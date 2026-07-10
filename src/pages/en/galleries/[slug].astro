@@ -8,7 +8,7 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
 import GalleryGrid from '../../../components/GalleryGrid.astro';
 import Lightbox from '../../../components/Lightbox.astro';
 import { getGalleries } from '../../../lib/sanity';
-import { thumbnailUrl } from '../../../lib/image';
+import { thumbnailUrl, fullSizeUrl } from '../../../lib/image';
 import type { Gallery } from '../../../lib/sanity';
 
 export const getStaticPaths = (async () => {
@@ -30,70 +30,126 @@ const locale = 'en' as const;
 // still be partially populated mid-edit.
 const statement = gallery.statement?.[locale] ?? '';
 const backHref = getRelativeLocaleUrl(locale, 'galleries');
+// D-07/UI-SPEC Layout Notes: hero-scrim uses the gallery's cover photo
+// (images[0]) at full size, same helper the Lightbox uses for its slides.
+const heroImage = gallery.images[0];
+const heroSrc = fullSizeUrl(heroImage, 2000);
+const heroAlt = heroImage.alt?.[locale] ?? '';
 ---
 
-<BaseLayout title={`${gallery.title} — Atelier Jacqueline Suzanne`}>
+<BaseLayout title={`${gallery.title} — Atelier Jacqueline Suzanne`} headerVariant="transparent">
   <div class="gallery-detail">
-    <div class="gallery-detail__header">
-      <h1>{gallery.title}</h1>
+    <div class="gallery-detail__hero">
+      <img
+        src={heroSrc}
+        alt={heroAlt}
+        class="gallery-detail__hero-img"
+        loading="eager"
+        decoding="async"
+      />
+      <div class="gallery-detail__hero-scrim" aria-hidden="true"></div>
+      <a href={backHref} class="gallery-detail__hero-back">← Back to galleries</a>
+      <h1 class="gallery-detail__hero-title">{gallery.title}</h1>
     </div>
-    <p class="gallery-detail__statement">{statement}</p>
-    <GalleryGrid>
-      {
-        gallery.images.map((img, index) => (
-          <button
-            type="button"
-            class="gallery-detail__thumb-button"
-            data-gallery-thumb
-            data-index={index}
-            aria-label={`View full size, image ${index + 1} of ${gallery.images.length}`}
-          >
-            <img
-              src={thumbnailUrl(img, 600)}
-              width="600"
-              height="600"
-              alt=""
-              loading="lazy"
-              decoding="async"
-              class="gallery-detail__thumb"
-            />
-          </button>
-        ))
-      }
-    </GalleryGrid>
-    <p class="gallery-detail__back">
-      <a href={backHref}>Back to galleries</a>
-    </p>
+    <div class="gallery-detail__content">
+      <p class="gallery-detail__statement">{statement}</p>
+      <GalleryGrid>
+        {
+          gallery.images.map((img, index) => (
+            <button
+              type="button"
+              class="gallery-detail__thumb-button"
+              data-gallery-thumb
+              data-index={index}
+              aria-label={`View full size, image ${index + 1} of ${gallery.images.length}`}
+            >
+              <img
+                src={thumbnailUrl(img, 600)}
+                width="600"
+                height="600"
+                alt=""
+                loading="lazy"
+                decoding="async"
+                class="gallery-detail__thumb"
+              />
+            </button>
+          ))
+        }
+      </GalleryGrid>
+    </div>
   </div>
   <Lightbox images={gallery.images} locale={locale} />
 </BaseLayout>
 
 <style>
   .gallery-detail {
-    padding: var(--space-2xl) var(--space-md);
+    padding: 0 0 var(--space-2xl);
   }
 
-  .gallery-detail__header {
-    container-type: inline-size;
-    background: var(--color-accent);
-    padding: var(--space-lg) var(--space-xl);
-    margin: 0 0 var(--space-2xl);
-    display: inline-block;
+  /* D-07: full-bleed hero photo + dark gradient scrim (matches the homepage
+     carousel's technique) with a white bottom-left Display title and a
+     white top-left back-link, under the transparent header variant. */
+  .gallery-detail__hero {
+    position: relative;
+    height: 70vh;
+    min-height: 420px;
+    overflow: hidden;
   }
 
-  .gallery-detail__header h1 {
+  .gallery-detail__hero-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .gallery-detail__hero-scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.15) 45%, rgba(0, 0, 0, 0) 70%);
+    pointer-events: none;
+  }
+
+  .gallery-detail__hero-back {
+    position: absolute;
+    top: var(--space-xl);
+    left: var(--space-xl);
+    z-index: 3;
+    color: #FFFFFF;
+    font-size: 14px; /* Label role */
+    font-weight: var(--weight-regular);
+    line-height: 1.5;
+    text-decoration: none;
+  }
+
+  .gallery-detail__hero-back:hover,
+  .gallery-detail__hero-back:focus-visible {
+    text-decoration: underline;
+  }
+
+  .gallery-detail__hero-title {
+    position: absolute;
+    left: var(--space-xl);
+    bottom: var(--space-xl);
+    right: var(--space-xl);
+    z-index: 3;
     margin: 0;
-    font-size: clamp(2.5rem, 12cqi, 6.5rem); /* Display role */
-    font-weight: 900;
-    line-height: 1;
-    letter-spacing: -0.02em;
-    color: var(--color-ink);
+    font-size: var(--text-display-size); /* Display role: fixed 32px */
+    font-weight: var(--weight-semibold);
+    font-family: var(--font-display);
+    line-height: 1.2;
+    color: #FFFFFF;
+  }
+
+  .gallery-detail__content {
+    padding: var(--space-2xl) var(--space-md) 0;
   }
 
   .gallery-detail__statement {
     max-width: 640px;
     font-size: 16px; /* Body role */
-    font-weight: 300;
+    font-weight: var(--weight-regular);
     line-height: 1.5;
     margin: 0 0 var(--space-2xl);
   }
@@ -108,9 +164,8 @@ const backHref = getRelativeLocaleUrl(locale, 'galleries');
   }
 
   .gallery-detail__thumb-button:focus-visible {
-    outline: 2px solid var(--color-ink);
+    outline: 2px solid var(--color-accent);
     outline-offset: 2px;
-    box-shadow: 0 0 0 4px var(--color-accent);
   }
 
   .gallery-detail__thumb {
@@ -119,15 +174,5 @@ const backHref = getRelativeLocaleUrl(locale, 'galleries');
     height: auto;
     aspect-ratio: 1 / 1;
     object-fit: cover;
-  }
-
-  .gallery-detail__back {
-    margin: var(--space-2xl) 0 0;
-    font-size: 16px; /* Body role */
-    font-weight: 300;
-  }
-
-  .gallery-detail__back a {
-    color: var(--color-ink);
   }
 </style>

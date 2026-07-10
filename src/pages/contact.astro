@@ -15,6 +15,14 @@ const locale = 'fr' as const;
   <div class="contact-page">
     <h1>Contact</h1>
     <p class="contact-page__lead">Une question, une envie de collaboration&nbsp;? Écrivez-moi.</p>
+    <p class="contact-page__social">
+      Vous pouvez aussi me suivre sur Instagram :
+      <a
+        href="https://www.instagram.com/ajs_romanelepont/"
+        target="_blank"
+        rel="noopener noreferrer"
+      >@ajs_romanelepont<span class="sr-only"> (nouvelle fenêtre)</span></a>
+    </p>
     <ContactForm locale={locale} />
   </div>
 </BaseLayout>
@@ -27,17 +35,23 @@ const locale = 'fr' as const;
   }
 
   .contact-page h1 {
-    container-type: inline-size;
-    font-size: clamp(2.5rem, 12cqi, 6.5rem); /* Display role */
-    font-weight: 900;
-    line-height: 1;
-    letter-spacing: -0.02em;
+    font-size: var(--text-display-size); /* Display role */
+    font-weight: var(--weight-semibold);
+    font-family: var(--font-display);
+    line-height: 1.2;
     margin: 0 0 var(--space-xl);
   }
 
   .contact-page__lead {
-    font-size: 16px; /* Body role */
-    font-weight: 300;
+    font-size: var(--text-body-size); /* Body role */
+    font-weight: var(--weight-regular);
+    line-height: 1.5;
+    margin: 0 0 var(--space-2xl);
+  }
+
+  .contact-page__social {
+    font-size: var(--text-body-size); /* Body role */
+    font-weight: var(--weight-regular);
     line-height: 1.5;
     margin: 0 0 var(--space-2xl);
   }

@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 4 context gathered
-last_updated: "2026-07-08T11:30:44.546Z"
-last_activity: 2026-07-08
+stopped_at: Phase 04.2 verification passed
+last_updated: "2026-07-10T14:47:06.846Z"
+last_activity: 2026-07-10 -- Phase 04.2 planning complete
 progress:
-  total_phases: 5
-  completed_phases: 3
-  total_plans: 12
-  completed_plans: 12
-  percent: 60
+  total_phases: 7
+  completed_phases: 6
+  total_plans: 22
+  completed_plans: 22
+  percent: 86
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-05)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; checkout follows in v1.x.)
-**Current focus:** Phase 03 — about-contact
+**Current focus:** Phase 04.1 — design-system-homepage-refresh
 
 ## Current Position
 
-Phase: 4
-Plan: Not started
+Phase: 04.1 (design-system-homepage-refresh) — EXECUTING
+Plan: 1 of 6
 Status: Ready to execute
-Last activity: 2026-07-08
+Last activity: 2026-07-10 -- Phase 04.2 planning complete
 
 Progress: [██████████] 100%
 
@@ -36,7 +36,7 @@ Progress: [██████████] 100%
 
 **Velocity:**
 
-- Total plans completed: 7
+- Total plans completed: 10
 - Average duration: - min
 - Total execution time: 0 hours
 
@@ -46,6 +46,7 @@ Progress: [██████████] 100%
 |-------|-------|-------|----------|
 | 02 | 4 | - | - |
 | 03 | 3 | - | - |
+| 04 | 3 | - | - |
 
 **Recent Trend:**
 
@@ -64,6 +65,11 @@ Progress: [██████████] 100%
 | Phase 02 P04 | 90 | 3 tasks | 3 files |
 
 ## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 04.1: Design System & Homepage Refresh (INSERTED after Phase 4, URGENT) — import + adopt the Claude-Design-generated monochrome/pop-pink identity and rebuild the homepage per the imported prototype. See `.planning/design-import/README.md`.
+- Phase 04.2: Social Media Links (INSERTED after Phase 4, URGENT) — Instagram link in the footer and on the About/Contact page.
 
 ### Decisions
 
@@ -112,6 +118,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-08T11:30:44.543Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-legal-compliance/04-CONTEXT.md
+Last session: 2026-07-10T14:47:06.843Z
+Stopped at: Phase 04.2 verification passed
+Resume file: .planning/phases/04.2-social-media-links/04.2-VERIFICATION.md

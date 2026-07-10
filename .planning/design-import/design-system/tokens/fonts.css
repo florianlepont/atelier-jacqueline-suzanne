@@ -1,0 +1,15 @@
+/* Atelier Jacqueline Suzanne — Display font
+   FONT SUBSTITUTION FLAGGED: no font files were supplied for the AJS wordmark logo (it's
+   flattened into the PNG lockup, not a usable typeface file). "Archivo Black" is the
+   brutalist-leaning Google Fonts match used here — a single-weight, blunt, uniform-stroke
+   grotesk with no rounded softness, closer to the raw/industrial character of the logo's
+   blocky "AJS" letterforms than a geometric-rounded display face. Used ONLY for
+   Heading/Display roles; Label/Body stay on the neutral system stack for reading comfort.
+   Ask Romane/Florian for the real logo typeface (or a licensed near-match) to replace this
+   substitution. */
+
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap');
+
+:root {
+  --font-display: 'Archivo Black', var(--font-sans);
+}

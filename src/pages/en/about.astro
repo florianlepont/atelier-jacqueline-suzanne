@@ -23,6 +23,14 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     <p class="placeholder">
       Details on medium and technique coming soon — pending confirmation with the artist.
     </p>
+    <p>
+      Follow Romane's work on Instagram:
+      <a
+        href="https://www.instagram.com/ajs_romanelepont/"
+        target="_blank"
+        rel="noopener noreferrer"
+      >@ajs_romanelepont<span class="sr-only"> (opens in new tab)</span></a>
+    </p>
   </div>
 </BaseLayout>
 
@@ -34,24 +42,24 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   }
 
   .about-page h1 {
-    container-type: inline-size;
-    font-size: clamp(2.5rem, 12cqi, 6.5rem); /* Display role */
-    font-weight: 900;
-    line-height: 1;
-    letter-spacing: -0.02em;
+    font-size: var(--text-display-size); /* Display role */
+    font-weight: var(--weight-semibold);
+    font-family: var(--font-display);
+    line-height: 1.2;
     margin: 0 0 var(--space-xl);
   }
 
   .about-page h2 {
-    font-size: 20px; /* Heading role */
-    font-weight: 900;
+    font-size: var(--text-heading-size); /* Heading role */
+    font-weight: var(--weight-semibold);
+    font-family: var(--font-display);
     line-height: 1.2;
     margin: var(--space-2xl) 0 var(--space-md);
   }
 
   .about-page p {
-    font-size: 16px; /* Body role */
-    font-weight: 300;
+    font-size: var(--text-body-size); /* Body role */
+    font-weight: var(--weight-regular);
     line-height: 1.5;
     margin: 0 0 var(--space-md);
   }

@@ -1,0 +1,73 @@
+---
+// Reusable button primitive (D-14/D-15/RESEARCH.md Pattern 2), translated
+// from .planning/design-import/design-system/components/forms/Button.jsx
+// into plain Astro. Presentational only — no client-side state of its own,
+// so no <script>/client:* directive is needed. Extra attributes (notably
+// data-role, used by ContactForm.astro's <script> to query the submit
+// button) are forwarded via Astro's attribute spreading.
+interface Props {
+  variant?: 'primary' | 'secondary';
+  size?: 'sm' | 'md';
+  disabled?: boolean;
+  type?: 'button' | 'submit' | 'reset';
+}
+
+const { variant = 'primary', size = 'md', disabled = false, type = 'button', ...rest } = Astro.props;
+---
+
+<button type={type} disabled={disabled} class:list={['btn', `btn--${variant}`, `btn--${size}`]} {...rest}>
+  <slot />
+</button>
+
+<style>
+  .btn {
+    font-family: var(--font-sans);
+    font-size: var(--text-label-size);
+    font-weight: var(--weight-semibold);
+    line-height: var(--text-label-leading);
+    min-height: var(--tap-target-min);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs);
+    transition:
+      opacity 120ms ease,
+      background-color 120ms ease;
+  }
+
+  .btn--md {
+    padding: var(--space-sm) var(--space-lg);
+  }
+
+  .btn--sm {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .btn--primary {
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    border: var(--border-hairline) solid var(--color-accent);
+  }
+
+  .btn--secondary {
+    background: transparent;
+    color: var(--color-accent);
+    border: var(--border-hairline) solid var(--color-accent);
+  }
+
+  .btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+
+  .btn:not(:disabled):hover {
+    opacity: 0.8;
+  }
+
+  .btn:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: var(--focus-ring-offset);
+  }
+</style>

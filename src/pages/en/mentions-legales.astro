@@ -1,0 +1,73 @@
+---
+// English legal notice page (LEGAL-01): site publisher identity, hosting
+// provider, and business status, per LCEN Article 1-1 (current text,
+// effective 2024-05-23 — this article was renumbered by the SREN law from
+// its long-standing pre-2024 citation; do not cite the old, abolished
+// numbering here, 04-RESEARCH.md Pitfall 2). Identical layout and legal content
+// to src/pages/mentions-legales.astro (see that file's frontmatter comment
+// for the full D-07/D-08/D-09/D-10 rationale); only import depth and copy
+// differ. Slug is deliberately identical to the FR page (RESEARCH.md
+// Pitfall 1) — getSwitcherHref() only strips/re-adds the "/en/" prefix, it
+// does not translate slugs.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Legal notice — Atelier Jacqueline Suzanne">
+  <div class="legal-page">
+    <h1>Legal notice</h1>
+
+    <h2>Site publisher</h2>
+    <p>Romane Lepont, trading as « Atelier Jacqueline Suzanne ».</p>
+    <p>Publication director: Romane Lepont.</p>
+    <p>Email: contact@atelierjacquelinesuzanne.fr</p>
+    <p class="placeholder">Address: to be completed.</p>
+    <p class="placeholder">Phone: to be completed.</p>
+
+    <h2>Hosting</h2>
+    <p>
+      OVH SAS — RCS Lille Métropole 424 761 419 00045 — APE code 2620Z. Registered office: 2 rue
+      Kellermann, 59100 Roubaix, France.
+    </p>
+
+    <h2>Status</h2>
+    <p class="placeholder">
+      Status: individual activity, not registered — occasional activity below the threshold
+      requiring business registration.
+    </p>
+  </div>
+</BaseLayout>
+
+<style>
+  .legal-page {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: var(--space-2xl) var(--space-md);
+  }
+
+  .legal-page h1 {
+    font-size: var(--text-display-size); /* Display role */
+    font-weight: var(--weight-semibold);
+    font-family: var(--font-display);
+    line-height: 1.2;
+    margin: 0 0 var(--space-xl);
+  }
+
+  .legal-page h2 {
+    font-size: var(--text-heading-size); /* Heading role */
+    font-weight: var(--weight-semibold);
+    font-family: var(--font-display);
+    line-height: 1.2;
+    margin: var(--space-2xl) 0 var(--space-md);
+  }
+
+  .legal-page p {
+    font-size: var(--text-body-size); /* Body role */
+    font-weight: var(--weight-regular);
+    line-height: 1.5;
+    margin: 0 0 var(--space-md);
+  }
+
+  .legal-page .placeholder {
+    font-style: italic;
+  }
+</style>

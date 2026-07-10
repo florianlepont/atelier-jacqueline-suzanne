@@ -1,0 +1,43 @@
+---
+// Reusable heading + body empty-state block (D-16/RESEARCH.md Code
+// Examples), translated from
+// .planning/design-import/design-system/components/feedback/EmptyState.jsx
+// into plain Astro. Copy comes entirely from props — no hardcoded
+// French-only default, since this project already ships both-locale copy
+// (contrast with the .jsx reference's FR-only default prop values).
+interface Props {
+  heading: string;
+  body: string;
+}
+
+const { heading, body } = Astro.props;
+---
+
+<div class="empty-state">
+  <p class="empty-state__heading">{heading}</p>
+  <p class="empty-state__body">{body}</p>
+</div>
+
+<style>
+  .empty-state {
+    font-family: var(--font-sans);
+    text-align: center;
+    padding: var(--space-3xl) var(--space-lg);
+    color: var(--color-ink);
+  }
+
+  .empty-state__heading {
+    font-size: var(--text-heading-size);
+    font-weight: var(--text-heading-weight);
+    line-height: var(--text-heading-leading);
+    font-family: var(--text-heading-family);
+    margin: 0 0 var(--space-sm);
+  }
+
+  .empty-state__body {
+    font-size: var(--text-body-size);
+    font-weight: var(--text-body-weight);
+    line-height: var(--text-body-leading);
+    margin: 0;
+  }
+</style>

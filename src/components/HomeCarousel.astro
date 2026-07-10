@@ -1,0 +1,562 @@
+---
+// Homepage hero carousel + 2-column grid toggle (D-08/D-09/D-10/D-12), the
+// real gallery entry point replacing Phase 1's placeholder homepage. A
+// dependency-free vanilla-JS island (no client:* directive — no framework to
+// hydrate), mirroring Lightbox.astro's hidden-data-node + typed <script>
+// pattern (04.1-RESEARCH.md Pattern 4).
+//
+// T-04.1-04-ID (threat model, mitigate): gallery data below is pre-fetched
+// and pre-filtered (D-12) by the calling page's frontmatter via
+// getGalleries() — this component and its client <script> never import
+// src/lib/sanity.ts, so SANITY_API_READ_TOKEN never reaches the browser.
+//
+// This component also renders the homepage's own <header> (nav +
+// carousel/grid toggle + LanguageSwitcher) since the page invokes
+// `<BaseLayout headerVariant="none">` to avoid a duplicate <header> — see
+// 04.1-UI-SPEC.md Layout Notes ("Homepage — Carousel mode" / "Grid mode").
+import { getRelativeLocaleUrl } from 'astro:i18n';
+import LanguageSwitcher from './LanguageSwitcher.astro';
+
+interface GalleryEntry {
+  slug: string;
+  title: string;
+  heroSrc: string;
+  gridSrc: string;
+  alt: string;
+}
+
+interface Props {
+  locale: 'fr' | 'en';
+  galleries: GalleryEntry[];
+}
+
+const { locale, galleries } = Astro.props;
+const isEn = locale === 'en';
+
+// Copy verbatim from the prototype (UI-SPEC Copywriting Contract) — hardcoded
+// per the "Homepage intro copy source" decision, not sourced from
+// siteSettings.welcomeHeading/welcomeBody.
+const homeLabel = isEn ? 'Home' : 'Accueil';
+const galleriesLabel = isEn ? 'Galleries' : 'Galeries';
+const homeHref = getRelativeLocaleUrl(locale, '');
+const galleriesHref = getRelativeLocaleUrl(locale, 'galleries');
+const toggleCarouselLabel = isEn ? 'Carousel' : 'Carrousel';
+const toggleGridLabel = isEn ? 'Grid' : 'Grille';
+const prevLabel = isEn ? 'Previous gallery' : 'Galerie précédente';
+const nextLabel = isEn ? 'Next gallery' : 'Galerie suivante';
+const wordmark = 'Atelier Jacqueline Suzanne';
+const introBody = isEn
+  ? "This site showcases Romane Lepont's photographic work and lets you buy a piece directly online."
+  : "Le site présente le travail photographique de Romane Lepont et permet l'achat d'une œuvre directement en ligne.";
+const byline = isEn ? 'A project by Romane Lepont' : 'Un projet de Romane Lepont';
+const ctaLabel = isEn ? 'Discover other galleries →' : 'Découvrir les autres galeries →';
+const ctaHref = galleriesHref;
+
+const totalLabel = String(galleries.length).padStart(2, '0');
+const firstGallery = galleries[0];
+---
+
+{galleries.length === 0 ? (
+  <p class="home-empty">{isEn ? 'No galleries available yet.' : 'Aucune galerie disponible pour le moment.'}</p>
+) : (
+  <section class="home" data-display-mode="carousel">
+    <header class="home-header" data-role="home-header">
+      <a href={homeHref} class="home-logo" aria-label={wordmark}>
+        <img src="/logos/AJS_Brutalist_White_Transparent.png" alt="" class="home-logo__img home-logo__img--white" />
+        <img src="/logos/AJS_Brutalist_Black_Transparent.png" alt="" class="home-logo__img home-logo__img--black" />
+      </a>
+      <nav class="home-nav" aria-label="Primary">
+        <a href={homeHref} class="home-nav-link">{homeLabel}</a>
+        <a href={galleriesHref} class="home-nav-link">{galleriesLabel}</a>
+      </nav>
+      <div class="home-toggle" role="group" aria-label={isEn ? 'Display mode' : "Mode d'affichage"}>
+        <button type="button" class="home-toggle__btn is-active" data-action="show-carousel">{toggleCarouselLabel}</button>
+        <button type="button" class="home-toggle__btn" data-action="show-grid">{toggleGridLabel}</button>
+      </div>
+      <LanguageSwitcher />
+    </header>
+
+    <div class="home-hero" data-role="home-carousel">
+      <img data-role="hero-image" src={firstGallery.heroSrc} alt={firstGallery.alt} class="home-hero__img" />
+      <div class="home-hero__scrim" aria-hidden="true"></div>
+
+      <button type="button" class="home-hero__arrow home-hero__arrow--prev" data-action="prev" aria-label={prevLabel}>
+        <span aria-hidden="true">‹</span>
+      </button>
+      <button type="button" class="home-hero__arrow home-hero__arrow--next" data-action="next" aria-label={nextLabel}>
+        <span aria-hidden="true">›</span>
+      </button>
+
+      <div class="home-hero__caption">
+        <p class="home-hero__index" data-role="index-label">01 / {totalLabel}</p>
+        <h2 class="home-hero__title" data-role="gallery-title">{firstGallery.title.toUpperCase()}</h2>
+        <p class="home-hero__byline">{byline}</p>
+      </div>
+
+      <div class="home-hero__accent" data-role="accent-panel" style={{ backgroundColor: 'var(--color-accent)', color: 'var(--color-on-accent)' }}>
+        <p class="home-hero__wordmark">{wordmark}</p>
+        <p class="home-hero__intro">{introBody}</p>
+        <a href={ctaHref} class="home-hero__cta">{ctaLabel}</a>
+      </div>
+    </div>
+
+    <div class="home-grid" data-role="home-grid" hidden>
+      <div class="home-grid__intro">
+        <p class="home-grid__wordmark">{wordmark}</p>
+        <p class="home-grid__intro-body">{introBody}</p>
+      </div>
+      <div class="home-grid__tiles">
+        {galleries.map((gallery) => (
+          <a href={getRelativeLocaleUrl(locale, `galleries/${gallery.slug}`)} class="home-grid__tile">
+            <img
+              src={gallery.gridSrc}
+              width="600"
+              height="600"
+              alt={gallery.alt}
+              loading="lazy"
+              decoding="async"
+              class="home-grid__tile-img"
+            />
+            <div class="home-grid__tile-scrim" aria-hidden="true"></div>
+            <span class="home-grid__tile-title">{gallery.title}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+
+    {/* Build-time data for the runtime script to read (Lightbox.astro
+        precedent) — the script never imports src/lib/sanity, it only reads
+        this already-fetched, already-filtered (D-12) static markup. */}
+    <ul hidden data-role="home-carousel-data">
+      {galleries.map((gallery) => (
+        <li data-title={gallery.title} data-hero-src={gallery.heroSrc} data-alt={gallery.alt} />
+      ))}
+    </ul>
+
+    <script>
+      interface GalleryEntry {
+        title: string;
+        heroSrc: string;
+        alt: string;
+      }
+
+      const root = document.querySelector<HTMLElement>('.home[data-display-mode]');
+      const hero = document.querySelector<HTMLElement>('[data-role="home-carousel"]');
+      const grid = document.querySelector<HTMLElement>('[data-role="home-grid"]');
+      const dataEl = document.querySelector<HTMLUListElement>('ul[data-role="home-carousel-data"]');
+
+      if (root && hero && grid && dataEl) {
+        const galleries: GalleryEntry[] = Array.from(dataEl.querySelectorAll('li')).map((li) => ({
+          title: li.dataset.title ?? '',
+          heroSrc: li.dataset.heroSrc ?? '',
+          alt: li.dataset.alt ?? '',
+        }));
+
+        // ACCENTS cycles generically via index % ACCENTS.length (RESEARCH.md
+        // Open Question 3) — written for N galleries, not hardcoded to 2,
+        // so it extends correctly once more galleries migrate. bg/text pairs
+        // per the prototype's ACCENTS array (plan interfaces block).
+        const ACCENTS: Array<{ bg: string; text: string }> = [
+          { bg: 'var(--color-accent)', text: 'var(--color-on-accent)' },
+          { bg: 'var(--palette-purple)', text: '#FFFFFF' },
+          { bg: 'var(--palette-teal)', text: 'var(--color-ink)' },
+          { bg: 'var(--palette-lime)', text: 'var(--color-ink)' },
+          { bg: 'var(--palette-plum)', text: '#FFFFFF' },
+        ];
+
+        const heroImg = hero.querySelector<HTMLImageElement>('[data-role="hero-image"]');
+        const indexLabel = hero.querySelector<HTMLElement>('[data-role="index-label"]');
+        const titleEl = hero.querySelector<HTMLElement>('[data-role="gallery-title"]');
+        const accentPanel = hero.querySelector<HTMLElement>('[data-role="accent-panel"]');
+
+        let carouselIndex = 0;
+        let timer: ReturnType<typeof setInterval> | null = null;
+
+        function render() {
+          const gallery = galleries[carouselIndex];
+          if (!gallery) return;
+          const accent = ACCENTS[carouselIndex % ACCENTS.length];
+          if (heroImg) {
+            heroImg.src = gallery.heroSrc;
+            heroImg.alt = gallery.alt;
+          }
+          if (indexLabel) {
+            indexLabel.textContent = `${String(carouselIndex + 1).padStart(2, '0')} / ${String(galleries.length).padStart(2, '0')}`;
+          }
+          if (titleEl) {
+            titleEl.textContent = gallery.title.toUpperCase();
+          }
+          if (accentPanel) {
+            accentPanel.style.backgroundColor = accent.bg;
+            accentPanel.style.color = accent.text;
+          }
+          root!.style.setProperty('--current-accent', accent.bg);
+        }
+
+        function stopAutoAdvance() {
+          if (timer) clearInterval(timer);
+          timer = null;
+        }
+
+        // D-09: auto-advance every 6000ms, paused on hover/focus, resumed on
+        // mouseleave/focusout — never paused permanently.
+        function startAutoAdvance() {
+          stopAutoAdvance();
+          timer = setInterval(() => {
+            carouselIndex = (carouselIndex + 1) % galleries.length;
+            render();
+          }, 6000);
+        }
+
+        function showCarousel() {
+          root!.dataset.displayMode = 'carousel';
+          hero!.hidden = false;
+          grid!.hidden = true;
+          startAutoAdvance();
+        }
+
+        function showGrid() {
+          root!.dataset.displayMode = 'grid';
+          hero!.hidden = true;
+          grid!.hidden = false;
+          stopAutoAdvance();
+        }
+
+        hero.addEventListener('mouseenter', stopAutoAdvance);
+        hero.addEventListener('mouseleave', startAutoAdvance);
+        hero.addEventListener('focusin', stopAutoAdvance);
+        hero.addEventListener('focusout', startAutoAdvance);
+
+        hero.querySelector('[data-action="prev"]')?.addEventListener('click', () => {
+          carouselIndex = (carouselIndex - 1 + galleries.length) % galleries.length;
+          render();
+        });
+        hero.querySelector('[data-action="next"]')?.addEventListener('click', () => {
+          carouselIndex = (carouselIndex + 1) % galleries.length;
+          render();
+        });
+
+        function setActiveToggle(button: HTMLButtonElement) {
+          root!.querySelectorAll('.home-toggle__btn').forEach((btn) => btn.classList.remove('is-active'));
+          button.classList.add('is-active');
+        }
+
+        root.querySelectorAll<HTMLButtonElement>('[data-action="show-carousel"]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            showCarousel();
+            setActiveToggle(btn);
+          });
+        });
+        root.querySelectorAll<HTMLButtonElement>('[data-action="show-grid"]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            showGrid();
+            setActiveToggle(btn);
+          });
+        });
+
+        render();
+        startAutoAdvance();
+      }
+    </script>
+  </section>
+)}
+
+<style>
+  .home-empty {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: var(--space-3xl) var(--space-md);
+    text-align: center;
+    font-size: 16px;
+  }
+
+  .home {
+    position: relative;
+  }
+
+  /* Top bar — carousel mode: overlaid on the hero photo, colored with the
+     current accent (UI-SPEC Layout Notes — Header). Grid mode: static
+     position, ink-colored (no image beneath it). */
+  .home-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    padding: var(--space-lg) var(--space-md);
+    z-index: 5;
+  }
+
+  .home[data-display-mode='carousel'] .home-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 100%);
+    color: var(--current-accent, var(--color-accent));
+  }
+
+  .home[data-display-mode='grid'] .home-header {
+    position: static;
+    background: none;
+    color: var(--color-ink);
+  }
+
+  .home-logo {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .home-logo__img {
+    width: 56px;
+    height: auto;
+    display: none;
+  }
+
+  .home[data-display-mode='carousel'] .home-logo__img--white {
+    display: block;
+  }
+
+  .home[data-display-mode='grid'] .home-logo__img--black {
+    display: block;
+  }
+
+  .home-nav {
+    margin-right: auto;
+    margin-left: var(--space-md);
+    display: flex;
+    gap: var(--space-md);
+  }
+
+  .home-nav-link,
+  .home-toggle__btn {
+    font-size: 14px; /* Label role */
+    font-weight: var(--weight-regular);
+    line-height: 1.5;
+    color: inherit;
+    text-decoration: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: var(--space-xs) var(--space-sm);
+    min-height: var(--tap-target-min);
+  }
+
+  .home-nav-link:hover,
+  .home-nav-link:focus-visible,
+  .home-toggle__btn:hover,
+  .home-toggle__btn:focus-visible {
+    text-decoration: underline;
+  }
+
+  .home-toggle {
+    display: flex;
+    gap: var(--space-sm);
+  }
+
+  .home-toggle__btn.is-active {
+    font-weight: var(--weight-semibold);
+    text-decoration: underline;
+  }
+
+  /* Carousel mode — full-viewport hero photo + scrim + caption + accent
+     panel (D-08/D-09, UI-SPEC Layout Notes — Homepage Carousel mode). */
+  .home-hero {
+    position: relative;
+    height: 100vh;
+    min-height: 680px;
+    overflow: hidden;
+  }
+
+  .home-hero__img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .home-hero__scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.15) 45%, rgba(0, 0, 0, 0) 70%);
+  }
+
+  .home-hero__arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: var(--tap-target-min);
+    height: var(--tap-target-min);
+    border-radius: var(--radius-none);
+    border: none;
+    background: rgba(0, 0, 0, 0.35);
+    color: #FFFFFF;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+  }
+
+  .home-hero__arrow--prev {
+    left: var(--space-md);
+  }
+
+  .home-hero__arrow--next {
+    right: var(--space-md);
+  }
+
+  .home-hero__caption {
+    position: absolute;
+    left: var(--space-md);
+    bottom: var(--space-xl);
+    max-width: 60%;
+    z-index: 3;
+    color: #FFFFFF;
+  }
+
+  .home-hero__index {
+    font-size: 14px; /* Label role */
+    font-weight: var(--weight-regular);
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.75);
+    margin: 0 0 var(--space-xs);
+  }
+
+  .home-hero__title {
+    font-family: var(--font-display);
+    font-size: 20px; /* Heading role */
+    font-weight: var(--weight-semibold);
+    line-height: 1.2;
+    margin: 0 0 var(--space-xs);
+    color: #FFFFFF;
+  }
+
+  .home-hero__byline {
+    font-size: 14px; /* Label role */
+    font-weight: var(--weight-regular);
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.75);
+    margin: 0;
+  }
+
+  .home-hero__accent {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: min(560px, 52%);
+    padding: var(--space-xl);
+    z-index: 3;
+  }
+
+  .home-hero__wordmark {
+    font-family: var(--font-display);
+    font-size: 32px; /* Display role, fixed */
+    font-weight: var(--weight-semibold);
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+    margin: 0 0 var(--space-md);
+  }
+
+  .home-hero__intro {
+    font-size: 16px; /* Body role */
+    font-weight: var(--weight-regular);
+    line-height: 1.5;
+    margin: 0 0 var(--space-md);
+  }
+
+  .home-hero__cta {
+    font-size: 14px; /* Label role */
+    font-weight: var(--weight-semibold);
+    text-decoration: underline;
+    color: inherit;
+  }
+
+  /* Grid mode — intro band + seamless 2-column tile grid (D-08, UI-SPEC
+     Layout Notes — Homepage Grid mode). */
+  .home-grid__intro {
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    padding: var(--space-2xl) var(--space-md);
+  }
+
+  .home-grid__wordmark {
+    font-family: var(--font-display);
+    font-size: 32px; /* Display role, fixed */
+    font-weight: var(--weight-semibold);
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+    margin: 0 0 var(--space-md);
+  }
+
+  .home-grid__intro-body {
+    max-width: 640px;
+    font-size: 16px; /* Body role */
+    font-weight: var(--weight-regular);
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .home-grid__tiles {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0;
+  }
+
+  .home-grid__tile {
+    position: relative;
+    display: block;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    text-decoration: none;
+  }
+
+  .home-grid__tile-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .home-grid__tile-scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.15) 45%, rgba(0, 0, 0, 0) 70%);
+  }
+
+  .home-grid__tile-title {
+    position: absolute;
+    left: var(--space-md);
+    bottom: var(--space-md);
+    z-index: 2;
+    font-family: var(--font-display);
+    font-size: 32px; /* Display role, fixed */
+    font-weight: var(--weight-semibold);
+    line-height: 1.2;
+    color: #FFFFFF;
+  }
+
+  /* Mobile responsive (D-10, UI-SPEC Layout Notes — Homepage Mobile). */
+  @media (max-width: 767px) {
+    .home-header {
+      flex-wrap: wrap;
+    }
+
+    .home-hero {
+      height: auto;
+      min-height: 420px;
+      overflow: visible;
+    }
+
+    .home-hero__accent {
+      position: static;
+      width: 100%;
+    }
+
+    .home-grid__tiles {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

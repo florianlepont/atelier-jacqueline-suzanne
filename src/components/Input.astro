@@ -1,0 +1,78 @@
+---
+// Reusable labelled text input (D-14/RESEARCH.md Pattern 2), translated from
+// .planning/design-import/design-system/components/forms/Input.jsx into
+// plain Astro. Ink-only error convention (D-03): no red anywhere — error
+// state uses a thicker ink border + bold ink error text via a role="alert"
+// element. Extra attributes (id, name, required, etc.) are forwarded to the
+// underlying <input> via attribute spreading.
+interface Props {
+  label: string;
+  id: string;
+  name?: string;
+  type?: string;
+  required?: boolean;
+  error?: string;
+}
+
+const { label, id, name, type = 'text', required = false, error, ...rest } = Astro.props;
+---
+
+<div class="field">
+  <label for={id} class="field__label">{label}</label>
+  <input
+    id={id}
+    name={name}
+    type={type}
+    required={required}
+    class:list={['field__input', { 'field__input--error': Boolean(error) }]}
+    {...rest}
+  />
+  {error && (
+    <p class="field__error" role="alert">{error}</p>
+  )}
+</div>
+
+<style>
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    font-family: var(--font-sans);
+  }
+
+  .field__label {
+    font-size: var(--text-label-size);
+    font-weight: var(--weight-regular);
+    line-height: var(--text-label-leading);
+    color: var(--color-ink);
+  }
+
+  .field__input {
+    font-family: var(--font-sans);
+    font-size: var(--text-body-size); /* 16px — avoids iOS Safari auto-zoom on focus */
+    line-height: var(--text-body-leading);
+    color: var(--color-ink);
+    background: var(--color-dominant);
+    border: var(--border-hairline) solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-sm) var(--space-md);
+    min-height: var(--tap-target-min);
+  }
+
+  /* D-03: no destructive red — thicker ink border instead. */
+  .field__input--error {
+    border: var(--border-focus) solid var(--color-ink);
+  }
+
+  .field__error {
+    margin: 0;
+    font-size: var(--text-label-size);
+    font-weight: var(--weight-semibold);
+    color: var(--color-ink);
+  }
+
+  .field__input:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: var(--focus-ring-offset);
+  }
+</style>

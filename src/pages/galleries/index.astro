@@ -6,6 +6,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import GalleryGrid from '../../components/GalleryGrid.astro';
 import GalleryCard from '../../components/GalleryCard.astro';
+import EmptyState from '../../components/EmptyState.astro';
 import { getGalleries } from '../../lib/sanity';
 
 const galleries = await getGalleries();
@@ -23,10 +24,10 @@ const galleries = await getGalleries();
         </GalleryGrid>
       </div>
     ) : (
-      <div class="empty-state">
-        <h1>Galeries à venir</h1>
-        <p>De nouvelles œuvres seront bientôt visibles ici. Revenez prochainement.</p>
-      </div>
+      <EmptyState
+        heading="Galeries à venir"
+        body="De nouvelles œuvres seront bientôt visibles ici. Revenez prochainement."
+      />
     )
   }
 </BaseLayout>
@@ -36,33 +37,13 @@ const galleries = await getGalleries();
     padding: var(--space-2xl) var(--space-md);
   }
 
+  /* D-16/UI-SPEC Typography: Display is a site-wide fixed 32px role, not a
+     fluid/responsive font-size mechanism. */
   .galleries-page h1 {
-    container-type: inline-size;
-    font-size: clamp(2.5rem, 12cqi, 6.5rem); /* Display role */
-    font-weight: 900;
-    line-height: 1;
-    letter-spacing: -0.02em;
+    font-size: var(--text-display-size);
+    font-weight: var(--text-display-weight);
+    line-height: var(--text-display-leading);
+    font-family: var(--text-display-family);
     margin: 0 0 var(--space-xl);
-  }
-
-  .empty-state {
-    max-width: 640px;
-    margin: 0 auto;
-    padding: var(--space-2xl) var(--space-md);
-    text-align: center;
-  }
-
-  .empty-state h1 {
-    font-size: 20px; /* Heading role */
-    font-weight: 900;
-    line-height: 1.2;
-    margin: 0 0 var(--space-md);
-  }
-
-  .empty-state p {
-    font-size: 16px; /* Body role */
-    font-weight: 300;
-    line-height: 1.5;
-    margin: 0;
   }
 </style>

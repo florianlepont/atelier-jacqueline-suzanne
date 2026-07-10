@@ -35,26 +35,3 @@ lowercases hex colors in the compiled output (`#f92d97`); confirmed case-insensi
 (`grep -qi`) that the token reaches the built CSS correctly — the source file
 `src/layouts/BaseLayout.astro` carries the exact uppercase value the plan's acceptance criteria
 checks against.
-
-## Delight variable font sourcing/licensing (Plan 02-02 Task 2, deferred by explicit user choice)
-
-Task 2 of `02-02-PLAN.md` was a `checkpoint:human-action` gate: source the "Delight" variable
-typeface (a free Behance release by Rajesh Rajput — not on Google Fonts, any CDN, or npm; the
-Behance project page is image-only, not fetchable programmatically), confirm a license
-permitting self-hosted commercial web embedding, and place the file at
-`public/fonts/delight.woff2`. At the checkpoint, the user explicitly chose **"fallback-only"**
-(2026-07-07) rather than block Phase 2 on font sourcing/licensing.
-
-Current state: `src/layouts/BaseLayout.astro` already declares the `@font-face` rule for
-`'Delight'` pointing at `/fonts/delight.woff2` with `font-weight: 100 900; font-display: swap;`
-(added in Task 1). No file exists at that path yet, so every browser falls through to the
-system-font stack (`-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif`)
-declared alongside it — the site is fully functional and visually complete (Dawn Pink/Woodsmoke/
-Wild Strawberry identity, correct weights via the system font's available weight axis) on this
-fallback. No console errors result: the browser only requests the font file when it's actually
-needed for a rendered glyph, and Astro's `font-display: swap` avoids a render-blocking wait.
-
-**Follow-up (not scheduled to a phase yet):** source the licensed Delight `.woff2` file(s),
-verify web-embedding rights, and place at `public/fonts/delight.woff2` (or update the
-`@font-face` `src` to the actual filename) whenever font licensing is resolved — flagging for
-the phase/milestone owner to schedule.

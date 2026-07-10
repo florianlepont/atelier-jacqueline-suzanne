@@ -1,0 +1,31 @@
+/* Atelier Jacqueline Suzanne — Typography tokens
+   Source: 01-UI-SPEC.md — exactly 4 roles, exactly 2 weights. Label/Body use the neutral
+   system stack; Heading/Display use --font-display (Unbounded, a flagged Google Fonts
+   substitute for the logo's brutalist face — see tokens/fonts.css). */
+
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+
+  /* Weights */
+  --weight-regular: 400;
+  --weight-semibold: 600;
+
+  /* Roles: size / weight / line-height */
+  --text-label-size: 14px;
+  --text-label-weight: var(--weight-regular);
+  --text-label-leading: 1.5;
+
+  --text-body-size: 16px;
+  --text-body-weight: var(--weight-regular);
+  --text-body-leading: 1.5;
+
+  --text-heading-size: 20px;
+  --text-heading-weight: var(--weight-semibold);
+  --text-heading-leading: 1.2;
+  --text-heading-family: var(--font-display); /* brutalist display face — logo-adjacent */
+
+  --text-display-size: 32px;
+  --text-display-weight: var(--weight-semibold);
+  --text-display-leading: 1.2;
+  --text-display-family: var(--font-display); /* brutalist display face — logo-adjacent */
+}

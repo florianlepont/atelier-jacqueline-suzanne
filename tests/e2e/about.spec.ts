@@ -60,8 +60,14 @@ test.describe('about page content', () => {
     expect(enMain).not.toBe(frMain);
   });
 
-  test('the header nav links to the About page from "/"', async ({ page }) => {
-    await page.goto('/');
+  test('the header nav links to the About page', async ({ page }) => {
+    // Phase 04.1: the homepage ("/") intentionally renders its own minimal,
+    // immersive nav (Accueil/Galeries + carousel-grid toggle + switcher only
+    // — no About/Contact) per 04.1-UI-SPEC.md's Layout Notes, matching the
+    // imported design prototype. The standard site-wide header (with the
+    // About link) still renders on every other page, so this checks
+    // reachability from there instead of "/".
+    await page.goto('/galleries/');
 
     await page.locator('header').getByRole('link', { name: 'À propos' }).click();
 

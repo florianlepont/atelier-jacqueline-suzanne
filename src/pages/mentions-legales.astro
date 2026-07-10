@@ -1,0 +1,93 @@
+---
+// French mentions légales page (LEGAL-01): site publisher identity, hosting
+// provider, and business status, per LCEN Article 1-1 (current text,
+// effective 2024-05-23 — this article was renumbered by the SREN law from
+// its long-standing pre-2024 citation; do not cite the old, abolished
+// numbering here, 04-RESEARCH.md Pitfall 2).
+//
+// Hardcoded content (Pattern 3 — no Sanity fetch), same convention as
+// src/pages/about.astro: legal copy needs developer review before any
+// change, so it is not CMS-editable (04-RESEARCH.md "Don't Hand-Roll").
+//
+// Identity disclosure (D-08, RESOLVED): LCEN Article 1-1, I requires a
+// professional editorial site to disclose the publisher's real legal name,
+// not just a trade/brand name — "Romane Lepont, exerçant sous le nom
+// commercial « Atelier Jacqueline Suzanne »".
+//
+// Address/phone (D-09, RESOLVED): Romane has no professional address or
+// phone line on file yet. Shipped as explicit, clearly-marked `.placeholder`
+// pending fields — never fabricated, never silently omitted.
+//
+// Hosting (D-07): names OVH as the confirmed Phase-5 end-state host, even
+// though the site is still actually live on GitHub Pages today. Address/RCS/
+// APE details verified directly against OVH's own live mentions-légales page
+// (ovhcloud.com/fr/terms-and-conditions/) during this task — that page does
+// not itself publish a phone number for OVH SAS, so none is asserted here
+// (04-RESEARCH.md Assumption A2 delta, recorded in 04-01-SUMMARY.md).
+//
+// Business status (D-10, RESOLVED): Romane has not filed any business
+// registration — her activity is occasional and, by her own account, below
+// the threshold that would trigger a registration obligation. This is NOT
+// the "SIRET en cours d'attribution" (filed, pending issuance) case.
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Mentions légales — Atelier Jacqueline Suzanne">
+  <div class="legal-page">
+    <h1>Mentions légales</h1>
+
+    <h2>Éditeur du site</h2>
+    <p>Romane Lepont, exerçant sous le nom commercial « Atelier Jacqueline Suzanne ».</p>
+    <p>Directeur de la publication : Romane Lepont.</p>
+    <p>E-mail : contact@atelierjacquelinesuzanne.fr</p>
+    <p class="placeholder">Adresse : à compléter.</p>
+    <p class="placeholder">Téléphone : à compléter.</p>
+
+    <h2>Hébergement</h2>
+    <p>
+      OVH SAS — RCS Lille Métropole 424 761 419 00045 — Code APE 2620Z. Siège social : 2 rue
+      Kellermann, 59100 Roubaix, France.
+    </p>
+
+    <h2>Statut</h2>
+    <p class="placeholder">
+      Statut : activité individuelle, non immatriculée — activité occasionnelle en dessous du
+      seuil imposant l'immatriculation.
+    </p>
+  </div>
+</BaseLayout>
+
+<style>
+  .legal-page {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: var(--space-2xl) var(--space-md);
+  }
+
+  .legal-page h1 {
+    font-size: var(--text-display-size); /* Display role */
+    font-weight: var(--weight-semibold);
+    font-family: var(--font-display);
+    line-height: 1.2;
+    margin: 0 0 var(--space-xl);
+  }
+
+  .legal-page h2 {
+    font-size: var(--text-heading-size); /* Heading role */
+    font-weight: var(--weight-semibold);
+    font-family: var(--font-display);
+    line-height: 1.2;
+    margin: var(--space-2xl) 0 var(--space-md);
+  }
+
+  .legal-page p {
+    font-size: var(--text-body-size); /* Body role */
+    font-weight: var(--weight-regular);
+    line-height: 1.5;
+    margin: 0 0 var(--space-md);
+  }
+
+  .legal-page .placeholder {
+    font-style: italic;
+  }
+</style>

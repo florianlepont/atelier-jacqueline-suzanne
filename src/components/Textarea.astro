@@ -1,0 +1,76 @@
+---
+// Reusable labelled textarea (D-14/RESEARCH.md Pattern 2), translated from
+// .planning/design-import/design-system/components/forms/Textarea.jsx into
+// plain Astro. Same border/error convention as Input.astro (D-03, ink-only).
+interface Props {
+  label: string;
+  id: string;
+  name?: string;
+  rows?: number;
+  required?: boolean;
+  error?: string;
+}
+
+const { label, id, name, rows = 5, required = false, error, ...rest } = Astro.props;
+---
+
+<div class="field">
+  <label for={id} class="field__label">{label}</label>
+  <textarea
+    id={id}
+    name={name}
+    rows={rows}
+    required={required}
+    class:list={['field__textarea', { 'field__textarea--error': Boolean(error) }]}
+    {...rest}
+  ></textarea>
+  {error && (
+    <p class="field__error" role="alert">{error}</p>
+  )}
+</div>
+
+<style>
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    font-family: var(--font-sans);
+  }
+
+  .field__label {
+    font-size: var(--text-label-size);
+    font-weight: var(--weight-regular);
+    line-height: var(--text-label-leading);
+    color: var(--color-ink);
+  }
+
+  .field__textarea {
+    font-family: var(--font-sans);
+    font-size: var(--text-body-size); /* 16px — avoids iOS Safari auto-zoom on focus */
+    line-height: var(--text-body-leading);
+    color: var(--color-ink);
+    background: var(--color-dominant);
+    border: var(--border-hairline) solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-sm) var(--space-md);
+    min-height: 120px;
+    resize: vertical;
+  }
+
+  /* D-03: no destructive red — thicker ink border instead. */
+  .field__textarea--error {
+    border: var(--border-focus) solid var(--color-ink);
+  }
+
+  .field__error {
+    margin: 0;
+    font-size: var(--text-label-size);
+    font-weight: var(--weight-semibold);
+    color: var(--color-ink);
+  }
+
+  .field__textarea:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: var(--focus-ring-offset);
+  }
+</style>

@@ -34,9 +34,9 @@ Phased launch: v1 replaces the current Myportfolio site fast with portfolio + ab
 
 ### Legal
 
-- [ ] **LEGAL-01**: Site displays a mentions légales page (site owner identity, hosting provider, business status)
-- [ ] **LEGAL-03**: Site displays a privacy policy / GDPR notice
-- [ ] **LEGAL-05**: Site displays a cookie/consent banner compliant with CNIL guidance (if any non-essential cookies are used)
+- [x] **LEGAL-01**: Site displays a mentions légales page (site owner identity, hosting provider, business status)
+- [x] **LEGAL-03**: Site displays a privacy policy / GDPR notice
+- [x] **LEGAL-05**: Site displays a cookie/consent banner compliant with CNIL guidance (if any non-essential cookies are used)
 
 ### Launch
 
@@ -129,9 +129,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CMS-01 | Phase 2 | Complete |
 | CONT-01 | Phase 3 | Complete |
 | CONT-02 | Phase 3 | Complete |
-| LEGAL-01 | Phase 4 | Pending |
-| LEGAL-03 | Phase 4 | Pending |
-| LEGAL-05 | Phase 4 | Pending |
+| LEGAL-01 | Phase 4 | Complete |
+| LEGAL-03 | Phase 4 | Complete |
+| LEGAL-05 | Phase 4 | Complete |
 | LAUNCH-01 | Phase 5 | Pending |
 
 **Coverage:**

@@ -1,0 +1,133 @@
+---
+// French privacy policy page (LEGAL-03 / LEGAL-05): contact-form, Sanity, and
+// hosting-log data flows, plus the ajs_locale cookie disclosure. Hardcoded
+// content (Pattern 3 — no Sanity fetch), same convention as
+// src/pages/about.astro and src/pages/mentions-legales.astro: this is a
+// lightweight, plain-language notice (D-04), not a formal Article 13
+// processor list.
+//
+// Contact form (D-05, RESOLVED): describes the confirmed OVH mail()
+// end-state — a DIRECT send to Romane's own OVH mailbox, no third-party
+// processor. This supersedes Phase 3's interim third-party form-delivery
+// wiring (PROJECT.md Key Decisions, 2026-07-08 entry) — that superseded
+// provider's name is intentionally never mentioned here.
+//
+// Cookies section (D-01/D-02/D-03, RESOLVED): the ajs_locale cookie
+// (src/components/LanguageSwitcher.astro) is disclosed with its exact
+// facts — set only on an explicit FR/EN switcher click, never on page
+// load, SameSite=Lax; Secure, ~1-year max-age. CNIL guidance confirms
+// language-preference/UI-personalization cookies are exempt from consent,
+// which is why there is no accept/reject banner anywhere on the site
+// (04-RESEARCH.md "CNIL Cookie Guidance"). This is also the sole place
+// cookie information appears (no separate cookie-policy page, per D-02).
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Politique de confidentialité — Atelier Jacqueline Suzanne">
+  <div class="legal-page">
+    <h1>Politique de confidentialité</h1>
+    <p>
+      Cette page décrit, de façon simple et directe, les seules données traitées par ce site :
+      celles du formulaire de contact, le contenu du site lui-même, les journaux techniques de
+      l'hébergeur, et un unique cookie technique. Ce n'est pas un document juridique formel — c'est
+      une explication claire de ce qui se passe réellement.
+    </p>
+
+    <h2>Formulaire de contact</h2>
+    <p>
+      Lorsque vous envoyez un message via le formulaire de contact, celui-ci est transmis
+      directement à la boîte mail personnelle de Romane Lepont, hébergée chez OVH, sans passer par
+      aucun prestataire tiers.
+    </p>
+    <p>
+      Responsable du traitement : Romane Lepont / Atelier Jacqueline Suzanne, e-mail :
+      contact@atelierjacquelinesuzanne.fr.
+    </p>
+    <p>Finalité : répondre à votre demande.</p>
+    <p>
+      Base légale : votre consentement — l'envoi du formulaire est une démarche volontaire de votre
+      part.
+    </p>
+    <p>
+      Champs nécessaires : le nom, l'e-mail et le message sont nécessaires pour pouvoir vous
+      répondre. Un champ caché supplémentaire (« pot de miel ») sert uniquement à détecter les
+      robots spammeurs — il ne collecte aucune donnée vous concernant.
+    </p>
+    <p>Destinataire : Romane Lepont uniquement — aucun prestataire tiers n'intervient.</p>
+    <p>
+      Durée de conservation : votre message est conservé uniquement le temps nécessaire pour vous
+      répondre, puis supprimé.
+    </p>
+    <p>
+      Vos droits : vous disposez d'un droit d'accès, de rectification, d'effacement et
+      d'opposition sur vos données. Vous pouvez également introduire une réclamation auprès de la
+      CNIL (Commission nationale de l'informatique et des libertés).
+    </p>
+
+    <h2>Contenu du site (Sanity)</h2>
+    <p>
+      Le contenu du site (galeries, textes) provient d'un système de gestion de contenu (Sanity),
+      interrogé uniquement au moment de la construction du site. Aucune donnée vous concernant n'est
+      jamais transmise à Sanity.
+    </p>
+
+    <h2>Journaux d'hébergement</h2>
+    <p>
+      Comme tout hébergeur web, OVH enregistre automatiquement votre adresse IP et votre navigateur
+      (user-agent) dans le cadre normal de la mise à disposition des pages du site. Ces informations
+      constituent une donnée personnelle au sens du RGPD, même si le code de ce site ne les utilise
+      jamais lui-même.
+    </p>
+
+    <h2>Cookies</h2>
+    <p>
+      Ce site utilise un seul cookie, nommé <code>ajs_locale</code>. Il n'est déposé que lorsque
+      vous cliquez explicitement sur le sélecteur de langue FR/EN — jamais automatiquement au
+      chargement d'une page — et stocke uniquement votre préférence de langue (français ou
+      anglais). Il est configuré avec les attributs <code>SameSite=Lax</code> et{' '}
+      <code>Secure</code>, pour une durée d'environ un an.
+    </p>
+    <p>
+      Ce cookie est strictement fonctionnel : il sert uniquement à personnaliser l'affichage du
+      site dans la langue de votre choix. À ce titre, il est exempté de consentement selon les
+      recommandations de la CNIL — c'est pourquoi ce site n'affiche aucun bandeau
+      d'acceptation/refus des cookies. Aucun cookie publicitaire, de mesure d'audience ou de
+      traçage n'est utilisé sur ce site.
+    </p>
+  </div>
+</BaseLayout>
+
+<style>
+  .legal-page {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: var(--space-2xl) var(--space-md);
+  }
+
+  .legal-page h1 {
+    font-size: var(--text-display-size); /* Display role */
+    font-weight: var(--weight-semibold);
+    font-family: var(--font-display);
+    line-height: 1.2;
+    margin: 0 0 var(--space-xl);
+  }
+
+  .legal-page h2 {
+    font-size: var(--text-heading-size); /* Heading role */
+    font-weight: var(--weight-semibold);
+    font-family: var(--font-display);
+    line-height: 1.2;
+    margin: var(--space-2xl) 0 var(--space-md);
+  }
+
+  .legal-page p {
+    font-size: var(--text-body-size); /* Body role */
+    font-weight: var(--weight-regular);
+    line-height: 1.5;
+    margin: 0 0 var(--space-md);
+  }
+
+  .legal-page .placeholder {
+    font-style: italic;
+  }
+</style>

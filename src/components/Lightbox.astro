@@ -203,14 +203,14 @@ const slides = images.map((img) => ({
     max-height: 100vh;
     width: 100vw;
     height: 100vh;
-    background: rgba(20, 18, 19, 0.96); /* Woodsmoke scrim — documented exception, not var(--color-accent) */
+    background: rgba(26, 26, 26, 0.96); /* Ink-equivalent scrim (var(--color-ink)) — documented exception, not var(--color-accent) */
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
   dialog#lightbox::backdrop {
-    background: rgba(20, 18, 19, 0.96);
+    background: rgba(26, 26, 26, 0.96);
   }
 
   .lightbox__image {
@@ -263,7 +263,7 @@ const slides = images.map((img) => ({
     transform: translateX(-50%);
     margin: 0;
     font-size: 14px; /* Label role */
-    font-weight: 300;
+    font-weight: var(--weight-regular);
     color: var(--color-dominant);
   }
 </style>

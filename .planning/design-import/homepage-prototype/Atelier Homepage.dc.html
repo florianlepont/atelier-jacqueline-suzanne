@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/atelier-jacqueline-suzanne-design-system-04051c3b-5c12-4425-ae1b-df66f83355ce/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/atelier-jacqueline-suzanne-design-system-04051c3b-5c12-4425-ae1b-df66f83355ce/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/atelier-jacqueline-suzanne-design-system-04051c3b-5c12-4425-ae1b-df66f83355ce/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/atelier-jacqueline-suzanne-design-system-04051c3b-5c12-4425-ae1b-df66f83355ce/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/atelier-jacqueline-suzanne-design-system-04051c3b-5c12-4425-ae1b-df66f83355ce/styles.css">
+  <script src="_ds/atelier-jacqueline-suzanne-design-system-04051c3b-5c12-4425-ae1b-df66f83355ce/_ds_bundle.js"></script>
+  <script src="./image-slot.js"></script>
+  <style>
+    @keyframes homeViewFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    .home-view-fade { animation: homeViewFadeIn 450ms ease; }
+    body { margin: 0; background: var(--color-dominant); }
+  </style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;font-family:var(--font-sans)">
+
+  <!-- Preview nav strip (not part of the real site) -->
+  <div style="display:flex;align-items:center;gap:8px;padding:8px;background:#f0f0f0;font-family:var(--font-sans);font-size:12px">
+    <span>Preview nav:</span>
+    <button onClick="{{ goHome }}" style="cursor:pointer">Homepage</button>
+    <button onClick="{{ goDetailFirst }}" style="cursor:pointer">Gallery detail</button>
+    <button onClick="{{ goNotFound }}" style="cursor:pointer">404</button>
+    <span style="margin-left:16px">Locale:</span>
+    <button onClick="{{ toggleLocale }}" style="cursor:pointer">{{ localeLabel }}</button>
+  </div>
+
+  <sc-if value="{{ showChromeHeader }}" hint-placeholder-val="{{ false }}">
+    <x-import component-from-global-scope="AtelierJacquelineSuzanneDesignSystem_04051c.Header" hint-size="100%,72px"
+      site-title="Atelier Jacqueline Suzanne"
+      logo-src="assets/logos/AJS_Brutalist_Black_Transparent.png"
+      home-label="{{ homeLabel }}"
+      nav-label="{{ galleriesLabel }}">
+    </x-import>
+  </sc-if>
+
+  <div style="flex:1">
+
+    <!-- HOME SCREEN -->
+    <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+
+      <!-- Carousel view -->
+      <sc-if value="{{ isCarousel }}" hint-placeholder-val="{{ true }}">
+        <div class="home-view-fade" style="position:relative;width:100%;height:100vh;min-height:680px;overflow:hidden">
+          <image-slot id="homepage-hero" shape="rect" placeholder="{{ carouselHeroPlaceholder }}" style="width:100%;height:100%;display:block"></image-slot>
+          <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.15) 45%, rgba(0,0,0,0) 70%);pointer-events:none"></div>
+
+          <button aria-label="{{ prevAria }}" onClick="{{ carouselPrev }}" style="position:absolute;top:50%;left:var(--space-xl);transform:translateY(-50%);z-index:3;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.35);border:none;color:#FFFFFF;font-size:22px;cursor:pointer">‹</button>
+          <button aria-label="{{ nextAria }}" onClick="{{ carouselNext }}" style="position:absolute;top:50%;right:var(--space-xl);transform:translateY(-50%);z-index:3;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.35);border:none;color:#FFFFFF;font-size:22px;cursor:pointer">›</button>
+
+          <!-- TopBar dark -->
+          <div style="position:absolute;top:0;left:0;right:0;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:var(--space-xl);background:linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0))">
+            <img src="assets/logos/AJS_Brutalist_White_Transparent.png" alt="Atelier Jacqueline Suzanne" style="width:56px;height:auto;display:block">
+            <nav style="display:flex;align-items:center;gap:var(--space-xl);font-family:var(--font-sans);font-size:var(--text-label-size)">
+              <a href="#" style="text-decoration:none;color:{{ accentBg }}">{{ homeLabel }}</a>
+              <a href="#" onClick="{{ goGalleries }}" style="text-decoration:none;cursor:pointer;color:{{ accentBg }}">{{ galleriesLabel }}</a>
+              <div style="display:flex;align-items:center;gap:var(--space-xs);font-family:var(--font-sans);font-size:var(--text-label-size)">
+                <button onClick="{{ setCarouselDisplay }}" style="background:none;border:none;cursor:pointer;padding:var(--space-xs) var(--space-sm);min-height:var(--tap-target-min);text-decoration:underline;text-underline-offset:3px;font-weight:var(--weight-semibold);color:{{ accentBg }}">{{ carouselLabel }}</button>
+                <span style="opacity:0.5;color:{{ accentBg }}">|</span>
+                <button onClick="{{ setGridDisplay }}" style="background:none;border:none;cursor:pointer;padding:var(--space-xs) var(--space-sm);min-height:var(--tap-target-min);text-decoration:none;font-weight:var(--weight-regular);color:{{ accentBg }}">{{ gridLabel }}</button>
+              </div>
+              <x-import component-from-global-scope="AtelierJacquelineSuzanneDesignSystem_04051c.LanguageSwitcher" hint-size="auto,24px" locale="{{ locale }}" href-fr="#" href-en="#" color="#1A1A1A"></x-import>
+            </nav>
+          </div>
+
+          <!-- Bottom-left index + caption -->
+          <div style="position:absolute;left:0;bottom:0;z-index:2;padding:var(--space-xl);color:#FFFFFF;font-family:var(--font-sans);max-width:420px">
+            <div style="font-size:var(--text-label-size);color:rgba(255,255,255,0.75);margin-bottom:var(--space-md)">{{ carouselIndexLabel }}</div>
+            <div style="font-size:var(--text-heading-size);font-weight:var(--text-heading-weight);line-height:var(--text-heading-leading);margin-bottom:var(--space-xs)">{{ currentGalleryTitleUpper }}</div>
+            <div style="font-size:var(--text-label-size);color:rgba(255,255,255,0.75)">{{ byLineLabel }}</div>
+          </div>
+
+          <!-- Bottom-right accent panel -->
+          <div style="position:absolute;right:var(--space-md);bottom:var(--space-md);z-index:2;width:min(560px, 52%);padding:var(--space-xl);font-family:var(--font-sans);transition:background-color 200ms ease;background:{{ accentBg }};color:{{ accentInk }}">
+            <div style="font-family:var(--font-display);font-size:clamp(32px, 5vw, 56px);font-weight:400;line-height:1.05;letter-spacing:-0.01em;margin-bottom:var(--space-lg)">Atelier<br />Jacqueline<br />Suzanne</div>
+            <p style="font-size:var(--text-body-size);line-height:var(--text-body-leading);margin:0 0 var(--space-lg) 0">{{ introText }}</p>
+            <a href="#" onClick="{{ goGalleries }}" style="display:inline-flex;align-items:center;gap:var(--space-xs);font-size:var(--text-label-size);font-weight:var(--weight-semibold);text-decoration:underline;cursor:pointer;color:{{ accentInk }}">{{ ctaLabel }} →</a>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- Grid view -->
+      <sc-if value="{{ isGrid }}" hint-placeholder-val="{{ false }}">
+        <div class="home-view-fade" style="position:relative">
+          <div style="position:absolute;top:0;left:0;right:0;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:var(--space-xl);background:none">
+            <img src="assets/logos/AJS_Brutalist_Black_Transparent.png" alt="Atelier Jacqueline Suzanne" style="width:56px;height:auto;display:block">
+            <nav style="display:flex;align-items:center;gap:var(--space-xl);font-family:var(--font-sans);font-size:var(--text-label-size)">
+              <a href="#" style="text-decoration:none;color:{{ accentBg }}">{{ homeLabel }}</a>
+              <a href="#" onClick="{{ goGalleries }}" style="text-decoration:none;cursor:pointer;color:{{ accentBg }}">{{ galleriesLabel }}</a>
+              <div style="display:flex;align-items:center;gap:var(--space-xs);font-family:var(--font-sans);font-size:var(--text-label-size)">
+                <button onClick="{{ setCarouselDisplay }}" style="background:none;border:none;cursor:pointer;padding:var(--space-xs) var(--space-sm);min-height:var(--tap-target-min);text-decoration:none;font-weight:var(--weight-regular);color:{{ accentBg }}">{{ carouselLabel }}</button>
+                <span style="opacity:0.5;color:{{ accentBg }}">|</span>
+                <button onClick="{{ setGridDisplay }}" style="background:none;border:none;cursor:pointer;padding:var(--space-xs) var(--space-sm);min-height:var(--tap-target-min);text-decoration:underline;text-underline-offset:3px;font-weight:var(--weight-semibold);color:{{ accentBg }}">{{ gridLabel }}</button>
+              </div>
+              <x-import component-from-global-scope="AtelierJacquelineSuzanneDesignSystem_04051c.LanguageSwitcher" hint-size="auto,24px" locale="{{ locale }}" href-fr="#" href-en="#" color="#1A1A1A"></x-import>
+            </nav>
+          </div>
+
+          <div style="padding-top:120px">
+            <div style="background:var(--color-accent);color:var(--color-on-accent);padding:var(--space-xl);font-family:var(--font-sans)">
+              <div style="font-family:var(--font-display);font-size:clamp(32px, 5vw, 56px);font-weight:400;line-height:1.05;letter-spacing:-0.01em;margin-bottom:var(--space-lg)">Atelier<br />Jacqueline<br />Suzanne</div>
+              <p style="font-family:var(--font-sans);font-size:var(--text-body-size);line-height:var(--text-body-leading);margin:0;max-width:480px">{{ introText }}</p>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:2px">
+              <sc-for list="{{ galleries }}" as="g" hint-placeholder-count="6">
+                <div onClick="{{ g.open }}" style="position:relative;cursor:pointer;height:60vh;min-height:360px;overflow:hidden">
+                  <image-slot id="grid-cover-{{ g.slug }}" shape="rect" placeholder="{{ g.title }}" style="width:100%;height:100%;display:block"></image-slot>
+                  <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.15) 45%, rgba(0,0,0,0) 70%);pointer-events:none"></div>
+                  <span style="position:absolute;left:0;right:0;bottom:0;color:#FFFFFF;padding:var(--space-lg) var(--space-xl);font-family:var(--font-display);font-size:var(--text-display-size);font-weight:400">{{ g.title }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <!-- GALLERY DETAIL SCREEN -->
+    <sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="position:relative;height:70vh;min-height:420px">
+          <image-slot id="{{ detailHeroId }}" shape="rect" placeholder="{{ detailHeroPlaceholder }}" style="width:100%;height:100%;display:block"></image-slot>
+          <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.15) 45%, rgba(0,0,0,0) 70%);pointer-events:none"></div>
+          <x-import component-from-global-scope="AtelierJacquelineSuzanneDesignSystem_04051c.Header" hint-size="100%,72px"
+            site-title="Atelier Jacqueline Suzanne"
+            logo-src="assets/logos/AJS_Brutalist_White_Transparent.png"
+            home-label="{{ homeLabel }}"
+            nav-label="{{ galleriesLabel }}"
+            transparent="{{ true }}">
+          </x-import>
+          <button onClick="{{ goGalleries }}" style="position:absolute;top:84px;left:var(--space-xl);z-index:2;font-family:var(--font-sans);font-size:14px;background:none;border:none;color:#FFFFFF;cursor:pointer;padding:0">← {{ backLabel }}</button>
+          <h1 style="position:absolute;left:0;bottom:0;color:#FFFFFF;margin:0;padding:var(--space-xl);font-family:var(--font-display);font-size:var(--text-display-size);font-weight:400">{{ currentGalleryTitle }}</h1>
+        </div>
+        <p style="font-family:var(--font-sans);font-size:var(--text-body-size);line-height:var(--text-body-leading);color:var(--color-ink);max-width:640px;margin:0 auto;padding:var(--space-2xl) var(--space-xl)">{{ currentGalleryStatement }}</p>
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:2px">
+          <sc-for list="{{ detailImages }}" as="im" hint-placeholder-count="6">
+            <div onClick="{{ im.open }}" style="cursor:pointer">
+              <image-slot id="{{ im.id }}" shape="rect" placeholder="{{ im.placeholder }}" style="width:100%;aspect-ratio:1 / 1;display:block"></image-slot>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <sc-if value="{{ lightboxOpen }}" hint-placeholder-val="{{ false }}">
+        <x-import component-from-global-scope="AtelierJacquelineSuzanneDesignSystem_04051c.Lightbox" hint-size="100%,100%"
+          index="{{ lightboxPosition }}" total="{{ lightboxTotal }}"
+          on-close="{{ closeLightbox }}" on-prev="{{ lightboxPrev }}" on-next="{{ lightboxNext }}">
+        </x-import>
+      </sc-if>
+    </sc-if>
+
+    <!-- 404 SCREEN -->
+    <sc-if value="{{ isNotFound }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:var(--space-3xl) var(--space-xl);text-align:center">
+        <p style="font-family:var(--font-display);font-size:var(--text-heading-size);font-weight:400;color:var(--color-ink);margin:0 0 var(--space-sm) 0">{{ notFoundTitle }}</p>
+        <p style="font-family:var(--font-sans);font-size:var(--text-body-size);color:var(--color-ink);margin:0 0 var(--space-lg) 0">{{ notFoundBody }}</p>
+        <button onClick="{{ goHome }}" style="font-family:var(--font-sans);font-size:14px;color:var(--color-accent);background:none;border:none;text-decoration:underline;cursor:pointer">{{ homeLabel }}</button>
+      </div>
+    </sc-if>
+
+  </div>
+
+  <x-import component-from-global-scope="AtelierJacquelineSuzanneDesignSystem_04051c.Footer" hint-size="100%,60px" text="© 2026 Atelier Jacqueline Suzanne"></x-import>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const GALLERIES = [
+  { slug: "rebut", title: "Rebut", statement: "Une série sur les objets abandonnés, la matière qui se défait et ce qu'elle raconte encore." },
+  { slug: "silos", title: "Silos", statement: "Architectures industrielles isolées dans le paysage, photographiées comme des sculptures silencieuses." },
+  { slug: "brume", title: "Brume", statement: "Paysages dissous dans la brume matinale, à la limite du visible." },
+  { slug: "adults", title: "Adults", statement: "Portraits en intérieur, une exploration du passage à l'âge adulte." },
+  { slug: "victorian-tea-room", title: "The Victorian Tea Room", statement: "Une mise en scène d'un salon de thé victorien reconstitué." },
+  { slug: "paysages", title: "Paysages", statement: "Paysages ruraux français, lumière naturelle, longues focales." },
+];
+
+const ACCENTS = [
+  { bg: "var(--color-accent)", ink: "var(--color-on-accent)" },
+  { bg: "var(--palette-purple)", ink: "#FFFFFF" },
+  { bg: "var(--palette-teal)", ink: "var(--color-ink)" },
+  { bg: "var(--palette-lime)", ink: "var(--color-ink)" },
+  { bg: "var(--palette-plum)", ink: "#FFFFFF" },
+];
+
+class Component extends DCLogic {
+  state = {
+    locale: "fr",
+    screen: "home",
+    gallerySlug: null,
+    homeDisplay: "carousel",
+    carouselIndex: 0,
+    lightboxIndex: null,
+  };
+
+  goHome = () => this.setState({ screen: "home" });
+  goGalleries = (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ screen: "home", homeDisplay: "grid" }); };
+  goDetailFirst = () => this.setState({ screen: "detail", gallerySlug: GALLERIES[0].slug, lightboxIndex: null });
+  goNotFound = () => this.setState({ screen: "notfound" });
+  toggleLocale = () => this.setState(s => ({ locale: s.locale === "fr" ? "en" : "fr" }));
+  setCarouselDisplay = () => this.setState({ homeDisplay: "carousel" });
+  setGridDisplay = () => this.setState({ homeDisplay: "grid" });
+  carouselPrev = () => this.setState(s => ({ carouselIndex: (s.carouselIndex - 1 + GALLERIES.length) % GALLERIES.length }));
+  carouselNext = () => this.setState(s => ({ carouselIndex: (s.carouselIndex + 1) % GALLERIES.length }));
+  openGallery = (slug) => this.setState({ screen: "detail", gallerySlug: slug, lightboxIndex: null });
+  closeLightbox = () => this.setState({ lightboxIndex: null });
+  lightboxPrev = () => this.setState(s => ({ lightboxIndex: (s.lightboxIndex - 1 + 6) % 6 }));
+  lightboxNext = () => this.setState(s => ({ lightboxIndex: (s.lightboxIndex + 1) % 6 }));
+
+  renderVals() {
+    const s = this.state;
+    const fr = s.locale === "fr";
+    const gallery = GALLERIES.find(g => g.slug === s.gallerySlug) || GALLERIES[0];
+    const carouselGallery = GALLERIES[s.carouselIndex];
+    const accent = ACCENTS[s.carouselIndex % ACCENTS.length];
+
+    const galleries = GALLERIES.map(g => ({ ...g, open: () => this.openGallery(g.slug) }));
+    const detailImages = [1, 2, 3, 4, 5, 6].map((n, i) => ({
+      id: gallery.slug + "-img-" + n,
+      placeholder: "Image " + n,
+      open: () => this.setState({ lightboxIndex: i }),
+    }));
+
+    return {
+      locale: s.locale,
+      localeLabel: s.locale.toUpperCase(),
+      isHome: s.screen === "home",
+      isDetail: s.screen === "detail",
+      isNotFound: s.screen === "notfound",
+      isCarousel: s.homeDisplay === "carousel",
+      isGrid: s.homeDisplay === "grid",
+      showChromeHeader: s.screen === "notfound",
+
+      homeLabel: fr ? "Accueil" : "Home",
+      galleriesLabel: fr ? "Galeries" : "Galleries",
+      carouselLabel: fr ? "Carrousel" : "Carousel",
+      gridLabel: fr ? "Grille" : "Grid",
+      backLabel: fr ? "Retour aux galeries" : "Back to galleries",
+      byLineLabel: fr ? "Un projet de Romane Lepont" : "A project by Romane Lepont",
+      introText: fr
+        ? "Le site présente le travail photographique de Romane Lepont et permet l'achat d'une œuvre directement en ligne."
+        : "This site showcases Romane Lepont's photographic work and lets you buy a piece directly online.",
+      ctaLabel: fr ? "Découvrir les autres galeries" : "Discover other galleries",
+      prevAria: fr ? "Galerie précédente" : "Previous gallery",
+      nextAria: fr ? "Galerie suivante" : "Next gallery",
+      notFoundTitle: fr ? "Page introuvable." : "Page not found.",
+      notFoundBody: fr ? "Retournez à l'accueil." : "Return home.",
+
+      accentBg: accent.bg,
+      accentInk: accent.ink,
+      carouselIndexLabel: String(s.carouselIndex + 1).padStart(2, "0") + " / " + String(GALLERIES.length).padStart(2, "0"),
+      currentGalleryTitleUpper: carouselGallery.title.toUpperCase(),
+      carouselHeroPlaceholder: carouselGallery.title + " — full-bleed hero photo",
+
+      currentGalleryTitle: gallery.title,
+      currentGalleryStatement: gallery.statement,
+      detailHeroId: "hero-" + gallery.slug,
+      detailHeroPlaceholder: gallery.title + " cover",
+
+      galleries,
+      detailImages,
+
+      lightboxOpen: s.lightboxIndex !== null,
+      lightboxPosition: (s.lightboxIndex || 0) + 1,
+      lightboxTotal: 6,
+
+      goHome: this.goHome,
+      goGalleries: this.goGalleries,
+      goDetailFirst: this.goDetailFirst,
+      goNotFound: this.goNotFound,
+      toggleLocale: this.toggleLocale,
+      setCarouselDisplay: this.setCarouselDisplay,
+      setGridDisplay: this.setGridDisplay,
+      carouselPrev: this.carouselPrev,
+      carouselNext: this.carouselNext,
+      closeLightbox: this.closeLightbox,
+      lightboxPrev: this.lightboxPrev,
+      lightboxNext: this.lightboxNext,
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -16,7 +16,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation & Bilingual Infrastructure** - Site scaffolding (Astro + OVH Web Hosting + Sanity) deployed with working FR/EN routing and a persistent language switcher (completed 2026-07-06)
 - [x] **Phase 2: Portfolio Galleries** - Visitors can browse migrated galleries and full-size images; Romane can self-serve gallery edits via the CMS (completed 2026-07-07)
 - [x] **Phase 3: About & Contact** - Visitors can read Romane's bio/practice info and reach her through a spam-protected contact form (reopened 2026-07-08 — verification found the About page ships placeholder-only content; gap-closure plan 03-03 added) (completed 2026-07-08)
-- [ ] **Phase 4: Legal & Compliance** - Mentions légales, privacy/GDPR notice, and CNIL-compliant cookie consent are live
+- [x] **Phase 4: Legal & Compliance** - Mentions légales, privacy/GDPR notice, and CNIL-compliant cookie consent are live (completed 2026-07-08)
+- [x] **Phase 04.1: Design System & Homepage Refresh (INSERTED)** - Adopt the imported design system's rebrand and rebuild the homepage per the imported prototype (completed 2026-07-10)
+- [x] **Phase 04.2: Social Media Links (INSERTED)** - Instagram link visible in the footer and on the About/Contact page (completed 2026-07-10)
 - [ ] **Phase 5: Launch & Domain Cutover** - The new site is live at atelierjacquelinesuzanne.fr, replacing the old Myportfolio site
 
 ## Phase Details
@@ -128,14 +130,58 @@ Plans:
   2. Visitor can view a privacy policy / GDPR notice describing what data is collected (e.g., via the contact form) and how it's used.
   3. Visitor sees a CNIL-compliant cookie/consent banner before any non-essential cookie is set (or the banner correctly reflects that none are used).
 
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+**Wave 1**
+
+- [x] 04-01-PLAN.md — Mentions légales bilingual slice + Wave 0 failing e2e harness + footer legal nav (LEGAL-01)
+
+**Wave 2** *(blocked on Wave 1 — shared BaseLayout.astro footer + legal.spec.ts)*
+
+- [x] 04-02-PLAN.md — Privacy policy bilingual slice (data flows + ajs_locale cookie disclosure, no banner) + privacy footer link (LEGAL-03, LEGAL-05)
+
+**Wave 3** *(blocked on Wave 2)*
+
+- [x] 04-03-PLAN.md — Legal-content accuracy human-verify checkpoint (name / OVH host / business status)
+
 **UI hint**: yes
+
+### Phase 04.1: Design System & Homepage Refresh (INSERTED)
+
+**Goal:** The site adopts the imported design system's monochrome + pop-pink visual identity (superseding Phase 2's Dawn Pink/Wild Strawberry palette) and the homepage becomes a real hero-carousel/grid-toggle gallery entry point, replacing the current placeholder "under construction" page.
+**Requirements**: TBD — see `.planning/design-import/README.md` for imported reference material (tokens, components, homepage prototype)
+**Depends on:** Phase 4
+**Plans:** 6/6 plans complete
+
+Plans:
+**Wave 1**
+
+- [x] 04.1-01-PLAN.md — Foundation: rebrand tokens + self-hosted Archivo Black + white-on-white chrome + AJS logo header (headerVariant prop) (Wave 1)
+- [x] 04.1-02-PLAN.md — Wave 0 RED e2e spec: homepage carousel/grid/auto-advance/only-migrated-galleries contract (Wave 1)
+
+**Wave 2** *(blocked on Wave 1 — new :root tokens + headerVariant prop)*
+
+- [x] 04.1-03-PLAN.md — New Button/Input/Textarea/EmptyState components + ContactForm ink-only-error refactor + galleries EmptyState adoption (Wave 2)
+- [x] 04.1-04-PLAN.md — Homepage rebuild: HomeCarousel island (carousel+grid+auto-advance) + FR/EN index pages, turns homepage.spec.ts GREEN (Wave 2)
+- [x] 04.1-05-PLAN.md — Repaint GalleryCard/Grid/Lightbox/LanguageSwitcher + gallery-detail hero-scrim (D-07) (Wave 2)
+- [x] 04.1-06-PLAN.md — Repaint About + legal-page (mentions-légales/confidentialité, FR/EN) typography to the fixed Display/Heading/Body roles — closes the D-01 split-identity gap (Wave 2)
+
+### Phase 04.2: Social Media Links (INSERTED)
+
+**Goal:** Visitors can find and follow Romane's Instagram (@ajs_romanelepont) from the site footer (site-wide) and from the About/Contact page.
+**Requirements**: SOCIAL-01 (synthetic — maps to the phase goal; ROADMAP had no formal REQ-ID)
+**Depends on:** Phase 4
+**Plans:** 1/1 plans complete
+
+Plans:
+
+- [x] 04.2-01-PLAN.md — Add the Instagram link to the site-wide footer + About/Contact pages (FR/EN), with e2e coverage
 
 ### Phase 5: Launch & Domain Cutover
 
 **Goal**: The new site fully replaces the old Myportfolio site at the live domain, with no unplanned downtime or broken email.
 **Mode:** mvp
-**Depends on**: Phase 2, Phase 3, Phase 4
+**Depends on**: Phase 2, Phase 3, Phase 4, Phase 04.1, Phase 04.2
 **Requirements**: LAUNCH-01
 **Success Criteria** (what must be TRUE):
 
@@ -155,7 +201,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Foundation & Bilingual Infrastructure | 5/5 | Complete   | 2026-07-06 |
 | 2. Portfolio Galleries | 4/4 | Complete    | 2026-07-07 |
 | 3. About & Contact | 3/3 | Complete    | 2026-07-08 |
-| 4. Legal & Compliance | 0/TBD | Not started | - |
+| 4. Legal & Compliance | 3/3 | Complete    | 2026-07-08 |
 | 5. Launch & Domain Cutover | 0/TBD | Not started | - |
 
 ## Milestone Scope Note

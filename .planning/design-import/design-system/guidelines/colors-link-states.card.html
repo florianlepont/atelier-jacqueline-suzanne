@@ -1,0 +1,15 @@
+<!-- @dsCard group="Colors" viewport="700x120" subtitle="Link color states — always Accent" name="Link States" -->
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>
+body{margin:0;font-family:var(--font-sans);padding:20px;box-sizing:border-box;background:var(--color-dominant);}
+a{color:var(--color-accent);}
+a:hover{text-decoration-thickness:2px;}
+</style></head>
+<body>
+<div style="display:flex;gap:32px;font-size:16px;">
+  <a href="#">Default link</a>
+  <a href="#" style="text-decoration:underline;text-underline-offset:3px;">Hover / active underline</a>
+  <a href="#" style="outline:2px solid var(--color-accent);outline-offset:2px;">:focus-visible outline</a>
+</div>
+</body></html>

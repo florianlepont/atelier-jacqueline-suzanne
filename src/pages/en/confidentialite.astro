@@ -1,0 +1,108 @@
+---
+// English privacy policy page (LEGAL-03 / LEGAL-05): identical content and
+// layout to src/pages/confidentialite.astro (see that file's frontmatter
+// comment for the full D-01/D-02/D-03/D-04/D-05 rationale); only import
+// depth and copy differ. Slug is deliberately identical to the FR page
+// (04-RESEARCH.md Pitfall 1) — getSwitcherHref() only strips/re-adds the
+// "/en/" prefix, it does not translate slugs.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Privacy Policy — Atelier Jacqueline Suzanne">
+  <div class="legal-page">
+    <h1>Privacy Policy</h1>
+    <p>
+      This page describes, simply and directly, the only data handled by this site: contact-form
+      data, the site's own content, the host's technical logs, and a single functional cookie.
+      This is not a formal legal document — it is a plain-language explanation of what actually
+      happens.
+    </p>
+
+    <h2>Contact form</h2>
+    <p>
+      When you send a message via the contact form, it is sent directly to Romane Lepont's own
+      mailbox, hosted with OVH, with no third-party processor involved.
+    </p>
+    <p>
+      Data controller: Romane Lepont / Atelier Jacqueline Suzanne, email:
+      contact@atelierjacquelinesuzanne.fr.
+    </p>
+    <p>Purpose: replying to your enquiry.</p>
+    <p>Legal basis: your consent — submitting the form is a voluntary action on your part.</p>
+    <p>
+      Required fields: name, email, and message are required so we can reply to you. An additional
+      hidden field (a "honeypot") is used only to detect spam robots — it never collects any data
+      about you.
+    </p>
+    <p>Recipient: Romane Lepont only — no third-party processor is involved.</p>
+    <p>Retention: your message is kept only as long as needed to reply to you, then deleted.</p>
+    <p>
+      Your rights: you have the right to access, rectify, erase, and object to the processing of
+      your data. You may also lodge a complaint with the CNIL (the French data protection
+      authority).
+    </p>
+
+    <h2>Site content (Sanity)</h2>
+    <p>
+      The site's content (galleries, text) comes from a content management system (Sanity),
+      queried only when the site is built. No data about you is ever sent to Sanity.
+    </p>
+
+    <h2>Hosting logs</h2>
+    <p>
+      Like any web host, OVH automatically logs your IP address and browser (user-agent) as a
+      normal part of serving the site's pages. This counts as personal data under GDPR, even
+      though this site's own code never touches it.
+    </p>
+
+    <h2>Cookies</h2>
+    <p>
+      This site uses a single cookie, named <code>ajs_locale</code>. It is only set when you
+      explicitly click the FR/EN language switcher — never automatically on page load — and it
+      stores only your language preference (French or English). It is set with the{' '}
+      <code>SameSite=Lax</code> and <code>Secure</code> attributes, for a duration of about one
+      year.
+    </p>
+    <p>
+      This cookie is strictly functional: it is only used to personalize the site's display in the
+      language you choose. As such, it is exempt from consent under CNIL guidance — which is why
+      this site shows no accept/reject cookie banner. This site uses no advertising, analytics, or
+      tracking cookies of any kind.
+    </p>
+  </div>
+</BaseLayout>
+
+<style>
+  .legal-page {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: var(--space-2xl) var(--space-md);
+  }
+
+  .legal-page h1 {
+    font-size: var(--text-display-size); /* Display role */
+    font-weight: var(--weight-semibold);
+    font-family: var(--font-display);
+    line-height: 1.2;
+    margin: 0 0 var(--space-xl);
+  }
+
+  .legal-page h2 {
+    font-size: var(--text-heading-size); /* Heading role */
+    font-weight: var(--weight-semibold);
+    font-family: var(--font-display);
+    line-height: 1.2;
+    margin: var(--space-2xl) 0 var(--space-md);
+  }
+
+  .legal-page p {
+    font-size: var(--text-body-size); /* Body role */
+    font-weight: var(--weight-regular);
+    line-height: 1.5;
+    margin: 0 0 var(--space-md);
+  }
+
+  .legal-page .placeholder {
+    font-style: italic;
+  }
+</style>

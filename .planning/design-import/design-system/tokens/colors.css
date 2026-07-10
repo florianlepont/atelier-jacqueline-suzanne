@@ -1,0 +1,44 @@
+/* Atelier Jacqueline Suzanne — Color tokens
+   Source of truth: florianlepont/ajs-website, .planning/phases/01-foundation-bilingual-infrastructure/01-UI-SPEC.md
+   Base chrome (dominant/secondary/ink) stays the Phase 1 monochrome neutrals. Accent was
+   revised per direct design-system feedback (2026) to a flashy pop pink — the first real
+   brand-color decision for the portfolio identity. Revisit again if the source repo's own
+   Phase 2 palette (Dawn Pink/Wild Strawberry) is later confirmed as canonical. */
+
+:root {
+  /* Base values */
+  --gray-0: #FFFFFF;
+  --gray-900: #1A1A1A;
+  --pink-600: #FF3B94; /* flashy pop pink — accent, now the most-used chrome color */
+
+  /* Secondary decorative palette — added alongside the pink accent for decorative/highlight
+     use (tags, chart/data accents, illustrative moments). Pink remains the ONLY color used
+     for interactive/functional chrome (links, buttons, focus rings, locale emphasis) — these
+     four are for decoration only, never for text, backgrounds-of-content, or UI state. */
+  --palette-purple: #AF3DFF;
+  --palette-teal: #55FFE1;
+  --palette-lime: #A6FD29;
+  --palette-plum: #37013A;
+
+  /* Semantic aliases — 60/30/10 */
+  --color-dominant: var(--gray-0);     /* 60% — page background, main content area */
+  --color-secondary: var(--gray-0);    /* chrome bands (header/footer) — merged with the
+                                           dominant white per feedback; no longer a distinct
+                                           tint. Chrome reads as white-on-white, delineated by
+                                           a hairline border (--color-border) instead of a
+                                           background-color difference. */
+  --color-accent: var(--pink-600);     /* flashy pop pink: link accent, hover/active underline, focus outline, current-locale emphasis, primary buttons — the most-used color */
+
+  /* Rendering aliases */
+  --color-bg: var(--color-dominant);
+  --color-bg-chrome: var(--color-secondary);
+  --color-ink: var(--gray-900);       /* body copy / heading text */
+  --color-link: var(--color-accent);
+  --color-link-hover: var(--color-accent);
+  --color-focus-ring: var(--color-accent);
+  --color-border: #E3E1DE;            /* quiet hairline derived from secondary, for card/input borders */
+
+  /* Text rendered directly on an accent-pink fill (buttons, gallery-title panels if adopted)
+     needs a dark ink, not white — pink-on-white passes readably, but white-on-pink does not. */
+  --color-on-accent: var(--gray-900);
+}

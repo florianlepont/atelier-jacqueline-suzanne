@@ -1,9 +1,9 @@
 ---
 // Gallery listing card (UI-SPEC Layout Notes + Color "Documented exception —
 // Gallery title panels"): the whole card is a single link to the gallery's
-// detail page; a Wild Strawberry panel overlaps the lower portion of the 1:1
-// cover thumbnail and carries the Display-role title, per the reference's
-// "bold color panel + near-black type over photography" motif.
+// detail page; a pink accent panel (--color-accent) overlaps the lower
+// portion of the 1:1 cover thumbnail and carries the Display-role title, per
+// the reference's "bold color panel + ink type over photography" motif.
 import { getRelativeLocaleUrl } from 'astro:i18n';
 import { thumbnailUrl } from '../lib/image';
 import type { Gallery } from '../lib/sanity';
@@ -49,9 +49,8 @@ const ctaSuffix = locale === 'en' ? ' — View gallery' : ' — Voir la galerie'
   }
 
   .gallery-card:focus-visible {
-    outline: 2px solid var(--color-ink);
+    outline: 2px solid var(--color-accent);
     outline-offset: 2px;
-    box-shadow: 0 0 0 4px var(--color-accent);
   }
 
   .gallery-card__cover {
@@ -68,7 +67,6 @@ const ctaSuffix = locale === 'en' ? ' — View gallery' : ' — Voir la galerie'
   }
 
   .gallery-card__panel {
-    container-type: inline-size;
     position: absolute;
     left: 0;
     right: 0;
@@ -86,10 +84,10 @@ const ctaSuffix = locale === 'en' ? ' — View gallery' : ' — Voir la galerie'
 
   .gallery-card__title {
     display: block;
-    font-size: clamp(2.5rem, 12cqi, 6.5rem); /* Display role */
-    font-weight: 900;
-    line-height: 1;
-    letter-spacing: -0.02em;
+    font-size: var(--text-display-size); /* Display role: fixed 32px, not fluid */
+    font-weight: var(--weight-semibold);
+    font-family: var(--font-display);
+    line-height: 1.2;
     color: var(--color-ink);
   }
 </style>

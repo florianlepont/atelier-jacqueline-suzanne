@@ -1,0 +1,393 @@
+<!-- @dsCard group="Website" viewport="1000x640" subtitle="Homepage, gallery listing, gallery detail + lightbox, 404 — click-through" -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Atelier Jacqueline Suzanne — UI Kit</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="./image-slot.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--color-dominant); }
+  .app { min-height: 100vh; display: flex; flex-direction: column; }
+  .content { flex: 1; }
+  @keyframes homeViewFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .home-view-fade { animation: homeViewFadeIn 450ms ease; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Header, Footer, LanguageSwitcher, GalleryCard, Lightbox } = window.AtelierJacquelineSuzanneDesignSystem_04051c;
+
+const GALLERIES = [
+  { slug: "rebut", title: "Rebut", statement: "Une série sur les objets abandonnés, la matière qui se défait et ce qu'elle raconte encore." },
+  { slug: "silos", title: "Silos", statement: "Architectures industrielles isolées dans le paysage, photographiées comme des sculptures silencieuses." },
+  { slug: "brume", title: "Brume", statement: "Paysages dissous dans la brume matinale, à la limite du visible." },
+  { slug: "adults", title: "Adults", statement: "Portraits en intérieur, une exploration du passage à l'âge adulte." },
+  { slug: "victorian-tea-room", title: "The Victorian Tea Room", statement: "Une mise en scène d'un salon de thé victorien reconstitué." },
+  { slug: "paysages", title: "Paysages", statement: "Paysages ruraux français, lumière naturelle, longues focales." },
+];
+
+function Chrome({ locale, transparentHeader, children }) {
+  return (
+    <div className="app">
+      {!transparentHeader && (
+        <Header
+          siteTitle="Atelier Jacqueline Suzanne"
+          logoSrc="../../assets/logos/AJS_Brutalist_Black_Transparent.png"
+          homeLabel={locale === "fr" ? "Accueil" : "Home"}
+          navLabel={locale === "fr" ? "Galeries" : "Galleries"}
+          switcher={<LanguageSwitcher locale={locale} hrefFr="#" hrefEn="#" />}
+        />
+      )}
+      <div className="content">{children}</div>
+      <Footer text="© 2026 Atelier Jacqueline Suzanne" />
+    </div>
+  );
+}
+
+// Bottom-anchored gradient scrim — lets a full-bleed photo carry overlaid white text legibly.
+const scrim = {
+  position: "absolute",
+  inset: 0,
+  background: "linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.15) 45%, rgba(0,0,0,0) 70%)",
+  pointerEvents: "none",
+};
+
+function Homepage({ locale, homeDisplay, setHomeDisplay, goGalleries, openGallery }) {
+  const fr = locale === "fr";
+  const [index, setIndex] = React.useState(0);
+  const total = GALLERIES.length;
+  const gallery = GALLERIES[index];
+
+  // Each gallery cycles through the system's accent + secondary decorative palette —
+  // pink stays the default/most-used, the others are the decorative set from Colors.
+  const accents = [
+    { bg: "var(--color-accent)", ink: "var(--color-on-accent)" },
+    { bg: "var(--palette-purple)", ink: "#FFFFFF" },
+    { bg: "var(--palette-teal)", ink: "var(--color-ink)" },
+    { bg: "var(--palette-lime)", ink: "var(--color-ink)" },
+    { bg: "var(--palette-plum)", ink: "#FFFFFF" },
+  ];
+  const accent = accents[index % accents.length];
+
+  const go = (delta) => setIndex((i) => (i + delta + total) % total);
+  const arrowBtn = {
+    position: "absolute",
+    top: "50%",
+    transform: "translateY(-50%)",
+    zIndex: 3,
+    width: 44,
+    height: 44,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "rgba(0,0,0,0.35)",
+    border: "none",
+    color: "#FFFFFF",
+    fontSize: 22,
+    cursor: "pointer",
+  };
+
+  // View-switch control — plain text toggle, consistent with the text-only nav convention.
+  const ViewToggle = ({ color }) => (
+    <div style={{ display: "flex", alignItems: "center", gap: "var(--space-xs)", fontFamily: "var(--font-sans)", fontSize: "var(--text-label-size)" }}>
+      <button
+        onClick={() => setHomeDisplay("carousel")}
+        style={{
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          padding: "var(--space-xs) var(--space-sm)",
+          minHeight: "var(--tap-target-min)",
+          color: color,
+          fontWeight: homeDisplay === "carousel" ? "var(--weight-semibold)" : "var(--weight-regular)",
+          textDecoration: homeDisplay === "carousel" ? "underline" : "none",
+          textUnderlineOffset: "3px",
+          transition: "color 200ms ease",
+        }}
+      >
+        {fr ? "Carrousel" : "Carousel"}
+      </button>
+      <span style={{ opacity: 0.5, color: color, transition: "color 200ms ease" }}>|</span>
+      <button
+        onClick={() => setHomeDisplay("grid")}
+        style={{
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          padding: "var(--space-xs) var(--space-sm)",
+          minHeight: "var(--tap-target-min)",
+          color: color,
+          fontWeight: homeDisplay === "grid" ? "var(--weight-semibold)" : "var(--weight-regular)",
+          textDecoration: homeDisplay === "grid" ? "underline" : "none",
+          textUnderlineOffset: "3px",
+          transition: "color 200ms ease",
+        }}
+      >
+        {fr ? "Grille" : "Grid"}
+      </button>
+    </div>
+  );
+
+  // Shared top bar — identical box (position, padding, layout) in both display modes so
+  // the header never shifts when switching Carousel ↔ Grid; only colors/logo swap.
+  const TopBar = ({ dark }) => (
+    <div
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 2,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "var(--space-xl)",
+        background: dark ? "linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0))" : "none",
+      }}
+    >
+      <img
+        src={dark ? "../../assets/logos/AJS_Brutalist_White_Transparent.png" : "../../assets/logos/AJS_Brutalist_Black_Transparent.png"}
+        alt="Atelier Jacqueline Suzanne"
+        style={{ width: 56, height: "auto", display: "block" }}
+      />
+      <nav style={{ display: "flex", alignItems: "center", gap: "var(--space-xl)", fontFamily: "var(--font-sans)", fontSize: "var(--text-label-size)" }}>
+        <a href="#" style={{ color: accent.bg, textDecoration: "none", transition: "color 200ms ease" }}>{fr ? "Accueil" : "Home"}</a>
+        <a href="#" onClick={goGalleries} style={{ color: accent.bg, textDecoration: "none", cursor: "pointer", transition: "color 200ms ease" }}>{fr ? "Galeries" : "Galleries"}</a>
+        <ViewToggle color={accent.bg} />
+        <LanguageSwitcher locale={locale} hrefFr="#" hrefEn="#" color="#1A1A1A" />
+      </nav>
+    </div>
+  );
+
+  if (homeDisplay === "grid") {
+    return (
+      <div key="grid" className="home-view-fade" style={{ position: "relative" }}>
+        <TopBar dark={false} />
+        {/* paddingTop reserves the exact height of the absolute TopBar above so content
+            starts right below it, at the same offset the carousel's caption/panel use. */}
+        <div style={{ paddingTop: 120 }}>
+          <div
+            style={{
+              background: "var(--color-accent)",
+              color: "var(--color-on-accent)",
+              padding: "var(--space-xl)",
+              fontFamily: "var(--font-sans)",
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "clamp(32px, 5vw, 56px)",
+                fontWeight: 400,
+                lineHeight: 1.05,
+                letterSpacing: "-0.01em",
+                marginBottom: "var(--space-lg)",
+              }}
+            >
+              Atelier<br />Jacqueline<br />Suzanne
+            </div>
+            <p style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-size)", lineHeight: "var(--text-body-leading)", margin: 0, maxWidth: 480 }}>
+              {fr
+                ? "Le site présente le travail photographique de Romane Lepont et permet l'achat d'une œuvre directement en ligne."
+                : "This site showcases Romane Lepont's photographic work and lets you buy a piece directly online."}
+            </p>
+          </div>
+          {/* Widescreen, full-bleed rows — same wide feel as the carousel hero, not square tiles */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2 }}>
+            {GALLERIES.map((g) => (
+              <div key={g.slug} onClick={() => openGallery(g)} style={{ position: "relative", cursor: "pointer", height: "60vh", minHeight: 360, overflow: "hidden" }}>
+                <image-slot id={"grid-cover-" + g.slug} shape="rect" placeholder={g.title} style={{ width: "100%", height: "100%", display: "block" }}></image-slot>
+                <div style={scrim}></div>
+                <span style={{ position: "absolute", left: 0, right: 0, bottom: 0, color: "#FFFFFF", padding: "var(--space-lg) var(--space-xl)", fontFamily: "var(--font-display)", fontSize: "var(--text-display-size)", fontWeight: 400 }}>
+                  {g.title}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div key="carousel" className="home-view-fade" style={{ position: "relative", width: "100%", height: "100vh", minHeight: 680, overflow: "hidden" }}>
+      <image-slot key={gallery.slug} id={"homepage-hero-" + gallery.slug} shape="rect" placeholder={gallery.title + " — full-bleed hero photo"} style={{ width: "100%", height: "100%", display: "block" }}></image-slot>
+      <div style={scrim}></div>
+
+      <button aria-label={fr ? "Galerie précédente" : "Previous gallery"} onClick={() => go(-1)} style={{ ...arrowBtn, left: "var(--space-xl)" }}>‹</button>
+      <button aria-label={fr ? "Galerie suivante" : "Next gallery"} onClick={() => go(1)} style={{ ...arrowBtn, right: "var(--space-xl)" }}>›</button>
+
+      <TopBar dark={true} />
+
+      {/* Bottom-left index + caption */}
+      <div style={{ position: "absolute", left: 0, bottom: 0, zIndex: 2, padding: "var(--space-xl)", color: "#FFFFFF", fontFamily: "var(--font-sans)", maxWidth: 420 }}>
+        <div style={{ fontSize: "var(--text-label-size)", color: "rgba(255,255,255,0.75)", marginBottom: "var(--space-md)" }}>
+          {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
+        </div>
+        <div style={{ fontSize: "var(--text-heading-size)", fontWeight: "var(--text-heading-weight)", lineHeight: "var(--text-heading-leading)", marginBottom: "var(--space-xs)" }}>
+          {gallery.title.toUpperCase()}
+        </div>
+        <div style={{ fontSize: "var(--text-label-size)", color: "rgba(255,255,255,0.75)" }}>
+          {fr ? "Un projet de Romane Lepont" : "A project by Romane Lepont"}
+        </div>
+      </div>
+
+      {/* Bottom-right accent panel — floats on top of the photo: site name + purpose only */}
+      <div
+        style={{
+          position: "absolute",
+          right: "var(--space-md)",
+          bottom: "var(--space-md)",
+          zIndex: 2,
+          width: "min(560px, 52%)",
+          background: accent.bg,
+          color: accent.ink,
+          padding: "var(--space-xl)",
+          fontFamily: "var(--font-sans)",
+          transition: "background-color 200ms ease",
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: "clamp(32px, 5vw, 56px)",
+            fontWeight: 400,
+            lineHeight: 1.05,
+            letterSpacing: "-0.01em",
+            marginBottom: "var(--space-lg)",
+          }}
+        >
+          Atelier<br />Jacqueline<br />Suzanne
+        </div>
+        <p style={{ fontSize: "var(--text-body-size)", lineHeight: "var(--text-body-leading)", margin: "0 0 var(--space-lg) 0" }}>
+          {fr
+            ? "Le site présente le travail photographique de Romane Lepont et permet l'achat d'une œuvre directement en ligne."
+            : "This site showcases Romane Lepont's photographic work and lets you buy a piece directly online."}
+        </p>
+        <a
+          href="#"
+          onClick={goGalleries}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "var(--space-xs)",
+            fontSize: "var(--text-label-size)",
+            fontWeight: "var(--weight-semibold)",
+            color: accent.ink,
+            textDecoration: "underline",
+            cursor: "pointer",
+          }}
+        >
+          {fr ? "Découvrir les autres galeries" : "Discover other galleries"} →
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function GalleryDetail({ locale, gallery, back }) {
+  const [lightboxIndex, setLightboxIndex] = React.useState(null);
+  const fr = locale === "fr";
+  const images = [1, 2, 3, 4, 5, 6];
+  return (
+    <div>
+      <div style={{ position: "relative", height: "70vh", minHeight: 420 }}>
+        <image-slot id={"hero-" + gallery.slug} shape="rect" placeholder={gallery.title + " cover"} style={{ width: "100%", height: "100%", display: "block" }}></image-slot>
+        <div style={scrim}></div>
+        <Header
+          siteTitle="Atelier Jacqueline Suzanne"
+          logoSrc="../../assets/logos/AJS_Brutalist_White_Transparent.png"
+          homeLabel={fr ? "Accueil" : "Home"}
+          navLabel={fr ? "Galeries" : "Galleries"}
+          transparent
+          switcher={<LanguageSwitcher locale={locale} hrefFr="#" hrefEn="#" />}
+        />
+        <button onClick={back} style={{ position: "absolute", top: 84, left: "var(--space-xl)", zIndex: 2, fontFamily: "var(--font-sans)", fontSize: 14, background: "none", border: "none", color: "#FFFFFF", cursor: "pointer", padding: 0 }}>
+          ← {fr ? "Retour aux galeries" : "Back to galleries"}
+        </button>
+        <h1 style={{ position: "absolute", left: 0, bottom: 0, color: "#FFFFFF", margin: 0, padding: "var(--space-xl)", fontFamily: "var(--font-display)", fontSize: "var(--text-display-size)", fontWeight: 400 }}>
+          {gallery.title}
+        </h1>
+      </div>
+      <p style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-size)", lineHeight: "var(--text-body-leading)", color: "var(--color-ink)", maxWidth: 640, margin: "0 auto", padding: "var(--space-2xl) var(--space-xl)" }}>
+        {gallery.statement}
+      </p>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 2 }}>
+        {images.map((n, i) => (
+          <div key={n} onClick={() => setLightboxIndex(i)} style={{ cursor: "pointer" }}>
+            <image-slot id={gallery.slug + "-img-" + n} shape="rect" placeholder={"Image " + n} style={{ width: "100%", aspectRatio: "1 / 1", display: "block" }}></image-slot>
+          </div>
+        ))}
+      </div>
+      {lightboxIndex !== null && (
+        <Lightbox
+          index={lightboxIndex + 1}
+          total={images.length}
+          onClose={() => setLightboxIndex(null)}
+          onPrev={() => setLightboxIndex((i) => (i - 1 + images.length) % images.length)}
+          onNext={() => setLightboxIndex((i) => (i + 1) % images.length)}
+        />
+      )}
+    </div>
+  );
+}
+
+function NotFound({ locale, goHome }) {
+  const fr = locale === "fr";
+  return (
+    <div style={{ padding: "var(--space-3xl) var(--space-xl)", textAlign: "center" }}>
+      <p style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-heading-size)", fontWeight: 400, color: "var(--color-ink)", margin: "0 0 var(--space-sm) 0" }}>
+        {fr ? "Page introuvable." : "Page not found."}
+      </p>
+      <p style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-body-size)", color: "var(--color-ink)", margin: "0 0 var(--space-lg) 0" }}>
+        {fr ? "Retournez à l'accueil." : "Return home."}
+      </p>
+      <button onClick={goHome} style={{ fontFamily: "var(--font-sans)", fontSize: 14, color: "var(--color-accent)", background: "none", border: "none", textDecoration: "underline", cursor: "pointer" }}>
+        {fr ? "Accueil" : "Home"}
+      </button>
+    </div>
+  );
+}
+
+function App() {
+  const [locale, setLocale] = React.useState("fr");
+  const [screen, setScreen] = React.useState("home");
+  const [gallery, setGallery] = React.useState(null);
+  const [homeDisplay, setHomeDisplay] = React.useState("carousel");
+
+  const goGalleries = () => { setScreen("home"); setHomeDisplay("grid"); };
+
+  const nav = {
+    home: <Homepage locale={locale} homeDisplay={homeDisplay} setHomeDisplay={setHomeDisplay} goGalleries={goGalleries} openGallery={(g) => { setGallery(g); setScreen("detail"); }} />,
+    detail: gallery && <GalleryDetail locale={locale} gallery={gallery} back={goGalleries} />,
+    notfound: <NotFound locale={locale} goHome={() => setScreen("home")} />,
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 8, padding: 8, background: "#f0f0f0", fontFamily: "var(--font-sans)", fontSize: 12 }}>
+        <span>Preview nav:</span>
+        <button onClick={() => setScreen("home")}>Homepage</button>
+        <button onClick={() => { setGallery(GALLERIES[0]); setScreen("detail"); }}>Gallery detail</button>
+        <button onClick={() => setScreen("notfound")}>404</button>
+        <span style={{ marginLeft: 16 }}>Locale:</span>
+        <button onClick={() => setLocale(locale === "fr" ? "en" : "fr")}>{locale.toUpperCase()}</button>
+      </div>
+      <Chrome locale={locale} transparentHeader={screen === "home" || screen === "detail"}>
+        {nav[screen]}
+      </Chrome>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

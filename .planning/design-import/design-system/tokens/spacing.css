@@ -1,0 +1,26 @@
+/* Atelier Jacqueline Suzanne — Spacing tokens
+   Source: 01-UI-SPEC.md spacing scale — all multiples of 4px. */
+
+:root {
+  --space-xs: 4px;   /* icon/inline gaps */
+  --space-sm: 8px;   /* compact spacing (switcher padding, footer line spacing) */
+  --space-md: 16px;  /* default spacing (nav gaps, paragraph spacing) */
+  --space-lg: 24px;  /* section padding, header/footer vertical padding (mobile) */
+  --space-xl: 32px;  /* layout gaps, header/footer vertical padding (desktop) */
+  --space-2xl: 48px; /* major section breaks */
+  --space-3xl: 64px; /* page-level spacing */
+
+  /* Exception: WCAG 2.5.5 minimum tap target, applied via padding not font-size */
+  --tap-target-min: 44px;
+
+  /* Radii — the source UI-SPEC/repo defines no rounded-corner system; chrome, cards and
+     inputs are square-cornered (brutalist wordmark cue), buttons get a minimal radius only
+     for touch affordance softening. */
+  --radius-none: 0px;
+  --radius-sm: 2px;
+
+  /* Border widths */
+  --border-hairline: 1px;
+  --border-focus: 2px;
+  --focus-ring-offset: 2px;
+}

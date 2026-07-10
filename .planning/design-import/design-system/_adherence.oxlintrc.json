@@ -1,0 +1,244 @@
+{
+  "plugins": [
+    "react",
+    "import"
+  ],
+  "rules": {
+    "react/forbid-elements": [
+      "warn",
+      {
+        "forbid": []
+      }
+    ],
+    "no-restricted-imports": [
+      "warn",
+      {
+        "patterns": [
+          {
+            "group": [
+              "components/feedback/**",
+              "components/forms/**",
+              "components/gallery/**",
+              "components/navigation/**",
+              "ui_kits/website/**"
+            ],
+            "message": "Import design-system components from 'index.js', not component internals."
+          }
+        ]
+      }
+    ],
+    "no-restricted-syntax": [
+      "warn",
+      {
+        "selector": "Literal[value=/#[0-9a-fA-F]{3,8}\\b/]",
+        "message": "Raw hex color — use a design-system color token via var()."
+      },
+      {
+        "selector": "Literal[value=/\\b\\d+px\\b/]",
+        "message": "Raw px value — use a design-system spacing token via var()."
+      },
+      {
+        "selector": "Literal[value=/font-family\\s*:\\s*(?!['\\\"]?(?:Archivo Black))/i]",
+        "message": "Font not provided by the design system. Available: Archivo Black."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Button'] > JSXAttribute > JSXIdentifier[name!=/^(?:children|variant|size|disabled|key|ref|className|style|children)$/]",
+        "message": "<Button> doesn't accept that prop. Declared props: children, variant, size, disabled."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Button'] > JSXAttribute[name.name='variant'] > Literal[value!=/^(?:primary|secondary)$/]",
+        "message": "<Button> variant must be one of 'primary' | 'secondary'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Button'] > JSXAttribute[name.name='size'] > Literal[value!=/^(?:sm|md)$/]",
+        "message": "<Button> size must be one of 'sm' | 'md'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='EmptyState'] > JSXAttribute > JSXIdentifier[name!=/^(?:heading|body|key|ref|className|style|children)$/]",
+        "message": "<EmptyState> doesn't accept that prop. Declared props: heading, body."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Footer'] > JSXAttribute > JSXIdentifier[name!=/^(?:text|key|ref|className|style|children)$/]",
+        "message": "<Footer> doesn't accept that prop. Declared props: text."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='GalleryCard'] > JSXAttribute > JSXIdentifier[name!=/^(?:title|imageSrc|imageAlt|href|ctaLabel|key|ref|className|style|children)$/]",
+        "message": "<GalleryCard> doesn't accept that prop. Declared props: title, imageSrc, imageAlt, href, ctaLabel."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Header'] > JSXAttribute > JSXIdentifier[name!=/^(?:siteTitle|logoSrc|locale|homeLabel|navLabel|switcher|transparent|key|ref|className|style|children)$/]",
+        "message": "<Header> doesn't accept that prop. Declared props: siteTitle, logoSrc, locale, homeLabel, navLabel, switcher, transparent."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Header'] > JSXAttribute[name.name='locale'] > Literal[value!=/^(?:fr|en)$/]",
+        "message": "<Header> locale must be one of 'fr' | 'en'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Input'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|error|key|ref|className|style|children)$/]",
+        "message": "<Input> doesn't accept that prop. Declared props: label, error."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='LanguageSwitcher'] > JSXAttribute > JSXIdentifier[name!=/^(?:locale|hrefFr|hrefEn|color|key|ref|className|style|children)$/]",
+        "message": "<LanguageSwitcher> doesn't accept that prop. Declared props: locale, hrefFr, hrefEn, color."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='LanguageSwitcher'] > JSXAttribute[name.name='locale'] > Literal[value!=/^(?:fr|en)$/]",
+        "message": "<LanguageSwitcher> locale must be one of 'fr' | 'en'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Lightbox'] > JSXAttribute > JSXIdentifier[name!=/^(?:imageSrc|imageAlt|index|total|onClose|onPrev|onNext|key|ref|className|style|children)$/]",
+        "message": "<Lightbox> doesn't accept that prop. Declared props: imageSrc, imageAlt, index, total, onClose, onPrev, onNext."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Textarea'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|error|key|ref|className|style|children)$/]",
+        "message": "<Textarea> doesn't accept that prop. Declared props: label, error."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/index.js"
+      ],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    }
+  ],
+  "x-omelette": {
+    "components": {
+      "Button": {
+        "replaces": []
+      },
+      "EmptyState": {
+        "replaces": []
+      },
+      "Footer": {
+        "replaces": []
+      },
+      "GalleryCard": {
+        "replaces": []
+      },
+      "Header": {
+        "replaces": []
+      },
+      "Input": {
+        "replaces": []
+      },
+      "LanguageSwitcher": {
+        "replaces": []
+      },
+      "Lightbox": {
+        "replaces": []
+      },
+      "Textarea": {
+        "replaces": []
+      }
+    },
+    "tokens": [
+      "--border-focus",
+      "--border-hairline",
+      "--color-accent",
+      "--color-bg",
+      "--color-bg-chrome",
+      "--color-border",
+      "--color-dominant",
+      "--color-focus-ring",
+      "--color-ink",
+      "--color-link",
+      "--color-link-hover",
+      "--color-on-accent",
+      "--color-secondary",
+      "--focus-ring-offset",
+      "--font-display",
+      "--font-sans",
+      "--gray-0",
+      "--gray-900",
+      "--palette-lime",
+      "--palette-plum",
+      "--palette-purple",
+      "--palette-teal",
+      "--pink-600",
+      "--radius-none",
+      "--radius-sm",
+      "--space-2xl",
+      "--space-3xl",
+      "--space-lg",
+      "--space-md",
+      "--space-sm",
+      "--space-xl",
+      "--space-xs",
+      "--tap-target-min",
+      "--text-body-leading",
+      "--text-body-size",
+      "--text-body-weight",
+      "--text-display-family",
+      "--text-display-leading",
+      "--text-display-size",
+      "--text-display-weight",
+      "--text-heading-family",
+      "--text-heading-leading",
+      "--text-heading-size",
+      "--text-heading-weight",
+      "--text-label-leading",
+      "--text-label-size",
+      "--text-label-weight",
+      "--weight-regular",
+      "--weight-semibold"
+    ],
+    "tokenKinds": {
+      "--gray-0": "color",
+      "--gray-900": "color",
+      "--pink-600": "color",
+      "--palette-purple": "color",
+      "--palette-teal": "color",
+      "--palette-lime": "color",
+      "--palette-plum": "color",
+      "--color-dominant": "color",
+      "--color-secondary": "color",
+      "--color-accent": "color",
+      "--color-bg": "color",
+      "--color-bg-chrome": "color",
+      "--color-ink": "color",
+      "--color-link": "color",
+      "--color-link-hover": "color",
+      "--color-focus-ring": "color",
+      "--color-border": "color",
+      "--color-on-accent": "color",
+      "--font-sans": "font",
+      "--weight-regular": "font",
+      "--weight-semibold": "font",
+      "--text-label-size": "font",
+      "--text-label-weight": "font",
+      "--text-label-leading": "font",
+      "--text-body-size": "font",
+      "--text-body-weight": "font",
+      "--text-body-leading": "font",
+      "--text-heading-size": "font",
+      "--text-heading-weight": "font",
+      "--text-heading-leading": "font",
+      "--text-heading-family": "font",
+      "--text-display-size": "font",
+      "--text-display-weight": "font",
+      "--text-display-leading": "font",
+      "--text-display-family": "font",
+      "--space-xs": "spacing",
+      "--space-sm": "spacing",
+      "--space-md": "spacing",
+      "--space-lg": "spacing",
+      "--space-xl": "spacing",
+      "--space-2xl": "spacing",
+      "--space-3xl": "spacing",
+      "--tap-target-min": "spacing",
+      "--radius-none": "radius",
+      "--radius-sm": "radius",
+      "--border-hairline": "spacing",
+      "--border-focus": "spacing",
+      "--focus-ring-offset": "spacing",
+      "--font-display": "font"
+    },
+    "fontFamilies": [
+      "Archivo Black"
+    ]
+  }
+}

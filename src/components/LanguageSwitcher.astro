@@ -39,7 +39,7 @@ const enHref = getSwitcherHref(Astro.url.pathname, 'en');
     justify-content: center;
     min-height: 44px; /* WCAG 2.5.5 tap-target floor, applied via padding not font-size */
     padding: 8px; /* sm spacing token */
-    color: #1a1a1a; /* Accent */
+    color: var(--color-accent); /* D-06: switcher links render pink */
     text-decoration: none;
   }
 
@@ -49,17 +49,17 @@ const enHref = getSwitcherHref(Astro.url.pathname, 'en');
   }
 
   .switcher-link:focus-visible {
-    outline: 2px solid #1a1a1a;
+    outline: 2px solid var(--color-accent);
     outline-offset: 2px;
   }
 
   .switcher-link.is-current {
-    font-weight: 600;
+    font-weight: var(--weight-semibold);
     text-decoration: underline;
   }
 
   .switcher-separator {
-    color: #1a1a1a;
+    color: var(--color-ink);
   }
 </style>
 

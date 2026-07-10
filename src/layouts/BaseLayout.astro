@@ -6,12 +6,23 @@
 import { getRelativeLocaleUrl } from 'astro:i18n';
 import { getSiteSettings } from '../lib/sanity';
 import LanguageSwitcher from '../components/LanguageSwitcher.astro';
+// D-02/RESEARCH.md Pattern 1: self-hosted Archivo Black (Heading/Display
+// role) — bundles the woff2 + @font-face at build time, no Google Fonts CDN
+// request (Pitfall 1 — keeps the shipped privacy policy's data-flow
+// enumeration accurate).
+import '@fontsource/archivo-black';
 
 interface Props {
   title: string;
+  // D-11/D-13/RESEARCH.md Architectural Responsibility Map: 'solid' (default)
+  // is every existing page's white-on-white hairline header; 'transparent'
+  // is the gallery-detail hero-scrim header (Plan 04.1-05, D-07); 'none'
+  // suppresses the shared header entirely for the homepage's own overlaid
+  // top bar (Plan 04.1-04). The shared <footer> always renders regardless.
+  headerVariant?: 'solid' | 'transparent' | 'none';
 }
 
-const { title } = Astro.props;
+const { title, headerVariant = 'solid' } = Astro.props;
 const locale = Astro.currentLocale === 'en' ? 'en' : 'fr';
 
 const siteSettings = await getSiteSettings();
@@ -38,6 +49,26 @@ const aboutHref = getRelativeLocaleUrl(locale, 'about');
 // Contact content is likewise outside CMS-01's galleries-only scope.
 const contactLabel = locale === 'en' ? 'Contact' : 'Contact';
 const contactHref = getRelativeLocaleUrl(locale, 'contact');
+// Legal pages (Phase 4, D-06): footer-only links, every page, not scoped to
+// About/Contact. Same hardcoded locale-conditional pattern as above — legal
+// copy is not CMS-editable (RESEARCH.md "Don't Hand-Roll"). Legal notice
+// link shipped in Plan 04-01; Confidentialité/Privacy link appended in Plan
+// 04-02, after the legal-notice link (UI-SPEC footer link order).
+const legalNoticeLabel = locale === 'en' ? 'Legal notice' : 'Mentions légales';
+const legalNoticeHref = getRelativeLocaleUrl(locale, 'mentions-legales');
+const privacyLabel = locale === 'en' ? 'Privacy' : 'Confidentialité';
+const privacyHref = getRelativeLocaleUrl(locale, 'confidentialite');
+// Phase 04.2 (SOCIAL-01): site-wide footer Instagram link. Absolute external
+// URL — does NOT go through getRelativeLocaleUrl (that helper is only for
+// internal/site-relative routes).
+const instagramNewTabHint = locale === 'en' ? ' (opens in new tab)' : ' (nouvelle fenêtre)';
+
+// D-11: real AJS wordmark PNG logo, header only. Base-aware (matches the
+// CR-01 precedent, 01-REVIEW.md) so the asset resolves correctly under
+// GitHub Pages' non-root base as well as OVH's root base.
+const assetBase = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '');
+const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
+const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
 ---
 
 <!doctype html>
@@ -73,44 +104,107 @@ const contactHref = getRelativeLocaleUrl(locale, 'contact');
     </script>
   </head>
   <body>
-    <header class="chrome-band">
-      <p class="site-title">{siteTitle}</p>
-      <nav class="site-nav" aria-label="Primary">
-        <a href={homeHref} class="nav-link">{homeLabel}</a>
-        <a href={galleriesHref} class="nav-link">{galleriesLabel}</a>
-        <a href={aboutHref} class="nav-link">{aboutLabel}</a>
-        <a href={contactHref} class="nav-link">{contactLabel}</a>
-      </nav>
-      <LanguageSwitcher />
-    </header>
+    {headerVariant !== 'none' && (
+      <header class:list={['chrome-band', 'site-header', `site-header--${headerVariant}`]}>
+        <a href={homeHref} class="logo-mark" aria-label={siteTitle}>
+          <span class="logo-mark__chip" aria-hidden="true"></span>
+          <img src={logoBlackSrc} alt="" class="logo-mark__img logo-mark__img--default" />
+          <img src={logoWhiteSrc} alt="" class="logo-mark__img logo-mark__img--hover" />
+        </a>
+        <nav class="site-nav" aria-label="Primary">
+          <a href={homeHref} class="nav-link">{homeLabel}</a>
+          <a href={galleriesHref} class="nav-link">{galleriesLabel}</a>
+          <a href={aboutHref} class="nav-link">{aboutLabel}</a>
+          <a href={contactHref} class="nav-link">{contactLabel}</a>
+        </nav>
+        <LanguageSwitcher />
+      </header>
+    )}
     <main>
       <slot />
     </main>
     <footer class="chrome-band">
       <p class="footer-text">{footerText}</p>
+      <nav class="footer-legal-nav" aria-label="Legal">
+        <a href={legalNoticeHref} class="nav-link">{legalNoticeLabel}</a>
+        <a href={privacyHref} class="nav-link">{privacyLabel}</a>
+      </nav>
+      <nav class="footer-social-nav" aria-label="Social">
+        <a
+          href="https://www.instagram.com/ajs_romanelepont/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="nav-link"
+        >
+          Instagram<span class="sr-only">{instagramNewTabHint}</span>
+        </a>
+      </nav>
     </footer>
   </body>
 </html>
 
 <style is:global>
-  /* Delight variable font (100-900 weight axis), self-hosted per UI-SPEC —
-     the system-font stack below remains a fully functional fallback until
-     the licensed file lands at public/fonts/delight.woff2 (Task 2). */
-  @font-face {
-    font-family: 'Delight';
-    src: url('/fonts/delight.woff2') format('woff2');
-    font-weight: 100 900;
-    font-display: swap;
-  }
-
   :root {
-    /* Dawn Pink / Woodsmoke / Wild Strawberry — real visual identity,
-       supersedes Phase 1's provisional grayscale (02-UI-SPEC.md Color). */
-    --color-dominant: #F0E7E4;
-    --color-secondary: #E4D9D0;
-    --color-accent: #F92D97;
-    --color-ink: #141213;
-    --color-destructive: #dc2626; /* reserved for later phases, unused this phase */
+    /* White / Ink / Pop-Pink — Phase 04.1 rebrand, supersedes Phase 2's
+       prior palette and dormant fallback-only display typeface
+       (04.1-UI-SPEC.md Color; values are authoritative per
+       .planning/design-import/design-system/tokens/colors.css). */
+    --gray-0: #FFFFFF;
+    --gray-900: #1A1A1A;
+    --pink-600: #FF3B94;
+
+    /* Decorative palette — homepage hero-carousel-only (D-05), never used
+       for functional/interactive UI elsewhere on the site. */
+    --palette-purple: #AF3DFF;
+    --palette-teal: #55FFE1;
+    --palette-lime: #A6FD29;
+    --palette-plum: #37013A;
+
+    /* Semantic aliases */
+    --color-dominant: var(--gray-0);
+    --color-secondary: var(--gray-0); /* D-04: merged into dominant — header/footer are white-on-white */
+    --color-accent: var(--pink-600);
+    --color-ink: var(--gray-900);
+    --color-border: #E3E1DE;
+    --color-on-accent: var(--gray-900); /* D-01/UI-SPEC Color: ink, not white, on accent-pink fills */
+    --color-link: var(--color-accent);
+    --color-link-hover: var(--color-accent);
+    --color-focus-ring: var(--color-accent);
+    /* The destructive-red semantic token is removed entirely (D-03) —
+       ink-only error convention (bold ink text + thicker ink border)
+       replaces it. */
+
+    /* Typography roles (04.1-UI-SPEC.md Typography) */
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --font-display: 'Archivo Black', var(--font-sans);
+    --weight-regular: 400;
+    --weight-semibold: 600;
+
+    --text-label-size: 14px;
+    --text-label-weight: var(--weight-regular);
+    --text-label-leading: 1.5;
+
+    --text-body-size: 16px;
+    --text-body-weight: var(--weight-regular);
+    --text-body-leading: 1.5;
+
+    --text-heading-size: 20px;
+    --text-heading-weight: var(--weight-semibold);
+    --text-heading-leading: 1.2;
+    --text-heading-family: var(--font-display);
+
+    --text-display-size: 32px;
+    --text-display-weight: var(--weight-semibold);
+    --text-display-leading: 1.2;
+    --text-display-family: var(--font-display);
+
+    /* Radii / borders (04.1-UI-SPEC.md Spacing Scale exceptions) */
+    --radius-none: 0px;
+    --radius-sm: 2px;
+    --border-hairline: 1px;
+    --border-focus: 2px;
+    --focus-ring-offset: 2px;
+    --tap-target-min: 44px;
 
     --space-xs: 4px;
     --space-sm: 8px;
@@ -132,36 +226,32 @@ const contactHref = getRelativeLocaleUrl(locale, 'contact');
   }
 
   body {
-    font-family:
-      'Delight',
-      -apple-system,
-      BlinkMacSystemFont,
-      'Segoe UI',
-      Helvetica,
-      Arial,
-      sans-serif;
-    font-weight: 300; /* Body/Label role default — Heading/Display opt into 900 */
+    font-family: var(--font-sans); /* Archivo is display-only, per UI-SPEC Typography */
+    font-weight: var(--weight-regular);
     background-color: var(--color-dominant);
     color: var(--color-ink);
   }
 
-  /* Wild Strawberry text fails WCAG contrast on Dawn Pink (~2.95:1), so links
-     keep the compliant Woodsmoke glyph color and carry the accent only via a
-     permanent underline cue (02-UI-SPEC.md Color, contrast resolution). */
+  /* D-06: links render as full pink text, not ink-text-plus-underline. */
   a {
-    color: var(--color-ink);
-    text-decoration-color: var(--color-accent);
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  a:hover,
+  a:focus-visible {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
     text-underline-offset: 3px;
   }
 
-  /* Co-styled double ring: the compliant Woodsmoke outline plus a Wild
-     Strawberry ring just outside it (bare accent-only outline fails the same
-     ~2.95:1 non-text contrast check as link text). */
+  /* Single pink focus ring (D-06/UI-SPEC Color, link hover/focus states) —
+     pink-on-white passes contrast, so the double ink+accent ring from the
+     superseded identity is no longer needed. */
   a:focus-visible,
   button:focus-visible {
-    outline: 2px solid var(--color-ink);
-    outline-offset: 2px;
-    box-shadow: 0 0 0 4px var(--color-accent);
+    outline: 2px solid var(--color-accent);
+    outline-offset: var(--focus-ring-offset);
   }
 
   /* Visually-hidden but screen-reader-available utility (introduced here for
@@ -180,8 +270,9 @@ const contactHref = getRelativeLocaleUrl(locale, 'contact');
 </style>
 
 <style>
+  /* D-04: header/footer merge onto --color-dominant (white-on-white),
+     delineated only by a 1px hairline border — no chrome-band tint. */
   .chrome-band {
-    background-color: var(--color-secondary);
     padding: var(--space-lg) var(--space-md);
   }
 
@@ -191,18 +282,88 @@ const contactHref = getRelativeLocaleUrl(locale, 'contact');
     }
   }
 
-  header.chrome-band {
+  .site-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--space-md);
   }
 
-  .site-title {
-    margin: 0;
-    font-size: 20px; /* Heading role */
-    font-weight: 900;
-    line-height: 1.2;
+  .site-header--solid {
+    background-color: var(--color-dominant);
+    border-bottom: var(--border-hairline) solid var(--color-border);
+  }
+
+  /* D-07/Plan 04.1-05: absolutely-positioned, transparent/gradient header
+     over a hero photo scrim — no hairline border (the scrim itself is the
+     delineation). Nav text renders white in this variant. */
+  .site-header--transparent {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 2;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.25) 60%, rgba(0, 0, 0, 0) 100%);
+  }
+
+  .site-header--transparent .nav-link {
+    color: #FFFFFF;
+  }
+
+  /* D-11/D-13/RESEARCH.md Pattern 3: two stacked <img> elements, hover-invert
+     via opacity cross-fade. */
+  .logo-mark {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+  }
+
+  /* Dark backdrop chip (logo bounding box + --space-sm padding, --radius-none
+     square corners) so the white PNG variant stays legible when it fades in
+     over the white solid header (UI-SPEC Layout Notes — Header). */
+  .logo-mark__chip {
+    position: absolute;
+    inset: calc(-1 * var(--space-sm));
+    background-color: var(--color-ink);
+    border-radius: var(--radius-none);
+    opacity: 0;
+    transition: opacity 150ms ease;
+    z-index: 0;
+  }
+
+  .logo-mark__img {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 56px;
+    height: auto;
+  }
+
+  .logo-mark__img--hover {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 150ms ease;
+  }
+
+  /* Solid header: default = black logo; hover/focus-within cross-fades to
+     the white variant over the dark chip. */
+  .site-header--solid .logo-mark:hover .logo-mark__chip,
+  .site-header--solid .logo-mark:focus-within .logo-mark__chip,
+  .site-header--solid .logo-mark:hover .logo-mark__img--hover,
+  .site-header--solid .logo-mark:focus-within .logo-mark__img--hover {
+    opacity: 1;
+  }
+
+  /* Transparent header: white logo variant shown by default (over the dark
+     scrim already provided by the header background) — no hover swap. */
+  .site-header--transparent .logo-mark__img--default {
+    opacity: 0;
+  }
+
+  .site-header--transparent .logo-mark__img--hover {
+    opacity: 1;
   }
 
   .site-nav {
@@ -214,7 +375,7 @@ const contactHref = getRelativeLocaleUrl(locale, 'contact');
 
   .nav-link {
     font-size: 14px; /* Label role */
-    font-weight: 300;
+    font-weight: var(--weight-regular);
     line-height: 1.5;
     text-decoration: none;
   }
@@ -226,13 +387,26 @@ const contactHref = getRelativeLocaleUrl(locale, 'contact');
 
   footer.chrome-band {
     text-align: left;
+    border-top: var(--border-hairline) solid var(--color-border);
   }
 
   .footer-text {
     margin: 0;
     font-size: 14px; /* Label role */
-    font-weight: 300;
+    font-weight: var(--weight-regular);
     line-height: 1.5;
+  }
+
+  .footer-legal-nav {
+    display: flex;
+    gap: var(--space-xl);
+    margin-top: var(--space-md);
+  }
+
+  .footer-social-nav {
+    display: flex;
+    gap: var(--space-xl);
+    margin-top: var(--space-md);
   }
 
   main {

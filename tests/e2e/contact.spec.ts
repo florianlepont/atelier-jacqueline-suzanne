@@ -120,7 +120,13 @@ test.describe('contact form validation', () => {
 
 test.describe('contact reachability', () => {
   test('visitor can reach the Contact page from the header nav link', async ({ page }) => {
-    await page.goto('/');
+    // Phase 04.1: the homepage ("/") intentionally renders its own minimal,
+    // immersive nav (Accueil/Galeries + carousel-grid toggle + switcher only
+    // — no About/Contact) per 04.1-UI-SPEC.md's Layout Notes, matching the
+    // imported design prototype. The standard site-wide header (with the
+    // Contact link) still renders on every other page, so this checks
+    // reachability from there instead of "/".
+    await page.goto('/galleries/');
     await page.getByRole('link', { name: /^contact$/i }).click();
     await expect(page).toHaveURL(/\/contact\/?$/);
   });
