@@ -35,12 +35,6 @@ const siteTitle = siteSettings?.siteTitle?.[locale] ?? 'Atelier Jacqueline Suzan
 const footerText = siteSettings?.footerText?.[locale] ?? '';
 const homeLabel = siteSettings?.navLabels?.home?.[locale] ?? (locale === 'en' ? 'Home' : 'Accueil');
 const homeHref = getRelativeLocaleUrl(locale, '');
-// WR-03: defensive fallback — navLabels.galleries is Studio-required (fr/en)
-// per 02-01's schema validation, but a document written outside the
-// Studio's publish-time validation could still be partially populated.
-const galleriesLabel =
-  siteSettings?.navLabels?.galleries?.[locale] ?? (locale === 'en' ? 'Galleries' : 'Galeries');
-const galleriesHref = getRelativeLocaleUrl(locale, 'galleries');
 // About content is not in CMS scope (CMS-01 is galleries-only), so this
 // label is a hardcoded locale conditional rather than a Sanity navLabels
 // field.
@@ -113,7 +107,6 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
         </a>
         <nav class="site-nav" aria-label="Primary">
           <a href={homeHref} class="nav-link">{homeLabel}</a>
-          <a href={galleriesHref} class="nav-link">{galleriesLabel}</a>
           <a href={aboutHref} class="nav-link">{aboutLabel}</a>
           <a href={contactHref} class="nav-link">{contactLabel}</a>
         </nav>
