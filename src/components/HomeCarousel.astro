@@ -37,9 +37,7 @@ const isEn = locale === 'en';
 // per the "Homepage intro copy source" decision, not sourced from
 // siteSettings.welcomeHeading/welcomeBody.
 const homeLabel = isEn ? 'Home' : 'Accueil';
-const galleriesLabel = isEn ? 'Galleries' : 'Galeries';
 const homeHref = getRelativeLocaleUrl(locale, '');
-const galleriesHref = getRelativeLocaleUrl(locale, 'galleries');
 // Matches BaseLayout.astro's aboutLabel/contactLabel/aboutHref/contactHref
 // exactly — the homepage's own header renders its own nav (headerVariant
 //="none" suppresses BaseLayout's), but must still surface every primary
@@ -59,7 +57,6 @@ const introBody = isEn
   : "Le site présente le travail photographique de Romane Lepont et permet l'achat d'une œuvre directement en ligne.";
 const byline = isEn ? 'A project by Romane Lepont' : 'Un projet de Romane Lepont';
 const ctaLabel = isEn ? 'Discover other galleries →' : 'Découvrir les autres galeries →';
-const ctaHref = galleriesHref;
 
 const totalLabel = String(galleries.length).padStart(2, '0');
 const firstGallery = galleries[0];
@@ -79,18 +76,30 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
   <section class="home" data-display-mode="carousel">
     <header class="home-header" data-role="home-header">
       <a href={homeHref} class="home-logo" aria-label={wordmark}>
-        <img src={logoWhiteSrc} alt="" class="home-logo__img home-logo__img--white" />
-        <img src={logoBlackSrc} alt="" class="home-logo__img home-logo__img--black" />
+        <span class="home-logo__chip" aria-hidden="true"></span>
+        <img src={logoBlackSrc} alt="" class="home-logo__img home-logo__img--default" />
+        <img src={logoWhiteSrc} alt="" class="home-logo__img home-logo__img--hover" />
       </a>
       <nav class="home-nav" aria-label="Primary">
         <a href={homeHref} class="home-nav-link">{homeLabel}</a>
-        <a href={galleriesHref} class="home-nav-link">{galleriesLabel}</a>
         <a href={aboutHref} class="home-nav-link">{aboutLabel}</a>
         <a href={contactHref} class="home-nav-link">{contactLabel}</a>
       </nav>
       <div class="home-toggle" role="group" aria-label={isEn ? 'Display mode' : "Mode d'affichage"}>
-        <button type="button" class="home-toggle__btn is-active" data-action="show-carousel">{toggleCarouselLabel}</button>
-        <button type="button" class="home-toggle__btn" data-action="show-grid">{toggleGridLabel}</button>
+        <button type="button" class="home-toggle__btn is-active" data-action="show-carousel" aria-label={toggleCarouselLabel}>
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <rect x="2" y="4" width="16" height="12" rx="1" stroke="currentColor" stroke-width="1.5" />
+            <path d="M8 7.5v5l4.5-2.5-4.5-2.5z" fill="currentColor" />
+          </svg>
+        </button>
+        <button type="button" class="home-toggle__btn" data-action="show-grid" aria-label={toggleGridLabel}>
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <rect x="2" y="2" width="7" height="7" stroke="currentColor" stroke-width="1.5" />
+            <rect x="11" y="2" width="7" height="7" stroke="currentColor" stroke-width="1.5" />
+            <rect x="2" y="11" width="7" height="7" stroke="currentColor" stroke-width="1.5" />
+            <rect x="11" y="11" width="7" height="7" stroke="currentColor" stroke-width="1.5" />
+          </svg>
+        </button>
       </div>
       <LanguageSwitcher />
     </header>
@@ -113,15 +122,15 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       </div>
 
       <div class="home-hero__accent" data-role="accent-panel" style={{ backgroundColor: 'var(--color-accent)', color: 'var(--color-on-accent)' }}>
-        <p class="home-hero__wordmark">{wordmark}</p>
+        <p class="home-hero__wordmark">Atelier<br />Jacqueline<br />Suzanne</p>
         <p class="home-hero__intro">{introBody}</p>
-        <a href={ctaHref} class="home-hero__cta">{ctaLabel}</a>
+        <button type="button" class="home-hero__cta" data-action="show-grid">{ctaLabel}</button>
       </div>
     </div>
 
     <div class="home-grid" data-role="home-grid" hidden>
       <div class="home-grid__intro">
-        <p class="home-grid__wordmark">{wordmark}</p>
+        <p class="home-grid__wordmark">Atelier<br />Jacqueline<br />Suzanne</p>
         <p class="home-grid__intro-body">{introBody}</p>
       </div>
       <div class="home-grid__tiles">
@@ -260,16 +269,26 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           button.classList.add('is-active');
         }
 
+        // D-05: the accent-panel CTA also carries data-action="show-grid" and
+        // is picked up by the querySelectorAll('[data-action="show-grid"]')
+        // loop below, but it isn't a toggle button itself — capture the real
+        // toggle buttons once so is-active always lands on the Grid/Carousel
+        // toggle, never on the CTA.
+        const gridToggleBtn = root.querySelector<HTMLButtonElement>('.home-toggle__btn[data-action="show-grid"]');
+        const carouselToggleBtn = root.querySelector<HTMLButtonElement>(
+          '.home-toggle__btn[data-action="show-carousel"]'
+        );
+
         root.querySelectorAll<HTMLButtonElement>('[data-action="show-carousel"]').forEach((btn) => {
           btn.addEventListener('click', () => {
             showCarousel();
-            setActiveToggle(btn);
+            if (carouselToggleBtn) setActiveToggle(carouselToggleBtn);
           });
         });
         root.querySelectorAll<HTMLButtonElement>('[data-action="show-grid"]').forEach((btn) => {
           btn.addEventListener('click', () => {
             showGrid();
-            setActiveToggle(btn);
+            if (gridToggleBtn) setActiveToggle(gridToggleBtn);
           });
         });
 
@@ -324,23 +343,59 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     color: var(--color-ink);
   }
 
+  /* D-01/D-02: two stacked <img> elements + dark backdrop chip, opacity
+     crossfade on hover/focus — mirrors BaseLayout.astro's .logo-mark
+     mechanism exactly, scoped by data-display-mode instead of a
+     site-header--solid/--transparent class. */
   .home-logo {
+    position: relative;
     display: inline-flex;
     align-items: center;
+    text-decoration: none;
+  }
+
+  .home-logo__chip {
+    position: absolute;
+    inset: calc(-1 * var(--space-sm));
+    background-color: var(--color-ink);
+    border-radius: var(--radius-none);
+    opacity: 0;
+    transition: opacity 150ms ease;
+    z-index: 0;
   }
 
   .home-logo__img {
+    position: relative;
+    z-index: 1;
+    display: block;
     width: 56px;
     height: auto;
-    display: none;
   }
 
-  .home[data-display-mode='carousel'] .home-logo__img--white {
-    display: block;
+  .home-logo__img--hover {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 150ms ease;
   }
 
-  .home[data-display-mode='grid'] .home-logo__img--black {
-    display: block;
+  /* Grid mode mirrors .site-header--solid: default = black logo;
+     hover/focus-within cross-fades to the white variant over the dark chip. */
+  .home[data-display-mode='grid'] .home-logo:hover .home-logo__chip,
+  .home[data-display-mode='grid'] .home-logo:focus-within .home-logo__chip,
+  .home[data-display-mode='grid'] .home-logo:hover .home-logo__img--hover,
+  .home[data-display-mode='grid'] .home-logo:focus-within .home-logo__img--hover {
+    opacity: 1;
+  }
+
+  /* Carousel mode mirrors .site-header--transparent: white logo variant
+     shown by default over the existing hero gradient scrim — no hover swap. */
+  .home[data-display-mode='carousel'] .home-logo__img--default {
+    opacity: 0;
+  }
+
+  .home[data-display-mode='carousel'] .home-logo__img--hover {
+    opacity: 1;
   }
 
   .home-nav {
@@ -387,10 +442,12 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
   }
 
   .home-nav-link:hover,
-  .home-nav-link:focus-visible,
-  .home-toggle__btn:hover,
-  .home-toggle__btn:focus-visible {
+  .home-nav-link:focus-visible {
     text-decoration: underline;
+  }
+
+  .home-toggle__btn svg {
+    display: block;
   }
 
   .home-toggle {
@@ -518,6 +575,12 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
   }
 
   .home-hero__cta {
+    /* D-05: was an <a>, now a <button> (triggers show-grid instead of
+       navigating) — reset button chrome so it still renders like a link. */
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
     font-size: 14px; /* Label role */
     font-weight: var(--weight-semibold);
     text-decoration: underline;
