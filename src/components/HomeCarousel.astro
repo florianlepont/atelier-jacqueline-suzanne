@@ -512,7 +512,13 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 3;
+    /* Above .home-hero__accent's z-index: 3 — on mobile the vertically-
+       centered arrows sit close to the now-taller (three-line wordmark,
+       D-09) accent panel's bottom edge; keeping the nav arrows always
+       clickable/visible takes priority over the accent panel here (no
+       overlap exists on desktop, where the accent panel is a small
+       bottom-right corner box far from the edge-anchored arrows). */
+    z-index: 4;
   }
 
   .home-hero__arrow--prev {
@@ -680,8 +686,32 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       overflow: visible;
     }
 
+    /* D-08 (distinct from the 600px min-height fix above, a different,
+       still-open symptom): live-measured root cause — position:static
+       drops .home-hero__accent out of the "positioned, z-index" paint
+       layer entirely (z-index has no effect on statically positioned
+       boxes per spec), so the accent panel (wordmark/intro/CTA) painted
+       in the earlier "in-flow content" layer, while the hero photo
+       (.home-hero__img, position:absolute) paints in the later
+       "positioned descendants" layer on top of it — the opaque photo
+       visually covers the accent panel's branded content completely,
+       reproducing as "the hero disappears" (confirmed via
+       elementFromPoint()/computed-style measurement at 375x667: the
+       header sits at the expected z-index, but the accent panel's own
+       content was unreachable/invisible under the image). Fix: keep the
+       accent panel in normal flow (still full-width, still after the
+       caption in source) but make it a positioned element via
+       position:relative instead of static, so its existing z-index: 3
+       (inherited from the desktop rule) takes effect again and it paints
+       above the image/scrim, exactly like it already does on desktop. */
     .home-hero__accent {
-      position: static;
+      position: relative;
+      /* Neutralize the desktop rule's right/bottom offsets — under
+         position:relative (unlike static) they'd otherwise shift this
+         box up-and-left by --space-md, since relative positioning still
+         honors inherited offset properties. */
+      right: auto;
+      bottom: auto;
       width: 100%;
     }
 
