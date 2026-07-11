@@ -159,11 +159,17 @@ Plans:
   6. Make the gallery name clickable to reach that gallery's detail page in carousel mode (currently plain text); verify grid-mode tiles remain fully clickable.
 **Requirements**: TBD (UI/UX refinement on top of shipped PORT-01/PORT-02 coverage — no new REQ-IDs)
 **Depends on:** Phase 04.1, Phase 04.2
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
+**Wave 1** *(disjoint file sets — run in parallel)*
 
-- [ ] TBD (run /gsd-plan-phase 04.3 to break down)
+- [ ] 04.3-01-PLAN.md — HomeCarousel refinements: logo hover crossfade, icon toggle, grid-mode CTA, three-line wordmark, clickable hero title, mobile hero fix (D-01/D-02/D-04/D-05/D-07/D-08/D-09/D-10) (Wave 1)
+- [ ] 04.3-02-PLAN.md — Remove standalone /galleries listing + dead GalleryCard, trim BaseLayout nav, repoint detail back-links home (D-03/D-04/D-06) (Wave 1)
+
+**Wave 2** *(blocked on both Wave 1 plans — full e2e/unit green gate)*
+
+- [ ] 04.3-03-PLAN.md — Reconcile e2e specs to the /galleries removal: gallery.spec grid discovery (+ D-11 verify), about/contact reachability repoint (Wave 2)
 
 ### Phase 04.1: Design System & Homepage Refresh (INSERTED)
 
