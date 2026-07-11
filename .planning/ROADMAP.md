@@ -151,21 +151,23 @@ Plans:
 
 **Goal:** Polish the Phase 04.1 homepage rebuild based on live user feedback — consistent logo hover behavior, a single gallery-browsing entry point, an icon-based mode toggle, a fixed mobile hero-visibility bug, a three-line wordmark treatment, and gallery names that link directly to their detail pages.
 **Scope items:**
+
   1. Homepage logo gets the same hover/focus crossfade as `BaseLayout.astro`'s `.logo-mark` (dark chip + black/white crossfade) — `HomeCarousel.astro`'s own logo currently has no hover state.
   2. Delete the standalone `/galleries` listing page entirely (both locales) and remove "Galleries" from site nav everywhere — the homepage grid view is now the sole gallery-browsing entry point. Update internal links/CTAs that point to it (`HomeCarousel`'s "Discover other galleries" CTA, `BaseLayout` nav).
   3. Replace the "Carousel / Grid" text-label toggle buttons with icon-based buttons — same functionality, icon instead of text.
   4. Fix a real-device mobile bug where the homepage hero visually disappears on phone viewports, despite the existing `height:auto; min-height:600px` mobile CSS.
   5. Render the wordmark "Atelier Jacqueline Suzanne" as three explicit lines (Atelier / Jacqueline / Suzanne) instead of one, in both the carousel accent panel and grid intro.
   6. Make the gallery name clickable to reach that gallery's detail page in carousel mode (currently plain text); verify grid-mode tiles remain fully clickable.
+
 **Requirements**: TBD (UI/UX refinement on top of shipped PORT-01/PORT-02 coverage — no new REQ-IDs)
 **Depends on:** Phase 04.1, Phase 04.2
-**Plans:** 3 plans
+**Plans:** 2/3 plans executed
 
 Plans:
 **Wave 1** *(disjoint file sets — run in parallel)*
 
-- [ ] 04.3-01-PLAN.md — HomeCarousel refinements: logo hover crossfade, icon toggle, grid-mode CTA, three-line wordmark, clickable hero title, mobile hero fix (D-01/D-02/D-04/D-05/D-07/D-08/D-09/D-10) (Wave 1)
-- [ ] 04.3-02-PLAN.md — Remove standalone /galleries listing + dead GalleryCard, trim BaseLayout nav, repoint detail back-links home (D-03/D-04/D-06) (Wave 1)
+- [x] 04.3-01-PLAN.md — HomeCarousel refinements: logo hover crossfade, icon toggle, grid-mode CTA, three-line wordmark, clickable hero title, mobile hero fix (D-01/D-02/D-04/D-05/D-07/D-08/D-09/D-10) (Wave 1)
+- [x] 04.3-02-PLAN.md — Remove standalone /galleries listing + dead GalleryCard, trim BaseLayout nav, repoint detail back-links home (D-03/D-04/D-06) (Wave 1)
 
 **Wave 2** *(blocked on both Wave 1 plans — full e2e/unit green gate)*
 
