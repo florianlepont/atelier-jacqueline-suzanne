@@ -117,7 +117,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
       <div class="home-hero__caption">
         <p class="home-hero__index" data-role="index-label">01 / {totalLabel}</p>
-        <h2 class="home-hero__title" data-role="gallery-title">{firstGallery.title.toUpperCase()}</h2>
+        <a class="home-hero__title" data-role="gallery-title" href={getRelativeLocaleUrl(locale, `galleries/${firstGallery.slug}`)}>{firstGallery.title.toUpperCase()}</a>
         <p class="home-hero__byline">{byline}</p>
       </div>
 
@@ -157,7 +157,12 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         this already-fetched, already-filtered (D-12) static markup. */}
     <ul hidden data-role="home-carousel-data">
       {galleries.map((gallery) => (
-        <li data-title={gallery.title} data-hero-src={gallery.heroSrc} data-alt={gallery.alt} />
+        <li
+          data-title={gallery.title}
+          data-hero-src={gallery.heroSrc}
+          data-alt={gallery.alt}
+          data-href={getRelativeLocaleUrl(locale, `galleries/${gallery.slug}`)}
+        />
       ))}
     </ul>
 
@@ -166,6 +171,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         title: string;
         heroSrc: string;
         alt: string;
+        href: string;
       }
 
       const root = document.querySelector<HTMLElement>('.home[data-display-mode]');
@@ -178,6 +184,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           title: li.dataset.title ?? '',
           heroSrc: li.dataset.heroSrc ?? '',
           alt: li.dataset.alt ?? '',
+          href: li.dataset.href ?? '',
         }));
 
         // ACCENTS cycles generically via index % ACCENTS.length (RESEARCH.md
@@ -213,6 +220,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           }
           if (titleEl) {
             titleEl.textContent = gallery.title.toUpperCase();
+            titleEl.setAttribute('href', gallery.href);
           }
           if (accentPanel) {
             accentPanel.style.backgroundColor = accent.bg;
