@@ -56,7 +56,6 @@ const introBody = isEn
   ? "This site showcases Romane Lepont's photographic work and lets you buy a piece directly online."
   : "Le site présente le travail photographique de Romane Lepont et permet l'achat d'une œuvre directement en ligne.";
 const byline = isEn ? 'A project by Romane Lepont' : 'Un projet de Romane Lepont';
-const ctaLabel = isEn ? 'Discover other galleries →' : 'Découvrir les autres galeries →';
 
 const totalLabel = String(galleries.length).padStart(2, '0');
 const firstGallery = galleries[0];
@@ -73,7 +72,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 {galleries.length === 0 ? (
   <p class="home-empty">{isEn ? 'No galleries available yet.' : 'Aucune galerie disponible pour le moment.'}</p>
 ) : (
-  <section class="home" data-display-mode="carousel">
+  <section
+    class="home"
+    data-display-mode="carousel"
+    style={{ '--wordmark-photo': `url(${firstGallery.heroSrc})` }}
+  >
     <header class="home-header" data-role="home-header">
       <a href={homeHref} class="home-logo" aria-label={wordmark}>
         <span class="home-logo__chip" aria-hidden="true"></span>
@@ -85,22 +88,26 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         <a href={aboutHref} class="home-nav-link">{aboutLabel}</a>
         <a href={contactHref} class="home-nav-link">{contactLabel}</a>
       </nav>
-      <div class="home-toggle" role="group" aria-label={isEn ? 'Display mode' : "Mode d'affichage"}>
-        <button type="button" class="home-toggle__btn is-active" data-action="show-carousel" aria-label={toggleCarouselLabel}>
-          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <rect x="2" y="4" width="16" height="12" rx="1" stroke="currentColor" stroke-width="1.5" />
-            <path d="M8 7.5v5l4.5-2.5-4.5-2.5z" fill="currentColor" />
-          </svg>
-        </button>
-        <button type="button" class="home-toggle__btn" data-action="show-grid" aria-label={toggleGridLabel}>
-          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <rect x="2" y="2" width="7" height="7" stroke="currentColor" stroke-width="1.5" />
-            <rect x="11" y="2" width="7" height="7" stroke="currentColor" stroke-width="1.5" />
-            <rect x="2" y="11" width="7" height="7" stroke="currentColor" stroke-width="1.5" />
-            <rect x="11" y="11" width="7" height="7" stroke="currentColor" stroke-width="1.5" />
-          </svg>
-        </button>
-      </div>
+      <button
+        type="button"
+        class="home-toggle"
+        data-role="mode-toggle"
+        data-action="toggle-mode"
+        data-label-carousel={toggleCarouselLabel}
+        data-label-grid={toggleGridLabel}
+        aria-label={toggleGridLabel}
+      >
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" class="home-toggle__icon home-toggle__icon--carousel">
+          <rect x="2" y="4" width="16" height="12" rx="1" stroke="currentColor" stroke-width="1.5" />
+          <path d="M8 7.5v5l4.5-2.5-4.5-2.5z" fill="currentColor" />
+        </svg>
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" class="home-toggle__icon home-toggle__icon--grid">
+          <rect x="2" y="2" width="7" height="7" stroke="currentColor" stroke-width="1.5" />
+          <rect x="11" y="2" width="7" height="7" stroke="currentColor" stroke-width="1.5" />
+          <rect x="2" y="11" width="7" height="7" stroke="currentColor" stroke-width="1.5" />
+          <rect x="11" y="11" width="7" height="7" stroke="currentColor" stroke-width="1.5" />
+        </svg>
+      </button>
       <LanguageSwitcher />
     </header>
 
@@ -121,19 +128,25 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         <p class="home-hero__byline">{byline}</p>
       </div>
 
-      <div class="home-hero__accent" data-role="accent-panel" style={{ backgroundColor: 'var(--color-accent)', color: 'var(--color-on-accent)' }}>
+      <div class="home-hero__accent" data-role="accent-panel" style={{ color: 'var(--color-on-accent)' }}>
+        {/* D-08: --wordmark-photo is server-rendered on the .home section
+            (above) from firstGallery.heroSrc, so the transparent cutout text
+            reveals a photo immediately, before and without JS; render() keeps
+            it synced with heroImg.src on every prev/next/auto-advance tick. */}
         <p class="home-hero__wordmark">Atelier<br />Jacqueline<br />Suzanne</p>
         <p class="home-hero__intro">{introBody}</p>
-        <button type="button" class="home-hero__cta" data-action="show-grid">{ctaLabel}</button>
       </div>
     </div>
 
     <div class="home-grid" data-role="home-grid" hidden>
-      <div class="home-grid__intro">
-        <p class="home-grid__wordmark">Atelier<br />Jacqueline<br />Suzanne</p>
-        <p class="home-grid__intro-body">{introBody}</p>
-      </div>
       <div class="home-grid__tiles">
+        {/* D-06: non-link hero tile — same square sizing as every gallery
+            tile, but a plain <div> (no gallery to navigate to). D-05: solid
+            accent background, no photo/cutout. */}
+        <div class="home-grid__tile home-grid__tile--hero">
+          <p class="home-grid__wordmark">Atelier<br />Jacqueline<br />Suzanne</p>
+          <p class="home-grid__intro-body">{introBody}</p>
+        </div>
         {galleries.map((gallery) => (
           <a href={getRelativeLocaleUrl(locale, `galleries/${gallery.slug}`)} class="home-grid__tile">
             <img
@@ -223,10 +236,13 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             titleEl.setAttribute('href', gallery.href);
           }
           if (accentPanel) {
-            accentPanel.style.backgroundColor = accent.bg;
             accentPanel.style.color = accent.text;
           }
           root!.style.setProperty('--current-accent', accent.bg);
+          // D-08/D-09: keep the wordmark's photo-cutout background in sync
+          // with the visible hero photo on every prev/next/auto-advance
+          // tick, so the letters always reveal the currently-shown gallery.
+          root!.style.setProperty('--wordmark-photo', `url(${gallery.heroSrc})`);
         }
 
         function stopAutoAdvance() {
@@ -272,32 +288,18 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           render();
         });
 
-        function setActiveToggle(button: HTMLButtonElement) {
-          root!.querySelectorAll('.home-toggle__btn').forEach((btn) => btn.classList.remove('is-active'));
-          button.classList.add('is-active');
-        }
-
-        // D-05: the accent-panel CTA also carries data-action="show-grid" and
-        // is picked up by the querySelectorAll('[data-action="show-grid"]')
-        // loop below, but it isn't a toggle button itself — capture the real
-        // toggle buttons once so is-active always lands on the Grid/Carousel
-        // toggle, never on the CTA.
-        const gridToggleBtn = root.querySelector<HTMLButtonElement>('.home-toggle__btn[data-action="show-grid"]');
-        const carouselToggleBtn = root.querySelector<HTMLButtonElement>(
-          '.home-toggle__btn[data-action="show-carousel"]'
-        );
-
-        root.querySelectorAll<HTMLButtonElement>('[data-action="show-carousel"]').forEach((btn) => {
-          btn.addEventListener('click', () => {
-            showCarousel();
-            if (carouselToggleBtn) setActiveToggle(carouselToggleBtn);
-          });
-        });
-        root.querySelectorAll<HTMLButtonElement>('[data-action="show-grid"]').forEach((btn) => {
-          btn.addEventListener('click', () => {
+        // D-01/D-02/D-03: a single stateful button — its aria-label always
+        // names the mode you'd switch TO, read off its own data-label-*
+        // attributes (the plain module script can't read frontmatter vars).
+        const modeToggleBtn = root.querySelector<HTMLButtonElement>('[data-role="mode-toggle"]');
+        modeToggleBtn?.addEventListener('click', () => {
+          if (root!.dataset.displayMode === 'carousel') {
             showGrid();
-            if (gridToggleBtn) setActiveToggle(gridToggleBtn);
-          });
+            modeToggleBtn.setAttribute('aria-label', modeToggleBtn.dataset.labelCarousel ?? '');
+          } else {
+            showCarousel();
+            modeToggleBtn.setAttribute('aria-label', modeToggleBtn.dataset.labelGrid ?? '');
+          }
         });
 
         render();
@@ -475,7 +477,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
   }
 
   .home-nav-link,
-  .home-toggle__btn {
+  .home-toggle {
     display: inline-flex; /* matches LanguageSwitcher's .switcher-link so text
                               baselines line up across the whole header —
                               a plain block/inline box top-aligns its text
@@ -499,18 +501,19 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     text-decoration: underline;
   }
 
-  .home-toggle__btn svg {
+  /* D-01: single toggle button holds BOTH icons; the icon shown is the icon
+     of the mode you'd switch TO, mirroring the aria-label. Same
+     data-display-mode-driven show/hide mechanic as the logo swap above. */
+  .home-toggle__icon {
+    display: none;
+  }
+
+  .home[data-display-mode='carousel'] .home-toggle__icon--grid {
     display: block;
   }
 
-  .home-toggle {
-    display: flex;
-    gap: var(--space-sm);
-  }
-
-  .home-toggle__btn.is-active {
-    font-weight: var(--weight-semibold);
-    text-decoration: underline;
+  .home[data-display-mode='grid'] .home-toggle__icon--carousel {
+    display: block;
   }
 
   /* Carousel mode — full-viewport hero photo + scrim + caption + accent
@@ -617,66 +620,84 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     z-index: 3;
   }
 
+  /* D-07/D-08/D-09: carousel-mode wordmark cutout — the accent panel no
+     longer paints a solid background behind it (see .home-hero__accent
+     above), so the letters can reveal --wordmark-photo (set server-side
+     from firstGallery.heroSrc and kept in sync per-gallery by render()). */
   .home-hero__wordmark {
     font-family: var(--font-display);
-    /* 44px (up from 32px, logo-hover-and-font debug session Round 2 — user
-       feedback: "might be a little bigger in the hero"). Scoped to this
-       selector only, not the shared --text-display-size token, since the
-       request was specifically about the hero wordmark's visual weight
-       against the accent panel, not every Display-role text on the site
-       (e.g. .home-grid__tile-title stays at 32px). */
-    font-size: 44px;
+    /* 64px desktop / 48px mobile (up from 44px, D-09 — larger, bolder type
+       reads better with a background-clip:text treatment). Scoped to this
+       selector only, not the shared --text-display-size token. */
+    font-size: 64px;
     font-weight: var(--weight-semibold);
     line-height: 1.2;
     letter-spacing: 0.02em;
     margin: 0 0 var(--space-md);
+    /* Fallback (unsupported engines, effectively unreachable in 2026
+       evergreen browsers): solid on-accent color, no background-image, so
+       the wordmark is never invisible/blank. */
+    color: var(--color-on-accent);
+  }
+
+  @supports (background-clip: text) or (-webkit-background-clip: text) {
+    .home-hero__wordmark {
+      background-image: var(--wordmark-photo);
+      background-size: cover;
+      background-position: center;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+    }
   }
 
   .home-hero__intro {
     font-size: 16px; /* Body role */
     font-weight: var(--weight-regular);
     line-height: 1.5;
-    margin: 0 0 var(--space-md);
+    margin: 0;
+    /* D-08: the accent panel's solid background moved off the wordmark, but
+       the intro paragraph still needs its own legible backing. */
+    padding: var(--space-sm) var(--space-md);
+    background-color: var(--current-accent, var(--color-accent));
   }
 
-  .home-hero__cta {
-    /* D-05: was an <a>, now a <button> (triggers show-grid instead of
-       navigating) — reset button chrome so it still renders like a link. */
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    font-size: 14px; /* Label role */
-    font-weight: var(--weight-semibold);
-    text-decoration: underline;
-    color: inherit;
-  }
-
-  /* Grid mode — intro band + seamless 2-column tile grid (D-08, UI-SPEC
-     Layout Notes — Homepage Grid mode). */
-  .home-grid__intro {
-    background: var(--color-accent);
+  /* D-04/D-05/D-06: grid-mode hero is now the first *tile* of the grid
+     itself (not a full-width band) — a non-link <div>, same square sizing
+     as every gallery tile, solid accent background (no photo/cutout). */
+  .home-grid__tile--hero {
+    background-color: var(--current-accent, var(--color-accent));
     color: var(--color-on-accent);
-    padding: var(--space-2xl) var(--space-md);
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 
   .home-grid__wordmark {
     font-family: var(--font-display);
-    /* 44px — matches .home-hero__wordmark's bump (see comment there); same
-       wordmark text, same treatment in both modes for consistency. */
-    font-size: 44px;
+    /* 24px desktop / 16px mobile — smaller than the carousel treatment: the
+       grid hero-tile is now a constrained square (same size as a single
+       gallery tile), so the wordmark must shrink to fit three lines + the
+       intro paragraph without overflowing. No cutout here (D-05) — stays
+       solid --font-display text in --color-on-accent. */
+    font-size: 24px;
     font-weight: var(--weight-semibold);
     line-height: 1.2;
     letter-spacing: 0.02em;
-    margin: 0 0 var(--space-md);
+    margin: 0 0 var(--space-sm);
   }
 
   .home-grid__intro-body {
-    max-width: 640px;
-    font-size: 16px; /* Body role */
+    font-size: 14px; /* Label role — down from 16px Body, same fit constraint */
     font-weight: var(--weight-regular);
     line-height: 1.5;
     margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   .home-grid__tiles {
@@ -743,7 +764,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        still-open symptom): live-measured root cause — position:static
        drops .home-hero__accent out of the "positioned, z-index" paint
        layer entirely (z-index has no effect on statically positioned
-       boxes per spec), so the accent panel (wordmark/intro/CTA) painted
+       boxes per spec), so the accent panel (wordmark/intro) painted
        in the earlier "in-flow content" layer, while the hero photo
        (.home-hero__img, position:absolute) paints in the later
        "positioned descendants" layer on top of it — the opaque photo
@@ -766,6 +787,16 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       right: auto;
       bottom: auto;
       width: 100%;
+    }
+
+    /* D-09: mobile-width override for the enlarged cutout wordmark. */
+    .home-hero__wordmark {
+      font-size: 48px;
+    }
+
+    /* Grid hero-tile wordmark — mobile-width override (Typography table). */
+    .home-grid__wordmark {
+      font-size: 16px;
     }
 
     .home-grid__tiles {
