@@ -42,6 +42,16 @@ Phased launch: v1 replaces the current Myportfolio site fast with portfolio + ab
 
 - [ ] **LAUNCH-01**: Site is reachable at the existing domain atelierjacquelinesuzanne.fr via a rehearsed DNS cutover from the current Myportfolio site
 
+## v1.1 Requirements (Homepage Refinements)
+
+Refines the homepage's view-mode toggle, grid layout, and hero typography before the v1.0 Phase 5 domain cutover and the larger v1.x shop/exhibitions wave.
+
+### Homepage
+
+- [ ] **HOME-01**: Visitor toggles between carousel and grid view via a single unified button (not two separate mode buttons)
+- [ ] **HOME-02**: In grid view, the hero appears as the first tile of the grid (not a separate full-width band) — wordmark + intro paragraph as overlay text, no CTA button
+- [ ] **HOME-03**: The "Atelier Jacqueline Suzanne" wordmark uses a transparent cutout effect revealing the photo through the letterforms, at least in carousel mode
+
 ## v2 Requirements
 
 Deferred to v1.x fast-follow (shop + exhibitions wave) and beyond. Tracked but not in current roadmap.
@@ -133,12 +143,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LEGAL-03 | Phase 4 | Complete |
 | LEGAL-05 | Phase 4 | Complete |
 | LAUNCH-01 | Phase 5 | Pending |
+| HOME-01 | TBD | Pending |
+| HOME-02 | TBD | Pending |
+| HOME-03 | TBD | Pending |
 
 **Coverage:**
 
 - v1 requirements: 14 total
 - Mapped to phases: 14/14 ✓
 - Unmapped: 0
+- v1.1 (Homepage Refinements) requirements: 3 total, not yet mapped to phases — mapped during this milestone's roadmap creation
 - v2 (v1.x fast-follow) requirements: 17 tracked, not yet in roadmap (out of scope for this roadmap by design)
 
 ---
