@@ -8,6 +8,17 @@ A bilingual (French/English) website for Romane Lepont's photography and artisti
 
 Visitors can browse Romane's photographic work and buy a piece (print, original, book, or merch) through a real, working checkout — everything else supports that. **Delivered in two milestones**: v1 replaces the current site fast with portfolio/about/contact so the old Myportfolio site can be retired sooner; v1.x adds exhibitions, the shop, and checkout on top of that foundation.
 
+## Current Milestone: v1.1 Homepage Refinements
+
+**Goal:** Refine the homepage's view-mode toggle, grid layout, and hero typography before the v1.0 domain cutover (Phase 5) and the larger v1.x shop/exhibitions wave.
+
+**Target features:**
+- Single unified button to switch carousel ↔ grid (replacing the current two separate icon buttons)
+- Grid mode's hero becomes the first tile of the grid itself (not a separate full-width band) — keeps the intro paragraph as overlay text, drops the CTA button since grid view is now the browser
+- "Atelier Jacqueline Suzanne" wordmark gets a transparent cutout treatment (letters reveal the photo behind them), at least in carousel mode where the wordmark sits over the hero photo — likely a larger/bolder font is needed for the cutout to stay legible
+
+**Note:** v1.0 is functionally complete (Phases 1–4.3) but not yet launched — Phase 5 (DNS cutover to atelierjacquelinesuzanne.fr) is deliberately deferred until after this milestone, by explicit user choice.
+
 ## Requirements
 
 ### Validated
@@ -23,6 +34,11 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 - [ ] Site is available in French and English with a language switcher
 - [ ] Romane (non-technical) can independently update galleries/photos without touching code
 - [ ] Site is reachable at the existing domain, atelierjacquelinesuzanne.fr
+
+**v1.1 (homepage refinements, this milestone):**
+- [ ] Visitor toggles between carousel and grid view via a single unified button (not two separate mode buttons)
+- [ ] In grid view, the hero is the first tile of the grid (not a separate full-width band above it), with its intro paragraph as overlay text and no CTA button
+- [ ] The "Atelier Jacqueline Suzanne" wordmark uses a transparent cutout effect revealing the photo behind the letters, at least in carousel mode
 
 **v1.x (add shop, deferred until v1 is live — see REQUIREMENTS.md v2 section):**
 - [ ] Visitor can view a list of upcoming and past exhibitions (dates, location, description)
@@ -96,4 +112,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-08 after Phase 4 (Legal & Compliance) completion*
+*Last updated: 2026-07-12 — milestone v1.1 (Homepage Refinements) started*
