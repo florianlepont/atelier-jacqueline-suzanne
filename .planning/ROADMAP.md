@@ -234,7 +234,9 @@ Plans:
   2. In grid view, the hero (wordmark + intro paragraph, no CTA button) renders as the first tile inside the grid itself, not as a separate full-width band above the grid.
   3. In carousel mode, the "Atelier Jacqueline Suzanne" wordmark shows a transparent cutout effect — the hero photo is visible through the letterforms — and stays legible at typical desktop and mobile viewport widths.
 
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 06-01-PLAN.md — Single unified toggle (HOME-01) + grid hero-as-first-tile (HOME-02) + carousel wordmark photo-cutout (HOME-03) + CTA removal, all in HomeCarousel.astro; test-first, with a live cutout-legibility checkpoint (Wave 1)
 **UI hint**: yes
 
 ## Progress
@@ -251,7 +253,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 3. About & Contact | 3/3 | Complete    | 2026-07-08 |
 | 4. Legal & Compliance | 3/3 | Complete    | 2026-07-08 |
 | 5. Launch & Domain Cutover | 0/TBD | Not started | - |
-| 6. Homepage View-Mode Toggle, Grid Hero & Wordmark Cutout | 0/TBD | Not started | - |
+| 6. Homepage View-Mode Toggle, Grid Hero & Wordmark Cutout | 0/1 | Not started | - |
 
 ## Milestone Scope Note
 
