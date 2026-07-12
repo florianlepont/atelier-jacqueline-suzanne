@@ -10,9 +10,9 @@ import {createClient} from '@sanity/client'
  * be bundled into shipped JS.
  */
 
-const projectId = process.env.SANITY_PROJECT_ID
-const dataset = process.env.SANITY_DATASET
-const token = process.env.SANITY_API_READ_TOKEN
+const projectId = import.meta.env.SANITY_PROJECT_ID
+const dataset = import.meta.env.SANITY_DATASET
+const token = import.meta.env.SANITY_API_READ_TOKEN
 
 if (!projectId || !dataset) {
   throw new Error(
