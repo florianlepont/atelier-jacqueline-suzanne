@@ -108,3 +108,33 @@ test.describe('i18n non-regression guard', () => {
     expect(enHeaderText).not.toBe(frHeaderText);
   });
 });
+
+test.describe('mobile hero visibility (D-08)', () => {
+  test('hero renders visibly at a 375px-wide viewport, not collapsed/blank', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto('/');
+
+    const hero = page.locator('.home-hero');
+    await expect(hero).toBeVisible();
+    const heroBox = await hero.boundingBox();
+    expect(heroBox?.height ?? 0).toBeGreaterThan(300);
+
+    const heroImage = page.locator('[data-role="hero-image"]');
+    await expect(heroImage).toBeVisible();
+    const imageBox = await heroImage.boundingBox();
+    expect(imageBox?.height ?? 0).toBeGreaterThan(0);
+
+    // Regression guard for the root cause found while fixing D-08: on
+    // mobile the accent panel (wordmark/intro/CTA) used to become a
+    // statically-positioned box, dropping it out of the stacking layer
+    // that the (opaque) hero photo paints in — visually burying the
+    // accent panel's content under the photo even though every element
+    // individually reported non-zero size/visibility. A plain click
+    // only succeeds if the CTA is not obscured by another element, so
+    // this exercises the real bug, not just each element's own box.
+    const cta = page.getByRole('button', { name: /découvrir les autres galeries/i });
+    await expect(cta).toBeVisible();
+    await cta.click();
+    await expect(page.locator('[data-role="home-grid"]')).toBeVisible();
+  });
+});

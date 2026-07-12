@@ -29,7 +29,7 @@ const locale = 'en' as const;
 // but a document written outside the Studio's publish-time validation could
 // still be partially populated mid-edit.
 const statement = gallery.statement?.[locale] ?? '';
-const backHref = getRelativeLocaleUrl(locale, 'galleries');
+const backHref = getRelativeLocaleUrl(locale, '');
 // D-07/UI-SPEC Layout Notes: hero-scrim uses the gallery's cover photo
 // (images[0]) at full size, same helper the Lightbox uses for its slides.
 const heroImage = gallery.images[0];
@@ -48,7 +48,7 @@ const heroAlt = heroImage.alt?.[locale] ?? '';
         decoding="async"
       />
       <div class="gallery-detail__hero-scrim" aria-hidden="true"></div>
-      <a href={backHref} class="gallery-detail__hero-back">← Back to galleries</a>
+      <a href={backHref} class="gallery-detail__hero-back">← Back home</a>
       <h1 class="gallery-detail__hero-title">{gallery.title}</h1>
     </div>
     <div class="gallery-detail__content">
