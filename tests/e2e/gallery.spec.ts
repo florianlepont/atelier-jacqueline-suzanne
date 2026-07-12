@@ -1,25 +1,27 @@
 import { test, expect } from '@playwright/test';
 
-// RED (Wave 0): the gallery listing/detail pages and the Lightbox island do
-// not exist yet — they are built in Plans 02-03 and 02-04. These assertions
-// target the real data/markup contracts documented in 02-RESEARCH.md (native
-// <dialog> lightbox, data-role="counter") and 02-UI-SPEC.md (accessible-name
-// copywriting contract) and are expected to FAIL until those plans land — do
-// not stub or weaken them to make them pass early.
+// Phase 04.3: the standalone /galleries listing route was removed (the
+// homepage grid is now the sole browse entry point, D-03/D-11). Discovery in
+// every block below starts from the homepage: navigate to "/", switch to
+// grid mode via the 'Grille' toggle button, then read the first
+// `.home-grid__tile` link's href — mirroring tests/e2e/homepage.spec.ts's
+// own grid-discovery pattern. Detail-page and lightbox assertions are
+// otherwise unchanged from before the route removal.
 
 test.describe('gallery listing', () => {
-  test('renders gallery cards and the first card matches the manually-ordered first gallery', async ({
+  test('homepage grid renders gallery tiles, and the first tile is clickable to its detail page (D-11)', async ({
     page,
   }) => {
-    await page.goto('/galleries/');
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
 
-    const cards = page.getByRole('link', { name: /voir la galerie/i });
-    await expect(cards.first()).toBeVisible();
+    const tiles = page.locator('.home-grid__tile');
+    await expect(tiles.first()).toBeVisible();
 
-    const firstCardName = (await cards.first().textContent())?.trim() ?? '';
-    expect(firstCardName.length).toBeGreaterThan(0);
+    const firstTileName = (await tiles.first().textContent())?.trim() ?? '';
+    expect(firstTileName.length).toBeGreaterThan(0);
 
-    const href = await cards.first().getAttribute('href');
+    const href = await tiles.first().getAttribute('href');
     expect(href).toMatch(/\/galleries\/[^/]+\/?$/);
   });
 });
@@ -28,19 +30,17 @@ test.describe('gallery detail', () => {
   test('renders the bilingual artist statement, differing between "/galleries/{slug}" and "/en/galleries/{slug}"', async ({
     page,
   }) => {
-    await page.goto('/galleries/');
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
 
-    const firstCardHref = await page
-      .getByRole('link', { name: /voir la galerie/i })
-      .first()
-      .getAttribute('href');
-    expect(firstCardHref).toBeTruthy();
+    const firstTileHref = await page.locator('.home-grid__tile').first().getAttribute('href');
+    expect(firstTileHref).toBeTruthy();
 
-    const slugMatch = firstCardHref!.match(/\/galleries\/([^/]+)\/?$/);
+    const slugMatch = firstTileHref!.match(/\/galleries\/([^/]+)\/?$/);
     const slug = slugMatch?.[1];
     expect(slug).toBeTruthy();
 
-    await page.goto(firstCardHref!);
+    await page.goto(firstTileHref!);
     const frStatement = (await page.locator('main').innerText()).trim();
     expect(frStatement.length).toBeGreaterThan(0);
 
@@ -56,15 +56,13 @@ test.describe('lightbox', () => {
   test('opens on thumbnail click, ArrowRight advances the counter, Escape closes and returns focus to the trigger', async ({
     page,
   }) => {
-    await page.goto('/galleries/');
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
 
-    const firstCardHref = await page
-      .getByRole('link', { name: /voir la galerie/i })
-      .first()
-      .getAttribute('href');
-    expect(firstCardHref).toBeTruthy();
+    const firstTileHref = await page.locator('.home-grid__tile').first().getAttribute('href');
+    expect(firstTileHref).toBeTruthy();
 
-    await page.goto(firstCardHref!);
+    await page.goto(firstTileHref!);
 
     const firstThumbnail = page
       .getByRole('button', { name: /voir en taille r.elle|view full size/i })
