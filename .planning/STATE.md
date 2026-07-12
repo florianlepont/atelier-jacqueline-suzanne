@@ -6,7 +6,7 @@ status: planning
 last_updated: "2026-07-12T12:20:31.777Z"
 last_activity: 2026-07-12
 progress:
-  total_phases: 0
+  total_phases: 1
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-05)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; checkout follows in v1.x.)
-**Current focus:** Phase 04.3 — homepage-refinements-logo-hover-crossfade-to-match-site-chro
+**Current focus:** Phase 6 — homepage view-mode toggle, grid hero & wordmark cutout (ROADMAP.md created, not yet planned)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: Phase 6 (Homepage View-Mode Toggle, Grid Hero & Wordmark Cutout) — roadmapped, not yet planned
 Plan: —
-Status: Defining requirements
-Last activity: 2026-07-12 — Milestone v1.1 started
+Status: Roadmap created, awaiting `/gsd-plan-phase 6`
+Last activity: 2026-07-12 — v1.1 ROADMAP.md created (HOME-01/02/03 mapped to Phase 6, 3/3 coverage)
 
 ## Performance Metrics
 
@@ -70,6 +70,7 @@ Last activity: 2026-07-12 — Milestone v1.1 started
 - Phase 04.2: Social Media Links (INSERTED after Phase 4, URGENT) — Instagram link in the footer and on the About/Contact page.
 - Phase 04.3 inserted after Phase 4: Homepage Refinements: logo hover crossfade, remove standalone Galleries page (grid view on homepage is now the sole browse entry point), icon-based carousel/grid toggle, fix mobile hero visibility bug, three-line wordmark, clickable gallery names in carousel + grid modes (URGENT)
 - Phase 04.3 planned: 3 plans, 2 waves — plan-checker VERIFICATION PASSED, all 11 CONTEXT.md decisions covered
+- v1.1 milestone (Homepage Refinements) roadmapped 2026-07-12: single new Phase 6 (integer, continuing numbering from v1.0's last phase, Phase 5) covers all three v1.1 requirements (HOME-01, HOME-02, HOME-03) — tightly-scoped, single-component (HomeCarousel.astro) refinement, so kept as one phase rather than split. Per PROJECT.md, Phase 6 is intended to execute before Phase 5's domain cutover despite the higher phase number (numbering reflects milestone-arrival order, not execution sequence).
 
 ### Decisions
 
@@ -79,6 +80,7 @@ Recent decisions affecting current work:
 - [Roadmap]: v1 milestone scoped to portfolio + about + contact + baseline legal + DNS cutover only; shop/checkout/exhibitions deferred to v1.x (separate future roadmap).
 - [Roadmap]: Bilingual routing + CMS scaffolding front-loaded into Phase 1 since I18N cross-cuts every later content phase.
 - [Roadmap]: Legal & Compliance (Phase 4) depends on Phase 3 (Contact) since the privacy notice must describe contact-form data handling.
+- [Roadmap]: v1.1 milestone (Homepage Refinements) mapped to a single new Phase 6, continuing integer numbering from v1.0's Phase 5 — all three requirements (HOME-01/02/03) touch the same component (HomeCarousel.astro) and are cosmetic/interaction refinements with no new backend/data model, so a single phase was judged more coherent than splitting.
 - [Phase 01]: No SSR adapter installed for Astro (output: 'static' framework default) per OVH static-hosting constraint — OVH Web Hosting is a zero-compute Apache file server; @astrojs/cloudflare/wrangler are explicitly excluded
 - [Phase 01]: Phase 1 staging deploys to GitHub Pages (repo now public) instead of an OVH subdomain; OVH SFTP facts recorded for Phase 5 — OVH Free hosting tier cannot attach any subdomain (multisite requires paid tier); GitHub Pages reuses existing repo with zero new signup and automatic HTTPS
 - [Phase 01]: Sanity read-only + one-time write tokens created and revoked entirely via CLI (sanity tokens add/delete), no dashboard visit needed — sanity tokens add/list/delete supports full non-interactive token lifecycle management
@@ -118,6 +120,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-11T17:47:00.000Z
-Stopped at: Phase 04.3 planned (3 plans, 2 waves, plan-checker passed)
-Resume file: .planning/phases/04.3-homepage-refinements-logo-hover-crossfade-to-match-site-chro/04.3-03-PLAN.md
+Last session: 2026-07-12T12:20:31.777Z
+Stopped at: v1.1 ROADMAP.md created (Phase 6 covers HOME-01/02/03, 3/3 coverage) — next step is `/gsd-plan-phase 6`
+Resume file: .planning/ROADMAP.md
+</content>

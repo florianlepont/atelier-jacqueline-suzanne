@@ -2,7 +2,9 @@
 
 ## Overview
 
-This roadmap covers the **v1 milestone only**: a fast, bilingual replacement of the current Myportfolio site with portfolio galleries, an About page, contact, baseline French legal pages, self-service gallery editing for Romane, and a rehearsed DNS cutover to the live domain. The journey starts with the bilingual/CMS/hosting foundation (since French/English and non-technical editing cross-cut every later page), moves through the two content pillars (portfolio, then about/contact), adds the legally-required pages, and ends with the domain cutover that retires the old site. Shop, checkout, shipping, and exhibitions (the v1.x wave) are explicitly deferred and are not represented here.
+This roadmap covers the **v1 milestone** (Phases 1–5): a fast, bilingual replacement of the current Myportfolio site with portfolio galleries, an About page, contact, baseline French legal pages, self-service gallery editing for Romane, and a rehearsed DNS cutover to the live domain. The journey starts with the bilingual/CMS/hosting foundation (since French/English and non-technical editing cross-cut every later page), moves through the two content pillars (portfolio, then about/contact), adds the legally-required pages, and ends with the domain cutover that retires the old site. Shop, checkout, shipping, and exhibitions (the v1.x wave) are explicitly deferred and are not represented here.
+
+It also covers the **v1.1 milestone** (Phase 6): homepage refinements — a single unified carousel/grid toggle, a grid view whose hero is the first grid tile instead of a separate band, and a transparent photo-cutout treatment for the hero wordmark. Per PROJECT.md, this milestone is intended to land before Phase 5's domain cutover, even though its phase number is higher (phase numbers reflect milestone-arrival order, not strict execution sequence — see the note under Progress).
 
 ## Phases
 
@@ -21,6 +23,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 04.2: Social Media Links (INSERTED)** - Instagram link visible in the footer and on the About/Contact page (completed 2026-07-10)
 - [x] **Phase 04.3: Homepage Refinements (INSERTED)** - Logo hover crossfade, single gallery-browsing entry point, icon-based mode toggle, mobile hero fix, three-line wordmark, clickable gallery names (completed 2026-07-12)
 - [ ] **Phase 5: Launch & Domain Cutover** - The new site is live at atelierjacquelinesuzanne.fr, replacing the old Myportfolio site
+- [ ] **Phase 6: Homepage View-Mode Toggle, Grid Hero & Wordmark Cutout** - Unified carousel/grid toggle button, grid view's hero becomes the first grid tile, and the wordmark gets a transparent photo-cutout treatment in carousel mode
 
 ## Phase Details
 
@@ -218,10 +221,28 @@ Plans:
 
 **Plans**: TBD
 
+### Phase 6: Homepage View-Mode Toggle, Grid Hero & Wordmark Cutout
+
+**Goal**: The homepage's view-mode control, grid layout, and hero wordmark read as one polished, coherent surface — a single toggle instead of two buttons, a grid view whose first tile *is* the hero (not a separate band above it), and a wordmark that visually reveals the hero photo through its own letterforms.
+**Mode:** mvp
+**Depends on**: Phase 04.3
+**Note**: Per PROJECT.md's v1.1 milestone goal, this phase is intended to execute *before* Phase 5's domain cutover, despite its higher phase number — numbering here reflects milestone-arrival order (v1.1 was scoped after v1's Phase 5 already existed in the roadmap), not execution sequence.
+**Requirements**: HOME-01, HOME-02, HOME-03
+**Success Criteria** (what must be TRUE):
+
+  1. Visitor sees a single button (not two separate carousel/grid buttons) to switch the homepage's display mode, and it visibly reflects which mode is currently active.
+  2. In grid view, the hero (wordmark + intro paragraph, no CTA button) renders as the first tile inside the grid itself, not as a separate full-width band above the grid.
+  3. In carousel mode, the "Atelier Jacqueline Suzanne" wordmark shows a transparent cutout effect — the hero photo is visible through the letterforms — and stays legible at typical desktop and mobile viewport widths.
+
+**Plans**: TBD
+**UI hint**: yes
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
+
+Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per PROJECT.md — see the Note under Phase 6 above. Phase numbering reflects milestone-arrival order, not strict execution sequence.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -230,7 +251,9 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 3. About & Contact | 3/3 | Complete    | 2026-07-08 |
 | 4. Legal & Compliance | 3/3 | Complete    | 2026-07-08 |
 | 5. Launch & Domain Cutover | 0/TBD | Not started | - |
+| 6. Homepage View-Mode Toggle, Grid Hero & Wordmark Cutout | 0/TBD | Not started | - |
 
 ## Milestone Scope Note
 
-This roadmap covers the **v1 milestone** (portfolio-replacement launch) only. The v1.x wave — exhibitions/agenda (EXHB-01, EXHB-02, CMS-02), shop (SHOP-01..04), checkout (CHK-01..05), shipping (SHIP-01, SHIP-02), commerce-specific legal (LEGAL-02, LEGAL-04), and related bilingual/CMS extensions (I18N-02b, I18N-03, CMS-03) — is tracked in REQUIREMENTS.md's v2 section and will get its own roadmap phases once v1 ships.
+This roadmap covers the **v1 milestone** (portfolio-replacement launch, Phases 1–5) and the **v1.1 milestone** (homepage refinements, Phase 6 — HOME-01, HOME-02, HOME-03). The v1.x wave — exhibitions/agenda (EXHB-01, EXHB-02, CMS-02), shop (SHOP-01..04), checkout (CHK-01..05), shipping (SHIP-01, SHIP-02), commerce-specific legal (LEGAL-02, LEGAL-04), and related bilingual/CMS extensions (I18N-02b, I18N-03, CMS-03) — is tracked in REQUIREMENTS.md's v2 section and will get its own roadmap phases once v1.1 ships.
+</content>

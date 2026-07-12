@@ -143,18 +143,21 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LEGAL-03 | Phase 4 | Complete |
 | LEGAL-05 | Phase 4 | Complete |
 | LAUNCH-01 | Phase 5 | Pending |
-| HOME-01 | TBD | Pending |
-| HOME-02 | TBD | Pending |
-| HOME-03 | TBD | Pending |
+| HOME-01 | Phase 6 | Pending |
+| HOME-02 | Phase 6 | Pending |
+| HOME-03 | Phase 6 | Pending |
 
 **Coverage:**
 
 - v1 requirements: 14 total
 - Mapped to phases: 14/14 ✓
 - Unmapped: 0
-- v1.1 (Homepage Refinements) requirements: 3 total, not yet mapped to phases — mapped during this milestone's roadmap creation
+- v1.1 (Homepage Refinements) requirements: 3 total
+- Mapped to phases: 3/3 ✓ (Phase 6)
+- Unmapped: 0
 - v2 (v1.x fast-follow) requirements: 17 tracked, not yet in roadmap (out of scope for this roadmap by design)
 
 ---
 *Requirements defined: 2026-07-05*
-*Last updated: 2026-07-05 after v1 roadmap creation (14/14 v1 requirements mapped to Phases 1-5)*
+*Last updated: 2026-07-12 after v1.1 roadmap creation (3/3 v1.1 requirements mapped to Phase 6)*
+</content>
