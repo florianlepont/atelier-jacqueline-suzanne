@@ -631,7 +631,15 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        selector only, not the shared --text-display-size token. */
     font-size: 64px;
     font-weight: var(--weight-semibold);
-    line-height: 1.2;
+    /* 1.6, not the site-wide 1.2 Display line-height: Anton's rendered glyph
+       box (ascent+descent) at this size measures ~1.5x font-size, taller
+       than a 1.2 line-height's own line box — verified via
+       Range.getBoundingClientRect() on each <br>-separated line, which
+       showed ~19px of vertical overlap between adjacent lines at 1.2. 1.6
+       clears that overlap with a small margin at both the 64px desktop and
+       48px mobile sizes (mobile inherits this value; only font-size is
+       overridden below). */
+    line-height: 1.6;
     letter-spacing: 0.02em;
     margin: 0 0 var(--space-md);
     /* Fallback (unsupported engines, effectively unreachable in 2026
@@ -675,8 +683,19 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
   /* D-04/D-05/D-06: grid-mode hero is now the first *tile* of the grid
      itself (not a full-width band) — a non-link <div>, same square sizing
-     as every gallery tile, solid accent background (no photo/cutout). */
-  .home-grid__tile--hero {
+     as every gallery tile, solid accent background (no photo/cutout).
+     Compound selector (.home-grid__tile.home-grid__tile--hero), not a bare
+     .home-grid__tile--hero: the generic .home-grid__tile rule below shares
+     this element (both classes are on the same <div>) and also sets
+     `display`, at equal single-class specificity — since it appears later
+     in source order it was silently winning and collapsing this rule's
+     `display: flex` back to `display: block`, losing the vertical-centering
+     layout (confirmed via getComputedStyle: display read "block" here
+     despite this rule; aspect-ratio/position/overflow were unaffected since
+     only .home-grid__tile itself declares those). The two-class selector
+     raises specificity so this rule's `display` always wins regardless of
+     source order. */
+  .home-grid__tile.home-grid__tile--hero {
     background-color: var(--current-accent, var(--color-accent));
     color: var(--color-on-accent);
     padding: var(--space-md);
