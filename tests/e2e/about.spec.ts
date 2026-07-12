@@ -66,8 +66,11 @@ test.describe('about page content', () => {
     // — no About/Contact) per 04.1-UI-SPEC.md's Layout Notes, matching the
     // imported design prototype. The standard site-wide header (with the
     // About link) still renders on every other page, so this checks
-    // reachability from there instead of "/".
-    await page.goto('/galleries/');
+    // reachability from there instead of "/". Phase 04.3 removed the
+    // standalone /galleries listing route (D-03), so this now originates
+    // from /contact/ — another surviving BaseLayout page whose header still
+    // exposes the About link.
+    await page.goto('/contact/');
 
     await page.locator('header').getByRole('link', { name: 'À propos' }).click();
 
