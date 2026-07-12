@@ -351,10 +351,28 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     color: var(--color-ink);
   }
 
-  /* D-01/D-02: two stacked <img> elements + dark backdrop chip, opacity
-     crossfade on hover/focus — mirrors BaseLayout.astro's .logo-mark
-     mechanism exactly, scoped by data-display-mode instead of a
-     site-header--solid/--transparent class. */
+  /* D-01/D-02 (revised per logo-hover-and-font debug session): two
+     normal-flow <img> elements, hard display:none/block swap on hover —
+     mirrors BaseLayout.astro's .logo-mark mechanism exactly (matches the
+     reference site's own hover MECHANIC, verified byte-for-byte against its
+     compiled CSS: a display:none/block toggle between two same-size images,
+     no transition/opacity), scoped by data-display-mode instead of a
+     site-header--solid/--transparent class. Deliberately NOT
+     absolutely-positioned — an earlier version stacked the hover image with
+     `position: absolute` while the default used `display: none` on hover,
+     which collapsed `.home-logo`'s own box to 0x0 (no in-flow child left)
+     and shifted the sibling nav layout on hover. Both logo PNGs share the
+     same intrinsic aspect ratio, so swapping which one is in-flow causes no
+     layout jump.
+
+     The dark `__chip` backdrop is KEPT (unlike the original fix plan) but
+     changed from an opacity-fade to the same instant display:none/block
+     toggle as the images — see BaseLayout.astro's matching comment: the
+     reference site's own rollover PNG asset has an opaque black background
+     baked into the file itself (verified by downloading and viewing it),
+     which is how it stays legible over a white header. Our white logo
+     variant is a transparent PNG, so without an instant backdrop the hover
+     state is nearly invisible against the light grid-mode header. */
   .home-logo {
     position: relative;
     display: inline-flex;
@@ -367,8 +385,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     inset: calc(-1 * var(--space-sm));
     background-color: var(--color-ink);
     border-radius: var(--radius-none);
-    opacity: 0;
-    transition: opacity 150ms ease;
+    display: none;
     z-index: 0;
   }
 
@@ -381,29 +398,57 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
   }
 
   .home-logo__img--hover {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    transition: opacity 150ms ease;
+    display: none;
   }
 
   /* Grid mode mirrors .site-header--solid: default = black logo;
-     hover/focus-within cross-fades to the white variant over the dark chip. */
-  .home[data-display-mode='grid'] .home-logo:hover .home-logo__chip,
-  .home[data-display-mode='grid'] .home-logo:focus-within .home-logo__chip,
-  .home[data-display-mode='grid'] .home-logo:hover .home-logo__img--hover,
-  .home[data-display-mode='grid'] .home-logo:focus-within .home-logo__img--hover {
-    opacity: 1;
+     hover/focus-within hard-swaps to the white variant over the instantly-
+     shown dark chip, no transition. */
+  .home[data-display-mode='grid'] .home-logo:hover .home-logo__img--default,
+  .home[data-display-mode='grid'] .home-logo:focus-within .home-logo__img--default {
+    display: none;
   }
 
-  /* Carousel mode mirrors .site-header--transparent: white logo variant
-     shown by default over the existing hero gradient scrim — no hover swap. */
+  .home[data-display-mode='grid'] .home-logo:hover .home-logo__img--hover,
+  .home[data-display-mode='grid'] .home-logo:focus-within .home-logo__img--hover,
+  .home[data-display-mode='grid'] .home-logo:hover .home-logo__chip,
+  .home[data-display-mode='grid'] .home-logo:focus-within .home-logo__chip {
+    display: block;
+  }
+
+  /* Carousel mode mirrors .site-header--transparent (revised per
+     logo-hover-and-font debug session, Round 2): white logo variant shown by
+     default over the existing hero gradient scrim — unchanged. Hover/
+     focus-within now hard-swaps to the BLACK variant, same mechanic as grid
+     mode, but with a LIGHT chip instead of grid mode's dark chip — the black
+     hover-logo would be invisible against both the dark hero photo and a
+     dark chip, so the backdrop color must flip with the logo color. */
   .home[data-display-mode='carousel'] .home-logo__img--default {
-    opacity: 0;
+    display: none;
   }
 
   .home[data-display-mode='carousel'] .home-logo__img--hover {
-    opacity: 1;
+    display: block;
+  }
+
+  .home[data-display-mode='carousel'] .home-logo:hover .home-logo__img--hover,
+  .home[data-display-mode='carousel'] .home-logo:focus-within .home-logo__img--hover {
+    display: none;
+  }
+
+  .home[data-display-mode='carousel'] .home-logo:hover .home-logo__img--default,
+  .home[data-display-mode='carousel'] .home-logo:focus-within .home-logo__img--default,
+  .home[data-display-mode='carousel'] .home-logo:hover .home-logo__chip,
+  .home[data-display-mode='carousel'] .home-logo:focus-within .home-logo__chip {
+    display: block;
+  }
+
+  /* Mode-aware chip color: grid mode's chip (behind the white hover-logo,
+     base .home-logo__chip rule above) stays dark (--color-ink) — this
+     override only applies in carousel mode, behind the black hover-logo, so
+     it must be light instead. */
+  .home[data-display-mode='carousel'] .home-logo__chip {
+    background-color: var(--color-dominant);
   }
 
   .home-nav {
@@ -574,7 +619,13 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
   .home-hero__wordmark {
     font-family: var(--font-display);
-    font-size: 32px; /* Display role, fixed */
+    /* 44px (up from 32px, logo-hover-and-font debug session Round 2 — user
+       feedback: "might be a little bigger in the hero"). Scoped to this
+       selector only, not the shared --text-display-size token, since the
+       request was specifically about the hero wordmark's visual weight
+       against the accent panel, not every Display-role text on the site
+       (e.g. .home-grid__tile-title stays at 32px). */
+    font-size: 44px;
     font-weight: var(--weight-semibold);
     line-height: 1.2;
     letter-spacing: 0.02em;
@@ -611,7 +662,9 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
   .home-grid__wordmark {
     font-family: var(--font-display);
-    font-size: 32px; /* Display role, fixed */
+    /* 44px — matches .home-hero__wordmark's bump (see comment there); same
+       wordmark text, same treatment in both modes for consistency. */
+    font-size: 44px;
     font-weight: var(--weight-semibold);
     line-height: 1.2;
     letter-spacing: 0.02em;

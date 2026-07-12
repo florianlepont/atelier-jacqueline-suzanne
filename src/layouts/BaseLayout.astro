@@ -6,11 +6,15 @@
 import { getRelativeLocaleUrl } from 'astro:i18n';
 import { getSiteSettings } from '../lib/sanity';
 import LanguageSwitcher from '../components/LanguageSwitcher.astro';
-// D-02/RESEARCH.md Pattern 1: self-hosted Archivo Black (Heading/Display
-// role) — bundles the woff2 + @font-face at build time, no Google Fonts CDN
-// request (Pitfall 1 — keeps the shipped privacy policy's data-flow
-// enumeration accurate).
-import '@fontsource/archivo-black';
+// D-02/RESEARCH.md Pattern 1: self-hosted Anton (Heading/Display role) —
+// bundles the woff2 + @font-face at build time, no Google Fonts CDN request
+// (Pitfall 1 — keeps the shipped privacy policy's data-flow enumeration
+// accurate). Swapped from Archivo Black per the logo-hover-and-font debug
+// session: Archivo Black was a self-flagged, unresearched placeholder
+// (.planning/design-import/design-system/tokens/fonts.css); Anton's
+// condensed, heavier black weight is a closer visual match to the AJS
+// wordmark logo's hand-cut brutalist character. Pending user visual sign-off.
+import '@fontsource/anton';
 
 interface Props {
   title: string;
@@ -169,7 +173,7 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
 
     /* Typography roles (04.1-UI-SPEC.md Typography) */
     --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-    --font-display: 'Archivo Black', var(--font-sans);
+    --font-display: 'Anton', var(--font-sans);
     --weight-regular: 400;
     --weight-semibold: 600;
 
@@ -303,8 +307,30 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
     color: #FFFFFF;
   }
 
-  /* D-11/D-13/RESEARCH.md Pattern 3: two stacked <img> elements, hover-invert
-     via opacity cross-fade. */
+  /* D-11/D-13/RESEARCH.md Pattern 3 (revised per logo-hover-and-font debug
+     session): two normal-flow <img> elements, hard display:none/block swap
+     on hover — matches the reference site's own hover MECHANIC exactly
+     (verified byte-for-byte against its compiled CSS: `.image-link` is
+     `display: inline-block`, `.image-rollover` is `display: none` by
+     default, swapped on hover, no transition/opacity). Deliberately NOT
+     absolutely-positioned: an earlier version of this fix stacked the hover
+     image with `position: absolute` while the default image used
+     `display: none` on hover, which collapsed `.logo-mark`'s own box to 0x0
+     (no in-flow child left) and shifted the sibling nav layout on hover.
+     Both logo PNGs share the same intrinsic aspect ratio, so swapping which
+     one is in-flow causes no layout jump.
+
+     The dark `__chip` backdrop is KEPT (unlike the original fix plan) but
+     changed from an opacity-fade to the same instant display:none/block
+     toggle as the images — verified by downloading the reference site's own
+     rollover PNG asset (not just its CSS) that its "hover" logo has an
+     opaque black background baked directly into the image file, which is
+     how it stays legible over the white header. Our white logo variant
+     (AJS_Brutalist_White_Transparent.png) is transparent, so without an
+     instant backdrop behind it, the hover state is nearly invisible against
+     a light header — reproducing the reference's CSS literally without this
+     would visually regress legibility versus both the reference site and
+     the pre-fix implementation. */
   .logo-mark {
     position: relative;
     display: inline-flex;
@@ -312,16 +338,12 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
     text-decoration: none;
   }
 
-  /* Dark backdrop chip (logo bounding box + --space-sm padding, --radius-none
-     square corners) so the white PNG variant stays legible when it fades in
-     over the white solid header (UI-SPEC Layout Notes — Header). */
   .logo-mark__chip {
     position: absolute;
     inset: calc(-1 * var(--space-sm));
     background-color: var(--color-ink);
     border-radius: var(--radius-none);
-    opacity: 0;
-    transition: opacity 150ms ease;
+    display: none;
     z-index: 0;
   }
 
@@ -334,29 +356,58 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
   }
 
   .logo-mark__img--hover {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    transition: opacity 150ms ease;
+    display: none;
   }
 
-  /* Solid header: default = black logo; hover/focus-within cross-fades to
-     the white variant over the dark chip. */
-  .site-header--solid .logo-mark:hover .logo-mark__chip,
-  .site-header--solid .logo-mark:focus-within .logo-mark__chip,
+  /* Solid header: default = black logo; hover/focus-within hard-swaps to the
+     white variant over the instantly-shown dark chip, no transition. */
+  .site-header--solid .logo-mark:hover .logo-mark__img--default,
+  .site-header--solid .logo-mark:focus-within .logo-mark__img--default {
+    display: none;
+  }
+
   .site-header--solid .logo-mark:hover .logo-mark__img--hover,
-  .site-header--solid .logo-mark:focus-within .logo-mark__img--hover {
-    opacity: 1;
+  .site-header--solid .logo-mark:focus-within .logo-mark__img--hover,
+  .site-header--solid .logo-mark:hover .logo-mark__chip,
+  .site-header--solid .logo-mark:focus-within .logo-mark__chip {
+    display: block;
   }
 
-  /* Transparent header: white logo variant shown by default (over the dark
-     scrim already provided by the header background) — no hover swap. */
+  /* Transparent header (revised per logo-hover-and-font debug session, Round
+     2): white logo variant shown by default (over the dark scrim already
+     provided by the header background) — unchanged. Hover/focus-within now
+     hard-swaps to the BLACK variant, same mechanic as the solid header, but
+     with a LIGHT chip instead of the solid header's dark chip — the black
+     hover-logo would be invisible against both the dark scrim and a dark
+     chip, so the backdrop color must flip with the logo color, not stay
+     fixed. Used on gallery-detail pages (dark hero background) as well as
+     any other transparent-header page. */
   .site-header--transparent .logo-mark__img--default {
-    opacity: 0;
+    display: none;
   }
 
   .site-header--transparent .logo-mark__img--hover {
-    opacity: 1;
+    display: block;
+  }
+
+  .site-header--transparent .logo-mark:hover .logo-mark__img--hover,
+  .site-header--transparent .logo-mark:focus-within .logo-mark__img--hover {
+    display: none;
+  }
+
+  .site-header--transparent .logo-mark:hover .logo-mark__img--default,
+  .site-header--transparent .logo-mark:focus-within .logo-mark__img--default,
+  .site-header--transparent .logo-mark:hover .logo-mark__chip,
+  .site-header--transparent .logo-mark:focus-within .logo-mark__chip {
+    display: block;
+  }
+
+  /* Mode-aware chip color: solid header's chip (behind the white hover-logo)
+     stays dark (--color-ink, the base .logo-mark__chip rule above) — this
+     override only applies inside the transparent header, behind the black
+     hover-logo, so it must be light instead. */
+  .site-header--transparent .logo-mark__chip {
+    background-color: var(--color-dominant);
   }
 
   .site-nav {
