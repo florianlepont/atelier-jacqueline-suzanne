@@ -649,6 +649,16 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       background-clip: text;
       color: transparent;
       -webkit-text-fill-color: transparent;
+      /* Live-verification finding (Task 3): the plain cutout is illegible
+         wherever the underlying photo crop is busy/low-contrast near a
+         letter's edge (confirmed on both the Silos and Brume galleries — the
+         third line consistently vanished into the photo). A soft dark
+         text-shadow paints around the glyph outline (independent of the
+         transparent fill) to give every letter a contrast edge against any
+         photo content, without adding a solid backing that would defeat the
+         cutout (D-08's own "must be verified live, must remain legible"
+         requirement, resolved via Claude's discretion per D-08/D-09). */
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55), 0 0 18px rgba(0, 0, 0, 0.45);
     }
   }
 
