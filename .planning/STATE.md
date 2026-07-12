@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
 status: Roadmap created, awaiting `/gsd-plan-phase 6`
-stopped_at: Phase 6 context gathered
-last_updated: "2026-07-12T12:46:30.714Z"
+stopped_at: Phase 6 UI-SPEC approved
+last_updated: "2026-07-12T12:54:39.542Z"
 last_activity: 2026-07-12 — v1.1 ROADMAP.md created (HOME-01/02/03 mapped to Phase 6, 3/3 coverage)
 progress:
   total_phases: 9
@@ -121,7 +121,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-12T12:46:30.709Z
-Stopped at: Phase 6 context gathered
-Resume file: .planning/phases/06-homepage-view-mode-toggle-grid-hero-wordmark-cutout/06-CONTEXT.md
+Last session: 2026-07-12T12:54:39.539Z
+Stopped at: Phase 6 UI-SPEC approved
+Resume file: .planning/phases/06-homepage-view-mode-toggle-grid-hero-wordmark-cutout/06-UI-SPEC.md
 </content>
