@@ -109,6 +109,70 @@ test.describe('i18n non-regression guard', () => {
   });
 });
 
+// D-02 (Phase 6): the toggle's accessible name is now state-dependent on a
+// SINGLE button (not two independently, statically-named buttons as locked
+// by Phase 04.3's D-07). This intentionally supersedes 04.3's two-button
+// model — do NOT "restore" a two-button count assertion here; a future
+// reviewer should treat `data-role="mode-toggle"` count === 1 as the
+// contract, not a regression.
+test.describe('single unified mode toggle (HOME-01, D-01/D-02)', () => {
+  test('exactly one toggle button exists and its accessible name flips with display mode', async ({ page }) => {
+    await page.goto('/');
+
+    const toggle = page.locator('[data-role="mode-toggle"]');
+    await expect(toggle).toHaveCount(1);
+    await expect(page.locator('.home-toggle__btn')).toHaveCount(0);
+
+    await expect(toggle).toHaveAttribute('aria-label', 'Grille');
+
+    await toggle.click();
+    await expect(page.locator('[data-role="home-carousel"]')).toBeHidden();
+    await expect(page.locator('[data-role="home-grid"]')).toBeVisible();
+    await expect(toggle).toHaveAttribute('aria-label', 'Carrousel');
+
+    await toggle.click();
+    await expect(page.locator('[data-role="home-carousel"]')).toBeVisible();
+    await expect(toggle).toHaveAttribute('aria-label', 'Grille');
+  });
+});
+
+test.describe('grid hero-as-first-tile (HOME-02, D-04/D-06)', () => {
+  test('the old intro band is gone; the grid hero is a non-link first tile', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+
+    await expect(page.locator('.home-grid__intro')).toHaveCount(0);
+
+    const firstTile = page.locator('.home-grid__tiles > :first-child');
+    await expect(firstTile).toHaveClass(/home-grid__tile--hero/);
+    await expect(firstTile).toContainText(/Atelier/);
+    const tagName = await firstTile.evaluate((el) => el.tagName);
+    expect(tagName).toBe('DIV');
+    await expect(firstTile).not.toHaveAttribute('href', /.*/);
+  });
+});
+
+test.describe('carousel wordmark cutout (HOME-03, D-08)', () => {
+  test('the wordmark uses background-clip:text with a photo background-image', async ({ page }) => {
+    await page.goto('/');
+
+    const wordmark = page.locator('.home-hero__wordmark');
+    const { clip, bg } = await wordmark.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        clip: style.webkitBackgroundClip || style.backgroundClip,
+        bg: style.backgroundImage,
+      };
+    });
+
+    expect(clip).toContain('text');
+    expect(bg).toContain('url(');
+    // Whether the photo is actually legible through the letters is confirmed
+    // live in the phase's checkpoint task per D-08 — computed style alone
+    // cannot assert visual legibility, so no pixel assertion here.
+  });
+});
+
 test.describe('mobile hero visibility (D-08)', () => {
   test('hero renders visibly at a 375px-wide viewport, not collapsed/blank', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
@@ -125,16 +189,17 @@ test.describe('mobile hero visibility (D-08)', () => {
     expect(imageBox?.height ?? 0).toBeGreaterThan(0);
 
     // Regression guard for the root cause found while fixing D-08: on
-    // mobile the accent panel (wordmark/intro/CTA) used to become a
+    // mobile the accent panel (wordmark/intro) used to become a
     // statically-positioned box, dropping it out of the stacking layer
     // that the (opaque) hero photo paints in — visually burying the
     // accent panel's content under the photo even though every element
-    // individually reported non-zero size/visibility. A plain click
-    // only succeeds if the CTA is not obscured by another element, so
-    // this exercises the real bug, not just each element's own box.
-    const cta = page.getByRole('button', { name: /découvrir les autres galeries/i });
-    await expect(cta).toBeVisible();
-    await cta.click();
+    // individually reported non-zero size/visibility. Per D-10 the CTA
+    // that used to exercise this is gone, so the wordmark itself is the
+    // regression witness now.
+    const wordmark = page.locator('.home-hero__wordmark');
+    await expect(wordmark).toBeVisible();
+
+    await page.getByRole('button', { name: 'Grille' }).click();
     await expect(page.locator('[data-role="home-grid"]')).toBeVisible();
   });
 });
