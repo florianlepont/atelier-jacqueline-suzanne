@@ -19,7 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Legal & Compliance** - Mentions légales, privacy/GDPR notice, and CNIL-compliant cookie consent are live (completed 2026-07-08)
 - [x] **Phase 04.1: Design System & Homepage Refresh (INSERTED)** - Adopt the imported design system's rebrand and rebuild the homepage per the imported prototype (completed 2026-07-10)
 - [x] **Phase 04.2: Social Media Links (INSERTED)** - Instagram link visible in the footer and on the About/Contact page (completed 2026-07-10)
-- [ ] **Phase 04.3: Homepage Refinements (INSERTED)** - Logo hover crossfade, single gallery-browsing entry point, icon-based mode toggle, mobile hero fix, three-line wordmark, clickable gallery names
+- [x] **Phase 04.3: Homepage Refinements (INSERTED)** - Logo hover crossfade, single gallery-browsing entry point, icon-based mode toggle, mobile hero fix, three-line wordmark, clickable gallery names (completed 2026-07-12)
 - [ ] **Phase 5: Launch & Domain Cutover** - The new site is live at atelierjacquelinesuzanne.fr, replacing the old Myportfolio site
 
 ## Phase Details
@@ -161,7 +161,7 @@ Plans:
 
 **Requirements**: TBD (UI/UX refinement on top of shipped PORT-01/PORT-02 coverage — no new REQ-IDs)
 **Depends on:** Phase 04.1, Phase 04.2
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 **Wave 1** *(disjoint file sets — run in parallel)*
@@ -171,7 +171,7 @@ Plans:
 
 **Wave 2** *(blocked on both Wave 1 plans — full e2e/unit green gate)*
 
-- [ ] 04.3-03-PLAN.md — Reconcile e2e specs to the /galleries removal: gallery.spec grid discovery (+ D-11 verify), about/contact reachability repoint (Wave 2)
+- [x] 04.3-03-PLAN.md — Reconcile e2e specs to the /galleries removal: gallery.spec grid discovery (+ D-11 verify), about/contact reachability repoint (Wave 2)
 
 ### Phase 04.1: Design System & Homepage Refresh (INSERTED)
 

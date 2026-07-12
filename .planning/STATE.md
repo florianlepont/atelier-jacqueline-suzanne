@@ -2,18 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 04.3
-current_phase_name: homepage-refinements
 status: executing
-stopped_at: Phase 04.3 planned (3 plans, plan-checker passed)
-last_updated: "2026-07-11T17:35:55.921Z"
-last_activity: 2026-07-11
-last_activity_desc: Phase 04.3 execution started
+stopped_at: Phase 04.3 planned (3 plans, 2 waves, plan-checker passed)
+last_updated: "2026-07-12T06:29:34.932Z"
+last_activity: 2026-07-12 -- Phase 04.3 execution started
 progress:
   total_phases: 8
   completed_phases: 6
   total_plans: 25
-  completed_plans: 22
+  completed_plans: 24
   percent: 75
 ---
 
@@ -24,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-05)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; checkout follows in v1.x.)
-**Current focus:** Phase 04.3 — homepage-refinements
+**Current focus:** Phase 04.3 — homepage-refinements-logo-hover-crossfade-to-match-site-chro
 
 ## Current Position
 
-Phase: 04.3 (homepage-refinements) — EXECUTING
+Phase: 04.3 (homepage-refinements-logo-hover-crossfade-to-match-site-chro) — EXECUTING
 Plan: 1 of 3
 Status: Executing Phase 04.3
-Last activity: 2026-07-11 — Phase 04.3 execution started
+Last activity: 2026-07-12 -- Phase 04.3 execution started
 
 Progress: [██████████] 100%
 
