@@ -97,16 +97,14 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         data-label-grid={toggleGridLabel}
         aria-label={toggleGridLabel}
       >
-        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" class="home-toggle__icon home-toggle__icon--carousel">
-          <rect x="2" y="4" width="16" height="12" rx="1" stroke="currentColor" stroke-width="1.5" />
-          <path d="M8 7.5v5l4.5-2.5-4.5-2.5z" fill="currentColor" />
-        </svg>
-        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" class="home-toggle__icon home-toggle__icon--grid">
-          <rect x="2" y="2" width="7" height="7" stroke="currentColor" stroke-width="1.5" />
-          <rect x="11" y="2" width="7" height="7" stroke="currentColor" stroke-width="1.5" />
-          <rect x="2" y="11" width="7" height="7" stroke="currentColor" stroke-width="1.5" />
-          <rect x="11" y="11" width="7" height="7" stroke="currentColor" stroke-width="1.5" />
-        </svg>
+        <span aria-hidden="true" class="home-toggle__morph">
+          <span class="home-toggle__morph-cell"></span>
+          <span class="home-toggle__morph-cell"></span>
+          <span class="home-toggle__morph-cell"></span>
+          <span class="home-toggle__morph-cell"></span>
+          <span class="home-toggle__morph-cell"></span>
+          <span class="home-toggle__morph-cell"></span>
+        </span>
       </button>
       <LanguageSwitcher />
     </header>
@@ -293,6 +291,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         // attributes (the plain module script can't read frontmatter vars).
         const modeToggleBtn = root.querySelector<HTMLButtonElement>('[data-role="mode-toggle"]');
         modeToggleBtn?.addEventListener('click', () => {
+          // Stop the periodic attention-pulse (see .home-toggle--used in
+          // the <style> block) for good once the visitor has actually
+          // found and used the control — no reason to keep nudging it.
+          modeToggleBtn.classList.add('home-toggle--used');
           if (root!.dataset.displayMode === 'carousel') {
             showGrid();
             modeToggleBtn.setAttribute('aria-label', modeToggleBtn.dataset.labelCarousel ?? '');
@@ -501,19 +503,112 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     text-decoration: underline;
   }
 
-  /* D-01: single toggle button holds BOTH icons; the icon shown is the icon
-     of the mode you'd switch TO, mirroring the aria-label. Same
-     data-display-mode-driven show/hide mechanic as the logo swap above. */
-  .home-toggle__icon {
-    display: none;
+  /* Direct user feedback: the bare 20x20 icon (no border/background) didn't
+     read as an interactive button among the nav's plain text links — give
+     it a visible box so it looks distinctly clickable, matching the site's
+     square-cornered (--radius-none) brutalist language rather than a
+     rounded chip. */
+  .home-toggle {
+    border: 1.5px solid currentColor;
+    padding: var(--space-xs);
   }
 
-  .home[data-display-mode='carousel'] .home-toggle__icon--grid {
-    display: block;
+  .home-toggle:hover,
+  .home-toggle:focus-visible {
+    background-color: currentColor;
   }
 
-  .home[data-display-mode='grid'] .home-toggle__icon--carousel {
-    display: block;
+  .home-toggle:hover .home-toggle__morph-cell,
+  .home-toggle:focus-visible .home-toggle__morph-cell {
+    /* Invert the cells' own fill against the now-solid currentColor
+       background above (background-color, not color — each cell paints
+       itself via background-color: currentColor, not an SVG stroke/fill),
+       so they stay visible instead of disappearing into a same-color
+       backdrop. */
+    background-color: var(--current-accent, var(--color-accent));
+  }
+
+  .home[data-display-mode='grid'] .home-toggle:hover .home-toggle__morph-cell,
+  .home[data-display-mode='grid'] .home-toggle:focus-visible .home-toggle__morph-cell {
+    background-color: var(--color-dominant);
+  }
+
+  /* Direct user feedback: draw temporary attention to the toggle so first-
+     time visitors notice it exists, without permanently animating a control
+     they've already found. A bounded pulse (3 iterations, ~1.5s total)
+     starting shortly after the page settles. Direct follow-up feedback:
+     visitors may not be looking at exactly that moment, so this repeats
+     periodically (a brief double-pulse every 6s, mostly at rest in
+     between) rather than firing once and going quiet for good — "pour
+     attirer l'oeil" even without a click. Stops permanently once the
+     visitor actually clicks it (see .home-toggle--used below, set by the
+     click handler in the <script> block) — no reason to keep nudging a
+     control they've already found and used. Respects
+     prefers-reduced-motion throughout. */
+  @media (prefers-reduced-motion: no-preference) {
+    @keyframes home-toggle-attention {
+      0%,
+      75%,
+      100% {
+        transform: scale(1);
+      }
+      82%,
+      92% {
+        transform: scale(1.15);
+      }
+      87% {
+        transform: scale(1);
+      }
+    }
+
+    .home-toggle:not(.home-toggle--used) {
+      animation: home-toggle-attention 6s ease-in-out infinite;
+      animation-delay: 1.2s;
+    }
+  }
+
+  /* D-01 (revised per direct user reference — a "carousel to grid material
+     icon" morph animation, not a hard icon swap): a single 6-cell CSS grid
+     icon (2 rows x 3 cols, matching the reference image exactly) whose gap
+     animates between two states, rather than two separate SVGs shown/
+     hidden via display. When gap is 0, each row's 3 cells sit flush against
+     each other with no visible seam (same solid currentColor fill, no
+     border) and read as one continuous bar — the carousel/list glyph. When
+     gap opens up, the same 6 cells read as a 3x2 grid — the grid glyph.
+     Only the gap value changes; the 6 elements themselves never move,
+     resize, or get replaced, so the browser can animate the transition
+     smoothly for free via `transition: gap`. */
+  .home-toggle__morph {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    width: 20px;
+    height: 14px;
+    /* row-gap is fixed, never animated — it's what keeps the icon reading
+       as "2 bars" even once each bar's 3 cells merge into one (see
+       column-gap below). Animating the shorthand `gap` collapsed row-gap
+       to 0 too, which merged all 6 cells into a single solid block instead
+       of two distinct bars — confirmed via a live screenshot before this
+       fix, not guessed. */
+    row-gap: 2px;
+    column-gap: 0;
+    transition: column-gap 280ms ease;
+  }
+
+  .home-toggle__morph-cell {
+    background-color: currentColor;
+  }
+
+  /* Icon shown is the icon of the mode you'd switch TO, mirroring the
+     aria-label (unchanged from D-01's original intent) — carousel mode
+     shows the grid glyph (gap open), grid mode shows the bars glyph
+     (gap closed). */
+  .home[data-display-mode='carousel'] .home-toggle__morph {
+    column-gap: 2px;
+  }
+
+  .home[data-display-mode='grid'] .home-toggle__morph {
+    column-gap: 0;
   }
 
   /* Carousel mode — full-viewport hero photo + scrim + caption + accent
@@ -526,8 +621,45 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
      instead of chasing another guessed pixel value. */
   .home-hero {
     position: relative;
-    height: 100vh;
+    /* Explicit width required: without it, the browser treats aspect-ratio
+       + max-height together as "solve for width" once max-height clamps
+       the height, shrinking the hero narrower than the viewport (confirmed
+       via live measurement — a 1920x700 window produced a 1244px-wide
+       hero, leaving visible gaps left/right) instead of just capping
+       height and keeping it full-bleed. */
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    /* Without a ceiling, aspect-ratio derives height purely from width — on
+       a wide/short browser window that height can exceed the actual
+       viewport (unlike the previous height:100vh, which was always capped
+       to the viewport by definition), making the whole page noticeably
+       taller/scrollier than before. max-height keeps the 16:9 look on
+       narrower windows while never letting the hero alone exceed one
+       screen's height. */
+    max-height: 100vh;
     overflow: hidden;
+    /* Establishes a block formatting context so a child's margin-top (see
+       .home-hero__accent's mobile margin-top below, added to clear the
+       header) can't collapse through and shift .home-hero itself down
+       instead of creating space inside it — confirmed via live measurement
+       that without this, the accent panel's margin-top moved the whole
+       .home-hero section (and everything in it, header included) down by
+       the same amount, leaving header and accent panel still perfectly
+       overlapping, just both shifted down together. */
+    display: flow-root;
+  }
+
+  /* Explicit override, required: an author-stylesheet `.home-hero { display:
+     flow-root }` (above) has the same specificity (0,1,0) as the browser's
+     default `[hidden] { display: none }` UA-stylesheet rule, and author
+     rules always win over UA defaults regardless of source order — so once
+     .home-hero declared its own `display`, toggling the `hidden` attribute
+     (via showCarousel()/showGrid() in the client script) silently stopped
+     hiding it, breaking the carousel/grid mode switch (caught by the
+     existing e2e suite, not a hunch). This restores the intended behavior
+     explicitly rather than relying on the UA default. */
+  .home-hero[hidden] {
+    display: none;
   }
 
   .home-hero__img {
@@ -601,6 +733,19 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     line-height: 1.2;
     margin: 0 0 var(--space-xs);
     color: #FFFFFF;
+    /* Direct user feedback: nothing distinguished this from a plain
+       caption heading, so visitors weren't discovering it's a link to the
+       gallery. Persistent underline (not hover-only — hover affordances
+       don't help touch/mobile users decide whether to tap in the first
+       place) plus a visible hover/focus state for pointer users. */
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    display: inline-block;
+  }
+
+  .home-hero__title:hover,
+  .home-hero__title:focus-visible {
+    color: var(--current-accent, var(--color-accent));
   }
 
   .home-hero__byline {
@@ -615,31 +760,59 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     position: absolute;
     right: var(--space-md);
     bottom: var(--space-md);
-    width: min(560px, 52%);
+    /* Widened from 560px: at the bigger 64px wordmark size (below), the
+       longest line ("JACQUELINE", ~545px wide incl. letter-spacing) needed
+       more room than the old 560px panel (496px inner width after padding)
+       could fit without overflowing past the panel's own edge — live-
+       measured via a temporary off-screen span at each candidate size
+       before picking values, not guessed. 680px gives ~616px of inner
+       width, comfortable clearance for the widest line. */
+    width: min(680px, 56%);
     padding: var(--space-xl);
     z-index: 3;
+    /* Solid "paper" backing for the whole panel (wordmark + intro together),
+       cycling per-gallery via --current-accent (set by render()). This is
+       what makes the wordmark below read as letters CUT OUT of a solid
+       sheet, revealing the photo behind through the cutout shapes, rather
+       than ghostly text floating directly on the photo with no panel at
+       all — corrected per direct user feedback (the panel background was
+       removed entirely in an earlier pass; that was the wrong reading of
+       D-08, which only meant the WORDMARK's own fill should reveal the
+       photo, not that the surrounding panel should have no backing). */
+    background-color: var(--current-accent, var(--color-accent));
   }
 
-  /* D-07/D-08/D-09: carousel-mode wordmark cutout — the accent panel no
-     longer paints a solid background behind it (see .home-hero__accent
-     above), so the letters can reveal --wordmark-photo (set server-side
-     from firstGallery.heroSrc and kept in sync per-gallery by render()). */
+  /* D-07/D-08/D-09: carousel-mode wordmark cutout — the letters themselves
+     have no solid fill (see @supports block below), so wherever a glyph
+     shape sits, .home-hero__accent's own solid background (above) is
+     overpainted by --wordmark-photo instead — a true papercut effect: solid
+     panel everywhere except the exact letter shapes, which show the photo
+     behind. Outside the glyphs, the panel's plain solid color shows through
+     normally, since the wordmark element itself has no background of its
+     own beyond the text fill. */
   .home-hero__wordmark {
     font-family: var(--font-display);
-    /* 64px desktop / 48px mobile (up from 44px, D-09 — larger, bolder type
-       reads better with a background-clip:text treatment). Scoped to this
-       selector only, not the shared --text-display-size token. */
+    /* Matches the gallery caption title convention elsewhere in this same
+       component (.home-hero__title / grid tile titles both render via
+       .toUpperCase() — see "SILOS" in the caption), and the AJS logo mark
+       itself, which is all-caps. Direct user feedback — the wordmark should
+       read consistently with those, not mixed-case. */
+    text-transform: uppercase;
+    /* 64px desktop / 52px mobile — bumped up again per direct user request
+       ("even bigger font, strongly reduce the gap between the 3 lines").
+       Re-verify against the accent panel's own bounds (width: min(560px,
+       52%)) if this is revisited again — an earlier 64px attempt with
+       Anton's metrics outgrew the panel, but Unbounded's letterforms are
+       narrower per-glyph at the same font-size, and the tight line-height
+       below keeps the total block height in check too. */
     font-size: 64px;
     font-weight: var(--weight-semibold);
-    /* 1.6, not the site-wide 1.2 Display line-height: Anton's rendered glyph
-       box (ascent+descent) at this size measures ~1.5x font-size, taller
-       than a 1.2 line-height's own line box — verified via
-       Range.getBoundingClientRect() on each <br>-separated line, which
-       showed ~19px of vertical overlap between adjacent lines at 1.2. 1.6
-       clears that overlap with a small margin at both the 64px desktop and
-       48px mobile sizes (mobile inherits this value; only font-size is
-       overridden below). */
-    line-height: 1.6;
+    /* 0.9 — deliberately tight, not the previous 1.6: direct user request
+       to "strongly reduce the gap between the lines." Verify live that
+       Unbounded's glyphs (different metrics than Anton, which needed 1.6 to
+       avoid real box overlap) don't visually collide/become illegible at
+       this tightness — tight-but-legible is the goal, not overlapping. */
+    line-height: 0.9;
     letter-spacing: 0.02em;
     margin: 0 0 var(--space-md);
     /* Fallback (unsupported engines, effectively unreachable in 2026
@@ -666,7 +839,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
          photo content, without adding a solid backing that would defeat the
          cutout (D-08's own "must be verified live, must remain legible"
          requirement, resolved via Claude's discretion per D-08/D-09). */
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55), 0 0 18px rgba(0, 0, 0, 0.45);
+      text-shadow: none; /* temporarily removed for comparison, per user request */
     }
   }
 
@@ -675,10 +848,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     font-weight: var(--weight-regular);
     line-height: 1.5;
     margin: 0;
-    /* D-08: the accent panel's solid background moved off the wordmark, but
-       the intro paragraph still needs its own legible backing. */
+    /* No background of its own — .home-hero__accent's solid panel background
+       (above) now covers the whole panel, wordmark included, so a separate
+       backing here would just repaint the same color redundantly. */
     padding: var(--space-sm) var(--space-md);
-    background-color: var(--current-accent, var(--color-accent));
   }
 
   /* D-04/D-05/D-06: grid-mode hero is now the first *tile* of the grid
@@ -706,14 +879,18 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
   .home-grid__wordmark {
     font-family: var(--font-display);
-    /* 24px desktop / 16px mobile — smaller than the carousel treatment: the
-       grid hero-tile is now a constrained square (same size as a single
-       gallery tile), so the wordmark must shrink to fit three lines + the
-       intro paragraph without overflowing. No cutout here (D-05) — stays
-       solid --font-display text in --color-on-accent. */
-    font-size: 24px;
+    text-transform: uppercase;
+    /* 40px desktop — bumped from 24px (direct user feedback: too small,
+       inconsistent visual weight next to the carousel version). Live-
+       measured against the hero-tile's actual inner width (395px at a
+       1280px viewport, 3-column grid): "JACQUELINE" (the widest line) is
+       only 341px at 40px, comfortable margin, well short of the earlier
+       overflow problems the carousel version hit at its much larger sizes.
+       No cutout here (D-05) — stays solid --font-display text in
+       --color-on-accent. */
+    font-size: 40px;
     font-weight: var(--weight-semibold);
-    line-height: 1.2;
+    line-height: 1.15;
     letter-spacing: 0.02em;
     margin: 0 0 var(--space-sm);
   }
@@ -731,7 +908,9 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
   .home-grid__tiles {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    /* 3, not 2 — direct user feedback that tiles were too big at 2 columns
+       (each roughly half the viewport width). */
+    grid-template-columns: repeat(3, 1fr);
     gap: 0;
   }
 
@@ -816,11 +995,32 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       right: auto;
       bottom: auto;
       width: 100%;
+      /* Pre-existing bug, fixed here (previously deferred as "out of scope
+         for HOME-01/02/03" in deferred-items.md, but the papercut panel's
+         new solid background made it far more visually broken than before —
+         solid pink now painted directly under the header nav, not just
+         faint transparent text — so it's fixed as part of this same
+         change). .home-hero__accent is the first in-flow child of
+         .home-hero (every earlier sibling — image, scrim, arrows, caption —
+         is position:absolute and consumes no flow space), so without this
+         margin it renders flush at the very top of .home-hero, directly
+         under the position:absolute header overlay. Live-measured header
+         height at 375px width: 192px (Playwright boundingBox()); add
+         --space-lg on top for breathing room rather than an exact 192px, so
+         it stays correct if the header's own height shifts slightly (e.g.
+         longer translated nav labels). */
+      margin-top: calc(192px + var(--space-lg));
     }
 
-    /* D-09: mobile-width override for the enlarged cutout wordmark. */
+    /* D-09: mobile-width override for the enlarged cutout wordmark. 34px,
+       not the desktop 64px — live-measured "JACQUELINE" (the widest line)
+       against the mobile panel's actual inner width (311px at 375px
+       viewport): 34px fits with a 21px margin, 36px+ was too tight/started
+       clipping past the panel edge. Mobile has much less horizontal room
+       than desktop's widened panel, so it can't scale 1:1 with the desktop
+       size increase. */
     .home-hero__wordmark {
-      font-size: 48px;
+      font-size: 34px;
     }
 
     /* Grid hero-tile wordmark — mobile-width override (Typography table). */

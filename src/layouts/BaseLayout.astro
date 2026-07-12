@@ -6,15 +6,27 @@
 import { getRelativeLocaleUrl } from 'astro:i18n';
 import { getSiteSettings } from '../lib/sanity';
 import LanguageSwitcher from '../components/LanguageSwitcher.astro';
-// D-02/RESEARCH.md Pattern 1: self-hosted Anton (Heading/Display role) —
-// bundles the woff2 + @font-face at build time, no Google Fonts CDN request
-// (Pitfall 1 — keeps the shipped privacy policy's data-flow enumeration
-// accurate). Swapped from Archivo Black per the logo-hover-and-font debug
-// session: Archivo Black was a self-flagged, unresearched placeholder
-// (.planning/design-import/design-system/tokens/fonts.css); Anton's
-// condensed, heavier black weight is a closer visual match to the AJS
-// wordmark logo's hand-cut brutalist character. Pending user visual sign-off.
-import '@fontsource/anton';
+// D-02/RESEARCH.md Pattern 1: self-hosted Unbounded, 900 (black) weight only
+// (Heading/Display role) — bundles the woff2 + @font-face at build time, no
+// Google Fonts CDN request (Pitfall 1 — keeps the shipped privacy policy's
+// data-flow enumeration accurate). Swapped from Anton per direct user
+// feedback (referencing mockplus.com's brutalist-fonts roundup): Anton was
+// itself a swap from Archivo Black (a self-flagged, unresearched placeholder
+// — .planning/design-import/design-system/tokens/fonts.css) via the
+// logo-hover-and-font debug session. The specific font the user pointed to
+// (#14 in that roundup, "Damian Uniqua") turned out to be a Creative Fabrica
+// font with unverified commercial/web-embedding license terms — too risky
+// for a site that sells art — so this is a free-license (SIL OFL 1.1, same
+// as Anton) Google Font lookalike instead: Unbounded is explicitly designed
+// with brutalist/constructivist influence (geometric, distinctively
+// rounded-cut corners), matching the "unique curves and bold strokes"
+// character the user was pointing at. Only the 900 (black) weight is
+// imported/loaded — every --font-display consumer already declares
+// font-weight: var(--weight-semibold) (600), but since 900 is the only
+// weight file loaded, the browser renders that single loaded weight
+// regardless of the declared number (identical behavior to how the
+// single-weight Anton import worked before it).
+import '@fontsource/unbounded/900.css';
 
 interface Props {
   title: string;
@@ -173,7 +185,7 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
 
     /* Typography roles (04.1-UI-SPEC.md Typography) */
     --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-    --font-display: 'Anton', var(--font-sans);
+    --font-display: 'Unbounded', var(--font-sans);
     --weight-regular: 400;
     --weight-semibold: 600;
 
