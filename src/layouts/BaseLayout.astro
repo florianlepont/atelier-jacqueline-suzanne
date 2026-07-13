@@ -76,11 +76,6 @@ const legalNoticeLabel = locale === 'en' ? 'Legal notice' : 'Mentions légales';
 const legalNoticeHref = getRelativeLocaleUrl(locale, 'mentions-legales');
 const privacyLabel = locale === 'en' ? 'Privacy' : 'Confidentialité';
 const privacyHref = getRelativeLocaleUrl(locale, 'confidentialite');
-// Phase 04.2 (SOCIAL-01): site-wide footer Instagram link. Absolute external
-// URL — does NOT go through getRelativeLocaleUrl (that helper is only for
-// internal/site-relative routes).
-const instagramNewTabHint = locale === 'en' ? ' (opens in new tab)' : ' (nouvelle fenêtre)';
-
 // D-11: real AJS wordmark PNG logo, header only. Base-aware (matches the
 // CR-01 precedent, 01-REVIEW.md) so the asset resolves correctly under
 // GitHub Pages' non-root base as well as OVH's root base.
@@ -150,16 +145,6 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
       <nav class="footer-legal-nav" aria-label="Legal">
         <a href={legalNoticeHref} class="nav-link">{legalNoticeLabel}</a>
         <a href={privacyHref} class="nav-link">{privacyLabel}</a>
-      </nav>
-      <nav class="footer-social-nav" aria-label="Social">
-        <a
-          href={siteCopy.instagramUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="nav-link"
-        >
-          Instagram<span class="sr-only">{instagramNewTabHint}</span>
-        </a>
       </nav>
     </footer>
   </body>
@@ -467,12 +452,6 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
   }
 
   .footer-legal-nav {
-    display: flex;
-    gap: var(--space-xl);
-    margin-top: var(--space-md);
-  }
-
-  .footer-social-nav {
     display: flex;
     gap: var(--space-xl);
     margin-top: var(--space-md);

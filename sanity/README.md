@@ -8,7 +8,7 @@ Dans le menu utilisateur en haut à droite, choisir **Français** comme langue d
 
 ## Modifier une collection
 
-1. Ouvrir **Collections**, puis choisir une collection.
+1. Ouvrir **Collections photo**, puis choisir une collection.
 2. Utiliser les onglets **Présentation**, **Page d’accueil** et **Photos**.
 3. Renseigner les textes français et anglais.
 4. Dans **Photos**, glisser-déposer les images et les réordonner. La première image est la couverture.
@@ -19,7 +19,9 @@ Pour une nouvelle collection, saisir d’abord son nom puis cliquer sur **Géné
 
 ## Modifier les textes communs
 
-Ouvrir **Réglages du site** pour changer les libellés du menu, l’introduction de la page d’accueil, le copyright ou le compte Instagram.
+Ouvrir **Page d’accueil** pour modifier son introduction et son référencement.
+
+Ouvrir **Réglages du site** pour changer le nom du site, les libellés du menu, le copyright et le référencement utilisé par défaut.
 
 La rubrique **Page À propos** permet de modifier la biographie, la présentation de la pratique et les informations de technique. L’onglet **Aperçu** montre le brouillon courant en français ou en anglais avant sa publication.
 
@@ -37,7 +39,7 @@ Cette rubrique peut déjà accueillir les expositions et événements à venir. 
 
 ## Ordre des collections
 
-Dans **Collections**, déplacer les lignes par glisser-déposer. Cet ordre est repris sur la page d’accueil.
+Dans **Collections photo**, déplacer les lignes par glisser-déposer. Cet ordre est repris sur la page d’accueil.
 
 ## Mise en ligne
 

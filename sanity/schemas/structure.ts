@@ -1,4 +1,8 @@
-import type {DefaultDocumentNodeResolver, StructureBuilder, StructureResolver} from 'sanity/structure'
+import type {
+  DefaultDocumentNodeResolver,
+  StructureBuilder,
+  StructureResolver,
+} from 'sanity/structure'
 import {orderableDocumentListDeskItem} from '@sanity/orderable-document-list'
 import {ContentPreview} from './ContentPreview'
 
@@ -8,7 +12,7 @@ const editorViews = (S: StructureBuilder) => [
 ]
 
 export const defaultDocumentNode: DefaultDocumentNodeResolver = (S, {schemaType}) => {
-  if (['gallery', 'aboutPage', 'siteSettings'].includes(schemaType)) {
+  if (['gallery', 'homePage', 'aboutPage'].includes(schemaType)) {
     return S.document().views(editorViews(S))
   }
   return S.document()
@@ -30,23 +34,20 @@ export const structure: StructureResolver = (S, context) =>
       S.listItem()
         .title('Réglages du site')
         .id('siteSettings')
-        .child(
-          S.document()
-            .schemaType('siteSettings')
-            .documentId('siteSettings')
-            .views(editorViews(S)),
-        ),
+        .child(S.document().schemaType('siteSettings').documentId('siteSettings')),
+      S.listItem()
+        .title("Page d'accueil")
+        .id('homePage')
+        .child(S.document().schemaType('homePage').documentId('homePage').views(editorViews(S))),
       S.listItem()
         .title('Page À propos')
         .id('aboutPage')
-        .child(
-          S.document().schemaType('aboutPage').documentId('aboutPage').views(editorViews(S)),
-        ),
-      orderableDocumentListDeskItem({type: 'gallery', title: 'Collections', S, context}),
+        .child(S.document().schemaType('aboutPage').documentId('aboutPage').views(editorViews(S))),
+      orderableDocumentListDeskItem({type: 'gallery', title: 'Collections photo', S, context}),
       S.documentTypeListItem('exhibition').title('Agenda / Expositions'),
       ...S.documentTypeListItems().filter(
         (listItem) =>
-          !['siteSettings', 'aboutPage', 'gallery', 'exhibition', 'seo'].includes(
+          !['siteSettings', 'homePage', 'aboutPage', 'gallery', 'exhibition', 'seo'].includes(
             listItem.getId() ?? '',
           ),
       ),

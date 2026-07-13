@@ -36,8 +36,20 @@ function localeTextField(name: string, title: string, hidden = false) {
     type: 'object',
     hidden,
     fields: [
-      defineField({name: 'fr', title: 'Français', type: 'text', rows: 3, validation: (rule) => rule.required()}),
-      defineField({name: 'en', title: 'Anglais', type: 'text', rows: 3, validation: (rule) => rule.required()}),
+      defineField({
+        name: 'fr',
+        title: 'Français',
+        type: 'text',
+        rows: 3,
+        validation: (rule) => rule.required(),
+      }),
+      defineField({
+        name: 'en',
+        title: 'Anglais',
+        type: 'text',
+        rows: 3,
+        validation: (rule) => rule.required(),
+      }),
     ],
   })
 }
@@ -51,14 +63,6 @@ export const siteSettings = defineType({
       about: {fr: 'À propos', en: 'About'},
       contact: {fr: 'Contact', en: 'Contact'},
     },
-    homepageIntro: {
-      fr: "Le site présente le travail photographique de Romane Lepont et permet l'achat d'une œuvre directement en ligne.",
-      en: "This site showcases Romane Lepont's photographic work and lets you buy a piece directly online.",
-    },
-    socialLinks: {
-      instagramUrl: 'https://www.instagram.com/ajs_romanelepont/',
-      instagramLabel: '@ajs_romanelepont',
-    },
   },
   // Singleton: only one instance should ever exist. Enforced via the Studio
   // structure builder (sanity/schemas/structure.ts), which pins this type to a
@@ -66,9 +70,8 @@ export const siteSettings = defineType({
   groups: [
     {name: 'identity', title: 'Identité', default: true},
     {name: 'navigation', title: 'Navigation'},
-    {name: 'homepage', title: "Page d'accueil"},
-    {name: 'footer', title: 'Pied de page & réseaux'},
-    {name: 'seo', title: 'SEO & partage'},
+    {name: 'footer', title: 'Pied de page'},
+    {name: 'seo', title: 'SEO & Partage'},
   ],
   fields: [
     localeStringField('siteTitle', 'Nom du site', false, 'identity'),
@@ -85,8 +88,18 @@ export const siteSettings = defineType({
           title: 'Home label',
           type: 'object',
           fields: [
-            defineField({name: 'fr', title: 'French', type: 'string', validation: (rule) => rule.required()}),
-            defineField({name: 'en', title: 'English', type: 'string', validation: (rule) => rule.required()}),
+            defineField({
+              name: 'fr',
+              title: 'French',
+              type: 'string',
+              validation: (rule) => rule.required(),
+            }),
+            defineField({
+              name: 'en',
+              title: 'English',
+              type: 'string',
+              validation: (rule) => rule.required(),
+            }),
           ],
           hidden: true,
         }),
@@ -95,8 +108,18 @@ export const siteSettings = defineType({
           title: 'Galleries label',
           type: 'object',
           fields: [
-            defineField({name: 'fr', title: 'French', type: 'string', validation: (rule) => rule.required()}),
-            defineField({name: 'en', title: 'English', type: 'string', validation: (rule) => rule.required()}),
+            defineField({
+              name: 'fr',
+              title: 'French',
+              type: 'string',
+              validation: (rule) => rule.required(),
+            }),
+            defineField({
+              name: 'en',
+              title: 'English',
+              type: 'string',
+              validation: (rule) => rule.required(),
+            }),
           ],
           hidden: true,
         }),
@@ -122,67 +145,25 @@ export const siteSettings = defineType({
     }),
     localeStringField('footerText', 'Texte de copyright', false, 'footer'),
     defineField({
-      name: 'homepageIntro',
-      title: "Introduction de la page d'accueil",
-      type: 'object',
-      group: 'homepage',
-      description: "Court texte affiché dans le panneau coloré de la page d'accueil.",
-      options: {columns: 2},
-      fields: [
-        defineField({
-          name: 'fr',
-          title: 'Français',
-          type: 'text',
-          rows: 5,
-          validation: (rule) => rule.required().error("L'introduction française est obligatoire."),
-        }),
-        defineField({
-          name: 'en',
-          title: 'Anglais',
-          type: 'text',
-          rows: 5,
-          validation: (rule) => rule.required().error("L'introduction anglaise est obligatoire."),
-        }),
-      ],
-    }),
-    defineField({
-      name: 'socialLinks',
-      title: 'Instagram',
-      type: 'object',
-      group: 'footer',
-      fields: [
-        defineField({
-          name: 'instagramUrl',
-          title: 'Adresse du profil Instagram',
-          type: 'url',
-          validation: (rule) =>
-            rule.required().uri({scheme: ['https']}).error('Utiliser une adresse HTTPS complète.'),
-        }),
-        defineField({
-          name: 'instagramLabel',
-          title: 'Nom du compte Instagram',
-          type: 'string',
-          description: 'Par exemple : @ajs_romanelepont',
-          validation: (rule) => rule.required().error('Le nom du compte est obligatoire.'),
-        }),
-      ],
-    }),
-    defineField({
       name: 'defaultSeo',
       title: 'SEO par défaut',
       type: 'seo',
       group: 'seo',
       description: 'Utilisé lorsqu’une page ne possède pas ses propres réglages SEO.',
     }),
-    // Obsolete fields kept in the schema so old Content Lake values remain
-    // addressable during migration. They are no longer shown or queried.
+    // Obsolete text fields stay addressable during migration, but are hidden
+    // and no longer queried by the site.
     localeStringField('welcomeHeading', 'Legacy welcome heading', true),
     localeTextField('welcomeBody', 'Legacy welcome body', true),
+    localeTextField('homepageIntro', 'Legacy homepage introduction', true),
   ],
   preview: {
     select: {title: 'siteTitle.fr'},
     prepare({title}) {
-      return {title: title || 'Réglages du site', subtitle: 'Textes et liens communs à tout le site'}
+      return {
+        title: title || 'Réglages du site',
+        subtitle: 'Textes et liens communs à tout le site',
+      }
     },
   },
 })

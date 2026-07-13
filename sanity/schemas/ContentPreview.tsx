@@ -58,7 +58,9 @@ export const ContentPreview: UserViewComponent = ({document, schemaType}) => {
           {item.toUpperCase()}
         </button>
       ))}
-      <span style={{alignSelf: 'center', color: '#666', fontSize: 13}}>Aperçu du brouillon en cours</span>
+      <span style={{alignSelf: 'center', color: '#666', fontSize: 13}}>
+        Aperçu du brouillon en cours
+      </span>
     </div>
   )
 
@@ -74,23 +76,42 @@ export const ContentPreview: UserViewComponent = ({document, schemaType}) => {
       <div style={shellStyle}>
         {localePicker}
         {value.isVisible === false && (
-          <p style={{background: '#FFF1C7', padding: 12}}>Cette collection est actuellement masquée du site.</p>
+          <p style={{background: '#FFF1C7', padding: 12}}>
+            Cette collection est actuellement masquée du site.
+          </p>
         )}
         <div style={{background: '#1A1A1A', color: '#FFFFFF', overflow: 'hidden'}}>
           {cover ? (
-            <img src={cover} alt="" style={{display: 'block', width: '100%', height: 420, objectFit: 'cover'}} />
+            <img
+              src={cover}
+              alt=""
+              style={{display: 'block', width: '100%', height: 420, objectFit: 'cover'}}
+            />
           ) : (
-            <div style={{display: 'grid', height: 260, placeItems: 'center', color: '#CCCCCC'}}>Ajouter une photo de couverture</div>
+            <div style={{display: 'grid', height: 260, placeItems: 'center', color: '#CCCCCC'}}>
+              Ajouter une photo de couverture
+            </div>
           )}
           <div style={{padding: 24}}>
             <h1 style={{fontSize: 38, margin: 0}}>{title}</h1>
-            <p style={{lineHeight: 1.6, marginBottom: 0}}>{statement || 'Ajouter le texte de présentation dans cette langue.'}</p>
+            <p style={{lineHeight: 1.6, marginBottom: 0}}>
+              {statement || 'Ajouter le texte de présentation dans cette langue.'}
+            </p>
           </div>
         </div>
-        <div style={{background: color?.hex ?? '#FF3B94', color: color?.text ?? '#1A1A1A', marginTop: 16, padding: 20}}>
+        <div
+          style={{
+            background: color?.hex ?? '#FF3B94',
+            color: color?.text ?? '#1A1A1A',
+            marginTop: 16,
+            padding: 20,
+          }}
+        >
           Couleur du panneau d’accueil : <strong>{color?.title ?? 'Palette automatique'}</strong>
         </div>
-        <p style={{color: '#666', fontSize: 13}}>{images.length} photo{images.length > 1 ? 's' : ''}</p>
+        <p style={{color: '#666', fontSize: 13}}>
+          {images.length} photo{images.length > 1 ? 's' : ''}
+        </p>
       </div>
     )
   }
@@ -101,22 +122,30 @@ export const ContentPreview: UserViewComponent = ({document, schemaType}) => {
         {localePicker}
         <article style={{border: '1px solid #E3E1DE', padding: 32}}>
           <h1 style={{fontSize: 38, marginTop: 0}}>{locale === 'fr' ? 'À propos' : 'About'}</h1>
-          <p style={{lineHeight: 1.6}}>{localized(value.biography, locale) || 'Ajouter la biographie.'}</p>
+          <p style={{lineHeight: 1.6}}>
+            {localized(value.biography, locale) || 'Ajouter la biographie.'}
+          </p>
           <h2>{locale === 'fr' ? 'Atelier & pratique' : 'Studio & practice'}</h2>
-          <p style={{lineHeight: 1.6}}>{localized(value.practice, locale) || 'Ajouter le texte sur la pratique.'}</p>
-          <p style={{lineHeight: 1.6}}>{localized(value.medium, locale) || 'Ajouter le texte sur le médium et la technique.'}</p>
+          <p style={{lineHeight: 1.6}}>
+            {localized(value.practice, locale) || 'Ajouter le texte sur la pratique.'}
+          </p>
+          <p style={{lineHeight: 1.6}}>
+            {localized(value.medium, locale) || 'Ajouter le texte sur le médium et la technique.'}
+          </p>
         </article>
       </div>
     )
   }
 
-  const intro = localized(value.homepageIntro, locale)
+  const intro = localized(value.intro, locale)
   return (
     <div style={shellStyle}>
       {localePicker}
       <div style={{background: '#FF3B94', color: '#1A1A1A', padding: 32}}>
         <h1 style={{fontSize: 34, marginTop: 0}}>Atelier Jacqueline Suzanne</h1>
-        <p style={{fontSize: 18, lineHeight: 1.6}}>{intro || "Ajouter l'introduction de la page d'accueil."}</p>
+        <p style={{fontSize: 18, lineHeight: 1.6}}>
+          {intro || "Ajouter l'introduction de la page d'accueil."}
+        </p>
       </div>
     </div>
   )

@@ -1,8 +1,9 @@
-import {describe, expect, it} from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_INSTAGRAM_URL,
   getHeroTextColor,
   normalizeHeroColor,
+  resolveHomepageIntro,
   resolveSiteCopy,
 } from '../../src/lib/site-config';
 
@@ -13,17 +14,15 @@ describe('resolveSiteCopy', () => {
     expect(copy.aboutLabel).toBe('À propos');
     expect(copy.contactLabel).toBe('Contact');
     expect(copy.instagramUrl).toBe(DEFAULT_INSTAGRAM_URL);
-    expect(copy.homepageIntro).toContain('travail photographique');
+    expect(resolveHomepageIntro(null, 'fr')).toContain('travail photographique');
   });
 
   it('uses the new editable site settings when populated', () => {
     const copy = resolveSiteCopy(
       {
-        siteTitle: {fr: 'AJS', en: 'AJS'},
-        navLabels: {about: {fr: 'Studio'}, contact: {fr: 'Écrire'}},
-        footerText: {fr: '', en: ''},
-        homepageIntro: {fr: 'Texte éditable'},
-        socialLinks: {instagramUrl: 'https://www.instagram.com/example/', instagramLabel: '@example'},
+        siteTitle: { fr: 'AJS', en: 'AJS' },
+        navLabels: { about: { fr: 'Studio' }, contact: { fr: 'Écrire' } },
+        footerText: { fr: '', en: '' },
       },
       'fr',
     );
@@ -31,10 +30,13 @@ describe('resolveSiteCopy', () => {
     expect(copy).toMatchObject({
       aboutLabel: 'Studio',
       contactLabel: 'Écrire',
-      homepageIntro: 'Texte éditable',
-      instagramUrl: 'https://www.instagram.com/example/',
-      instagramLabel: '@example',
+      instagramUrl: DEFAULT_INSTAGRAM_URL,
+      instagramLabel: '@ajs_romanelepont',
     });
+  });
+
+  it('uses the dedicated homepage document when populated', () => {
+    expect(resolveHomepageIntro({ intro: { fr: 'Texte éditable' } }, 'fr')).toBe('Texte éditable');
   });
 });
 

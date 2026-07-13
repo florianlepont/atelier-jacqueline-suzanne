@@ -4,18 +4,23 @@
 // migrated photos appear (D-12 — filtered generically by `images.length > 0`,
 // not a hardcoded slug denylist, so it adapts automatically as more
 // galleries are migrated). The current homepage intro and navigation copy
-// now come from the updated siteSettings schema, with live-copy fallbacks.
+// now come from the dedicated homePage singleton, with live-copy fallbacks.
 import BaseLayout from '../layouts/BaseLayout.astro';
 import HomeCarousel from '../components/HomeCarousel.astro';
-import { getGalleries, getSiteSettings } from '../lib/sanity';
+import { getGalleries, getHomePage, getSiteSettings } from '../lib/sanity';
 import { fullSizeUrl, thumbnailUrl } from '../lib/image';
-import { getHeroTextColor, normalizeHeroColor, resolveSiteCopy } from '../lib/site-config';
+import { getHeroTextColor, normalizeHeroColor, resolveHomepageIntro, resolveSiteCopy } from '../lib/site-config';
 
 const locale = 'fr' as const;
 const siteSettings = await getSiteSettings();
-const siteCopy = resolveSiteCopy(siteSettings, locale);
-const seoTitle = siteSettings?.defaultSeo?.title?.[locale] ?? 'Atelier Jacqueline Suzanne';
-const seoDescription = siteSettings?.defaultSeo?.description?.[locale];
+const homePage = await getHomePage();
+const siteCopy = {
+  ...resolveSiteCopy(siteSettings, locale),
+  homepageIntro: resolveHomepageIntro(homePage, locale),
+};
+const seoTitle = homePage?.seo?.title?.[locale] ?? siteSettings?.defaultSeo?.title?.[locale] ?? 'Atelier Jacqueline Suzanne';
+const seoDescription = homePage?.seo?.description?.[locale] ?? siteSettings?.defaultSeo?.description?.[locale];
+const seoImage = homePage?.seo?.image ? fullSizeUrl(homePage.seo.image, 1200) : undefined;
 
 const galleries = (await getGalleries())
   .filter((gallery) => gallery.images.length > 0)
@@ -38,6 +43,6 @@ const galleries = (await getGalleries())
   });
 ---
 
-<BaseLayout title={seoTitle} description={seoDescription} headerVariant="none">
+<BaseLayout title={seoTitle} description={seoDescription} socialImage={seoImage} headerVariant="none">
   <HomeCarousel locale={locale} galleries={galleries} siteCopy={siteCopy} />
 </BaseLayout>

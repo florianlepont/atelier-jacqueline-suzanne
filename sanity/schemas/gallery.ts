@@ -36,7 +36,7 @@ function localeTextField(name: string, title: string, group?: string) {
 
 export const gallery = defineType({
   name: 'gallery',
-  title: 'Collection',
+  title: 'Collection photo',
   type: 'document',
   initialValue: {isVisible: true},
   groups: [
@@ -60,7 +60,8 @@ export const gallery = defineType({
       title: 'Adresse de la page',
       type: 'slug',
       group: 'content',
-      description: 'Cliquer sur « Générer » après avoir saisi le nom. À modifier uniquement avant la première publication.',
+      description:
+        'Cliquer sur « Générer » après avoir saisi le nom. À modifier uniquement avant la première publication.',
       options: {source: 'title'},
       validation: (rule) => rule.required().error("L'adresse de la page est obligatoire."),
     }),
@@ -71,7 +72,7 @@ export const gallery = defineType({
       type: 'string',
       group: 'homepage',
       description:
-        "Choisir le fond du panneau associé à cette collection, ou conserver la palette automatique.",
+        'Choisir le fond du panneau associé à cette collection, ou conserver la palette automatique.',
       options: {
         list: HERO_COLOR_OPTIONS.map(({title, value}) => ({title, value})),
       },
@@ -108,21 +109,25 @@ export const gallery = defineType({
               name: 'alt',
               title: "Description de l'image (accessibilité)",
               type: 'object',
-              description: "Décrire brièvement ce que montre l'image pour les personnes qui ne peuvent pas la voir.",
+              description:
+                "Décrire brièvement ce que montre l'image pour les personnes qui ne peuvent pas la voir.",
               options: {columns: 2},
-              validation: (rule) => rule.required().error("La description de l'image est obligatoire."),
+              validation: (rule) =>
+                rule.required().error("La description de l'image est obligatoire."),
               fields: [
                 defineField({
                   name: 'fr',
                   title: 'Français',
                   type: 'string',
-                  validation: (rule) => rule.required().error('La description française est obligatoire.'),
+                  validation: (rule) =>
+                    rule.required().error('La description française est obligatoire.'),
                 }),
                 defineField({
                   name: 'en',
                   title: 'Anglais',
                   type: 'string',
-                  validation: (rule) => rule.required().error('La description anglaise est obligatoire.'),
+                  validation: (rule) =>
+                    rule.required().error('La description anglaise est obligatoire.'),
                 }),
               ],
             }),

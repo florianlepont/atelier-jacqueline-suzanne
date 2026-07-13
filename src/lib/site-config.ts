@@ -1,4 +1,4 @@
-import type {SiteSettings} from './sanity'
+import type {HomePage, SiteSettings} from './sanity'
 
 export type Locale = 'fr' | 'en'
 
@@ -22,10 +22,13 @@ export function resolveSiteCopy(settings: SiteSettings | null, locale: Locale) {
   return {
     aboutLabel: settings?.navLabels?.about?.[locale] || (locale === 'en' ? 'About' : 'À propos'),
     contactLabel: settings?.navLabels?.contact?.[locale] || 'Contact',
-    homepageIntro: settings?.homepageIntro?.[locale] || DEFAULT_HOMEPAGE_INTRO[locale],
-    instagramUrl: settings?.socialLinks?.instagramUrl || DEFAULT_INSTAGRAM_URL,
-    instagramLabel: settings?.socialLinks?.instagramLabel || DEFAULT_INSTAGRAM_LABEL,
+    instagramUrl: DEFAULT_INSTAGRAM_URL,
+    instagramLabel: DEFAULT_INSTAGRAM_LABEL,
   }
+}
+
+export function resolveHomepageIntro(page: HomePage | null, locale: Locale) {
+  return page?.intro?.[locale] || DEFAULT_HOMEPAGE_INTRO[locale]
 }
 
 /** Resolve only named colors from the site's decorative design-system palette. */

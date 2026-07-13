@@ -59,11 +59,6 @@ export interface SiteSettings {
     contact?: Partial<LocaleString>
   }
   footerText: LocaleString
-  homepageIntro?: Partial<LocaleString>
-  socialLinks?: {
-    instagramUrl?: string
-    instagramLabel?: string
-  }
   defaultSeo?: SeoSettings
 }
 
@@ -71,8 +66,6 @@ const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{
   siteTitle,
   navLabels,
   footerText,
-  homepageIntro,
-  socialLinks,
   defaultSeo
 }`
 
@@ -122,6 +115,16 @@ export interface AboutPage {
   seo?: SeoSettings
 }
 
+export interface HomePage {
+  intro?: Partial<LocaleString>
+  seo?: SeoSettings
+}
+
+const HOME_PAGE_QUERY = /* groq */ `*[_id == "homePage"][0]{
+  intro,
+  seo
+}`
+
 const ABOUT_PAGE_QUERY = /* groq */ `*[_id == "aboutPage"][0]{
   biography,
   practice,
@@ -150,5 +153,10 @@ export async function getGallery(slug: string): Promise<Gallery | null> {
 
 export async function getAboutPage(): Promise<AboutPage | null> {
   const result = await sanityClient.fetch<AboutPage | null>(ABOUT_PAGE_QUERY)
+  return result ?? null
+}
+
+export async function getHomePage(): Promise<HomePage | null> {
+  const result = await sanityClient.fetch<HomePage | null>(HOME_PAGE_QUERY)
   return result ?? null
 }
