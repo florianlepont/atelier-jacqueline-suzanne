@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, devices } from '@playwright/test';
 
 // RED (Wave 0): the real homepage (hero carousel + grid toggle) does not exist
 // yet — the current "/" is still Phase 1's bare placeholder homepage. These
@@ -528,5 +528,75 @@ test.describe('mobile hero visibility (D-08)', () => {
 
     await page.getByRole('button', { name: 'Grille' }).click();
     await expect(page.locator('[data-role="home-grid"]')).toBeVisible();
+  });
+});
+
+// Phase 07 Plan 02 (HOME-06, D-10/D-11/D-12): mobile-emulation regression
+// guard for the real-device (iPhone 17 Pro) full-bleed hero bug — a white
+// gap above the header plus the site footer bleeding through on first load.
+// D-11: this is emulation-only (Playwright's iPhone device profile still
+// runs on the chromium engine, per playwright.config.ts's single chromium
+// project — test.use() below only overrides context options like viewport/
+// isMobile/hasTouch/UA, it does not switch the underlying browser engine to
+// WebKit). A GREEN result here is NOT a guarantee the exact real-device
+// symptom is impossible — this bug class (100vh vs 100svh Safari-chrome
+// timing) already escaped devtools/emulation testing once before (Phase 6's
+// fix was only caught via a real iPhone 17 Pro screenshot, see
+// 06-01-SUMMARY.md). If the symptom recurs live post-ship, it should be
+// flagged as a follow-up quick task, not treated as disproven by this test.
+test.describe('mobile full-bleed hero regression (HOME-06)', () => {
+  // defaultBrowserType is stripped from the device descriptor before
+  // spreading — the suite has a single chromium project (playwright.config.ts),
+  // and Playwright refuses test.use({ defaultBrowserType }) inside a describe
+  // block (it would force a dedicated worker/browser per D-11's own note:
+  // engine stays chromium, only viewport/isMobile/hasTouch/UA are emulated).
+  const { defaultBrowserType: _defaultBrowserType, ...iPhone14Pro } = devices['iPhone 14 Pro'];
+  test.use({ ...iPhone14Pro });
+
+  test('at an iPhone viewport, on first load the hero is full-bleed with no gap above the header and no footer bleed-through, and the morph stays active', async ({ page }) => {
+    await page.goto('/');
+
+    const header = page.locator('[data-role="home-header"]');
+    const photo = page.locator('.home-hero__photo');
+    await expect(header).toBeVisible();
+    await expect(photo).toBeVisible();
+
+    const headerBox = await header.boundingBox();
+    const photoBox = await photo.boundingBox();
+    expect(headerBox).not.toBeNull();
+    expect(photoBox).not.toBeNull();
+    // No white gap above the header: both the header and the hero photo
+    // sit flush against the top of the viewport (the header overlays the
+    // photo, it doesn't push it down).
+    expect(Math.abs(headerBox!.y)).toBeLessThanOrEqual(1);
+    expect(Math.abs(photoBox!.y)).toBeLessThanOrEqual(1);
+
+    const viewportSize = page.viewportSize();
+    expect(viewportSize).not.toBeNull();
+    // Hero fills the small viewport: min-height:100svh should make the
+    // photo at least as tall as the visible (chrome-showing) viewport.
+    expect(photoBox!.height).toBeGreaterThanOrEqual(viewportSize!.height - 2);
+
+    // Footer not visible in the initial viewport: BaseLayout.astro always
+    // renders <footer>, regardless of headerVariant, so it is provably
+    // present in the homepage DOM — it must sit at or below the fold on
+    // first load, not bleed through beneath the hero.
+    const footer = page.locator('footer');
+    await expect(footer).toHaveCount(1);
+    const footerBox = await footer.boundingBox();
+    expect(footerBox).not.toBeNull();
+    expect(footerBox!.y).toBeGreaterThanOrEqual(viewportSize!.height - 1);
+
+    // D-12 guard: the carousel/grid morph must stay active on mobile — not
+    // desktop/pointer:fine-gated.
+    const supportsViewTransitions = await page.evaluate(() => typeof document.startViewTransition === 'function');
+    expect(supportsViewTransitions).toBe(true);
+
+    const carousel = page.locator('[data-role="home-carousel"]');
+    const grid = page.locator('[data-role="home-grid"]');
+    await expect(carousel).toBeVisible();
+    await page.getByRole('button', { name: 'Grille' }).click();
+    await expect(carousel).toBeHidden();
+    await expect(grid).toBeVisible();
   });
 });
