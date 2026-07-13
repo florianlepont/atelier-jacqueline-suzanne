@@ -5,7 +5,7 @@ milestone_name: milestone
 status: v1.1 milestone complete
 stopped_at: Phase 6 complete
 last_updated: "2026-07-13T10:23:27.221Z"
-last_activity: 2026-07-13 - Completed quick task 260713-hcj: Make the grid-mode hero tile's Atelier Jacqueline Suzanne wordmark bigger on mobile and give it the same transparent photo-cutout effect as the carousel wordmark
+last_activity: 2026-07-13 - Completed quick task 260713-jfz: Add an animated transition between carousel and grid view modes using the View Transitions API, with shared-element morphing and graceful fallback
 progress:
   total_phases: 9
   completed_phases: 8
@@ -122,6 +122,7 @@ None currently open. Both prior research-carryover items were resolved during Ph
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260713-hcj | Make the grid-mode hero tile's Atelier Jacqueline Suzanne wordmark bigger on mobile and give it the same transparent photo-cutout effect as the carousel wordmark | 2026-07-13 | 1b1b9e1 | [260713-hcj-make-the-grid-mode-hero-tile-s-atelier-j](./quick/260713-hcj-make-the-grid-mode-hero-tile-s-atelier-j/) |
+| 260713-jfz | Add an animated transition between carousel and grid view modes using the View Transitions API, with shared-element morphing and graceful fallback | 2026-07-13 | 57733a8 | [260713-jfz-add-an-animated-transition-between-carou](./quick/260713-jfz-add-an-animated-transition-between-carou/) |
 
 ## Deferred Items
 
