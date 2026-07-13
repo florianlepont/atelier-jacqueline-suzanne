@@ -1,4 +1,5 @@
 import {useEffect, useMemo, useState} from 'react'
+import {Badge, Box, Button, Card, Flex, Grid, Heading, Spinner, Stack, Text} from '@sanity/ui'
 import {useClient} from 'sanity'
 import {IntentLink} from 'sanity/router'
 import {deploymentLabel, getLatestDeployment, SITE_PREVIEW_URL} from './deployment'
@@ -12,6 +13,14 @@ interface DashboardDocument extends Record<string, unknown> {
   title?: string
   isVisible?: boolean
   images?: unknown[]
+}
+
+interface DashboardRow {
+  id: string
+  current: DashboardDocument
+  hasDraft: boolean
+  isPublished: boolean
+  summary: ReturnType<typeof summarizeChecks>
 }
 
 const query = `*[_type in ["gallery", "homePage", "aboutPage", "siteSettings", "exhibition"]] | order(_updatedAt desc) {
@@ -75,15 +84,14 @@ export function EditorialDashboard() {
       else entry.published = document
       byId.set(id, entry)
     }
-    return Array.from(byId.entries()).map(([id, versions]) => {
+    return Array.from(byId.entries()).map(([id, versions]): DashboardRow => {
       const current = versions.draft ?? versions.published!
-      const checks = getDocumentChecks(current._type, current)
       return {
         id,
         current,
         hasDraft: Boolean(versions.draft),
         isPublished: Boolean(versions.published),
-        summary: summarizeChecks(checks),
+        summary: summarizeChecks(getDocumentChecks(current._type, current)),
       }
     })
   }, [documents])
@@ -93,150 +101,261 @@ export function EditorialDashboard() {
       !summary.requiredComplete || !summary.recommendedComplete || current.isVisible === false,
   )
   const galleries = rows.filter(({current}) => current._type === 'gallery')
-  const deployment = deploymentLabel(run)
 
   return (
-    <main style={{maxWidth: 1120, margin: '0 auto', padding: 24, fontFamily: 'Arial, sans-serif'}}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: 20,
-        }}
-      >
-        <div>
-          <h1 style={{fontSize: 32, margin: '0 0 8px'}}>Bonjour 👋</h1>
-          <p style={{color: '#666', margin: 0}}>Voici l’état du contenu et du site.</p>
-        </div>
-        <a href={SITE_PREVIEW_URL} target="_blank" rel="noreferrer" style={{color: '#1A1A1A'}}>
-          Ouvrir le site ↗
-        </a>
-      </div>
+    <Box padding={[3, 4, 5]} style={{maxWidth: 1080, margin: '0 auto'}}>
+      <Stack space={5}>
+        <Flex align="center" justify="space-between" gap={3} wrap="wrap">
+          <Stack space={2}>
+            <Heading as="h1" size={3}>
+              Tableau de bord
+            </Heading>
+            <Text muted size={1}>
+              L’essentiel du contenu et de la mise en ligne.
+            </Text>
+          </Stack>
+          <Button
+            as="a"
+            href={SITE_PREVIEW_URL}
+            target="_blank"
+            rel="noreferrer"
+            mode="ghost"
+            text="Ouvrir le site ↗"
+          />
+        </Flex>
 
-      {loading && <p style={{marginTop: 32}}>Chargement du tableau de bord…</p>}
-      {error && <p style={{marginTop: 32, color: '#B00020'}}>Impossible de charger : {error}</p>}
+        {loading && (
+          <Card padding={5} radius={3} tone="transparent">
+            <Flex align="center" justify="center" gap={3}>
+              <Spinner muted />
+              <Text muted size={1}>
+                Chargement…
+              </Text>
+            </Flex>
+          </Card>
+        )}
 
-      {!loading && !error && (
-        <>
-          <section
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
-              gap: 14,
-              marginTop: 32,
-            }}
-          >
-            <DashboardCard
-              label="Collections publiées"
-              value={String(galleries.filter((row) => row.isPublished).length)}
-            />
-            <DashboardCard
-              label="Brouillons en cours"
-              value={String(rows.filter((row) => row.hasDraft).length)}
-            />
-            <DashboardCard label="À vérifier" value={String(attention.length)} />
-            <DashboardCard
-              label="Déploiement"
-              value={deployment.label}
-              color={deployment.color}
-              href={run?.html_url}
-            />
-          </section>
+        {error && (
+          <Card padding={4} radius={3} tone="critical">
+            <Text size={1}>Impossible de charger le tableau de bord : {error}</Text>
+          </Card>
+        )}
 
-          <section style={{marginTop: 38}}>
-            <h2 style={{fontSize: 22}}>Contenus à vérifier</h2>
-            {attention.length === 0 ? (
-              <p style={{padding: 18, background: '#F1F8F2'}}>Tout est prêt.</p>
-            ) : (
-              <div style={{display: 'grid', gap: 10}}>
-                {attention.map(({id, current, hasDraft, isPublished, summary}) => (
-                  <IntentLink
-                    key={id}
-                    intent="edit"
-                    params={{id, type: current._type}}
-                    style={{
-                      display: 'block',
-                      border: '1px solid #E3E1DE',
-                      color: '#1A1A1A',
-                      padding: 16,
-                      textDecoration: 'none',
-                    }}
-                  >
-                    <strong>{documentTitle(current)}</strong>
-                    <span style={{display: 'block', color: '#666', fontSize: 13, marginTop: 5}}>
-                      {typeLabels[current._type]} ·{' '}
-                      {hasDraft ? 'Brouillon en cours' : isPublished ? 'Publié' : 'Non publié'}
-                      {current.isVisible === false ? ' · Masqué' : ''} · {summary.completeCount}/
-                      {summary.totalCount} éléments prêts
-                    </span>
-                  </IntentLink>
-                ))}
-              </div>
-            )}
-          </section>
+        {!loading && !error && (
+          <>
+            <Grid columns={[2, 2, 4]} gap={3}>
+              <MetricCard
+                label="Collections"
+                value={String(galleries.filter((row) => row.isPublished).length)}
+                detail="publiées"
+              />
+              <MetricCard
+                label="Brouillons"
+                value={String(rows.filter((row) => row.hasDraft).length)}
+                detail="en cours"
+              />
+              <MetricCard label="À vérifier" value={String(attention.length)} detail="contenus" />
+              <DeploymentCard run={run} />
+            </Grid>
 
-          <section style={{marginTop: 38}}>
-            <h2 style={{fontSize: 22}}>Modifiés récemment</h2>
-            <div style={{display: 'grid', gap: 10}}>
-              {rows.slice(0, 6).map(({id, current}) => (
-                <IntentLink
-                  key={id}
-                  intent="edit"
-                  params={{id, type: current._type}}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    gap: 16,
-                    borderBottom: '1px solid #E3E1DE',
-                    color: '#1A1A1A',
-                    padding: '10px 0',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <span>{documentTitle(current)}</span>
-                  <small style={{color: '#666'}}>
-                    {new Date(current._updatedAt).toLocaleDateString('fr-FR')}
-                  </small>
-                </IntentLink>
-              ))}
-            </div>
-          </section>
-        </>
-      )}
-    </main>
+            <Stack space={3}>
+              <Flex align="center" justify="space-between">
+                <Heading as="h2" size={2}>
+                  À vérifier
+                </Heading>
+                <Badge mode="outline" tone={attention.length ? 'caution' : 'positive'}>
+                  {attention.length || 'Tout est prêt'}
+                </Badge>
+              </Flex>
+
+              {attention.length === 0 ? (
+                <Card padding={4} radius={3} tone="positive">
+                  <Text size={1}>Aucun contenu ne nécessite votre attention.</Text>
+                </Card>
+              ) : (
+                <Card radius={3} shadow={1} overflow="hidden">
+                  <Stack space={0}>
+                    {attention.map((row, index) => (
+                      <ContentRow
+                        key={row.id}
+                        row={row}
+                        withBorder={index < attention.length - 1}
+                      />
+                    ))}
+                  </Stack>
+                </Card>
+              )}
+            </Stack>
+
+            <Stack space={3}>
+              <Heading as="h2" size={2}>
+                Activité récente
+              </Heading>
+              <Card radius={3} tone="transparent" border>
+                <Stack space={0}>
+                  {rows.slice(0, 6).map((row, index) => (
+                    <RecentRow
+                      key={row.id}
+                      row={row}
+                      withBorder={index < Math.min(rows.length, 6) - 1}
+                    />
+                  ))}
+                </Stack>
+              </Card>
+            </Stack>
+          </>
+        )}
+      </Stack>
+    </Box>
   )
 }
 
-function DashboardCard({
-  label,
-  value,
-  color = '#1A1A1A',
-  href,
-}: {
-  label: string
-  value: string
-  color?: string
-  href?: string
-}) {
-  const content = (
-    <>
-      <span style={{display: 'block', color: '#666', fontSize: 13}}>{label}</span>
-      <strong style={{display: 'block', color, fontSize: 21, marginTop: 9}}>{value}</strong>
-    </>
+function MetricCard({label, value, detail}: {label: string; value: string; detail: string}) {
+  return (
+    <Card padding={3} radius={3} shadow={1}>
+      <Stack space={3}>
+        <Text muted size={1}>
+          {label}
+        </Text>
+        <Flex align="baseline" gap={2}>
+          <Heading size={3}>{value}</Heading>
+          <Text muted size={1}>
+            {detail}
+          </Text>
+        </Flex>
+      </Stack>
+    </Card>
   )
-  const style = {
-    display: 'block',
-    border: '1px solid #E3E1DE',
-    color: '#1A1A1A',
-    padding: 18,
-    textDecoration: 'none',
-  }
-  return href ? (
-    <a href={href} target="_blank" rel="noreferrer" style={style}>
+}
+
+function DeploymentCard({run}: {run: DeploymentRun | null}) {
+  const status = deploymentLabel(run)
+  const tone = !run
+    ? 'default'
+    : run.status !== 'completed'
+      ? 'caution'
+      : run.conclusion === 'success'
+        ? 'positive'
+        : 'critical'
+
+  const content = (
+    <Stack space={3}>
+      <Text muted size={1}>
+        Mise en ligne
+      </Text>
+      <Badge tone={tone} mode="light">
+        {status.label}
+      </Badge>
+    </Stack>
+  )
+
+  return run?.html_url ? (
+    <Card
+      as="a"
+      href={run.html_url}
+      target="_blank"
+      rel="noreferrer"
+      padding={3}
+      radius={3}
+      shadow={1}
+      style={{color: 'inherit', textDecoration: 'none'}}
+    >
       {content}
-    </a>
+    </Card>
   ) : (
-    <div style={style}>{content}</div>
+    <Card padding={3} radius={3} shadow={1}>
+      {content}
+    </Card>
+  )
+}
+
+function ContentRow({row, withBorder}: {row: DashboardRow; withBorder: boolean}) {
+  const missing = row.summary.totalCount - row.summary.completeCount
+  return (
+    <IntentLink
+      intent="edit"
+      params={{id: row.id, type: row.current._type}}
+      style={{color: 'inherit', textDecoration: 'none'}}
+    >
+      <Card
+        padding={3}
+        tone="transparent"
+        style={{borderBottom: withBorder ? '1px solid var(--card-border-color)' : undefined}}
+      >
+        <Flex align="center" justify="space-between" gap={3} wrap="wrap">
+          <Stack space={2} style={{minWidth: 0}}>
+            <Text size={1} weight="semibold" textOverflow="ellipsis">
+              {documentTitle(row.current)}
+            </Text>
+            <Flex align="center" gap={2} wrap="wrap">
+              <Text muted size={0}>
+                {typeLabels[row.current._type]}
+              </Text>
+              {row.hasDraft ? (
+                <Badge fontSize={0} mode="light" tone="caution">
+                  Brouillon
+                </Badge>
+              ) : row.isPublished ? (
+                <Badge fontSize={0} mode="light" tone="positive">
+                  Publié
+                </Badge>
+              ) : (
+                <Badge fontSize={0} mode="light">
+                  Non publié
+                </Badge>
+              )}
+              {row.current.isVisible === false && (
+                <Badge fontSize={0} mode="light" tone="critical">
+                  Masqué
+                </Badge>
+              )}
+              {!row.summary.requiredComplete && (
+                <Badge fontSize={0} mode="outline" tone="critical">
+                  Contenu incomplet
+                </Badge>
+              )}
+              {row.summary.requiredComplete && !row.summary.recommendedComplete && (
+                <Badge fontSize={0} mode="outline" tone="primary">
+                  SEO à compléter
+                </Badge>
+              )}
+            </Flex>
+          </Stack>
+          <Flex align="center" gap={2}>
+            <Text muted size={1}>
+              {missing} à compléter
+            </Text>
+            <Text muted size={1}>
+              ›
+            </Text>
+          </Flex>
+        </Flex>
+      </Card>
+    </IntentLink>
+  )
+}
+
+function RecentRow({row, withBorder}: {row: DashboardRow; withBorder: boolean}) {
+  return (
+    <IntentLink
+      intent="edit"
+      params={{id: row.id, type: row.current._type}}
+      style={{color: 'inherit', textDecoration: 'none'}}
+    >
+      <Flex
+        align="center"
+        justify="space-between"
+        gap={3}
+        padding={3}
+        style={{borderBottom: withBorder ? '1px solid var(--card-border-color)' : undefined}}
+      >
+        <Text size={1} textOverflow="ellipsis">
+          {documentTitle(row.current)}
+        </Text>
+        <Text muted size={0}>
+          {new Date(row.current._updatedAt).toLocaleDateString('fr-FR')}
+        </Text>
+      </Flex>
+    </IntentLink>
   )
 }
