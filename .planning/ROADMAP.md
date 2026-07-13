@@ -335,7 +335,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 4. Legal & Compliance | 3/3 | Complete    | 2026-07-08 |
 | 5. Launch & Domain Cutover | 0/TBD | Not started | - |
 | 6. Homepage View-Mode Toggle, Grid Hero & Wordmark Cutout | 1/1 | Complete   | 2026-07-13 |
-| 7. Homepage Quick Fixes & Mobile Hero Correctness | 2/2 | Complete   | 2026-07-13 |
+| 7. Homepage Quick Fixes & Mobile Hero Correctness | 2/2 | Complete    | 2026-07-13 |
 | 8. Gallery Descriptions | 0/TBD | Not started | - |
 | 9. Progressive Homepage Image Loading | 0/TBD | Not started | - |
 | 10. Unified Header & Simplified Language Switcher | 0/TBD | Not started | - |
