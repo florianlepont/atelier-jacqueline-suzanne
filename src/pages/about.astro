@@ -9,6 +9,10 @@
 // src/pages/index.astro; only import depth and copy differ from
 // src/pages/en/about.astro.
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { getSiteSettings } from '../lib/sanity';
+import { resolveSiteCopy } from '../lib/site-config';
+
+const siteCopy = resolveSiteCopy(await getSiteSettings(), 'fr');
 ---
 
 <BaseLayout title="À propos — Atelier Jacqueline Suzanne">
@@ -29,10 +33,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     <p>
       Suivez le travail de Romane sur Instagram :
       <a
-        href="https://www.instagram.com/ajs_romanelepont/"
+        href={siteCopy.instagramUrl}
         target="_blank"
         rel="noopener noreferrer"
-      >@ajs_romanelepont<span class="sr-only"> (nouvelle fenêtre)</span></a>
+      >{siteCopy.instagramLabel}<span class="sr-only"> (nouvelle fenêtre)</span></a>
     </p>
   </div>
 </BaseLayout>

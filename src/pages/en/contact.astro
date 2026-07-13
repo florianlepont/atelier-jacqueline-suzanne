@@ -3,8 +3,11 @@
 // src/pages/contact.astro; only import depth and copy differ.
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ContactForm from '../../components/ContactForm.astro';
+import { getSiteSettings } from '../../lib/sanity';
+import { resolveSiteCopy } from '../../lib/site-config';
 
 const locale = 'en' as const;
+const siteCopy = resolveSiteCopy(await getSiteSettings(), locale);
 ---
 
 <BaseLayout title="Contact — Atelier Jacqueline Suzanne">
@@ -14,10 +17,10 @@ const locale = 'en' as const;
     <p class="contact-page__social">
       You can also follow me on Instagram:
       <a
-        href="https://www.instagram.com/ajs_romanelepont/"
+        href={siteCopy.instagramUrl}
         target="_blank"
         rel="noopener noreferrer"
-      >@ajs_romanelepont<span class="sr-only"> (opens in new tab)</span></a>
+      >{siteCopy.instagramLabel}<span class="sr-only"> (opens in new tab)</span></a>
     </p>
     <ContactForm locale={locale} />
   </div>

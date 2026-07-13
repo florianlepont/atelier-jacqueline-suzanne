@@ -35,6 +35,14 @@ export const gallery = defineType({
     }),
     localeTextField('statement', 'Artist Statement'),
     defineField({
+      name: 'heroColor',
+      title: 'Homepage hero color',
+      type: 'color',
+      description:
+        'Background color of this collection\'s text panel in the homepage carousel. The automatic palette is used when no color is selected.',
+      options: {disableAlpha: true},
+    }),
+    defineField({
       name: 'images',
       title: 'Gallery Images',
       type: 'array',

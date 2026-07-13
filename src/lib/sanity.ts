@@ -44,20 +44,23 @@ export interface LocaleString {
 export interface SiteSettings {
   siteTitle: LocaleString
   navLabels: {
-    home: LocaleString
-    galleries: LocaleString
+    about?: Partial<LocaleString>
+    contact?: Partial<LocaleString>
   }
   footerText: LocaleString
-  welcomeHeading: LocaleString
-  welcomeBody: LocaleString
+  homepageIntro?: Partial<LocaleString>
+  socialLinks?: {
+    instagramUrl?: string
+    instagramLabel?: string
+  }
 }
 
 const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{
   siteTitle,
   navLabels,
   footerText,
-  welcomeHeading,
-  welcomeBody
+  homepageIntro,
+  socialLinks
 }`
 
 /**
@@ -87,15 +90,16 @@ export interface Gallery {
   title: string // D-04: not locale-aware — shared proper noun across fr/en
   slug: string
   statement: LocaleString
+  heroColor?: string
   images: GalleryImage[] // D-09: images[0] is always the cover
 }
 
 const GALLERIES_QUERY = /* groq */ `*[_type == "gallery"] | order(orderRank) {
-  title, "slug": slug.current, statement, images
+  title, "slug": slug.current, statement, "heroColor": heroColor.hex, images
 }`
 
 const GALLERY_BY_SLUG_QUERY = /* groq */ `*[_type == "gallery" && slug.current == $slug][0]{
-  title, "slug": slug.current, statement, images
+  title, "slug": slug.current, statement, "heroColor": heroColor.hex, images
 }`
 
 /**

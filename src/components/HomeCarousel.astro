@@ -23,19 +23,30 @@ interface GalleryEntry {
   heroSrc: string;
   gridSrc: string;
   alt: string;
+  heroColor?: string;
+  heroTextColor?: string;
+}
+
+interface SiteCopy {
+  aboutLabel: string;
+  contactLabel: string;
+  homepageIntro: string;
+  instagramUrl: string;
+  instagramLabel: string;
 }
 
 interface Props {
   locale: 'fr' | 'en';
   galleries: GalleryEntry[];
+  siteCopy: SiteCopy;
 }
 
-const { locale, galleries } = Astro.props;
+const { locale, galleries, siteCopy } = Astro.props;
 const isEn = locale === 'en';
 
-// Copy verbatim from the prototype (UI-SPEC Copywriting Contract) — hardcoded
-// per the "Homepage intro copy source" decision, not sourced from
-// siteSettings.welcomeHeading/welcomeBody.
+// Site-wide editable copy is resolved by the page at build time. Defaults in
+// site-config.ts preserve the prototype wording until the new Sanity fields
+// are populated.
 // homeHref is still needed below for the logo's own link — no separate
 // "Accueil"/"Home" nav link anymore (direct user feedback: redundant,
 // since clicking the logo already goes home).
@@ -45,9 +56,9 @@ const homeHref = getRelativeLocaleUrl(locale, '');
 //="none" suppresses BaseLayout's), but must still surface every primary
 // site section, not just Home/Galleries (real user feedback: About/Contact
 // were reported missing from the homepage nav).
-const aboutLabel = isEn ? 'About' : 'À propos';
+const aboutLabel = siteCopy.aboutLabel;
 const aboutHref = getRelativeLocaleUrl(locale, 'about');
-const contactLabel = 'Contact';
+const contactLabel = siteCopy.contactLabel;
 const contactHref = getRelativeLocaleUrl(locale, 'contact');
 // HOME-04 (D-05): reuses BaseLayout.astro's footer Instagram link's exact
 // href/target/rel/sr-only-hint semantics verbatim — this component doesn't
@@ -57,9 +68,7 @@ const instagramNewTabHint = isEn ? ' (opens in new tab)' : ' (nouvelle fenêtre)
 const toggleCarouselLabel = isEn ? 'Carousel' : 'Carrousel';
 const toggleGridLabel = isEn ? 'Grid' : 'Grille';
 const wordmark = 'Atelier Jacqueline Suzanne';
-const introBody = isEn
-  ? "This site showcases Romane Lepont's photographic work and lets you buy a piece directly online."
-  : "Le site présente le travail photographique de Romane Lepont et permet l'achat d'une œuvre directement en ligne.";
+const introBody = siteCopy.homepageIntro;
 const byline = isEn ? 'A project by Romane Lepont' : 'Un projet de Romane Lepont';
 
 const totalLabel = String(galleries.length).padStart(2, '0');
@@ -80,7 +89,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
   <section
     class="home"
     data-display-mode="carousel"
-    style={{ '--wordmark-photo': `url(${firstGallery.heroSrc})` }}
+    style={{
+      '--wordmark-photo': `url(${firstGallery.heroSrc})`,
+      '--current-accent': firstGallery.heroColor ?? 'var(--color-accent)',
+    }}
   >
     <header class="home-header" data-role="home-header">
       <a href={homeHref} class="home-logo" aria-label={wordmark}>
@@ -96,11 +108,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             D-04: bare icon, no bordered box — the glyph is expected to read
             as clickable on its own among the plain-text nav links. */}
         <a
-          href="https://www.instagram.com/ajs_romanelepont/"
+          href={siteCopy.instagramUrl}
           target="_blank"
           rel="noopener noreferrer"
           class="home-nav-link"
-          aria-label="Instagram"
+          aria-label={`Instagram ${siteCopy.instagramLabel}`}
         >
           {/* Hand-authored, dependency-free, currentColor-based glyph —
               rounded-square camera outline + lens + shutter dot — matching
@@ -196,7 +208,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         </div>
       </div>
 
-      <div class="home-hero__accent" data-role="accent-panel" style={{ color: 'var(--color-on-accent)' }}>
+      <div
+        class="home-hero__accent"
+        data-role="accent-panel"
+        style={{ color: firstGallery.heroTextColor ?? 'var(--color-on-accent)' }}
+      >
         {/* D-08: --wordmark-photo is server-rendered on the .home section
             (above) from firstGallery.heroSrc, so the transparent cutout text
             reveals a photo immediately, before and without JS; render() keeps
@@ -243,6 +259,8 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           data-hero-src={gallery.heroSrc}
           data-alt={gallery.alt}
           data-href={getRelativeLocaleUrl(locale, `galleries/${gallery.slug}`)}
+          data-hero-color={gallery.heroColor}
+          data-hero-text-color={gallery.heroTextColor}
         />
       ))}
     </ul>
@@ -253,6 +271,8 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         heroSrc: string;
         alt: string;
         href: string;
+        heroColor?: string;
+        heroTextColor?: string;
       }
 
       const root = document.querySelector<HTMLElement>('.home[data-display-mode]');
@@ -266,6 +286,8 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           heroSrc: li.dataset.heroSrc ?? '',
           alt: li.dataset.alt ?? '',
           href: li.dataset.href ?? '',
+          heroColor: li.dataset.heroColor || undefined,
+          heroTextColor: li.dataset.heroTextColor || undefined,
         }));
 
         // ACCENTS cycles generically via index % ACCENTS.length (RESEARCH.md
@@ -345,7 +367,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         function render() {
           const gallery = galleries[carouselIndex];
           if (!gallery) return;
-          const accent = ACCENTS[carouselIndex % ACCENTS.length];
+          const fallbackAccent = ACCENTS[carouselIndex % ACCENTS.length];
+          const accent = gallery.heroColor
+            ? { bg: gallery.heroColor, text: gallery.heroTextColor ?? 'var(--color-on-accent)' }
+            : fallbackAccent;
           if (heroImg) {
             heroImg.src = gallery.heroSrc;
             heroImg.alt = gallery.alt;

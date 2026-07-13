@@ -4,11 +4,12 @@ import {defineField, defineType} from 'sanity'
  * Locale-aware string pair: a single field carrying both FR and EN values.
  * Reused for every chrome/copy field this singleton exposes (D-09).
  */
-function localeStringField(name: string, title: string) {
+function localeStringField(name: string, title: string, hidden = false) {
   return defineField({
     name,
     title,
     type: 'object',
+    hidden,
     fields: [
       defineField({name: 'fr', title: 'French', type: 'string', validation: (rule) => rule.required()}),
       defineField({name: 'en', title: 'English', type: 'string', validation: (rule) => rule.required()}),
@@ -16,11 +17,12 @@ function localeStringField(name: string, title: string) {
   })
 }
 
-function localeTextField(name: string, title: string) {
+function localeTextField(name: string, title: string, hidden = false) {
   return defineField({
     name,
     title,
     type: 'object',
+    hidden,
     fields: [
       defineField({name: 'fr', title: 'French', type: 'text', rows: 3, validation: (rule) => rule.required()}),
       defineField({name: 'en', title: 'English', type: 'text', rows: 3, validation: (rule) => rule.required()}),
@@ -50,6 +52,7 @@ export const siteSettings = defineType({
             defineField({name: 'fr', title: 'French', type: 'string', validation: (rule) => rule.required()}),
             defineField({name: 'en', title: 'English', type: 'string', validation: (rule) => rule.required()}),
           ],
+          hidden: true,
         }),
         defineField({
           name: 'galleries',
@@ -59,12 +62,62 @@ export const siteSettings = defineType({
             defineField({name: 'fr', title: 'French', type: 'string', validation: (rule) => rule.required()}),
             defineField({name: 'en', title: 'English', type: 'string', validation: (rule) => rule.required()}),
           ],
+          hidden: true,
+        }),
+        defineField({
+          name: 'about',
+          title: 'About label',
+          type: 'object',
+          fields: [
+            defineField({name: 'fr', title: 'French', type: 'string'}),
+            defineField({name: 'en', title: 'English', type: 'string'}),
+          ],
+        }),
+        defineField({
+          name: 'contact',
+          title: 'Contact label',
+          type: 'object',
+          fields: [
+            defineField({name: 'fr', title: 'French', type: 'string'}),
+            defineField({name: 'en', title: 'English', type: 'string'}),
+          ],
         }),
       ],
     }),
     localeStringField('footerText', 'Footer Text'),
-    localeStringField('welcomeHeading', 'Homepage Welcome Heading'),
-    localeTextField('welcomeBody', 'Homepage Welcome Body'),
+    defineField({
+      name: 'homepageIntro',
+      title: 'Homepage introduction',
+      type: 'object',
+      description: 'Short text displayed in the colored homepage hero panel.',
+      fields: [
+        defineField({name: 'fr', title: 'French', type: 'text', rows: 3}),
+        defineField({name: 'en', title: 'English', type: 'text', rows: 3}),
+      ],
+    }),
+    defineField({
+      name: 'socialLinks',
+      title: 'Social links',
+      type: 'object',
+      fields: [
+        defineField({
+          name: 'instagramUrl',
+          title: 'Instagram URL',
+          type: 'url',
+          validation: (rule) => rule.uri({scheme: ['https']}).error('Use a complete HTTPS URL.'),
+        }),
+        defineField({
+          name: 'instagramLabel',
+          title: 'Instagram handle',
+          type: 'string',
+          description: 'For example: @ajs_romanelepont',
+        }),
+      ],
+    }),
+    // Obsolete fields kept in the schema so old Content Lake values remain
+    // addressable during migration. They are no longer shown or queried.
+    localeStringField('welcomeHeading', 'Legacy welcome heading', true),
+    localeTextField('welcomeBody', 'Legacy welcome body', true),
   ],
   preview: {
     select: {title: 'siteTitle.fr'},

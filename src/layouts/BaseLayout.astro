@@ -5,6 +5,7 @@
 // differs (UI-SPEC Layout Notes).
 import { getRelativeLocaleUrl } from 'astro:i18n';
 import { getSiteSettings } from '../lib/sanity';
+import { resolveSiteCopy } from '../lib/site-config';
 import LanguageSwitcher from '../components/LanguageSwitcher.astro';
 // D-02/RESEARCH.md Pattern 1: self-hosted Unbounded, 900 (black) weight only
 // (Heading/Display role) — bundles the woff2 + @font-face at build time, no
@@ -49,17 +50,15 @@ const siteSettings = await getSiteSettings();
 // unguarded nested access here would fail the entire site build.
 const siteTitle = siteSettings?.siteTitle?.[locale] ?? 'Atelier Jacqueline Suzanne';
 const footerText = siteSettings?.footerText?.[locale] ?? '';
+const siteCopy = resolveSiteCopy(siteSettings, locale);
 // homeHref is still needed below for the logo's own link — no separate
 // "Accueil"/"Home" nav link anymore (direct user feedback: redundant,
 // since clicking the logo already goes home).
 const homeHref = getRelativeLocaleUrl(locale, '');
-// About content is not in CMS scope (CMS-01 is galleries-only), so this
-// label is a hardcoded locale conditional rather than a Sanity navLabels
-// field.
-const aboutLabel = locale === 'en' ? 'About' : 'À propos';
+// Current navigation labels are editable in the siteSettings singleton.
+const aboutLabel = siteCopy.aboutLabel;
 const aboutHref = getRelativeLocaleUrl(locale, 'about');
-// Contact content is likewise outside CMS-01's galleries-only scope.
-const contactLabel = locale === 'en' ? 'Contact' : 'Contact';
+const contactLabel = siteCopy.contactLabel;
 const contactHref = getRelativeLocaleUrl(locale, 'contact');
 // Legal pages (Phase 4, D-06): footer-only links, every page, not scoped to
 // About/Contact. Same hardcoded locale-conditional pattern as above — legal
@@ -141,7 +140,7 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
       </nav>
       <nav class="footer-social-nav" aria-label="Social">
         <a
-          href="https://www.instagram.com/ajs_romanelepont/"
+          href={siteCopy.instagramUrl}
           target="_blank"
           rel="noopener noreferrer"
           class="nav-link"

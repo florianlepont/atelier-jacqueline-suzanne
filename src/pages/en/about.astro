@@ -8,6 +8,10 @@
 // before launch. Identical layout to src/pages/about.astro; only import
 // depth and copy differ.
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getSiteSettings } from '../../lib/sanity';
+import { resolveSiteCopy } from '../../lib/site-config';
+
+const siteCopy = resolveSiteCopy(await getSiteSettings(), 'en');
 ---
 
 <BaseLayout title="About — Atelier Jacqueline Suzanne">
@@ -26,10 +30,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     <p>
       Follow Romane's work on Instagram:
       <a
-        href="https://www.instagram.com/ajs_romanelepont/"
+        href={siteCopy.instagramUrl}
         target="_blank"
         rel="noopener noreferrer"
-      >@ajs_romanelepont<span class="sr-only"> (opens in new tab)</span></a>
+      >{siteCopy.instagramLabel}<span class="sr-only"> (opens in new tab)</span></a>
     </p>
   </div>
 </BaseLayout>

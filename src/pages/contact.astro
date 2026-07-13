@@ -7,8 +7,11 @@
 // src/pages/en/contact.astro.
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ContactForm from '../components/ContactForm.astro';
+import { getSiteSettings } from '../lib/sanity';
+import { resolveSiteCopy } from '../lib/site-config';
 
 const locale = 'fr' as const;
+const siteCopy = resolveSiteCopy(await getSiteSettings(), locale);
 ---
 
 <BaseLayout title="Contact — Atelier Jacqueline Suzanne">
@@ -18,10 +21,10 @@ const locale = 'fr' as const;
     <p class="contact-page__social">
       Vous pouvez aussi me suivre sur Instagram :
       <a
-        href="https://www.instagram.com/ajs_romanelepont/"
+        href={siteCopy.instagramUrl}
         target="_blank"
         rel="noopener noreferrer"
-      >@ajs_romanelepont<span class="sr-only"> (nouvelle fenêtre)</span></a>
+      >{siteCopy.instagramLabel}<span class="sr-only"> (nouvelle fenêtre)</span></a>
     </p>
     <ContactForm locale={locale} />
   </div>
