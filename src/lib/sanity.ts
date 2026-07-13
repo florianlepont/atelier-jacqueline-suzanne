@@ -106,6 +106,7 @@ export interface Gallery {
   heroColor?: string
   isVisible?: boolean
   publicationStatus?: 'preparation' | 'published' | 'archived'
+  showOnHomePage?: boolean
   seo?: SeoSettings
   images: GalleryImage[] // D-09: images[0] is always the cover
 }
@@ -113,11 +114,11 @@ export interface Gallery {
 const PUBLISHED_GALLERY_FILTER = /* groq */ `coalesce(publicationStatus, select(isVisible == false => "preparation", "published")) == "published"`
 
 const GALLERIES_QUERY = /* groq */ `*[_type == "gallery" && ${PUBLISHED_GALLERY_FILTER}] | order(orderRank) {
-  title, "slug": slug.current, statement, heroColor, publicationStatus, "isVisible": coalesce(isVisible, true), seo, images
+  title, "slug": slug.current, statement, heroColor, publicationStatus, "showOnHomePage": coalesce(showOnHomePage, true), "isVisible": coalesce(isVisible, true), seo, images
 }`
 
 const GALLERY_BY_SLUG_QUERY = /* groq */ `*[_type == "gallery" && slug.current == $slug && ${PUBLISHED_GALLERY_FILTER}][0]{
-  title, "slug": slug.current, statement, heroColor, publicationStatus, "isVisible": coalesce(isVisible, true), seo, images
+  title, "slug": slug.current, statement, heroColor, publicationStatus, "showOnHomePage": coalesce(showOnHomePage, true), "isVisible": coalesce(isVisible, true), seo, images
 }`
 
 export interface AboutPage {

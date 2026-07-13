@@ -84,6 +84,12 @@ export const ContentPreview: UserViewComponent = ({document, schemaType}) => {
             site.
           </p>
         )}
+        {value.showOnHomePage === false && (
+          <p style={{background: '#FFF1C7', padding: 12}}>
+            La page de cette collection reste publique, mais elle n’apparaît pas sur la page
+            d’accueil.
+          </p>
+        )}
         <div style={{background: '#1A1A1A', color: '#FFFFFF', overflow: 'hidden'}}>
           {cover ? (
             <img

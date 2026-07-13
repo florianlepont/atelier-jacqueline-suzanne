@@ -61,6 +61,15 @@ describe('getGalleries', () => {
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('statement, heroColor'));
   });
 
+  it('projects whether a collection is selected for the homepage', async () => {
+    fetchMock.mockResolvedValueOnce([]);
+
+    const { getGalleries } = await import('../../src/lib/sanity');
+    await getGalleries();
+
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('showOnHomePage'));
+  });
+
   it('excludes collections explicitly hidden in Sanity', async () => {
     fetchMock.mockResolvedValueOnce([]);
 

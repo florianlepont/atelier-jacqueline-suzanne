@@ -50,7 +50,7 @@ export const gallery = defineType({
   name: 'gallery',
   title: 'Collection photo',
   type: 'document',
-  initialValue: {publicationStatus: 'published'},
+  initialValue: {publicationStatus: 'published', showOnHomePage: true},
   groups: [
     {name: 'publication', title: 'Publication', default: true},
     {name: 'content', title: 'Présentation'},
@@ -112,6 +112,15 @@ export const gallery = defineType({
     }),
     localeTextField('statement', 'Texte de présentation', 'content'),
     defineField({
+      name: 'showOnHomePage',
+      title: "Afficher sur la page d'accueil",
+      type: 'boolean',
+      group: 'homepage',
+      description:
+        'Désactiver pour conserver la page publique de la collection sans la montrer dans le carrousel ni dans la grille de l’accueil.',
+      initialValue: true,
+    }),
+    defineField({
       name: 'heroColor',
       title: "Couleur sur la page d'accueil",
       type: 'string',
@@ -129,7 +138,7 @@ export const gallery = defineType({
       type: 'array',
       group: 'photos',
       description:
-        "Glisser-déposer plusieurs images ici. La première photo sert de couverture sur la page d'accueil ; réordonner les photos par glisser-déposer.",
+        "Glisser-déposer plusieurs images ici. La première photo sert de couverture sur la page d'accueil ; réordonner les photos par glisser-déposer. Pour réutiliser une image existante, choisir « Ajouter » puis « Sélectionner ».",
       // D-01/D-02/CMS-01: `alt` fields are attached directly onto an `image`-
       // type array member (rather than nesting `image` inside a separate
       // `object` wrapper type) so Sanity Studio still recognizes each array
@@ -224,10 +233,11 @@ export const gallery = defineType({
       media: 'images.0',
       heroColor: 'heroColor',
       publicationStatus: 'publicationStatus',
+      showOnHomePage: 'showOnHomePage',
       isVisible: 'isVisible',
       ...previewImageKeys,
     },
-    prepare({title, media, heroColor, publicationStatus, isVisible, ...imageKeys}) {
+    prepare({title, media, heroColor, publicationStatus, showOnHomePage, isVisible, ...imageKeys}) {
       const count = Object.values(imageKeys).filter(Boolean).length
       const color = HERO_COLOR_OPTIONS.find((option) => option.value === heroColor)?.title
       const photoLabel = `${count}${count === PREVIEW_IMAGE_LIMIT ? '+' : ''} photo${count > 1 ? 's' : ''}`
@@ -239,7 +249,7 @@ export const gallery = defineType({
             : 'Publiée'
       return {
         title: title || 'Collection sans nom',
-        subtitle: `${status} · ${photoLabel} · ${color || 'Palette automatique'}`,
+        subtitle: `${status}${showOnHomePage === false ? ' · Hors accueil' : ''} · ${photoLabel} · ${color || 'Palette automatique'}`,
         media,
       }
     },

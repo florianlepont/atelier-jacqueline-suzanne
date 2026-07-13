@@ -5,6 +5,7 @@ import {schemaTypes} from './schemas'
 import {defaultDocumentNode, structure} from './schemas/structure'
 import {EditorialDashboard} from './editorial/EditorialDashboard'
 import {resolveActions, resolveBadges} from './editorial/workflow'
+import {MediaLibrary} from './editorial/MediaLibrary'
 
 export default defineConfig({
   name: 'default',
@@ -19,6 +20,7 @@ export default defineConfig({
 
   tools: (prev) => [
     {name: 'dashboard', title: 'Tableau de bord', component: EditorialDashboard},
+    {name: 'media', title: 'Médiathèque', component: MediaLibrary},
     ...prev,
   ],
 
@@ -30,7 +32,7 @@ export default defineConfig({
         title: 'Nouvelle collection photo',
         description: 'Collection visible avec les réglages recommandés déjà préparés.',
         schemaType: 'gallery',
-        value: {publicationStatus: 'published'},
+        value: {publicationStatus: 'published', showOnHomePage: true},
       },
       ...prev.filter((template) => template.id !== 'gallery'),
     ],
