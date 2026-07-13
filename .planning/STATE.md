@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
-status: Roadmap created, awaiting `/gsd-plan-phase 6`
-stopped_at: Phase 6 UI-SPEC approved
-last_updated: "2026-07-12T12:54:39.542Z"
-last_activity: 2026-07-12 — v1.1 ROADMAP.md created (HOME-01/02/03 mapped to Phase 6, 3/3 coverage)
+status: v1.1 milestone complete
+stopped_at: Phase 6 complete
+last_updated: "2026-07-13T10:23:27.221Z"
+last_activity: 2026-07-13 -- Phase 6 completed (06-01-SUMMARY.md written; live post-checkpoint mobile/navigation follow-on reconciled into tracked history)
 progress:
   total_phases: 9
-  completed_phases: 7
-  total_plans: 25
-  completed_plans: 25
-  percent: 78
+  completed_phases: 8
+  total_plans: 26
+  completed_plans: 26
+  percent: 100
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-05)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; checkout follows in v1.x.)
-**Current focus:** Phase 6 — homepage view-mode toggle, grid hero & wordmark cutout (ROADMAP.md created, not yet planned)
+**Current focus:** v1.1 milestone complete. Phase 5 (Launch & Domain Cutover) is the only remaining phase in the v1/v1.1 roadmap, not yet started.
 
 ## Current Position
 
-Phase: Phase 6 (Homepage View-Mode Toggle, Grid Hero & Wordmark Cutout) — roadmapped, not yet planned
-Plan: —
-Status: Roadmap created, awaiting `/gsd-plan-phase 6`
-Last activity: 2026-07-12 — v1.1 ROADMAP.md created (HOME-01/02/03 mapped to Phase 6, 3/3 coverage)
+Phase: 6 (homepage-view-mode-toggle-grid-hero-wordmark-cutout) — COMPLETE
+Plan: 1 of 1 (complete)
+Status: Phase 6 complete — v1.1 milestone delivered
+Last activity: 2026-07-13 -- Phase 6 completed (06-01-SUMMARY.md written; live post-checkpoint mobile/navigation follow-on reconciled into tracked history)
 
 ## Performance Metrics
 
@@ -62,6 +62,7 @@ Last activity: 2026-07-12 — v1.1 ROADMAP.md created (HOME-01/02/03 mapped to P
 | Phase 02 P02 | 25 | 2 tasks | 5 files |
 | Phase 02 P03 | ~2h (incl. content migration + 2 real bugs found/fixed) | 3 tasks | 8 files |
 | Phase 02 P04 | 90 | 3 tasks | 3 files |
+| Phase 06 P01 | ~21h elapsed (two sessions, long overnight gap) | 3 planned tasks + live post-checkpoint follow-on | 3 files |
 
 ## Accumulated Context
 
@@ -72,6 +73,7 @@ Last activity: 2026-07-12 — v1.1 ROADMAP.md created (HOME-01/02/03 mapped to P
 - Phase 04.3 inserted after Phase 4: Homepage Refinements: logo hover crossfade, remove standalone Galleries page (grid view on homepage is now the sole browse entry point), icon-based carousel/grid toggle, fix mobile hero visibility bug, three-line wordmark, clickable gallery names in carousel + grid modes (URGENT)
 - Phase 04.3 planned: 3 plans, 2 waves — plan-checker VERIFICATION PASSED, all 11 CONTEXT.md decisions covered
 - v1.1 milestone (Homepage Refinements) roadmapped 2026-07-12: single new Phase 6 (integer, continuing numbering from v1.0's last phase, Phase 5) covers all three v1.1 requirements (HOME-01, HOME-02, HOME-03) — tightly-scoped, single-component (HomeCarousel.astro) refinement, so kept as one phase rather than split. Per PROJECT.md, Phase 6 is intended to execute before Phase 5's domain cutover despite the higher phase number (numbering reflects milestone-arrival order, not execution sequence).
+- Phase 6 completed 2026-07-13: HOME-01/02/03 delivered per plan (commits `ad27437`..`dbebd6f`), plus a substantial live post-checkpoint follow-on (commit `44cc10d`) reworking the mobile hero (full-bleed `100svh`, panel overlaid on the photo) and replacing the arrow-button navigation with a clickable dashed progress indicator plus keyboard/swipe support — none of this follow-on was in the original plan; it was discovered through direct use after Task 3's checkpoint was already approved, and reconciled into tracked history via `06-01-SUMMARY.md` per explicit user request. v1.1 milestone is now complete; Phase 5 (Launch & Domain Cutover) is the only remaining phase.
 
 ### Decisions
 
@@ -99,6 +101,10 @@ Recent decisions affecting current work:
 - [Phase 02]: Restricted sanityClient to perspective: 'published' so build-time queries never pull in unpublished drafts — an in-progress draft gallery (title set, no images) reached getGalleries() and crashed the static build with a null images array — published-only perspective ensures Romane's mid-edit documents can never break a production build
 - [Phase 02]: Pushed to origin/main mid-phase to verify the CMS-01/lightbox checkpoint against real deployed GitHub Pages staging content, including a genuine mobile-device touch test — user chose live verification over local-only preview since real touch-swipe feel and Romane's unassisted Studio workflow can't be confidently confirmed from a local dev server
 - [Phase 02]: Overrode D-13 (all-known-projects-migrated) to close Phase 2 with 2/8 projects published (Silos, Brume) — the content-migration pipeline is proven end-to-end with real content; remaining 6 projects (Rebut, Adults, The Victorian Tea Room, Paysages, Accumulation, MADO) are tracked as follow-up content work, not a code blocker — user explicitly accepted this override
+- [Phase 06]: Mobile hero restructured into two independently-sized boxes (.home-hero__photo / .home-hero__accent) after live feedback surfaced overlap bugs — the accent panel's own in-flow height was stretching the absolutely-positioned photo/caption/arrows that shared its containing block; hardcoded pixel offsets kept breaking as content changed, so the structural fix removed the need for them
+- [Phase 06]: Mobile hero uses 100svh, not 100vh — 100vh resolves to the large (chrome-hidden) viewport on real mobile Safari, letting the site footer peek in before the user scrolls; 100svh always reflects the guaranteed-visible area
+- [Phase 06]: Prev/next arrow buttons replaced with a compact (~20-30% viewport width) clickable dashed progress indicator plus keyboard ArrowLeft/ArrowRight and touch-swipe navigation, per direct user request — arrows are gone from the component entirely
+- [Phase 06]: Mobile-only wordmark background-position bypass (added when the panel briefly sat below the photo) was removed once the panel returned to overlaying the photo — mobile now shares desktop's live pixel-alignment computation, not an approximation
 
 ### Pending Todos
 
@@ -121,7 +127,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-12T12:54:39.539Z
-Stopped at: Phase 6 UI-SPEC approved
-Resume file: .planning/phases/06-homepage-view-mode-toggle-grid-hero-wordmark-cutout/06-UI-SPEC.md
+Last session: 2026-07-13T10:23:27.221Z
+Stopped at: Phase 6 complete — v1.1 milestone delivered
+Resume file: .planning/phases/06-homepage-view-mode-toggle-grid-hero-wordmark-cutout/06-01-SUMMARY.md
 </content>
