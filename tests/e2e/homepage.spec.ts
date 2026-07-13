@@ -212,6 +212,32 @@ test.describe('grid hero wordmark cutout — mobile (HOME-03, D-05 reversal)', (
   });
 });
 
+// quick-260713-jfz: the toggle's DOM mutation now runs inside
+// document.startViewTransition() (feature-detected). View Transitions
+// themselves cannot be meaningfully pixel/frame-asserted in Playwright, so
+// this is a robust, non-visual, non-timing functional assertion — it only
+// proves the transition wrapping doesn't break the swap under the
+// reduced-motion CSS path (where the animation is disabled but the DOM
+// mutation still must occur).
+test.describe('view-transition toggle — reduced-motion still swaps modes', () => {
+  test('toggling with prefers-reduced-motion: reduce still functionally swaps carousel/grid', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/');
+
+    const carousel = page.locator('[data-role="home-carousel"]');
+    const grid = page.locator('[data-role="home-grid"]');
+    await expect(carousel).toBeVisible();
+
+    await page.getByRole('button', { name: 'Grille' }).click();
+    await expect(carousel).toBeHidden();
+    await expect(grid).toBeVisible();
+
+    await page.getByRole('button', { name: 'Carrousel' }).click();
+    await expect(carousel).toBeVisible();
+    await expect(grid).toBeHidden();
+  });
+});
+
 test.describe('mobile hero visibility (D-08)', () => {
   test('hero renders visibly at a 375px-wide viewport, not collapsed/blank', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
