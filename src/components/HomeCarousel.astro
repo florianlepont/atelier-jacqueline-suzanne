@@ -23,6 +23,7 @@ interface GalleryEntry {
   heroSrc: string;
   gridSrc: string;
   alt: string;
+  statement: string;
   heroColor?: string;
   heroTextColor?: string;
 }
@@ -69,7 +70,7 @@ const toggleCarouselLabel = isEn ? 'Carousel' : 'Carrousel';
 const toggleGridLabel = isEn ? 'Grid' : 'Grille';
 const wordmark = 'Atelier Jacqueline Suzanne';
 const introBody = siteCopy.homepageIntro;
-const byline = isEn ? 'A project by Romane Lepont' : 'Un projet de Romane Lepont';
+const fallbackByline = isEn ? 'A project by Romane Lepont' : 'Un projet de Romane Lepont';
 
 const totalLabel = String(galleries.length).padStart(2, '0');
 const firstGallery = galleries[0];
@@ -204,7 +205,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           </div>
           <p class="home-hero__index" data-role="index-label">01 / {totalLabel}</p>
           <a class="home-hero__title" data-role="gallery-title" href={getRelativeLocaleUrl(locale, `galleries/${firstGallery.slug}`)}>{firstGallery.title.toUpperCase()}</a>
-          <p class="home-hero__byline">{byline}</p>
+          <p class="home-hero__byline" data-role="gallery-statement">{firstGallery.statement || fallbackByline}</p>
         </div>
       </div>
 
@@ -243,7 +244,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
               class="home-grid__tile-img"
             />
             <div class="home-grid__tile-scrim" aria-hidden="true"></div>
-            <span class="home-grid__tile-title">{gallery.title}</span>
+            <span class="home-grid__tile-copy">
+              <span class="home-grid__tile-title">{gallery.title}</span>
+              {gallery.statement && <span class="home-grid__tile-description">{gallery.statement}</span>}
+            </span>
           </a>
         ))}
       </div>
@@ -258,6 +262,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           data-title={gallery.title}
           data-hero-src={gallery.heroSrc}
           data-alt={gallery.alt}
+          data-statement={gallery.statement}
           data-href={getRelativeLocaleUrl(locale, `galleries/${gallery.slug}`)}
           data-hero-color={gallery.heroColor}
           data-hero-text-color={gallery.heroTextColor}
@@ -270,6 +275,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         title: string;
         heroSrc: string;
         alt: string;
+        statement: string;
         href: string;
         heroColor?: string;
         heroTextColor?: string;
@@ -285,6 +291,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           title: li.dataset.title ?? '',
           heroSrc: li.dataset.heroSrc ?? '',
           alt: li.dataset.alt ?? '',
+          statement: li.dataset.statement ?? '',
           href: li.dataset.href ?? '',
           heroColor: li.dataset.heroColor || undefined,
           heroTextColor: li.dataset.heroTextColor || undefined,
@@ -305,6 +312,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         const heroImg = hero.querySelector<HTMLImageElement>('[data-role="hero-image"]');
         const indexLabel = hero.querySelector<HTMLElement>('[data-role="index-label"]');
         const titleEl = hero.querySelector<HTMLElement>('[data-role="gallery-title"]');
+        const statementEl = hero.querySelector<HTMLElement>('[data-role="gallery-statement"]');
         const accentPanel = hero.querySelector<HTMLElement>('[data-role="accent-panel"]');
         const wordmarkEl = hero.querySelector<HTMLElement>('.home-hero__wordmark');
         const progressDashes = Array.from(hero.querySelectorAll<HTMLButtonElement>('[data-role="progress"] .home-hero__progress-dash'));
@@ -386,6 +394,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           if (titleEl) {
             titleEl.textContent = gallery.title.toUpperCase();
             titleEl.setAttribute('href', gallery.href);
+          }
+          if (statementEl) {
+            statementEl.textContent = gallery.statement || (document.documentElement.lang === 'en'
+              ? 'A project by Romane Lepont'
+              : 'Un projet de Romane Lepont');
           }
           if (accentPanel) {
             accentPanel.style.color = accent.text;
@@ -1308,16 +1321,41 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     background: linear-gradient(to top, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.15) 45%, rgba(0, 0, 0, 0) 70%);
   }
 
-  .home-grid__tile-title {
+  .home-grid__tile-copy {
     position: absolute;
     left: var(--space-md);
     bottom: var(--space-md);
+    right: var(--space-md);
     z-index: 2;
+    color: #FFFFFF;
+  }
+
+  .home-grid__tile-title {
+    display: block;
     font-family: var(--font-display);
     font-size: 32px; /* Display role, fixed */
     font-weight: var(--weight-semibold);
     line-height: 1.2;
-    color: #FFFFFF;
+  }
+
+  .home-grid__tile-description {
+    display: -webkit-box;
+    margin-top: var(--space-sm);
+    max-width: 52ch;
+    overflow: hidden;
+    font-size: 14px;
+    line-height: 1.4;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 180ms ease, transform 180ms ease;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  .home-grid__tile:hover .home-grid__tile-description,
+  .home-grid__tile:focus-visible .home-grid__tile-description {
+    opacity: 1;
+    transform: translateY(0);
   }
 
   /* Mobile responsive (D-10, UI-SPEC Layout Notes — Homepage Mobile). */

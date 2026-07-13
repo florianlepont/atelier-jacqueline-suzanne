@@ -1,32 +1,27 @@
 ---
-// English About page (ABOUT-01, ABOUT-02): bio + atelier/practice section.
-// Hardcoded content (Pattern 3 — no Sanity fetch): live-site verification
-// found no existing bio/practice text to migrate (03-RESEARCH.md Open
-// Question 1, resolved by 03-CONTEXT.md Post-Research Amendment), so this
-// page ships with clearly-marked italic placeholder copy — same treatment
-// as the locked D-06 medium/technique placeholder — for Romane to replace
-// before launch. Identical layout to src/pages/about.astro; only import
-// depth and copy differ.
+// English About page: mirrors the French Sanity-managed page.
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getSiteSettings } from '../../lib/sanity';
+import { getAboutPage, getSiteSettings } from '../../lib/sanity';
 import { resolveSiteCopy } from '../../lib/site-config';
+import { fullSizeUrl } from '../../lib/image';
 
 const siteCopy = resolveSiteCopy(await getSiteSettings(), 'en');
+const about = await getAboutPage();
+const biography = about?.biography?.en ?? "Romane's biography will be available here soon.";
+const practice = about?.practice?.en ?? "Information about Romane's studio and practice is coming soon.";
+const medium = about?.medium?.en ?? 'Details on medium and technique are coming soon.';
+const seoTitle = about?.seo?.title?.en ?? 'About — Atelier Jacqueline Suzanne';
+const seoDescription = about?.seo?.description?.en ?? biography;
+const socialImage = about?.seo?.image ? fullSizeUrl(about.seo.image, 1200) : undefined;
 ---
 
-<BaseLayout title="About — Atelier Jacqueline Suzanne">
+<BaseLayout title={seoTitle} description={seoDescription} socialImage={socialImage}>
   <div class="about-page">
     <h1>About</h1>
-    <p class="placeholder">
-      Romane's biography will be available here soon — pending her final text.
-    </p>
+    <p>{biography}</p>
     <h2>Studio &amp; practice</h2>
-    <p class="placeholder">
-      Information about Romane's studio and practice is coming soon.
-    </p>
-    <p class="placeholder">
-      Details on medium and technique coming soon — pending confirmation with the artist.
-    </p>
+    <p>{practice}</p>
+    <p>{medium}</p>
     <p>
       Follow Romane's work on Instagram:
       <a
@@ -68,7 +63,4 @@ const siteCopy = resolveSiteCopy(await getSiteSettings(), 'en');
     margin: 0 0 var(--space-md);
   }
 
-  .about-page .placeholder {
-    font-style: italic;
-  }
 </style>

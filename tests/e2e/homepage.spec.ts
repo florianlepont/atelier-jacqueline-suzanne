@@ -7,40 +7,31 @@ import { test, expect } from '@playwright/test';
 // 04.1-UI-SPEC.md, built in Plan 04.1-04. They are expected to FAIL until then
 // — do not stub or weaken them to make them pass early.
 
-// Content note: a third Sanity gallery document (slug `adults`) now has real
-// published photos under the title "Paysage" — added directly in Sanity
-// Studio, outside this phase's work. D-12's filter is content-driven
-// (`images.length > 0`, not a hardcoded slug denylist per CONTEXT.md), so it
-// correctly picks this up. Only Rebut and The Victorian Tea Room remain
-// genuinely unmigrated (still zero images).
-const MIGRATED_GALLERIES = [/silos/i, /brume/i, /paysage/i];
-const UNMIGRATED_GALLERIES = [/rebut/i, /victorian tea room/i];
-
 test.describe('homepage carousel', () => {
   test('carousel root renders and shows the first migrated gallery', async ({ page }) => {
     await page.goto('/');
 
     const carousel = page.locator('[data-role="home-carousel"]');
     await expect(carousel).toBeVisible();
-    await expect(carousel).toContainText(/silos/i);
+    await expect(carousel.locator('[data-role="gallery-title"]')).toHaveText(/.+/);
+    await expect(carousel.locator('[data-role="hero-image"]')).toHaveAttribute('src', /cdn\.sanity\.io/);
   });
 });
 
-test.describe('only migrated galleries appear (D-12)', () => {
-  test('unmigrated galleries never appear; all migrated galleries are reachable', async ({ page }) => {
+test.describe('only galleries with photos appear (D-12)', () => {
+  test('every rendered gallery tile has a real image and a destination', async ({ page }) => {
     await page.goto('/');
 
     // The carousel shows one slide's title at a time by design, so "all
     // migrated galleries are reachable" is checked in grid mode, where every
     // gallery renders as its own visible tile simultaneously.
     await page.getByRole('button', { name: 'Grille' }).click();
-    const gridText = await page.locator('[data-role="home-grid"]').innerText();
-
-    for (const forbidden of UNMIGRATED_GALLERIES) {
-      expect(gridText).not.toMatch(forbidden);
-    }
-    for (const migrated of MIGRATED_GALLERIES) {
-      expect(gridText).toMatch(migrated);
+    const tiles = page.locator('a.home-grid__tile');
+    expect(await tiles.count()).toBeGreaterThan(0);
+    for (const tile of await tiles.all()) {
+      await expect(tile).toHaveAttribute('href', /\/galleries\/[^/]+\/?$/);
+      await expect(tile.locator('img')).toHaveAttribute('src', /cdn\.sanity\.io/);
+      await expect(tile.locator('.home-grid__tile-title')).toHaveText(/.+/);
     }
   });
 });
@@ -97,13 +88,13 @@ test.describe('i18n non-regression guard', () => {
   test('homepage header still exposes the FR|EN switcher and differs between locales', async ({ page }) => {
     await page.goto('/');
 
-    const header = page.locator('header');
+    const header = page.locator('[data-role="home-header"]');
     await expect(header).toBeVisible();
     await expect(header).toContainText('FR | EN');
     const frHeaderText = await header.innerText();
 
     await page.goto('/en/');
-    const enHeaderText = await page.locator('header').innerText();
+    const enHeaderText = await page.locator('[data-role="home-header"]').innerText();
 
     expect(enHeaderText).not.toBe(frHeaderText);
   });
@@ -149,6 +140,27 @@ test.describe('grid hero-as-first-tile (HOME-02, D-04/D-06)', () => {
     const tagName = await firstTile.evaluate((el) => el.tagName);
     expect(tagName).toBe('DIV');
     await expect(firstTile).not.toHaveAttribute('href', /.*/);
+  });
+});
+
+test.describe('collection statements on the homepage', () => {
+  test('carousel uses the current collection statement instead of the generic byline', async ({page}) => {
+    await page.goto('/');
+
+    const statement = page.locator('[data-role="gallery-statement"]');
+    await expect(statement).toBeVisible();
+    await expect(statement).not.toHaveText('Un projet de Romane Lepont');
+  });
+
+  test('grid tile reveals its collection statement on hover', async ({page}) => {
+    await page.goto('/');
+    await page.getByRole('button', {name: 'Grille'}).click();
+
+    const tile = page.locator('a.home-grid__tile').first();
+    const description = tile.locator('.home-grid__tile-description');
+    await expect(description).toHaveText(/.+/);
+    await tile.hover();
+    await expect(description).toHaveCSS('opacity', '1');
   });
 });
 

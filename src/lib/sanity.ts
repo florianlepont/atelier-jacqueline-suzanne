@@ -40,6 +40,17 @@ export interface LocaleString {
   en: string
 }
 
+export interface SanityImage {
+  asset: {_ref: string}
+  hotspot?: {x: number; y: number; height: number; width: number}
+}
+
+export interface SeoSettings {
+  title?: Partial<LocaleString>
+  description?: Partial<LocaleString>
+  image?: SanityImage
+}
+
 /** The published `siteSettings` singleton, typed for both locales. */
 export interface SiteSettings {
   siteTitle: LocaleString
@@ -53,6 +64,7 @@ export interface SiteSettings {
     instagramUrl?: string
     instagramLabel?: string
   }
+  defaultSeo?: SeoSettings
 }
 
 const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{
@@ -60,7 +72,8 @@ const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{
   navLabels,
   footerText,
   homepageIntro,
-  socialLinks
+  socialLinks,
+  defaultSeo
 }`
 
 /**
@@ -79,9 +92,7 @@ export async function getSiteSettings(): Promise<SiteSettings | null> {
  * `image`-type array member — see sanity/schemas/gallery.ts — which is what
  * preserves Studio's native multi-file drag-and-drop upload.
  */
-export interface GalleryImage {
-  asset: {_ref: string}
-  hotspot?: {x: number; y: number; height: number; width: number}
+export interface GalleryImage extends SanityImage {
   alt: LocaleString
 }
 
@@ -91,15 +102,31 @@ export interface Gallery {
   slug: string
   statement: LocaleString
   heroColor?: string
+  isVisible?: boolean
+  seo?: SeoSettings
   images: GalleryImage[] // D-09: images[0] is always the cover
 }
 
-const GALLERIES_QUERY = /* groq */ `*[_type == "gallery"] | order(orderRank) {
-  title, "slug": slug.current, statement, heroColor, images
+const GALLERIES_QUERY = /* groq */ `*[_type == "gallery" && coalesce(isVisible, true)] | order(orderRank) {
+  title, "slug": slug.current, statement, heroColor, "isVisible": coalesce(isVisible, true), seo, images
 }`
 
-const GALLERY_BY_SLUG_QUERY = /* groq */ `*[_type == "gallery" && slug.current == $slug][0]{
-  title, "slug": slug.current, statement, heroColor, images
+const GALLERY_BY_SLUG_QUERY = /* groq */ `*[_type == "gallery" && slug.current == $slug && coalesce(isVisible, true)][0]{
+  title, "slug": slug.current, statement, heroColor, "isVisible": coalesce(isVisible, true), seo, images
+}`
+
+export interface AboutPage {
+  biography?: Partial<LocaleString>
+  practice?: Partial<LocaleString>
+  medium?: Partial<LocaleString>
+  seo?: SeoSettings
+}
+
+const ABOUT_PAGE_QUERY = /* groq */ `*[_id == "aboutPage"][0]{
+  biography,
+  practice,
+  medium,
+  seo
 }`
 
 /**
@@ -118,5 +145,10 @@ export async function getGalleries(): Promise<Gallery[]> {
  */
 export async function getGallery(slug: string): Promise<Gallery | null> {
   const result = await sanityClient.fetch<Gallery | null>(GALLERY_BY_SLUG_QUERY, {slug})
+  return result ?? null
+}
+
+export async function getAboutPage(): Promise<AboutPage | null> {
+  const result = await sanityClient.fetch<AboutPage | null>(ABOUT_PAGE_QUERY)
   return result ?? null
 }

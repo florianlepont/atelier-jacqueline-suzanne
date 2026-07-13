@@ -38,10 +38,12 @@ export const gallery = defineType({
   name: 'gallery',
   title: 'Collection',
   type: 'document',
+  initialValue: {isVisible: true},
   groups: [
     {name: 'content', title: 'Présentation', default: true},
     {name: 'homepage', title: "Page d'accueil"},
     {name: 'photos', title: 'Photos'},
+    {name: 'seo', title: 'SEO & partage'},
   ],
   fields: [
     // D-04: plain string, NOT a locale-object — project titles are shared
@@ -74,6 +76,15 @@ export const gallery = defineType({
         list: HERO_COLOR_OPTIONS.map(({title, value}) => ({title, value})),
       },
       components: {input: HeroColorInput},
+    }),
+    defineField({
+      name: 'isVisible',
+      title: 'Afficher cette collection sur le site',
+      type: 'boolean',
+      group: 'homepage',
+      description:
+        "Désactiver pour conserver la collection dans Sanity sans l'afficher sur la page d'accueil ni créer sa page publique.",
+      initialValue: true,
     }),
     defineField({
       name: 'images',
@@ -125,15 +136,22 @@ export const gallery = defineType({
     // Fractional-index ordering field for Studio drag-reorder (CMS-01/D-10).
     // Hidden per Pitfall 4 so Romane never sees the raw field in the edit form.
     {...orderRankField({type: 'gallery'}), hidden: true},
+    defineField({name: 'seo', title: 'SEO & partage', type: 'seo', group: 'seo'}),
   ],
   preview: {
-    select: {title: 'title', media: 'images.0', images: 'images', heroColor: 'heroColor'},
-    prepare({title, media, images, heroColor}) {
+    select: {
+      title: 'title',
+      media: 'images.0',
+      images: 'images',
+      heroColor: 'heroColor',
+      isVisible: 'isVisible',
+    },
+    prepare({title, media, images, heroColor, isVisible}) {
       const count = Array.isArray(images) ? images.length : 0
       const color = HERO_COLOR_OPTIONS.find((option) => option.value === heroColor)?.title
       return {
         title: title || 'Collection sans nom',
-        subtitle: `${count} photo${count > 1 ? 's' : ''} · ${color || 'Palette automatique'}`,
+        subtitle: `${isVisible === false ? 'Masquée · ' : ''}${count} photo${count > 1 ? 's' : ''} · ${color || 'Palette automatique'}`,
         media,
       }
     },

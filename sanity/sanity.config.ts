@@ -2,7 +2,7 @@ import {defineConfig} from 'sanity'
 import {structureTool} from 'sanity/structure'
 import {frFRLocale} from '@sanity/locale-fr-fr'
 import {schemaTypes} from './schemas'
-import {structure} from './schemas/structure'
+import {defaultDocumentNode, structure} from './schemas/structure'
 
 export default defineConfig({
   name: 'default',
@@ -13,7 +13,7 @@ export default defineConfig({
 
   // French UI for the day-to-day editor. The developer-only Vision query
   // tool is deliberately omitted from the main navigation.
-  plugins: [structureTool({structure}), frFRLocale({title: 'Français'})],
+  plugins: [structureTool({structure, defaultDocumentNode}), frFRLocale({title: 'Français'})],
 
   schema: {
     types: schemaTypes,
@@ -28,12 +28,14 @@ export default defineConfig({
     // A second document would make `*[_type == "siteSettings"][0]` in
     // src/lib/sanity.ts non-deterministic, silently breaking Romane's edits.
     actions: (prev, context) =>
-      context.schemaType === 'siteSettings'
+      ['siteSettings', 'aboutPage'].includes(context.schemaType)
         ? prev.filter((action) => !['duplicate'].includes(action.action ?? ''))
         : prev,
     newDocumentOptions: (prev, context) =>
       context.creationContext.type === 'global'
-        ? prev.filter((template) => template.templateId !== 'siteSettings')
+        ? prev.filter(
+            (template) => !['siteSettings', 'aboutPage'].includes(template.templateId),
+          )
         : prev,
   },
 })

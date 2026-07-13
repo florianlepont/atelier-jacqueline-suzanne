@@ -38,9 +38,12 @@ const backHref = getRelativeLocaleUrl(locale, '');
 const heroImage = gallery.images[0];
 const heroSrc = fullSizeUrl(heroImage, 2000);
 const heroAlt = heroImage.alt?.[locale] ?? '';
+const seoTitle = gallery.seo?.title?.[locale] ?? `${gallery.title} — Atelier Jacqueline Suzanne`;
+const seoDescription = gallery.seo?.description?.[locale] ?? statement;
+const socialImage = fullSizeUrl(gallery.seo?.image ?? heroImage, 1200);
 ---
 
-<BaseLayout title={`${gallery.title} — Atelier Jacqueline Suzanne`} headerVariant="transparent">
+<BaseLayout title={seoTitle} description={seoDescription} socialImage={socialImage} headerVariant="transparent">
   <div class="gallery-detail">
     <div class="gallery-detail__hero">
       <img

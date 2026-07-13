@@ -1,35 +1,28 @@
 ---
-// French About page (ABOUT-01, ABOUT-02): bio + atelier/practice section.
-// Hardcoded content (Pattern 3 — no Sanity fetch): live-site verification
-// found no existing bio/practice text to migrate (03-RESEARCH.md Open
-// Question 1, resolved by 03-CONTEXT.md Post-Research Amendment), so this
-// page ships with clearly-marked italic placeholder copy — same treatment
-// as the locked D-06 medium/technique placeholder — for Romane to replace
-// before launch. Mirrors the FR/EN page pair pattern from
-// src/pages/index.astro; only import depth and copy differ from
-// src/pages/en/about.astro.
+// French About page: biography/practice content is managed by the published
+// Sanity aboutPage singleton, with safe build-time fallbacks.
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getSiteSettings } from '../lib/sanity';
+import { getAboutPage, getSiteSettings } from '../lib/sanity';
 import { resolveSiteCopy } from '../lib/site-config';
+import { fullSizeUrl } from '../lib/image';
 
 const siteCopy = resolveSiteCopy(await getSiteSettings(), 'fr');
+const about = await getAboutPage();
+const biography = about?.biography?.fr ?? 'Le texte de présentation de Romane sera bientôt disponible ici.';
+const practice = about?.practice?.fr ?? "Informations sur l'atelier et la pratique de Romane à venir prochainement.";
+const medium = about?.medium?.fr ?? 'Précisions sur le médium et la technique à venir.';
+const seoTitle = about?.seo?.title?.fr ?? 'À propos — Atelier Jacqueline Suzanne';
+const seoDescription = about?.seo?.description?.fr ?? biography;
+const socialImage = about?.seo?.image ? fullSizeUrl(about.seo.image, 1200) : undefined;
 ---
 
-<BaseLayout title="À propos — Atelier Jacqueline Suzanne">
+<BaseLayout title={seoTitle} description={seoDescription} socialImage={socialImage}>
   <div class="about-page">
     <h1>À propos</h1>
-    <p class="placeholder">
-      Le texte de présentation de Romane sera bientôt disponible ici — en attente de sa version
-      définitive.
-    </p>
+    <p>{biography}</p>
     <h2>Atelier &amp; pratique</h2>
-    <p class="placeholder">
-      Informations sur l'atelier et la pratique de Romane à venir prochainement.
-    </p>
-    <p class="placeholder">
-      Précisions sur le médium et la technique à venir — en attente de confirmation avec
-      l'artiste.
-    </p>
+    <p>{practice}</p>
+    <p>{medium}</p>
     <p>
       Suivez le travail de Romane sur Instagram :
       <a
@@ -71,7 +64,4 @@ const siteCopy = resolveSiteCopy(await getSiteSettings(), 'fr');
     margin: 0 0 var(--space-md);
   }
 
-  .about-page .placeholder {
-    font-style: italic;
-  }
 </style>

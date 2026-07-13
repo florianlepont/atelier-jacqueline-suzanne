@@ -68,6 +68,7 @@ export const siteSettings = defineType({
     {name: 'navigation', title: 'Navigation'},
     {name: 'homepage', title: "Page d'accueil"},
     {name: 'footer', title: 'Pied de page & réseaux'},
+    {name: 'seo', title: 'SEO & partage'},
   ],
   fields: [
     localeStringField('siteTitle', 'Nom du site', false, 'identity'),
@@ -165,6 +166,13 @@ export const siteSettings = defineType({
           validation: (rule) => rule.required().error('Le nom du compte est obligatoire.'),
         }),
       ],
+    }),
+    defineField({
+      name: 'defaultSeo',
+      title: 'SEO par défaut',
+      type: 'seo',
+      group: 'seo',
+      description: 'Utilisé lorsqu’une page ne possède pas ses propres réglages SEO.',
     }),
     // Obsolete fields kept in the schema so old Content Lake values remain
     // addressable during migration. They are no longer shown or queried.

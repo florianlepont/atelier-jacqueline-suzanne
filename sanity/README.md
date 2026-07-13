@@ -21,6 +21,20 @@ Pour une nouvelle collection, saisir d’abord son nom puis cliquer sur **Géné
 
 Ouvrir **Réglages du site** pour changer les libellés du menu, l’introduction de la page d’accueil, le copyright ou le compte Instagram.
 
+La rubrique **Page À propos** permet de modifier la biographie, la présentation de la pratique et les informations de technique. L’onglet **Aperçu** montre le brouillon courant en français ou en anglais avant sa publication.
+
+## Masquer temporairement une collection
+
+Dans l’onglet **Page d’accueil** d’une collection, désactiver « Afficher cette collection sur le site ». La collection et ses photos restent dans Sanity mais sa page publique ne sera plus générée au prochain déploiement.
+
+## Référencement
+
+Les onglets **SEO & partage** permettent de personnaliser le titre Google, sa description et l’image affichée sur les réseaux sociaux. Ces champs sont facultatifs : le site utilise automatiquement le titre, le texte de présentation et la couverture lorsqu’ils sont vides.
+
+## Agenda / Expositions
+
+Cette rubrique peut déjà accueillir les expositions et événements à venir. Ces données sont préparées dans Sanity mais ne sont pas encore affichées sur le site public.
+
 ## Ordre des collections
 
 Dans **Collections**, déplacer les lignes par glisser-déposer. Cet ordre est repris sur la page d’accueil.

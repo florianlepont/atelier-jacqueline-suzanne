@@ -1,5 +1,18 @@
-import type {StructureResolver} from 'sanity/structure'
+import type {DefaultDocumentNodeResolver, StructureBuilder, StructureResolver} from 'sanity/structure'
 import {orderableDocumentListDeskItem} from '@sanity/orderable-document-list'
+import {ContentPreview} from './ContentPreview'
+
+const editorViews = (S: StructureBuilder) => [
+  S.view.form().title('Édition'),
+  S.view.component(ContentPreview).title('Aperçu'),
+]
+
+export const defaultDocumentNode: DefaultDocumentNodeResolver = (S, {schemaType}) => {
+  if (['gallery', 'aboutPage', 'siteSettings'].includes(schemaType)) {
+    return S.document().views(editorViews(S))
+  }
+  return S.document()
+}
 
 /**
  * Custom desk structure: pins `siteSettings` to a single, fixed document ID
@@ -17,9 +30,24 @@ export const structure: StructureResolver = (S, context) =>
       S.listItem()
         .title('Réglages du site')
         .id('siteSettings')
-        .child(S.document().schemaType('siteSettings').documentId('siteSettings')),
+        .child(
+          S.document()
+            .schemaType('siteSettings')
+            .documentId('siteSettings')
+            .views(editorViews(S)),
+        ),
+      S.listItem()
+        .title('Page À propos')
+        .id('aboutPage')
+        .child(
+          S.document().schemaType('aboutPage').documentId('aboutPage').views(editorViews(S)),
+        ),
       orderableDocumentListDeskItem({type: 'gallery', title: 'Collections', S, context}),
+      S.documentTypeListItem('exhibition').title('Agenda / Expositions'),
       ...S.documentTypeListItems().filter(
-        (listItem) => !['siteSettings', 'gallery'].includes(listItem.getId() ?? ''),
+        (listItem) =>
+          !['siteSettings', 'aboutPage', 'gallery', 'exhibition', 'seo'].includes(
+            listItem.getId() ?? '',
+          ),
       ),
     ])

@@ -14,7 +14,7 @@ test.describe('about page content', () => {
     await page.goto('/about/');
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
-    await expect(page.locator('h1')).toContainText('À propos');
+    await expect(page.locator('main h1')).toContainText('À propos');
 
     const main = page.locator('main');
     await expect(main).toContainText(
@@ -35,7 +35,7 @@ test.describe('about page content', () => {
     await page.goto('/en/about/');
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-    await expect(page.locator('h1')).toContainText('About');
+    await expect(page.locator('main h1')).toContainText('About');
 
     const main = page.locator('main');
     await expect(main).toContainText(

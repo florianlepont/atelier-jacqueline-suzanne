@@ -6,6 +6,7 @@
 import { getRelativeLocaleUrl } from 'astro:i18n';
 import { getSiteSettings } from '../lib/sanity';
 import { resolveSiteCopy } from '../lib/site-config';
+import { fullSizeUrl } from '../lib/image';
 import LanguageSwitcher from '../components/LanguageSwitcher.astro';
 // D-02/RESEARCH.md Pattern 1: self-hosted Unbounded, 900 (black) weight only
 // (Heading/Display role) — bundles the woff2 + @font-face at build time, no
@@ -31,6 +32,8 @@ import '@fontsource/unbounded/900.css';
 
 interface Props {
   title: string;
+  description?: string;
+  socialImage?: string;
   // D-11/D-13/RESEARCH.md Architectural Responsibility Map: 'solid' (default)
   // is every existing page's white-on-white hairline header; 'transparent'
   // is the gallery-detail hero-scrim header (Plan 04.1-05, D-07); 'none'
@@ -39,7 +42,7 @@ interface Props {
   headerVariant?: 'solid' | 'transparent' | 'none';
 }
 
-const { title, headerVariant = 'solid' } = Astro.props;
+const { title, description: pageDescription, socialImage: pageSocialImage, headerVariant = 'solid' } = Astro.props;
 const locale = Astro.currentLocale === 'en' ? 'en' : 'fr';
 
 const siteSettings = await getSiteSettings();
@@ -51,6 +54,10 @@ const siteSettings = await getSiteSettings();
 const siteTitle = siteSettings?.siteTitle?.[locale] ?? 'Atelier Jacqueline Suzanne';
 const footerText = siteSettings?.footerText?.[locale] ?? '';
 const siteCopy = resolveSiteCopy(siteSettings, locale);
+const description = pageDescription ?? siteSettings?.defaultSeo?.description?.[locale] ?? '';
+const socialImage = pageSocialImage ?? (siteSettings?.defaultSeo?.image
+  ? fullSizeUrl(siteSettings.defaultSeo.image, 1200)
+  : undefined);
 // homeHref is still needed below for the logo's own link — no separate
 // "Accueil"/"Home" nav link anymore (direct user feedback: redundant,
 // since clicking the logo already goes home).
@@ -89,6 +96,12 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    <meta property="og:title" content={title} />
+    {description && <meta property="og:description" content={description} />}
+    <meta property="og:type" content="website" />
+    {socialImage && <meta property="og:image" content={socialImage} />}
+    <meta name="twitter:card" content={socialImage ? 'summary_large_image' : 'summary'} />
     <script is:inline define:vars={{ base: import.meta.env.BASE_URL }}>
       // D-03: no server/middleware exists on OVH static hosting to read
       // cookies, so a returning visitor's locale preference is honored via a

@@ -9,7 +9,10 @@ import { fullSizeUrl, thumbnailUrl } from '../../lib/image';
 import { getHeroTextColor, normalizeHeroColor, resolveSiteCopy } from '../../lib/site-config';
 
 const locale = 'en' as const;
-const siteCopy = resolveSiteCopy(await getSiteSettings(), locale);
+const siteSettings = await getSiteSettings();
+const siteCopy = resolveSiteCopy(siteSettings, locale);
+const seoTitle = siteSettings?.defaultSeo?.title?.[locale] ?? 'Atelier Jacqueline Suzanne';
+const seoDescription = siteSettings?.defaultSeo?.description?.[locale];
 
 const galleries = (await getGalleries())
   .filter((gallery) => gallery.images.length > 0)
@@ -22,12 +25,13 @@ const galleries = (await getGalleries())
       heroSrc: fullSizeUrl(cover),
       gridSrc: thumbnailUrl(cover, 600),
       alt: cover.alt?.[locale] ?? '',
+      statement: gallery.statement?.[locale] ?? '',
       heroColor,
       heroTextColor: heroColor ? getHeroTextColor(heroColor) : undefined,
     };
   });
 ---
 
-<BaseLayout title="Atelier Jacqueline Suzanne" headerVariant="none">
+<BaseLayout title={seoTitle} description={seoDescription} headerVariant="none">
   <HomeCarousel locale={locale} galleries={galleries} siteCopy={siteCopy} />
 </BaseLayout>

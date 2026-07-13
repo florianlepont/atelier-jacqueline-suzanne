@@ -54,7 +54,18 @@ describe('getGalleries', () => {
     await getGalleries();
 
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('statement, heroColor, images'),
+      expect.stringContaining('statement, heroColor'),
+    );
+  });
+
+  it('excludes collections explicitly hidden in Sanity', async () => {
+    fetchMock.mockResolvedValueOnce([]);
+
+    const { getGalleries } = await import('../../src/lib/sanity');
+    await getGalleries();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('coalesce(isVisible, true)'),
     );
   });
 });
@@ -96,5 +107,27 @@ describe('getGallery', () => {
       expect.stringContaining('slug.current == $slug'),
       { slug: 'rebut' },
     );
+  });
+});
+
+describe('getAboutPage', () => {
+  beforeEach(() => {
+    fetchMock.mockReset();
+  });
+
+  it('returns null safely when the singleton is unavailable', async () => {
+    fetchMock.mockResolvedValueOnce(undefined);
+
+    const { getAboutPage } = await import('../../src/lib/sanity');
+    await expect(getAboutPage()).resolves.toBeNull();
+  });
+
+  it('queries the fixed aboutPage singleton', async () => {
+    fetchMock.mockResolvedValueOnce(null);
+
+    const { getAboutPage } = await import('../../src/lib/sanity');
+    await getAboutPage();
+
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('_id == "aboutPage"'));
   });
 });
