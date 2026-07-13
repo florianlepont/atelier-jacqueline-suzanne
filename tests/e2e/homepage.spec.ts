@@ -162,6 +162,47 @@ test.describe('collection statements on the homepage', () => {
     await tile.hover();
     await expect(description).toHaveCSS('opacity', '1');
   });
+
+  test('carousel keeps its navigation fixed and clamps long collection statements', async ({ page }) => {
+    await page.setViewportSize({ width: 1536, height: 864 });
+    await page.goto('/');
+
+    const carousel = page.locator('[data-role="home-carousel"]');
+    await carousel.hover();
+
+    const progress = carousel.locator('[data-role="progress"]');
+    const dashes = progress.locator('[data-action="go-to"]');
+    const progressPositions: number[] = [];
+
+    for (let index = 0; index < await dashes.count(); index += 1) {
+      await dashes.nth(index).click();
+      const box = await progress.boundingBox();
+      expect(box).not.toBeNull();
+      progressPositions.push(box!.y);
+    }
+
+    expect(Math.max(...progressPositions) - Math.min(...progressPositions)).toBeLessThanOrEqual(1);
+
+    const layout = await carousel.evaluate((element) => {
+      const caption = element.querySelector<HTMLElement>('.home-hero__caption')!;
+      const statement = element.querySelector<HTMLElement>('[data-role="gallery-statement"]')!;
+      const accent = element.querySelector<HTMLElement>('[data-role="accent-panel"]')!;
+      const captionRect = caption.getBoundingClientRect();
+      const accentRect = accent.getBoundingClientRect();
+
+      return {
+        captionRight: captionRect.right,
+        accentLeft: accentRect.left,
+        statementHeight: statement.getBoundingClientRect().height,
+        statementLineHeight: parseFloat(getComputedStyle(statement).lineHeight),
+        statementOverflow: getComputedStyle(statement).overflow,
+      };
+    });
+
+    expect(layout.captionRight).toBeLessThanOrEqual(layout.accentLeft);
+    expect(layout.statementHeight).toBeLessThanOrEqual(layout.statementLineHeight * 2 + 1);
+    expect(layout.statementOverflow).toBe('hidden');
+  });
 });
 
 test.describe('carousel wordmark cutout (HOME-03, D-08)', () => {

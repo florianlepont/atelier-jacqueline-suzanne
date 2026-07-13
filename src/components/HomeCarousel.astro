@@ -1020,7 +1020,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     display: flex;
     gap: var(--space-xs);
     width: min(25vw, 220px);
-    margin: 0 0 var(--space-sm);
+    margin: 0;
   }
 
   .home-hero__progress-dash {
@@ -1066,8 +1066,17 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
   .home-hero__caption {
     position: absolute;
     left: var(--space-md);
+    /* Keep the caption in the part of the photo that is not occupied by
+       the coloured panel. This prevents long statements from continuing
+       underneath it on wide screens. */
+    right: calc(min(800px, 60%) + var(--space-xl));
     bottom: var(--space-xl);
-    max-width: 60%;
+    /* Fixed tracks make the progress navigation stay at exactly the same
+       vertical position when the active collection changes. */
+    display: grid;
+    grid-template-rows: 3px 21px 24px 42px;
+    row-gap: var(--space-xs);
+    height: 102px;
     z-index: 3;
     color: #FFFFFF;
   }
@@ -1085,7 +1094,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     font-size: 20px; /* Heading role */
     font-weight: var(--weight-semibold);
     line-height: 1.2;
-    margin: 0 0 var(--space-xs);
+    margin: 0;
     color: #FFFFFF;
     /* Direct user feedback: nothing distinguished this from a plain
        caption heading, so visitors weren't discovering it's a link to the
@@ -1094,7 +1103,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        place) plus a visible hover/focus state for pointer users. */
     text-decoration: underline;
     text-underline-offset: 3px;
-    display: inline-block;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .home-hero__title:hover,
@@ -1108,6 +1120,14 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     line-height: 1.5;
     color: rgba(255, 255, 255, 0.75);
     margin: 0;
+    /* Collection statements can be arbitrarily long in Sanity. Keep two
+       useful lines in the carousel and preserve the complete text in the
+       DOM for assistive technologies and the collection page. */
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 
   .home-hero__accent {
@@ -1433,23 +1453,23 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       min-height: 100svh;
     }
 
+    .home-hero__caption {
+      right: var(--space-md);
+    }
+
     /* Direct follow-up: an in-flow panel below the photo (previous pass)
        required scrolling to see it, but "on the picture" was the whole
        point — the panel needs to overlay the full-bleed photo, not follow
        it. Back to position:absolute (like the desktop corner card), just
        anchored full-width along the bottom instead of a bottom-right
-       corner. bottom offset reserves room for .home-hero__caption (now
-       progress dashes + index + title + byline, live-remeasured at 85px
-       tall after the dashes moved in above the index line — was 74px
-       before) below the panel plus its own --space-xl gap to the screen
-       edge, so the two overlaid layers stack without covering each other.
-       Re-verify this number any time .home-hero__caption's own content
-       changes — it's a live measurement, not a derived value. */
+       corner. bottom offset reserves room for the fixed-height caption
+       below the panel plus its own --space-xl gap to the screen edge, so
+       the two overlaid layers stack without covering each other. */
     .home-hero__accent {
       position: absolute;
       left: 0;
       right: 0;
-      bottom: calc(85px + var(--space-xl) + var(--space-md));
+      bottom: calc(102px + var(--space-xl) + var(--space-md));
       width: 100%;
       margin-top: 0;
       /* Direct request: shrink the panel itself so less of the screen is
