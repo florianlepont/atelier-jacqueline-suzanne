@@ -6,6 +6,8 @@ This roadmap covers the **v1 milestone** (Phases 1–5): a fast, bilingual repla
 
 It also covers the **v1.1 milestone** (Phase 6): homepage refinements — a single unified carousel/grid toggle, a grid view whose hero is the first grid tile instead of a separate band, and a transparent photo-cutout treatment for the hero wordmark. Per PROJECT.md, this milestone is intended to land before Phase 5's domain cutover, even though its phase number is higher (phase numbers reflect milestone-arrival order, not strict execution sequence — see the note under Progress).
 
+It also covers the **v1.2 milestone** (Phases 7–10): homepage polish before the Phase 5 domain cutover — social presence (Instagram icon in the header nav), visual consistency (square toggle border), a mobile full-bleed hero regression fix, per-gallery description text (replacing the generic byline, in both carousel and grid-hover form), progressive/optimized image loading, and a structural consolidation of the homepage header with the shared About/Contact header plus a simplified language switcher. Phases are sequenced by blast radius: small, contained homepage-only fixes first (Phase 7), a content-model addition shared across two display modes next (Phase 8), a self-contained performance change (Phase 9), and the higher-risk shared-component refactor last (Phase 10) — so the header/toggle groundwork laid in Phase 7 is carried forward into the unified component once, rather than rebuilt twice.
+
 ## Phases
 
 **Phase Numbering:**
@@ -23,7 +25,11 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 04.2: Social Media Links (INSERTED)** - Instagram link visible in the footer and on the About/Contact page (completed 2026-07-10)
 - [x] **Phase 04.3: Homepage Refinements (INSERTED)** - Logo hover crossfade, single gallery-browsing entry point, icon-based mode toggle, mobile hero fix, three-line wordmark, clickable gallery names (completed 2026-07-12)
 - [ ] **Phase 5: Launch & Domain Cutover** - The new site is live at atelierjacquelinesuzanne.fr, replacing the old Myportfolio site
-- [x] **Phase 6: Homepage View-Mode Toggle, Grid Hero & Wordmark Cutout** - Unified carousel/grid toggle button, grid view's hero becomes the first grid tile, and the wordmark gets a transparent photo-cutout treatment in carousel mode (completed 2026-07-13)
+- [x] **Phase 6: Homepage View-Mode Toggle, Grid Hero & Wordmark Cutout** - Unified carousel/grid toggle button, grid view's hero becomes the first grid tile, and the wordmark gets a transparent photo-cutout treatment (completed 2026-07-13)
+- [ ] **Phase 7: Homepage Quick Fixes & Mobile Hero Correctness** - Instagram icon in the header nav, square toggle border, and a fix for the mobile full-bleed hero regression
+- [ ] **Phase 8: Gallery Descriptions** - Each gallery's own description text replaces the generic byline under its title, and reveals on hover in grid mode
+- [ ] **Phase 9: Progressive Homepage Image Loading** - Homepage photos load with priority and a blur-to-sharp transition, with no blocking full-screen loader
+- [ ] **Phase 10: Unified Header & Simplified Language Switcher** - Homepage header consolidated into the shared About/Contact header component; language switcher shows only the other language plus a globe icon
 
 ## Phase Details
 
@@ -239,12 +245,76 @@ Plans:
 - [x] 06-01-PLAN.md — Single unified toggle (HOME-01) + grid hero-as-first-tile (HOME-02) + carousel wordmark photo-cutout (HOME-03) + CTA removal, all in HomeCarousel.astro; test-first, with a live cutout-legibility checkpoint (Wave 1) — completed 2026-07-13, including a live post-checkpoint mobile/navigation follow-on (full-bleed hero, dashed swipe/keyboard nav) reconciled into 06-01-SUMMARY.md
 **UI hint**: yes
 
+### Phase 7: Homepage Quick Fixes & Mobile Hero Correctness
+
+**Goal**: The homepage's header nav and mode toggle read correctly, and the mobile hero is genuinely full-bleed on first load with no visual regressions — the small, contained fixes that don't touch shared components or content models, done first so their groundwork carries forward cleanly into Phase 10's header consolidation.
+**Mode:** mvp
+**Depends on**: Phase 6
+**Requirements**: HOME-04, HOME-05, HOME-06
+**Success Criteria** (what must be TRUE):
+
+  1. Visitor sees an Instagram icon (not text) link in the homepage header nav that opens Romane's Instagram profile (@ajs_romanelepont).
+  2. The carousel/grid mode toggle button has a square (not rectangular) border, in both carousel and grid modes.
+  3. On first load on a mobile device (e.g. iPhone 17 Pro), the hero fills the viewport edge-to-edge with no white gap above the header and no footer visible or bleeding through beneath the hero.
+
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 8: Gallery Descriptions
+
+**Goal**: Visitors see each gallery's own descriptive text on the homepage — under its title in carousel mode, and revealed on hover in grid mode — replacing the generic "Un projet de Romane Lepont" byline, backed by a real per-gallery content field Romane can edit herself.
+**Mode:** mvp
+**Depends on**: Phase 2, Phase 6
+**Requirements**: HOME-07, HOME-08
+**Success Criteria** (what must be TRUE):
+
+  1. Each gallery has a short description field in the Sanity CMS (new or reused), editable by Romane in both French and English without code.
+  2. In carousel mode, the homepage shows each gallery's own description text under its title instead of the generic "Un projet de Romane Lepont" / "A project by Romane Lepont" byline.
+  3. In grid mode, hovering (or focusing, for keyboard users) a gallery tile reveals that gallery's own description as an overlay.
+  4. A gallery with no description yet falls back gracefully (e.g. to the existing generic byline, or an empty state) without breaking the homepage layout.
+
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 9: Progressive Homepage Image Loading
+
+**Goal**: The homepage page shell renders immediately, and hero/gallery photos load with priority and a smooth blur-to-sharp transition, so first-time visitors never see a blocking full-screen loading state.
+**Mode:** mvp
+**Depends on**: Phase 6
+**Requirements**: HOME-09
+**Success Criteria** (what must be TRUE):
+
+  1. The homepage's layout and chrome (header, nav, toggle) render immediately on load — no full-screen blocking loader is shown while photos load.
+  2. The hero photo is requested with loading priority (e.g. `fetchpriority="high"` / eager loading) and appears as soon as it's available, ahead of below-the-fold images.
+  3. Each homepage photo transitions visibly from a blurred low-quality placeholder to the sharp full-resolution image as it finishes loading, rather than popping in abruptly or leaving blank space.
+  4. Gallery tile images below the fold load lazily and do not delay the homepage's initial render.
+
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 10: Unified Header & Simplified Language Switcher
+
+**Goal**: The homepage renders from the same shared header component as About/Contact — so logo, nav, toggle, and switcher positioning stay aligned by construction instead of drifting — and the site-wide language switcher shows only the other language plus a globe icon.
+**Mode:** mvp
+**Depends on**: Phase 1, Phase 6, Phase 7
+**Requirements**: HOME-10, I18N-04
+**Success Criteria** (what must be TRUE):
+
+  1. The homepage header and the About/Contact header are rendered from a single shared header component (not two independently-styled implementations), with matching logo/nav/switcher positioning by construction.
+  2. A header-level change made once in the shared component (e.g. nav item spacing) is reflected identically on the homepage and on About/Contact without a second edit.
+  3. The homepage-only carousel/grid mode toggle still renders and functions correctly within the unified header, and does not appear on pages where it doesn't apply (About, Contact, etc.).
+  4. The language switcher shows only a link to the OTHER language (not both FR and EN) alongside a small globe icon, on every page site-wide.
+  5. Clicking the language switcher link takes the visitor directly to the translated version of the current page (same destination behavior as before, just one link instead of two).
+
+**Plans**: TBD
+**UI hint**: yes
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
 
-Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per PROJECT.md — see the Note under Phase 6 above. Phase numbering reflects milestone-arrival order, not strict execution sequence.
+Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per PROJECT.md — see the Note under Phase 6 above. Phases 7–10 (v1.2) are likewise intended to execute before Phase 5, per PROJECT.md's current-milestone note. Phase numbering reflects milestone-arrival order, not strict execution sequence.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -254,8 +324,12 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 4. Legal & Compliance | 3/3 | Complete    | 2026-07-08 |
 | 5. Launch & Domain Cutover | 0/TBD | Not started | - |
 | 6. Homepage View-Mode Toggle, Grid Hero & Wordmark Cutout | 1/1 | Complete   | 2026-07-13 |
+| 7. Homepage Quick Fixes & Mobile Hero Correctness | 0/TBD | Not started | - |
+| 8. Gallery Descriptions | 0/TBD | Not started | - |
+| 9. Progressive Homepage Image Loading | 0/TBD | Not started | - |
+| 10. Unified Header & Simplified Language Switcher | 0/TBD | Not started | - |
 
 ## Milestone Scope Note
 
-This roadmap covers the **v1 milestone** (portfolio-replacement launch, Phases 1–5) and the **v1.1 milestone** (homepage refinements, Phase 6 — HOME-01, HOME-02, HOME-03). The v1.x wave — exhibitions/agenda (EXHB-01, EXHB-02, CMS-02), shop (SHOP-01..04), checkout (CHK-01..05), shipping (SHIP-01, SHIP-02), commerce-specific legal (LEGAL-02, LEGAL-04), and related bilingual/CMS extensions (I18N-02b, I18N-03, CMS-03) — is tracked in REQUIREMENTS.md's v2 section and will get its own roadmap phases once v1.1 ships.
+This roadmap covers the **v1 milestone** (portfolio-replacement launch, Phases 1–5), the **v1.1 milestone** (homepage refinements, Phase 6 — HOME-01, HOME-02, HOME-03), and the **v1.2 milestone** (homepage polish/pre-launch, Phases 7–10 — HOME-04..HOME-10, I18N-04). The v1.x wave — exhibitions/agenda (EXHB-01, EXHB-02, CMS-02), shop (SHOP-01..04), checkout (CHK-01..05), shipping (SHIP-01, SHIP-02), commerce-specific legal (LEGAL-02, LEGAL-04), and related bilingual/CMS extensions (I18N-02b, I18N-03, CMS-03) — is tracked in REQUIREMENTS.md's v2 section and will get its own roadmap phases once v1.2 ships.
 </content>

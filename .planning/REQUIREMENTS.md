@@ -164,6 +164,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HOME-01 | Phase 6 | Complete |
 | HOME-02 | Phase 6 | Complete |
 | HOME-03 | Phase 6 | Complete |
+| HOME-04 | Phase 7 | Pending |
+| HOME-05 | Phase 7 | Pending |
+| HOME-06 | Phase 7 | Pending |
+| HOME-07 | Phase 8 | Pending |
+| HOME-08 | Phase 8 | Pending |
+| HOME-09 | Phase 9 | Pending |
+| HOME-10 | Phase 10 | Pending |
+| I18N-04 | Phase 10 | Pending |
 
 **Coverage:**
 
@@ -174,10 +182,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 - Mapped to phases: 3/3 ✓ (Phase 6, shipped 2026-07-13)
 - Unmapped: 0
 - v1.2 (Homepage Polish, Pre-Launch) requirements: 8 total (HOME-04..HOME-10, I18N-04)
-- Mapped to phases: 0/8 — pending roadmap creation
+- Mapped to phases: 8/8 ✓ (Phases 7–10)
+- Unmapped: 0
 - v2 (v1.x fast-follow) requirements: 17 tracked, not yet in roadmap (out of scope for this roadmap by design)
 
 ---
 *Requirements defined: 2026-07-05*
-*Last updated: 2026-07-13 — v1.1 marked complete (Phase 6); v1.2 (Homepage Polish) requirements added, pending roadmap*
+*Last updated: 2026-07-13 — v1.2 (Homepage Polish) requirements mapped to Phases 7–10 (roadmap creation); coverage 8/8*
 </content>

@@ -6,7 +6,7 @@ status: planning
 last_updated: "2026-07-13T18:19:15.370Z"
 last_activity: 2026-07-13
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-13)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; checkout follows in v1.x.)
-**Current focus:** v1.2 milestone (Homepage Polish, Pre-Launch) — defining requirements. v1.1 shipped 2026-07-13. Phase 5 (Launch & Domain Cutover) remains deferred until after v1.2.
+**Current focus:** v1.2 milestone (Homepage Polish, Pre-Launch) — roadmap created, ready for phase planning. v1.1 shipped 2026-07-13. Phase 5 (Launch & Domain Cutover) remains deferred until after v1.2.
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: Phase 7 (Homepage Quick Fixes & Mobile Hero Correctness) — not started
 Plan: —
-Status: Defining requirements
-Last activity: 2026-07-13 — Milestone v1.2 started
+Status: Roadmap created, awaiting `/gsd-plan-phase 7`
+Last activity: 2026-07-13 — v1.2 roadmap created (Phases 7–10)
 
 ## Performance Metrics
 
@@ -72,7 +72,8 @@ Last activity: 2026-07-13 — Milestone v1.2 started
 - Phase 04.3 inserted after Phase 4: Homepage Refinements: logo hover crossfade, remove standalone Galleries page (grid view on homepage is now the sole browse entry point), icon-based carousel/grid toggle, fix mobile hero visibility bug, three-line wordmark, clickable gallery names in carousel + grid modes (URGENT)
 - Phase 04.3 planned: 3 plans, 2 waves — plan-checker VERIFICATION PASSED, all 11 CONTEXT.md decisions covered
 - v1.1 milestone (Homepage Refinements) roadmapped 2026-07-12: single new Phase 6 (integer, continuing numbering from v1.0's last phase, Phase 5) covers all three v1.1 requirements (HOME-01, HOME-02, HOME-03) — tightly-scoped, single-component (HomeCarousel.astro) refinement, so kept as one phase rather than split. Per PROJECT.md, Phase 6 is intended to execute before Phase 5's domain cutover despite the higher phase number (numbering reflects milestone-arrival order, not execution sequence).
-- Phase 6 completed 2026-07-13: HOME-01/02/03 delivered per plan (commits `ad27437`..`dbebd6f`), plus a substantial live post-checkpoint follow-on (commit `44cc10d`) reworking the mobile hero (full-bleed `100svh`, panel overlaid on the photo) and replacing the arrow-button navigation with a clickable dashed progress indicator plus keyboard/swipe support — none of this follow-on was in the original plan; it was discovered through direct use after Task 3's checkpoint was already approved, and reconciled into tracked history via `06-01-SUMMARY.md` per explicit user request. v1.1 milestone is now complete; Phase 5 (Launch & Domain Cutover) is the only remaining phase.
+- Phase 6 completed 2026-07-13: HOME-01/02/03 delivered per plan (commits `ad27437`..`dbebd6f`), plus a substantial live post-checkpoint follow-on (commit `44cc10d`) reworking the mobile hero (full-bleed `100svh`, panel overlaid on the photo) and replacing the arrow-button navigation with a clickable dashed progress indicator plus keyboard/swipe support — none of this follow-on was in the original plan; it was discovered through direct use after Task 3's checkpoint was already approved, and reconciled into tracked history via `06-01-SUMMARY.md` per explicit user request. v1.1 milestone is now complete; Phase 5 (Launch & Domain Cutover) is the only remaining v1 phase.
+- v1.2 milestone (Homepage Polish, Pre-Launch) roadmapped 2026-07-13: four new integer phases (7–10, continuing numbering from Phase 6) cover all eight v1.2 requirements (HOME-04..HOME-10, I18N-04), sequenced by blast radius rather than dumped into one phase — Phase 7 (HOME-04, HOME-05, HOME-06): small, contained, homepage-only header/CSS tweaks and a mobile bug fix, done first with no shared-component or content-model risk. Phase 8 (HOME-07, HOME-08): grouped together because both surface the same new per-gallery description content (Sanity schema addition), just in two display forms (carousel byline, grid hover) — building the schema once and wiring both displays in the same phase avoids doing the content-model work twice. Phase 9 (HOME-09): kept standalone — progressive image loading has its own distinct testing surface (loading states/priority/transition timing) and potentially touches more than just the homepage's own images, so it wasn't folded into Phase 7's contained fixes. Phase 10 (HOME-10, I18N-04): the highest-risk item (structural header-consolidation refactor spanning homepage + About/Contact) done last, in its own phase, depending on Phase 7 — so the header nav/toggle groundwork already fixed in Phase 7 gets carried into the unified component once, rather than rebuilt twice; I18N-04 (language switcher globe-icon change) is bundled in because its presentation lives inside the same header being unified.
 
 ### Decisions
 
@@ -83,6 +84,7 @@ Recent decisions affecting current work:
 - [Roadmap]: Bilingual routing + CMS scaffolding front-loaded into Phase 1 since I18N cross-cuts every later content phase.
 - [Roadmap]: Legal & Compliance (Phase 4) depends on Phase 3 (Contact) since the privacy notice must describe contact-form data handling.
 - [Roadmap]: v1.1 milestone (Homepage Refinements) mapped to a single new Phase 6, continuing integer numbering from v1.0's Phase 5 — all three requirements (HOME-01/02/03) touch the same component (HomeCarousel.astro) and are cosmetic/interaction refinements with no new backend/data model, so a single phase was judged more coherent than splitting.
+- [Roadmap]: v1.2 milestone (Homepage Polish, Pre-Launch) mapped to four new phases (7–10), continuing integer numbering from Phase 6 — split by blast radius/risk (contained visual fixes → shared content-model addition → self-contained perf change → shared-component structural refactor done last) rather than one large phase, since HOME-10/I18N-04 carry materially higher risk (multi-page shared component) than the other six requirements.
 - [Phase 01]: No SSR adapter installed for Astro (output: 'static' framework default) per OVH static-hosting constraint — OVH Web Hosting is a zero-compute Apache file server; @astrojs/cloudflare/wrangler are explicitly excluded
 - [Phase 01]: Phase 1 staging deploys to GitHub Pages (repo now public) instead of an OVH subdomain; OVH SFTP facts recorded for Phase 5 — OVH Free hosting tier cannot attach any subdomain (multisite requires paid tier); GitHub Pages reuses existing repo with zero new signup and automatic HTTPS
 - [Phase 01]: Sanity read-only + one-time write tokens created and revoked entirely via CLI (sanity tokens add/delete), no dashboard visit needed — sanity tokens add/list/delete supports full non-interactive token lifecycle management
@@ -116,6 +118,8 @@ None currently open. Both prior research-carryover items were resolved during Ph
 - Domain email service: confirmed active (MX Plan + Zimbra mailbox) via the OVH panel — Phase 5's DNS cutover must preserve these records, not wipe the zone.
 - OVH deployment method: confirmed via the OVH panel — "Free hosting" tier, SFTP enabled on port 22, host `ftp.cluster129.hosting.ovh.net`, user `atelihu`, home dir `/home/atelihu` (see 01-02-SUMMARY.md). Note: this same Free tier cannot attach any subdomain (multisite requires a paid tier) — Phase 1 staging used GitHub Pages instead; Phase 5's production cutover plan should account for the single-domain limitation.
 
+Note: Phase 6's mobile full-bleed hero work has a reported regression (HOME-06, tracked for Phase 7) — a white gap above the header plus footer bleed-through on first load, seen on iPhone 17 Pro.
+
 ### Quick Tasks Completed
 
 | # | Description | Date | Commit | Directory |
@@ -135,6 +139,6 @@ Items acknowledged and carried forward from previous milestone close:
 ## Session Continuity
 
 Last session: 2026-07-13T10:23:27.221Z
-Stopped at: Phase 6 complete — v1.1 milestone delivered
-Resume file: .planning/phases/06-homepage-view-mode-toggle-grid-hero-wordmark-cutout/06-01-SUMMARY.md
+Stopped at: v1.2 roadmap created (Phases 7–10) — ready for `/gsd-plan-phase 7`
+Resume file: .planning/ROADMAP.md
 </content>
