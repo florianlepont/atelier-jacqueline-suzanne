@@ -37,10 +37,19 @@ export const gallery = defineType({
     defineField({
       name: 'heroColor',
       title: 'Homepage hero color',
-      type: 'color',
+      type: 'string',
       description:
         'Background color of this collection\'s text panel in the homepage carousel. The automatic palette is used when no color is selected.',
-      options: {disableAlpha: true},
+      options: {
+        layout: 'radio',
+        list: [
+          {title: 'Pink — #FF3B94', value: 'pink'},
+          {title: 'Purple — #AF3DFF', value: 'purple'},
+          {title: 'Teal — #55FFE1', value: 'teal'},
+          {title: 'Lime — #A6FD29', value: 'lime'},
+          {title: 'Plum — #37013A', value: 'plum'},
+        ],
+      },
     }),
     defineField({
       name: 'images',

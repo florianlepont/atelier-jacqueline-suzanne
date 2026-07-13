@@ -39,10 +39,10 @@ describe('resolveSiteCopy', () => {
 });
 
 describe('homepage hero colors', () => {
-  it('accepts only six-digit Sanity hex colors', () => {
-    expect(normalizeHeroColor('#af3dff')).toBe('#AF3DFF');
+  it('accepts only named colors from the design-system palette', () => {
+    expect(normalizeHeroColor('purple')).toBe('#AF3DFF');
     expect(normalizeHeroColor('red')).toBeUndefined();
-    expect(normalizeHeroColor('#fff')).toBeUndefined();
+    expect(normalizeHeroColor('#AF3DFF')).toBeUndefined();
   });
 
   it('chooses readable ink on light colors and white on dark colors', () => {

@@ -5,6 +5,14 @@ export type Locale = 'fr' | 'en'
 export const DEFAULT_INSTAGRAM_URL = 'https://www.instagram.com/ajs_romanelepont/'
 export const DEFAULT_INSTAGRAM_LABEL = '@ajs_romanelepont'
 
+export const HERO_COLORS = {
+  pink: '#FF3B94',
+  purple: '#AF3DFF',
+  teal: '#55FFE1',
+  lime: '#A6FD29',
+  plum: '#37013A',
+} as const
+
 const DEFAULT_HOMEPAGE_INTRO: Record<Locale, string> = {
   fr: "Le site présente le travail photographique de Romane Lepont et permet l'achat d'une œuvre directement en ligne.",
   en: "This site showcases Romane Lepont's photographic work and lets you buy a piece directly online.",
@@ -20,14 +28,16 @@ export function resolveSiteCopy(settings: SiteSettings | null, locale: Locale) {
   }
 }
 
-/** Accept only the opaque six-digit values emitted by Sanity's color input. */
+/** Resolve only named colors from the site's decorative design-system palette. */
 export function normalizeHeroColor(value?: string): string | undefined {
-  return value && /^#[0-9a-f]{6}$/i.test(value) ? value.toUpperCase() : undefined
+  return value && value in HERO_COLORS ? HERO_COLORS[value as keyof typeof HERO_COLORS] : undefined
 }
 
 /** Pick whichever of the site's ink/white colors has the stronger WCAG contrast. */
 export function getHeroTextColor(background: string): '#1A1A1A' | '#FFFFFF' {
-  const hex = normalizeHeroColor(background)
+  const hex = /^#[0-9a-f]{6}$/i.test(background)
+    ? background.toUpperCase()
+    : normalizeHeroColor(background)
   if (!hex) return '#1A1A1A'
 
   const channels = [1, 3, 5].map((offset) => {

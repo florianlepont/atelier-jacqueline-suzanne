@@ -15,7 +15,6 @@
     "sanity"
   ],
   "dependencies": {
-    "@sanity/color-input": "^6.0.13",
     "@sanity/orderable-document-list": "^2.0.8",
     "@sanity/vision": "^6.4.0",
     "react": "^19.2.4",

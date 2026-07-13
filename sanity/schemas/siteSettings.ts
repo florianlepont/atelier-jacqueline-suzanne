@@ -34,6 +34,20 @@ export const siteSettings = defineType({
   name: 'siteSettings',
   title: 'Site Settings',
   type: 'document',
+  initialValue: {
+    navLabels: {
+      about: {fr: 'À propos', en: 'About'},
+      contact: {fr: 'Contact', en: 'Contact'},
+    },
+    homepageIntro: {
+      fr: "Le site présente le travail photographique de Romane Lepont et permet l'achat d'une œuvre directement en ligne.",
+      en: "This site showcases Romane Lepont's photographic work and lets you buy a piece directly online.",
+    },
+    socialLinks: {
+      instagramUrl: 'https://www.instagram.com/ajs_romanelepont/',
+      instagramLabel: '@ajs_romanelepont',
+    },
+  },
   // Singleton: only one instance should ever exist. Enforced via the Studio
   // structure builder (sanity/schemas/structure.ts), which pins this type to a
   // single fixed document ID and removes it from the generic document list.

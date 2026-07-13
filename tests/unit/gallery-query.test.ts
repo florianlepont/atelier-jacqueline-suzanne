@@ -47,14 +47,14 @@ describe('getGalleries', () => {
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('order(orderRank)'));
   });
 
-  it('projects the collection hero color as a plain hex string', async () => {
+  it('projects the collection design-system hero color key', async () => {
     fetchMock.mockResolvedValueOnce([]);
 
     const { getGalleries } = await import('../../src/lib/sanity');
     await getGalleries();
 
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('"heroColor": heroColor.hex'),
+      expect.stringContaining('statement, heroColor, images'),
     );
   });
 });

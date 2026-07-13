@@ -95,11 +95,11 @@ export interface Gallery {
 }
 
 const GALLERIES_QUERY = /* groq */ `*[_type == "gallery"] | order(orderRank) {
-  title, "slug": slug.current, statement, "heroColor": heroColor.hex, images
+  title, "slug": slug.current, statement, heroColor, images
 }`
 
 const GALLERY_BY_SLUG_QUERY = /* groq */ `*[_type == "gallery" && slug.current == $slug][0]{
-  title, "slug": slug.current, statement, "heroColor": heroColor.hex, images
+  title, "slug": slug.current, statement, heroColor, images
 }`
 
 /**
