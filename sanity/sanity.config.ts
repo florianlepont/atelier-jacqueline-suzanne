@@ -20,8 +20,8 @@ export default defineConfig({
 
   tools: (prev) => [
     {name: 'dashboard', title: 'Tableau de bord', component: EditorialDashboard},
-    {name: 'media', title: 'Médiathèque', component: MediaLibrary},
     ...prev,
+    {name: 'media', title: 'Suivi des images', component: MediaLibrary},
   ],
 
   schema: {

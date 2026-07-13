@@ -135,7 +135,7 @@ export function MediaLibrary() {
         <Flex align="center" justify="space-between" gap={3} wrap="wrap">
           <Stack space={2}>
             <Heading as="h1" size={3}>
-              Médiathèque
+              Suivi des images
             </Heading>
             <Text muted size={1}>
               Vue d’ensemble des images et des points à corriger.
