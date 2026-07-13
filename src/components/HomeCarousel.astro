@@ -1244,9 +1244,42 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       line-height: 1.4;
     }
 
-    /* Grid hero-tile wordmark — mobile-width override (Typography table). */
+    /* Grid hero-tile wordmark — mobile-width override (Typography table).
+       Deliberate mobile-only reversal of D-05 (see 06-DISCUSSION-LOG.md):
+       (a) the grid hero tile was flat 16px solid text on mobile, too small
+       and visually inconsistent with the carousel's photo-cutout wordmark —
+       direct live-device feedback asked for the same effect here; (b) sized
+       with the carousel's proven starting clamp (see Task 2 for the final
+       live-measured bounds); (c) desktop (`.home-grid__wordmark` above,
+       outside this media query) is untouched — still solid --color-on-accent
+       text, no cutout. */
     .home-grid__wordmark {
-      font-size: 16px;
+      font-size: clamp(36px, 9.8vw, 50px);
+    }
+
+    /* --wordmark-photo is inherited from the .home root (server-rendered,
+       re-set on every carousel tick) — no JS change needed here, it's
+       already the "photo displayed on the carousel behind" for whichever
+       gallery the carousel last showed. Unlike the carousel wordmark, the
+       grid hero tile has no photo physically behind it to pixel-align to
+       (it's a solid-accent square), so this uses the same cover/center
+       fallback values the carousel's own @supports block falls back to
+       before JS runs — not syncWordmarkAlignment()'s live-computed
+       --wordmark-bg-size/--wordmark-bg-position, which would be meaningless
+       here. Fallback (unsupported engines): the base rule's solid
+       --color-on-accent color above still applies since it's outside this
+       @supports block. */
+    @supports (background-clip: text) or (-webkit-background-clip: text) {
+      .home-grid__wordmark {
+        background-image: var(--wordmark-photo);
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        -webkit-text-fill-color: transparent;
+      }
     }
 
     .home-grid__tiles {
