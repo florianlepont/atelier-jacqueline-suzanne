@@ -200,6 +200,7 @@ test.describe('collection statements on the homepage', () => {
     });
 
     expect(layout.captionRight).toBeLessThanOrEqual(layout.accentLeft);
+    expect(layout.accentLeft - layout.captionRight).toBeGreaterThanOrEqual(63);
     expect(layout.statementHeight).toBeLessThanOrEqual(layout.statementLineHeight * 2 + 1);
     expect(layout.statementOverflow).toBe('hidden');
   });
