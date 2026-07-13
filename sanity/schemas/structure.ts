@@ -66,7 +66,7 @@ export const structure: StructureResolver = (S, context) =>
         ),
       orderableDocumentListDeskItem({
         type: 'gallery',
-        title: 'Collections photo — glisser pour réordonner',
+        title: 'Collections photo',
         S,
         context,
       }),
