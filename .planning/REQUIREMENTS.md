@@ -48,9 +48,27 @@ Refines the homepage's view-mode toggle, grid layout, and hero typography before
 
 ### Homepage
 
-- [ ] **HOME-01**: Visitor toggles between carousel and grid view via a single unified button (not two separate mode buttons)
-- [ ] **HOME-02**: In grid view, the hero appears as the first tile of the grid (not a separate full-width band) — wordmark + intro paragraph as overlay text, no CTA button
-- [ ] **HOME-03**: The "Atelier Jacqueline Suzanne" wordmark uses a transparent cutout effect revealing the photo through the letterforms, at least in carousel mode
+- [x] **HOME-01**: Visitor toggles between carousel and grid view via a single unified button (not two separate mode buttons)
+- [x] **HOME-02**: In grid view, the hero appears as the first tile of the grid (not a separate full-width band) — wordmark + intro paragraph as overlay text, no CTA button
+- [x] **HOME-03**: The "Atelier Jacqueline Suzanne" wordmark uses a transparent cutout effect revealing the photo through the letterforms, at least in carousel mode
+
+## v1.2 Requirements (Homepage Polish, Pre-Launch)
+
+Resolves the remaining homepage UX rough edges before the Phase 5 domain cutover — social presence, visual consistency, mobile correctness, and richer per-gallery content.
+
+### Homepage
+
+- [ ] **HOME-04**: Visitor can reach Romane's Instagram via an icon link (not text) in the header nav
+- [ ] **HOME-05**: The carousel/grid toggle button has a square (not rectangular) border
+- [ ] **HOME-06**: Mobile hero is genuinely full-bleed on first load — no white gap above the header, no footer bleed-through (regression from v1.1's 100svh full-bleed work, reported on iPhone 17 Pro)
+- [ ] **HOME-07**: Each gallery's own description text shows under its title on the homepage, replacing the generic "Un projet de Romane Lepont" byline
+- [ ] **HOME-08**: Hovering a grid-mode tile reveals that collection's description
+- [ ] **HOME-09**: Homepage photos load progressively (priority + blur-to-sharp transition), with no blocking full-screen loading state
+- [ ] **HOME-10**: Homepage header is visually identical to the About/Contact header by construction (single shared header component, not two independently-styled implementations)
+
+### Bilingual
+
+- [ ] **I18N-04**: Language switcher shows only the other language (plus a globe icon indicating it's a language control), not both FR/EN — clicking switches directly to the translated version of the current page
 
 ## v2 Requirements
 
@@ -143,9 +161,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LEGAL-03 | Phase 4 | Complete |
 | LEGAL-05 | Phase 4 | Complete |
 | LAUNCH-01 | Phase 5 | Pending |
-| HOME-01 | Phase 6 | Pending |
-| HOME-02 | Phase 6 | Pending |
-| HOME-03 | Phase 6 | Pending |
+| HOME-01 | Phase 6 | Complete |
+| HOME-02 | Phase 6 | Complete |
+| HOME-03 | Phase 6 | Complete |
 
 **Coverage:**
 
@@ -153,11 +171,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 - Mapped to phases: 14/14 ✓
 - Unmapped: 0
 - v1.1 (Homepage Refinements) requirements: 3 total
-- Mapped to phases: 3/3 ✓ (Phase 6)
+- Mapped to phases: 3/3 ✓ (Phase 6, shipped 2026-07-13)
 - Unmapped: 0
+- v1.2 (Homepage Polish, Pre-Launch) requirements: 8 total (HOME-04..HOME-10, I18N-04)
+- Mapped to phases: 0/8 — pending roadmap creation
 - v2 (v1.x fast-follow) requirements: 17 tracked, not yet in roadmap (out of scope for this roadmap by design)
 
 ---
 *Requirements defined: 2026-07-05*
-*Last updated: 2026-07-12 after v1.1 roadmap creation (3/3 v1.1 requirements mapped to Phase 6)*
+*Last updated: 2026-07-13 — v1.1 marked complete (Phase 6); v1.2 (Homepage Polish) requirements added, pending roadmap*
 </content>
