@@ -1,5 +1,5 @@
-import {useEffect, useMemo, useState} from 'react'
-import {Badge, Box, Card, Flex, Grid, Heading, Spinner, Stack, Text} from '@sanity/ui'
+import {useCallback, useEffect, useMemo, useState} from 'react'
+import {Badge, Box, Button, Card, Flex, Grid, Heading, Spinner, Stack, Text} from '@sanity/ui'
 import {useClient} from 'sanity'
 import {IntentLink} from 'sanity/router'
 
@@ -29,6 +29,8 @@ interface MediaPayload {
   galleries: GalleryDocument[]
 }
 
+type SectionKey = 'descriptions' | 'unused' | 'reused'
+
 const mediaQuery = `{
   "assets": *[_type == "sanity.imageAsset"] | order(_createdAt desc) {
     _id, originalFilename, sha1hash, url, metadata{dimensions},
@@ -50,16 +52,27 @@ function filename(asset: MediaAsset) {
 export function MediaLibrary() {
   const client = useClient({apiVersion: '2025-08-15'})
   const [payload, setPayload] = useState<MediaPayload | null>(null)
+  const [activeSection, setActiveSection] = useState<SectionKey>('descriptions')
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [updatedAt, setUpdatedAt] = useState<Date | null>(null)
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
+    setLoading(true)
+    setError('')
     client
       .fetch<MediaPayload>(mediaQuery, {}, {perspective: 'raw'})
-      .then(setPayload)
+      .then((result) => {
+        setPayload(result)
+        setUpdatedAt(new Date())
+      })
       .catch((reason: unknown) =>
         setError(reason instanceof Error ? reason.message : 'Erreur inconnue'),
       )
+      .finally(() => setLoading(false))
   }, [client])
+
+  useEffect(() => refresh(), [refresh])
 
   const report = useMemo(() => {
     if (!payload) return null
@@ -119,16 +132,33 @@ export function MediaLibrary() {
   return (
     <Box padding={[3, 4, 5]} style={{maxWidth: 1080, margin: '0 auto'}}>
       <Stack space={5}>
-        <Stack space={2}>
-          <Heading as="h1" size={3}>
-            Médiathèque
-          </Heading>
-          <Text muted size={1}>
-            Contrôler les images du site et repérer rapidement ce qui demande votre attention.
-          </Text>
-        </Stack>
+        <Flex align="center" justify="space-between" gap={3} wrap="wrap">
+          <Stack space={2}>
+            <Heading as="h1" size={3}>
+              Médiathèque
+            </Heading>
+            <Text muted size={1}>
+              Vue d’ensemble des images et des points à corriger.
+            </Text>
+          </Stack>
+          <Stack space={2} style={{alignItems: 'flex-end'}}>
+            <Button
+              disabled={loading}
+              loading={loading}
+              mode="ghost"
+              text="Actualiser"
+              onClick={refresh}
+            />
+            {updatedAt && (
+              <Text muted size={0}>
+                Analysé à{' '}
+                {updatedAt.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}
+              </Text>
+            )}
+          </Stack>
+        </Flex>
 
-        {!payload && !error && (
+        {!payload && loading && (
           <Card padding={5} radius={3} tone="transparent">
             <Flex align="center" justify="center" gap={3}>
               <Spinner muted />
@@ -148,123 +178,56 @@ export function MediaLibrary() {
         {report && (
           <>
             <Grid columns={[2, 2, 4]} gap={3}>
-              <Metric label="Images" value={report.assets.length} />
-              <Metric label="Inutilisées" value={report.unusedAssets.length} tone="caution" />
+              <Metric label="Images" value={report.assets.length} detail="au total" />
               <Metric
-                label="Descriptions manquantes"
+                label="À décrire"
                 value={report.missingDescriptions.length}
-                tone="critical"
+                detail="photos"
+                tone={report.missingDescriptions.length ? 'critical' : 'positive'}
               />
-              <Metric label="Réutilisées" value={report.reusedAssets.length} />
+              <Metric
+                label="Inutilisées"
+                value={report.unusedAssets.length}
+                detail="fichiers"
+                tone={report.unusedAssets.length ? 'caution' : 'positive'}
+              />
+              <Metric label="Réutilisées" value={report.reusedAssets.length} detail="images" />
             </Grid>
 
-            <Stack space={3}>
-              <Flex align="center" justify="space-between">
-                <Heading as="h2" size={2}>
-                  Descriptions à compléter
-                </Heading>
-                <Badge tone={report.missingDescriptions.length ? 'caution' : 'positive'}>
-                  {report.missingDescriptions.length || 'Tout est prêt'}
-                </Badge>
+            <Card padding={2} radius={3} tone="transparent" border>
+              <Flex gap={2} wrap="wrap">
+                <SectionButton
+                  active={activeSection === 'descriptions'}
+                  label="Descriptions"
+                  count={report.missingDescriptions.length}
+                  onClick={() => setActiveSection('descriptions')}
+                />
+                <SectionButton
+                  active={activeSection === 'unused'}
+                  label="Inutilisées"
+                  count={report.unusedAssets.length}
+                  onClick={() => setActiveSection('unused')}
+                />
+                <SectionButton
+                  active={activeSection === 'reused'}
+                  label="Réutilisées"
+                  count={report.reusedAssets.length}
+                  onClick={() => setActiveSection('reused')}
+                />
               </Flex>
-              {report.missingDescriptions.length === 0 ? (
-                <Card padding={4} radius={3} tone="positive">
-                  <Text size={1}>Toutes les photos des collections sont décrites.</Text>
-                </Card>
-              ) : (
-                <Card radius={3} border overflow="hidden">
-                  {report.missingDescriptions.map((item, index) => (
-                    <IntentLink
-                      key={`${item.id}-${item.photo}`}
-                      intent="edit"
-                      params={{id: item.id, type: 'gallery'}}
-                      style={{color: 'inherit', textDecoration: 'none'}}
-                    >
-                      <Flex
-                        align="center"
-                        justify="space-between"
-                        gap={3}
-                        padding={3}
-                        style={{
-                          borderBottom:
-                            index < report.missingDescriptions.length - 1
-                              ? '1px solid var(--card-border-color)'
-                              : undefined,
-                        }}
-                      >
-                        <Stack space={2}>
-                          <Text size={1} weight="semibold">
-                            {item.title} · Photo {item.photo}
-                          </Text>
-                          <Text muted size={0}>
-                            Langue manquante : {item.missing.join(' + ')}
-                          </Text>
-                        </Stack>
-                        <Text muted size={1}>
-                          Ouvrir ›
-                        </Text>
-                      </Flex>
-                    </IntentLink>
-                  ))}
-                </Card>
-              )}
-            </Stack>
+            </Card>
 
-            <AssetSection
-              title="Images inutilisées"
-              description="Ces fichiers ne sont référencés par aucun contenu. Ils ne sont pas supprimés automatiquement."
-              assets={report.unusedAssets}
-              emptyMessage="Aucune image inutilisée."
-            />
+            {activeSection === 'descriptions' && (
+              <DescriptionsSection items={report.missingDescriptions} />
+            )}
 
-            <Stack space={3}>
-              <Heading as="h2" size={2}>
-                Images présentes dans plusieurs collections
-              </Heading>
-              {report.reusedAssets.length === 0 ? (
-                <Card padding={4} radius={3} tone="transparent" border>
-                  <Text muted size={1}>
-                    Aucune image n’est utilisée dans plusieurs collections.
-                  </Text>
-                </Card>
-              ) : (
-                <Card radius={3} border overflow="hidden">
-                  {report.reusedAssets.map(({asset, usages}, index) => (
-                    <Flex
-                      key={asset._id}
-                      align="center"
-                      gap={3}
-                      padding={3}
-                      style={{
-                        borderBottom:
-                          index < report.reusedAssets.length - 1
-                            ? '1px solid var(--card-border-color)'
-                            : undefined,
-                      }}
-                    >
-                      <AssetThumbnail asset={asset} />
-                      <Stack space={2}>
-                        <Text size={1} weight="semibold">
-                          {filename(asset)}
-                        </Text>
-                        <Text muted size={0}>
-                          {usages.map((usage) => usage.title).join(' · ')}
-                        </Text>
-                      </Stack>
-                    </Flex>
-                  ))}
-                </Card>
-              )}
-            </Stack>
+            {activeSection === 'unused' && <UnusedSection assets={report.unusedAssets} />}
 
-            {report.duplicateUploads.length > 0 && (
-              <Card padding={4} radius={3} tone="caution">
-                <Text size={1}>
-                  {report.duplicateUploads.length} fichier
-                  {report.duplicateUploads.length > 1 ? 's identiques ont' : ' identique a'} été
-                  envoyé plusieurs fois.
-                </Text>
-              </Card>
+            {activeSection === 'reused' && (
+              <ReusedSection
+                items={report.reusedAssets}
+                duplicateCount={report.duplicateUploads.length}
+              />
             )}
           </>
         )}
@@ -276,11 +239,13 @@ export function MediaLibrary() {
 function Metric({
   label,
   value,
+  detail,
   tone = 'default',
 }: {
   label: string
   value: number
-  tone?: 'default' | 'caution' | 'critical'
+  detail: string
+  tone?: 'default' | 'positive' | 'caution' | 'critical'
 }) {
   return (
     <Card padding={3} radius={3} shadow={1} tone={tone}>
@@ -288,25 +253,51 @@ function Metric({
         <Text muted size={1}>
           {label}
         </Text>
-        <Heading size={3}>{value}</Heading>
+        <Flex align="baseline" gap={2}>
+          <Heading size={3}>{value}</Heading>
+          <Text muted size={0}>
+            {detail}
+          </Text>
+        </Flex>
       </Stack>
     </Card>
   )
 }
 
-function AssetSection({
+function SectionButton({
+  active,
+  label,
+  count,
+  onClick,
+}: {
+  active: boolean
+  label: string
+  count: number
+  onClick: () => void
+}) {
+  return (
+    <Button
+      aria-pressed={active}
+      mode={active ? 'default' : 'ghost'}
+      text={`${label} · ${count}`}
+      onClick={onClick}
+    />
+  )
+}
+
+function SectionHeader({
   title,
   description,
-  assets,
-  emptyMessage,
+  count,
+  tone = 'default',
 }: {
   title: string
   description: string
-  assets: MediaAsset[]
-  emptyMessage: string
+  count: number
+  tone?: 'default' | 'positive' | 'caution' | 'critical'
 }) {
   return (
-    <Stack space={3}>
+    <Flex align="flex-start" justify="space-between" gap={3} wrap="wrap">
       <Stack space={2}>
         <Heading as="h2" size={2}>
           {title}
@@ -315,45 +306,212 @@ function AssetSection({
           {description}
         </Text>
       </Stack>
-      {assets.length === 0 ? (
-        <Card padding={4} radius={3} tone="positive">
-          <Text size={1}>{emptyMessage}</Text>
-        </Card>
+      <Badge tone={tone} mode="light">
+        {count}
+      </Badge>
+    </Flex>
+  )
+}
+
+function DescriptionsSection({
+  items,
+}: {
+  items: Array<{id: string; title: string; photo: number; missing: string[]}>
+}) {
+  return (
+    <Stack space={3}>
+      <SectionHeader
+        title="Descriptions à compléter"
+        description="Ouvrir une collection pour renseigner les langues manquantes."
+        count={items.length}
+        tone={items.length ? 'caution' : 'positive'}
+      />
+      {items.length === 0 ? (
+        <EmptyState text="Toutes les photos des collections sont décrites." />
       ) : (
-        <Grid columns={[2, 3, 4]} gap={3}>
-          {assets.slice(0, 16).map((asset) => (
-            <Card key={asset._id} radius={3} border overflow="hidden">
-              <img
-                src={`${asset.url}?w=360&h=240&fit=crop&auto=format`}
-                alt=""
-                loading="lazy"
-                style={{display: 'block', width: '100%', aspectRatio: '3 / 2', objectFit: 'cover'}}
-              />
-              <Box padding={3}>
-                <Text size={0} textOverflow="ellipsis">
-                  {filename(asset)}
+        <Card radius={3} border overflow="hidden">
+          {items.map((item, index) => (
+            <IntentLink
+              key={`${item.id}-${item.photo}`}
+              intent="edit"
+              params={{id: item.id, type: 'gallery'}}
+              style={{color: 'inherit', textDecoration: 'none'}}
+            >
+              <Flex
+                align="center"
+                justify="space-between"
+                gap={3}
+                padding={3}
+                style={{
+                  borderBottom:
+                    index < items.length - 1 ? '1px solid var(--card-border-color)' : undefined,
+                }}
+              >
+                <Stack space={2}>
+                  <Text size={1} weight="semibold">
+                    {item.title}
+                  </Text>
+                  <Flex align="center" gap={2} wrap="wrap">
+                    <Text muted size={0}>
+                      Photo {item.photo}
+                    </Text>
+                    {item.missing.map((locale) => (
+                      <Badge key={locale} fontSize={0} mode="outline" tone="caution">
+                        {locale} manquant
+                      </Badge>
+                    ))}
+                  </Flex>
+                </Stack>
+                <Text muted size={1}>
+                  Ouvrir ›
                 </Text>
-              </Box>
-            </Card>
+              </Flex>
+            </IntentLink>
           ))}
-        </Grid>
-      )}
-      {assets.length > 16 && (
-        <Text muted size={0}>
-          16 images affichées sur {assets.length}.
-        </Text>
+        </Card>
       )}
     </Stack>
   )
 }
 
+function UnusedSection({assets}: {assets: MediaAsset[]}) {
+  return (
+    <Stack space={3}>
+      <SectionHeader
+        title="Images inutilisées"
+        description="Ces fichiers ne sont référencés par aucun contenu et ne sont jamais supprimés automatiquement."
+        count={assets.length}
+        tone={assets.length ? 'caution' : 'positive'}
+      />
+      {assets.length === 0 ? (
+        <EmptyState text="Aucune image inutilisée." />
+      ) : (
+        <>
+          <Grid columns={[2, 3, 5]} gap={3}>
+            {assets.slice(0, 20).map((asset) => (
+              <Card key={asset._id} radius={3} border overflow="hidden" shadow={1}>
+                <img
+                  src={`${asset.url}?w=360&h=270&fit=crop&auto=format`}
+                  alt=""
+                  loading="lazy"
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    aspectRatio: '4 / 3',
+                    objectFit: 'cover',
+                  }}
+                />
+                <Stack padding={3} space={2}>
+                  <Text size={0} weight="semibold" textOverflow="ellipsis">
+                    {filename(asset)}
+                  </Text>
+                  <Text muted size={0}>
+                    {formatDimensions(asset)}
+                  </Text>
+                </Stack>
+              </Card>
+            ))}
+          </Grid>
+          {assets.length > 20 && (
+            <Text muted size={0}>
+              20 images affichées sur {assets.length}.
+            </Text>
+          )}
+        </>
+      )}
+    </Stack>
+  )
+}
+
+function ReusedSection({
+  items,
+  duplicateCount,
+}: {
+  items: Array<{asset: MediaAsset; usages: Array<{id: string; title: string}>}>
+  duplicateCount: number
+}) {
+  return (
+    <Stack space={3}>
+      <SectionHeader
+        title="Images réutilisées"
+        description="Une même image est présente dans plusieurs collections. Cela peut être volontaire."
+        count={items.length}
+      />
+      {items.length === 0 ? (
+        <EmptyState text="Aucune image n’est utilisée dans plusieurs collections." />
+      ) : (
+        <Card radius={3} border overflow="hidden">
+          {items.map(({asset, usages}, index) => (
+            <Flex
+              key={asset._id}
+              align="center"
+              gap={3}
+              padding={3}
+              style={{
+                borderBottom:
+                  index < items.length - 1 ? '1px solid var(--card-border-color)' : undefined,
+              }}
+            >
+              <AssetThumbnail asset={asset} />
+              <Stack space={2} style={{minWidth: 0}}>
+                <Text size={1} weight="semibold" textOverflow="ellipsis">
+                  {filename(asset)}
+                </Text>
+                <Flex align="center" gap={2} wrap="wrap">
+                  {usages.map((usage) => (
+                    <Badge key={usage.id} fontSize={0} mode="light">
+                      {usage.title}
+                    </Badge>
+                  ))}
+                </Flex>
+              </Stack>
+            </Flex>
+          ))}
+        </Card>
+      )}
+      {duplicateCount > 0 && (
+        <Card padding={3} radius={3} tone="caution">
+          <Text size={1}>
+            {duplicateCount} fichier{duplicateCount > 1 ? 's identiques ont' : ' identique a'} été
+            envoyé plusieurs fois.
+          </Text>
+        </Card>
+      )}
+    </Stack>
+  )
+}
+
+function EmptyState({text}: {text: string}) {
+  return (
+    <Card padding={4} radius={3} tone="positive">
+      <Flex align="center" gap={2}>
+        <Text size={1}>✓</Text>
+        <Text size={1}>{text}</Text>
+      </Flex>
+    </Card>
+  )
+}
+
+function formatDimensions(asset: MediaAsset) {
+  const width = asset.metadata?.dimensions?.width
+  const height = asset.metadata?.dimensions?.height
+  return width && height ? `${width} × ${height} px` : 'Dimensions inconnues'
+}
+
 function AssetThumbnail({asset}: {asset: MediaAsset}) {
   return (
     <img
-      src={`${asset.url}?w=96&h=72&fit=crop&auto=format`}
+      src={`${asset.url}?w=144&h=108&fit=crop&auto=format`}
       alt=""
       loading="lazy"
-      style={{display: 'block', width: 64, height: 48, flex: '0 0 auto', objectFit: 'cover'}}
+      style={{
+        display: 'block',
+        width: 72,
+        height: 54,
+        flex: '0 0 auto',
+        borderRadius: 4,
+        objectFit: 'cover',
+      }}
     />
   )
 }
