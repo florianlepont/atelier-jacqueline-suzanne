@@ -21,6 +21,7 @@ interface DashboardRow {
   current: DashboardDocument
   hasDraft: boolean
   isPublished: boolean
+  lastUpdatedAt: string
   summary: ReturnType<typeof summarizeChecks>
 }
 
@@ -92,16 +93,22 @@ export function EditorialDashboard() {
       else entry.published = document
       byId.set(id, entry)
     }
-    return Array.from(byId.entries()).map(([id, versions]): DashboardRow => {
-      const current = versions.draft ?? versions.published!
-      return {
-        id,
-        current,
-        hasDraft: Boolean(versions.draft),
-        isPublished: Boolean(versions.published),
-        summary: summarizeChecks(getDocumentChecks(current._type, current)),
-      }
-    })
+    return Array.from(byId.entries())
+      .map(([id, versions]): DashboardRow => {
+        const current = versions.draft ?? versions.published!
+        const lastUpdatedAt = [versions.draft?._updatedAt, versions.published?._updatedAt]
+          .filter((value): value is string => Boolean(value))
+          .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0]
+        return {
+          id,
+          current,
+          hasDraft: Boolean(versions.draft),
+          isPublished: Boolean(versions.published),
+          lastUpdatedAt: lastUpdatedAt ?? current._updatedAt,
+          summary: summarizeChecks(getDocumentChecks(current._type, current)),
+        }
+      })
+      .sort((a, b) => new Date(b.lastUpdatedAt).getTime() - new Date(a.lastUpdatedAt).getTime())
   }, [documents])
 
   const attention = rows.filter(({current, summary}) => {
@@ -355,6 +362,8 @@ function ContentRow({row, withBorder}: {row: DashboardRow; withBorder: boolean})
 }
 
 function RecentRow({row, withBorder}: {row: DashboardRow; withBorder: boolean}) {
+  const missing = row.summary.totalCount - row.summary.completeCount
+  const photoCount = Array.isArray(row.current.images) ? row.current.images.length : 0
   return (
     <IntentLink
       intent="edit"
@@ -366,15 +375,72 @@ function RecentRow({row, withBorder}: {row: DashboardRow; withBorder: boolean}) 
         justify="space-between"
         gap={3}
         padding={3}
+        wrap="wrap"
         style={{borderBottom: withBorder ? '1px solid var(--card-border-color)' : undefined}}
       >
-        <Text size={1} textOverflow="ellipsis">
-          {documentTitle(row.current)}
-        </Text>
-        <Text muted size={0}>
-          {new Date(row.current._updatedAt).toLocaleDateString('fr-FR')}
-        </Text>
+        <Stack space={2} style={{minWidth: 0, flex: '1 1 420px'}}>
+          <Text size={1} weight="semibold" textOverflow="ellipsis">
+            {documentTitle(row.current)}
+          </Text>
+          <Flex align="center" gap={2} wrap="wrap">
+            <Text muted size={0}>
+              {typeLabels[row.current._type]}
+              {row.current._type === 'gallery'
+                ? ` · ${photoCount} photo${photoCount > 1 ? 's' : ''}`
+                : ''}
+              {missing > 0 ? ` · ${missing} à compléter` : ' · Contenu prêt'}
+            </Text>
+            {row.hasDraft ? (
+              <Badge fontSize={0} mode="light" tone="caution">
+                Brouillon en cours
+              </Badge>
+            ) : row.isPublished ? (
+              <Badge fontSize={0} mode="light" tone="positive">
+                Publié
+              </Badge>
+            ) : (
+              <Badge fontSize={0} mode="light">
+                Non publié
+              </Badge>
+            )}
+            {row.current._type === 'gallery' && (
+              <Badge
+                fontSize={0}
+                mode="outline"
+                tone={isGalleryOnline(row.current) ? 'positive' : 'default'}
+              >
+                {isGalleryOnline(row.current) ? 'Sur le site' : 'Hors du site'}
+              </Badge>
+            )}
+          </Flex>
+        </Stack>
+        <Stack space={2} style={{flex: '0 0 auto', textAlign: 'right'}}>
+          <Text muted size={0}>
+            Dernière modification
+          </Text>
+          <Text size={1}>{formatActivityDate(row.lastUpdatedAt)}</Text>
+        </Stack>
       </Flex>
     </IntentLink>
   )
+}
+
+function formatActivityDate(value: string) {
+  const date = new Date(value)
+  const now = new Date()
+  const yesterday = new Date(now)
+  yesterday.setDate(now.getDate() - 1)
+  const sameDay = (left: Date, right: Date) =>
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
+  const time = date.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})
+
+  if (sameDay(date, now)) return `Aujourd’hui à ${time}`
+  if (sameDay(date, yesterday)) return `Hier à ${time}`
+  return `${date.toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })} à ${time}`
 }
