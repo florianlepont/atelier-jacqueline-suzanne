@@ -242,7 +242,9 @@ Plans:
 
 **Plans**: 1 plan
 Plans:
+
 - [x] 06-01-PLAN.md — Single unified toggle (HOME-01) + grid hero-as-first-tile (HOME-02) + carousel wordmark photo-cutout (HOME-03) + CTA removal, all in HomeCarousel.astro; test-first, with a live cutout-legibility checkpoint (Wave 1) — completed 2026-07-13, including a live post-checkpoint mobile/navigation follow-on (full-bleed hero, dashed swipe/keyboard nav) reconciled into 06-01-SUMMARY.md
+
 **UI hint**: yes
 
 ### Phase 7: Homepage Quick Fixes & Mobile Hero Correctness
@@ -257,11 +259,11 @@ Plans:
   2. The carousel/grid mode toggle button has a square (not rectangular) border, in both carousel and grid modes.
   3. On first load on a mobile device (e.g. iPhone 17 Pro), the hero fills the viewport edge-to-edge with no white gap above the header and no footer visible or bleeding through beneath the hero.
 
-**Plans**: 2 plans
+**Plans**: 1/2 plans executed
 Plans:
 **Wave 1**
 
-- [ ] 07-01-PLAN.md — Header quick fixes: Instagram icon nav link (HOME-04) + square mode-toggle box with 44px tap floor (HOME-05), in HomeCarousel.astro (Wave 1)
+- [x] 07-01-PLAN.md — Header quick fixes: Instagram icon nav link (HOME-04) + square mode-toggle box with 44px tap floor (HOME-05), in HomeCarousel.astro (Wave 1)
 
 **Wave 2** *(blocked on Wave 1 — same file, HomeCarousel.astro)*
 
@@ -333,7 +335,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 4. Legal & Compliance | 3/3 | Complete    | 2026-07-08 |
 | 5. Launch & Domain Cutover | 0/TBD | Not started | - |
 | 6. Homepage View-Mode Toggle, Grid Hero & Wordmark Cutout | 1/1 | Complete   | 2026-07-13 |
-| 7. Homepage Quick Fixes & Mobile Hero Correctness | 0/TBD | Not started | - |
+| 7. Homepage Quick Fixes & Mobile Hero Correctness | 1/2 | In Progress|  |
 | 8. Gallery Descriptions | 0/TBD | Not started | - |
 | 9. Progressive Homepage Image Loading | 0/TBD | Not started | - |
 | 10. Unified Header & Simplified Language Switcher | 0/TBD | Not started | - |

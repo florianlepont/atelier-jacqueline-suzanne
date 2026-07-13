@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Homepage Polish (Pre-Launch)
-current_phase: 7
-current_phase_name: Homepage Quick Fixes & Mobile Hero Correctness
-status: planning
+current_phase: 07
+current_phase_name: homepage-quick-fixes-mobile-hero-correctness
+status: executing
 stopped_at: Phase 7 UI-SPEC approved
-last_updated: "2026-07-13T19:05:24.465Z"
+last_updated: "2026-07-13T19:34:49.478Z"
 last_activity: 2026-07-13
-last_activity_desc: v1.2 roadmap created (Phases 7–10)
+last_activity_desc: Phase 07 execution started
 progress:
   total_phases: 13
   completed_phases: 8
-  total_plans: 26
-  completed_plans: 26
+  total_plans: 28
+  completed_plans: 27
   percent: 62
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-13)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; checkout follows in v1.x.)
-**Current focus:** v1.2 milestone (Homepage Polish, Pre-Launch) — roadmap created, ready for phase planning. v1.1 shipped 2026-07-13. Phase 5 (Launch & Domain Cutover) remains deferred until after v1.2.
+**Current focus:** Phase 07 — homepage-quick-fixes-mobile-hero-correctness
 
 ## Current Position
 
-Phase: Phase 7 (Homepage Quick Fixes & Mobile Hero Correctness) — not started
-Plan: —
-Status: Roadmap created, awaiting `/gsd-plan-phase 7`
-Last activity: 2026-07-13 — v1.2 roadmap created (Phases 7–10)
+Phase: 07 (homepage-quick-fixes-mobile-hero-correctness) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
+Last activity: 2026-07-13 — Phase 07 execution started
 
 ## Performance Metrics
 
@@ -66,6 +66,7 @@ Last activity: 2026-07-13 — v1.2 roadmap created (Phases 7–10)
 | Phase 02 P03 | ~2h (incl. content migration + 2 real bugs found/fixed) | 3 tasks | 8 files |
 | Phase 02 P04 | 90 | 3 tasks | 3 files |
 | Phase 06 P01 | ~21h elapsed (two sessions, long overnight gap) | 3 planned tasks + live post-checkpoint follow-on | 3 files |
+| Phase 07 P01 | 15min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -110,6 +111,8 @@ Recent decisions affecting current work:
 - [Phase 06]: Mobile hero uses 100svh, not 100vh — 100vh resolves to the large (chrome-hidden) viewport on real mobile Safari, letting the site footer peek in before the user scrolls; 100svh always reflects the guaranteed-visible area
 - [Phase 06]: Prev/next arrow buttons replaced with a compact (~20-30% viewport width) clickable dashed progress indicator plus keyboard ArrowLeft/ArrowRight and touch-swipe navigation, per direct user request — arrows are gone from the component entirely
 - [Phase 06]: Mobile-only wordmark background-position bypass (added when the panel briefly sat below the photo) was removed once the panel returned to overlaying the photo — mobile now shares desktop's live pixel-alignment computation, not an approximation
+- [Phase 07]: [Phase 07 Plan 01]: Instagram nav link and square mode-toggle box committed together (not split per-task) since HOME-05's 44px tap-target fix directly changed HOME-04's mobile pixel-budget math
+- [Phase 07]: [Phase 07 Plan 01]: .home-header's mobile inter-item gap trimmed a second time (8px to 4px) beyond the plan's nav-only trims, to absorb the wider 44px toggle button and keep all 5 header items on one row at 393px
 
 ### Pending Todos
 
@@ -142,7 +145,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-13T19:05:24.460Z
+Last session: 2026-07-13T19:33:48.054Z
 Stopped at: Phase 7 UI-SPEC approved
 Resume file: .planning/phases/07-homepage-quick-fixes-mobile-hero-correctness/07-UI-SPEC.md
 </content>
