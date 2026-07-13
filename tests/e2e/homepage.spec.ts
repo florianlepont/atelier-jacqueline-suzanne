@@ -173,6 +173,45 @@ test.describe('carousel wordmark cutout (HOME-03, D-08)', () => {
   });
 });
 
+test.describe('grid hero wordmark cutout — mobile (HOME-03, D-05 reversal)', () => {
+  test('the grid hero wordmark cutout is mobile-only; desktop stays solid', async ({ page }) => {
+    // Mobile (393px): cutout applied — same background-clip:text +
+    // photo background-image treatment as the carousel wordmark.
+    await page.setViewportSize({ width: 393, height: 800 });
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+
+    const mobileWordmark = page.locator('.home-grid__wordmark');
+    await expect(mobileWordmark).toBeVisible();
+    const mobileStyle = await mobileWordmark.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        clip: style.webkitBackgroundClip || style.backgroundClip,
+        bg: style.backgroundImage,
+      };
+    });
+    expect(mobileStyle.clip).toContain('text');
+    expect(mobileStyle.bg).toContain('url(');
+
+    // Desktop (1280px): D-05 preserved — solid, non-transparent text, no
+    // cutout. Reload at the wider viewport rather than resizing in place,
+    // since the toggle mode is local component state that should still be
+    // in grid mode after a fresh load selects grid again.
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+
+    const desktopWordmark = page.locator('.home-grid__wordmark');
+    await expect(desktopWordmark).toBeVisible();
+    const desktopFill = await desktopWordmark.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return style.webkitTextFillColor || style.color;
+    });
+    expect(desktopFill).not.toBe('transparent');
+    expect(desktopFill).not.toBe('rgba(0, 0, 0, 0)');
+  });
+});
+
 test.describe('mobile hero visibility (D-08)', () => {
   test('hero renders visibly at a 375px-wide viewport, not collapsed/blank', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
