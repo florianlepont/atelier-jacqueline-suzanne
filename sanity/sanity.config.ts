@@ -16,12 +16,15 @@ export default defineConfig({
 
   // French UI for the day-to-day editor. The developer-only Vision query
   // tool is deliberately omitted from the main navigation.
-  plugins: [structureTool({structure, defaultDocumentNode}), frFRLocale({title: 'Français'})],
+  plugins: [
+    structureTool({title: 'Contenu du site', structure, defaultDocumentNode}),
+    frFRLocale({title: 'Français'}),
+  ],
 
   tools: (prev) => [
     {name: 'dashboard', title: 'Tableau de bord', component: EditorialDashboard},
     ...prev,
-    {name: 'media', title: 'Suivi des images', component: MediaLibrary},
+    {name: 'media', title: 'Médiathèque', component: MediaLibrary},
   ],
 
   schema: {
