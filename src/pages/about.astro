@@ -14,9 +14,24 @@ const medium = about?.medium?.fr ?? 'Précisions sur le médium et la technique 
 const seoTitle = about?.seo?.title?.fr ?? 'À propos — Atelier Jacqueline Suzanne';
 const seoDescription = about?.seo?.description?.fr ?? biography;
 const socialImage = about?.seo?.image ? fullSizeUrl(about.seo.image, 1200) : undefined;
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: 'Romane Lepont',
+  jobTitle: 'Photographe',
+  description: biography,
+  url: Astro.url.toString(),
+  sameAs: [siteCopy.instagramUrl],
+};
 ---
 
-<BaseLayout title={seoTitle} description={seoDescription} socialImage={socialImage}>
+<BaseLayout
+  title={seoTitle}
+  description={seoDescription}
+  socialImage={socialImage}
+  noIndex={about?.seo?.noIndex}
+  structuredData={structuredData}
+>
   <div class="about-page">
     <h1>À propos</h1>
     <p>{biography}</p>

@@ -131,6 +131,20 @@ export const gallery = defineType({
                 }),
               ],
             }),
+            defineField({
+              name: 'rights',
+              title: 'Crédits et droits',
+              type: 'imageRights',
+              description:
+                'Ces informations permettent de tracer les droits et, si souhaité, d’afficher le crédit dans la visionneuse.',
+              initialValue: {
+                credit: 'Romane Lepont',
+                copyrightNotice: '© Romane Lepont — Tous droits réservés',
+                usage: 'allRightsReserved',
+                displayCredit: true,
+              },
+              validation: (rule) => rule.required().error('Ajouter les crédits et les droits.'),
+            }),
           ],
         }),
       ],

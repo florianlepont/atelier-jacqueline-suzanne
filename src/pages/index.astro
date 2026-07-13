@@ -21,6 +21,15 @@ const siteCopy = {
 const seoTitle = homePage?.seo?.title?.[locale] ?? siteSettings?.defaultSeo?.title?.[locale] ?? 'Atelier Jacqueline Suzanne';
 const seoDescription = homePage?.seo?.description?.[locale] ?? siteSettings?.defaultSeo?.description?.[locale];
 const seoImage = homePage?.seo?.image ? fullSizeUrl(homePage.seo.image, 1200) : undefined;
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: seoTitle,
+  description: seoDescription,
+  url: Astro.url.toString(),
+  inLanguage: 'fr',
+  about: { '@type': 'Person', name: 'Romane Lepont', jobTitle: 'Photographe' },
+};
 
 const galleries = (await getGalleries())
   .filter((gallery) => gallery.images.length > 0)
@@ -43,6 +52,13 @@ const galleries = (await getGalleries())
   });
 ---
 
-<BaseLayout title={seoTitle} description={seoDescription} socialImage={seoImage} headerVariant="none">
+<BaseLayout
+  title={seoTitle}
+  description={seoDescription}
+  socialImage={seoImage}
+  noIndex={homePage?.seo?.noIndex}
+  structuredData={structuredData}
+  headerVariant="none"
+>
   <HomeCarousel locale={locale} galleries={galleries} siteCopy={siteCopy} />
 </BaseLayout>

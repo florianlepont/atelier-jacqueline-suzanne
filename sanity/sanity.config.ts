@@ -3,6 +3,8 @@ import {structureTool} from 'sanity/structure'
 import {frFRLocale} from '@sanity/locale-fr-fr'
 import {schemaTypes} from './schemas'
 import {defaultDocumentNode, structure} from './schemas/structure'
+import {EditorialDashboard} from './editorial/EditorialDashboard'
+import {resolveActions, resolveBadges} from './editorial/workflow'
 
 export default defineConfig({
   name: 'default',
@@ -15,8 +17,23 @@ export default defineConfig({
   // tool is deliberately omitted from the main navigation.
   plugins: [structureTool({structure, defaultDocumentNode}), frFRLocale({title: 'Français'})],
 
+  tools: (prev) => [
+    {name: 'dashboard', title: 'Tableau de bord', component: EditorialDashboard},
+    ...prev,
+  ],
+
   schema: {
     types: schemaTypes,
+    templates: (prev) => [
+      {
+        id: 'gallery',
+        title: 'Nouvelle collection photo',
+        description: 'Collection visible avec les réglages recommandés déjà préparés.',
+        schemaType: 'gallery',
+        value: {isVisible: true},
+      },
+      ...prev.filter((template) => template.id !== 'gallery'),
+    ],
   },
 
   document: {
@@ -27,14 +44,12 @@ export default defineConfig({
     // document (or duplicating the existing one) via those affordances.
     // A second document would make `*[_type == "siteSettings"][0]` in
     // src/lib/sanity.ts non-deterministic, silently breaking Romane's edits.
-    actions: (prev, context) =>
-      ['siteSettings', 'aboutPage'].includes(context.schemaType)
-        ? prev.filter((action) => !['duplicate'].includes(action.action ?? ''))
-        : prev,
+    actions: resolveActions,
+    badges: resolveBadges,
     newDocumentOptions: (prev, context) =>
       context.creationContext.type === 'global'
         ? prev.filter(
-            (template) => !['siteSettings', 'aboutPage'].includes(template.templateId),
+            (template) => !['siteSettings', 'homePage', 'aboutPage'].includes(template.templateId),
           )
         : prev,
   },

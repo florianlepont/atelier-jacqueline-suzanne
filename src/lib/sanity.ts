@@ -49,6 +49,7 @@ export interface SeoSettings {
   title?: Partial<LocaleString>
   description?: Partial<LocaleString>
   image?: SanityImage
+  noIndex?: boolean
 }
 
 /** The published `siteSettings` singleton, typed for both locales. */
@@ -87,6 +88,14 @@ export async function getSiteSettings(): Promise<SiteSettings | null> {
  */
 export interface GalleryImage extends SanityImage {
   alt: LocaleString
+  rights?: {
+    credit?: string
+    copyrightNotice?: string
+    year?: number
+    usage?: 'allRightsReserved' | 'editorialOnly' | 'licensed' | 'publicDomain'
+    licenseDetails?: string
+    displayCredit?: boolean
+  }
 }
 
 /** A `gallery` document, typed for both locales. */

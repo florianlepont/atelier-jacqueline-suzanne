@@ -5,15 +5,27 @@ import type {
 } from 'sanity/structure'
 import {orderableDocumentListDeskItem} from '@sanity/orderable-document-list'
 import {ContentPreview} from './ContentPreview'
+import {DocumentChecklist} from '../editorial/DocumentChecklist'
+import {WebsitePreview} from '../editorial/WebsitePreview'
 
 const editorViews = (S: StructureBuilder) => [
   S.view.form().title('Édition'),
-  S.view.component(ContentPreview).title('Aperçu'),
+  S.view.component(DocumentChecklist).title('Checklist'),
+  S.view.component(ContentPreview).title('Aperçu du brouillon'),
+  S.view.component(WebsitePreview).title('Site publié'),
+]
+
+const checklistViews = (S: StructureBuilder) => [
+  S.view.form().title('Édition'),
+  S.view.component(DocumentChecklist).title('Checklist'),
 ]
 
 export const defaultDocumentNode: DefaultDocumentNodeResolver = (S, {schemaType}) => {
   if (['gallery', 'homePage', 'aboutPage'].includes(schemaType)) {
     return S.document().views(editorViews(S))
+  }
+  if (['siteSettings', 'exhibition'].includes(schemaType)) {
+    return S.document().views(checklistViews(S))
   }
   return S.document()
 }
@@ -34,7 +46,12 @@ export const structure: StructureResolver = (S, context) =>
       S.listItem()
         .title('Réglages du site')
         .id('siteSettings')
-        .child(S.document().schemaType('siteSettings').documentId('siteSettings')),
+        .child(
+          S.document()
+            .schemaType('siteSettings')
+            .documentId('siteSettings')
+            .views(checklistViews(S)),
+        ),
       S.listItem()
         .title("Page d'accueil")
         .id('homePage')

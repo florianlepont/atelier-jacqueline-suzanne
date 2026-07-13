@@ -1,10 +1,13 @@
 import {defineField, defineType} from 'sanity'
+import {SeoPreviewInput} from '../editorial/SeoPreviewInput'
 
 export const seo = defineType({
   name: 'seo',
   title: 'Référencement et partage',
   type: 'object',
-  description: 'Facultatif : les valeurs normales de la page sont utilisées si ces champs restent vides.',
+  description:
+    'Facultatif : les valeurs normales de la page sont utilisées si ces champs restent vides.',
+  components: {input: SeoPreviewInput},
   fields: [
     defineField({
       name: 'title',
@@ -52,8 +55,18 @@ export const seo = defineType({
       name: 'image',
       title: 'Image de partage',
       type: 'image',
-      description: 'Image affichée lors du partage sur les réseaux sociaux. Format horizontal conseillé.',
+      description:
+        'Image affichée lors du partage sur les réseaux sociaux. Format horizontal conseillé.',
       options: {hotspot: true},
+    }),
+    defineField({
+      name: 'noIndex',
+      title: 'Masquer cette page dans Google',
+      type: 'boolean',
+      description:
+        'À activer uniquement pour une page qui ne doit pas apparaître dans les moteurs de recherche.',
+      initialValue: false,
+      hidden: ({document}) => document?._type === 'siteSettings',
     }),
   ],
 })

@@ -6,6 +6,29 @@ test.describe('SEO metadata', () => {
 
     await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', /Atelier Jacqueline Suzanne/i);
     await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', /summary/);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', /^https:\/\//);
+    await expect(page.locator('link[rel="alternate"][hreflang="fr"]')).toHaveCount(1);
+    await expect(page.locator('link[rel="alternate"][hreflang="en"]')).toHaveCount(1);
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /index, follow/);
+    const structuredData = await page
+      .locator('script[type="application/ld+json"]')
+      .textContent();
+    expect(structuredData).toContain('WebSite');
+  });
+
+  test('robots.txt references the generated sitemap', async ({page}) => {
+    const response = await page.request.get('/robots.txt');
+    expect(response.ok()).toBe(true);
+    expect(await response.text()).toContain('Sitemap: https://');
+  });
+
+  test('sitemap contains both languages and gallery pages', async ({page}) => {
+    const response = await page.request.get('/sitemap.xml');
+    expect(response.ok()).toBe(true);
+    const sitemap = await response.text();
+    expect(sitemap).toContain('<urlset');
+    expect(sitemap).toContain('/en/');
+    expect(sitemap).toContain('/galleries/');
   });
 
   test('About page uses its CMS biography as the default description', async ({page}) => {

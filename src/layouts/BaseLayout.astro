@@ -34,6 +34,8 @@ interface Props {
   title: string;
   description?: string;
   socialImage?: string;
+  noIndex?: boolean;
+  structuredData?: Record<string, unknown> | Record<string, unknown>[];
   // D-11/D-13/RESEARCH.md Architectural Responsibility Map: 'solid' (default)
   // is every existing page's white-on-white hairline header; 'transparent'
   // is the gallery-detail hero-scrim header (Plan 04.1-05, D-07); 'none'
@@ -42,7 +44,14 @@ interface Props {
   headerVariant?: 'solid' | 'transparent' | 'none';
 }
 
-const { title, description: pageDescription, socialImage: pageSocialImage, headerVariant = 'solid' } = Astro.props;
+const {
+  title,
+  description: pageDescription,
+  socialImage: pageSocialImage,
+  noIndex = false,
+  structuredData: pageStructuredData,
+  headerVariant = 'solid',
+} = Astro.props;
 const locale = Astro.currentLocale === 'en' ? 'en' : 'fr';
 
 const siteSettings = await getSiteSettings();
@@ -58,6 +67,39 @@ const description = pageDescription ?? siteSettings?.defaultSeo?.description?.[l
 const socialImage = pageSocialImage ?? (siteSettings?.defaultSeo?.image
   ? fullSizeUrl(siteSettings.defaultSeo.image, 1200)
   : undefined);
+const basePath = import.meta.env.BASE_URL.endsWith('/')
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+const pathWithinBase = Astro.url.pathname.startsWith(basePath)
+  ? Astro.url.pathname.slice(basePath.length)
+  : Astro.url.pathname.replace(/^\//, '');
+const neutralPath = locale === 'en' ? pathWithinBase.replace(/^en\/?/, '') : pathWithinBase;
+const frenchPath = `${basePath}${neutralPath}`.replace(/\/+/g, '/');
+const englishPath = `${basePath}en/${neutralPath}`.replace(/\/+/g, '/');
+const siteOrigin = Astro.site ?? new URL(Astro.url.origin);
+const canonicalUrl = new URL(Astro.url.pathname, siteOrigin).toString();
+const frenchUrl = new URL(frenchPath, siteOrigin).toString();
+const englishUrl = new URL(englishPath, siteOrigin).toString();
+const defaultStructuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: siteTitle,
+  url: new URL(basePath, siteOrigin).toString(),
+  inLanguage: ['fr', 'en'],
+  publisher: {
+    '@type': 'Person',
+    name: 'Romane Lepont',
+  },
+};
+const structuredData = [
+  defaultStructuredData,
+  ...(Array.isArray(pageStructuredData)
+    ? pageStructuredData
+    : pageStructuredData
+      ? [pageStructuredData]
+      : []),
+];
+const serializedStructuredData = JSON.stringify(structuredData).replace(/</g, '\\u003c');
 // homeHref is still needed below for the logo's own link — no separate
 // "Accueil"/"Home" nav link anymore (direct user feedback: redundant,
 // since clicking the logo already goes home).
@@ -91,12 +133,25 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+    <link rel="canonical" href={canonicalUrl} />
+    <link rel="alternate" hreflang="fr" href={frenchUrl} />
+    <link rel="alternate" hreflang="en" href={englishUrl} />
+    <link rel="alternate" hreflang="x-default" href={frenchUrl} />
+    <meta name="robots" content={noIndex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'} />
     {description && <meta name="description" content={description} />}
     <meta property="og:title" content={title} />
     {description && <meta property="og:description" content={description} />}
     <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:site_name" content={siteTitle} />
+    <meta property="og:locale" content={locale === 'en' ? 'en_GB' : 'fr_FR'} />
+    <meta property="og:locale:alternate" content={locale === 'en' ? 'fr_FR' : 'en_GB'} />
     {socialImage && <meta property="og:image" content={socialImage} />}
     <meta name="twitter:card" content={socialImage ? 'summary_large_image' : 'summary'} />
+    <meta name="twitter:title" content={title} />
+    {description && <meta name="twitter:description" content={description} />}
+    {socialImage && <meta name="twitter:image" content={socialImage} />}
+    <script type="application/ld+json" set:html={serializedStructuredData}></script>
     <script is:inline define:vars={{ base: import.meta.env.BASE_URL }}>
       // D-03: no server/middleware exists on OVH static hosting to read
       // cookies, so a returning visitor's locale preference is honored via a

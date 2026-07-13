@@ -87,4 +87,14 @@ test.describe('lightbox', () => {
     await expect(dialog).not.toBeVisible();
     await expect(firstThumbnail).toBeFocused();
   });
+
+  test('shows the photographic credit and copyright notice', async ({page}) => {
+    await page.goto('/');
+    await page.getByRole('button', {name: 'Grille'}).click();
+    const href = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    await page.goto(href!);
+    await page.locator('[data-gallery-thumb]').first().click();
+
+    await expect(page.locator('.lightbox__credit')).toContainText('Romane Lepont');
+  });
 });
