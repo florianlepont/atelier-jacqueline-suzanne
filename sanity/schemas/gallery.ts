@@ -2,6 +2,17 @@ import {defineArrayMember, defineField, defineType} from 'sanity'
 import {orderRankField} from '@sanity/orderable-document-list'
 import {HERO_COLOR_OPTIONS, HeroColorInput} from './HeroColorInput'
 
+// Sanity list previews intentionally expose only selected array positions,
+// not a complete array. Selecting lightweight `_key` values keeps the
+// collection list fast while still allowing an accurate photo count.
+const PREVIEW_IMAGE_LIMIT = 100
+const previewImageKeys = Object.fromEntries(
+  Array.from({length: PREVIEW_IMAGE_LIMIT}, (_, index) => [
+    `imageKey${index}`,
+    `images.${index}._key`,
+  ]),
+)
+
 /**
  * Locale-aware text pair, copied verbatim from `siteSettings.ts`'s
  * `localeTextField` helper (no shared schema-lib module exists yet to import
@@ -161,16 +172,17 @@ export const gallery = defineType({
     select: {
       title: 'title',
       media: 'images.0',
-      images: 'images',
       heroColor: 'heroColor',
       isVisible: 'isVisible',
+      ...previewImageKeys,
     },
-    prepare({title, media, images, heroColor, isVisible}) {
-      const count = Array.isArray(images) ? images.length : 0
+    prepare({title, media, heroColor, isVisible, ...imageKeys}) {
+      const count = Object.values(imageKeys).filter(Boolean).length
       const color = HERO_COLOR_OPTIONS.find((option) => option.value === heroColor)?.title
+      const photoLabel = `${count}${count === PREVIEW_IMAGE_LIMIT ? '+' : ''} photo${count > 1 ? 's' : ''}`
       return {
         title: title || 'Collection sans nom',
-        subtitle: `${isVisible === false ? 'Masquée · ' : ''}${count} photo${count > 1 ? 's' : ''} · ${color || 'Palette automatique'}`,
+        subtitle: `${isVisible === false ? 'Masquée · ' : ''}${photoLabel} · ${color || 'Palette automatique'}`,
         media,
       }
     },
