@@ -447,17 +447,63 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         // names the mode you'd switch TO, read off its own data-label-*
         // attributes (the plain module script can't read frontmatter vars).
         const modeToggleBtn = root.querySelector<HTMLButtonElement>('[data-role="mode-toggle"]');
+
+        // Shared-element morph target: the grid gallery tiles (hero tile
+        // excluded — it has no matching carousel slide), queried once
+        // alongside the other element lookups above. gridGalleryTiles[i]
+        // corresponds 1:1 with galleries[i]/carouselIndex, since both derive
+        // from the same server-rendered gallery order.
+        const gridGalleryTiles = Array.from(
+          grid.querySelectorAll<HTMLElement>('.home-grid__tile:not(.home-grid__tile--hero)'),
+        );
+        let namedMorphTile: HTMLElement | null = null;
+
+        // Narrow local typing for the View Transitions DOM API — avoids
+        // depending on lib.dom's (not-yet-universal) ViewTransition types
+        // just to feature-detect and call it.
+        type VTDocument = Document & {
+          startViewTransition?: (cb: () => void) => {
+            finished: Promise<void>;
+            ready: Promise<void>;
+            updateCallbackDone: Promise<void>;
+          };
+        };
+        const vtDoc = document as VTDocument;
+
         modeToggleBtn?.addEventListener('click', () => {
           // Stop the periodic attention-pulse (see .home-toggle--used in
           // the <style> block) for good once the visitor has actually
           // found and used the control — no reason to keep nudging it.
           modeToggleBtn.classList.add('home-toggle--used');
-          if (root!.dataset.displayMode === 'carousel') {
-            showGrid();
-            modeToggleBtn.setAttribute('aria-label', modeToggleBtn.dataset.labelCarousel ?? '');
+
+          const goingToGrid = root!.dataset.displayMode === 'carousel';
+
+          // Accessible name flips synchronously, outside the transition
+          // callback — correct even before the (possibly deferred-a-frame)
+          // DOM mutation below runs.
+          modeToggleBtn.setAttribute(
+            'aria-label',
+            goingToGrid ? modeToggleBtn.dataset.labelCarousel ?? '' : modeToggleBtn.dataset.labelGrid ?? '',
+          );
+
+          // Re-point the shared-element morph name to whichever gallery the
+          // carousel currently shows (it auto-advances), so both toggle
+          // directions morph the correct tile rather than always the first.
+          if (namedMorphTile) {
+            namedMorphTile.style.viewTransitionName = '';
+          }
+          const morphTarget = gridGalleryTiles[carouselIndex] ?? null;
+          if (morphTarget) {
+            morphTarget.style.viewTransitionName = 'ajs-hero-morph';
+          }
+          namedMorphTile = morphTarget;
+
+          const mutate = goingToGrid ? showGrid : showCarousel;
+
+          if (typeof vtDoc.startViewTransition === 'function') {
+            vtDoc.startViewTransition(mutate);
           } else {
-            showCarousel();
-            modeToggleBtn.setAttribute('aria-label', modeToggleBtn.dataset.labelGrid ?? '');
+            mutate();
           }
         });
 
@@ -817,6 +863,14 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        screen's height. */
     max-height: 100vh;
     overflow: hidden;
+    /* Shared-element morph target (quick-260713-jfz): names this real
+       component element so the View Transitions engine treats it as the
+       "old" or "new" state of the ajs-hero-morph pair, morphing it to/from
+       whichever grid tile is JS-named the same in the <script> above.
+       Regular scoped styling — this is a real element, not a
+       document-level ::view-transition-* pseudo-element (those require
+       :global below). */
+    view-transition-name: ajs-hero-morph;
   }
 
   .home-hero__img {
@@ -1284,6 +1338,37 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
     .home-grid__tiles {
       grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<style is:global>
+  /* View Transitions pseudo-elements (quick-260713-jfz) live on the document
+     root, outside this component's subtree — Astro's scoped <style> above
+     cannot target ::view-transition-*, so this must be a global block.
+     Customizes the swap's timing beyond the browser's flat ~250ms default
+     cross-fade: a deliberate ~420ms root cross-fade plus the shared-element
+     ajs-hero-morph group (named on .home-hero__photo above and on the
+     matching grid tile by the <script> block), so the hero photo visibly
+     grows/shrinks/repositions toward its grid tile instead of just fading. */
+  @media (prefers-reduced-motion: no-preference) {
+    ::view-transition-old(root),
+    ::view-transition-new(root),
+    ::view-transition-group(ajs-hero-morph) {
+      animation-duration: 420ms;
+      animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  }
+
+  /* The View Transitions API does not honor prefers-reduced-motion on its
+     own — this explicit override is required to keep the swap effectively
+     instant for reduced-motion users, mirroring how .home-toggle--used's
+     attention-pulse (above) is already gated behind the same query. */
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+      animation: none !important;
     }
   }
 </style>
