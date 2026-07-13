@@ -238,6 +238,84 @@ test.describe('view-transition toggle — reduced-motion still swaps modes', () 
   });
 });
 
+// quick-260713-kit: regression guard for the accent-panel fade timing fix.
+// Pauses and scrubs the real ::view-transition-new(ajs-accent-panel)
+// animation instead of asserting the CSS rule's text exists — a rule can be
+// present in the stylesheet yet silently not take effect (this was exactly
+// the original bug class: animation-fill-mode falling through to whatever
+// the browser's own default happens to be). Chromium-only (view transitions
+// are feature-detected; the test itself skips gracefully if unsupported).
+test.describe('view-transition accent-panel fade timing (quick-260713-kit)', () => {
+  test('accent panel is near-invisible during the entrance delay window and fully visible by transition end', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(browserName !== 'chromium', 'View Transitions scrubbing is Chromium-only in this suite');
+
+    await page.goto('/');
+
+    const supported = await page.evaluate(() => typeof document.startViewTransition === 'function');
+    test.skip(!supported, 'document.startViewTransition unsupported in this browser');
+
+    // Capture the transition object so we can await `ready` (pseudo-element
+    // tree + animations guaranteed to exist) instead of an arbitrary delay.
+    await page.evaluate(() => {
+      const orig = document.startViewTransition.bind(document);
+      (window as unknown as { __lastVT: unknown }).__lastVT = null;
+      document.startViewTransition = (cb: () => void) => {
+        const vt = orig(cb);
+        (window as unknown as { __lastVT: unknown }).__lastVT = vt;
+        return vt;
+      };
+    });
+
+    const toggle = page.locator('[data-role="mode-toggle"]');
+    await expect(page.locator('[data-role="home-carousel"]')).toBeVisible();
+
+    // Go to grid first, then back to carousel — the accent panel's entrance
+    // fade (::view-transition-new) is on the grid->carousel direction.
+    await toggle.click();
+    await expect(page.locator('[data-role="home-grid"]')).toBeVisible();
+
+    const opacities = await page.evaluate(async () => {
+      const toggleBtn = document.querySelector<HTMLButtonElement>('[data-role="mode-toggle"]');
+      toggleBtn?.click();
+
+      const win = window as unknown as { __lastVT: { ready?: Promise<void> } | null };
+      for (let i = 0; i < 50 && !win.__lastVT; i++) {
+        await new Promise((r) => setTimeout(r, 2));
+      }
+      if (win.__lastVT?.ready) {
+        await win.__lastVT.ready;
+      }
+
+      const panelAnim = document
+        .getAnimations()
+        .find((a) => a.effect?.pseudoElement === '::view-transition-new(ajs-accent-panel)');
+
+      if (!panelAnim) return null;
+
+      panelAnim.pause();
+
+      const readAt = (t: number) => {
+        panelAnim.currentTime = t;
+        document.documentElement.offsetHeight; // force style flush
+        return parseFloat(
+          getComputedStyle(document.documentElement, '::view-transition-new(ajs-accent-panel)').opacity,
+        );
+      };
+
+      return { at80: readAt(80), at480: readAt(480) };
+    });
+
+    expect(opacities).not.toBeNull();
+    // Inside the 100ms animation-delay window: near-invisible.
+    expect(opacities!.at80).toBeLessThanOrEqual(0.05);
+    // Transition end: fully visible.
+    expect(opacities!.at480).toBeGreaterThanOrEqual(0.95);
+  });
+});
+
 test.describe('mobile hero visibility (D-08)', () => {
   test('hero renders visibly at a 375px-wide viewport, not collapsed/blank', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
