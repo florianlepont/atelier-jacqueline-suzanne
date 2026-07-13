@@ -49,6 +49,11 @@ const aboutLabel = isEn ? 'About' : 'À propos';
 const aboutHref = getRelativeLocaleUrl(locale, 'about');
 const contactLabel = 'Contact';
 const contactHref = getRelativeLocaleUrl(locale, 'contact');
+// HOME-04 (D-05): reuses BaseLayout.astro's footer Instagram link's exact
+// href/target/rel/sr-only-hint semantics verbatim — this component doesn't
+// import from BaseLayout, so the same locale-conditional const is declared
+// locally rather than re-derived (BaseLayout.astro:76).
+const instagramNewTabHint = isEn ? ' (opens in new tab)' : ' (nouvelle fenêtre)';
 const toggleCarouselLabel = isEn ? 'Carousel' : 'Carrousel';
 const toggleGridLabel = isEn ? 'Grid' : 'Grille';
 const wordmark = 'Atelier Jacqueline Suzanne';
@@ -86,6 +91,38 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       <nav class="home-nav" aria-label="Primary">
         <a href={aboutHref} class="home-nav-link">{aboutLabel}</a>
         <a href={contactHref} class="home-nav-link">{contactLabel}</a>
+        {/* D-02: grouped with the other "leave the page" links (About/
+            Contact), not with the toggle/switcher (display controls). D-01/
+            D-04: bare icon, no bordered box — the glyph is expected to read
+            as clickable on its own among the plain-text nav links. */}
+        <a
+          href="https://www.instagram.com/ajs_romanelepont/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="home-nav-link"
+          aria-label="Instagram"
+        >
+          {/* Hand-authored, dependency-free, currentColor-based glyph —
+              rounded-square camera outline + lens + shutter dot — matching
+              the "no icon library" convention already established by
+              .home-toggle__morph. Square 20x20 footprint (D-01: Instagram's
+              mark is conventionally square, unlike the toggle's intentionally
+              non-square bar/grid glyph). */}
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            aria-hidden="true"
+          >
+            <rect x="2.5" y="2.5" width="19" height="19" rx="5.5" />
+            <circle cx="12" cy="12" r="4.6" />
+            <circle cx="17.4" cy="6.6" r="1.1" fill="currentColor" stroke="none" />
+          </svg>
+          <span class="sr-only">{instagramNewTabHint}</span>
+        </a>
       </nav>
       <button
         type="button"
@@ -96,13 +133,15 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         data-label-grid={toggleGridLabel}
         aria-label={toggleGridLabel}
       >
-        <span aria-hidden="true" class="home-toggle__morph">
-          <span class="home-toggle__morph-cell"></span>
-          <span class="home-toggle__morph-cell"></span>
-          <span class="home-toggle__morph-cell"></span>
-          <span class="home-toggle__morph-cell"></span>
-          <span class="home-toggle__morph-cell"></span>
-          <span class="home-toggle__morph-cell"></span>
+        <span class="home-toggle__box" aria-hidden="true">
+          <span class="home-toggle__morph">
+            <span class="home-toggle__morph-cell"></span>
+            <span class="home-toggle__morph-cell"></span>
+            <span class="home-toggle__morph-cell"></span>
+            <span class="home-toggle__morph-cell"></span>
+            <span class="home-toggle__morph-cell"></span>
+            <span class="home-toggle__morph-cell"></span>
+          </span>
         </span>
       </button>
       <LanguageSwitcher />
@@ -732,18 +771,43 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     text-decoration: underline;
   }
 
+  /* HOME-05 (D-06): the button's bounding box has no explicit width/height,
+     so it used to be whatever the 20x14 morph icon plus padding produced —
+     wider than tall. Fixed via two nested boxes: this outer .home-toggle
+     button is now the INVISIBLE, tappable box (44px floor via min-width/
+     min-height, D-08), and .home-toggle__box below is the visible square
+     the border traces. */
+  .home-toggle {
+    justify-content: center;
+    /* Overrides the shared .home-nav-link, .home-toggle padding shorthand —
+       the invisible hit box centers its visible .home-toggle__box child via
+       flex alignment, not padding. */
+    padding: 0;
+    min-width: var(--tap-target-min);
+  }
+
   /* Direct user feedback: the bare 20x20 icon (no border/background) didn't
      read as an interactive button among the nav's plain text links — give
      it a visible box so it looks distinctly clickable, matching the site's
      square-cornered (--radius-none) brutalist language rather than a
-     rounded chip. */
-  .home-toggle {
+     rounded chip. D-08: sized tightly around the 20x14 icon (28px, a
+     4px-grid multiple) rather than the full 44px tap-target box, for a
+     visually compact header row — the tap-target floor lives on the outer
+     .home-toggle button above instead. */
+  .home-toggle__box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
     border: 1.5px solid currentColor;
-    padding: var(--space-xs);
   }
 
-  .home-toggle:hover,
-  .home-toggle:focus-visible {
+  /* D-06.3: moved (not duplicated) from .home-toggle itself — painting the
+     full invisible 44px hit box on hover would visually contradict the
+     compact-square goal this fix exists to achieve. */
+  .home-toggle:hover .home-toggle__box,
+  .home-toggle:focus-visible .home-toggle__box {
     background-color: currentColor;
   }
 
@@ -753,7 +817,8 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        background above (background-color, not color — each cell paints
        itself via background-color: currentColor, not an SVG stroke/fill),
        so they stay visible instead of disappearing into a same-color
-       backdrop. */
+       backdrop. The descendant combinator still resolves correctly through
+       the intermediate .home-toggle__box wrapper. */
     background-color: var(--current-accent, var(--color-accent));
   }
 
@@ -773,7 +838,9 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
      visitor actually clicks it (see .home-toggle--used below, set by the
      click handler in the <script> block) — no reason to keep nudging a
      control they've already found and used. Respects
-     prefers-reduced-motion throughout. */
+     prefers-reduced-motion throughout. Targets .home-toggle__box (the
+     visible square), not the outer .home-toggle button (the invisible 44px
+     hit box) — scaling the invisible box has no visible pulse effect. */
   @media (prefers-reduced-motion: no-preference) {
     @keyframes home-toggle-attention {
       0%,
@@ -790,7 +857,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       }
     }
 
-    .home-toggle:not(.home-toggle--used) {
+    .home-toggle:not(.home-toggle--used) .home-toggle__box {
       animation: home-toggle-attention 6s ease-in-out infinite;
       animation-delay: 1.2s;
     }
@@ -1231,25 +1298,51 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
   /* Mobile responsive (D-10, UI-SPEC Layout Notes — Homepage Mobile). */
   @media (max-width: 767px) {
     /* Direct request: FR|EN belongs in the top row alongside the logo/nav/
-       toggle, not wrapped onto its own row underneath. Live-measured at
-       393px wide: logo(56) + nav(157) + toggle(30) + switcher(79) plus
-       .home-header's own gap between all four (3 × 16px) totals 386px —
-       10px over the 361px available (393 minus the header's own 32px of
-       side padding) BEFORE even counting .home-nav's extra margin-left
-       (below), which was adding a redundant second gap on top of the
-       header's own flex gap between the logo and nav specifically. Trimming
-       both — the header's inter-item gap and that redundant nav margin —
-       recovers ~40px, comfortably fitting all four on one row (measured
-       346px used of 361px available). flex-wrap stays on as a safety net
-       for narrower phones or longer translated labels; it just no longer
-       needs to trigger at this width. */
+       toggle, not wrapped onto its own row underneath. Original 4-item
+       measurement (pre-HOME-04/05) at 393px wide: logo(56) + nav(157) +
+       toggle(30) + switcher(79) plus .home-header's own gap between all four
+       (3 × 16px) totalled 386px — 10px over the 361px available (393 minus
+       the header's own 32px of side padding) BEFORE even counting
+       .home-nav's extra margin-left (below), which was adding a redundant
+       second gap on top of the header's own flex gap between the logo and
+       nav specifically. Trimming both — the header's inter-item gap (16px
+       to 8px) and that redundant nav margin — recovered ~40px, fitting all
+       four on one row (346px used of 361px available).
+
+       HOME-04/HOME-05 re-measurement: adding the Instagram link as a 5th
+       nav item (via .home-nav's own gap/padding trims below) grew the nav
+       to ~161.5px, AND HOME-05's 44px tap-target floor grew the toggle
+       button from ~30px to 44px (D-08 — a hard floor, not adjustable here).
+       New total: 56 + 161.5 + 44 + 79.4 + 3×8(header gap) = ~397px, ~4px
+       over the 393px budget, wrapping the row. Trimming the header's own
+       inter-item gap once more (8px to 4px, saving 12px) recovers enough
+       margin (measured 385px used of 393px available) to keep all five
+       items on one row again. flex-wrap stays on as a safety net for
+       narrower phones or longer translated labels. */
     .home-header {
       flex-wrap: wrap;
-      gap: var(--space-sm);
+      gap: var(--space-xs);
     }
 
     .home-nav {
       margin-left: 0;
+      /* HOME-04 (D-03): re-measured after adding the Instagram link as a 5th
+         header item — projected ~29px over the 361px budget documented
+         above. Trimming the nav's own internal gap (var(--space-md) = 16px
+         desktop) down to var(--space-xs) (4px) here recovers ~24px (2 gaps
+         across About/Contact/Instagram) without touching the toggle/
+         switcher spacing, which is unrelated to this addition. */
+      gap: var(--space-xs);
+    }
+
+    /* HOME-04 (D-03): trims each nav link's own horizontal padding (desktop
+       var(--space-sm) = 8px each side, from the shared .home-nav-link,
+       .home-toggle rule) down to var(--space-xs) (4px) — scoped to .home-nav
+       links only, so the toggle/switcher's own tap-target padding is
+       untouched. Recovers a further ~24px (4px × 2 sides × 3 links). */
+    .home-nav .home-nav-link {
+      padding-left: var(--space-xs);
+      padding-right: var(--space-xs);
     }
 
     /* Direct request: the photo should cover the full phone screen on
