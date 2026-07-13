@@ -56,7 +56,25 @@ export const gallery = defineType({
     {name: 'photos', title: 'Photos'},
     {name: 'seo', title: 'SEO & partage'},
   ],
+  fieldsets: [
+    {
+      name: 'publication',
+      title: 'Publication',
+      description: 'Contrôle si cette collection est accessible aux visiteurs.',
+      options: {collapsible: false},
+    },
+  ],
   fields: [
+    defineField({
+      name: 'isVisible',
+      title: 'Afficher cette collection sur le site',
+      type: 'boolean',
+      group: 'content',
+      fieldset: 'publication',
+      description:
+        "Désactiver pour conserver la collection dans Sanity sans l'afficher sur la page d'accueil ni créer sa page publique.",
+      initialValue: true,
+    }),
     // D-04: plain string, NOT a locale-object — project titles are shared
     // proper nouns across both locales (e.g. "Rebut").
     defineField({
@@ -88,15 +106,6 @@ export const gallery = defineType({
         list: HERO_COLOR_OPTIONS.map(({title, value}) => ({title, value})),
       },
       components: {input: HeroColorInput},
-    }),
-    defineField({
-      name: 'isVisible',
-      title: 'Afficher cette collection sur le site',
-      type: 'boolean',
-      group: 'homepage',
-      description:
-        "Désactiver pour conserver la collection dans Sanity sans l'afficher sur la page d'accueil ni créer sa page publique.",
-      initialValue: true,
     }),
     defineField({
       name: 'images',
