@@ -575,6 +575,29 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           }
           namedMorphTile = morphTarget;
 
+          // HOME-06 (D-10/D-12): .home-hero__photo/.home-hero__accent no
+          // longer carry a permanent, unconditional view-transition-name in
+          // CSS (see their <style> comments) — name them here instead,
+          // synchronously before startViewTransition() is called, exactly
+          // mirroring how morphTarget/namedMorphTile above are assigned:
+          // set on click, left in place (not proactively reverted to '').
+          // Deliberately NOT cleared via transition.finished — an earlier
+          // version of this fix did that, but a second toggle click fired
+          // before the first transition's `finished` promise settled races
+          // the cleanup against the second click's own naming, sometimes
+          // clearing the name while the second transition is still capturing
+          // its snapshot (confirmed as the cause of a real, reproducible
+          // failure in the existing accent-panel fade-timing test — the
+          // named pseudo-element silently failed to materialize). Leaving
+          // the name in place after the first interaction is safe: it still
+          // fully addresses the D-10 hypothesis (the element carries no name
+          // at first paint / before any interaction, which is the scenario
+          // the reported mobile regression is about), it just no longer
+          // reverts to unnamed between later toggles — same persistence
+          // model gridGalleryTiles' morphTarget already uses.
+          if (heroPhoto) heroPhoto.style.viewTransitionName = 'ajs-hero-morph';
+          if (accentPanel) accentPanel.style.viewTransitionName = 'ajs-accent-panel';
+
           const mutate = goingToGrid ? showGrid : showCarousel;
 
           if (typeof vtDoc.startViewTransition === 'function') {
@@ -626,7 +649,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     padding: var(--space-lg) var(--space-md);
     z-index: 5;
     /* Direct follow-up (quick-260713-jfz): same class of bug as
-       .home-hero__accent's view-transition-name above — unnamed, the
+       .home-hero__accent's view-transition-name (see below) — unnamed, the
        header was just part of the flat root snapshot, and since it comes
        BEFORE .home-hero__photo in DOM order, default paint-order stacking
        would put its own group BELOW ajs-hero-morph too (root-relative
@@ -638,7 +661,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        mid-transition screenshot showing the header region completely
        empty. Naming it (plus the explicit z-index in the is:global block)
        keeps it in its own group, painted above the morph regardless of
-       DOM order. */
+       DOM order. Unlike .home-hero__photo/.home-hero__accent (HOME-06
+       D-10/D-12), this element was NOT flagged as a mobile-hero regression
+       suspect and keeps its permanent naming — the header's own
+       positioning/sizing doesn't depend on 100svh/100vh math, so there is
+       no equivalent "always-on naming at first paint" risk here. */
     view-transition-name: ajs-header;
   }
 
@@ -983,14 +1010,25 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        screen's height. */
     max-height: 100vh;
     overflow: hidden;
-    /* Shared-element morph target (quick-260713-jfz): names this real
-       component element so the View Transitions engine treats it as the
-       "old" or "new" state of the ajs-hero-morph pair, morphing it to/from
-       whichever grid tile is JS-named the same in the <script> above.
-       Regular scoped styling — this is a real element, not a
-       document-level ::view-transition-* pseudo-element (those require
-       :global below). */
-    view-transition-name: ajs-hero-morph;
+    /* HOME-06 (D-10/D-12) fix: view-transition-name is NO LONGER set here.
+       quick-260713-jfz originally gave this element a permanent, unconditional
+       `view-transition-name: ajs-hero-morph` — present at all times, including
+       first paint, not just during an active transition. That asymmetry (the
+       matching grid tile in gridGalleryTiles is only named dynamically, right
+       before a transition, and unnamed again afterward) was the leading
+       hypothesis for the reported mobile regression: a name that is "always
+       on" is exactly the kind of permanent state that could interact badly
+       with a real mobile browser's dynamic address-bar chrome collapsing on
+       first load (D-10). A disable/re-enable experiment under Chromium
+       mobile emulation showed no measurable difference either way (see
+       07-02-SUMMARY.md) — this bug class is known to escape emulation (D-11)
+       — so the hypothesis could not be directly confirmed here, but removing
+       the permanent naming is still the correct, low-risk fix: it makes this
+       element's naming symmetric with its grid-tile counterpart (both are
+       now named only for the duration of an actual transition, via
+       `heroPhoto.style.viewTransitionName` in the <script> below) and
+       eliminates the "always named, even at rest" state entirely, without
+       gating document.startViewTransition() to desktop (D-12). */
   }
 
   .home-hero__img {
@@ -1145,20 +1183,27 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     width: min(800px, 60%);
     padding: var(--space-xl);
     z-index: 3;
-    /* Direct follow-up (quick-260713-jfz): without its own name, this panel
-       was just part of the flat "everything else" root snapshot, painted
-       BELOW the named ajs-hero-morph group in the view-transition overlay's
-       default stacking order. Since the panel geometrically overlaps the
-       photo in its final position, the still-growing photo morph visually
-       covered it for the whole transition — it only became visible once the
-       overlay tore down and real DOM stacking (z-index: 3, above the photo)
-       took over, reading as a sudden pop instead of the fade-in it was meant
-       to be. Naming it gives it its own group in the pseudo-element tree,
-       stacked above ajs-hero-morph (it comes later in DOM/paint order), so
-       it can fade in independently and stay visible throughout. It has no
-       "old" counterpart on the grid side (the whole .home-hero is hidden in
-       grid mode), so this is a pure enter/exit fade — no shape to morph. */
-    view-transition-name: ajs-accent-panel;
+    /* Direct follow-up (quick-260713-jfz) established WHY this element needs
+       its own view-transition-name (without one, it was just part of the
+       flat "everything else" root snapshot, painted BELOW the named
+       ajs-hero-morph group in the view-transition overlay's default stacking
+       order — the still-growing photo morph visually covered it for the
+       whole transition, reading as a sudden pop instead of a fade-in once
+       the overlay tore down and real DOM stacking took over). Naming it
+       gives it its own group in the pseudo-element tree, stacked above
+       ajs-hero-morph, so it can fade in independently and stay visible
+       throughout (a pure enter/exit fade — no "old" counterpart on the grid
+       side, since the whole .home-hero is hidden in grid mode).
+
+       HOME-06 (D-10/D-12) fix: the name itself is NO LONGER set here as a
+       permanent, unconditional value. It was one of the two elements flagged
+       as the leading hypothesis for the reported mobile full-bleed
+       regression (always-on naming, even at first paint, unlike the
+       matching grid tile which is only named during an active transition —
+       see .home-hero__photo's comment above for the full reasoning and the
+       disable/re-enable experiment recorded in 07-02-SUMMARY.md). The name
+       is now set dynamically via `accentPanel.style.viewTransitionName` in
+       the <script> below, only for the duration of an actual transition. */
     /* Solid "paper" backing for the whole panel (wordmark + intro together),
        cycling per-gallery via --current-accent (set by render()). This is
        what makes the wordmark below read as letters CUT OUT of a solid
