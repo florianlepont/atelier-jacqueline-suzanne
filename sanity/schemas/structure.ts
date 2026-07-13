@@ -12,13 +12,13 @@ import {orderableDocumentListDeskItem} from '@sanity/orderable-document-list'
  */
 export const structure: StructureResolver = (S, context) =>
   S.list()
-    .title('Content')
+    .title('Contenu du site')
     .items([
       S.listItem()
-        .title('Site Settings')
+        .title('Réglages du site')
         .id('siteSettings')
         .child(S.document().schemaType('siteSettings').documentId('siteSettings')),
-      orderableDocumentListDeskItem({type: 'gallery', S, context}),
+      orderableDocumentListDeskItem({type: 'gallery', title: 'Collections', S, context}),
       ...S.documentTypeListItems().filter(
         (listItem) => !['siteSettings', 'gallery'].includes(listItem.getId() ?? ''),
       ),

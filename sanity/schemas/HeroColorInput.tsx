@@ -1,10 +1,10 @@
 import {set, unset, type StringInputProps} from 'sanity'
 
 export const HERO_COLOR_OPTIONS = [
-  {title: 'Pink', value: 'pink', hex: '#FF3B94', text: '#1A1A1A'},
-  {title: 'Purple', value: 'purple', hex: '#AF3DFF', text: '#FFFFFF'},
-  {title: 'Teal', value: 'teal', hex: '#55FFE1', text: '#1A1A1A'},
-  {title: 'Lime', value: 'lime', hex: '#A6FD29', text: '#1A1A1A'},
+  {title: 'Rose', value: 'pink', hex: '#FF3B94', text: '#1A1A1A'},
+  {title: 'Violet', value: 'purple', hex: '#AF3DFF', text: '#FFFFFF'},
+  {title: 'Turquoise', value: 'teal', hex: '#55FFE1', text: '#1A1A1A'},
+  {title: 'Citron vert', value: 'lime', hex: '#A6FD29', text: '#1A1A1A'},
   {title: 'Plum', value: 'plum', hex: '#37013A', text: '#FFFFFF'},
 ] as const
 
@@ -46,7 +46,7 @@ export function HeroColorInput(props: StringInputProps) {
           ))}
         </span>
         <span style={{display: 'block', padding: '7px 8px', color: '#1A1A1A', fontWeight: 600}}>
-          Automatic palette
+          Palette automatique
         </span>
       </button>
 

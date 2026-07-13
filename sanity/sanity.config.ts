@@ -1,6 +1,6 @@
 import {defineConfig} from 'sanity'
 import {structureTool} from 'sanity/structure'
-import {visionTool} from '@sanity/vision'
+import {frFRLocale} from '@sanity/locale-fr-fr'
 import {schemaTypes} from './schemas'
 import {structure} from './schemas/structure'
 
@@ -11,7 +11,9 @@ export default defineConfig({
   projectId: 'gwz8iug4',
   dataset: 'production',
 
-  plugins: [structureTool({structure}), visionTool()],
+  // French UI for the day-to-day editor. The developer-only Vision query
+  // tool is deliberately omitted from the main navigation.
+  plugins: [structureTool({structure}), frFRLocale({title: 'Français'})],
 
   schema: {
     types: schemaTypes,
