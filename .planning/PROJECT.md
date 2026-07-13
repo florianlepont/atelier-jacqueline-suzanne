@@ -8,22 +8,30 @@ A bilingual (French/English) website for Romane Lepont's photography and artisti
 
 Visitors can browse Romane's photographic work and buy a piece (print, original, book, or merch) through a real, working checkout — everything else supports that. **Delivered in two milestones**: v1 replaces the current site fast with portfolio/about/contact so the old Myportfolio site can be retired sooner; v1.x adds exhibitions, the shop, and checkout on top of that foundation.
 
-## Current Milestone: v1.1 Homepage Refinements
+## Current Milestone: v1.2 Homepage Polish (Pre-Launch)
 
-**Goal:** Refine the homepage's view-mode toggle, grid layout, and hero typography before the v1.0 domain cutover (Phase 5) and the larger v1.x shop/exhibitions wave.
+**Goal:** Resolve the remaining homepage UX rough edges before the Phase 5 domain cutover — social presence, visual consistency, mobile correctness, and richer per-gallery content.
 
 **Target features:**
-- Single unified button to switch carousel ↔ grid (replacing the current two separate icon buttons)
-- Grid mode's hero becomes the first tile of the grid itself (not a separate full-width band) — keeps the intro paragraph as overlay text, drops the CTA button since grid view is now the browser
-- "Atelier Jacqueline Suzanne" wordmark gets a transparent cutout treatment (letters reveal the photo behind them), at least in carousel mode where the wordmark sits over the hero photo — likely a larger/bolder font is needed for the cutout to stay legible
+- Instagram icon link in the header nav (icon, not text — Instagram already exists in the footer/About/Contact, not yet in the main nav)
+- Square (not rectangular) border on the carousel/grid toggle button
+- Fix the mobile full-bleed hero bug: a white gap appears above the header and the footer is still slightly visible on first load (reported on iPhone 17 Pro) — a regression/gap in the existing 100svh full-bleed work from v1.1
+- Show each gallery's own description text under its title on the homepage, replacing the generic "Un projet de Romane Lepont" byline
+- Language switcher shows only the OTHER language (not both FR/EN) plus a small globe icon indicating it's a language control; clicking switches directly to the translated version of the current page (same behavior as today, just one link shown instead of two)
+- Progressive/optimized image loading: page renders immediately, hero/gallery photos load with priority and a smooth blur-to-sharp transition — no blocking full-screen loader
+- Unify the homepage's header with the shared header component used by About/Contact, so item positioning stays aligned by construction instead of drifting
+- Grid-mode tile hover effect revealing the collection's description
 
-**Note:** v1.0 is functionally complete (Phases 1–4.3) but not yet launched — Phase 5 (DNS cutover to atelierjacquelinesuzanne.fr) is deliberately deferred until after this milestone, by explicit user choice.
+**Note:** v1.0 is functionally complete (Phases 1–4.3) and v1.1 (Homepage Refinements, Phase 6) shipped 2026-07-13 — Phase 5 (DNS cutover to atelierjacquelinesuzanne.fr) remains deliberately deferred until after this milestone too, by explicit user choice.
 
 ## Requirements
 
 ### Validated
 
-(None yet — ship to validate)
+**v1.1 (Homepage Refinements — Phase 6, shipped 2026-07-13):**
+- [x] Visitor toggles between carousel and grid view via a single unified button (not two separate mode buttons) — Phase 6
+- [x] In grid view, the hero is the first tile of the grid (not a separate full-width band above it), with its intro paragraph as overlay text and no CTA button — Phase 6
+- [x] The "Atelier Jacqueline Suzanne" wordmark uses a transparent cutout effect revealing the photo behind the letters, at least in carousel mode — Phase 6
 
 ### Active
 
@@ -35,10 +43,15 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 - [ ] Romane (non-technical) can independently update galleries/photos without touching code
 - [ ] Site is reachable at the existing domain, atelierjacquelinesuzanne.fr
 
-**v1.1 (homepage refinements, this milestone):**
-- [ ] Visitor toggles between carousel and grid view via a single unified button (not two separate mode buttons)
-- [ ] In grid view, the hero is the first tile of the grid (not a separate full-width band above it), with its intro paragraph as overlay text and no CTA button
-- [ ] The "Atelier Jacqueline Suzanne" wordmark uses a transparent cutout effect revealing the photo behind the letters, at least in carousel mode
+**v1.2 (homepage polish, this milestone):**
+- [ ] Visitor can reach Romane's Instagram via an icon link in the header nav
+- [ ] The carousel/grid toggle button has a square border
+- [ ] Mobile hero is genuinely full-bleed on first load — no white gap above the header, no footer bleed-through (regression from v1.1's 100svh work, reported on iPhone 17 Pro)
+- [ ] Each gallery's own description text shows under its title on the homepage, replacing the generic byline
+- [ ] Language switcher shows only the other language (plus a globe icon), not both FR/EN
+- [ ] Homepage photos load progressively (priority + blur-to-sharp), no blocking loading screen
+- [ ] Homepage header is visually identical to the About/Contact header by construction (shared component)
+- [ ] Hovering a grid-mode tile reveals that collection's description
 
 **v1.x (add shop, deferred until v1 is live — see REQUIREMENTS.md v2 section):**
 - [ ] Visitor can view a list of upcoming and past exhibitions (dates, location, description)
@@ -112,4 +125,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-12 — milestone v1.1 (Homepage Refinements) started*
+*Last updated: 2026-07-13 — milestone v1.1 (Homepage Refinements) shipped; milestone v1.2 (Homepage Polish, Pre-Launch) started*

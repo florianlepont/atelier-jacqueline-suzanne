@@ -1,34 +1,33 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: milestone
-status: v1.1 milestone complete
-stopped_at: Phase 6 complete
-last_updated: "2026-07-13T10:23:27.221Z"
-last_activity: 2026-07-13 - Completed quick task 260713-kit: Fix the pink accent panel's view-transition fade — corrected to a sequential handoff (photo morph finishes, then panel fades in cleanly), not overlapping or popping
+milestone: v1.2
+milestone_name: Homepage Polish (Pre-Launch)
+status: planning
+last_updated: "2026-07-13T18:19:15.370Z"
+last_activity: 2026-07-13
 progress:
-  total_phases: 9
-  completed_phases: 8
-  total_plans: 26
-  completed_plans: 26
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-07-05)
+See: .planning/PROJECT.md (updated 2026-07-13)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; checkout follows in v1.x.)
-**Current focus:** v1.1 milestone complete. Phase 5 (Launch & Domain Cutover) is the only remaining phase in the v1/v1.1 roadmap, not yet started.
+**Current focus:** v1.2 milestone (Homepage Polish, Pre-Launch) — defining requirements. v1.1 shipped 2026-07-13. Phase 5 (Launch & Domain Cutover) remains deferred until after v1.2.
 
 ## Current Position
 
-Phase: 6 (homepage-view-mode-toggle-grid-hero-wordmark-cutout) — COMPLETE
-Plan: 1 of 1 (complete)
-Status: Phase 6 complete — v1.1 milestone delivered
-Last activity: 2026-07-13 -- Phase 6 completed (06-01-SUMMARY.md written; live post-checkpoint mobile/navigation follow-on reconciled into tracked history)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-07-13 — Milestone v1.2 started
 
 ## Performance Metrics
 
