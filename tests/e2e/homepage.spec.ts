@@ -162,6 +162,63 @@ test.describe('collection statements on the homepage', () => {
     await tile.hover();
     await expect(description).toHaveCSS('opacity', '1');
   });
+
+  test('carousel keeps its navigation fixed and clamps long collection statements', async ({ page }) => {
+    await page.setViewportSize({ width: 2048, height: 1152 });
+    await page.goto('/');
+
+    const carousel = page.locator('[data-role="home-carousel"]');
+    await carousel.hover();
+
+    const progress = carousel.locator('[data-role="progress"]');
+    const dashes = progress.locator('[data-action="go-to"]');
+    const progressPositions: number[] = [];
+
+    for (let index = 0; index < await dashes.count(); index += 1) {
+      await dashes.nth(index).click();
+      const box = await progress.boundingBox();
+      expect(box).not.toBeNull();
+      progressPositions.push(box!.y);
+    }
+
+    expect(Math.max(...progressPositions) - Math.min(...progressPositions)).toBeLessThanOrEqual(1);
+
+    const layout = await carousel.evaluate((element) => {
+      const caption = element.querySelector<HTMLElement>('.home-hero__caption')!;
+      const indexLabel = element.querySelector<HTMLElement>('[data-role="index-label"]')!;
+      const title = element.querySelector<HTMLElement>('[data-role="gallery-title"]')!;
+      const statement = element.querySelector<HTMLElement>('[data-role="gallery-statement"]')!;
+      const accent = element.querySelector<HTMLElement>('[data-role="accent-panel"]')!;
+      const captionRect = caption.getBoundingClientRect();
+      const indexRect = indexLabel.getBoundingClientRect();
+      const titleRect = title.getBoundingClientRect();
+      const statementRect = statement.getBoundingClientRect();
+      const accentRect = accent.getBoundingClientRect();
+
+      return {
+        captionRight: captionRect.right,
+        captionWidth: captionRect.width,
+        indexTitleGap: titleRect.top - indexRect.bottom,
+        titleFontSize: parseFloat(getComputedStyle(title).fontSize),
+        accentLeft: accentRect.left,
+        statementRight: statementRect.right,
+        statementWidth: statementRect.width,
+        statementHeight: statementRect.height,
+        statementLineHeight: parseFloat(getComputedStyle(statement).lineHeight),
+        statementOverflow: getComputedStyle(statement).overflow,
+      };
+    });
+
+    expect(layout.captionRight).toBeLessThanOrEqual(layout.accentLeft);
+    expect(layout.captionWidth).toBeLessThanOrEqual(721);
+    expect(layout.indexTitleGap).toBeGreaterThanOrEqual(11);
+    expect(layout.titleFontSize).toBe(18);
+    expect(layout.accentLeft - layout.captionRight).toBeGreaterThanOrEqual(63);
+    expect(layout.statementWidth).toBeLessThanOrEqual(441);
+    expect(layout.accentLeft - layout.statementRight).toBeGreaterThanOrEqual(300);
+    expect(layout.statementHeight).toBeLessThanOrEqual(layout.statementLineHeight * 3 + 1);
+    expect(layout.statementOverflow).toBe('hidden');
+  });
 });
 
 test.describe('carousel wordmark cutout (HOME-03, D-08)', () => {
