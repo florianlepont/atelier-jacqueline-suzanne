@@ -188,13 +188,16 @@ test.describe('collection statements on the homepage', () => {
       const statement = element.querySelector<HTMLElement>('[data-role="gallery-statement"]')!;
       const accent = element.querySelector<HTMLElement>('[data-role="accent-panel"]')!;
       const captionRect = caption.getBoundingClientRect();
+      const statementRect = statement.getBoundingClientRect();
       const accentRect = accent.getBoundingClientRect();
 
       return {
         captionRight: captionRect.right,
         captionWidth: captionRect.width,
         accentLeft: accentRect.left,
-        statementHeight: statement.getBoundingClientRect().height,
+        statementRight: statementRect.right,
+        statementWidth: statementRect.width,
+        statementHeight: statementRect.height,
         statementLineHeight: parseFloat(getComputedStyle(statement).lineHeight),
         statementOverflow: getComputedStyle(statement).overflow,
       };
@@ -203,7 +206,9 @@ test.describe('collection statements on the homepage', () => {
     expect(layout.captionRight).toBeLessThanOrEqual(layout.accentLeft);
     expect(layout.captionWidth).toBeLessThanOrEqual(721);
     expect(layout.accentLeft - layout.captionRight).toBeGreaterThanOrEqual(63);
-    expect(layout.statementHeight).toBeLessThanOrEqual(layout.statementLineHeight * 2 + 1);
+    expect(layout.statementWidth).toBeLessThanOrEqual(441);
+    expect(layout.accentLeft - layout.statementRight).toBeGreaterThanOrEqual(300);
+    expect(layout.statementHeight).toBeLessThanOrEqual(layout.statementLineHeight * 3 + 1);
     expect(layout.statementOverflow).toBe('hidden');
   });
 });

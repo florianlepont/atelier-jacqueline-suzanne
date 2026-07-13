@@ -1075,9 +1075,9 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     /* Fixed tracks make the progress navigation stay at exactly the same
        vertical position when the active collection changes. */
     display: grid;
-    grid-template-rows: 3px 21px 24px 42px;
+    grid-template-rows: 3px 21px 24px 63px;
     row-gap: var(--space-xs);
-    height: 102px;
+    height: 123px;
     z-index: 3;
     color: #FFFFFF;
   }
@@ -1121,14 +1121,16 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     line-height: 1.5;
     color: rgba(255, 255, 255, 0.75);
     margin: 0;
-    /* Collection statements can be arbitrarily long in Sanity. Keep two
-       useful lines in the carousel and preserve the complete text in the
-       DOM for assistive technologies and the collection page. */
+    max-width: 440px;
+    /* Collection statements can be arbitrarily long in Sanity. Use a
+       deliberately narrow three-line column on desktop so it never crowds
+       the coloured panel; preserve the complete text in the DOM for
+       assistive technologies and the collection page. */
     display: -webkit-box;
     overflow: hidden;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
   }
 
   .home-hero__accent {
@@ -1457,6 +1459,14 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     .home-hero__caption {
       right: var(--space-md);
       max-width: none;
+      grid-template-rows: 3px 21px 24px 42px;
+      height: 102px;
+    }
+
+    .home-hero__byline {
+      max-width: none;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
     }
 
     /* Direct follow-up: an in-flow panel below the photo (previous pass)
