@@ -305,14 +305,17 @@ test.describe('view-transition accent-panel fade timing (quick-260713-kit)', () 
         );
       };
 
-      return { at80: readAt(80), at480: readAt(480) };
+      return { at200: readAt(200), at760: readAt(760) };
     });
 
     expect(opacities).not.toBeNull();
-    // Inside the 100ms animation-delay window: near-invisible.
-    expect(opacities!.at80).toBeLessThanOrEqual(0.05);
-    // Transition end: fully visible.
-    expect(opacities!.at480).toBeGreaterThanOrEqual(0.95);
+    // Inside the 420ms animation-delay window (the panel waits for the
+    // photo/root/header group to fully finish before starting its own
+    // fade — sequential, not overlapping): still fully invisible.
+    expect(opacities!.at200).toBeLessThanOrEqual(0.05);
+    // Well past the fade's end (420ms delay + 320ms duration = 740ms):
+    // fully visible.
+    expect(opacities!.at760).toBeGreaterThanOrEqual(0.95);
   });
 });
 

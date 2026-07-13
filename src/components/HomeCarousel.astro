@@ -1443,25 +1443,24 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        naming it moves it into its own group, stacked above ajs-hero-morph,
        so it's no longer hidden behind the still-growing photo for the whole
        transition (see the comment on .home-hero__accent's view-transition-
-       name for the full root-cause). A short delay after the photo starts
-       morphing, rather than an identical simultaneous fade, reads as a
-       deliberate staggered reveal — the photo settles into place, then the
-       panel fades in over it — instead of everything happening at once.
+       name for the full root-cause).
 
-       Delay + duration must finish AT OR BEFORE the root/photo's 420ms
-       (see below), not after: the original 100ms delay + 380ms duration
-       finished at 480ms, a ~60ms tail where the panel was the ONLY thing
-       still animating after the photo and header had already stopped
-       moving — confirmed via CDP screencast capture (page.screenshot()
-       forces/resolves the view-transition state and cannot be trusted to
-       observe this) that this genuinely reads as "the panel appears after
-       the transition is finished," matching reported feedback exactly.
-       40ms delay + 320ms duration finishes at 360ms, comfortably inside
-       the 420ms window — still a deliberate stagger, but fully contained
-       within the same transition, nothing left moving after everything
-       else settles. */
+       Sequential, not overlapping: the panel's fade is intended to start
+       only once the photo/root/header group has fully finished (420ms),
+       then fade in on its own over the following stretch — "the photo
+       settles into place, THEN the panel fades in," not both moving at
+       once. An earlier pass (wrongly) treated "the panel appears after the
+       transition is finished" as a bug to eliminate by cramming the fade
+       INSIDE the 420ms window (40ms delay + 320ms, overlapping the photo
+       morph) — that was a misreading of the actual complaint, which was
+       about a jarring POP (a broken fade, snapping straight to opaque)
+       landing after the morph, not about the sequential timing itself;
+       the sequential reveal was the intended design all along. Delay is
+       set to the photo/root/header's own 420ms duration exactly, so the
+       fade begins the instant they finish — a clean handoff, not a gap
+       and not an overlap. */
     ::view-transition-new(ajs-accent-panel) {
-      animation: ajs-panel-fade-in 320ms cubic-bezier(0.4, 0, 0.2, 1) 40ms both;
+      animation: ajs-panel-fade-in 320ms cubic-bezier(0.4, 0, 0.2, 1) 420ms both;
     }
 
     /* Exit fade (carousel->grid direction) — no entrance delay needed
