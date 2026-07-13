@@ -19,6 +19,11 @@ function localized(value: unknown): boolean {
   return text(pair.fr) && text(pair.en)
 }
 
+function missingLocalizedParts(value: unknown): string[] {
+  const pair = record(value)
+  return [!text(pair.fr) ? 'FR' : '', !text(pair.en) ? 'EN' : ''].filter(Boolean)
+}
+
 function seoChecks(value: unknown): CheckItem[] {
   const seo = record(value)
   return [
@@ -35,23 +40,41 @@ function seoChecks(value: unknown): CheckItem[] {
 export function getDocumentChecks(schemaType: string, value: EditorialDocument): CheckItem[] {
   if (schemaType === 'gallery') {
     const images = Array.isArray(value.images) ? value.images : []
+    const missingAlt = images.flatMap((image, index) => {
+      const missing = missingLocalizedParts(record(image).alt)
+      return missing.length ? [`photo ${index + 1} (${missing.join(' + ')})`] : []
+    })
+    const missingRights = images.flatMap((image, index) => {
+      const rights = record(record(image).rights)
+      const missing = [
+        !text(rights.credit) ? 'crédit' : '',
+        !text(rights.copyrightNotice) ? 'copyright' : '',
+        !text(rights.usage) ? 'droits' : '',
+      ].filter(Boolean)
+      return missing.length ? [`photo ${index + 1} (${missing.join(', ')})`] : []
+    })
     return [
+      {
+        label: 'Statut de publication',
+        complete:
+          text(value.publicationStatus) ||
+          (typeof value.isVisible === 'boolean' && value.isVisible === false),
+      },
       {label: 'Nom de la collection', complete: text(value.title)},
       {label: 'Adresse de la page', complete: text(record(value.slug).current)},
       {label: 'Présentation en français et en anglais', complete: localized(value.statement)},
       {label: 'Au moins une photo', complete: images.length > 0},
       {
-        label: 'Descriptions accessibles de toutes les photos',
-        complete: images.length > 0 && images.every((image) => localized(record(image).alt)),
+        label: missingAlt.length
+          ? `Descriptions manquantes : ${missingAlt.join(', ')}`
+          : 'Descriptions accessibles de toutes les photos',
+        complete: images.length > 0 && missingAlt.length === 0,
       },
       {
-        label: 'Crédits et droits de toutes les photos',
-        complete:
-          images.length > 0 &&
-          images.every((image) => {
-            const rights = record(record(image).rights)
-            return text(rights.credit) && text(rights.copyrightNotice) && text(rights.usage)
-          }),
+        label: missingRights.length
+          ? `Crédits incomplets : ${missingRights.join(', ')}`
+          : 'Crédits et droits de toutes les photos',
+        complete: images.length > 0 && missingRights.length === 0,
       },
       ...seoChecks(value.seo),
     ]
@@ -69,6 +92,20 @@ export function getDocumentChecks(schemaType: string, value: EditorialDocument):
       {label: 'Biographie française et anglaise', complete: localized(value.biography)},
       {label: 'Pratique française et anglaise', complete: localized(value.practice)},
       {label: 'Médium français et anglais', complete: localized(value.medium)},
+      ...seoChecks(value.seo),
+    ]
+  }
+
+  if (schemaType === 'contactPage') {
+    const links = Array.isArray(value.professionalLinks) ? value.professionalLinks : []
+    return [
+      {label: 'Introduction française et anglaise', complete: localized(value.intro)},
+      {label: 'Adresse e-mail publique', complete: text(value.publicEmail)},
+      {
+        label: 'Libellés français et anglais des liens professionnels',
+        complete: links.every((link) => localized(record(link).label)),
+        recommended: true,
+      },
       ...seoChecks(value.seo),
     ]
   }

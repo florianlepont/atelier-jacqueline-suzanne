@@ -75,9 +75,13 @@ export const ContentPreview: UserViewComponent = ({document, schemaType}) => {
     return (
       <div style={shellStyle}>
         {localePicker}
-        {value.isVisible === false && (
+        {(value.publicationStatus === 'preparation' ||
+          value.publicationStatus === 'archived' ||
+          (!value.publicationStatus && value.isVisible === false)) && (
           <p style={{background: '#FFF1C7', padding: 12}}>
-            Cette collection est actuellement masquée du site.
+            Cette collection est actuellement{' '}
+            {value.publicationStatus === 'archived' ? 'archivée' : 'en préparation'} et absente du
+            site.
           </p>
         )}
         <div style={{background: '#1A1A1A', color: '#FFFFFF', overflow: 'hidden'}}>
@@ -132,6 +136,34 @@ export const ContentPreview: UserViewComponent = ({document, schemaType}) => {
           <p style={{lineHeight: 1.6}}>
             {localized(value.medium, locale) || 'Ajouter le texte sur le médium et la technique.'}
           </p>
+        </article>
+      </div>
+    )
+  }
+
+  if (schemaType.name === 'contactPage') {
+    const links = Array.isArray(value.professionalLinks) ? value.professionalLinks : []
+    const email = typeof value.publicEmail === 'string' ? value.publicEmail : ''
+    return (
+      <div style={shellStyle}>
+        {localePicker}
+        <article style={{border: '1px solid rgba(127, 127, 127, 0.3)', padding: 32}}>
+          <h1 style={{fontSize: 38, marginTop: 0}}>Contact</h1>
+          <p style={{lineHeight: 1.6}}>
+            {localized(value.intro, locale) || "Ajouter le texte d'introduction."}
+          </p>
+          {email && <p>{email}</p>}
+          {localized(value.location, locale) && <p>{localized(value.location, locale)}</p>}
+          {localized(value.availability, locale) && <p>{localized(value.availability, locale)}</p>}
+          {links.length > 0 && (
+            <ul>
+              {links.map((link, index) => (
+                <li key={String(record(link)._key ?? index)}>
+                  {localized(record(link).label, locale) || 'Lien professionnel'}
+                </li>
+              ))}
+            </ul>
+          )}
         </article>
       </div>
     )

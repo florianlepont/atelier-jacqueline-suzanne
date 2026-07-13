@@ -6,7 +6,7 @@ import type {
 } from 'sanity'
 import {getDocumentChecks, summarizeChecks} from './checks'
 
-const protectedTypes = new Set(['siteSettings', 'homePage', 'aboutPage'])
+const protectedTypes = new Set(['siteSettings', 'homePage', 'aboutPage', 'contactPage'])
 
 const CompletenessBadge: DocumentBadgeComponent = ({draft, published}) => {
   const value = (draft ?? published ?? {}) as Record<string, unknown>
@@ -30,20 +30,38 @@ const CompletenessBadge: DocumentBadgeComponent = ({draft, published}) => {
   return {label: 'Prêt', title: 'Les contenus et recommandations sont complétés.', color: 'success'}
 }
 
-const VisibilityBadge: DocumentBadgeComponent = ({draft, published}) => {
+const CollectionStatusBadge: DocumentBadgeComponent = ({draft, published}) => {
   const value = (draft ?? published ?? {}) as Record<string, unknown>
-  return value._type === 'gallery' && value.isVisible === false
-    ? {
-        label: 'Masquée',
-        title: "Cette collection n'est pas affichée sur le site.",
-        color: 'warning',
-      }
-    : null
+  if (value._type !== 'gallery') return null
+  if (value.publicationStatus === 'archived') {
+    return {
+      label: 'Archivée',
+      title: 'Cette collection est conservée hors du site.',
+      color: 'default',
+    }
+  }
+  if (
+    value.publicationStatus === 'preparation' ||
+    (!value.publicationStatus && value.isVisible === false)
+  ) {
+    return {
+      label: 'En préparation',
+      title: "Cette collection n'est pas encore affichée sur le site.",
+      color: 'warning',
+    }
+  }
+  return {
+    label: 'Sur le site',
+    title: 'Cette collection est affichée sur le site.',
+    color: 'success',
+  }
 }
 
 export const resolveBadges: DocumentBadgesResolver = (prev, context) =>
-  ['gallery', 'homePage', 'aboutPage', 'siteSettings', 'exhibition'].includes(context.schemaType)
-    ? [CompletenessBadge, VisibilityBadge, ...prev]
+  ['gallery', 'homePage', 'aboutPage', 'contactPage', 'siteSettings', 'exhibition'].includes(
+    context.schemaType,
+  )
+    ? [CompletenessBadge, CollectionStatusBadge, ...prev]
     : prev
 
 function renamePublishAction(action: DocumentActionComponent): DocumentActionComponent {
@@ -65,9 +83,13 @@ export const resolveActions: DocumentActionsResolver = (prev, context) => {
     ? prev.filter((action) => !['delete', 'duplicate'].includes(action.action ?? ''))
     : prev
 
-  const updatesPublicSite = ['gallery', 'homePage', 'aboutPage', 'siteSettings'].includes(
-    context.schemaType,
-  )
+  const updatesPublicSite = [
+    'gallery',
+    'homePage',
+    'aboutPage',
+    'contactPage',
+    'siteSettings',
+  ].includes(context.schemaType)
   return withoutUnsafeSingletonActions.map((action) =>
     updatesPublicSite && action.action === 'publish' ? renamePublishAction(action) : action,
   )

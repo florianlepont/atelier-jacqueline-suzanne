@@ -12,6 +12,7 @@ interface DashboardDocument extends Record<string, unknown> {
   _updatedAt: string
   title?: string
   isVisible?: boolean
+  publicationStatus?: string
   images?: unknown[]
 }
 
@@ -23,16 +24,17 @@ interface DashboardRow {
   summary: ReturnType<typeof summarizeChecks>
 }
 
-const query = `*[_type in ["gallery", "homePage", "aboutPage", "siteSettings", "exhibition"]] | order(_updatedAt desc) {
-  _id, _type, _updatedAt, title, slug, isVisible, statement, images, seo,
+const query = `*[_type in ["gallery", "homePage", "aboutPage", "contactPage", "siteSettings", "exhibition"]] | order(_updatedAt desc) {
+  _id, _type, _updatedAt, title, slug, isVisible, publicationStatus, statement, images, seo,
   intro, biography, practice, medium, siteTitle, navLabels, footerText, defaultSeo,
-  startDate, venue, city, description, image
+  publicEmail, professionalLinks, startDate, venue, city, description, image
 }`
 
 const typeLabels: Record<string, string> = {
   gallery: 'Collection photo',
   homePage: "Page d'accueil",
   aboutPage: 'Page À propos',
+  contactPage: 'Page Contact',
   siteSettings: 'Réglages du site',
   exhibition: 'Exposition',
 }
@@ -49,6 +51,12 @@ function documentTitle(document: DashboardDocument) {
     )
   }
   return typeLabels[document._type] || document._type
+}
+
+function isGalleryOnline(document: DashboardDocument) {
+  return document.publicationStatus
+    ? document.publicationStatus === 'published'
+    : document.isVisible !== false
 }
 
 export function EditorialDashboard() {
@@ -96,10 +104,15 @@ export function EditorialDashboard() {
     })
   }, [documents])
 
-  const attention = rows.filter(
-    ({current, summary}) =>
-      !summary.requiredComplete || !summary.recommendedComplete || current.isVisible === false,
-  )
+  const attention = rows.filter(({current, summary}) => {
+    if (current.publicationStatus === 'archived') return false
+    return (
+      !summary.requiredComplete ||
+      !summary.recommendedComplete ||
+      current.publicationStatus === 'preparation' ||
+      (!current.publicationStatus && current.isVisible === false)
+    )
+  })
   const galleries = rows.filter(({current}) => current._type === 'gallery')
 
   return (
@@ -146,8 +159,8 @@ export function EditorialDashboard() {
             <Grid columns={[2, 2, 4]} gap={3}>
               <MetricCard
                 label="Collections"
-                value={String(galleries.filter((row) => row.isPublished).length)}
-                detail="publiées"
+                value={String(galleries.filter((row) => isGalleryOnline(row.current)).length)}
+                detail="sur le site"
               />
               <MetricCard
                 label="Brouillons"
@@ -304,9 +317,15 @@ function ContentRow({row, withBorder}: {row: DashboardRow; withBorder: boolean})
                   Non publié
                 </Badge>
               )}
-              {row.current.isVisible === false && (
+              {(row.current.publicationStatus === 'preparation' ||
+                (!row.current.publicationStatus && row.current.isVisible === false)) && (
                 <Badge fontSize={0} mode="light" tone="critical">
-                  Masqué
+                  En préparation
+                </Badge>
+              )}
+              {row.current.publicationStatus === 'archived' && (
+                <Badge fontSize={0} mode="light">
+                  Archivé
                 </Badge>
               )}
               {!row.summary.requiredComplete && (

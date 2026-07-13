@@ -1,6 +1,8 @@
 import {defineArrayMember, defineField, defineType} from 'sanity'
 import {orderRankField} from '@sanity/orderable-document-list'
 import {HERO_COLOR_OPTIONS, HeroColorInput} from './HeroColorInput'
+import {GalleryImagesInput} from './GalleryImagesInput'
+import {PublishedPageLinks} from './PublishedPageLinks'
 
 // Sanity list previews intentionally expose only selected array positions,
 // not a complete array. Selecting lightweight `_key` values keeps the
@@ -49,7 +51,7 @@ export const gallery = defineType({
   name: 'gallery',
   title: 'Collection photo',
   type: 'document',
-  initialValue: {isVisible: true},
+  initialValue: {publicationStatus: 'published'},
   groups: [
     {name: 'publication', title: 'Publication', default: true},
     {name: 'content', title: 'Présentation'},
@@ -59,13 +61,36 @@ export const gallery = defineType({
   ],
   fields: [
     defineField({
-      name: 'isVisible',
-      title: 'Afficher cette collection sur le site',
-      type: 'boolean',
+      name: 'publicationStatus',
+      title: 'Statut de la collection',
+      type: 'string',
       group: 'publication',
       description:
-        "Désactiver pour conserver la collection dans Sanity sans l'afficher sur la page d'accueil ni créer sa page publique.",
-      initialValue: true,
+        '« En préparation » reste dans Sanity, « Publiée » apparaît sur le site, « Archivée » est conservée mais retirée du site.',
+      initialValue: 'published',
+      options: {
+        layout: 'radio',
+        list: [
+          {title: 'En préparation', value: 'preparation'},
+          {title: 'Publiée sur le site', value: 'published'},
+          {title: 'Archivée', value: 'archived'},
+        ],
+      },
+      validation: (rule) => rule.required().error('Choisir le statut de la collection.'),
+    }),
+    defineField({
+      name: 'publishedPageLinks',
+      title: 'Page publiée',
+      type: 'string',
+      group: 'publication',
+      readOnly: true,
+      components: {input: PublishedPageLinks},
+    }),
+    defineField({
+      name: 'isVisible',
+      title: 'Ancienne visibilité',
+      type: 'boolean',
+      hidden: true,
     }),
     // D-04: plain string, NOT a locale-object — project titles are shared
     // proper nouns across both locales (e.g. "Rebut").
@@ -161,8 +186,34 @@ export const gallery = defineType({
         }),
       ],
       options: {layout: 'grid'},
+      components: {input: GalleryImagesInput},
       validation: (rule) =>
-        rule.min(1).error('Ajouter au moins une photo. La première servira de couverture.'),
+        rule.custom((images) => {
+          if (!Array.isArray(images) || images.length === 0) {
+            return 'Ajouter au moins une photo. La première servira de couverture.'
+          }
+          const missingAlt = images.flatMap((image, index) => {
+            const alt = image?.alt
+            return alt?.fr?.trim() && alt?.en?.trim() ? [] : [index + 1]
+          })
+          const missingRights = images.flatMap((image, index) => {
+            const rights = image?.rights
+            return rights?.credit?.trim() &&
+              rights?.copyrightNotice?.trim() &&
+              rights?.usage?.trim()
+              ? []
+              : [index + 1]
+          })
+          const messages = [
+            missingAlt.length
+              ? `description manquante sur ${missingAlt.map((index) => `la photo ${index}`).join(', ')}`
+              : '',
+            missingRights.length
+              ? `crédits incomplets sur ${missingRights.map((index) => `la photo ${index}`).join(', ')}`
+              : '',
+          ].filter(Boolean)
+          return messages.length ? `À corriger : ${messages.join(' ; ')}.` : true
+        }),
     }),
     // Fractional-index ordering field for Studio drag-reorder (CMS-01/D-10).
     // Hidden per Pitfall 4 so Romane never sees the raw field in the edit form.
@@ -174,16 +225,23 @@ export const gallery = defineType({
       title: 'title',
       media: 'images.0',
       heroColor: 'heroColor',
+      publicationStatus: 'publicationStatus',
       isVisible: 'isVisible',
       ...previewImageKeys,
     },
-    prepare({title, media, heroColor, isVisible, ...imageKeys}) {
+    prepare({title, media, heroColor, publicationStatus, isVisible, ...imageKeys}) {
       const count = Object.values(imageKeys).filter(Boolean).length
       const color = HERO_COLOR_OPTIONS.find((option) => option.value === heroColor)?.title
       const photoLabel = `${count}${count === PREVIEW_IMAGE_LIMIT ? '+' : ''} photo${count > 1 ? 's' : ''}`
+      const status =
+        publicationStatus === 'archived'
+          ? 'Archivée'
+          : publicationStatus === 'preparation' || (!publicationStatus && isVisible === false)
+            ? 'En préparation'
+            : 'Publiée'
       return {
         title: title || 'Collection sans nom',
-        subtitle: `${isVisible === false ? 'Masquée · ' : ''}${photoLabel} · ${color || 'Palette automatique'}`,
+        subtitle: `${status} · ${photoLabel} · ${color || 'Palette automatique'}`,
         media,
       }
     },

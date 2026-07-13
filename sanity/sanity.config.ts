@@ -30,7 +30,7 @@ export default defineConfig({
         title: 'Nouvelle collection photo',
         description: 'Collection visible avec les réglages recommandés déjà préparés.',
         schemaType: 'gallery',
-        value: {isVisible: true},
+        value: {publicationStatus: 'published'},
       },
       ...prev.filter((template) => template.id !== 'gallery'),
     ],
@@ -49,7 +49,10 @@ export default defineConfig({
     newDocumentOptions: (prev, context) =>
       context.creationContext.type === 'global'
         ? prev.filter(
-            (template) => !['siteSettings', 'homePage', 'aboutPage'].includes(template.templateId),
+            (template) =>
+              !['siteSettings', 'homePage', 'aboutPage', 'contactPage'].includes(
+                template.templateId,
+              ),
           )
         : prev,
   },

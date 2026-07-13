@@ -105,16 +105,19 @@ export interface Gallery {
   statement: LocaleString
   heroColor?: string
   isVisible?: boolean
+  publicationStatus?: 'preparation' | 'published' | 'archived'
   seo?: SeoSettings
   images: GalleryImage[] // D-09: images[0] is always the cover
 }
 
-const GALLERIES_QUERY = /* groq */ `*[_type == "gallery" && coalesce(isVisible, true)] | order(orderRank) {
-  title, "slug": slug.current, statement, heroColor, "isVisible": coalesce(isVisible, true), seo, images
+const PUBLISHED_GALLERY_FILTER = /* groq */ `coalesce(publicationStatus, select(isVisible == false => "preparation", "published")) == "published"`
+
+const GALLERIES_QUERY = /* groq */ `*[_type == "gallery" && ${PUBLISHED_GALLERY_FILTER}] | order(orderRank) {
+  title, "slug": slug.current, statement, heroColor, publicationStatus, "isVisible": coalesce(isVisible, true), seo, images
 }`
 
-const GALLERY_BY_SLUG_QUERY = /* groq */ `*[_type == "gallery" && slug.current == $slug && coalesce(isVisible, true)][0]{
-  title, "slug": slug.current, statement, heroColor, "isVisible": coalesce(isVisible, true), seo, images
+const GALLERY_BY_SLUG_QUERY = /* groq */ `*[_type == "gallery" && slug.current == $slug && ${PUBLISHED_GALLERY_FILTER}][0]{
+  title, "slug": slug.current, statement, heroColor, publicationStatus, "isVisible": coalesce(isVisible, true), seo, images
 }`
 
 export interface AboutPage {
@@ -129,6 +132,19 @@ export interface HomePage {
   seo?: SeoSettings
 }
 
+export interface ContactPage {
+  intro?: Partial<LocaleString>
+  publicEmail?: string
+  location?: Partial<LocaleString>
+  availability?: Partial<LocaleString>
+  professionalLinks?: Array<{
+    _key?: string
+    label?: Partial<LocaleString>
+    url?: string
+  }>
+  seo?: SeoSettings
+}
+
 const HOME_PAGE_QUERY = /* groq */ `*[_id == "homePage"][0]{
   intro,
   seo
@@ -138,6 +154,15 @@ const ABOUT_PAGE_QUERY = /* groq */ `*[_id == "aboutPage"][0]{
   biography,
   practice,
   medium,
+  seo
+}`
+
+const CONTACT_PAGE_QUERY = /* groq */ `*[_id == "contactPage"][0]{
+  intro,
+  publicEmail,
+  location,
+  availability,
+  professionalLinks,
   seo
 }`
 
@@ -167,5 +192,10 @@ export async function getAboutPage(): Promise<AboutPage | null> {
 
 export async function getHomePage(): Promise<HomePage | null> {
   const result = await sanityClient.fetch<HomePage | null>(HOME_PAGE_QUERY)
+  return result ?? null
+}
+
+export async function getContactPage(): Promise<ContactPage | null> {
+  const result = await sanityClient.fetch<ContactPage | null>(CONTACT_PAGE_QUERY)
   return result ?? null
 }

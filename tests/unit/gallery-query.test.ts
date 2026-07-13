@@ -67,8 +67,10 @@ describe('getGalleries', () => {
     const { getGalleries } = await import('../../src/lib/sanity');
     await getGalleries();
 
-    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('coalesce(isVisible, true)'));
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('publicationStatus'));
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('isVisible == false'));
   });
+
 });
 
 describe('getGallery', () => {
@@ -151,5 +153,20 @@ describe('getHomePage', () => {
     await getHomePage();
 
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('_id == "homePage"'));
+  });
+});
+
+describe('getContactPage', () => {
+  beforeEach(() => {
+    fetchMock.mockReset();
+  });
+
+  it('queries the fixed Contact page singleton', async () => {
+    fetchMock.mockResolvedValueOnce(null);
+
+    const { getContactPage } = await import('../../src/lib/sanity');
+    await getContactPage();
+
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('_id == "contactPage"'));
   });
 });

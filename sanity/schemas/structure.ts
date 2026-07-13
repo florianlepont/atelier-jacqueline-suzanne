@@ -19,7 +19,7 @@ const checklistViews = (S: StructureBuilder) => [
 ]
 
 export const defaultDocumentNode: DefaultDocumentNodeResolver = (S, {schemaType}) => {
-  if (['gallery', 'homePage', 'aboutPage'].includes(schemaType)) {
+  if (['gallery', 'homePage', 'aboutPage', 'contactPage'].includes(schemaType)) {
     return S.document().views(editorViews(S))
   }
   if (['siteSettings', 'exhibition'].includes(schemaType)) {
@@ -58,12 +58,29 @@ export const structure: StructureResolver = (S, context) =>
         .title('Page À propos')
         .id('aboutPage')
         .child(S.document().schemaType('aboutPage').documentId('aboutPage').views(editorViews(S))),
-      orderableDocumentListDeskItem({type: 'gallery', title: 'Collections photo', S, context}),
+      S.listItem()
+        .title('Page Contact')
+        .id('contactPage')
+        .child(
+          S.document().schemaType('contactPage').documentId('contactPage').views(editorViews(S)),
+        ),
+      orderableDocumentListDeskItem({
+        type: 'gallery',
+        title: 'Collections photo — glisser pour réordonner',
+        S,
+        context,
+      }),
       S.documentTypeListItem('exhibition').title('Agenda / Expositions'),
       ...S.documentTypeListItems().filter(
         (listItem) =>
-          !['siteSettings', 'homePage', 'aboutPage', 'gallery', 'exhibition', 'seo'].includes(
-            listItem.getId() ?? '',
-          ),
+          ![
+            'siteSettings',
+            'homePage',
+            'aboutPage',
+            'contactPage',
+            'gallery',
+            'exhibition',
+            'seo',
+          ].includes(listItem.getId() ?? ''),
       ),
     ])

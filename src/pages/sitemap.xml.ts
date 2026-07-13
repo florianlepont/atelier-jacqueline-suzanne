@@ -1,5 +1,5 @@
 import type {APIRoute} from 'astro'
-import {getAboutPage, getGalleries, getHomePage} from '../lib/sanity'
+import {getAboutPage, getContactPage, getGalleries, getHomePage} from '../lib/sanity'
 
 function xml(value: string) {
   return value.replace(/[<>&'"]/g, (character) => {
@@ -19,15 +19,16 @@ export const GET: APIRoute = async ({site}) => {
   const base = import.meta.env.BASE_URL.endsWith('/')
     ? import.meta.env.BASE_URL
     : `${import.meta.env.BASE_URL}/`
-  const [galleries, homePage, aboutPage] = await Promise.all([
+  const [galleries, homePage, aboutPage, contactPage] = await Promise.all([
     getGalleries(),
     getHomePage(),
     getAboutPage(),
+    getContactPage(),
   ])
   const localizedPaths = [
     ...(homePage?.seo?.noIndex ? [] : ['']),
     ...(aboutPage?.seo?.noIndex ? [] : ['about/']),
-    'contact/',
+    ...(contactPage?.seo?.noIndex ? [] : ['contact/']),
     'mentions-legales/',
     'confidentialite/',
     ...galleries

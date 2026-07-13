@@ -7,26 +7,69 @@
 // src/pages/en/contact.astro.
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ContactForm from '../components/ContactForm.astro';
-import { getSiteSettings } from '../lib/sanity';
-import { resolveSiteCopy } from '../lib/site-config';
+import { getContactPage } from '../lib/sanity';
+import { fullSizeUrl } from '../lib/image';
 
 const locale = 'fr' as const;
-const siteCopy = resolveSiteCopy(await getSiteSettings(), locale);
+const contact = await getContactPage();
+const intro = contact?.intro?.fr ?? 'Une question, une envie de collaboration ? Écrivez-moi.';
+const publicEmail = contact?.publicEmail ?? 'contact@atelierjacquelinesuzanne.fr';
+const location = contact?.location?.fr;
+const availability = contact?.availability?.fr;
+const professionalLinks = (contact?.professionalLinks ?? []).filter((link) => link.url && link.label?.fr);
+const instagramLink = professionalLinks.find((link) => link.url?.includes('instagram.com'));
+const otherProfessionalLinks = professionalLinks.filter((link) => link !== instagramLink);
+const seoTitle = contact?.seo?.title?.fr ?? 'Contact — Atelier Jacqueline Suzanne';
+const seoDescription = contact?.seo?.description?.fr ?? intro;
+const socialImage = contact?.seo?.image ? fullSizeUrl(contact.seo.image, 1200) : undefined;
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'ContactPage',
+  name: 'Contact',
+  description: intro,
+  mainEntity: {
+    '@type': 'Person',
+    name: 'Romane Lepont',
+    email: publicEmail,
+  },
+};
 ---
 
-<BaseLayout title="Contact — Atelier Jacqueline Suzanne">
+<BaseLayout
+  title={seoTitle}
+  description={seoDescription}
+  socialImage={socialImage}
+  noIndex={contact?.seo?.noIndex}
+  structuredData={structuredData}
+>
   <div class="contact-page">
     <h1>Contact</h1>
-    <p class="contact-page__lead">Une question, une envie de collaboration&nbsp;? Écrivez-moi.</p>
-    <p class="contact-page__social">
-      Vous pouvez aussi me suivre sur Instagram :
-      <a
-        href={siteCopy.instagramUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-      >{siteCopy.instagramLabel}<span class="sr-only"> (nouvelle fenêtre)</span></a>
-    </p>
-    <ContactForm locale={locale} />
+    <p class="contact-page__lead">{intro}</p>
+    <div class="contact-page__details">
+      <p><a href={`mailto:${publicEmail}`}>{publicEmail}</a></p>
+      {location && <p>{location}</p>}
+      {availability && <p>{availability}</p>}
+      {instagramLink && (
+        <p class="contact-page__social">
+          Vous pouvez aussi me suivre sur Instagram :
+          <a href={instagramLink.url} target="_blank" rel="noopener noreferrer">
+            {instagramLink.label?.fr}<span class="sr-only"> (nouvelle fenêtre)</span>
+          </a>
+        </p>
+      )}
+      {otherProfessionalLinks.length > 0 && (
+        <ul class="contact-page__links">
+          {otherProfessionalLinks.map((link) => (
+            <li>
+              <a href={link.url} target="_blank" rel="noopener noreferrer">
+                {link.label?.fr}<span class="sr-only"> (nouvelle fenêtre)</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+    <ContactForm locale={locale} publicEmail={publicEmail} />
   </div>
 </BaseLayout>
 
@@ -52,10 +95,27 @@ const siteCopy = resolveSiteCopy(await getSiteSettings(), locale);
     margin: 0 0 var(--space-2xl);
   }
 
-  .contact-page__social {
+  .contact-page__details {
     font-size: var(--text-body-size); /* Body role */
     font-weight: var(--weight-regular);
     line-height: 1.5;
     margin: 0 0 var(--space-2xl);
+  }
+
+  .contact-page__details p {
+    margin: 0 0 var(--space-sm);
+  }
+
+  .contact-page__social a {
+    margin-left: 0.35em;
+  }
+
+  .contact-page__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    margin: var(--space-md) 0 0;
+    padding: 0;
+    list-style: none;
   }
 </style>
