@@ -1075,9 +1075,9 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     /* Fixed tracks make the progress navigation stay at exactly the same
        vertical position when the active collection changes. */
     display: grid;
-    grid-template-rows: 3px 21px 24px 63px;
+    grid-template-rows: 3px 21px 30px 63px;
     row-gap: var(--space-xs);
-    height: 123px;
+    height: 129px;
     z-index: 3;
     color: #FFFFFF;
   }
@@ -1092,10 +1092,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
   .home-hero__title {
     font-family: var(--font-display);
-    font-size: 20px; /* Heading role */
+    font-size: 18px; /* Compact heading role */
     font-weight: var(--weight-semibold);
     line-height: 1.2;
-    margin: 0;
+    margin: var(--space-sm) 0 0;
     color: #FFFFFF;
     /* Direct user feedback: nothing distinguished this from a plain
        caption heading, so visitors weren't discovering it's a link to the
@@ -1459,8 +1459,8 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     .home-hero__caption {
       right: var(--space-md);
       max-width: none;
-      grid-template-rows: 3px 21px 24px 42px;
-      height: 102px;
+      grid-template-rows: 3px 21px 30px 42px;
+      height: 108px;
     }
 
     .home-hero__byline {
@@ -1481,7 +1481,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       position: absolute;
       left: 0;
       right: 0;
-      bottom: calc(102px + var(--space-xl) + var(--space-md));
+      bottom: calc(108px + var(--space-xl) + var(--space-md));
       width: 100%;
       margin-top: 0;
       /* Direct request: shrink the panel itself so less of the screen is

@@ -185,15 +185,21 @@ test.describe('collection statements on the homepage', () => {
 
     const layout = await carousel.evaluate((element) => {
       const caption = element.querySelector<HTMLElement>('.home-hero__caption')!;
+      const indexLabel = element.querySelector<HTMLElement>('[data-role="index-label"]')!;
+      const title = element.querySelector<HTMLElement>('[data-role="gallery-title"]')!;
       const statement = element.querySelector<HTMLElement>('[data-role="gallery-statement"]')!;
       const accent = element.querySelector<HTMLElement>('[data-role="accent-panel"]')!;
       const captionRect = caption.getBoundingClientRect();
+      const indexRect = indexLabel.getBoundingClientRect();
+      const titleRect = title.getBoundingClientRect();
       const statementRect = statement.getBoundingClientRect();
       const accentRect = accent.getBoundingClientRect();
 
       return {
         captionRight: captionRect.right,
         captionWidth: captionRect.width,
+        indexTitleGap: titleRect.top - indexRect.bottom,
+        titleFontSize: parseFloat(getComputedStyle(title).fontSize),
         accentLeft: accentRect.left,
         statementRight: statementRect.right,
         statementWidth: statementRect.width,
@@ -205,6 +211,8 @@ test.describe('collection statements on the homepage', () => {
 
     expect(layout.captionRight).toBeLessThanOrEqual(layout.accentLeft);
     expect(layout.captionWidth).toBeLessThanOrEqual(721);
+    expect(layout.indexTitleGap).toBeGreaterThanOrEqual(11);
+    expect(layout.titleFontSize).toBe(18);
     expect(layout.accentLeft - layout.captionRight).toBeGreaterThanOrEqual(63);
     expect(layout.statementWidth).toBeLessThanOrEqual(441);
     expect(layout.accentLeft - layout.statementRight).toBeGreaterThanOrEqual(300);
