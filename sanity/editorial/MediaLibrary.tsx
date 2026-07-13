@@ -158,18 +158,6 @@ export function MediaLibrary() {
               <Metric label="Réutilisées" value={report.reusedAssets.length} />
             </Grid>
 
-            <Card padding={4} radius={3} tone="primary" border>
-              <Stack space={2}>
-                <Text size={1} weight="semibold">
-                  Réutiliser une image existante
-                </Text>
-                <Text muted size={1}>
-                  Dans une collection, ouvrez Photos puis choisissez « Ajouter » et « Sélectionner
-                  ». Vous pourrez reprendre une image déjà envoyée sans créer de copie.
-                </Text>
-              </Stack>
-            </Card>
-
             <Stack space={3}>
               <Flex align="center" justify="space-between">
                 <Heading as="h2" size={2}>
