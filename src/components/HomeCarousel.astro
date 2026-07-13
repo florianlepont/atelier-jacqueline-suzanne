@@ -36,7 +36,9 @@ const isEn = locale === 'en';
 // Copy verbatim from the prototype (UI-SPEC Copywriting Contract) — hardcoded
 // per the "Homepage intro copy source" decision, not sourced from
 // siteSettings.welcomeHeading/welcomeBody.
-const homeLabel = isEn ? 'Home' : 'Accueil';
+// homeHref is still needed below for the logo's own link — no separate
+// "Accueil"/"Home" nav link anymore (direct user feedback: redundant,
+// since clicking the logo already goes home).
 const homeHref = getRelativeLocaleUrl(locale, '');
 // Matches BaseLayout.astro's aboutLabel/contactLabel/aboutHref/contactHref
 // exactly — the homepage's own header renders its own nav (headerVariant
@@ -49,8 +51,6 @@ const contactLabel = 'Contact';
 const contactHref = getRelativeLocaleUrl(locale, 'contact');
 const toggleCarouselLabel = isEn ? 'Carousel' : 'Carrousel';
 const toggleGridLabel = isEn ? 'Grid' : 'Grille';
-const prevLabel = isEn ? 'Previous gallery' : 'Galerie précédente';
-const nextLabel = isEn ? 'Next gallery' : 'Galerie suivante';
 const wordmark = 'Atelier Jacqueline Suzanne';
 const introBody = isEn
   ? "This site showcases Romane Lepont's photographic work and lets you buy a piece directly online."
@@ -84,7 +84,6 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         <img src={logoWhiteSrc} alt="" class="home-logo__img home-logo__img--hover" />
       </a>
       <nav class="home-nav" aria-label="Primary">
-        <a href={homeHref} class="home-nav-link">{homeLabel}</a>
         <a href={aboutHref} class="home-nav-link">{aboutLabel}</a>
         <a href={contactHref} class="home-nav-link">{contactLabel}</a>
       </nav>
@@ -110,20 +109,52 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     </header>
 
     <div class="home-hero" data-role="home-carousel">
-      <img data-role="hero-image" src={firstGallery.heroSrc} alt={firstGallery.alt} class="home-hero__img" />
-      <div class="home-hero__scrim" aria-hidden="true"></div>
+      {/* Wraps the photo + its overlaid chrome (scrim, arrows, caption) in
+          its own sized box, separate from .home-hero__accent below. On
+          mobile, .home-hero__accent is in-flow (not absolute — see its
+          mobile override), which used to make .home-hero itself grow taller
+          than the photo to fit the panel; since .home-hero__img/__caption
+          were absolutely positioned against .home-hero's *entire* (grown)
+          box, the photo silently stretched down behind the panel and the
+          caption landed past it, overlapping. This wrapper is what
+          .home-hero__img/__scrim/__arrow/__caption are now absolutely
+          positioned against, so they stay confined to the photo's own
+          16:9 band regardless of how tall the accent panel makes
+          .home-hero grow. */}
+      <div class="home-hero__photo">
+        <img data-role="hero-image" src={firstGallery.heroSrc} alt={firstGallery.alt} class="home-hero__img" />
+        <div class="home-hero__scrim" aria-hidden="true"></div>
 
-      <button type="button" class="home-hero__arrow home-hero__arrow--prev" data-action="prev" aria-label={prevLabel}>
-        <span aria-hidden="true">‹</span>
-      </button>
-      <button type="button" class="home-hero__arrow home-hero__arrow--next" data-action="next" aria-label={nextLabel}>
-        <span aria-hidden="true">›</span>
-      </button>
-
-      <div class="home-hero__caption">
-        <p class="home-hero__index" data-role="index-label">01 / {totalLabel}</p>
-        <a class="home-hero__title" data-role="gallery-title" href={getRelativeLocaleUrl(locale, `galleries/${firstGallery.slug}`)}>{firstGallery.title.toUpperCase()}</a>
-        <p class="home-hero__byline">{byline}</p>
+        <div class="home-hero__caption">
+          {/* Direct request: replaces the prev/next arrow buttons with a
+              clickable dashed progress indicator (one segment per gallery,
+              current one highlighted) — navigation itself moves to keyboard
+              arrow keys and touch swipe, handled in the <script> below. Each
+              dash is still a real, individually-focusable/clickable <button>
+              (not decorative), so mouse/touch users who don't know the
+              keyboard shortcut retain a direct way to jump to any gallery.
+              Nested inside .home-hero__caption (bottom-left, not the top)
+              per direct follow-up feedback, so it flows naturally above the
+              index/title/byline instead of needing its own hardcoded
+              vertical offset — one less pixel-math dependency to keep in
+              sync with the rest of the caption's content. */}
+          <div class="home-hero__progress" data-role="progress" role="tablist" aria-label={isEn ? 'Choose a gallery' : 'Choisir une galerie'}>
+            {galleries.map((gallery, i) => (
+              <button
+                type="button"
+                class="home-hero__progress-dash"
+                data-action="go-to"
+                data-index={i}
+                role="tab"
+                aria-current={i === 0 ? 'true' : 'false'}
+                aria-label={`${gallery.title} (${i + 1}/${galleries.length})`}
+              />
+            ))}
+          </div>
+          <p class="home-hero__index" data-role="index-label">01 / {totalLabel}</p>
+          <a class="home-hero__title" data-role="gallery-title" href={getRelativeLocaleUrl(locale, `galleries/${firstGallery.slug}`)}>{firstGallery.title.toUpperCase()}</a>
+          <p class="home-hero__byline">{byline}</p>
+        </div>
       </div>
 
       <div class="home-hero__accent" data-role="accent-panel" style={{ color: 'var(--color-on-accent)' }}>
@@ -214,9 +245,63 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         const indexLabel = hero.querySelector<HTMLElement>('[data-role="index-label"]');
         const titleEl = hero.querySelector<HTMLElement>('[data-role="gallery-title"]');
         const accentPanel = hero.querySelector<HTMLElement>('[data-role="accent-panel"]');
+        const wordmarkEl = hero.querySelector<HTMLElement>('.home-hero__wordmark');
+        const progressDashes = Array.from(hero.querySelectorAll<HTMLButtonElement>('[data-role="progress"] .home-hero__progress-dash'));
 
         let carouselIndex = 0;
         let timer: ReturnType<typeof setInterval> | null = null;
+
+        // .home-hero__img uses the default object-position (50% 50%,
+        // dead center) — kept as named constants so the crop math below
+        // stays generic if that ever changes again.
+        const OBJECT_POSITION_X = 0.5;
+        const OBJECT_POSITION_Y = 0.5;
+
+        // Direct user feedback: background-size:cover scoped to the small
+        // wordmark box (the previous approach) shows an independently
+        // re-cropped/zoomed slice of the photo, not the SAME slice that's
+        // actually behind the panel — it doesn't read as a true cutout.
+        // This computes the exact background-size/position the wordmark's
+        // own background-image needs so it lines up pixel-for-pixel with
+        // heroImg's own object-fit:cover crop — i.e. what you'd see if the
+        // panel really were a hole cut in the same physical photo. Must be
+        // computed in JS: CSS has no way to say "background-size:cover
+        // relative to a DIFFERENT (larger) box than the element's own".
+        function syncWordmarkAlignment() {
+          if (!heroImg || !wordmarkEl) return;
+          const naturalW = heroImg.naturalWidth;
+          const naturalH = heroImg.naturalHeight;
+          if (!naturalW || !naturalH) return;
+          // Deliberately heroImg's own rect, not .home-hero's — heroImg now
+          // has `inset: -6%` (the zoom fix above), so its actual rendered
+          // box is already bigger than the visible hero container. Reading
+          // it directly here means the crop math below automatically
+          // reflects that expansion with no separate ZOOM_INSET_PCT term
+          // needed — it's already baked into this rect.
+          const heroRect = heroImg.getBoundingClientRect();
+          const wordmarkRect = wordmarkEl.getBoundingClientRect();
+          if (heroRect.width === 0 || heroRect.height === 0) return;
+          // Same formula object-fit:cover itself uses: scale to fill,
+          // cropping whichever axis overflows.
+          const scale = Math.max(heroRect.width / naturalW, heroRect.height / naturalH);
+          const renderedW = naturalW * scale;
+          const renderedH = naturalH * scale;
+          // How much of the scaled image is cropped off each edge — must
+          // track heroImg's own object-position (OBJECT_POSITION_X/Y
+          // above), not assume the 50%/50% (dead center) default.
+          const cropX = (renderedW - heroRect.width) * OBJECT_POSITION_X;
+          const cropY = (renderedH - heroRect.height) * OBJECT_POSITION_Y;
+          // Where the wordmark box sits relative to the hero photo's own
+          // top-left — both rects read via getBoundingClientRect() in the
+          // same tick, so any scroll offset cancels out in the subtraction.
+          const offsetX = wordmarkRect.left - heroRect.left;
+          const offsetY = wordmarkRect.top - heroRect.top;
+          wordmarkEl.style.setProperty('--wordmark-bg-size', `${renderedW}px ${renderedH}px`);
+          wordmarkEl.style.setProperty(
+            '--wordmark-bg-position',
+            `${-(cropX + offsetX)}px ${-(cropY + offsetY)}px`,
+          );
+        }
 
         function render() {
           const gallery = galleries[carouselIndex];
@@ -225,6 +310,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           if (heroImg) {
             heroImg.src = gallery.heroSrc;
             heroImg.alt = gallery.alt;
+            if (heroImg.complete) {
+              syncWordmarkAlignment();
+            } else {
+              heroImg.addEventListener('load', syncWordmarkAlignment, { once: true });
+            }
           }
           if (indexLabel) {
             indexLabel.textContent = `${String(carouselIndex + 1).padStart(2, '0')} / ${String(galleries.length).padStart(2, '0')}`;
@@ -241,6 +331,9 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           // with the visible hero photo on every prev/next/auto-advance
           // tick, so the letters always reveal the currently-shown gallery.
           root!.style.setProperty('--wordmark-photo', `url(${gallery.heroSrc})`);
+          progressDashes.forEach((dash, i) => {
+            dash.setAttribute('aria-current', i === carouselIndex ? 'true' : 'false');
+          });
         }
 
         function stopAutoAdvance() {
@@ -277,14 +370,78 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         hero.addEventListener('focusin', stopAutoAdvance);
         hero.addEventListener('focusout', startAutoAdvance);
 
-        hero.querySelector('[data-action="prev"]')?.addEventListener('click', () => {
+        function goToPrev() {
           carouselIndex = (carouselIndex - 1 + galleries.length) % galleries.length;
           render();
-        });
-        hero.querySelector('[data-action="next"]')?.addEventListener('click', () => {
+        }
+
+        function goToNext() {
           carouselIndex = (carouselIndex + 1) % galleries.length;
           render();
+        }
+
+        function goToIndex(i: number) {
+          if (i < 0 || i >= galleries.length || i === carouselIndex) return;
+          carouselIndex = i;
+          render();
+        }
+
+        progressDashes.forEach((dash) => {
+          dash.addEventListener('click', () => {
+            const i = Number(dash.dataset.index);
+            if (!Number.isNaN(i)) goToIndex(i);
+          });
         });
+
+        // Direct request: arrow-key navigation, only while the carousel
+        // (not the grid) is showing, and only when focus isn't inside a
+        // form control elsewhere on the page (About/Contact share this
+        // layout's header, and a stray ArrowLeft/ArrowRight while typing
+        // in an <input> shouldn't hijack the carousel).
+        document.addEventListener('keydown', (event) => {
+          if (root!.dataset.displayMode !== 'carousel') return;
+          const target = event.target as HTMLElement | null;
+          if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+          if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            goToPrev();
+          } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            goToNext();
+          }
+        });
+
+        // Direct request: swipe support on mobile. touchstart/touchend
+        // (not touchmove) — only the net horizontal distance matters, and
+        // this avoids fighting the browser's own vertical scroll handling
+        // mid-gesture. Horizontal delta must clearly exceed vertical delta
+        // (SWIPE_DIRECTION_RATIO) before it's treated as a swipe, so an
+        // intentional vertical scroll over the hero never triggers a
+        // gallery change.
+        const SWIPE_MIN_DISTANCE = 50;
+        const SWIPE_DIRECTION_RATIO = 1.5;
+        let touchStartX = 0;
+        let touchStartY = 0;
+        const heroPhoto = hero.querySelector<HTMLElement>('.home-hero__photo');
+        heroPhoto?.addEventListener('touchstart', (event) => {
+          const touch = event.changedTouches[0];
+          if (!touch) return;
+          touchStartX = touch.clientX;
+          touchStartY = touch.clientY;
+        }, { passive: true });
+        heroPhoto?.addEventListener('touchend', (event) => {
+          const touch = event.changedTouches[0];
+          if (!touch) return;
+          const deltaX = touch.clientX - touchStartX;
+          const deltaY = touch.clientY - touchStartY;
+          if (Math.abs(deltaX) < SWIPE_MIN_DISTANCE) return;
+          if (Math.abs(deltaX) < Math.abs(deltaY) * SWIPE_DIRECTION_RATIO) return;
+          if (deltaX < 0) {
+            goToNext();
+          } else {
+            goToPrev();
+          }
+        }, { passive: true });
 
         // D-01/D-02/D-03: a single stateful button — its aria-label always
         // names the mode you'd switch TO, read off its own data-label-*
@@ -306,6 +463,17 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
         render();
         startAutoAdvance();
+
+        // Re-align the wordmark cutout on resize — both the hero photo's
+        // rendered size and the wordmark's own position within it change
+        // at different viewport widths (see the mobile-width overrides
+        // above), so a stale computed --wordmark-bg-size/-position from a
+        // previous width would drift out of alignment.
+        let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+        window.addEventListener('resize', () => {
+          if (resizeTimer) clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(syncWordmarkAlignment, 100);
+        });
       }
     </script>
   </section>
@@ -621,6 +789,17 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
      instead of chasing another guessed pixel value. */
   .home-hero {
     position: relative;
+  }
+
+  /* Photo + its overlaid chrome (scrim, arrows, caption) — sized
+     independently of .home-hero__accent, which on mobile is an in-flow
+     sibling below (see its mobile override) and would otherwise force
+     .home-hero itself to grow taller than the photo. Everything visually
+     "part of the photo" is absolutely positioned against *this* box, so it
+     stays confined to a proper 16:9 band no matter how tall the panel
+     below makes .home-hero grow. */
+  .home-hero__photo {
+    position: relative;
     /* Explicit width required: without it, the browser treats aspect-ratio
        + max-height together as "solve for width" once max-height clamps
        the height, shrinking the hero narrower than the viewport (confirmed
@@ -638,28 +817,6 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        screen's height. */
     max-height: 100vh;
     overflow: hidden;
-    /* Establishes a block formatting context so a child's margin-top (see
-       .home-hero__accent's mobile margin-top below, added to clear the
-       header) can't collapse through and shift .home-hero itself down
-       instead of creating space inside it — confirmed via live measurement
-       that without this, the accent panel's margin-top moved the whole
-       .home-hero section (and everything in it, header included) down by
-       the same amount, leaving header and accent panel still perfectly
-       overlapping, just both shifted down together. */
-    display: flow-root;
-  }
-
-  /* Explicit override, required: an author-stylesheet `.home-hero { display:
-     flow-root }` (above) has the same specificity (0,1,0) as the browser's
-     default `[hidden] { display: none }` UA-stylesheet rule, and author
-     rules always win over UA defaults regardless of source order — so once
-     .home-hero declared its own `display`, toggling the `hidden` attribute
-     (via showCarousel()/showGrid() in the client script) silently stopped
-     hiding it, breaking the carousel/grid mode switch (caught by the
-     existing e2e suite, not a hunch). This restores the intended behavior
-     explicitly rather than relying on the UA default. */
-  .home-hero[hidden] {
-    display: none;
   }
 
   .home-hero__img {
@@ -676,37 +833,60 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     background: linear-gradient(to top, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.15) 45%, rgba(0, 0, 0, 0) 70%);
   }
 
-  .home-hero__arrow {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: var(--tap-target-min);
-    height: var(--tap-target-min);
-    border-radius: var(--radius-none);
-    border: none;
-    background: rgba(0, 0, 0, 0.35);
-    color: #FFFFFF;
-    font-size: 24px;
-    line-height: 1;
-    cursor: pointer;
+  /* Replaces the old prev/next arrow buttons. Direct follow-up feedback:
+     moved from a full-width bar below the header to a compact one nested
+     inside .home-hero__caption (bottom-left, in normal flow above the
+     index/title/byline) — no absolute positioning of its own needed, it
+     just sits wherever the caption already sits. Width is capped well
+     under the caption's own 60% max-width per the "20-30% max of the page
+     width" request — min() keeps it from ballooning on very wide desktop
+     windows while staying comfortably tappable (3 dashes + gaps) on
+     narrow phones. */
+  .home-hero__progress {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    /* Above .home-hero__accent's z-index: 3 — on mobile the vertically-
-       centered arrows sit close to the now-taller (three-line wordmark,
-       D-09) accent panel's bottom edge; keeping the nav arrows always
-       clickable/visible takes priority over the accent panel here (no
-       overlap exists on desktop, where the accent panel is a small
-       bottom-right corner box far from the edge-anchored arrows). */
-    z-index: 4;
+    gap: var(--space-xs);
+    width: min(25vw, 220px);
+    margin: 0 0 var(--space-sm);
   }
 
-  .home-hero__arrow--prev {
-    left: var(--space-md);
+  .home-hero__progress-dash {
+    position: relative;
+    flex: 1 1 0;
+    height: 3px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-none);
+    background: rgba(255, 255, 255, 0.35);
+    cursor: pointer;
   }
 
-  .home-hero__arrow--next {
-    right: var(--space-md);
+  /* Invisible hit-area extension — a 3px-tall bar is far below the
+     var(--tap-target-min) (44px) accessible tap-target size, so this
+     enlarges the clickable/tappable region vertically without changing
+     the dash's own visual thickness. */
+  .home-hero__progress-dash::before {
+    content: '';
+    position: absolute;
+    inset: calc(-1 * var(--space-md)) 0;
+  }
+
+  .home-hero__progress-dash[aria-current='true'] {
+    background: var(--current-accent, var(--color-accent));
+  }
+
+  .home-hero__progress-dash:hover,
+  .home-hero__progress-dash:focus-visible {
+    background: rgba(255, 255, 255, 0.65);
+  }
+
+  .home-hero__progress-dash[aria-current='true']:hover,
+  .home-hero__progress-dash[aria-current='true']:focus-visible {
+    background: var(--current-accent, var(--color-accent));
+  }
+
+  .home-hero__progress-dash:focus-visible {
+    outline: 2px solid #FFFFFF;
+    outline-offset: 3px;
   }
 
   .home-hero__caption {
@@ -760,14 +940,12 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     position: absolute;
     right: var(--space-md);
     bottom: var(--space-md);
-    /* Widened from 560px: at the bigger 64px wordmark size (below), the
-       longest line ("JACQUELINE", ~545px wide incl. letter-spacing) needed
-       more room than the old 560px panel (496px inner width after padding)
-       could fit without overflowing past the panel's own edge — live-
-       measured via a temporary off-screen span at each candidate size
-       before picking values, not guessed. 680px gives ~616px of inner
-       width, comfortable clearance for the widest line. */
-    width: min(680px, 56%);
+    /* Widened again for the 80px wordmark (below, up from 64px): live-
+       measured "JACQUELINE" at 80px is ~682px wide including letter-
+       spacing, which needed more room than the previous 680px panel
+       (616px inner width) could fit. 800px gives ~736px of inner width,
+       comfortable clearance for the widest line. */
+    width: min(800px, 60%);
     padding: var(--space-xl);
     z-index: 3;
     /* Solid "paper" backing for the whole panel (wordmark + intro together),
@@ -798,14 +976,21 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        itself, which is all-caps. Direct user feedback — the wordmark should
        read consistently with those, not mixed-case. */
     text-transform: uppercase;
-    /* 64px desktop / 52px mobile — bumped up again per direct user request
-       ("even bigger font, strongly reduce the gap between the 3 lines").
-       Re-verify against the accent panel's own bounds (width: min(560px,
-       52%)) if this is revisited again — an earlier 64px attempt with
-       Anton's metrics outgrew the panel, but Unbounded's letterforms are
-       narrower per-glyph at the same font-size, and the tight line-height
-       below keeps the total block height in check too. */
-    font-size: 64px;
+    /* Fluid, not a flat 80px: a fixed font-size paired with the panel's
+       percentage-driven width (min(800px, 60%), above) only matched at the
+       exact viewport widths it was spot-checked at — live-measured a real
+       overflow zone between ~1000-1230px viewport width, where 60% of the
+       viewport produces a narrower panel than the flat 80px text needs
+       (confirmed via a live screenshot showing "JACQUELINE"/"SUZANNE"
+       clipped past the panel edge, not guessed). clamp(44px, 6vw, 80px)
+       tracks the SAME 60vw rate the panel width uses below the 1333px
+       breakpoint where the panel's own min(800px, 60%) switches from
+       percentage to its flat cap — so the font-to-panel-width ratio stays
+       constant across the entire desktop range instead of only being
+       correct at whichever handful of widths got spot-checked. Re-verified
+       across the full 768-1920px range after this fix, not just the
+       previously-broken zone. */
+    font-size: clamp(44px, 6vw, 80px);
     font-weight: var(--weight-semibold);
     /* 0.9 — deliberately tight, not the previous 1.6: direct user request
        to "strongly reduce the gap between the lines." Verify live that
@@ -824,8 +1009,21 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
   @supports (background-clip: text) or (-webkit-background-clip: text) {
     .home-hero__wordmark {
       background-image: var(--wordmark-photo);
-      background-size: cover;
-      background-position: center;
+      /* --wordmark-bg-size/-position are computed live by
+         syncWordmarkAlignment() in the <script> below, so the visible
+         slice lines up with the exact same crop of the photo that's
+         actually behind the panel (a true cutout), not an independently
+         re-cropped/zoomed copy. cover/center are fallbacks only — for the
+         brief window before JS first runs, or if it never runs at all. */
+      background-size: var(--wordmark-bg-size, cover);
+      background-position: var(--wordmark-bg-position, center);
+      /* Without this, a stale/out-of-range --wordmark-bg-position (e.g. the
+         mobile fallback path, which never sets it, or any future edge
+         case where the computed offset exceeds the background image's own
+         size) tiles into a repeated, garbled texture instead of just
+         clipping — confirmed as the cause of a reported "transparency
+         effect doesn't work" regression. */
+      background-repeat: no-repeat;
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
@@ -949,78 +1147,101 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
   /* Mobile responsive (D-10, UI-SPEC Layout Notes — Homepage Mobile). */
   @media (max-width: 767px) {
+    /* Direct request: FR|EN belongs in the top row alongside the logo/nav/
+       toggle, not wrapped onto its own row underneath. Live-measured at
+       393px wide: logo(56) + nav(157) + toggle(30) + switcher(79) plus
+       .home-header's own gap between all four (3 × 16px) totals 386px —
+       10px over the 361px available (393 minus the header's own 32px of
+       side padding) BEFORE even counting .home-nav's extra margin-left
+       (below), which was adding a redundant second gap on top of the
+       header's own flex gap between the logo and nav specifically. Trimming
+       both — the header's inter-item gap and that redundant nav margin —
+       recovers ~40px, comfortably fitting all four on one row (measured
+       346px used of 361px available). flex-wrap stays on as a safety net
+       for narrower phones or longer translated labels; it just no longer
+       needs to trigger at this width. */
     .home-header {
       flex-wrap: wrap;
+      gap: var(--space-sm);
     }
 
-    /* min-height raised from the UI-SPEC's original 420px: adding the
-       About/Contact nav items (real user feedback — see debug session
-       homepage-visual-bugs) made the wrapped mobile header 3 rows tall
-       (~252px) instead of 2, which the old 420px floor left too little
-       clearance for — the prev/next arrows (vertically centered on the
-       whole hero box) collided with the header. Confirmed via direct
-       DOM measurement at 375px width: 600px leaves a comfortable ~26px
-       gap between the header and the arrows, and the arrows stay well
-       clear of the caption block below them. */
-    .home-hero {
-      height: auto;
-      min-height: 600px;
-      overflow: visible;
+    .home-nav {
+      margin-left: 0;
     }
 
-    /* D-08 (distinct from the 600px min-height fix above, a different,
-       still-open symptom): live-measured root cause — position:static
-       drops .home-hero__accent out of the "positioned, z-index" paint
-       layer entirely (z-index has no effect on statically positioned
-       boxes per spec), so the accent panel (wordmark/intro) painted
-       in the earlier "in-flow content" layer, while the hero photo
-       (.home-hero__img, position:absolute) paints in the later
-       "positioned descendants" layer on top of it — the opaque photo
-       visually covers the accent panel's branded content completely,
-       reproducing as "the hero disappears" (confirmed via
-       elementFromPoint()/computed-style measurement at 375x667: the
-       header sits at the expected z-index, but the accent panel's own
-       content was unreachable/invisible under the image). Fix: keep the
-       accent panel in normal flow (still full-width, still after the
-       caption in source) but make it a positioned element via
-       position:relative instead of static, so its existing z-index: 3
-       (inherited from the desktop rule) takes effect again and it paints
-       above the image/scrim, exactly like it already does on desktop. */
+    /* Direct request: the photo should cover the full phone screen on
+       arrival, like a true full-bleed mobile hero. .home-hero__photo
+       already has max-height:100vh from the base rule; pairing it with an
+       equal min-height forces the full viewport height regardless of the
+       16:9 aspect-ratio, and object-fit:cover on .home-hero__img (unchanged)
+       naturally crops/zooms the photo to fill that box — a portrait phone
+       screen against a landscape photo crops in hard on its own, no extra
+       transform needed. The base rule's top:50% arrow centering and
+       bottom-anchored caption both now measure against this same
+       full-viewport box, so nothing needs a mobile-specific override —
+       centering in "the whole screen" is exactly right for a full-bleed
+       hero.
+
+       100svh, not 100vh: confirmed via a real-device screenshot that plain
+       vh (which resolves to the LARGE viewport, i.e. the size once
+       Safari's address bar auto-hides) made the hero taller than what's
+       actually visible on first load, while the browser chrome is still
+       showing — the site's own footer text peeked in underneath the
+       caption on arrival. svh always resolves to the SMALL viewport (chrome
+       visible, the worst case), so the hero is guaranteed to fit within
+       whatever is actually on screen before any scrolling happens. */
+    .home-hero__photo {
+      min-height: 100svh;
+    }
+
+    /* Direct follow-up: an in-flow panel below the photo (previous pass)
+       required scrolling to see it, but "on the picture" was the whole
+       point — the panel needs to overlay the full-bleed photo, not follow
+       it. Back to position:absolute (like the desktop corner card), just
+       anchored full-width along the bottom instead of a bottom-right
+       corner. bottom offset reserves room for .home-hero__caption (now
+       progress dashes + index + title + byline, live-remeasured at 85px
+       tall after the dashes moved in above the index line — was 74px
+       before) below the panel plus its own --space-xl gap to the screen
+       edge, so the two overlaid layers stack without covering each other.
+       Re-verify this number any time .home-hero__caption's own content
+       changes — it's a live measurement, not a derived value. */
     .home-hero__accent {
-      position: relative;
-      /* Neutralize the desktop rule's right/bottom offsets — under
-         position:relative (unlike static) they'd otherwise shift this
-         box up-and-left by --space-md, since relative positioning still
-         honors inherited offset properties. */
-      right: auto;
-      bottom: auto;
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: calc(85px + var(--space-xl) + var(--space-md));
       width: 100%;
-      /* Pre-existing bug, fixed here (previously deferred as "out of scope
-         for HOME-01/02/03" in deferred-items.md, but the papercut panel's
-         new solid background made it far more visually broken than before —
-         solid pink now painted directly under the header nav, not just
-         faint transparent text — so it's fixed as part of this same
-         change). .home-hero__accent is the first in-flow child of
-         .home-hero (every earlier sibling — image, scrim, arrows, caption —
-         is position:absolute and consumes no flow space), so without this
-         margin it renders flush at the very top of .home-hero, directly
-         under the position:absolute header overlay. Live-measured header
-         height at 375px width: 192px (Playwright boundingBox()); add
-         --space-lg on top for breathing room rather than an exact 192px, so
-         it stays correct if the header's own height shifts slightly (e.g.
-         longer translated nav labels). */
-      margin-top: calc(192px + var(--space-lg));
+      margin-top: 0;
+      /* Direct request: shrink the panel itself so less of the screen is
+         solid color and more of the photo shows above it. Tighter padding
+         than the desktop var(--space-xl) (32px) reduces the panel's
+         footprint on all four sides and, as a side effect, widens the
+         wordmark's own inner width — more room to grow it further below. */
+      padding: var(--space-lg);
     }
 
-    /* D-09: mobile-width override for the enlarged cutout wordmark. 34px,
-       not the desktop 64px — live-measured "JACQUELINE" (the widest line)
-       against the mobile panel's actual inner width (311px at 375px
-       viewport): 34px fits with a 21px margin, 36px+ was too tight/started
-       clipping past the panel edge. Mobile has much less horizontal room
-       than desktop's widened panel, so it can't scale 1:1 with the desktop
-       size increase. */
+    /* D-09/direct follow-up ("more bigger!"): pushed further than the
+       first pass, using the room freed up by .home-hero__accent's tighter
+       mobile padding above (var(--space-lg), not the desktop var(--space-xl))
+       — a wider inner width for the same viewport. Re-measured the same
+       way (actual rendered line width via Range.getBoundingClientRect()
+       across 360-767px): clamp(36px, 9.8vw, 50px) keeps at least a 5px
+       margin everywhere, with most of the common phone range (390-428px)
+       sitting at 16-23px of margin. 360px now floors at 36px (up from the
+       previous pass's 34px); ~390-428px renders 38-42px (up from 36-39px);
+       cap raised from 46px to 50px for wider viewports. */
     .home-hero__wordmark {
-      font-size: 34px;
+      font-size: clamp(36px, 9.8vw, 50px);
+    }
+
+    /* Direct request: shrink the intro paragraph to make room for a bigger
+       wordmark and a shorter overall panel — 14px (Label role, matching
+       .home-hero__index/__byline elsewhere in this component) instead of
+       the desktop 16px (Body role). */
+    .home-hero__intro {
+      font-size: 14px;
+      line-height: 1.4;
     }
 
     /* Grid hero-tile wordmark — mobile-width override (Typography table). */

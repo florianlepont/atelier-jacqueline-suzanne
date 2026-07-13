@@ -49,7 +49,9 @@ const siteSettings = await getSiteSettings();
 // unguarded nested access here would fail the entire site build.
 const siteTitle = siteSettings?.siteTitle?.[locale] ?? 'Atelier Jacqueline Suzanne';
 const footerText = siteSettings?.footerText?.[locale] ?? '';
-const homeLabel = siteSettings?.navLabels?.home?.[locale] ?? (locale === 'en' ? 'Home' : 'Accueil');
+// homeHref is still needed below for the logo's own link — no separate
+// "Accueil"/"Home" nav link anymore (direct user feedback: redundant,
+// since clicking the logo already goes home).
 const homeHref = getRelativeLocaleUrl(locale, '');
 // About content is not in CMS scope (CMS-01 is galleries-only), so this
 // label is a hardcoded locale conditional rather than a Sanity navLabels
@@ -122,7 +124,6 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
           <img src={logoWhiteSrc} alt="" class="logo-mark__img logo-mark__img--hover" />
         </a>
         <nav class="site-nav" aria-label="Primary">
-          <a href={homeHref} class="nav-link">{homeLabel}</a>
           <a href={aboutHref} class="nav-link">{aboutLabel}</a>
           <a href={contactHref} class="nav-link">{contactLabel}</a>
         </nav>
