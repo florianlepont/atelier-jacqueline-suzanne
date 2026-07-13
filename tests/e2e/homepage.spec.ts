@@ -164,7 +164,7 @@ test.describe('collection statements on the homepage', () => {
   });
 
   test('carousel keeps its navigation fixed and clamps long collection statements', async ({ page }) => {
-    await page.setViewportSize({ width: 1536, height: 864 });
+    await page.setViewportSize({ width: 2048, height: 1152 });
     await page.goto('/');
 
     const carousel = page.locator('[data-role="home-carousel"]');
@@ -192,6 +192,7 @@ test.describe('collection statements on the homepage', () => {
 
       return {
         captionRight: captionRect.right,
+        captionWidth: captionRect.width,
         accentLeft: accentRect.left,
         statementHeight: statement.getBoundingClientRect().height,
         statementLineHeight: parseFloat(getComputedStyle(statement).lineHeight),
@@ -200,6 +201,7 @@ test.describe('collection statements on the homepage', () => {
     });
 
     expect(layout.captionRight).toBeLessThanOrEqual(layout.accentLeft);
+    expect(layout.captionWidth).toBeLessThanOrEqual(721);
     expect(layout.accentLeft - layout.captionRight).toBeGreaterThanOrEqual(63);
     expect(layout.statementHeight).toBeLessThanOrEqual(layout.statementLineHeight * 2 + 1);
     expect(layout.statementOverflow).toBe('hidden');

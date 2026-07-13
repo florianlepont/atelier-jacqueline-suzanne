@@ -1070,6 +1070,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        the coloured panel. This prevents long statements from continuing
        underneath it on wide screens. */
     right: calc(min(800px, 60%) + var(--space-3xl) + var(--space-md));
+    max-width: 720px;
     bottom: var(--space-xl);
     /* Fixed tracks make the progress navigation stay at exactly the same
        vertical position when the active collection changes. */
@@ -1455,6 +1456,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
     .home-hero__caption {
       right: var(--space-md);
+      max-width: none;
     }
 
     /* Direct follow-up: an in-flow panel below the photo (previous pass)
