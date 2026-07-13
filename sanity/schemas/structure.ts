@@ -6,13 +6,11 @@ import type {
 import {orderableDocumentListDeskItem} from '@sanity/orderable-document-list'
 import {ContentPreview} from './ContentPreview'
 import {DocumentChecklist} from '../editorial/DocumentChecklist'
-import {WebsitePreview} from '../editorial/WebsitePreview'
 
 const editorViews = (S: StructureBuilder) => [
   S.view.form().title('Édition'),
   S.view.component(DocumentChecklist).title('Checklist'),
   S.view.component(ContentPreview).title('Aperçu du brouillon'),
-  S.view.component(WebsitePreview).title('Site publié'),
 ]
 
 const checklistViews = (S: StructureBuilder) => [

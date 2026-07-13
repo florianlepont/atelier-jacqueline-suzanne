@@ -19,7 +19,7 @@ Dans le menu utilisateur en haut à droite, choisir **Français** comme langue d
 
 L’onglet **Checklist** indique ce qui est obligatoire et ce qui est simplement recommandé. Les badges « À compléter », « SEO à compléter », « Prêt » et « Masquée » rendent l’état du document visible immédiatement.
 
-L’onglet **Aperçu du brouillon** montre le contenu avant publication. L’onglet **Site publié** affiche le véritable site en version ordinateur ou mobile et indique si sa mise à jour est terminée.
+L’onglet **Aperçu du brouillon** montre le contenu avant publication. Le lien **Ouvrir le site** du tableau de bord permet de consulter rapidement la version publique.
 
 Pour une nouvelle collection, saisir d’abord son nom puis cliquer sur **Générer** sous « Adresse de la page ».
 
@@ -66,4 +66,4 @@ npm run dev
 
 Le Studio est généralement disponible sur `http://localhost:3333`.
 
-Pour changer le site affiché dans l’onglet **Site publié**, copier `.env.example` vers `.env.local` et adapter `SANITY_STUDIO_PREVIEW_URL` avant de construire ou déployer le Studio.
+Pour changer la destination du lien **Ouvrir le site**, copier `.env.example` vers `.env.local` et adapter `SANITY_STUDIO_PREVIEW_URL` avant de construire ou déployer le Studio.
