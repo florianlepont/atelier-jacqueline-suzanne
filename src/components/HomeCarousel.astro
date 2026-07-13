@@ -548,6 +548,21 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     gap: var(--space-md);
     padding: var(--space-lg) var(--space-md);
     z-index: 5;
+    /* Direct follow-up (quick-260713-jfz): same class of bug as
+       .home-hero__accent's view-transition-name above — unnamed, the
+       header was just part of the flat root snapshot, and since it comes
+       BEFORE .home-hero__photo in DOM order, default paint-order stacking
+       would put its own group BELOW ajs-hero-morph too (root-relative
+       DOM position, not just "unnamed vs named", determines default
+       stacking — see the explicit z-index below, which is what actually
+       fixes it). The morphing photo's box overlaps the header's screen
+       area while growing/shrinking, fully blanking the logo/nav/toggle for
+       a visible chunk of the transition — confirmed via a cropped
+       mid-transition screenshot showing the header region completely
+       empty. Naming it (plus the explicit z-index in the is:global block)
+       keeps it in its own group, painted above the morph regardless of
+       DOM order. */
+    view-transition-name: ajs-header;
   }
 
   .home[data-display-mode='carousel'] .home-header {
@@ -1002,6 +1017,20 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     width: min(800px, 60%);
     padding: var(--space-xl);
     z-index: 3;
+    /* Direct follow-up (quick-260713-jfz): without its own name, this panel
+       was just part of the flat "everything else" root snapshot, painted
+       BELOW the named ajs-hero-morph group in the view-transition overlay's
+       default stacking order. Since the panel geometrically overlaps the
+       photo in its final position, the still-growing photo morph visually
+       covered it for the whole transition — it only became visible once the
+       overlay tore down and real DOM stacking (z-index: 3, above the photo)
+       took over, reading as a sudden pop instead of the fade-in it was meant
+       to be. Naming it gives it its own group in the pseudo-element tree,
+       stacked above ajs-hero-morph (it comes later in DOM/paint order), so
+       it can fade in independently and stay visible throughout. It has no
+       "old" counterpart on the grid side (the whole .home-hero is hidden in
+       grid mode), so this is a pure enter/exit fade — no shape to morph. */
+    view-transition-name: ajs-accent-panel;
     /* Solid "paper" backing for the whole panel (wordmark + intro together),
        cycling per-gallery via --current-accent (set by render()). This is
        what makes the wordmark below read as letters CUT OUT of a solid
@@ -1351,10 +1380,60 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
      ajs-hero-morph group (named on .home-hero__photo above and on the
      matching grid tile by the <script> block), so the hero photo visibly
      grows/shrinks/repositions toward its grid tile instead of just fading. */
+  /* Explicit stacking, unconditional (not just under no-preference — wrong
+     stacking would be just as visible, if briefly, even at reduced-motion
+     durations). Default view-transition-group stacking follows DOM/paint
+     order, which put ajs-header (comes BEFORE .home-hero__photo in the
+     markup) and, less obviously, ajs-accent-panel too, at the mercy of
+     that ordering rather than a guarantee. Named groups default to normal
+     stacking (root at the back); giving ajs-hero-morph the lowest explicit
+     z-index and the header/panel higher ones guarantees both always paint
+     above the morphing photo regardless of markup order, instead of
+     relying on "it happens to come after in the DOM." */
+  ::view-transition-group(ajs-hero-morph) {
+    z-index: 1;
+  }
+
+  ::view-transition-group(ajs-header),
+  ::view-transition-group(ajs-accent-panel) {
+    z-index: 2;
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     ::view-transition-old(root),
     ::view-transition-new(root),
     ::view-transition-group(ajs-hero-morph) {
+      animation-duration: 420ms;
+      animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Direct follow-up: the accent panel (ajs-accent-panel, named above)
+       gets its own fade rather than riding along with the root cross-fade —
+       naming it moves it into its own group, stacked above ajs-hero-morph,
+       so it's no longer hidden behind the still-growing photo for the whole
+       transition (see the comment on .home-hero__accent's view-transition-
+       name for the full root-cause). A short delay after the photo starts
+       morphing, rather than an identical simultaneous fade, reads as a
+       deliberate staggered reveal — the photo settles into place, then the
+       panel fades in over it — instead of everything happening at once. */
+    ::view-transition-old(ajs-accent-panel),
+    ::view-transition-new(ajs-accent-panel) {
+      animation-duration: 380ms;
+      animation-delay: 100ms;
+      animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Direct follow-up: the header (ajs-header, named above) was fully
+       blanked out for a visible chunk of the transition — the morphing
+       photo's box overlapped its screen area while the header was still
+       painted in the (wrongly-stacked) root layer beneath it. Unlike the
+       accent panel, the header is present in BOTH the carousel and grid
+       states (just restyled — gradient-over-photo vs solid background), so
+       this is a genuine cross-fade of its two appearances, not an
+       enter/exit — no entrance delay needed, just the same duration as
+       everything else for a consistent feel. */
+    ::view-transition-old(ajs-header),
+    ::view-transition-new(ajs-header) {
       animation-duration: 420ms;
       animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     }
