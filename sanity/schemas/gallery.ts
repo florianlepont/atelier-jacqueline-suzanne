@@ -51,26 +51,18 @@ export const gallery = defineType({
   type: 'document',
   initialValue: {isVisible: true},
   groups: [
-    {name: 'content', title: 'Présentation', default: true},
+    {name: 'publication', title: 'Publication', default: true},
+    {name: 'content', title: 'Présentation'},
     {name: 'homepage', title: "Page d'accueil"},
     {name: 'photos', title: 'Photos'},
     {name: 'seo', title: 'SEO & partage'},
-  ],
-  fieldsets: [
-    {
-      name: 'publication',
-      title: 'Publication',
-      description: 'Contrôle si cette collection est accessible aux visiteurs.',
-      options: {collapsible: false},
-    },
   ],
   fields: [
     defineField({
       name: 'isVisible',
       title: 'Afficher cette collection sur le site',
       type: 'boolean',
-      group: 'content',
-      fieldset: 'publication',
+      group: 'publication',
       description:
         "Désactiver pour conserver la collection dans Sanity sans l'afficher sur la page d'accueil ni créer sa page publique.",
       initialValue: true,
