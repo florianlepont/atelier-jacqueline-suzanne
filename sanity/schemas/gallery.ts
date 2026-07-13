@@ -1,5 +1,6 @@
 import {defineArrayMember, defineField, defineType} from 'sanity'
 import {orderRankField} from '@sanity/orderable-document-list'
+import {HERO_COLOR_OPTIONS, HeroColorInput} from './HeroColorInput'
 
 /**
  * Locale-aware text pair, copied verbatim from `siteSettings.ts`'s
@@ -39,17 +40,11 @@ export const gallery = defineType({
       title: 'Homepage hero color',
       type: 'string',
       description:
-        'Background color of this collection\'s text panel in the homepage carousel. The automatic palette is used when no color is selected.',
+        'Choose the background of this collection\'s homepage text panel, or keep the automatic palette.',
       options: {
-        layout: 'radio',
-        list: [
-          {title: 'Pink — #FF3B94', value: 'pink'},
-          {title: 'Purple — #AF3DFF', value: 'purple'},
-          {title: 'Teal — #55FFE1', value: 'teal'},
-          {title: 'Lime — #A6FD29', value: 'lime'},
-          {title: 'Plum — #37013A', value: 'plum'},
-        ],
+        list: HERO_COLOR_OPTIONS.map(({title, value}) => ({title, value})),
       },
+      components: {input: HeroColorInput},
     }),
     defineField({
       name: 'images',
