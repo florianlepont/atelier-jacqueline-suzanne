@@ -1,7 +1,6 @@
 import {defineArrayMember, defineField, defineType} from 'sanity'
 import {orderRankField} from '@sanity/orderable-document-list'
 import {HERO_COLOR_OPTIONS, HeroColorInput} from './HeroColorInput'
-import {GalleryImagesInput} from './GalleryImagesInput'
 import {PublishedPageLinks} from './PublishedPageLinks'
 
 // Sanity list previews intentionally expose only selected array positions,
@@ -186,7 +185,6 @@ export const gallery = defineType({
         }),
       ],
       options: {layout: 'grid'},
-      components: {input: GalleryImagesInput},
       validation: (rule) =>
         rule.custom((images) => {
           if (!Array.isArray(images) || images.length === 0) {

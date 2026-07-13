@@ -6,9 +6,17 @@ import type {
 import {orderableDocumentListDeskItem} from '@sanity/orderable-document-list'
 import {ContentPreview} from './ContentPreview'
 import {DocumentChecklist} from '../editorial/DocumentChecklist'
+import {GalleryCreditsView} from '../editorial/GalleryCreditsView'
 
 const editorViews = (S: StructureBuilder) => [
   S.view.form().title('Édition'),
+  S.view.component(DocumentChecklist).title('Checklist'),
+  S.view.component(ContentPreview).title('Aperçu du brouillon'),
+]
+
+const galleryViews = (S: StructureBuilder) => [
+  S.view.form().title('Édition'),
+  S.view.component(GalleryCreditsView).title('Crédits et droits'),
   S.view.component(DocumentChecklist).title('Checklist'),
   S.view.component(ContentPreview).title('Aperçu du brouillon'),
 ]
@@ -19,7 +27,10 @@ const checklistViews = (S: StructureBuilder) => [
 ]
 
 export const defaultDocumentNode: DefaultDocumentNodeResolver = (S, {schemaType}) => {
-  if (['gallery', 'homePage', 'aboutPage', 'contactPage'].includes(schemaType)) {
+  if (schemaType === 'gallery') {
+    return S.document().views(galleryViews(S))
+  }
+  if (['homePage', 'aboutPage', 'contactPage'].includes(schemaType)) {
     return S.document().views(editorViews(S))
   }
   if (['siteSettings', 'exhibition'].includes(schemaType)) {
