@@ -4,17 +4,17 @@ milestone: v1.2
 milestone_name: Homepage Polish (Pre-Launch)
 current_phase: 07
 current_phase_name: homepage-quick-fixes-mobile-hero-correctness
-status: executing
+status: verifying
 stopped_at: Phase 7 UI-SPEC approved
-last_updated: "2026-07-13T19:34:49.478Z"
+last_updated: "2026-07-13T22:53:52.348Z"
 last_activity: 2026-07-13
 last_activity_desc: Phase 07 execution started
 progress:
   total_phases: 13
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 28
-  completed_plans: 27
-  percent: 62
+  completed_plans: 28
+  percent: 69
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-07-13)
 
 Phase: 07 (homepage-quick-fixes-mobile-hero-correctness) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-13 — Phase 07 execution started
 
 ## Performance Metrics
@@ -67,6 +67,7 @@ Last activity: 2026-07-13 — Phase 07 execution started
 | Phase 02 P04 | 90 | 3 tasks | 3 files |
 | Phase 06 P01 | ~21h elapsed (two sessions, long overnight gap) | 3 planned tasks + live post-checkpoint follow-on | 3 files |
 | Phase 07 P01 | 15min | 2 tasks | 2 files |
+| Phase 07 P02 | ~20min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -113,6 +114,8 @@ Recent decisions affecting current work:
 - [Phase 06]: Mobile-only wordmark background-position bypass (added when the panel briefly sat below the photo) was removed once the panel returned to overlaying the photo — mobile now shares desktop's live pixel-alignment computation, not an approximation
 - [Phase 07]: [Phase 07 Plan 01]: Instagram nav link and square mode-toggle box committed together (not split per-task) since HOME-05's 44px tap-target fix directly changed HOME-04's mobile pixel-budget math
 - [Phase 07]: [Phase 07 Plan 01]: .home-header's mobile inter-item gap trimmed a second time (8px to 4px) beyond the plan's nav-only trims, to absorb the wider 44px toggle button and keep all 5 header items on one row at 393px
+- [Phase 07]: [Phase 07 Plan 02]: HOME-06's D-10 view-transition hypothesis could not be directly confirmed/reproduced under Chromium mobile emulation (test passed GREEN before and after a disable/re-enable experiment) — applied the fix anyway per D-12 since it corrects a real, identified asymmetry (.home-hero__photo/.home-hero__accent's unconditional CSS view-transition-name vs the grid tile's always-dynamic naming)
+- [Phase 07]: [Phase 07 Plan 02]: dynamic view-transition-name assignment for the hero photo/accent panel is set once per toggle click and never cleared afterward (not via transition.finished) — clearing raced a rapid second click and broke the pre-existing accent-panel fade-timing test
 
 ### Pending Todos
 
@@ -145,7 +148,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-13T19:33:48.054Z
+Last session: 2026-07-13T22:53:03.017Z
 Stopped at: Phase 7 UI-SPEC approved
 Resume file: .planning/phases/07-homepage-quick-fixes-mobile-hero-correctness/07-UI-SPEC.md
 </content>

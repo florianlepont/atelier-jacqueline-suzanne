@@ -26,7 +26,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 04.3: Homepage Refinements (INSERTED)** - Logo hover crossfade, single gallery-browsing entry point, icon-based mode toggle, mobile hero fix, three-line wordmark, clickable gallery names (completed 2026-07-12)
 - [ ] **Phase 5: Launch & Domain Cutover** - The new site is live at atelierjacquelinesuzanne.fr, replacing the old Myportfolio site
 - [x] **Phase 6: Homepage View-Mode Toggle, Grid Hero & Wordmark Cutout** - Unified carousel/grid toggle button, grid view's hero becomes the first grid tile, and the wordmark gets a transparent photo-cutout treatment (completed 2026-07-13)
-- [ ] **Phase 7: Homepage Quick Fixes & Mobile Hero Correctness** - Instagram icon in the header nav, square toggle border, and a fix for the mobile full-bleed hero regression
+- [x] **Phase 7: Homepage Quick Fixes & Mobile Hero Correctness** - Instagram icon in the header nav, square toggle border, and a fix for the mobile full-bleed hero regression (completed 2026-07-13)
 - [ ] **Phase 8: Gallery Descriptions** - Each gallery's own description text replaces the generic byline under its title, and reveals on hover in grid mode
 - [ ] **Phase 9: Progressive Homepage Image Loading** - Homepage photos load with priority and a blur-to-sharp transition, with no blocking full-screen loader
 - [ ] **Phase 10: Unified Header & Simplified Language Switcher** - Homepage header consolidated into the shared About/Contact header component; language switcher shows only the other language plus a globe icon
@@ -259,7 +259,7 @@ Plans:
   2. The carousel/grid mode toggle button has a square (not rectangular) border, in both carousel and grid modes.
   3. On first load on a mobile device (e.g. iPhone 17 Pro), the hero fills the viewport edge-to-edge with no white gap above the header and no footer visible or bleeding through beneath the hero.
 
-**Plans**: 1/2 plans executed
+**Plans**: 2/2 plans complete
 Plans:
 **Wave 1**
 
@@ -267,7 +267,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 — same file, HomeCarousel.astro)*
 
-- [ ] 07-02-PLAN.md — Mobile full-bleed hero regression fix (HOME-06): view-transition-first root-cause (D-10), CSS fix keeping the morph on mobile (D-12), Playwright iPhone-emulation regression test (D-11) (Wave 2)
+- [x] 07-02-PLAN.md — Mobile full-bleed hero regression fix (HOME-06): view-transition-first root-cause (D-10), CSS fix keeping the morph on mobile (D-12), Playwright iPhone-emulation regression test (D-11) (Wave 2)
 
 **UI hint**: yes
 
@@ -335,7 +335,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 4. Legal & Compliance | 3/3 | Complete    | 2026-07-08 |
 | 5. Launch & Domain Cutover | 0/TBD | Not started | - |
 | 6. Homepage View-Mode Toggle, Grid Hero & Wordmark Cutout | 1/1 | Complete   | 2026-07-13 |
-| 7. Homepage Quick Fixes & Mobile Hero Correctness | 1/2 | In Progress|  |
+| 7. Homepage Quick Fixes & Mobile Hero Correctness | 2/2 | Complete   | 2026-07-13 |
 | 8. Gallery Descriptions | 0/TBD | Not started | - |
 | 9. Progressive Homepage Image Loading | 0/TBD | Not started | - |
 | 10. Unified Header & Simplified Language Switcher | 0/TBD | Not started | - |
