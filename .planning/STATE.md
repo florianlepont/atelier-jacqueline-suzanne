@@ -5,8 +5,8 @@ milestone_name: Homepage Polish (Pre-Launch)
 current_phase: 7
 current_phase_name: Homepage Quick Fixes & Mobile Hero Correctness
 status: planning
-stopped_at: Phase 7 context gathered
-last_updated: "2026-07-13T18:49:46.010Z"
+stopped_at: Phase 7 UI-SPEC approved
+last_updated: "2026-07-13T19:05:24.465Z"
 last_activity: 2026-07-13
 last_activity_desc: v1.2 roadmap created (Phases 7–10)
 progress:
@@ -142,7 +142,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-13T18:49:46.002Z
-Stopped at: Phase 7 context gathered
-Resume file: .planning/phases/07-homepage-quick-fixes-mobile-hero-correctness/07-CONTEXT.md
+Last session: 2026-07-13T19:05:24.460Z
+Stopped at: Phase 7 UI-SPEC approved
+Resume file: .planning/phases/07-homepage-quick-fixes-mobile-hero-correctness/07-UI-SPEC.md
 </content>
