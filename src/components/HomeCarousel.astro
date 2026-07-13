@@ -1407,6 +1407,37 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     }
 
+    /* quick-260713-kit: locally-defined keyframes for the accent panel's
+       enter/exit fade, referenced via the FULL `animation` shorthand
+       (name + duration + timing + delay + fill-mode) below, instead of
+       the previous longhand-only override (duration/delay/timing-function
+       only). The longhand-only rule left animation-name and
+       animation-fill-mode to fall through the cascade from the browser's
+       own UA view-transition stylesheet — in the Chromium version used for
+       this fix, that UA default already happens to be `both`, so the
+       delay-window hold-at-0 already worked there, but relying on an
+       unspecified, engine-defined default for a load-bearing visual
+       guarantee is fragile (other engines are not guaranteed to default to
+       `both`). Setting the full shorthand replaces 100% of the animation
+       sub-properties, so the fade no longer depends on any UA default. */
+    @keyframes ajs-panel-fade-in {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes ajs-panel-fade-out {
+      from {
+        opacity: 1;
+      }
+      to {
+        opacity: 0;
+      }
+    }
+
     /* Direct follow-up: the accent panel (ajs-accent-panel, named above)
        gets its own fade rather than riding along with the root cross-fade —
        naming it moves it into its own group, stacked above ajs-hero-morph,
@@ -1416,11 +1447,15 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        morphing, rather than an identical simultaneous fade, reads as a
        deliberate staggered reveal — the photo settles into place, then the
        panel fades in over it — instead of everything happening at once. */
-    ::view-transition-old(ajs-accent-panel),
     ::view-transition-new(ajs-accent-panel) {
-      animation-duration: 380ms;
-      animation-delay: 100ms;
-      animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      animation: ajs-panel-fade-in 380ms cubic-bezier(0.4, 0, 0.2, 1) 100ms both;
+    }
+
+    /* Exit fade (carousel->grid direction) — no entrance delay needed
+       here, live measurement showed the exit already reads smoothly with
+       an immediate fade-out. */
+    ::view-transition-old(ajs-accent-panel) {
+      animation: ajs-panel-fade-out 380ms cubic-bezier(0.4, 0, 0.2, 1) both;
     }
 
     /* Direct follow-up: the header (ajs-header, named above) was fully
