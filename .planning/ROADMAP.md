@@ -257,7 +257,16 @@ Plans:
   2. The carousel/grid mode toggle button has a square (not rectangular) border, in both carousel and grid modes.
   3. On first load on a mobile device (e.g. iPhone 17 Pro), the hero fills the viewport edge-to-edge with no white gap above the header and no footer visible or bleeding through beneath the hero.
 
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+**Wave 1**
+
+- [ ] 07-01-PLAN.md — Header quick fixes: Instagram icon nav link (HOME-04) + square mode-toggle box with 44px tap floor (HOME-05), in HomeCarousel.astro (Wave 1)
+
+**Wave 2** *(blocked on Wave 1 — same file, HomeCarousel.astro)*
+
+- [ ] 07-02-PLAN.md — Mobile full-bleed hero regression fix (HOME-06): view-transition-first root-cause (D-10), CSS fix keeping the morph on mobile (D-12), Playwright iPhone-emulation regression test (D-11) (Wave 2)
+
 **UI hint**: yes
 
 ### Phase 8: Gallery Descriptions
