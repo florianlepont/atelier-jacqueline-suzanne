@@ -1446,9 +1446,22 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        name for the full root-cause). A short delay after the photo starts
        morphing, rather than an identical simultaneous fade, reads as a
        deliberate staggered reveal — the photo settles into place, then the
-       panel fades in over it — instead of everything happening at once. */
+       panel fades in over it — instead of everything happening at once.
+
+       Delay + duration must finish AT OR BEFORE the root/photo's 420ms
+       (see below), not after: the original 100ms delay + 380ms duration
+       finished at 480ms, a ~60ms tail where the panel was the ONLY thing
+       still animating after the photo and header had already stopped
+       moving — confirmed via CDP screencast capture (page.screenshot()
+       forces/resolves the view-transition state and cannot be trusted to
+       observe this) that this genuinely reads as "the panel appears after
+       the transition is finished," matching reported feedback exactly.
+       40ms delay + 320ms duration finishes at 360ms, comfortably inside
+       the 420ms window — still a deliberate stagger, but fully contained
+       within the same transition, nothing left moving after everything
+       else settles. */
     ::view-transition-new(ajs-accent-panel) {
-      animation: ajs-panel-fade-in 380ms cubic-bezier(0.4, 0, 0.2, 1) 100ms both;
+      animation: ajs-panel-fade-in 320ms cubic-bezier(0.4, 0, 0.2, 1) 40ms both;
     }
 
     /* Exit fade (carousel->grid direction) — no entrance delay needed
