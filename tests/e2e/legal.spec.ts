@@ -20,7 +20,7 @@ test.describe('mentions légales page content', () => {
     await page.goto('/mentions-legales/');
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
-    await expect(page.locator('h1')).toContainText('Mentions légales');
+    await expect(page.locator('main h1')).toContainText('Mentions légales');
 
     const main = page.locator('main');
     await expect(main).toContainText('Romane Lepont');
@@ -35,7 +35,7 @@ test.describe('mentions légales page content', () => {
     await page.goto('/en/mentions-legales/');
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-    await expect(page.locator('h1')).toContainText('Legal notice');
+    await expect(page.locator('main h1')).toContainText('Legal notice');
 
     const main = page.locator('main');
     await expect(main).toContainText('Romane Lepont');
@@ -58,7 +58,7 @@ test.describe('privacy policy page content', () => {
     await page.goto('/confidentialite/');
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
-    await expect(page.locator('h1')).toContainText(/confidentialité/i);
+    await expect(page.locator('main h1')).toContainText(/confidentialité/i);
 
     const main = page.locator('main');
     await expect(main).toContainText('ajs_locale');
@@ -69,7 +69,7 @@ test.describe('privacy policy page content', () => {
     await page.goto('/en/confidentialite/');
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-    await expect(page.locator('h1')).toContainText(/privacy/i);
+    await expect(page.locator('main h1')).toContainText(/privacy/i);
   });
 
   test('Privacy policy copy differs between the French and English pages', async ({ page }) => {

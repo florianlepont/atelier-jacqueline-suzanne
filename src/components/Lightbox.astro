@@ -35,6 +35,10 @@ const nextLabel = locale === 'en' ? 'Next image' : 'Image suivante';
 const slides = images.map((img) => ({
   src: fullSizeUrl(img, 2000),
   alt: img.alt?.[locale] ?? '',
+  credit: img.rights?.displayCredit === false ? '' : img.rights?.credit ?? 'Romane Lepont',
+  copyright: img.rights?.displayCredit === false
+    ? ''
+    : img.rights?.copyrightNotice ?? '© Romane Lepont — Tous droits réservés',
 }));
 ---
 
@@ -56,6 +60,7 @@ const slides = images.map((img) => ({
     </svg>
   </button>
   <img data-role="lightbox-image" class="lightbox__image" alt="" />
+  <p data-role="credit" class="lightbox__credit"></p>
   <p data-role="counter" class="lightbox__counter" aria-live="polite"></p>
 </dialog>
 
@@ -66,7 +71,7 @@ const slides = images.map((img) => ({
     parse embedded JSON. */}
 <ul hidden data-role="lightbox-data">
   {slides.map((slide) => (
-    <li data-src={slide.src} data-alt={slide.alt} />
+    <li data-src={slide.src} data-alt={slide.alt} data-credit={slide.credit} data-copyright={slide.copyright} />
   ))}
 </ul>
 
@@ -74,6 +79,8 @@ const slides = images.map((img) => ({
   interface Slide {
     src: string;
     alt: string;
+    credit: string;
+    copyright: string;
   }
 
   const dialog = document.getElementById('lightbox') as HTMLDialogElement | null;
@@ -83,9 +90,12 @@ const slides = images.map((img) => ({
     const slides: Slide[] = Array.from(dataEl.querySelectorAll<HTMLLIElement>('li')).map((li) => ({
       src: li.dataset.src ?? '',
       alt: li.dataset.alt ?? '',
+      credit: li.dataset.credit ?? '',
+      copyright: li.dataset.copyright ?? '',
     }));
     const imageEl = dialog.querySelector<HTMLImageElement>('[data-role="lightbox-image"]');
     const counterEl = dialog.querySelector<HTMLElement>('[data-role="counter"]');
+    const creditEl = dialog.querySelector<HTMLElement>('[data-role="credit"]');
     const closeBtn = dialog.querySelector<HTMLButtonElement>('[data-action="close"]');
     const prevBtn = dialog.querySelector<HTMLButtonElement>('[data-action="prev"]');
     const nextBtn = dialog.querySelector<HTMLButtonElement>('[data-action="next"]');
@@ -105,6 +115,10 @@ const slides = images.map((img) => ({
       imageEl.src = slide.src;
       imageEl.alt = slide.alt;
       counterEl.textContent = `${current + 1} / ${slides.length}`;
+      if (creditEl) {
+        creditEl.textContent = [slide.credit, slide.copyright].filter(Boolean).join(' · ');
+        creditEl.hidden = !creditEl.textContent;
+      }
       // Preload neighbours for perceived performance on prev/next.
       preload(current - 1);
       preload(current + 1);
@@ -265,5 +279,27 @@ const slides = images.map((img) => ({
     font-size: 14px; /* Label role */
     font-weight: var(--weight-regular);
     color: var(--color-dominant);
+  }
+
+  .lightbox__credit {
+    position: absolute;
+    right: var(--space-md, 16px);
+    bottom: var(--space-md, 16px);
+    max-width: min(60vw, 640px);
+    margin: 0;
+    color: var(--color-dominant);
+    font-size: 12px;
+    line-height: 1.4;
+    text-align: right;
+  }
+
+  @media (max-width: 600px) {
+    .lightbox__credit {
+      right: var(--space-sm, 8px);
+      bottom: 48px;
+      left: var(--space-sm, 8px);
+      max-width: none;
+      text-align: center;
+    }
   }
 </style>

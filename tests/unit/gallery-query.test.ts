@@ -28,7 +28,12 @@ describe('getGalleries', () => {
 
   it('returns the array fetch resolves', async () => {
     const galleries = [
-      { title: 'Rebut', slug: 'rebut', statement: { fr: 'a', en: 'b' }, images: [] },
+      {
+        title: 'Rebut',
+        slug: 'rebut',
+        statement: { fr: 'a', en: 'b' },
+        images: [],
+      },
     ];
     fetchMock.mockResolvedValueOnce(galleries);
 
@@ -46,6 +51,35 @@ describe('getGalleries', () => {
 
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('order(orderRank)'));
   });
+
+  it('projects the collection design-system hero color key', async () => {
+    fetchMock.mockResolvedValueOnce([]);
+
+    const { getGalleries } = await import('../../src/lib/sanity');
+    await getGalleries();
+
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('statement, heroColor'));
+  });
+
+  it('projects whether a collection is selected for the homepage', async () => {
+    fetchMock.mockResolvedValueOnce([]);
+
+    const { getGalleries } = await import('../../src/lib/sanity');
+    await getGalleries();
+
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('showOnHomePage'));
+  });
+
+  it('excludes collections explicitly hidden in Sanity', async () => {
+    fetchMock.mockResolvedValueOnce([]);
+
+    const { getGalleries } = await import('../../src/lib/sanity');
+    await getGalleries();
+
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('publicationStatus'));
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('isVisible == false'));
+  });
+
 });
 
 describe('getGallery', () => {
@@ -81,9 +115,67 @@ describe('getGallery', () => {
     const { getGallery } = await import('../../src/lib/sanity');
     await getGallery('rebut');
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('slug.current == $slug'),
-      { slug: 'rebut' },
-    );
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('slug.current == $slug'), {
+      slug: 'rebut',
+    });
+  });
+});
+
+describe('getAboutPage', () => {
+  beforeEach(() => {
+    fetchMock.mockReset();
+  });
+
+  it('returns null safely when the singleton is unavailable', async () => {
+    fetchMock.mockResolvedValueOnce(undefined);
+
+    const { getAboutPage } = await import('../../src/lib/sanity');
+    await expect(getAboutPage()).resolves.toBeNull();
+  });
+
+  it('queries the fixed aboutPage singleton', async () => {
+    fetchMock.mockResolvedValueOnce(null);
+
+    const { getAboutPage } = await import('../../src/lib/sanity');
+    await getAboutPage();
+
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('_id == "aboutPage"'));
+  });
+});
+
+describe('getHomePage', () => {
+  beforeEach(() => {
+    fetchMock.mockReset();
+  });
+
+  it('returns null safely when the singleton is unavailable', async () => {
+    fetchMock.mockResolvedValueOnce(undefined);
+
+    const { getHomePage } = await import('../../src/lib/sanity');
+    await expect(getHomePage()).resolves.toBeNull();
+  });
+
+  it('queries the fixed homePage singleton', async () => {
+    fetchMock.mockResolvedValueOnce(null);
+
+    const { getHomePage } = await import('../../src/lib/sanity');
+    await getHomePage();
+
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('_id == "homePage"'));
+  });
+});
+
+describe('getContactPage', () => {
+  beforeEach(() => {
+    fetchMock.mockReset();
+  });
+
+  it('queries the fixed Contact page singleton', async () => {
+    fetchMock.mockResolvedValueOnce(null);
+
+    const { getContactPage } = await import('../../src/lib/sanity');
+    await getContactPage();
+
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('_id == "contactPage"'));
   });
 });

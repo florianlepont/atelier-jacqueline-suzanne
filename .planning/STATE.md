@@ -1,36 +1,37 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
+milestone: v1.2
+milestone_name: Homepage Polish (Pre-Launch)
+current_phase: 07
+current_phase_name: homepage-quick-fixes-mobile-hero-correctness
 status: executing
-stopped_at: Phase 04.3 planned (3 plans, 2 waves, plan-checker passed)
-last_updated: "2026-07-12T06:46:13.732Z"
-last_activity: 2026-07-12
+stopped_at: Phase 7 UI-SPEC approved
+last_updated: "2026-07-13T19:34:49.478Z"
+last_activity: 2026-07-13
+last_activity_desc: Phase 07 execution started
 progress:
-  total_phases: 8
-  completed_phases: 7
-  total_plans: 25
-  completed_plans: 25
-  percent: 88
+  total_phases: 13
+  completed_phases: 8
+  total_plans: 28
+  completed_plans: 27
+  percent: 62
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-07-05)
+See: .planning/PROJECT.md (updated 2026-07-13)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; checkout follows in v1.x.)
-**Current focus:** Phase 04.3 — homepage-refinements-logo-hover-crossfade-to-match-site-chro
+**Current focus:** Phase 07 — homepage-quick-fixes-mobile-hero-correctness
 
 ## Current Position
 
-Phase: 5
-Plan: Not started
-Status: Executing Phase 04.3
-Last activity: 2026-07-12
-
-Progress: [██████████] 100%
+Phase: 07 (homepage-quick-fixes-mobile-hero-correctness) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
+Last activity: 2026-07-13 — Phase 07 execution started
 
 ## Performance Metrics
 
@@ -64,6 +65,8 @@ Progress: [██████████] 100%
 | Phase 02 P02 | 25 | 2 tasks | 5 files |
 | Phase 02 P03 | ~2h (incl. content migration + 2 real bugs found/fixed) | 3 tasks | 8 files |
 | Phase 02 P04 | 90 | 3 tasks | 3 files |
+| Phase 06 P01 | ~21h elapsed (two sessions, long overnight gap) | 3 planned tasks + live post-checkpoint follow-on | 3 files |
+| Phase 07 P01 | 15min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -73,6 +76,9 @@ Progress: [██████████] 100%
 - Phase 04.2: Social Media Links (INSERTED after Phase 4, URGENT) — Instagram link in the footer and on the About/Contact page.
 - Phase 04.3 inserted after Phase 4: Homepage Refinements: logo hover crossfade, remove standalone Galleries page (grid view on homepage is now the sole browse entry point), icon-based carousel/grid toggle, fix mobile hero visibility bug, three-line wordmark, clickable gallery names in carousel + grid modes (URGENT)
 - Phase 04.3 planned: 3 plans, 2 waves — plan-checker VERIFICATION PASSED, all 11 CONTEXT.md decisions covered
+- v1.1 milestone (Homepage Refinements) roadmapped 2026-07-12: single new Phase 6 (integer, continuing numbering from v1.0's last phase, Phase 5) covers all three v1.1 requirements (HOME-01, HOME-02, HOME-03) — tightly-scoped, single-component (HomeCarousel.astro) refinement, so kept as one phase rather than split. Per PROJECT.md, Phase 6 is intended to execute before Phase 5's domain cutover despite the higher phase number (numbering reflects milestone-arrival order, not execution sequence).
+- Phase 6 completed 2026-07-13: HOME-01/02/03 delivered per plan (commits `ad27437`..`dbebd6f`), plus a substantial live post-checkpoint follow-on (commit `44cc10d`) reworking the mobile hero (full-bleed `100svh`, panel overlaid on the photo) and replacing the arrow-button navigation with a clickable dashed progress indicator plus keyboard/swipe support — none of this follow-on was in the original plan; it was discovered through direct use after Task 3's checkpoint was already approved, and reconciled into tracked history via `06-01-SUMMARY.md` per explicit user request. v1.1 milestone is now complete; Phase 5 (Launch & Domain Cutover) is the only remaining v1 phase.
+- v1.2 milestone (Homepage Polish, Pre-Launch) roadmapped 2026-07-13: four new integer phases (7–10, continuing numbering from Phase 6) cover all eight v1.2 requirements (HOME-04..HOME-10, I18N-04), sequenced by blast radius rather than dumped into one phase — Phase 7 (HOME-04, HOME-05, HOME-06): small, contained, homepage-only header/CSS tweaks and a mobile bug fix, done first with no shared-component or content-model risk. Phase 8 (HOME-07, HOME-08): grouped together because both surface the same new per-gallery description content (Sanity schema addition), just in two display forms (carousel byline, grid hover) — building the schema once and wiring both displays in the same phase avoids doing the content-model work twice. Phase 9 (HOME-09): kept standalone — progressive image loading has its own distinct testing surface (loading states/priority/transition timing) and potentially touches more than just the homepage's own images, so it wasn't folded into Phase 7's contained fixes. Phase 10 (HOME-10, I18N-04): the highest-risk item (structural header-consolidation refactor spanning homepage + About/Contact) done last, in its own phase, depending on Phase 7 — so the header nav/toggle groundwork already fixed in Phase 7 gets carried into the unified component once, rather than rebuilt twice; I18N-04 (language switcher globe-icon change) is bundled in because its presentation lives inside the same header being unified.
 
 ### Decisions
 
@@ -82,6 +88,8 @@ Recent decisions affecting current work:
 - [Roadmap]: v1 milestone scoped to portfolio + about + contact + baseline legal + DNS cutover only; shop/checkout/exhibitions deferred to v1.x (separate future roadmap).
 - [Roadmap]: Bilingual routing + CMS scaffolding front-loaded into Phase 1 since I18N cross-cuts every later content phase.
 - [Roadmap]: Legal & Compliance (Phase 4) depends on Phase 3 (Contact) since the privacy notice must describe contact-form data handling.
+- [Roadmap]: v1.1 milestone (Homepage Refinements) mapped to a single new Phase 6, continuing integer numbering from v1.0's Phase 5 — all three requirements (HOME-01/02/03) touch the same component (HomeCarousel.astro) and are cosmetic/interaction refinements with no new backend/data model, so a single phase was judged more coherent than splitting.
+- [Roadmap]: v1.2 milestone (Homepage Polish, Pre-Launch) mapped to four new phases (7–10), continuing integer numbering from Phase 6 — split by blast radius/risk (contained visual fixes → shared content-model addition → self-contained perf change → shared-component structural refactor done last) rather than one large phase, since HOME-10/I18N-04 carry materially higher risk (multi-page shared component) than the other six requirements.
 - [Phase 01]: No SSR adapter installed for Astro (output: 'static' framework default) per OVH static-hosting constraint — OVH Web Hosting is a zero-compute Apache file server; @astrojs/cloudflare/wrangler are explicitly excluded
 - [Phase 01]: Phase 1 staging deploys to GitHub Pages (repo now public) instead of an OVH subdomain; OVH SFTP facts recorded for Phase 5 — OVH Free hosting tier cannot attach any subdomain (multisite requires paid tier); GitHub Pages reuses existing repo with zero new signup and automatic HTTPS
 - [Phase 01]: Sanity read-only + one-time write tokens created and revoked entirely via CLI (sanity tokens add/delete), no dashboard visit needed — sanity tokens add/list/delete supports full non-interactive token lifecycle management
@@ -99,6 +107,12 @@ Recent decisions affecting current work:
 - [Phase 02]: Restricted sanityClient to perspective: 'published' so build-time queries never pull in unpublished drafts — an in-progress draft gallery (title set, no images) reached getGalleries() and crashed the static build with a null images array — published-only perspective ensures Romane's mid-edit documents can never break a production build
 - [Phase 02]: Pushed to origin/main mid-phase to verify the CMS-01/lightbox checkpoint against real deployed GitHub Pages staging content, including a genuine mobile-device touch test — user chose live verification over local-only preview since real touch-swipe feel and Romane's unassisted Studio workflow can't be confidently confirmed from a local dev server
 - [Phase 02]: Overrode D-13 (all-known-projects-migrated) to close Phase 2 with 2/8 projects published (Silos, Brume) — the content-migration pipeline is proven end-to-end with real content; remaining 6 projects (Rebut, Adults, The Victorian Tea Room, Paysages, Accumulation, MADO) are tracked as follow-up content work, not a code blocker — user explicitly accepted this override
+- [Phase 06]: Mobile hero restructured into two independently-sized boxes (.home-hero__photo / .home-hero__accent) after live feedback surfaced overlap bugs — the accent panel's own in-flow height was stretching the absolutely-positioned photo/caption/arrows that shared its containing block; hardcoded pixel offsets kept breaking as content changed, so the structural fix removed the need for them
+- [Phase 06]: Mobile hero uses 100svh, not 100vh — 100vh resolves to the large (chrome-hidden) viewport on real mobile Safari, letting the site footer peek in before the user scrolls; 100svh always reflects the guaranteed-visible area
+- [Phase 06]: Prev/next arrow buttons replaced with a compact (~20-30% viewport width) clickable dashed progress indicator plus keyboard ArrowLeft/ArrowRight and touch-swipe navigation, per direct user request — arrows are gone from the component entirely
+- [Phase 06]: Mobile-only wordmark background-position bypass (added when the panel briefly sat below the photo) was removed once the panel returned to overlaying the photo — mobile now shares desktop's live pixel-alignment computation, not an approximation
+- [Phase 07]: [Phase 07 Plan 01]: Instagram nav link and square mode-toggle box committed together (not split per-task) since HOME-05's 44px tap-target fix directly changed HOME-04's mobile pixel-budget math
+- [Phase 07]: [Phase 07 Plan 01]: .home-header's mobile inter-item gap trimmed a second time (8px to 4px) beyond the plan's nav-only trims, to absorb the wider 44px toggle button and keep all 5 header items on one row at 393px
 
 ### Pending Todos
 
@@ -111,6 +125,16 @@ None currently open. Both prior research-carryover items were resolved during Ph
 - Domain email service: confirmed active (MX Plan + Zimbra mailbox) via the OVH panel — Phase 5's DNS cutover must preserve these records, not wipe the zone.
 - OVH deployment method: confirmed via the OVH panel — "Free hosting" tier, SFTP enabled on port 22, host `ftp.cluster129.hosting.ovh.net`, user `atelihu`, home dir `/home/atelihu` (see 01-02-SUMMARY.md). Note: this same Free tier cannot attach any subdomain (multisite requires a paid tier) — Phase 1 staging used GitHub Pages instead; Phase 5's production cutover plan should account for the single-domain limitation.
 
+Note: Phase 6's mobile full-bleed hero work has a reported regression (HOME-06, tracked for Phase 7) — a white gap above the header plus footer bleed-through on first load, seen on iPhone 17 Pro.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260713-hcj | Make the grid-mode hero tile's Atelier Jacqueline Suzanne wordmark bigger on mobile and give it the same transparent photo-cutout effect as the carousel wordmark | 2026-07-13 | 1b1b9e1 | [260713-hcj-make-the-grid-mode-hero-tile-s-atelier-j](./quick/260713-hcj-make-the-grid-mode-hero-tile-s-atelier-j/) |
+| 260713-jfz | Add an animated transition between carousel and grid view modes using the View Transitions API, with shared-element morphing and graceful fallback | 2026-07-13 | 57733a8 | [260713-jfz-add-an-animated-transition-between-carou](./quick/260713-jfz-add-an-animated-transition-between-carou/) |
+| 260713-kit | Fix the pink accent panel's view-transition fade — corrected to a sequential handoff (photo morph finishes, then panel fades in cleanly), not overlapping or popping | 2026-07-13 | 2a943ef | [260713-kit-the-pink-accent-panel-now-appears-only-a](./quick/260713-kit-the-pink-accent-panel-now-appears-only-a/) |
+
 ## Deferred Items
 
 Items acknowledged and carried forward from previous milestone close:
@@ -121,6 +145,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-11T17:47:00.000Z
-Stopped at: Phase 04.3 planned (3 plans, 2 waves, plan-checker passed)
-Resume file: .planning/phases/04.3-homepage-refinements-logo-hover-crossfade-to-match-site-chro/04.3-03-PLAN.md
+Last session: 2026-07-13T19:33:48.054Z
+Stopped at: Phase 7 UI-SPEC approved
+Resume file: .planning/phases/07-homepage-quick-fixes-mobile-hero-correctness/07-UI-SPEC.md
+</content>

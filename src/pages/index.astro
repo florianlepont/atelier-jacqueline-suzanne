@@ -3,20 +3,39 @@
 // + grid toggle, replacing Phase 1's placeholder. Only galleries with real
 // migrated photos appear (D-12 — filtered generically by `images.length > 0`,
 // not a hardcoded slug denylist, so it adapts automatically as more
-// galleries are migrated). Homepage copy is hardcoded (UI-SPEC "Homepage
-// intro copy source" decision) — this page does NOT read
-// welcomeHeading/welcomeBody.
+// galleries are migrated). The current homepage intro and navigation copy
+// now come from the dedicated homePage singleton, with live-copy fallbacks.
 import BaseLayout from '../layouts/BaseLayout.astro';
 import HomeCarousel from '../components/HomeCarousel.astro';
-import { getGalleries } from '../lib/sanity';
+import { getGalleries, getHomePage, getSiteSettings } from '../lib/sanity';
 import { fullSizeUrl, thumbnailUrl } from '../lib/image';
+import { getHeroTextColor, normalizeHeroColor, resolveHomepageIntro, resolveSiteCopy } from '../lib/site-config';
 
 const locale = 'fr' as const;
+const siteSettings = await getSiteSettings();
+const homePage = await getHomePage();
+const siteCopy = {
+  ...resolveSiteCopy(siteSettings, locale),
+  homepageIntro: resolveHomepageIntro(homePage, locale),
+};
+const seoTitle = homePage?.seo?.title?.[locale] ?? siteSettings?.defaultSeo?.title?.[locale] ?? 'Atelier Jacqueline Suzanne';
+const seoDescription = homePage?.seo?.description?.[locale] ?? siteSettings?.defaultSeo?.description?.[locale];
+const seoImage = homePage?.seo?.image ? fullSizeUrl(homePage.seo.image, 1200) : undefined;
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: seoTitle,
+  description: seoDescription,
+  url: Astro.url.toString(),
+  inLanguage: 'fr',
+  about: { '@type': 'Person', name: 'Romane Lepont', jobTitle: 'Photographe' },
+};
 
 const galleries = (await getGalleries())
-  .filter((gallery) => gallery.images.length > 0)
+  .filter((gallery) => gallery.showOnHomePage !== false && gallery.images.length > 0)
   .map((gallery) => {
     const cover = gallery.images[0];
+    const heroColor = normalizeHeroColor(gallery.heroColor);
     return {
       slug: gallery.slug,
       title: gallery.title,
@@ -26,10 +45,20 @@ const galleries = (await getGalleries())
       // outside the Studio's publish-time validation could still be
       // partially populated.
       alt: cover.alt?.[locale] ?? '',
+      statement: gallery.statement?.[locale] ?? '',
+      heroColor,
+      heroTextColor: heroColor ? getHeroTextColor(heroColor) : undefined,
     };
   });
 ---
 
-<BaseLayout title="Atelier Jacqueline Suzanne" headerVariant="none">
-  <HomeCarousel locale={locale} galleries={galleries} />
+<BaseLayout
+  title={seoTitle}
+  description={seoDescription}
+  socialImage={seoImage}
+  noIndex={homePage?.seo?.noIndex}
+  structuredData={structuredData}
+  headerVariant="none"
+>
+  <HomeCarousel locale={locale} galleries={galleries} siteCopy={siteCopy} />
 </BaseLayout>

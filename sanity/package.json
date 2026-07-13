@@ -15,8 +15,8 @@
     "sanity"
   ],
   "dependencies": {
+    "@sanity/locale-fr-fr": "^1.2.33",
     "@sanity/orderable-document-list": "^2.0.8",
-    "@sanity/vision": "^6.4.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "sanity": "^6.4.0",
@@ -28,6 +28,16 @@
     "eslint": "^9.28",
     "prettier": "^3.5",
     "typescript": "^5.8"
+  },
+  "overrides": {
+    "@sanity/uuid": "3.0.3",
+    "@vercel/frameworks": {
+      "js-yaml": "3.15.0",
+      "smol-toml": "1.7.0"
+    },
+    "typeid-js": {
+      "uuid": "11.1.1"
+    }
   },
   "prettier": {
     "bracketSpacing": false,

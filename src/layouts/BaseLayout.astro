@@ -5,19 +5,37 @@
 // differs (UI-SPEC Layout Notes).
 import { getRelativeLocaleUrl } from 'astro:i18n';
 import { getSiteSettings } from '../lib/sanity';
+import { resolveSiteCopy } from '../lib/site-config';
+import { fullSizeUrl } from '../lib/image';
 import LanguageSwitcher from '../components/LanguageSwitcher.astro';
-// D-02/RESEARCH.md Pattern 1: self-hosted Anton (Heading/Display role) —
-// bundles the woff2 + @font-face at build time, no Google Fonts CDN request
-// (Pitfall 1 — keeps the shipped privacy policy's data-flow enumeration
-// accurate). Swapped from Archivo Black per the logo-hover-and-font debug
-// session: Archivo Black was a self-flagged, unresearched placeholder
-// (.planning/design-import/design-system/tokens/fonts.css); Anton's
-// condensed, heavier black weight is a closer visual match to the AJS
-// wordmark logo's hand-cut brutalist character. Pending user visual sign-off.
-import '@fontsource/anton';
+// D-02/RESEARCH.md Pattern 1: self-hosted Unbounded, 900 (black) weight only
+// (Heading/Display role) — bundles the woff2 + @font-face at build time, no
+// Google Fonts CDN request (Pitfall 1 — keeps the shipped privacy policy's
+// data-flow enumeration accurate). Swapped from Anton per direct user
+// feedback (referencing mockplus.com's brutalist-fonts roundup): Anton was
+// itself a swap from Archivo Black (a self-flagged, unresearched placeholder
+// — .planning/design-import/design-system/tokens/fonts.css) via the
+// logo-hover-and-font debug session. The specific font the user pointed to
+// (#14 in that roundup, "Damian Uniqua") turned out to be a Creative Fabrica
+// font with unverified commercial/web-embedding license terms — too risky
+// for a site that sells art — so this is a free-license (SIL OFL 1.1, same
+// as Anton) Google Font lookalike instead: Unbounded is explicitly designed
+// with brutalist/constructivist influence (geometric, distinctively
+// rounded-cut corners), matching the "unique curves and bold strokes"
+// character the user was pointing at. Only the 900 (black) weight is
+// imported/loaded — every --font-display consumer already declares
+// font-weight: var(--weight-semibold) (600), but since 900 is the only
+// weight file loaded, the browser renders that single loaded weight
+// regardless of the declared number (identical behavior to how the
+// single-weight Anton import worked before it).
+import '@fontsource/unbounded/900.css';
 
 interface Props {
   title: string;
+  description?: string;
+  socialImage?: string;
+  noIndex?: boolean;
+  structuredData?: Record<string, unknown> | Record<string, unknown>[];
   // D-11/D-13/RESEARCH.md Architectural Responsibility Map: 'solid' (default)
   // is every existing page's white-on-white hairline header; 'transparent'
   // is the gallery-detail hero-scrim header (Plan 04.1-05, D-07); 'none'
@@ -26,7 +44,14 @@ interface Props {
   headerVariant?: 'solid' | 'transparent' | 'none';
 }
 
-const { title, headerVariant = 'solid' } = Astro.props;
+const {
+  title,
+  description: pageDescription,
+  socialImage: pageSocialImage,
+  noIndex = false,
+  structuredData: pageStructuredData,
+  headerVariant = 'solid',
+} = Astro.props;
 const locale = Astro.currentLocale === 'en' ? 'en' : 'fr';
 
 const siteSettings = await getSiteSettings();
@@ -37,15 +62,52 @@ const siteSettings = await getSiteSettings();
 // unguarded nested access here would fail the entire site build.
 const siteTitle = siteSettings?.siteTitle?.[locale] ?? 'Atelier Jacqueline Suzanne';
 const footerText = siteSettings?.footerText?.[locale] ?? '';
-const homeLabel = siteSettings?.navLabels?.home?.[locale] ?? (locale === 'en' ? 'Home' : 'Accueil');
+const siteCopy = resolveSiteCopy(siteSettings, locale);
+const description = pageDescription ?? siteSettings?.defaultSeo?.description?.[locale] ?? '';
+const socialImage = pageSocialImage ?? (siteSettings?.defaultSeo?.image
+  ? fullSizeUrl(siteSettings.defaultSeo.image, 1200)
+  : undefined);
+const basePath = import.meta.env.BASE_URL.endsWith('/')
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+const pathWithinBase = Astro.url.pathname.startsWith(basePath)
+  ? Astro.url.pathname.slice(basePath.length)
+  : Astro.url.pathname.replace(/^\//, '');
+const neutralPath = locale === 'en' ? pathWithinBase.replace(/^en\/?/, '') : pathWithinBase;
+const frenchPath = `${basePath}${neutralPath}`.replace(/\/+/g, '/');
+const englishPath = `${basePath}en/${neutralPath}`.replace(/\/+/g, '/');
+const siteOrigin = Astro.site ?? new URL(Astro.url.origin);
+const canonicalUrl = new URL(Astro.url.pathname, siteOrigin).toString();
+const frenchUrl = new URL(frenchPath, siteOrigin).toString();
+const englishUrl = new URL(englishPath, siteOrigin).toString();
+const defaultStructuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: siteTitle,
+  url: new URL(basePath, siteOrigin).toString(),
+  inLanguage: ['fr', 'en'],
+  publisher: {
+    '@type': 'Person',
+    name: 'Romane Lepont',
+  },
+};
+const structuredData = [
+  defaultStructuredData,
+  ...(Array.isArray(pageStructuredData)
+    ? pageStructuredData
+    : pageStructuredData
+      ? [pageStructuredData]
+      : []),
+];
+const serializedStructuredData = JSON.stringify(structuredData).replace(/</g, '\\u003c');
+// homeHref is still needed below for the logo's own link — no separate
+// "Accueil"/"Home" nav link anymore (direct user feedback: redundant,
+// since clicking the logo already goes home).
 const homeHref = getRelativeLocaleUrl(locale, '');
-// About content is not in CMS scope (CMS-01 is galleries-only), so this
-// label is a hardcoded locale conditional rather than a Sanity navLabels
-// field.
-const aboutLabel = locale === 'en' ? 'About' : 'À propos';
+// Current navigation labels are editable in the siteSettings singleton.
+const aboutLabel = siteCopy.aboutLabel;
 const aboutHref = getRelativeLocaleUrl(locale, 'about');
-// Contact content is likewise outside CMS-01's galleries-only scope.
-const contactLabel = locale === 'en' ? 'Contact' : 'Contact';
+const contactLabel = siteCopy.contactLabel;
 const contactHref = getRelativeLocaleUrl(locale, 'contact');
 // Legal pages (Phase 4, D-06): footer-only links, every page, not scoped to
 // About/Contact. Same hardcoded locale-conditional pattern as above — legal
@@ -56,11 +118,6 @@ const legalNoticeLabel = locale === 'en' ? 'Legal notice' : 'Mentions légales';
 const legalNoticeHref = getRelativeLocaleUrl(locale, 'mentions-legales');
 const privacyLabel = locale === 'en' ? 'Privacy' : 'Confidentialité';
 const privacyHref = getRelativeLocaleUrl(locale, 'confidentialite');
-// Phase 04.2 (SOCIAL-01): site-wide footer Instagram link. Absolute external
-// URL — does NOT go through getRelativeLocaleUrl (that helper is only for
-// internal/site-relative routes).
-const instagramNewTabHint = locale === 'en' ? ' (opens in new tab)' : ' (nouvelle fenêtre)';
-
 // D-11: real AJS wordmark PNG logo, header only. Base-aware (matches the
 // CR-01 precedent, 01-REVIEW.md) so the asset resolves correctly under
 // GitHub Pages' non-root base as well as OVH's root base.
@@ -76,6 +133,25 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+    <link rel="canonical" href={canonicalUrl} />
+    <link rel="alternate" hreflang="fr" href={frenchUrl} />
+    <link rel="alternate" hreflang="en" href={englishUrl} />
+    <link rel="alternate" hreflang="x-default" href={frenchUrl} />
+    <meta name="robots" content={noIndex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'} />
+    {description && <meta name="description" content={description} />}
+    <meta property="og:title" content={title} />
+    {description && <meta property="og:description" content={description} />}
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:site_name" content={siteTitle} />
+    <meta property="og:locale" content={locale === 'en' ? 'en_GB' : 'fr_FR'} />
+    <meta property="og:locale:alternate" content={locale === 'en' ? 'fr_FR' : 'en_GB'} />
+    {socialImage && <meta property="og:image" content={socialImage} />}
+    <meta name="twitter:card" content={socialImage ? 'summary_large_image' : 'summary'} />
+    <meta name="twitter:title" content={title} />
+    {description && <meta name="twitter:description" content={description} />}
+    {socialImage && <meta name="twitter:image" content={socialImage} />}
+    <script type="application/ld+json" set:html={serializedStructuredData}></script>
     <script is:inline define:vars={{ base: import.meta.env.BASE_URL }}>
       // D-03: no server/middleware exists on OVH static hosting to read
       // cookies, so a returning visitor's locale preference is honored via a
@@ -110,7 +186,6 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
           <img src={logoWhiteSrc} alt="" class="logo-mark__img logo-mark__img--hover" />
         </a>
         <nav class="site-nav" aria-label="Primary">
-          <a href={homeHref} class="nav-link">{homeLabel}</a>
           <a href={aboutHref} class="nav-link">{aboutLabel}</a>
           <a href={contactHref} class="nav-link">{contactLabel}</a>
         </nav>
@@ -125,16 +200,6 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
       <nav class="footer-legal-nav" aria-label="Legal">
         <a href={legalNoticeHref} class="nav-link">{legalNoticeLabel}</a>
         <a href={privacyHref} class="nav-link">{privacyLabel}</a>
-      </nav>
-      <nav class="footer-social-nav" aria-label="Social">
-        <a
-          href="https://www.instagram.com/ajs_romanelepont/"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="nav-link"
-        >
-          Instagram<span class="sr-only">{instagramNewTabHint}</span>
-        </a>
       </nav>
     </footer>
   </body>
@@ -173,7 +238,7 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
 
     /* Typography roles (04.1-UI-SPEC.md Typography) */
     --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-    --font-display: 'Anton', var(--font-sans);
+    --font-display: 'Unbounded', var(--font-sans);
     --weight-regular: 400;
     --weight-semibold: 600;
 
@@ -442,12 +507,6 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
   }
 
   .footer-legal-nav {
-    display: flex;
-    gap: var(--space-xl);
-    margin-top: var(--space-md);
-  }
-
-  .footer-social-nav {
     display: flex;
     gap: var(--space-xl);
     margin-top: var(--space-md);

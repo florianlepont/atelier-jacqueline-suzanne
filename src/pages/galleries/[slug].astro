@@ -38,9 +38,35 @@ const backHref = getRelativeLocaleUrl(locale, '');
 const heroImage = gallery.images[0];
 const heroSrc = fullSizeUrl(heroImage, 2000);
 const heroAlt = heroImage.alt?.[locale] ?? '';
+const seoTitle = gallery.seo?.title?.[locale] ?? `${gallery.title} — Atelier Jacqueline Suzanne`;
+const seoDescription = gallery.seo?.description?.[locale] ?? statement;
+const socialImage = fullSizeUrl(gallery.seo?.image ?? heroImage, 1200);
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'ImageGallery',
+  name: gallery.title,
+  description: seoDescription,
+  url: Astro.url.toString(),
+  inLanguage: 'fr',
+  creator: { '@type': 'Person', name: 'Romane Lepont' },
+  image: gallery.images.map((image) => ({
+    '@type': 'ImageObject',
+    contentUrl: fullSizeUrl(image, 2000),
+    caption: image.alt?.fr ?? '',
+    creditText: image.rights?.credit ?? 'Romane Lepont',
+    copyrightNotice: image.rights?.copyrightNotice ?? '© Romane Lepont — Tous droits réservés',
+  })),
+};
 ---
 
-<BaseLayout title={`${gallery.title} — Atelier Jacqueline Suzanne`} headerVariant="transparent">
+<BaseLayout
+  title={seoTitle}
+  description={seoDescription}
+  socialImage={socialImage}
+  noIndex={gallery.seo?.noIndex}
+  structuredData={structuredData}
+  headerVariant="transparent"
+>
   <div class="gallery-detail">
     <div class="gallery-detail__hero">
       <img

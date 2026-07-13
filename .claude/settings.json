@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gsd-sdk query config-get *)",
+      "Bash(gsd-sdk query agent-skills *)",
+      "Bash(gsd-sdk query init.*)",
+      "Bash(gsd-sdk query resolve-model *)",
+      "Bash(npm run build)",
+      "Bash(npx playwright test*)",
+      "Bash(npm run test:unit)",
+      "Bash(gsd-sdk query phase.mvp-mode *)",
+      "Bash(gsd-sdk query roadmap.get-phase *)",
+      "Bash(gsd-sdk query phase-plan-index *)",
+      "Bash(npx sanity documents query *)",
+      "Bash(npm run test:e2e)",
+      "Bash(gsd-sdk query check*)",
+      "Bash(gsd-sdk query current-timestamp*)",
+      "Bash(npx astro build*)",
+      "Bash(gsd-sdk query verify.*)",
+      "Bash(npx astro dev*)",
+      "Bash(gsd-sdk query todo.match-phase *)",
+      "Bash(npm run dev)",
+      "Bash(gsd-sdk query progress*)"
+    ]
+  }
+}

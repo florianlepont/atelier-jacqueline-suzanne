@@ -1,6 +1,6 @@
 import createImageUrlBuilder from '@sanity/image-url'
 import {sanityClient} from './sanity'
-import type {GalleryImage} from './sanity'
+import type {GalleryImage, SanityImage} from './sanity'
 
 /**
  * Build-time only Sanity CDN image URL builder.
@@ -23,6 +23,6 @@ export function thumbnailUrl(img: GalleryImage, size = 600): string {
  * Full-size, uncropped URL, for the lightbox (UI-SPEC: `object-fit: contain`,
  * never cropped).
  */
-export function fullSizeUrl(img: GalleryImage, maxWidth = 2000): string {
+export function fullSizeUrl(img: SanityImage, maxWidth = 2000): string {
   return builder.image(img).width(maxWidth).fit('max').auto('format').url()
 }

@@ -23,9 +23,10 @@ import Button from './Button.astro';
 
 interface Props {
   locale: 'fr' | 'en';
+  publicEmail?: string;
 }
 
-const { locale } = Astro.props;
+const { locale, publicEmail = 'contact@atelierjacquelinesuzanne.fr' } = Astro.props;
 
 const nameLabel = locale === 'en' ? 'Name' : 'Nom';
 const emailLabel = locale === 'en' ? 'Email' : 'E-mail';
@@ -43,8 +44,8 @@ const successMessage =
 // Exact mailbox alias per 03-CONTEXT.md D-07 clarification / 01-CONTEXT.md D-14.
 const submissionErrorMessage =
   locale === 'en'
-    ? 'Something went wrong. Please try again, or email me directly at contact@atelierjacquelinesuzanne.fr.'
-    : "Une erreur est survenue. Réessayez, ou écrivez-moi directement à contact@atelierjacquelinesuzanne.fr.";
+    ? `Something went wrong. Please try again, or email me directly at ${publicEmail}.`
+    : `Une erreur est survenue. Réessayez, ou écrivez-moi directement à ${publicEmail}.`;
 
 const errNameBlank = locale === 'en' ? 'Please enter your name.' : 'Merci d’indiquer votre nom.';
 const errEmailBlank = locale === 'en' ? 'Please enter your email.' : 'Merci d’indiquer votre e-mail.';

@@ -3,6 +3,9 @@ import { defineConfig } from 'astro/config';
 
 // https://astro.build/config
 export default defineConfig({
+  // Used for canonical URLs, hreflang links, robots.txt and the sitemap.
+  // Override SITE_URL when the final OVH domain replaces GitHub Pages.
+  site: process.env.SITE_URL || 'https://florianlepont.github.io',
   // Static output (framework default) — no server-rendering integration is
   // installed. OVH Web Hosting is a plain Apache file server with zero
   // request-time compute, so this project never needs @astrojs/cloudflare,

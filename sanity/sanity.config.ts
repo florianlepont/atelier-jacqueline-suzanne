@@ -1,8 +1,11 @@
 import {defineConfig} from 'sanity'
 import {structureTool} from 'sanity/structure'
-import {visionTool} from '@sanity/vision'
+import {frFRLocale} from '@sanity/locale-fr-fr'
 import {schemaTypes} from './schemas'
-import {structure} from './schemas/structure'
+import {defaultDocumentNode, structure} from './schemas/structure'
+import {EditorialDashboard} from './editorial/EditorialDashboard'
+import {resolveActions, resolveBadges} from './editorial/workflow'
+import {MediaLibrary} from './editorial/MediaLibrary'
 
 export default defineConfig({
   name: 'default',
@@ -11,10 +14,31 @@ export default defineConfig({
   projectId: 'gwz8iug4',
   dataset: 'production',
 
-  plugins: [structureTool({structure}), visionTool()],
+  // French UI for the day-to-day editor. The developer-only Vision query
+  // tool is deliberately omitted from the main navigation.
+  plugins: [
+    structureTool({title: 'Contenu du site', structure, defaultDocumentNode}),
+    frFRLocale({title: 'Français'}),
+  ],
+
+  tools: (prev) => [
+    {name: 'dashboard', title: 'Tableau de bord', component: EditorialDashboard},
+    ...prev,
+    {name: 'media', title: 'Médiathèque', component: MediaLibrary},
+  ],
 
   schema: {
     types: schemaTypes,
+    templates: (prev) => [
+      {
+        id: 'gallery',
+        title: 'Nouvelle collection photo',
+        description: 'Collection visible avec les réglages recommandés déjà préparés.',
+        schemaType: 'gallery',
+        value: {publicationStatus: 'published', showOnHomePage: true},
+      },
+      ...prev.filter((template) => template.id !== 'gallery'),
+    ],
   },
 
   document: {
@@ -25,13 +49,16 @@ export default defineConfig({
     // document (or duplicating the existing one) via those affordances.
     // A second document would make `*[_type == "siteSettings"][0]` in
     // src/lib/sanity.ts non-deterministic, silently breaking Romane's edits.
-    actions: (prev, context) =>
-      context.schemaType === 'siteSettings'
-        ? prev.filter((action) => !['duplicate'].includes(action.action ?? ''))
-        : prev,
+    actions: resolveActions,
+    badges: resolveBadges,
     newDocumentOptions: (prev, context) =>
       context.creationContext.type === 'global'
-        ? prev.filter((template) => template.templateId !== 'siteSettings')
+        ? prev.filter(
+            (template) =>
+              !['siteSettings', 'homePage', 'aboutPage', 'contactPage'].includes(
+                template.templateId,
+              ),
+          )
         : prev,
   },
 })

@@ -12,28 +12,28 @@ test.describe('locale content', () => {
     await page.goto('/');
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
-    await expect(page.locator('header')).toBeVisible();
-    await expect(page.locator('footer')).toBeVisible();
-    await expect(page.locator('header')).toContainText('FR | EN');
+    await expect(page.locator('[data-role="home-header"]')).toBeVisible();
+    await expect(page.locator('body > footer')).toBeVisible();
+    await expect(page.locator('[data-role="home-header"]')).toContainText('FR | EN');
   });
 
   test('English chrome and placeholder homepage render at "/en/"', async ({ page }) => {
     await page.goto('/en/');
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-    await expect(page.locator('header')).toBeVisible();
-    await expect(page.locator('footer')).toBeVisible();
-    await expect(page.locator('header')).toContainText('FR | EN');
+    await expect(page.locator('[data-role="home-header"]')).toBeVisible();
+    await expect(page.locator('body > footer')).toBeVisible();
+    await expect(page.locator('[data-role="home-header"]')).toContainText('FR | EN');
   });
 
   test('site-title/nav/footer copy differs between the French and English pages', async ({ page }) => {
     await page.goto('/');
-    const frHeader = await page.locator('header').innerText();
-    const frFooter = await page.locator('footer').innerText();
+    const frHeader = await page.locator('[data-role="home-header"]').innerText();
+    const frFooter = await page.locator('body > footer').innerText();
 
     await page.goto('/en/');
-    const enHeader = await page.locator('header').innerText();
-    const enFooter = await page.locator('footer').innerText();
+    const enHeader = await page.locator('[data-role="home-header"]').innerText();
+    const enFooter = await page.locator('body > footer').innerText();
 
     expect(enHeader).not.toBe(frHeader);
     expect(enFooter).not.toBe(frFooter);
