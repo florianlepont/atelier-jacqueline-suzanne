@@ -319,6 +319,118 @@ test.describe('view-transition accent-panel fade timing (quick-260713-kit)', () 
   });
 });
 
+// Phase 07 Plan 01, Task 1 (HOME-04, D-01-D-05): Instagram icon link in the
+// homepage header nav, reusing the footer's existing link semantics
+// (04.2-01-SUMMARY.md) rather than re-deriving new behavior.
+test.describe('Instagram nav link (HOME-04)', () => {
+  test('exactly one Instagram link exists in the header with correct href/target/rel', async ({ page }) => {
+    await page.goto('/');
+
+    const header = page.locator('header');
+    const instagramLink = header.locator('a[href="https://www.instagram.com/ajs_romanelepont/"]');
+    await expect(instagramLink).toHaveCount(1);
+    await expect(instagramLink).toHaveAttribute('target', '_blank');
+    const rel = await instagramLink.getAttribute('rel');
+    expect(rel).toContain('noopener');
+    expect(rel).toContain('noreferrer');
+  });
+
+  test('the link renders an inline svg icon (not visible text) with an accessible name of Instagram', async ({ page }) => {
+    await page.goto('/');
+
+    const link = page.locator('header a[href="https://www.instagram.com/ajs_romanelepont/"]');
+    await expect(link.locator('svg')).toHaveCount(1);
+    // Accessible name check via ARIA role query, scoped to the header — proves
+    // the header's link has a discoverable name of "Instagram" without
+    // relying on visible text (the pre-existing footer link also matches
+    // this href, so this must be scoped, not page-wide).
+    const header = page.locator('header');
+    await expect(header.getByRole('link', { name: 'Instagram', exact: false })).toHaveCount(1);
+  });
+
+  test('DOM order: the Instagram link comes after the Contact link inside .home-nav', async ({ page }) => {
+    await page.goto('/');
+
+    const navLinks = page.locator('.home-nav > a');
+    const hrefs = await navLinks.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
+    const contactIndex = hrefs.findIndex((href) => href?.includes('contact'));
+    const instagramIndex = hrefs.findIndex((href) => href === 'https://www.instagram.com/ajs_romanelepont/');
+    expect(contactIndex).toBeGreaterThanOrEqual(0);
+    expect(instagramIndex).toBeGreaterThan(contactIndex);
+  });
+
+  test('at a 393px mobile viewport the Instagram link is visible with no horizontal page overflow', async ({ page }) => {
+    await page.setViewportSize({ width: 393, height: 800 });
+    await page.goto('/');
+
+    // Scoped to .home-nav — the pre-existing footer Instagram link also
+    // matches this href but is not the subject of this mobile-fit assertion.
+    const instagramLink = page.locator('.home-nav a[href="https://www.instagram.com/ajs_romanelepont/"]');
+    await expect(instagramLink).toBeVisible();
+
+    const overflow = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      innerWidth: window.innerWidth,
+    }));
+    expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.innerWidth);
+  });
+
+  test('the sr-only new-tab hint is locale-conditional (FR vs EN)', async ({ page }) => {
+    // textContent (not innerText) preserves the exact leading-space string —
+    // rendered innerText collapses/trims whitespace, which would falsely
+    // strip the leading space this string is defined with.
+    await page.goto('/en/');
+    const enHint = await page
+      .locator('.home-nav a[href="https://www.instagram.com/ajs_romanelepont/"] .sr-only')
+      .evaluate((el) => el.textContent);
+    expect(enHint).toBe(' (opens in new tab)');
+
+    await page.goto('/');
+    const frHint = await page
+      .locator('.home-nav a[href="https://www.instagram.com/ajs_romanelepont/"] .sr-only')
+      .evaluate((el) => el.textContent);
+    expect(frHint).toBe(' (nouvelle fenêtre)');
+  });
+});
+
+test.describe('square mode-toggle box (HOME-05)', () => {
+  test('carousel mode: .home-toggle__box is a square and .home-toggle clears the 44px tap-target floor', async ({ page }) => {
+    await page.goto('/');
+
+    const box = page.locator('.home-toggle__box');
+    const boxBox = await box.boundingBox();
+    expect(boxBox).not.toBeNull();
+    expect(Math.abs((boxBox!.width ?? 0) - (boxBox!.height ?? 0))).toBeLessThanOrEqual(1);
+
+    const toggle = page.locator('[data-role="mode-toggle"]');
+    const toggleBox = await toggle.boundingBox();
+    expect(toggleBox).not.toBeNull();
+    expect(toggleBox!.width).toBeGreaterThanOrEqual(44);
+    expect(toggleBox!.height).toBeGreaterThanOrEqual(44);
+  });
+
+  test('grid mode: .home-toggle__box remains a square', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+
+    const box = page.locator('.home-toggle__box');
+    const boxBox = await box.boundingBox();
+    expect(boxBox).not.toBeNull();
+    expect(Math.abs((boxBox!.width ?? 0) - (boxBox!.height ?? 0))).toBeLessThanOrEqual(1);
+  });
+
+  test('the visible border lives on .home-toggle__box and the single-toggle contract is unchanged', async ({ page }) => {
+    await page.goto('/');
+
+    const box = page.locator('.home-toggle__box');
+    const borderWidth = await box.evaluate((el) => parseFloat(getComputedStyle(el).borderWidth));
+    expect(borderWidth).toBeGreaterThan(0);
+
+    await expect(page.locator('[data-role="mode-toggle"]')).toHaveCount(1);
+    await expect(page.locator('.home-toggle__btn')).toHaveCount(0);
+  });
+});
+
 test.describe('mobile hero visibility (D-08)', () => {
   test('hero renders visibly at a 375px-wide viewport, not collapsed/blank', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
