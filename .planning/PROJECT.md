@@ -33,6 +33,11 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 - [x] In grid view, the hero is the first tile of the grid (not a separate full-width band above it), with its intro paragraph as overlay text and no CTA button — Phase 6
 - [x] The "Atelier Jacqueline Suzanne" wordmark uses a transparent cutout effect revealing the photo behind the letters, at least in carousel mode — Phase 6
 
+**v1.2 (Homepage Quick Fixes & Mobile Hero Correctness — Phase 7, shipped 2026-07-13):**
+- [x] Visitor can reach Romane's Instagram via an icon link in the header nav (HOME-04) — Phase 7
+- [x] The carousel/grid toggle button has a square border (HOME-05) — Phase 7
+- [x] Mobile hero is genuinely full-bleed on first load — no white gap above the header, no footer bleed-through (HOME-06) — Phase 7
+
 ### Active
 
 **v1 (replace current site):**
@@ -44,9 +49,6 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 - [ ] Site is reachable at the existing domain, atelierjacquelinesuzanne.fr
 
 **v1.2 (homepage polish, this milestone):**
-- [ ] Visitor can reach Romane's Instagram via an icon link in the header nav
-- [ ] The carousel/grid toggle button has a square border
-- [ ] Mobile hero is genuinely full-bleed on first load — no white gap above the header, no footer bleed-through (regression from v1.1's 100svh work, reported on iPhone 17 Pro)
 - [ ] Each gallery's own description text shows under its title on the homepage, replacing the generic byline
 - [ ] Language switcher shows only the other language (plus a globe icon), not both FR/EN
 - [ ] Homepage photos load progressively (priority + blur-to-sharp), no blocking loading screen
@@ -125,4 +127,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-13 — milestone v1.1 (Homepage Refinements) shipped; milestone v1.2 (Homepage Polish, Pre-Launch) started*
+*Last updated: 2026-07-13 — Phase 7 (Homepage Quick Fixes & Mobile Hero Correctness) shipped within milestone v1.2 (Homepage Polish, Pre-Launch)*
