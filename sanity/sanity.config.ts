@@ -1,6 +1,7 @@
 import {defineConfig} from 'sanity'
 import {structureTool} from 'sanity/structure'
 import {frFRLocale} from '@sanity/locale-fr-fr'
+import {DashboardIcon, DocumentsIcon, ImagesIcon} from '@sanity/icons'
 import {schemaTypes} from './schemas'
 import {defaultDocumentNode, structure} from './schemas/structure'
 import {EditorialDashboard} from './editorial/EditorialDashboard'
@@ -17,14 +18,24 @@ export default defineConfig({
   // French UI for the day-to-day editor. The developer-only Vision query
   // tool is deliberately omitted from the main navigation.
   plugins: [
-    structureTool({title: 'Contenu du site', structure, defaultDocumentNode}),
+    structureTool({
+      title: 'Contenu du site',
+      icon: DocumentsIcon,
+      structure,
+      defaultDocumentNode,
+    }),
     frFRLocale({title: 'Français'}),
   ],
 
   tools: (prev) => [
-    {name: 'dashboard', title: 'Tableau de bord', component: EditorialDashboard},
+    {
+      name: 'dashboard',
+      title: 'Tableau de bord',
+      icon: DashboardIcon,
+      component: EditorialDashboard,
+    },
     ...prev,
-    {name: 'media', title: 'Médiathèque', component: MediaLibrary},
+    {name: 'media', title: 'Médiathèque', icon: ImagesIcon, component: MediaLibrary},
   ],
 
   schema: {

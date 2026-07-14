@@ -4,6 +4,7 @@ import type {
   StructureResolver,
 } from 'sanity/structure'
 import {orderableDocumentListDeskItem} from '@sanity/orderable-document-list'
+import {CalendarIcon, CogIcon, EnvelopeIcon, HomeIcon, ImagesIcon, UserIcon} from '@sanity/icons'
 import {ContentPreview} from './ContentPreview'
 import {DocumentChecklist} from '../editorial/DocumentChecklist'
 import {GalleryCreditsView} from '../editorial/GalleryCreditsView'
@@ -55,6 +56,7 @@ export const structure: StructureResolver = (S, context) =>
       S.listItem()
         .title('Réglages du site')
         .id('siteSettings')
+        .icon(CogIcon)
         .child(
           S.document()
             .schemaType('siteSettings')
@@ -64,24 +66,28 @@ export const structure: StructureResolver = (S, context) =>
       S.listItem()
         .title("Page d'accueil")
         .id('homePage')
+        .icon(HomeIcon)
         .child(S.document().schemaType('homePage').documentId('homePage').views(editorViews(S))),
       S.listItem()
         .title('Page À propos')
         .id('aboutPage')
+        .icon(UserIcon)
         .child(S.document().schemaType('aboutPage').documentId('aboutPage').views(editorViews(S))),
       S.listItem()
         .title('Page Contact')
         .id('contactPage')
+        .icon(EnvelopeIcon)
         .child(
           S.document().schemaType('contactPage').documentId('contactPage').views(editorViews(S)),
         ),
       orderableDocumentListDeskItem({
         type: 'gallery',
         title: 'Collections photo',
+        icon: ImagesIcon,
         S,
         context,
       }),
-      S.documentTypeListItem('exhibition').title('Agenda / Expositions'),
+      S.documentTypeListItem('exhibition').title('Agenda / Expositions').icon(CalendarIcon),
       ...S.documentTypeListItems().filter(
         (listItem) =>
           ![
