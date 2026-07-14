@@ -1,8 +1,8 @@
 import {useEffect, useMemo, useState} from 'react'
 import type {ComponentType} from 'react'
 import {Badge, Box, Button, Card, Flex, Grid, Heading, Spinner, Stack, Text} from '@sanity/ui'
-import {ToolLink, useClient} from 'sanity'
-import {IntentLink} from 'sanity/router'
+import {useClient, useWorkspace} from 'sanity'
+import {IntentLink, Link} from 'sanity/router'
 import {AddIcon, CalendarIcon, HomeIcon, ImagesIcon} from '@sanity/icons'
 import {deploymentLabel, getLatestDeployment, SITE_PREVIEW_URL} from './deployment'
 import type {DeploymentRun} from './deployment'
@@ -76,6 +76,7 @@ function isGalleryOnline(document: DashboardDocument) {
 
 export function EditorialDashboard() {
   const client = useClient({apiVersion: '2025-08-15'})
+  const {basePath} = useWorkspace()
   const [documents, setDocuments] = useState<DashboardDocument[]>([])
   const [run, setRun] = useState<DeploymentRun | null>(null)
   const [loading, setLoading] = useState(true)
@@ -191,9 +192,22 @@ export function EditorialDashboard() {
               intent="edit"
               params={{id: 'homePage', type: 'homePage'}}
             />
-            <ToolLink name="media" style={{color: 'inherit', textDecoration: 'none'}}>
+            {/*
+              Deliberately `Link` (raw href), not `ToolLink`: this component is rendered
+              *inside* the active 'dashboard' tool's own view, which Studio wraps in a
+              `RouteScope` scoped to 'dashboard'. `ToolLink`/`StateLink` resolve their href
+              through that scoped router, which nests the target tool's state under the
+              current tool's own key instead of replacing it (e.g. `{tool: 'dashboard',
+              dashboard: {tool: 'media', ...}}`) — since the 'dashboard' tool has no router,
+              that nested state can't be mapped to a URL and crashes Studio's router. `Link`
+              bypasses state resolution entirely by taking an already-resolved absolute href.
+            */}
+            <Link
+              href={`${basePath.replace(/\/$/, '')}/media`}
+              style={{color: 'inherit', textDecoration: 'none'}}
+            >
               <QuickActionContent icon={ImagesIcon} label="Photos et crédits" />
-            </ToolLink>
+            </Link>
           </Grid>
         </Stack>
 
@@ -409,13 +423,31 @@ function QuickActionContent({icon: Icon, label}: {icon: ComponentType; label: st
 function AttentionSection({group}: {group: AttentionGroup}) {
   return (
     <Card radius={3} shadow={1} overflow="hidden">
-      <Box padding={3} style={{borderBottom: '1px solid var(--card-border-color)'}}>
+      <Card
+        tone={group.tone}
+        padding={3}
+        style={{borderBottom: '1px solid var(--card-border-color)'}}
+      >
         <Flex align="center" gap={2} wrap="wrap">
-          <Badge mode="light" tone={group.tone}>
-            {group.rows.length}
-          </Badge>
+          <Card
+            tone={group.tone}
+            radius={4}
+            style={{
+              width: 24,
+              height: 24,
+              flex: '0 0 auto',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '50%',
+            }}
+          >
+            <Text size={0} weight="semibold">
+              {group.rows.length}
+            </Text>
+          </Card>
           <Stack space={1}>
-            <Text size={1} weight="semibold">
+            <Text size={1} weight="bold">
               {group.title}
             </Text>
             <Text muted size={0}>
@@ -423,10 +455,15 @@ function AttentionSection({group}: {group: AttentionGroup}) {
             </Text>
           </Stack>
         </Flex>
-      </Box>
+      </Card>
       <Stack space={0}>
         {group.rows.map((row, index) => (
-          <ContentRow key={row.id} row={row} withBorder={index < group.rows.length - 1} />
+          <ContentRow
+            key={row.id}
+            row={row}
+            withBorder={index < group.rows.length - 1}
+            accentTone={group.tone}
+          />
         ))}
       </Stack>
     </Card>
@@ -503,7 +540,15 @@ function DeploymentCard({run}: {run: DeploymentRun | null}) {
   )
 }
 
-function ContentRow({row, withBorder}: {row: DashboardRow; withBorder: boolean}) {
+function ContentRow({
+  row,
+  withBorder,
+  accentTone,
+}: {
+  row: DashboardRow
+  withBorder: boolean
+  accentTone: DashboardTone
+}) {
   const missing = row.summary.totalCount - row.summary.completeCount
   const missingChecks = row.checks.filter((check) => !check.complete)
   const status = editorialStatus(row)
@@ -514,48 +559,55 @@ function ContentRow({row, withBorder}: {row: DashboardRow; withBorder: boolean})
       style={{color: 'inherit', textDecoration: 'none'}}
     >
       <Card
-        padding={3}
         tone="transparent"
         style={{borderBottom: withBorder ? '1px solid var(--card-border-color)' : undefined}}
       >
-        <Flex align="center" justify="space-between" gap={3} wrap="wrap">
-          <Stack space={2} style={{minWidth: 0, flex: '1 1 520px'}}>
-            <Text size={1} weight="semibold" textOverflow="ellipsis">
-              {documentTitle(row.current)}
-            </Text>
-            <Flex align="center" gap={2} wrap="wrap">
-              <Text muted size={0}>
-                {typeLabels[row.current._type]}
-              </Text>
-              <Badge fontSize={0} mode="light" tone={status.tone}>
-                {status.label}
-              </Badge>
-              {!row.summary.requiredComplete && (
-                <Badge fontSize={0} mode="outline" tone="critical">
-                  Contenu incomplet
+        <Flex>
+          <Card tone={accentTone} style={{width: 4}} />
+          <Box padding={3} style={{minWidth: 0, flex: 1}}>
+            <Flex align="center" justify="space-between" gap={3} wrap="wrap">
+              <Stack space={2} style={{minWidth: 0, flex: '1 1 520px'}}>
+                <Text size={1} weight="semibold" textOverflow="ellipsis">
+                  {documentTitle(row.current)}
+                </Text>
+                <Flex align="center" gap={2} wrap="wrap">
+                  <Text muted size={0}>
+                    {typeLabels[row.current._type]}
+                  </Text>
+                  <Badge fontSize={0} mode="light" tone={status.tone}>
+                    {status.label}
+                  </Badge>
+                  {!row.summary.requiredComplete && (
+                    <Badge fontSize={0} mode="outline" tone="critical">
+                      Contenu incomplet
+                    </Badge>
+                  )}
+                  {row.summary.requiredComplete && !row.summary.recommendedComplete && (
+                    <Badge fontSize={0} mode="outline" tone="primary">
+                      SEO à compléter
+                    </Badge>
+                  )}
+                </Flex>
+                {missingChecks.length > 0 && (
+                  <Text muted size={0} textOverflow="ellipsis">
+                    Manque : {missingChecks.slice(0, 2).map((check) => check.label).join(' · ')}
+                    {missingChecks.length > 2 ? ` · +${missingChecks.length - 2} autre(s)` : ''}
+                  </Text>
+                )}
+              </Stack>
+              <Flex align="center" gap={2}>
+                <Badge mode="light" tone={accentTone}>
+                  {missing}
                 </Badge>
-              )}
-              {row.summary.requiredComplete && !row.summary.recommendedComplete && (
-                <Badge fontSize={0} mode="outline" tone="primary">
-                  SEO à compléter
-                </Badge>
-              )}
+                <Text muted size={1}>
+                  à compléter
+                </Text>
+                <Text muted size={1}>
+                  ›
+                </Text>
+              </Flex>
             </Flex>
-            {missingChecks.length > 0 && (
-              <Text muted size={0}>
-                Manque : {missingChecks.slice(0, 3).map((check) => check.label).join(' · ')}
-                {missingChecks.length > 3 ? ` · +${missingChecks.length - 3} autre(s)` : ''}
-              </Text>
-            )}
-          </Stack>
-          <Flex align="center" gap={2}>
-            <Text muted size={1}>
-              {missing} à compléter
-            </Text>
-            <Text muted size={1}>
-              ›
-            </Text>
-          </Flex>
+          </Box>
         </Flex>
       </Card>
     </IntentLink>
