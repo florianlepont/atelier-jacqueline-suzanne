@@ -330,13 +330,22 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         // blurred placeholder as it lazy-loads into view.
         const gridTileImgs = Array.from(document.querySelectorAll<HTMLImageElement>('.home-grid__tile-img--sharp'));
         gridTileImgs.forEach((img) => {
-          const markLoaded = () => img.classList.add('is-loaded');
-          if (img.complete) markLoaded();
-          else img.addEventListener('load', markLoaded, { once: true });
+          if (img.complete) {
+            showSharp(img);
+          } else {
+            img.addEventListener('load', () => showSharp(img), { once: true });
+            // A failed fetch never fires 'load' — without this, a broken image
+            // leaves the tile stuck on its blurred placeholder forever.
+            img.addEventListener('error', () => showSharp(img), { once: true });
+          }
         });
 
         let carouselIndex = 0;
         let timer: ReturnType<typeof setInterval> | null = null;
+        // Cancels the previous render()'s pending hero load/error listeners so
+        // rapid swaps (fast clicks/swipes) don't stack up never-fired 'load'
+        // listeners on heroImg (each abandoned request never fires 'load').
+        let pendingHeroLoadCtrl: AbortController | null = null;
 
         function showSharp(img: HTMLImageElement) {
           img.classList.add('is-loaded');
@@ -406,14 +415,23 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             heroImg.classList.remove('is-loaded'); // Pitfall 3: must precede src reassignment
             heroImg.src = gallery.heroSrc;
             heroImg.alt = gallery.alt;
+            // Abort the previous render()'s pending listeners first — a superseded
+            // request never fires 'load', so without this, rapid swaps stack up
+            // never-fired { once: true } listeners on heroImg indefinitely.
+            pendingHeroLoadCtrl?.abort();
             if (heroImg.complete) {
               showSharp(heroImg);
               syncWordmarkAlignment();
             } else {
-              heroImg.addEventListener('load', () => {
+              pendingHeroLoadCtrl = new AbortController();
+              const onSettle = () => {
                 showSharp(heroImg);
                 syncWordmarkAlignment();
-              }, { once: true });
+              };
+              // 'error' covers a failed fetch (bad asset, transient CDN issue) —
+              // without it the hero stays stuck on the blurred placeholder forever.
+              heroImg.addEventListener('load', onSettle, { once: true, signal: pendingHeroLoadCtrl.signal });
+              heroImg.addEventListener('error', onSettle, { once: true, signal: pendingHeroLoadCtrl.signal });
             }
           }
           if (indexLabel) {

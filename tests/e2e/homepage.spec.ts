@@ -655,6 +655,10 @@ test.describe('progressive image loading (HOME-09)', () => {
     const tiles = page.locator('a.home-grid__tile');
     expect(await tiles.count()).toBeGreaterThan(0);
     for (const tile of await tiles.all()) {
+      // Sharp tile images use loading="lazy" (D-03) — scroll each tile into
+      // view first so its request actually fires, regardless of how many
+      // galleries exist or how many fit in the initial viewport.
+      await tile.scrollIntoViewIfNeeded();
       const placeholder = tile.locator('.home-grid__tile-img-placeholder');
       await expect(placeholder).toHaveAttribute('src', /cdn\.sanity\.io/);
       const sharp = tile.locator('.home-grid__tile-img--sharp');
