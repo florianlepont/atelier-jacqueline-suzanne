@@ -42,6 +42,9 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 - [x] Each gallery's own description text shows under its title on the homepage, replacing the generic byline (HOME-07) — Phase 8
 - [x] Hovering a grid-mode tile reveals that collection's description (HOME-08) — Phase 8
 
+**v1.2 (Progressive Homepage Image Loading — Phase 9, shipped 2026-07-14):**
+- [x] Homepage photos load progressively (priority + blur-to-sharp), no blocking loading screen (HOME-09) — Phase 9
+
 ### Active
 
 **v1 (replace current site):**
@@ -54,7 +57,6 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 
 **v1.2 (homepage polish, this milestone):**
 - [ ] Language switcher shows only the other language (plus a globe icon), not both FR/EN
-- [ ] Homepage photos load progressively (priority + blur-to-sharp), no blocking loading screen
 - [ ] Homepage header is visually identical to the About/Contact header by construction (shared component)
 
 **v1.x (add shop, deferred until v1 is live — see REQUIREMENTS.md v2 section):**
@@ -111,6 +113,7 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 | Legal-content accuracy (identity, OVH host block, D-10 business-status wording, D-09 address/phone placeholder) requires explicit human sign-off before launch, not just automated test coverage | A mentions légales / privacy page that renders and passes e2e tests can still disclose an inaccurate legal identity or business status — no automated check can catch that. Phase 4's Plan 03 was a blocking, never-auto-approvable human-verify checkpoint for exactly this reason. | Confirmed — Florian signed off 2026-07-08 (04-03-SUMMARY.md), no corrections requested |
 | Rebrand: adopt the imported design system's monochrome + pop-pink identity (`#FFFFFF` dominant, `#1A1A1A` ink, `#FF3B94` accent, Archivo Black display font), superseding Phase 2's Dawn Pink / Woodsmoke / Wild Strawberry / Delight identity | Florian imported a design system + homepage prototype generated via Claude Design (see `.planning/design-import/`). The generated system was built from a stale, pre-Phase-2 repo snapshot and flagged the conflict itself; Florian explicitly chose to switch to its palette as the real rebrand direction rather than keep Phase 2's shipped identity. Two new phases inserted before Phase 5 to execute this: design-system/homepage refresh, and social media links. | Confirmed — Florian's explicit choice 2026-07-08, see `.planning/design-import/README.md` |
 | Phase 8 (HOME-07/HOME-08) implemented directly on `main` outside the `/gsd-plan-phase`→`/gsd-execute-phase` cycle, then retroactively verified and closed via `/gsd-discuss-phase 8` | Florian shipped the gallery-description byline/hover-reveal work himself (commits `38457dd`..`602d24b`, 2026-07-13/14), reusing the existing `gallery.statement` field from Phase 2 rather than adding a new schema field. `/gsd-discuss-phase 8` found it already complete with dedicated e2e coverage; Florian confirmed it as the intended deliverable rather than re-planning from scratch. | Confirmed — verified 2026-07-14 (13/13 unit tests, 23/23 e2e tests passing), see `.planning/phases/08-gallery-descriptions/08-SUMMARY.md` |
+| Progressive image loading (HOME-09): blur-up placeholders sourced from Sanity's CDN `.blur()` param (no new dependency), applied to the hero on every swap and to grid tiles, with next-photo prefetch and a quick/subtle (~260ms) crossfade | User chose the more thorough option at every gray area during `/gsd-discuss-phase 9` — every-swap hero blur-up (not just first load), grid tiles included, and background prefetch — prioritizing a uniformly polished feel over minimizing implementation surface. Code review (09-REVIEW.md) found 4 warnings (missing image error handlers, listener accumulation, a test that would flake once more galleries are migrated) — all fixed in commit `39144b9`. The verifier also flagged the D-05 prefetch claim as code-present-but-unverified; rather than route to manual DevTools verification, an automated Playwright test asserting the actual network request was added (commit `65bfabc`) since it's a mechanical behavior, not a subjective judgment. | Confirmed — verified 2026-07-14 (7/7 must-haves, 76/76 e2e, 40/40 unit tests passing), see `.planning/phases/09-progressive-homepage-image-loading/09-VERIFICATION.md` |
 
 ## Evolution
 
@@ -130,4 +133,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-14 — Phase 8 (Gallery Descriptions) retroactively verified and closed within milestone v1.2 (Homepage Polish, Pre-Launch)*
+*Last updated: 2026-07-14 — Phase 9 (Progressive Homepage Image Loading) shipped within milestone v1.2 (Homepage Polish, Pre-Launch)*
