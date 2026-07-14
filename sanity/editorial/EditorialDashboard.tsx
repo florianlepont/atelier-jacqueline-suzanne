@@ -458,7 +458,12 @@ function AttentionSection({group}: {group: AttentionGroup}) {
       </Card>
       <Stack space={0}>
         {group.rows.map((row, index) => (
-          <ContentRow key={row.id} row={row} withBorder={index < group.rows.length - 1} />
+          <ContentRow
+            key={row.id}
+            row={row}
+            withBorder={index < group.rows.length - 1}
+            accentTone={group.tone}
+          />
         ))}
       </Stack>
     </Card>
@@ -535,7 +540,15 @@ function DeploymentCard({run}: {run: DeploymentRun | null}) {
   )
 }
 
-function ContentRow({row, withBorder}: {row: DashboardRow; withBorder: boolean}) {
+function ContentRow({
+  row,
+  withBorder,
+  accentTone,
+}: {
+  row: DashboardRow
+  withBorder: boolean
+  accentTone: DashboardTone
+}) {
   const missing = row.summary.totalCount - row.summary.completeCount
   const missingChecks = row.checks.filter((check) => !check.complete)
   const status = editorialStatus(row)
@@ -546,48 +559,55 @@ function ContentRow({row, withBorder}: {row: DashboardRow; withBorder: boolean})
       style={{color: 'inherit', textDecoration: 'none'}}
     >
       <Card
-        padding={3}
         tone="transparent"
         style={{borderBottom: withBorder ? '1px solid var(--card-border-color)' : undefined}}
       >
-        <Flex align="center" justify="space-between" gap={3} wrap="wrap">
-          <Stack space={2} style={{minWidth: 0, flex: '1 1 520px'}}>
-            <Text size={1} weight="semibold" textOverflow="ellipsis">
-              {documentTitle(row.current)}
-            </Text>
-            <Flex align="center" gap={2} wrap="wrap">
-              <Text muted size={0}>
-                {typeLabels[row.current._type]}
-              </Text>
-              <Badge fontSize={0} mode="light" tone={status.tone}>
-                {status.label}
-              </Badge>
-              {!row.summary.requiredComplete && (
-                <Badge fontSize={0} mode="outline" tone="critical">
-                  Contenu incomplet
+        <Flex>
+          <Card tone={accentTone} style={{width: 4}} />
+          <Box padding={3} style={{minWidth: 0, flex: 1}}>
+            <Flex align="center" justify="space-between" gap={3} wrap="wrap">
+              <Stack space={2} style={{minWidth: 0, flex: '1 1 520px'}}>
+                <Text size={1} weight="semibold" textOverflow="ellipsis">
+                  {documentTitle(row.current)}
+                </Text>
+                <Flex align="center" gap={2} wrap="wrap">
+                  <Text muted size={0}>
+                    {typeLabels[row.current._type]}
+                  </Text>
+                  <Badge fontSize={0} mode="light" tone={status.tone}>
+                    {status.label}
+                  </Badge>
+                  {!row.summary.requiredComplete && (
+                    <Badge fontSize={0} mode="outline" tone="critical">
+                      Contenu incomplet
+                    </Badge>
+                  )}
+                  {row.summary.requiredComplete && !row.summary.recommendedComplete && (
+                    <Badge fontSize={0} mode="outline" tone="primary">
+                      SEO à compléter
+                    </Badge>
+                  )}
+                </Flex>
+                {missingChecks.length > 0 && (
+                  <Text muted size={0} textOverflow="ellipsis">
+                    Manque : {missingChecks.slice(0, 2).map((check) => check.label).join(' · ')}
+                    {missingChecks.length > 2 ? ` · +${missingChecks.length - 2} autre(s)` : ''}
+                  </Text>
+                )}
+              </Stack>
+              <Flex align="center" gap={2}>
+                <Badge mode="light" tone={accentTone}>
+                  {missing}
                 </Badge>
-              )}
-              {row.summary.requiredComplete && !row.summary.recommendedComplete && (
-                <Badge fontSize={0} mode="outline" tone="primary">
-                  SEO à compléter
-                </Badge>
-              )}
+                <Text muted size={1}>
+                  à compléter
+                </Text>
+                <Text muted size={1}>
+                  ›
+                </Text>
+              </Flex>
             </Flex>
-            {missingChecks.length > 0 && (
-              <Text muted size={0}>
-                Manque : {missingChecks.slice(0, 3).map((check) => check.label).join(' · ')}
-                {missingChecks.length > 3 ? ` · +${missingChecks.length - 3} autre(s)` : ''}
-              </Text>
-            )}
-          </Stack>
-          <Flex align="center" gap={2}>
-            <Text muted size={1}>
-              {missing} à compléter
-            </Text>
-            <Text muted size={1}>
-              ›
-            </Text>
-          </Flex>
+          </Box>
         </Flex>
       </Card>
     </IntentLink>
