@@ -38,6 +38,10 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 - [x] The carousel/grid toggle button has a square border (HOME-05) — Phase 7
 - [x] Mobile hero is genuinely full-bleed on first load — no white gap above the header, no footer bleed-through (HOME-06) — Phase 7
 
+**v1.2 (Gallery Descriptions — Phase 8, shipped 2026-07-14):**
+- [x] Each gallery's own description text shows under its title on the homepage, replacing the generic byline (HOME-07) — Phase 8
+- [x] Hovering a grid-mode tile reveals that collection's description (HOME-08) — Phase 8
+
 ### Active
 
 **v1 (replace current site):**
@@ -49,11 +53,9 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 - [ ] Site is reachable at the existing domain, atelierjacquelinesuzanne.fr
 
 **v1.2 (homepage polish, this milestone):**
-- [ ] Each gallery's own description text shows under its title on the homepage, replacing the generic byline
 - [ ] Language switcher shows only the other language (plus a globe icon), not both FR/EN
 - [ ] Homepage photos load progressively (priority + blur-to-sharp), no blocking loading screen
 - [ ] Homepage header is visually identical to the About/Contact header by construction (shared component)
-- [ ] Hovering a grid-mode tile reveals that collection's description
 
 **v1.x (add shop, deferred until v1 is live — see REQUIREMENTS.md v2 section):**
 - [ ] Visitor can view a list of upcoming and past exhibitions (dates, location, description)
@@ -108,6 +110,7 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 | Contact form delivery (CONT-01) left non-functional until Phase 5 — will switch from Web3Forms to OVH PHP `mail()` | Phase 3 shipped the contact form wired to Web3Forms (client-side POST, no backend needed — required on GitHub Pages, which has zero server compute), but no Web3Forms account/access key was ever provisioned. Florian (2026-07-08) confirmed during Phase 4 discussion that **OVH's built-in PHP `mail()` is the confirmed target delivery mechanism** once Phase 5 (OVH domain cutover) lands — not just one option to "reconsider," as originally framed on 2026-07-08. Until Phase 5 rewires delivery to OVH mail(), the live contact form shows a generic submission error to visitors. Tracked as gap `CONT-DELIVERY-01` in `03-HUMAN-UAT.md`, `resolves_phase: 5`. Phase 4's privacy policy is written around this OVH-mail() end state, not Web3Forms. | Deferred to Phase 5 — mechanism confirmed as OVH mail() |
 | Legal-content accuracy (identity, OVH host block, D-10 business-status wording, D-09 address/phone placeholder) requires explicit human sign-off before launch, not just automated test coverage | A mentions légales / privacy page that renders and passes e2e tests can still disclose an inaccurate legal identity or business status — no automated check can catch that. Phase 4's Plan 03 was a blocking, never-auto-approvable human-verify checkpoint for exactly this reason. | Confirmed — Florian signed off 2026-07-08 (04-03-SUMMARY.md), no corrections requested |
 | Rebrand: adopt the imported design system's monochrome + pop-pink identity (`#FFFFFF` dominant, `#1A1A1A` ink, `#FF3B94` accent, Archivo Black display font), superseding Phase 2's Dawn Pink / Woodsmoke / Wild Strawberry / Delight identity | Florian imported a design system + homepage prototype generated via Claude Design (see `.planning/design-import/`). The generated system was built from a stale, pre-Phase-2 repo snapshot and flagged the conflict itself; Florian explicitly chose to switch to its palette as the real rebrand direction rather than keep Phase 2's shipped identity. Two new phases inserted before Phase 5 to execute this: design-system/homepage refresh, and social media links. | Confirmed — Florian's explicit choice 2026-07-08, see `.planning/design-import/README.md` |
+| Phase 8 (HOME-07/HOME-08) implemented directly on `main` outside the `/gsd-plan-phase`→`/gsd-execute-phase` cycle, then retroactively verified and closed via `/gsd-discuss-phase 8` | Florian shipped the gallery-description byline/hover-reveal work himself (commits `38457dd`..`602d24b`, 2026-07-13/14), reusing the existing `gallery.statement` field from Phase 2 rather than adding a new schema field. `/gsd-discuss-phase 8` found it already complete with dedicated e2e coverage; Florian confirmed it as the intended deliverable rather than re-planning from scratch. | Confirmed — verified 2026-07-14 (13/13 unit tests, 23/23 e2e tests passing), see `.planning/phases/08-gallery-descriptions/08-SUMMARY.md` |
 
 ## Evolution
 
@@ -127,4 +130,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-13 — Phase 7 (Homepage Quick Fixes & Mobile Hero Correctness) shipped within milestone v1.2 (Homepage Polish, Pre-Launch)*
+*Last updated: 2026-07-14 — Phase 8 (Gallery Descriptions) retroactively verified and closed within milestone v1.2 (Homepage Polish, Pre-Launch)*

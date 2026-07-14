@@ -2,36 +2,36 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Homepage Polish (Pre-Launch)
-current_phase: 8
-current_phase_name: Gallery Descriptions
-status: verifying
-stopped_at: Phase 7 UI-SPEC approved
-last_updated: "2026-07-13T23:11:59.349Z"
-last_activity: 2026-07-13
-last_activity_desc: Phase 07 complete, transitioned to Phase 8
+current_phase: 9
+current_phase_name: Progressive Homepage Image Loading
+status: not_started
+stopped_at: Phase 8 retroactively verified and closed
+last_updated: "2026-07-14T00:00:00.000Z"
+last_activity: 2026-07-14
+last_activity_desc: Phase 08 (Gallery Descriptions) retroactively verified and closed via /gsd-discuss-phase
 progress:
   total_phases: 13
-  completed_phases: 9
+  completed_phases: 10
   total_plans: 28
   completed_plans: 28
-  percent: 69
+  percent: 77
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-07-13)
+See: .planning/PROJECT.md (updated 2026-07-14)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; checkout follows in v1.x.)
-**Current focus:** Phase 07 — homepage-quick-fixes-mobile-hero-correctness
+**Current focus:** Phase 09 — Progressive Homepage Image Loading
 
 ## Current Position
 
-Phase: 8 — Gallery Descriptions
-Plan: Not started
-Status: Phase complete — ready for verification
-Last activity: 2026-07-13 — Phase 07 complete, transitioned to Phase 8
+Phase: 8 (Gallery Descriptions) — COMPLETE (retroactive, see 08-SUMMARY.md)
+Phase: 9 (Progressive Homepage Image Loading) — NOT STARTED
+Status: Ready for `/gsd-discuss-phase 9`
+Last activity: 2026-07-14 — Phase 08 retroactively verified and closed
 
 ## Performance Metrics
 
@@ -69,6 +69,7 @@ Last activity: 2026-07-13 — Phase 07 complete, transitioned to Phase 8
 | Phase 06 P01 | ~21h elapsed (two sessions, long overnight gap) | 3 planned tasks + live post-checkpoint follow-on | 3 files |
 | Phase 07 P01 | 15min | 2 tasks | 2 files |
 | Phase 07 P02 | ~20min | 2 tasks | 2 files |
+| Phase 08 | unknown (implemented directly on main, outside plan/execute tracking) | - | 2 files (HomeCarousel.astro, homepage.spec.ts) + unrelated adjacent Sanity schema work |
 
 ## Accumulated Context
 
@@ -117,6 +118,7 @@ Recent decisions affecting current work:
 - [Phase 07]: [Phase 07 Plan 01]: .home-header's mobile inter-item gap trimmed a second time (8px to 4px) beyond the plan's nav-only trims, to absorb the wider 44px toggle button and keep all 5 header items on one row at 393px
 - [Phase 07]: [Phase 07 Plan 02]: HOME-06's D-10 view-transition hypothesis could not be directly confirmed/reproduced under Chromium mobile emulation (test passed GREEN before and after a disable/re-enable experiment) — applied the fix anyway per D-12 since it corrects a real, identified asymmetry (.home-hero__photo/.home-hero__accent's unconditional CSS view-transition-name vs the grid tile's always-dynamic naming)
 - [Phase 07]: [Phase 07 Plan 02]: dynamic view-transition-name assignment for the hero photo/accent panel is set once per toggle click and never cleared afterward (not via transition.finished) — clearing raced a rapid second click and broke the pre-existing accent-panel fade-timing test
+- [Phase 08]: HOME-07 and HOME-08 (gallery description on homepage byline + grid-tile hover) were implemented and shipped directly to `main` by Florian (commits `38457dd`, `3360f16`, `78f3c61`, `04b10a1`, `a68ee00`, `602d24b`, 2026-07-13/14) ahead of the formal `/gsd-discuss-phase` → `/gsd-plan-phase` → `/gsd-execute-phase` cycle. Both surfaces reuse the existing `gallery.statement` field from Phase 2 — no new Sanity schema field was needed, confirming the roadmap's rationale for grouping HOME-07/08 into one phase. `/gsd-discuss-phase 8` (2026-07-14) found the implementation already complete, verified it (13/13 unit tests, 23/23 e2e tests passing, including the dedicated "collection statements on the homepage" describe block), and retroactively closed the phase — see `.planning/phases/08-gallery-descriptions/08-CONTEXT.md` and `08-SUMMARY.md`.
 
 ### Pending Todos
 
@@ -128,8 +130,6 @@ None currently open. Both prior research-carryover items were resolved during Ph
 
 - Domain email service: confirmed active (MX Plan + Zimbra mailbox) via the OVH panel — Phase 5's DNS cutover must preserve these records, not wipe the zone.
 - OVH deployment method: confirmed via the OVH panel — "Free hosting" tier, SFTP enabled on port 22, host `ftp.cluster129.hosting.ovh.net`, user `atelihu`, home dir `/home/atelihu` (see 01-02-SUMMARY.md). Note: this same Free tier cannot attach any subdomain (multisite requires a paid tier) — Phase 1 staging used GitHub Pages instead; Phase 5's production cutover plan should account for the single-domain limitation.
-
-Note: Phase 6's mobile full-bleed hero work has a reported regression (HOME-06, tracked for Phase 7) — a white gap above the header plus footer bleed-through on first load, seen on iPhone 17 Pro.
 
 ### Quick Tasks Completed
 
@@ -149,7 +149,9 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-13T22:53:03.017Z
-Stopped at: Phase 7 UI-SPEC approved
-Resume file: .planning/phases/07-homepage-quick-fixes-mobile-hero-correctness/07-UI-SPEC.md
+Last session: 2026-07-14T00:00:00.000Z
+Stopped at: Phase 8 retroactively verified and closed
+Resume file: .planning/phases/08-gallery-descriptions/08-SUMMARY.md
+
+**Next up:** `/gsd-discuss-phase 9` — Progressive Homepage Image Loading (HOME-09).
 </content>

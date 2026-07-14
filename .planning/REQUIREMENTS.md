@@ -61,8 +61,8 @@ Resolves the remaining homepage UX rough edges before the Phase 5 domain cutover
 - [x] **HOME-04**: Visitor can reach Romane's Instagram via an icon link (not text) in the header nav
 - [x] **HOME-05**: The carousel/grid toggle button has a square (not rectangular) border
 - [x] **HOME-06**: Mobile hero is genuinely full-bleed on first load — no white gap above the header, no footer bleed-through (regression from v1.1's 100svh full-bleed work, reported on iPhone 17 Pro)
-- [ ] **HOME-07**: Each gallery's own description text shows under its title on the homepage, replacing the generic "Un projet de Romane Lepont" byline
-- [ ] **HOME-08**: Hovering a grid-mode tile reveals that collection's description
+- [x] **HOME-07**: Each gallery's own description text shows under its title on the homepage, replacing the generic "Un projet de Romane Lepont" byline
+- [x] **HOME-08**: Hovering a grid-mode tile reveals that collection's description
 - [ ] **HOME-09**: Homepage photos load progressively (priority + blur-to-sharp transition), with no blocking full-screen loading state
 - [ ] **HOME-10**: Homepage header is visually identical to the About/Contact header by construction (single shared header component, not two independently-styled implementations)
 
@@ -167,8 +167,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HOME-04 | Phase 7 | Complete |
 | HOME-05 | Phase 7 | Complete |
 | HOME-06 | Phase 7 | Complete |
-| HOME-07 | Phase 8 | Pending |
-| HOME-08 | Phase 8 | Pending |
+| HOME-07 | Phase 8 | Complete |
+| HOME-08 | Phase 8 | Complete |
 | HOME-09 | Phase 9 | Pending |
 | HOME-10 | Phase 10 | Pending |
 | I18N-04 | Phase 10 | Pending |
@@ -188,5 +188,5 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-07-05*
-*Last updated: 2026-07-13 — v1.2 (Homepage Polish) requirements mapped to Phases 7–10 (roadmap creation); coverage 8/8*
+*Last updated: 2026-07-14 — HOME-07/HOME-08 (Phase 8) marked complete; implemented and verified directly on `main` ahead of the formal plan/execute cycle (see `.planning/phases/08-gallery-descriptions/08-SUMMARY.md`)*
 </content>
