@@ -4,11 +4,11 @@ milestone: v1.2
 milestone_name: Homepage Polish (Pre-Launch)
 current_phase: 9
 current_phase_name: Progressive Homepage Image Loading
-status: not_started
-stopped_at: Phase 8 retroactively verified and closed
-last_updated: "2026-07-14T00:00:00.000Z"
+status: discussing
+stopped_at: Phase 9 context gathered
+last_updated: "2026-07-14T00:30:00.000Z"
 last_activity: 2026-07-14
-last_activity_desc: Phase 08 (Gallery Descriptions) retroactively verified and closed via /gsd-discuss-phase
+last_activity_desc: Phase 09 context gathered via /gsd-discuss-phase
 progress:
   total_phases: 13
   completed_phases: 10
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-07-14)
 ## Current Position
 
 Phase: 8 (Gallery Descriptions) — COMPLETE (retroactive, see 08-SUMMARY.md)
-Phase: 9 (Progressive Homepage Image Loading) — NOT STARTED
-Status: Ready for `/gsd-discuss-phase 9`
-Last activity: 2026-07-14 — Phase 08 retroactively verified and closed
+Phase: 9 (Progressive Homepage Image Loading) — CONTEXT GATHERED
+Status: Ready for `/gsd-plan-phase 9`
+Last activity: 2026-07-14 — Phase 09 context gathered via /gsd-discuss-phase
 
 ## Performance Metrics
 
@@ -149,9 +149,9 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-14T00:00:00.000Z
-Stopped at: Phase 8 retroactively verified and closed
-Resume file: .planning/phases/08-gallery-descriptions/08-SUMMARY.md
+Last session: 2026-07-14T00:30:00.000Z
+Stopped at: Phase 9 context gathered
+Resume file: .planning/phases/09-progressive-homepage-image-loading/09-CONTEXT.md
 
-**Next up:** `/gsd-discuss-phase 9` — Progressive Homepage Image Loading (HOME-09).
+**Next up:** `/gsd-plan-phase 9` — Progressive Homepage Image Loading (HOME-09).
 </content>
