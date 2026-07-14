@@ -28,7 +28,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 6: Homepage View-Mode Toggle, Grid Hero & Wordmark Cutout** - Unified carousel/grid toggle button, grid view's hero becomes the first grid tile, and the wordmark gets a transparent photo-cutout treatment (completed 2026-07-13)
 - [x] **Phase 7: Homepage Quick Fixes & Mobile Hero Correctness** - Instagram icon in the header nav, square toggle border, and a fix for the mobile full-bleed hero regression (completed 2026-07-13)
 - [ ] **Phase 8: Gallery Descriptions** - Each gallery's own description text replaces the generic byline under its title, and reveals on hover in grid mode
-- [ ] **Phase 9: Progressive Homepage Image Loading** - Homepage photos load with priority and a blur-to-sharp transition, with no blocking full-screen loader
+- [x] **Phase 9: Progressive Homepage Image Loading** - Homepage photos load with priority and a blur-to-sharp transition, with no blocking full-screen loader (completed 2026-07-14)
 - [ ] **Phase 10: Unified Header & Simplified Language Switcher** - Homepage header consolidated into the shared About/Contact header component; language switcher shows only the other language plus a globe icon
 
 ## Phase Details
@@ -300,7 +300,7 @@ Plans:
   3. Each homepage photo transitions visibly from a blurred low-quality placeholder to the sharp full-resolution image as it finishes loading, rather than popping in abruptly or leaving blank space.
   4. Gallery tile images below the fold load lazily and do not delay the homepage's initial render.
 
-**Plans**: 1/2 plans executed
+**Plans**: 2/2 plans complete
 Plans:
 **Wave 1**
 
@@ -308,7 +308,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1)*
 
-- [ ] 09-02-PLAN.md — Live blur-up legibility + View-Transition coincidence human-verify checkpoint (D-01 "verify live", RESEARCH Open Questions 1/2) (Wave 2)
+- [x] 09-02-PLAN.md — Live blur-up legibility + View-Transition coincidence human-verify checkpoint (D-01 "verify live", RESEARCH Open Questions 1/2) (Wave 2)
 
 **UI hint**: yes
 
@@ -346,7 +346,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 6. Homepage View-Mode Toggle, Grid Hero & Wordmark Cutout | 1/1 | Complete   | 2026-07-13 |
 | 7. Homepage Quick Fixes & Mobile Hero Correctness | 2/2 | Complete    | 2026-07-13 |
 | 8. Gallery Descriptions | 0/TBD | Not started | - |
-| 9. Progressive Homepage Image Loading | 1/2 | In Progress|  |
+| 9. Progressive Homepage Image Loading | 2/2 | Complete   | 2026-07-14 |
 | 10. Unified Header & Simplified Language Switcher | 0/TBD | Not started | - |
 
 ## Milestone Scope Note
