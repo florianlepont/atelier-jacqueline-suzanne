@@ -676,4 +676,25 @@ test.describe('progressive image loading (HOME-09)', () => {
       await expect(img).toHaveAttribute('loading', 'lazy');
     }
   });
+
+  test('next-gallery hero photo is prefetched to warm the cache before the next swap (D-05)', async ({ page }) => {
+    await page.goto('/');
+
+    const dataItems = page.locator('ul[data-role="home-carousel-data"] li');
+    const count = await dataItems.count();
+    test.skip(count < 2, 'need at least 2 galleries to verify prefetch of the next one');
+    const nextHeroSrc = await dataItems.nth(1).getAttribute('data-hero-src');
+    expect(nextHeroSrc).toBeTruthy();
+
+    // render() (called once immediately on script init, before any auto-advance
+    // tick) prefetches galleries[(index+1) % length]'s hero photo via `new
+    // Image()` (D-05) so it's already cache-warm before a swap ever happens.
+    // Reload and confirm the browser actually issues that request — a
+    // predicate (not a glob string) avoids Sanity CDN query-string characters
+    // being misinterpreted as glob wildcards.
+    const prefetchRequest = page.waitForRequest((req) => req.url() === nextHeroSrc, { timeout: 5000 });
+    await page.reload();
+    const request = await prefetchRequest;
+    expect(request.url()).toBe(nextHeroSrc);
+  });
 });
