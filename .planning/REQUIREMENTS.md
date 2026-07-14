@@ -63,7 +63,7 @@ Resolves the remaining homepage UX rough edges before the Phase 5 domain cutover
 - [x] **HOME-06**: Mobile hero is genuinely full-bleed on first load — no white gap above the header, no footer bleed-through (regression from v1.1's 100svh full-bleed work, reported on iPhone 17 Pro)
 - [x] **HOME-07**: Each gallery's own description text shows under its title on the homepage, replacing the generic "Un projet de Romane Lepont" byline
 - [x] **HOME-08**: Hovering a grid-mode tile reveals that collection's description
-- [ ] **HOME-09**: Homepage photos load progressively (priority + blur-to-sharp transition), with no blocking full-screen loading state
+- [x] **HOME-09**: Homepage photos load progressively (priority + blur-to-sharp transition), with no blocking full-screen loading state
 - [ ] **HOME-10**: Homepage header is visually identical to the About/Contact header by construction (single shared header component, not two independently-styled implementations)
 
 ### Bilingual
@@ -169,7 +169,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HOME-06 | Phase 7 | Complete |
 | HOME-07 | Phase 8 | Complete |
 | HOME-08 | Phase 8 | Complete |
-| HOME-09 | Phase 9 | Pending |
+| HOME-09 | Phase 9 | Complete |
 | HOME-10 | Phase 10 | Pending |
 | I18N-04 | Phase 10 | Pending |
 
