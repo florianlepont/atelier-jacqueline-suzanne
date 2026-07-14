@@ -236,6 +236,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         </div>
         {galleries.map((gallery) => (
           <a href={getRelativeLocaleUrl(locale, `galleries/${gallery.slug}`)} class="home-grid__tile">
+            <img src={gallery.blurSrc} alt="" aria-hidden="true" class="home-grid__tile-img home-grid__tile-img-placeholder" />
             <img
               src={gallery.gridSrc}
               width="600"
@@ -243,7 +244,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
               alt={gallery.alt}
               loading="lazy"
               decoding="async"
-              class="home-grid__tile-img"
+              class="home-grid__tile-img home-grid__tile-img--sharp"
             />
             <div class="home-grid__tile-scrim" aria-hidden="true"></div>
             <span class="home-grid__tile-copy">
@@ -322,6 +323,17 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         const accentPanel = hero.querySelector<HTMLElement>('[data-role="accent-panel"]');
         const wordmarkEl = hero.querySelector<HTMLElement>('.home-hero__wordmark');
         const progressDashes = Array.from(hero.querySelectorAll<HTMLButtonElement>('[data-role="progress"] .home-hero__progress-dash'));
+
+        // HOME-09 (D-03/D-06): grid tiles are server-rendered once and never
+        // re-rendered by render() — a one-time load-listener setup here
+        // (not inside render()) fades each tile's sharp <img> in over its
+        // blurred placeholder as it lazy-loads into view.
+        const gridTileImgs = Array.from(document.querySelectorAll<HTMLImageElement>('.home-grid__tile-img--sharp'));
+        gridTileImgs.forEach((img) => {
+          const markLoaded = () => img.classList.add('is-loaded');
+          if (img.complete) markLoaded();
+          else img.addEventListener('load', markLoaded, { once: true });
+        });
 
         let carouselIndex = 0;
         let timer: ReturnType<typeof setInterval> | null = null;
@@ -1422,6 +1434,29 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     height: 100%;
     object-fit: cover;
     display: block;
+  }
+
+  /* HOME-09 (D-01/D-03/D-06): blur-up crossfade — same two-layer opacity
+     mechanism as the hero (see .home-hero__img--sharp above). Additive to
+     `.home-grid__tile`'s existing position: relative — stacks the
+     placeholder/sharp variants the same way `.home-grid__tile-scrim`
+     already stacks against it. The sharp image keeps loading="lazy"
+     decoding="async" unchanged (D-03) — this is purely additive on top of
+     lazy-loading, not a replacement for it. */
+  .home-grid__tile-img,
+  .home-grid__tile-img-placeholder,
+  .home-grid__tile-img--sharp {
+    position: absolute;
+    inset: 0;
+  }
+
+  .home-grid__tile-img--sharp {
+    opacity: 0;
+    transition: opacity 260ms ease;
+  }
+
+  .home-grid__tile-img--sharp.is-loaded {
+    opacity: 1;
   }
 
   .home-grid__tile-scrim {

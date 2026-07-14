@@ -30,7 +30,10 @@ test.describe('only galleries with photos appear (D-12)', () => {
     expect(await tiles.count()).toBeGreaterThan(0);
     for (const tile of await tiles.all()) {
       await expect(tile).toHaveAttribute('href', /\/galleries\/[^/]+\/?$/);
-      await expect(tile.locator('img')).toHaveAttribute('src', /cdn\.sanity\.io/);
+      // HOME-09 added a blurred placeholder <img> sibling beneath the sharp
+      // tile image (both share the `img` tag) — scope to the sharp layer,
+      // which is the one that must carry the real gallery photo.
+      await expect(tile.locator('.home-grid__tile-img--sharp')).toHaveAttribute('src', /cdn\.sanity\.io/);
       await expect(tile.locator('.home-grid__tile-title')).toHaveText(/.+/);
     }
   });
