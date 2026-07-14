@@ -284,7 +284,7 @@ Plans:
   3. In grid mode, hovering (or focusing, for keyboard users) a gallery tile reveals that gallery's own description as an overlay.
   4. A gallery with no description yet falls back gracefully (e.g. to the existing generic byline, or an empty state) without breaking the homepage layout.
 
-**Plans**: TBD
+**Plans**: Implemented directly on `main` ahead of the formal plan/execute cycle (commits `38457dd`..`602d24b`), retroactively verified and closed via `/gsd-discuss-phase 8` — see `08-SUMMARY.md` and `08-VERIFICATION.md`.
 **UI hint**: yes
 
 ### Phase 9: Progressive Homepage Image Loading
@@ -345,8 +345,8 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 5. Launch & Domain Cutover | 0/TBD | Not started | - |
 | 6. Homepage View-Mode Toggle, Grid Hero & Wordmark Cutout | 1/1 | Complete   | 2026-07-13 |
 | 7. Homepage Quick Fixes & Mobile Hero Correctness | 2/2 | Complete    | 2026-07-13 |
-| 8. Gallery Descriptions | 0/TBD | Not started | - |
-| 9. Progressive Homepage Image Loading | 2/2 | Complete   | 2026-07-14 |
+| 8. Gallery Descriptions | 1/1 | Complete   | 2026-07-14 |
+| 9. Progressive Homepage Image Loading | 2/2 | Complete    | 2026-07-14 |
 | 10. Unified Header & Simplified Language Switcher | 0/TBD | Not started | - |
 
 ## Milestone Scope Note
