@@ -26,3 +26,12 @@ export function thumbnailUrl(img: GalleryImage, size = 600): string {
 export function fullSizeUrl(img: SanityImage, maxWidth = 2000): string {
   return builder.image(img).width(maxWidth).fit('max').auto('format').url()
 }
+
+/**
+ * Tiny, heavily-blurred CDN preview URL for the blur-up placeholder
+ * (D-01: 24px wide, blur radius 50 — a real low-res rendition of the photo,
+ * not a solid color). Used for both the hero photo and grid tiles.
+ */
+export function blurPlaceholderUrl(img: SanityImage, width = 24): string {
+  return builder.image(img).width(width).blur(50).auto('format').url()
+}
