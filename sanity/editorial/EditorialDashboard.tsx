@@ -423,13 +423,31 @@ function QuickActionContent({icon: Icon, label}: {icon: ComponentType; label: st
 function AttentionSection({group}: {group: AttentionGroup}) {
   return (
     <Card radius={3} shadow={1} overflow="hidden">
-      <Box padding={3} style={{borderBottom: '1px solid var(--card-border-color)'}}>
+      <Card
+        tone={group.tone}
+        padding={3}
+        style={{borderBottom: '1px solid var(--card-border-color)'}}
+      >
         <Flex align="center" gap={2} wrap="wrap">
-          <Badge mode="light" tone={group.tone}>
-            {group.rows.length}
-          </Badge>
+          <Card
+            tone={group.tone}
+            radius={4}
+            style={{
+              width: 24,
+              height: 24,
+              flex: '0 0 auto',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '50%',
+            }}
+          >
+            <Text size={0} weight="semibold">
+              {group.rows.length}
+            </Text>
+          </Card>
           <Stack space={1}>
-            <Text size={1} weight="semibold">
+            <Text size={1} weight="bold">
               {group.title}
             </Text>
             <Text muted size={0}>
@@ -437,7 +455,7 @@ function AttentionSection({group}: {group: AttentionGroup}) {
             </Text>
           </Stack>
         </Flex>
-      </Box>
+      </Card>
       <Stack space={0}>
         {group.rows.map((row, index) => (
           <ContentRow key={row.id} row={row} withBorder={index < group.rows.length - 1} />
