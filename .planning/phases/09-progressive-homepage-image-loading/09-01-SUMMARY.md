@@ -179,3 +179,7 @@ None - no external service configuration required.
 ---
 *Phase: 09-progressive-homepage-image-loading*
 *Completed: 2026-07-14*
+
+## Self-Check: PASSED
+
+All modified files confirmed present on disk (`tests/e2e/homepage.spec.ts`, `src/lib/image.ts`, `src/pages/index.astro`, `src/pages/en/index.astro`, `src/components/HomeCarousel.astro`, this SUMMARY.md). All task commits (`cccf8d1`, `5515873`, `6bca67b`) plus this docs commit confirmed present in `git log --oneline --all`.
