@@ -1,10 +1,13 @@
 import {useEffect, useMemo, useState} from 'react'
+import type {ComponentType} from 'react'
 import {Badge, Box, Button, Card, Flex, Grid, Heading, Spinner, Stack, Text} from '@sanity/ui'
-import {useClient} from 'sanity'
+import {ToolLink, useClient} from 'sanity'
 import {IntentLink} from 'sanity/router'
+import {AddIcon, CalendarIcon, HomeIcon, ImagesIcon} from '@sanity/icons'
 import {deploymentLabel, getLatestDeployment, SITE_PREVIEW_URL} from './deployment'
 import type {DeploymentRun} from './deployment'
 import {getDocumentChecks, summarizeChecks} from './checks'
+import type {CheckItem} from './checks'
 
 interface DashboardDocument extends Record<string, unknown> {
   _id: string
@@ -22,7 +25,18 @@ interface DashboardRow {
   hasDraft: boolean
   isPublished: boolean
   lastUpdatedAt: string
+  checks: CheckItem[]
   summary: ReturnType<typeof summarizeChecks>
+}
+
+type DashboardTone = 'default' | 'primary' | 'positive' | 'caution' | 'critical'
+
+interface AttentionGroup {
+  id: string
+  title: string
+  description: string
+  tone: DashboardTone
+  rows: DashboardRow[]
 }
 
 const query = `*[_type in ["gallery", "homePage", "aboutPage", "contactPage", "siteSettings", "exhibition"]] | order(_updatedAt desc) {
@@ -66,6 +80,7 @@ export function EditorialDashboard() {
   const [run, setRun] = useState<DeploymentRun | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [showAllActivity, setShowAllActivity] = useState(false)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -96,6 +111,7 @@ export function EditorialDashboard() {
     return Array.from(byId.entries())
       .map(([id, versions]): DashboardRow => {
         const current = versions.draft ?? versions.published!
+        const checks = getDocumentChecks(current._type, current)
         const lastUpdatedAt = [versions.draft?._updatedAt, versions.published?._updatedAt]
           .filter((value): value is string => Boolean(value))
           .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0]
@@ -105,22 +121,30 @@ export function EditorialDashboard() {
           hasDraft: Boolean(versions.draft),
           isPublished: Boolean(versions.published),
           lastUpdatedAt: lastUpdatedAt ?? current._updatedAt,
-          summary: summarizeChecks(getDocumentChecks(current._type, current)),
+          checks,
+          summary: summarizeChecks(checks),
         }
       })
       .sort((a, b) => new Date(b.lastUpdatedAt).getTime() - new Date(a.lastUpdatedAt).getTime())
   }, [documents])
 
-  const attention = rows.filter(({current, summary}) => {
-    if (current.publicationStatus === 'archived') return false
-    return (
-      !summary.requiredComplete ||
-      !summary.recommendedComplete ||
-      current.publicationStatus === 'preparation' ||
-      (!current.publicationStatus && current.isVisible === false)
-    )
-  })
+  const attention = rows
+    .filter((row) => {
+      const {current, summary} = row
+      if (current.publicationStatus === 'archived') return false
+      return (
+        !summary.requiredComplete ||
+        !summary.recommendedComplete ||
+        row.hasDraft ||
+        current.publicationStatus === 'preparation' ||
+        (!current.publicationStatus && current.isVisible === false)
+      )
+    })
+    .sort((left, right) => attentionPriority(left) - attentionPriority(right))
   const galleries = rows.filter(({current}) => current._type === 'gallery')
+  const visibleAttention = attention.slice(0, 5)
+  const attentionGroups = buildAttentionGroups(visibleAttention)
+  const recentRows = showAllActivity ? rows : rows.slice(0, 4)
 
   return (
     <Box padding={[3, 4, 5]} style={{maxWidth: 1080, margin: '0 auto'}}>
@@ -143,6 +167,35 @@ export function EditorialDashboard() {
             text="Ouvrir le site ↗"
           />
         </Flex>
+
+        <Stack space={3}>
+          <Heading as="h2" size={2}>
+            Actions rapides
+          </Heading>
+          <Grid columns={[1, 2, 4]} gap={2}>
+            <QuickIntentAction
+              icon={AddIcon}
+              label="Nouvelle collection"
+              intent="create"
+              params={{type: 'gallery', template: 'gallery'}}
+            />
+            <QuickIntentAction
+              icon={CalendarIcon}
+              label="Nouvelle exposition"
+              intent="create"
+              params={{type: 'exhibition'}}
+            />
+            <QuickIntentAction
+              icon={HomeIcon}
+              label="Modifier l’accueil"
+              intent="edit"
+              params={{id: 'homePage', type: 'homePage'}}
+            />
+            <ToolLink name="media" style={{color: 'inherit', textDecoration: 'none'}}>
+              <QuickActionContent icon={ImagesIcon} label="Photos et crédits" />
+            </ToolLink>
+          </Grid>
+        </Stack>
 
         {loading && (
           <Card padding={5} radius={3} tone="transparent">
@@ -180,9 +233,16 @@ export function EditorialDashboard() {
 
             <Stack space={3}>
               <Flex align="center" justify="space-between">
-                <Heading as="h2" size={2}>
-                  À vérifier
-                </Heading>
+                <Stack space={1}>
+                  <Heading as="h2" size={2}>
+                    À faire maintenant
+                  </Heading>
+                  {attention.length > 5 && (
+                    <Text muted size={0}>
+                      Les 5 contenus les plus prioritaires sur {attention.length}
+                    </Text>
+                  )}
+                </Stack>
                 <Badge mode="outline" tone={attention.length ? 'caution' : 'positive'}>
                   {attention.length || 'Tout est prêt'}
                 </Badge>
@@ -193,31 +253,35 @@ export function EditorialDashboard() {
                   <Text size={1}>Aucun contenu ne nécessite votre attention.</Text>
                 </Card>
               ) : (
-                <Card radius={3} shadow={1} overflow="hidden">
-                  <Stack space={0}>
-                    {attention.map((row, index) => (
-                      <ContentRow
-                        key={row.id}
-                        row={row}
-                        withBorder={index < attention.length - 1}
-                      />
-                    ))}
-                  </Stack>
-                </Card>
+                <Stack space={3}>
+                  {attentionGroups.map((group) => (
+                    <AttentionSection key={group.id} group={group} />
+                  ))}
+                </Stack>
               )}
             </Stack>
 
             <Stack space={3}>
-              <Heading as="h2" size={2}>
-                Activité récente
-              </Heading>
+              <Flex align="center" justify="space-between" gap={3}>
+                <Heading as="h2" size={2}>
+                  Activité récente
+                </Heading>
+                {rows.length > 4 && (
+                  <Button
+                    mode="bleed"
+                    fontSize={1}
+                    text={showAllActivity ? 'Réduire' : `Voir toute l’activité (${rows.length})`}
+                    onClick={() => setShowAllActivity((value) => !value)}
+                  />
+                )}
+              </Flex>
               <Card radius={3} tone="transparent" border>
                 <Stack space={0}>
-                  {rows.slice(0, 6).map((row, index) => (
+                  {recentRows.map((row, index) => (
                     <RecentRow
                       key={row.id}
                       row={row}
-                      withBorder={index < Math.min(rows.length, 6) - 1}
+                      withBorder={index < recentRows.length - 1}
                     />
                   ))}
                 </Stack>
@@ -227,6 +291,145 @@ export function EditorialDashboard() {
         )}
       </Stack>
     </Box>
+  )
+}
+
+function buildAttentionGroups(rows: DashboardRow[]): AttentionGroup[] {
+  const groups: AttentionGroup[] = [
+    {
+      id: 'blocking',
+      title: 'À corriger',
+      description: 'Informations indispensables manquantes',
+      tone: 'critical',
+      rows: [],
+    },
+    {
+      id: 'publish',
+      title: 'Modifications à publier',
+      description: 'Contenus modifiés depuis leur dernière publication',
+      tone: 'caution',
+      rows: [],
+    },
+    {
+      id: 'finish',
+      title: 'À finaliser',
+      description: 'Contenus encore en préparation ou hors ligne',
+      tone: 'primary',
+      rows: [],
+    },
+    {
+      id: 'recommended',
+      title: 'À améliorer',
+      description: 'SEO et informations recommandées',
+      tone: 'default',
+      rows: [],
+    },
+  ]
+
+  for (const row of rows) {
+    if (!row.summary.requiredComplete) groups[0].rows.push(row)
+    else if (row.hasDraft && row.isPublished) groups[1].rows.push(row)
+    else if (
+      row.current.publicationStatus === 'preparation' ||
+      (!row.current.publicationStatus && row.current.isVisible === false) ||
+      !row.isPublished
+    ) {
+      groups[2].rows.push(row)
+    } else {
+      groups[3].rows.push(row)
+    }
+  }
+
+  return groups.filter((group) => group.rows.length > 0)
+}
+
+function attentionPriority(row: DashboardRow) {
+  if (!row.summary.requiredComplete) return 0
+  if (row.hasDraft && row.isPublished) return 1
+  if (
+    row.current.publicationStatus === 'preparation' ||
+    (!row.current.publicationStatus && row.current.isVisible === false) ||
+    !row.isPublished
+  ) {
+    return 2
+  }
+  return 3
+}
+
+function editorialStatus(row: DashboardRow): {label: string; tone: DashboardTone} {
+  if (row.current.publicationStatus === 'archived') return {label: 'Archivé', tone: 'default'}
+  if (
+    row.current.publicationStatus === 'preparation' ||
+    (!row.current.publicationStatus && row.current.isVisible === false)
+  ) {
+    return {label: 'En préparation', tone: 'caution'}
+  }
+  if (row.hasDraft && row.isPublished) {
+    return {label: 'Modifications non publiées', tone: 'primary'}
+  }
+  if (row.isPublished && (row.current._type !== 'gallery' || isGalleryOnline(row.current))) {
+    return {label: 'En ligne', tone: 'positive'}
+  }
+  return {label: 'En préparation', tone: 'caution'}
+}
+
+function QuickIntentAction({
+  icon,
+  label,
+  intent,
+  params,
+}: {
+  icon: ComponentType
+  label: string
+  intent: 'create' | 'edit'
+  params: Record<string, string>
+}) {
+  return (
+    <IntentLink intent={intent} params={params} style={{color: 'inherit', textDecoration: 'none'}}>
+      <QuickActionContent icon={icon} label={label} />
+    </IntentLink>
+  )
+}
+
+function QuickActionContent({icon: Icon, label}: {icon: ComponentType; label: string}) {
+  return (
+    <Card padding={3} radius={2} border tone="transparent">
+      <Flex align="center" gap={2}>
+        <Text size={1}>
+          <Icon />
+        </Text>
+        <Text size={1} weight="semibold">
+          {label}
+        </Text>
+      </Flex>
+    </Card>
+  )
+}
+
+function AttentionSection({group}: {group: AttentionGroup}) {
+  return (
+    <Card radius={3} shadow={1} overflow="hidden">
+      <Box padding={3} style={{borderBottom: '1px solid var(--card-border-color)'}}>
+        <Flex align="center" gap={2} wrap="wrap">
+          <Badge mode="light" tone={group.tone}>
+            {group.rows.length}
+          </Badge>
+          <Stack space={1}>
+            <Text size={1} weight="semibold">
+              {group.title}
+            </Text>
+            <Text muted size={0}>
+              {group.description}
+            </Text>
+          </Stack>
+        </Flex>
+      </Box>
+      <Stack space={0}>
+        {group.rows.map((row, index) => (
+          <ContentRow key={row.id} row={row} withBorder={index < group.rows.length - 1} />
+        ))}
+      </Stack>
+    </Card>
   )
 }
 
@@ -257,15 +460,26 @@ function DeploymentCard({run}: {run: DeploymentRun | null}) {
       : run.conclusion === 'success'
         ? 'positive'
         : 'critical'
+  const dateLabel = run
+    ? `${run.status === 'completed' && run.conclusion === 'success' ? 'Dernière mise en ligne' : 'Dernière tentative'} : ${formatActivityDate(run.updated_at)}`
+    : 'Dernière mise en ligne inconnue'
 
   const content = (
-    <Stack space={3}>
+    <Stack space={2}>
       <Text muted size={1}>
         Mise en ligne
       </Text>
       <Badge tone={tone} mode="light">
         {status.label}
       </Badge>
+      <Text muted size={0}>
+        {dateLabel}
+      </Text>
+      {run?.html_url && (
+        <Text size={0} weight="semibold">
+          Voir le détail ↗
+        </Text>
+      )}
     </Stack>
   )
 
@@ -291,6 +505,8 @@ function DeploymentCard({run}: {run: DeploymentRun | null}) {
 
 function ContentRow({row, withBorder}: {row: DashboardRow; withBorder: boolean}) {
   const missing = row.summary.totalCount - row.summary.completeCount
+  const missingChecks = row.checks.filter((check) => !check.complete)
+  const status = editorialStatus(row)
   return (
     <IntentLink
       intent="edit"
@@ -303,7 +519,7 @@ function ContentRow({row, withBorder}: {row: DashboardRow; withBorder: boolean})
         style={{borderBottom: withBorder ? '1px solid var(--card-border-color)' : undefined}}
       >
         <Flex align="center" justify="space-between" gap={3} wrap="wrap">
-          <Stack space={2} style={{minWidth: 0}}>
+          <Stack space={2} style={{minWidth: 0, flex: '1 1 520px'}}>
             <Text size={1} weight="semibold" textOverflow="ellipsis">
               {documentTitle(row.current)}
             </Text>
@@ -311,30 +527,9 @@ function ContentRow({row, withBorder}: {row: DashboardRow; withBorder: boolean})
               <Text muted size={0}>
                 {typeLabels[row.current._type]}
               </Text>
-              {row.hasDraft ? (
-                <Badge fontSize={0} mode="light" tone="caution">
-                  Brouillon
-                </Badge>
-              ) : row.isPublished ? (
-                <Badge fontSize={0} mode="light" tone="positive">
-                  Publié
-                </Badge>
-              ) : (
-                <Badge fontSize={0} mode="light">
-                  Non publié
-                </Badge>
-              )}
-              {(row.current.publicationStatus === 'preparation' ||
-                (!row.current.publicationStatus && row.current.isVisible === false)) && (
-                <Badge fontSize={0} mode="light" tone="critical">
-                  En préparation
-                </Badge>
-              )}
-              {row.current.publicationStatus === 'archived' && (
-                <Badge fontSize={0} mode="light">
-                  Archivé
-                </Badge>
-              )}
+              <Badge fontSize={0} mode="light" tone={status.tone}>
+                {status.label}
+              </Badge>
               {!row.summary.requiredComplete && (
                 <Badge fontSize={0} mode="outline" tone="critical">
                   Contenu incomplet
@@ -346,6 +541,12 @@ function ContentRow({row, withBorder}: {row: DashboardRow; withBorder: boolean})
                 </Badge>
               )}
             </Flex>
+            {missingChecks.length > 0 && (
+              <Text muted size={0}>
+                Manque : {missingChecks.slice(0, 3).map((check) => check.label).join(' · ')}
+                {missingChecks.length > 3 ? ` · +${missingChecks.length - 3} autre(s)` : ''}
+              </Text>
+            )}
           </Stack>
           <Flex align="center" gap={2}>
             <Text muted size={1}>
@@ -364,6 +565,7 @@ function ContentRow({row, withBorder}: {row: DashboardRow; withBorder: boolean})
 function RecentRow({row, withBorder}: {row: DashboardRow; withBorder: boolean}) {
   const missing = row.summary.totalCount - row.summary.completeCount
   const photoCount = Array.isArray(row.current.images) ? row.current.images.length : 0
+  const status = editorialStatus(row)
   return (
     <IntentLink
       intent="edit"
@@ -374,11 +576,11 @@ function RecentRow({row, withBorder}: {row: DashboardRow; withBorder: boolean}) 
         align="center"
         justify="space-between"
         gap={3}
-        padding={3}
+        padding={[2, 3]}
         wrap="wrap"
         style={{borderBottom: withBorder ? '1px solid var(--card-border-color)' : undefined}}
       >
-        <Stack space={2} style={{minWidth: 0, flex: '1 1 420px'}}>
+        <Stack space={1} style={{minWidth: 0, flex: '1 1 420px'}}>
           <Text size={1} weight="semibold" textOverflow="ellipsis">
             {documentTitle(row.current)}
           </Text>
@@ -390,28 +592,9 @@ function RecentRow({row, withBorder}: {row: DashboardRow; withBorder: boolean}) 
                 : ''}
               {missing > 0 ? ` · ${missing} à compléter` : ' · Contenu prêt'}
             </Text>
-            {row.hasDraft ? (
-              <Badge fontSize={0} mode="light" tone="caution">
-                Brouillon en cours
-              </Badge>
-            ) : row.isPublished ? (
-              <Badge fontSize={0} mode="light" tone="positive">
-                Publié
-              </Badge>
-            ) : (
-              <Badge fontSize={0} mode="light">
-                Non publié
-              </Badge>
-            )}
-            {row.current._type === 'gallery' && (
-              <Badge
-                fontSize={0}
-                mode="outline"
-                tone={isGalleryOnline(row.current) ? 'positive' : 'default'}
-              >
-                {isGalleryOnline(row.current) ? 'Sur le site' : 'Hors du site'}
-              </Badge>
-            )}
+            <Badge fontSize={0} mode="light" tone={status.tone}>
+              {status.label}
+            </Badge>
           </Flex>
         </Stack>
         <Stack space={2} style={{flex: '0 0 auto', textAlign: 'right'}}>
