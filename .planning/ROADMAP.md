@@ -300,11 +300,11 @@ Plans:
   3. Each homepage photo transitions visibly from a blurred low-quality placeholder to the sharp full-resolution image as it finishes loading, rather than popping in abruptly or leaving blank space.
   4. Gallery tile images below the fold load lazily and do not delay the homepage's initial render.
 
-**Plans**: 2 plans
+**Plans**: 1/2 plans executed
 Plans:
 **Wave 1**
 
-- [ ] 09-01-PLAN.md — Progressive image loading vertical slices: `blurPlaceholderUrl()` helper + `blurSrc` threading, hero blur-to-sharp on every swap (`fetchpriority="high"` + next-photo prefetch), grid-tile blur-up kept lazy, all behind a new failing `progressive image loading (HOME-09)` e2e block (Wave 1)
+- [x] 09-01-PLAN.md — Progressive image loading vertical slices: `blurPlaceholderUrl()` helper + `blurSrc` threading, hero blur-to-sharp on every swap (`fetchpriority="high"` + next-photo prefetch), grid-tile blur-up kept lazy, all behind a new failing `progressive image loading (HOME-09)` e2e block (Wave 1)
 
 **Wave 2** *(blocked on Wave 1)*
 
@@ -346,7 +346,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 6. Homepage View-Mode Toggle, Grid Hero & Wordmark Cutout | 1/1 | Complete   | 2026-07-13 |
 | 7. Homepage Quick Fixes & Mobile Hero Correctness | 2/2 | Complete    | 2026-07-13 |
 | 8. Gallery Descriptions | 0/TBD | Not started | - |
-| 9. Progressive Homepage Image Loading | 0/2 | Not started | - |
+| 9. Progressive Homepage Image Loading | 1/2 | In Progress|  |
 | 10. Unified Header & Simplified Language Switcher | 0/TBD | Not started | - |
 
 ## Milestone Scope Note
