@@ -1,8 +1,8 @@
 import {useEffect, useMemo, useState} from 'react'
 import type {ComponentType} from 'react'
 import {Badge, Box, Button, Card, Flex, Grid, Heading, Spinner, Stack, Text} from '@sanity/ui'
-import {ToolLink, useClient} from 'sanity'
-import {IntentLink} from 'sanity/router'
+import {useClient, useWorkspace} from 'sanity'
+import {IntentLink, Link} from 'sanity/router'
 import {AddIcon, CalendarIcon, HomeIcon, ImagesIcon} from '@sanity/icons'
 import {deploymentLabel, getLatestDeployment, SITE_PREVIEW_URL} from './deployment'
 import type {DeploymentRun} from './deployment'
@@ -76,6 +76,7 @@ function isGalleryOnline(document: DashboardDocument) {
 
 export function EditorialDashboard() {
   const client = useClient({apiVersion: '2025-08-15'})
+  const {basePath} = useWorkspace()
   const [documents, setDocuments] = useState<DashboardDocument[]>([])
   const [run, setRun] = useState<DeploymentRun | null>(null)
   const [loading, setLoading] = useState(true)
@@ -191,9 +192,22 @@ export function EditorialDashboard() {
               intent="edit"
               params={{id: 'homePage', type: 'homePage'}}
             />
-            <ToolLink name="media" style={{color: 'inherit', textDecoration: 'none'}}>
+            {/*
+              Deliberately `Link` (raw href), not `ToolLink`: this component is rendered
+              *inside* the active 'dashboard' tool's own view, which Studio wraps in a
+              `RouteScope` scoped to 'dashboard'. `ToolLink`/`StateLink` resolve their href
+              through that scoped router, which nests the target tool's state under the
+              current tool's own key instead of replacing it (e.g. `{tool: 'dashboard',
+              dashboard: {tool: 'media', ...}}`) — since the 'dashboard' tool has no router,
+              that nested state can't be mapped to a URL and crashes Studio's router. `Link`
+              bypasses state resolution entirely by taking an already-resolved absolute href.
+            */}
+            <Link
+              href={`${basePath.replace(/\/$/, '')}/media`}
+              style={{color: 'inherit', textDecoration: 'none'}}
+            >
               <QuickActionContent icon={ImagesIcon} label="Photos et crédits" />
-            </ToolLink>
+            </Link>
           </Grid>
         </Stack>
 
