@@ -5,7 +5,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import HomeCarousel from '../../components/HomeCarousel.astro';
 import { getGalleries, getHomePage, getSiteSettings } from '../../lib/sanity';
-import { fullSizeUrl, thumbnailUrl } from '../../lib/image';
+import { fullSizeUrl, thumbnailUrl, blurPlaceholderUrl } from '../../lib/image';
 import { getHeroTextColor, normalizeHeroColor, resolveHomepageIntro, resolveSiteCopy } from '../../lib/site-config';
 
 const locale = 'en' as const;
@@ -38,6 +38,7 @@ const galleries = (await getGalleries())
       title: gallery.title,
       heroSrc: fullSizeUrl(cover),
       gridSrc: thumbnailUrl(cover, 600),
+      blurSrc: blurPlaceholderUrl(cover),
       alt: cover.alt?.[locale] ?? '',
       statement: gallery.statement?.[locale] ?? '',
       heroColor,

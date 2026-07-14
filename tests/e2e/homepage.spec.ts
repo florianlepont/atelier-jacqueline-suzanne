@@ -30,7 +30,10 @@ test.describe('only galleries with photos appear (D-12)', () => {
     expect(await tiles.count()).toBeGreaterThan(0);
     for (const tile of await tiles.all()) {
       await expect(tile).toHaveAttribute('href', /\/galleries\/[^/]+\/?$/);
-      await expect(tile.locator('img')).toHaveAttribute('src', /cdn\.sanity\.io/);
+      // HOME-09 added a blurred placeholder <img> sibling beneath the sharp
+      // tile image (both share the `img` tag) — scope to the sharp layer,
+      // which is the one that must carry the real gallery photo.
+      await expect(tile.locator('.home-grid__tile-img--sharp')).toHaveAttribute('src', /cdn\.sanity\.io/);
       await expect(tile.locator('.home-grid__tile-title')).toHaveText(/.+/);
     }
   });
@@ -598,5 +601,75 @@ test.describe('mobile full-bleed hero regression (HOME-06)', () => {
     await page.getByRole('button', { name: 'Grille' }).click();
     await expect(carousel).toBeHidden();
     await expect(grid).toBeVisible();
+  });
+});
+
+// Phase 9 (HOME-09): progressive image loading — page chrome renders
+// immediately (no blocking full-screen loader), the hero photo loads with
+// priority and blurs-to-sharp on first paint and every swap, and grid tiles
+// get the same blur-up treatment while staying lazy. RED (Wave 0 task 1):
+// the placeholder/`--sharp`/`fetchpriority` targets do not exist yet — only
+// the shell-renders guard is expected to already pass.
+test.describe('progressive image loading (HOME-09)', () => {
+  test('shell renders immediately without waiting on images', async ({ page }) => {
+    await page.goto('/');
+
+    const header = page.locator('[data-role="home-header"]');
+    await expect(header).toBeVisible();
+    const nav = page.locator('.home-nav');
+    await expect(nav).toBeVisible();
+    const toggle = page.locator('[data-role="mode-toggle"]');
+    await expect(toggle).toBeVisible();
+  });
+
+  test('hero image is requested with high priority', async ({ page }) => {
+    await page.goto('/');
+
+    const heroImg = page.locator('[data-role="hero-image"]');
+    await expect(heroImg).toHaveAttribute('fetchpriority', 'high');
+    await expect(heroImg).not.toHaveAttribute('loading', 'lazy');
+  });
+
+  test('hero blur-up: placeholder present and sharp fades in on first paint and after a swap', async ({ page }) => {
+    await page.clock.install();
+    await page.goto('/');
+
+    const placeholder = page.locator('[data-role="hero-image-placeholder"]');
+    await expect(placeholder).toHaveAttribute('src', /cdn\.sanity\.io/);
+
+    const heroImg = page.locator('[data-role="hero-image"]');
+    await expect(heroImg).toHaveClass(/is-loaded/);
+
+    // Trigger a swap via the mocked-clock auto-advance pattern (D-09) and
+    // confirm the sharp image reaches is-loaded again after the swap — the
+    // is-loaded class must be removed and re-added, not left stale from the
+    // previous gallery's photo (D-02).
+    await page.clock.fastForward(6000);
+    await expect(heroImg).toHaveClass(/is-loaded/);
+  });
+
+  test('grid tile blur-up: tiles carry a placeholder layer and gain is-loaded', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+
+    const tiles = page.locator('a.home-grid__tile');
+    expect(await tiles.count()).toBeGreaterThan(0);
+    for (const tile of await tiles.all()) {
+      const placeholder = tile.locator('.home-grid__tile-img-placeholder');
+      await expect(placeholder).toHaveAttribute('src', /cdn\.sanity\.io/);
+      const sharp = tile.locator('.home-grid__tile-img--sharp');
+      await expect(sharp).toHaveClass(/is-loaded/);
+    }
+  });
+
+  test('grid tiles stay lazy after this phase', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+
+    const sharpTiles = page.locator('.home-grid__tile-img--sharp');
+    expect(await sharpTiles.count()).toBeGreaterThan(0);
+    for (const img of await sharpTiles.all()) {
+      await expect(img).toHaveAttribute('loading', 'lazy');
+    }
   });
 });

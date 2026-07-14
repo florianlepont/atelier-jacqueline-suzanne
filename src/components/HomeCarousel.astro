@@ -22,6 +22,7 @@ interface GalleryEntry {
   title: string;
   heroSrc: string;
   gridSrc: string;
+  blurSrc: string;
   alt: string;
   statement: string;
   heroColor?: string;
@@ -174,7 +175,8 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           16:9 band regardless of how tall the accent panel makes
           .home-hero grow. */}
       <div class="home-hero__photo">
-        <img data-role="hero-image" src={firstGallery.heroSrc} alt={firstGallery.alt} class="home-hero__img" />
+        <img data-role="hero-image-placeholder" src={firstGallery.blurSrc} alt="" aria-hidden="true" class="home-hero__img home-hero__img-placeholder" />
+        <img data-role="hero-image" src={firstGallery.heroSrc} alt={firstGallery.alt} fetchpriority="high" class="home-hero__img home-hero__img--sharp" />
         <div class="home-hero__scrim" aria-hidden="true"></div>
 
         <div class="home-hero__caption">
@@ -234,6 +236,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         </div>
         {galleries.map((gallery) => (
           <a href={getRelativeLocaleUrl(locale, `galleries/${gallery.slug}`)} class="home-grid__tile">
+            <img src={gallery.blurSrc} alt="" aria-hidden="true" class="home-grid__tile-img home-grid__tile-img-placeholder" />
             <img
               src={gallery.gridSrc}
               width="600"
@@ -241,7 +244,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
               alt={gallery.alt}
               loading="lazy"
               decoding="async"
-              class="home-grid__tile-img"
+              class="home-grid__tile-img home-grid__tile-img--sharp"
             />
             <div class="home-grid__tile-scrim" aria-hidden="true"></div>
             <span class="home-grid__tile-copy">
@@ -261,6 +264,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         <li
           data-title={gallery.title}
           data-hero-src={gallery.heroSrc}
+          data-blur-src={gallery.blurSrc}
           data-alt={gallery.alt}
           data-statement={gallery.statement}
           data-href={getRelativeLocaleUrl(locale, `galleries/${gallery.slug}`)}
@@ -274,6 +278,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       interface GalleryEntry {
         title: string;
         heroSrc: string;
+        blurSrc: string;
         alt: string;
         statement: string;
         href: string;
@@ -290,6 +295,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         const galleries: GalleryEntry[] = Array.from(dataEl.querySelectorAll('li')).map((li) => ({
           title: li.dataset.title ?? '',
           heroSrc: li.dataset.heroSrc ?? '',
+          blurSrc: li.dataset.blurSrc ?? '',
           alt: li.dataset.alt ?? '',
           statement: li.dataset.statement ?? '',
           href: li.dataset.href ?? '',
@@ -310,6 +316,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         ];
 
         const heroImg = hero.querySelector<HTMLImageElement>('[data-role="hero-image"]');
+        const heroPlaceholderImg = hero.querySelector<HTMLImageElement>('[data-role="hero-image-placeholder"]');
         const indexLabel = hero.querySelector<HTMLElement>('[data-role="index-label"]');
         const titleEl = hero.querySelector<HTMLElement>('[data-role="gallery-title"]');
         const statementEl = hero.querySelector<HTMLElement>('[data-role="gallery-statement"]');
@@ -317,8 +324,23 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         const wordmarkEl = hero.querySelector<HTMLElement>('.home-hero__wordmark');
         const progressDashes = Array.from(hero.querySelectorAll<HTMLButtonElement>('[data-role="progress"] .home-hero__progress-dash'));
 
+        // HOME-09 (D-03/D-06): grid tiles are server-rendered once and never
+        // re-rendered by render() — a one-time load-listener setup here
+        // (not inside render()) fades each tile's sharp <img> in over its
+        // blurred placeholder as it lazy-loads into view.
+        const gridTileImgs = Array.from(document.querySelectorAll<HTMLImageElement>('.home-grid__tile-img--sharp'));
+        gridTileImgs.forEach((img) => {
+          const markLoaded = () => img.classList.add('is-loaded');
+          if (img.complete) markLoaded();
+          else img.addEventListener('load', markLoaded, { once: true });
+        });
+
         let carouselIndex = 0;
         let timer: ReturnType<typeof setInterval> | null = null;
+
+        function showSharp(img: HTMLImageElement) {
+          img.classList.add('is-loaded');
+        }
 
         // .home-hero__img uses the default object-position (50% 50%,
         // dead center) — kept as named constants so the crop math below
@@ -379,13 +401,19 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           const accent = gallery.heroColor
             ? { bg: gallery.heroColor, text: gallery.heroTextColor ?? 'var(--color-on-accent)' }
             : fallbackAccent;
-          if (heroImg) {
+          if (heroImg && heroPlaceholderImg) {
+            heroPlaceholderImg.src = gallery.blurSrc;
+            heroImg.classList.remove('is-loaded'); // Pitfall 3: must precede src reassignment
             heroImg.src = gallery.heroSrc;
             heroImg.alt = gallery.alt;
             if (heroImg.complete) {
+              showSharp(heroImg);
               syncWordmarkAlignment();
             } else {
-              heroImg.addEventListener('load', syncWordmarkAlignment, { once: true });
+              heroImg.addEventListener('load', () => {
+                showSharp(heroImg);
+                syncWordmarkAlignment();
+              }, { once: true });
             }
           }
           if (indexLabel) {
@@ -411,6 +439,16 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           progressDashes.forEach((dash, i) => {
             dash.setAttribute('aria-current', i === carouselIndex ? 'true' : 'false');
           });
+
+          // D-05: warm the browser's HTTP cache for the next gallery's hero
+          // photo so the crossfade above resolves near-instantly by the time
+          // the next auto-advance/prev/next/toggle swap actually happens.
+          const nextIndex = (carouselIndex + 1) % galleries.length;
+          const nextSrc = galleries[nextIndex]?.heroSrc;
+          if (nextSrc) {
+            const preload = new Image();
+            preload.src = nextSrc;
+          }
         }
 
         function stopAutoAdvance() {
@@ -1039,6 +1077,21 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     object-fit: cover;
   }
 
+  /* HOME-09 (D-01/D-02/D-06): blur-up placeholder crossfade — two stacked
+     <img> elements sharing the box above, not a single-<img> filter:blur()
+     animation (see 09-UI-SPEC.md's hard requirement). The placeholder
+     renders first in DOM order (paints beneath); the sharp layer starts
+     transparent and fades to opaque once loaded (render() below toggles
+     .is-loaded on every first paint and swap). */
+  .home-hero__img--sharp {
+    opacity: 0;
+    transition: opacity 260ms ease;
+  }
+
+  .home-hero__img--sharp.is-loaded {
+    opacity: 1;
+  }
+
   .home-hero__scrim {
     position: absolute;
     inset: 0;
@@ -1381,6 +1434,29 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     height: 100%;
     object-fit: cover;
     display: block;
+  }
+
+  /* HOME-09 (D-01/D-03/D-06): blur-up crossfade — same two-layer opacity
+     mechanism as the hero (see .home-hero__img--sharp above). Additive to
+     `.home-grid__tile`'s existing position: relative — stacks the
+     placeholder/sharp variants the same way `.home-grid__tile-scrim`
+     already stacks against it. The sharp image keeps loading="lazy"
+     decoding="async" unchanged (D-03) — this is purely additive on top of
+     lazy-loading, not a replacement for it. */
+  .home-grid__tile-img,
+  .home-grid__tile-img-placeholder,
+  .home-grid__tile-img--sharp {
+    position: absolute;
+    inset: 0;
+  }
+
+  .home-grid__tile-img--sharp {
+    opacity: 0;
+    transition: opacity 260ms ease;
+  }
+
+  .home-grid__tile-img--sharp.is-loaded {
+    opacity: 1;
   }
 
   .home-grid__tile-scrim {
