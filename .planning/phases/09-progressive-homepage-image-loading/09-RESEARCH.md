@@ -353,6 +353,8 @@ const galleries: GalleryEntry[] = Array.from(dataEl.querySelectorAll('li')).map(
 
 ## Open Questions
 
+*(RESOLVED — see 09-02 checkpoint: both questions below are closed by 09-02-PLAN.md Task 1's blocking human-verify checkpoint, which explicitly checks placeholder legibility against real gallery covers and the toggle-mid-fade View-Transition coincidence.)*
+
 1. **Exact placeholder width tuning (24px vs. larger)**
    - What we know: D-01 specifies `.width(24).blur(50)` as the starting point; blur(1-2000) and width(px) are both confirmed-valid parameters.
    - What's unclear: Whether 24px produces a placeholder that reads as "a recognizable color/shape preview, not a solid blob" for this specific set of photos (Silos, Brume, etc. — high-contrast documentary/architectural work) — CONTEXT.md flags this as "verify live."
