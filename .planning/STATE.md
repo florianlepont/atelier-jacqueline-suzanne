@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Homepage Polish (Pre-Launch)
-current_phase: 10
-current_phase_name: Unified Header & Simplified Language Switcher
+current_phase: 9
+current_phase_name: Progressive Homepage Image Loading
 status: executing
-stopped_at: Phase 10 context gathered
-last_updated: "2026-07-15T07:00:18.612Z"
+stopped_at: Phase 10 UI-SPEC approved
+last_updated: "2026-07-15T07:20:11.775Z"
 last_activity: 2026-07-14
-last_activity_desc: Phase 09 complete, transitioned to Phase 10
+last_activity_desc: Phase 10 context gathered via /gsd-discuss-phase
 progress:
   total_phases: 13
   completed_phases: 10
@@ -151,9 +151,9 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-15T07:00:18.604Z
-Stopped at: Phase 10 context gathered
-Resume file: .planning/phases/10-unified-header-simplified-language-switcher/10-CONTEXT.md
+Last session: 2026-07-15T07:20:11.767Z
+Stopped at: Phase 10 UI-SPEC approved
+Resume file: .planning/phases/10-unified-header-simplified-language-switcher/10-UI-SPEC.md
 
 **Next up:** `/gsd-execute-phase 9` — Progressive Homepage Image Loading (HOME-09).
 </content>
