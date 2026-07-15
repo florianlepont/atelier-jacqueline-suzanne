@@ -326,7 +326,20 @@ Plans:
   4. The language switcher shows only a link to the OTHER language (not both FR and EN) alongside a small globe icon, on every page site-wide.
   5. Clicking the language switcher link takes the visitor directly to the translated version of the current page (same destination behavior as before, just one link instead of two).
 
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+**Wave 1**
+
+- [ ] 10-01-PLAN.md — Extract shared `<SiteHeader>` + rewire BaseLayout; Instagram nav link everywhere + ported mobile CSS (HOME-10 part 1, D-01/D-03) (Wave 1)
+
+**Wave 2** *(blocked on Wave 1 — needs `<SiteHeader>`; shares HomeCarousel/homepage/i18n specs)*
+
+- [ ] 10-02-PLAN.md — Homepage renders `<SiteHeader variant="transparent">` with the mode-toggle in the `extra` slot; retire `.home-*` classes (HOME-10 part 2, D-02/D-04/D-05/D-06) (Wave 2)
+
+**Wave 3** *(blocked on Wave 2 — shares HomeCarousel/homepage/i18n specs)*
+
+- [ ] 10-03-PLAN.md — Simplify `LanguageSwitcher` to one link + globe icon, accessible name + cookie/nav preserved (I18N-04, D-07–D-11) (Wave 3)
+
 **UI hint**: yes
 
 ## Progress
@@ -347,7 +360,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 7. Homepage Quick Fixes & Mobile Hero Correctness | 2/2 | Complete    | 2026-07-13 |
 | 8. Gallery Descriptions | 1/1 | Complete   | 2026-07-14 |
 | 9. Progressive Homepage Image Loading | 2/2 | Complete    | 2026-07-14 |
-| 10. Unified Header & Simplified Language Switcher | 0/TBD | Not started | - |
+| 10. Unified Header & Simplified Language Switcher | 0/3 | Not started | - |
 
 ## Milestone Scope Note
 
