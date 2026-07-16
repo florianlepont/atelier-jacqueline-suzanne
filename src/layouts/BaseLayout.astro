@@ -7,7 +7,7 @@ import { getRelativeLocaleUrl } from 'astro:i18n';
 import { getSiteSettings } from '../lib/sanity';
 import { resolveSiteCopy } from '../lib/site-config';
 import { fullSizeUrl } from '../lib/image';
-import LanguageSwitcher from '../components/LanguageSwitcher.astro';
+import SiteHeader from '../components/SiteHeader.astro';
 // D-02/RESEARCH.md Pattern 1: self-hosted Unbounded, 900 (black) weight only
 // (Heading/Display role) — bundles the woff2 + @font-face at build time, no
 // Google Fonts CDN request (Pitfall 1 — keeps the shipped privacy policy's
@@ -109,6 +109,10 @@ const aboutLabel = siteCopy.aboutLabel;
 const aboutHref = getRelativeLocaleUrl(locale, 'about');
 const contactLabel = siteCopy.contactLabel;
 const contactHref = getRelativeLocaleUrl(locale, 'contact');
+// D-03/HOME-10: Instagram is now shared-header-wide (SiteHeader), not
+// homepage-only — matches HomeCarousel.astro's identical locale-conditional
+// const verbatim (previously duplicated only there).
+const instagramNewTabHint = locale === 'en' ? ' (opens in new tab)' : ' (nouvelle fenêtre)';
 // Legal pages (Phase 4, D-06): footer-only links, every page, not scoped to
 // About/Contact. Same hardcoded locale-conditional pattern as above — legal
 // copy is not CMS-editable (RESEARCH.md "Don't Hand-Roll"). Legal notice
@@ -179,18 +183,20 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
   </head>
   <body>
     {headerVariant !== 'none' && (
-      <header class:list={['chrome-band', 'site-header', `site-header--${headerVariant}`]}>
-        <a href={homeHref} class="logo-mark" aria-label={siteTitle}>
-          <span class="logo-mark__chip" aria-hidden="true"></span>
-          <img src={logoBlackSrc} alt="" class="logo-mark__img logo-mark__img--default" />
-          <img src={logoWhiteSrc} alt="" class="logo-mark__img logo-mark__img--hover" />
-        </a>
-        <nav class="site-nav" aria-label="Primary">
-          <a href={aboutHref} class="nav-link">{aboutLabel}</a>
-          <a href={contactHref} class="nav-link">{contactLabel}</a>
-        </nav>
-        <LanguageSwitcher />
-      </header>
+      <SiteHeader
+        variant={headerVariant}
+        siteTitle={siteTitle}
+        homeHref={homeHref}
+        aboutLabel={aboutLabel}
+        aboutHref={aboutHref}
+        contactLabel={contactLabel}
+        contactHref={contactHref}
+        instagramUrl={siteCopy.instagramUrl}
+        instagramLabel={siteCopy.instagramLabel}
+        instagramNewTabHint={instagramNewTabHint}
+        logoBlackSrc={logoBlackSrc}
+        logoWhiteSrc={logoWhiteSrc}
+      />
     )}
     <main>
       <slot />
@@ -333,167 +339,13 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
 
 <style>
   /* D-04: header/footer merge onto --color-dominant (white-on-white),
-     delineated only by a 1px hairline border — no chrome-band tint. */
-  .chrome-band {
-    padding: var(--space-lg) var(--space-md);
-  }
-
-  @media (min-width: 768px) {
-    .chrome-band {
-      padding: var(--space-xl) var(--space-md);
-    }
-  }
-
-  .site-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-md);
-  }
-
-  .site-header--solid {
-    background-color: var(--color-dominant);
-    border-bottom: var(--border-hairline) solid var(--color-border);
-  }
-
-  /* D-07/Plan 04.1-05: absolutely-positioned, transparent/gradient header
-     over a hero photo scrim — no hairline border (the scrim itself is the
-     delineation). Nav text renders white in this variant. */
-  .site-header--transparent {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 2;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.25) 60%, rgba(0, 0, 0, 0) 100%);
-  }
-
-  .site-header--transparent .nav-link {
-    color: #FFFFFF;
-  }
-
-  /* D-11/D-13/RESEARCH.md Pattern 3 (revised per logo-hover-and-font debug
-     session): two normal-flow <img> elements, hard display:none/block swap
-     on hover — matches the reference site's own hover MECHANIC exactly
-     (verified byte-for-byte against its compiled CSS: `.image-link` is
-     `display: inline-block`, `.image-rollover` is `display: none` by
-     default, swapped on hover, no transition/opacity). Deliberately NOT
-     absolutely-positioned: an earlier version of this fix stacked the hover
-     image with `position: absolute` while the default image used
-     `display: none` on hover, which collapsed `.logo-mark`'s own box to 0x0
-     (no in-flow child left) and shifted the sibling nav layout on hover.
-     Both logo PNGs share the same intrinsic aspect ratio, so swapping which
-     one is in-flow causes no layout jump.
-
-     The dark `__chip` backdrop is KEPT (unlike the original fix plan) but
-     changed from an opacity-fade to the same instant display:none/block
-     toggle as the images — verified by downloading the reference site's own
-     rollover PNG asset (not just its CSS) that its "hover" logo has an
-     opaque black background baked directly into the image file, which is
-     how it stays legible over the white header. Our white logo variant
-     (AJS_Brutalist_White_Transparent.png) is transparent, so without an
-     instant backdrop behind it, the hover state is nearly invisible against
-     a light header — reproducing the reference's CSS literally without this
-     would visually regress legibility versus both the reference site and
-     the pre-fix implementation. */
-  .logo-mark {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    text-decoration: none;
-  }
-
-  .logo-mark__chip {
-    position: absolute;
-    inset: calc(-1 * var(--space-sm));
-    background-color: var(--color-ink);
-    border-radius: var(--radius-none);
-    display: none;
-    z-index: 0;
-  }
-
-  .logo-mark__img {
-    position: relative;
-    z-index: 1;
-    display: block;
-    width: 56px;
-    height: auto;
-  }
-
-  .logo-mark__img--hover {
-    display: none;
-  }
-
-  /* Solid header: default = black logo; hover/focus-within hard-swaps to the
-     white variant over the instantly-shown dark chip, no transition. */
-  .site-header--solid .logo-mark:hover .logo-mark__img--default,
-  .site-header--solid .logo-mark:focus-within .logo-mark__img--default {
-    display: none;
-  }
-
-  .site-header--solid .logo-mark:hover .logo-mark__img--hover,
-  .site-header--solid .logo-mark:focus-within .logo-mark__img--hover,
-  .site-header--solid .logo-mark:hover .logo-mark__chip,
-  .site-header--solid .logo-mark:focus-within .logo-mark__chip {
-    display: block;
-  }
-
-  /* Transparent header (revised per logo-hover-and-font debug session, Round
-     2): white logo variant shown by default (over the dark scrim already
-     provided by the header background) — unchanged. Hover/focus-within now
-     hard-swaps to the BLACK variant, same mechanic as the solid header, but
-     with a LIGHT chip instead of the solid header's dark chip — the black
-     hover-logo would be invisible against both the dark scrim and a dark
-     chip, so the backdrop color must flip with the logo color, not stay
-     fixed. Used on gallery-detail pages (dark hero background) as well as
-     any other transparent-header page. */
-  .site-header--transparent .logo-mark__img--default {
-    display: none;
-  }
-
-  .site-header--transparent .logo-mark__img--hover {
-    display: block;
-  }
-
-  .site-header--transparent .logo-mark:hover .logo-mark__img--hover,
-  .site-header--transparent .logo-mark:focus-within .logo-mark__img--hover {
-    display: none;
-  }
-
-  .site-header--transparent .logo-mark:hover .logo-mark__img--default,
-  .site-header--transparent .logo-mark:focus-within .logo-mark__img--default,
-  .site-header--transparent .logo-mark:hover .logo-mark__chip,
-  .site-header--transparent .logo-mark:focus-within .logo-mark__chip {
-    display: block;
-  }
-
-  /* Mode-aware chip color: solid header's chip (behind the white hover-logo)
-     stays dark (--color-ink, the base .logo-mark__chip rule above) — this
-     override only applies inside the transparent header, behind the black
-     hover-logo, so it must be light instead. */
-  .site-header--transparent .logo-mark__chip {
-    background-color: var(--color-dominant);
-  }
-
-  .site-nav {
-    margin-right: auto;
-    margin-left: var(--space-md);
-    display: flex;
-    gap: var(--space-md);
-  }
-
-  .nav-link {
-    font-size: 14px; /* Label role */
-    font-weight: var(--weight-regular);
-    line-height: 1.5;
-    text-decoration: none;
-  }
-
-  .nav-link:hover,
-  .nav-link:focus-visible {
-    text-decoration: underline;
-  }
-
+     delineated only by a 1px hairline border — no chrome-band tint.
+     NOTE: .chrome-band's own padding rule (base + @media 768px variant) and
+     every .site-header*/.logo-mark*/.site-nav/.nav-link rule now live in
+     SiteHeader.astro's is:global stylesheet (HOME-10/D-01 extraction) — the
+     <header> element they target no longer renders from this file's own
+     template scope. footer.chrome-band's border-top rule stays here since
+     the <footer> element is still directly in this component's template. */
   footer.chrome-band {
     text-align: left;
     border-top: var(--border-hairline) solid var(--color-border);

@@ -1,0 +1,280 @@
+---
+// Single canonical header (HOME-10, D-01) — extracted verbatim from
+// BaseLayout.astro's former inline <header> markup/CSS. Rendered by
+// BaseLayout for every non-homepage page (Plan 01); the homepage itself
+// switches to rendering this same component in Plan 02.
+//
+// Every href/label is passed in by the caller (both call sites already
+// compute these identically today) — this component only imports
+// LanguageSwitcher, never getRelativeLocaleUrl/siteSettings/sanity directly,
+// so it stays a pure, build-time-only, zero-hydration presentational
+// component (T-10-01: no secret/token path reaches the client).
+import LanguageSwitcher from './LanguageSwitcher.astro';
+
+interface Props {
+  // 2-value union, not BaseLayout's 3-value headerVariant — 'none'
+  // suppression stays entirely in BaseLayout's own conditional
+  // (RESEARCH.md Open Question 2). SiteHeader only ever needs to know how
+  // to paint a header, never whether to paint one at all.
+  variant: 'solid' | 'transparent';
+  siteTitle: string;
+  homeHref: string;
+  aboutLabel: string;
+  aboutHref: string;
+  contactLabel: string;
+  contactHref: string;
+  instagramUrl: string;
+  instagramLabel: string;
+  instagramNewTabHint: string;
+  logoBlackSrc: string;
+  logoWhiteSrc: string;
+}
+
+const {
+  variant,
+  siteTitle,
+  homeHref,
+  aboutLabel,
+  aboutHref,
+  contactLabel,
+  contactHref,
+  instagramUrl,
+  instagramLabel,
+  instagramNewTabHint,
+  logoBlackSrc,
+  logoWhiteSrc,
+} = Astro.props;
+---
+
+<header class:list={['chrome-band', 'site-header', `site-header--${variant}`]} data-role="site-header">
+  <a href={homeHref} class="logo-mark" aria-label={siteTitle}>
+    <span class="logo-mark__chip" aria-hidden="true"></span>
+    <img src={logoBlackSrc} alt="" class="logo-mark__img logo-mark__img--default" />
+    <img src={logoWhiteSrc} alt="" class="logo-mark__img logo-mark__img--hover" />
+  </a>
+  <nav class="site-nav" aria-label="Primary">
+    <a href={aboutHref} class="nav-link">{aboutLabel}</a>
+    <a href={contactHref} class="nav-link">{contactLabel}</a>
+    {/* Instagram link — moved in verbatim from HomeCarousel.astro (D-03), so
+        it now renders on every page, not just the homepage. */}
+    <a
+      href={instagramUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="nav-link"
+      aria-label={`Instagram ${instagramLabel}`}
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        aria-hidden="true"
+      >
+        <rect x="2.5" y="2.5" width="19" height="19" rx="5.5" />
+        <circle cx="12" cy="12" r="4.6" />
+        <circle cx="17.4" cy="6.6" r="1.1" fill="currentColor" stroke="none" />
+      </svg>
+      <span class="sr-only">{instagramNewTabHint}</span>
+    </a>
+  </nav>
+  {/* D-04: reserved for the homepage's carousel/grid mode-toggle (Plan 02) —
+      empty on every other page. */}
+  <slot name="extra" />
+  <LanguageSwitcher />
+</header>
+
+<style is:global>
+  /* Relocated from BaseLayout.astro (RESEARCH.md Pattern 3 / this plan's
+     "SCOPING GOTCHA" note): the <header> now renders from this component,
+     leaving BaseLayout's own scoped-<style> scope, so .chrome-band's header
+     padding must live in an is:global block to keep reaching it. Global CSS
+     still applies to the footer's own `footer.chrome-band` element too
+     (BaseLayout.astro keeps that selector's border-top rule scoped there —
+     unaffected, since is:global rules apply site-wide regardless of which
+     component defines them). */
+  .chrome-band {
+    padding: var(--space-lg) var(--space-md);
+  }
+
+  @media (min-width: 768px) {
+    .chrome-band {
+      padding: var(--space-xl) var(--space-md);
+    }
+  }
+
+  .site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+  }
+
+  .site-header--solid {
+    background-color: var(--color-dominant);
+    border-bottom: var(--border-hairline) solid var(--color-border);
+  }
+
+  /* D-07/Plan 04.1-05: absolutely-positioned, transparent/gradient header
+     over a hero photo scrim — no hairline border (the scrim itself is the
+     delineation). Nav text renders white in this variant. */
+  .site-header--transparent {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 2;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.25) 60%, rgba(0, 0, 0, 0) 100%);
+  }
+
+  .site-header--transparent .nav-link {
+    color: #FFFFFF;
+  }
+
+  /* D-11/D-13/RESEARCH.md Pattern 3 (revised per logo-hover-and-font debug
+     session): two normal-flow <img> elements, hard display:none/block swap
+     on hover — matches the reference site's own hover MECHANIC exactly
+     (verified byte-for-byte against its compiled CSS: `.image-link` is
+     `display: inline-block`, `.image-rollover` is `display: none` by
+     default, swapped on hover, no transition/opacity). Deliberately NOT
+     absolutely-positioned: an earlier version of this fix stacked the hover
+     image with `position: absolute` while the default image used
+     `display: none` on hover, which collapsed `.logo-mark`'s own box to 0x0
+     (no in-flow child left) and shifted the sibling nav layout on hover.
+     Both logo PNGs share the same intrinsic aspect ratio, so swapping which
+     one is in-flow causes no layout jump.
+
+     The dark `__chip` backdrop is KEPT (unlike the original fix plan) but
+     changed from an opacity-fade to the same instant display:none/block
+     toggle as the images — verified by downloading the reference site's own
+     rollover PNG asset (not just its CSS) that its "hover" logo has an
+     opaque black background baked directly into the image file, which is
+     how it stays legible over the white header. Our white logo variant
+     (AJS_Brutalist_White_Transparent.png) is transparent, so without an
+     instant backdrop behind it, the hover state is nearly invisible against
+     a light header — reproducing the reference's CSS literally without this
+     would visually regress legibility versus both the reference site and
+     the pre-fix implementation. */
+  .logo-mark {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+  }
+
+  .logo-mark__chip {
+    position: absolute;
+    inset: calc(-1 * var(--space-sm));
+    background-color: var(--color-ink);
+    border-radius: var(--radius-none);
+    display: none;
+    z-index: 0;
+  }
+
+  .logo-mark__img {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 56px;
+    height: auto;
+  }
+
+  .logo-mark__img--hover {
+    display: none;
+  }
+
+  /* Solid header: default = black logo; hover/focus-within hard-swaps to the
+     white variant over the instantly-shown dark chip, no transition. */
+  .site-header--solid .logo-mark:hover .logo-mark__img--default,
+  .site-header--solid .logo-mark:focus-within .logo-mark__img--default {
+    display: none;
+  }
+
+  .site-header--solid .logo-mark:hover .logo-mark__img--hover,
+  .site-header--solid .logo-mark:focus-within .logo-mark__img--hover,
+  .site-header--solid .logo-mark:hover .logo-mark__chip,
+  .site-header--solid .logo-mark:focus-within .logo-mark__chip {
+    display: block;
+  }
+
+  /* Transparent header (revised per logo-hover-and-font debug session, Round
+     2): white logo variant shown by default (over the dark scrim already
+     provided by the header background) — unchanged. Hover/focus-within now
+     hard-swaps to the BLACK variant, same mechanic as the solid header, but
+     with a LIGHT chip instead of the solid header's dark chip — the black
+     hover-logo would be invisible against both the dark scrim and a dark
+     chip, so the backdrop color must flip with the logo color, not stay
+     fixed. Used on gallery-detail pages (dark hero background) as well as
+     any other transparent-header page. */
+  .site-header--transparent .logo-mark__img--default {
+    display: none;
+  }
+
+  .site-header--transparent .logo-mark__img--hover {
+    display: block;
+  }
+
+  .site-header--transparent .logo-mark:hover .logo-mark__img--hover,
+  .site-header--transparent .logo-mark:focus-within .logo-mark__img--hover {
+    display: none;
+  }
+
+  .site-header--transparent .logo-mark:hover .logo-mark__img--default,
+  .site-header--transparent .logo-mark:focus-within .logo-mark__img--default,
+  .site-header--transparent .logo-mark:hover .logo-mark__chip,
+  .site-header--transparent .logo-mark:focus-within .logo-mark__chip {
+    display: block;
+  }
+
+  /* Mode-aware chip color: solid header's chip (behind the white hover-logo)
+     stays dark (--color-ink, the base .logo-mark__chip rule above) — this
+     override only applies inside the transparent header, behind the black
+     hover-logo, so it must be light instead. */
+  .site-header--transparent .logo-mark__chip {
+    background-color: var(--color-dominant);
+  }
+
+  .site-nav {
+    margin-right: auto;
+    margin-left: var(--space-md);
+    display: flex;
+    gap: var(--space-md);
+  }
+
+  .nav-link {
+    font-size: 14px; /* Label role */
+    font-weight: var(--weight-regular);
+    line-height: 1.5;
+    text-decoration: none;
+  }
+
+  .nav-link:hover,
+  .nav-link:focus-visible {
+    text-decoration: underline;
+  }
+
+  /* Ported forward from HomeCarousel.astro's own live-tested mobile
+     pixel-budget CSS (RESEARCH.md Pitfall 1/Pattern Map) — BaseLayout's
+     header has never had mobile-specific CSS before (it only ever carried 4
+     flex items). Now that Instagram is a 3rd .nav-link on every page
+     (D-03), About/Contact/gallery-detail need the same wrap/gap trims the
+     homepage already relies on. */
+  @media (max-width: 767px) {
+    .site-header {
+      flex-wrap: wrap;
+      gap: var(--space-xs);
+    }
+
+    .site-nav {
+      margin-left: 0;
+      gap: var(--space-xs);
+    }
+
+    .site-nav .nav-link {
+      padding-left: var(--space-xs);
+      padding-right: var(--space-xs);
+    }
+  }
+</style>
