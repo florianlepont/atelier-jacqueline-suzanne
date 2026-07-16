@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Homepage Polish (Pre-Launch)
 current_phase: 10
-current_phase_name: Unified Header & Simplified Language Switcher
-status: planned
+current_phase_name: unified-header-simplified-language-switcher
+status: executing
 stopped_at: Phase 10 plans created — pending plan-checker verification
-last_updated: "2026-07-15T07:30:00.000Z"
-last_activity: 2026-07-14
-last_activity_desc: Phase 10 planned (3 plans, research + UI-SPEC + pattern map all passed)
+last_updated: "2026-07-16T14:50:55.821Z"
+last_activity: 2026-07-16
+last_activity_desc: Phase 10 execution started
 progress:
   total_phases: 13
   completed_phases: 10
-  total_plans: 30
+  total_plans: 33
   completed_plans: 31
   percent: 77
 ---
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-14)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; checkout follows in v1.x.)
-**Current focus:** Phase 10 — Unified Header & Simplified Language Switcher
+**Current focus:** Phase 10 — unified-header-simplified-language-switcher
 
 ## Current Position
 
-Phase: 9 (Progressive Homepage Image Loading) — COMPLETE (see 09-VERIFICATION.md)
+Phase: 10 (unified-header-simplified-language-switcher) — EXECUTING
 Phase: 10 (Unified Header & Simplified Language Switcher) — 3 plans created, verifying
-Status: Running plan-checker
-Last activity: 2026-07-14 — Phase 10 planned (research, UI-SPEC, pattern map, 3 plans)
+Status: Executing Phase 10
+Last activity: 2026-07-16 — Phase 10 execution started
 
 ## Performance Metrics
 
