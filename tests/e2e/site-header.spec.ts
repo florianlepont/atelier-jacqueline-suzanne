@@ -44,7 +44,7 @@ test.describe('Shared SiteHeader — Instagram nav link on non-homepage pages (H
 });
 
 test.describe('Shared SiteHeader — mobile fit at 393px (HOME-10, Pitfall 1)', () => {
-  for (const path of ['/about/', '/contact/']) {
+  for (const path of ['/about/', '/contact/', '/galleries/silos/']) {
     test(`${path}: no horizontal page overflow at a 393px viewport`, async ({ page }) => {
       await page.setViewportSize({ width: 393, height: 800 });
       await page.goto(path);
@@ -56,6 +56,15 @@ test.describe('Shared SiteHeader — mobile fit at 393px (HOME-10, Pitfall 1)', 
       expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.innerWidth);
     });
   }
+});
+
+test.describe('Shared SiteHeader — mode-toggle scoping (HOME-10, D-04)', () => {
+  test('the mode-toggle does not render on /about/ or /contact/', async ({ page }) => {
+    for (const path of ['/about/', '/contact/']) {
+      await page.goto(path);
+      await expect(page.locator('[data-role="mode-toggle"]')).toHaveCount(0);
+    }
+  });
 });
 
 test.describe('Shared SiteHeader — nav structure (HOME-10, D-01)', () => {
