@@ -88,12 +88,17 @@ test.describe('auto-advance + pause (D-09)', () => {
 });
 
 test.describe('i18n non-regression guard', () => {
-  test('homepage header still exposes the FR|EN switcher and differs between locales', async ({ page }) => {
+  test('homepage header still exposes the one-link switcher and differs between locales', async ({ page }) => {
     await page.goto('/');
 
     const header = page.locator('[data-role="site-header"]');
     await expect(header).toBeVisible();
-    await expect(header).toContainText('FR | EN');
+    // I18N-04/D-07/D-08: single switcher link (other language), no
+    // separator, accessible name contains "EN" on the French homepage.
+    const switcher = header.locator('.language-switcher');
+    await expect(switcher.locator('.switcher-link')).toHaveCount(1);
+    await expect(switcher.locator('.switcher-separator')).toHaveCount(0);
+    await expect(switcher.getByRole('link', { name: 'EN' })).toHaveCount(1);
     const frHeaderText = await header.innerText();
 
     await page.goto('/en/');

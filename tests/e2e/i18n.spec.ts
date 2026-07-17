@@ -12,18 +12,36 @@ test.describe('locale content', () => {
     await page.goto('/');
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
-    await expect(page.locator('[data-role="site-header"]')).toBeVisible();
+    const header = page.locator('[data-role="site-header"]');
+    await expect(header).toBeVisible();
     await expect(page.locator('body > footer')).toBeVisible();
-    await expect(page.locator('[data-role="site-header"]')).toContainText('FR | EN');
+
+    // I18N-04/D-07/D-08: exactly one switcher link (the other language),
+    // no separator, accessible name contains "EN", and a leading globe svg.
+    const switcher = header.locator('.language-switcher');
+    await expect(switcher.locator('.switcher-link')).toHaveCount(1);
+    await expect(switcher.locator('.switcher-separator')).toHaveCount(0);
+    const switcherLink = switcher.getByRole('link', { name: 'EN' });
+    await expect(switcherLink).toHaveCount(1);
+    await expect(switcherLink.locator('svg')).toHaveCount(1);
   });
 
   test('English chrome and placeholder homepage render at "/en/"', async ({ page }) => {
     await page.goto('/en/');
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-    await expect(page.locator('[data-role="site-header"]')).toBeVisible();
+    const header = page.locator('[data-role="site-header"]');
+    await expect(header).toBeVisible();
     await expect(page.locator('body > footer')).toBeVisible();
-    await expect(page.locator('[data-role="site-header"]')).toContainText('FR | EN');
+
+    // I18N-04/D-07/D-08: single switcher link, no separator, accessible
+    // name contains "FR" on the English page.
+    const switcher = header.locator('.language-switcher');
+    await expect(switcher.locator('.switcher-link')).toHaveCount(1);
+    await expect(switcher.locator('.switcher-separator')).toHaveCount(0);
+    const switcherLink = switcher.getByRole('link', { name: 'FR' });
+    await expect(switcherLink).toHaveCount(1);
+    await expect(switcherLink.locator('svg')).toHaveCount(1);
   });
 
   test('site-title/nav/footer copy differs between the French and English pages', async ({ page }) => {

@@ -68,7 +68,7 @@ Resolves the remaining homepage UX rough edges before the Phase 5 domain cutover
 
 ### Bilingual
 
-- [ ] **I18N-04**: Language switcher shows only the other language (plus a globe icon indicating it's a language control), not both FR/EN — clicking switches directly to the translated version of the current page
+- [x] **I18N-04**: Language switcher shows only the other language (plus a globe icon indicating it's a language control), not both FR/EN — clicking switches directly to the translated version of the current page
 
 ## v2 Requirements
 
@@ -171,7 +171,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HOME-08 | Phase 8 | Complete |
 | HOME-09 | Phase 9 | Complete |
 | HOME-10 | Phase 10 | Pending |
-| I18N-04 | Phase 10 | Pending |
+| I18N-04 | Phase 10 | Complete |
 
 **Coverage:**
 
