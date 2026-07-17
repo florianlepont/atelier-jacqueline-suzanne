@@ -10,12 +10,17 @@
 // getGalleries() — this component and its client <script> never import
 // src/lib/sanity.ts, so SANITY_API_READ_TOKEN never reaches the browser.
 //
-// This component also renders the homepage's own <header> (nav +
-// carousel/grid toggle + LanguageSwitcher) since the page invokes
-// `<BaseLayout headerVariant="none">` to avoid a duplicate <header> — see
-// 04.1-UI-SPEC.md Layout Notes ("Homepage — Carousel mode" / "Grid mode").
+// This component also renders the homepage's own header — since Phase 10
+// Plan 02 (HOME-10, D-01/D-02/D-04), that means rendering the SAME
+// <SiteHeader> component every other page renders (About/Contact/gallery-
+// detail via BaseLayout), with variant="transparent" fixed (RESEARCH.md
+// Pattern 1 — never re-rendered) and the carousel/grid mode-toggle passed
+// into its named `extra` slot. The page invokes `<BaseLayout
+// headerVariant="none">` to avoid a duplicate <header> — see
+// 04.1-UI-SPEC.md Layout Notes ("Homepage — Carousel mode" / "Grid mode")
+// and 10-UI-SPEC.md "<SiteHeader> component contract".
 import { getRelativeLocaleUrl } from 'astro:i18n';
-import LanguageSwitcher from './LanguageSwitcher.astro';
+import SiteHeader from './SiteHeader.astro';
 
 interface GalleryEntry {
   slug: string;
@@ -96,49 +101,26 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       '--current-accent': firstGallery.heroColor ?? 'var(--color-accent)',
     }}
   >
-    <header class="home-header" data-role="home-header">
-      <a href={homeHref} class="home-logo" aria-label={wordmark}>
-        <span class="home-logo__chip" aria-hidden="true"></span>
-        <img src={logoBlackSrc} alt="" class="home-logo__img home-logo__img--default" />
-        <img src={logoWhiteSrc} alt="" class="home-logo__img home-logo__img--hover" />
-      </a>
-      <nav class="home-nav" aria-label="Primary">
-        <a href={aboutHref} class="home-nav-link">{aboutLabel}</a>
-        <a href={contactHref} class="home-nav-link">{contactLabel}</a>
-        {/* D-02: grouped with the other "leave the page" links (About/
-            Contact), not with the toggle/switcher (display controls). D-01/
-            D-04: bare icon, no bordered box — the glyph is expected to read
-            as clickable on its own among the plain-text nav links. */}
-        <a
-          href={siteCopy.instagramUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="home-nav-link"
-          aria-label={`Instagram ${siteCopy.instagramLabel}`}
-        >
-          {/* Hand-authored, dependency-free, currentColor-based glyph —
-              rounded-square camera outline + lens + shutter dot — matching
-              the "no icon library" convention already established by
-              .home-toggle__morph. Square 20x20 footprint (D-01: Instagram's
-              mark is conventionally square, unlike the toggle's intentionally
-              non-square bar/grid glyph). */}
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            aria-hidden="true"
-          >
-            <rect x="2.5" y="2.5" width="19" height="19" rx="5.5" />
-            <circle cx="12" cy="12" r="4.6" />
-            <circle cx="17.4" cy="6.6" r="1.1" fill="currentColor" stroke="none" />
-          </svg>
-          <span class="sr-only">{instagramNewTabHint}</span>
-        </a>
-      </nav>
+    <SiteHeader
+      variant="transparent"
+      siteTitle={wordmark}
+      homeHref={homeHref}
+      aboutLabel={aboutLabel}
+      aboutHref={aboutHref}
+      contactLabel={contactLabel}
+      contactHref={contactHref}
+      instagramUrl={siteCopy.instagramUrl}
+      instagramLabel={siteCopy.instagramLabel}
+      instagramNewTabHint={instagramNewTabHint}
+      logoBlackSrc={logoBlackSrc}
+      logoWhiteSrc={logoWhiteSrc}
+    >
+      {/* D-04: the ONLY content ever passed through SiteHeader's named
+          `extra` slot — inherently homepage-only functionality (no "mode"
+          concept exists on About/Contact/gallery-detail). Markup/behavior
+          unchanged from before the SiteHeader extraction. */}
       <button
+        slot="extra"
         type="button"
         class="home-toggle"
         data-role="mode-toggle"
@@ -158,8 +140,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           </span>
         </span>
       </button>
-      <LanguageSwitcher />
-    </header>
+    </SiteHeader>
 
     <div class="home-hero" data-role="home-carousel">
       {/* Wraps the photo + its overlaid chrome (scrim, arrows, caption) in
@@ -694,16 +675,23 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     position: relative;
   }
 
-  /* Top bar — carousel mode: overlaid on the hero photo, colored with the
-     current accent (UI-SPEC Layout Notes — Header). Grid mode: static
-     position, ink-colored (no image beneath it). */
-  .home-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-md);
-    padding: var(--space-lg) var(--space-md);
-    z-index: 5;
+  /* HOME-10 (D-01/D-02/D-04, Phase 10 Plan 02): the homepage now renders
+     the SAME <SiteHeader> component every other page uses (About/Contact/
+     gallery-detail), with variant="transparent" fixed — RESEARCH.md
+     Pattern 1, never swapped by JS. Everything below is ONLY the
+     homepage-specific delta layered on top of SiteHeader's own is:global
+     stylesheet: the header's view-transition identity (a homepage-only
+     morph concern, unrelated to the 100svh/100vh mobile-hero math — see
+     .home-hero__photo/.home-hero__accent below for that), and the
+     [data-display-mode='grid'] re-skin that makes the fixed-transparent
+     header LOOK solid without ever changing the prop (D-02). :global()
+     wraps every selector fragment targeting markup owned by
+     SiteHeader.astro/LanguageSwitcher.astro — Astro's own CSS scoping
+     otherwise appends THIS file's scope id to only the rightmost compound
+     selector, which would never match those files' own scope id. Same
+     established pattern as the pre-existing :global(.switcher-link)
+     override below (that one predates this refactor). */
+  .home :global(.site-header) {
     /* Direct follow-up (quick-260713-jfz): same class of bug as
        .home-hero__accent's view-transition-name (see below) — unnamed, the
        header was just part of the flat root snapshot, and since it comes
@@ -715,166 +703,95 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        area while growing/shrinking, fully blanking the logo/nav/toggle for
        a visible chunk of the transition — confirmed via a cropped
        mid-transition screenshot showing the header region completely
-       empty. Naming it (plus the explicit z-index in the is:global block)
-       keeps it in its own group, painted above the morph regardless of
-       DOM order. Unlike .home-hero__photo/.home-hero__accent (HOME-06
-       D-10/D-12), this element was NOT flagged as a mobile-hero regression
-       suspect and keeps its permanent naming — the header's own
+       empty. Naming it keeps it in its own group, painted above the morph
+       regardless of DOM order. Unlike .home-hero__photo/.home-hero__accent
+       (HOME-06 D-10/D-12), this element was NOT flagged as a mobile-hero
+       regression suspect and keeps its permanent naming — the header's own
        positioning/sizing doesn't depend on 100svh/100vh math, so there is
        no equivalent "always-on naming at first paint" risk here. */
     view-transition-name: ajs-header;
+    z-index: 5;
   }
 
-  .home[data-display-mode='carousel'] .home-header {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 100%);
-    /* Neutral white, not the cycling accent color (direct user feedback —
-       the accent-per-gallery color is reserved for the accent panel only,
-       per D-05; header/nav text should read for contrast, not compete with
-       it). */
-    color: #FFFFFF;
-  }
-
-  .home[data-display-mode='grid'] .home-header {
+  /* Grid mode: re-skin the fixed transparent header to look solid (D-02) —
+     static position, no scrim, ink text — mirroring
+     .site-header--solid's own look (SiteHeader.astro) without ever
+     swapping SiteHeader's variant prop. Carousel mode needs no override
+     here: .site-header--transparent's own default look (dark gradient
+     scrim, white text) IS the carousel look, matching gallery-detail pages
+     exactly — the unification this whole phase exists to deliver. */
+  .home[data-display-mode='grid'] :global(.site-header--transparent) {
     position: static;
     background: none;
     color: var(--color-ink);
   }
 
-  /* D-01/D-02 (revised per logo-hover-and-font debug session): two
-     normal-flow <img> elements, hard display:none/block swap on hover —
-     mirrors BaseLayout.astro's .logo-mark mechanism exactly (matches the
-     reference site's own hover MECHANIC, verified byte-for-byte against its
-     compiled CSS: a display:none/block toggle between two same-size images,
-     no transition/opacity), scoped by data-display-mode instead of a
-     site-header--solid/--transparent class. Deliberately NOT
-     absolutely-positioned — an earlier version stacked the hover image with
-     `position: absolute` while the default used `display: none` on hover,
-     which collapsed `.home-logo`'s own box to 0x0 (no in-flow child left)
-     and shifted the sibling nav layout on hover. Both logo PNGs share the
-     same intrinsic aspect ratio, so swapping which one is in-flow causes no
-     layout jump.
-
-     The dark `__chip` backdrop is KEPT (unlike the original fix plan) but
-     changed from an opacity-fade to the same instant display:none/block
-     toggle as the images — see BaseLayout.astro's matching comment: the
-     reference site's own rollover PNG asset has an opaque black background
-     baked into the file itself (verified by downloading and viewing it),
-     which is how it stays legible over a white header. Our white logo
-     variant is a transparent PNG, so without an instant backdrop the hover
-     state is nearly invisible against the light grid-mode header. */
-  .home-logo {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    text-decoration: none;
+  .home[data-display-mode='grid'] :global(.site-header--transparent .nav-link) {
+    color: inherit;
   }
 
-  .home-logo__chip {
-    position: absolute;
-    inset: calc(-1 * var(--space-sm));
+  /* Grid mode logo re-skin: SiteHeader's own transparent-variant CSS shows
+     the white logo by default (correct for carousel mode) — grid mode
+     needs to look like the solid variant instead (black logo default,
+     white-on-dark-chip on hover), so this fully inverts the transparent
+     variant's default/hover swap, mirroring .site-header--solid's own
+     mechanic in SiteHeader.astro. */
+  .home[data-display-mode='grid'] :global(.site-header--transparent .logo-mark__img--default) {
+    display: block;
+  }
+
+  .home[data-display-mode='grid'] :global(.site-header--transparent .logo-mark__img--hover) {
+    display: none;
+  }
+
+  .home[data-display-mode='grid'] :global(.site-header--transparent .logo-mark:hover .logo-mark__img--hover),
+  .home[data-display-mode='grid'] :global(.site-header--transparent .logo-mark:focus-within .logo-mark__img--hover),
+  .home[data-display-mode='grid'] :global(.site-header--transparent .logo-mark:hover .logo-mark__chip),
+  .home[data-display-mode='grid'] :global(.site-header--transparent .logo-mark:focus-within .logo-mark__chip) {
+    display: block;
+  }
+
+  .home[data-display-mode='grid'] :global(.site-header--transparent .logo-mark:hover .logo-mark__img--default),
+  .home[data-display-mode='grid'] :global(.site-header--transparent .logo-mark:focus-within .logo-mark__img--default) {
+    display: none;
+  }
+
+  /* Mode-aware chip color: the base .logo-mark__chip rule (SiteHeader.astro)
+     is dark (--color-ink) for the solid variant's white hover-logo — grid
+     mode reuses that same dark chip (it's re-adopting the solid look), so
+     no override is needed here beyond restoring it against the transparent
+     variant's own light-chip default. */
+  .home[data-display-mode='grid'] :global(.site-header--transparent .logo-mark__chip) {
     background-color: var(--color-ink);
-    border-radius: var(--radius-none);
-    display: none;
-    z-index: 0;
-  }
-
-  .home-logo__img {
-    position: relative;
-    z-index: 1;
-    display: block;
-    width: 56px;
-    height: auto;
-  }
-
-  .home-logo__img--hover {
-    display: none;
-  }
-
-  /* Grid mode mirrors .site-header--solid: default = black logo;
-     hover/focus-within hard-swaps to the white variant over the instantly-
-     shown dark chip, no transition. */
-  .home[data-display-mode='grid'] .home-logo:hover .home-logo__img--default,
-  .home[data-display-mode='grid'] .home-logo:focus-within .home-logo__img--default {
-    display: none;
-  }
-
-  .home[data-display-mode='grid'] .home-logo:hover .home-logo__img--hover,
-  .home[data-display-mode='grid'] .home-logo:focus-within .home-logo__img--hover,
-  .home[data-display-mode='grid'] .home-logo:hover .home-logo__chip,
-  .home[data-display-mode='grid'] .home-logo:focus-within .home-logo__chip {
-    display: block;
-  }
-
-  /* Carousel mode mirrors .site-header--transparent (revised per
-     logo-hover-and-font debug session, Round 2): white logo variant shown by
-     default over the existing hero gradient scrim — unchanged. Hover/
-     focus-within now hard-swaps to the BLACK variant, same mechanic as grid
-     mode, but with a LIGHT chip instead of grid mode's dark chip — the black
-     hover-logo would be invisible against both the dark hero photo and a
-     dark chip, so the backdrop color must flip with the logo color. */
-  .home[data-display-mode='carousel'] .home-logo__img--default {
-    display: none;
-  }
-
-  .home[data-display-mode='carousel'] .home-logo__img--hover {
-    display: block;
-  }
-
-  .home[data-display-mode='carousel'] .home-logo:hover .home-logo__img--hover,
-  .home[data-display-mode='carousel'] .home-logo:focus-within .home-logo__img--hover {
-    display: none;
-  }
-
-  .home[data-display-mode='carousel'] .home-logo:hover .home-logo__img--default,
-  .home[data-display-mode='carousel'] .home-logo:focus-within .home-logo__img--default,
-  .home[data-display-mode='carousel'] .home-logo:hover .home-logo__chip,
-  .home[data-display-mode='carousel'] .home-logo:focus-within .home-logo__chip {
-    display: block;
-  }
-
-  /* Mode-aware chip color: grid mode's chip (behind the white hover-logo,
-     base .home-logo__chip rule above) stays dark (--color-ink) — this
-     override only applies in carousel mode, behind the black hover-logo, so
-     it must be light instead. */
-  .home[data-display-mode='carousel'] .home-logo__chip {
-    background-color: var(--color-dominant);
-  }
-
-  .home-nav {
-    margin-right: auto;
-    margin-left: var(--space-md);
-    display: flex;
-    gap: var(--space-md);
   }
 
   /* LanguageSwitcher.astro hardcodes its own links pink (correct everywhere
      else on the site, D-06) — but the homepage's own top bar is neutral
-     white/ink throughout (see .home-header color above), so the switcher
-     needs its own override here too. Scoped to .home-header only so
-     LanguageSwitcher's behavior everywhere else (BaseLayout's solid/
-     transparent headers) is untouched. */
-  .home[data-display-mode='carousel'] .home-header :global(.switcher-link),
-  .home[data-display-mode='carousel'] .home-header :global(.switcher-separator) {
+     white/ink throughout, so the switcher needs its own override here too.
+     Scoped to .site-header only so LanguageSwitcher's behavior everywhere
+     else (SiteHeader's solid/transparent headers on About/Contact/
+     gallery-detail) is untouched. */
+  .home[data-display-mode='carousel'] :global(.site-header .switcher-link),
+  .home[data-display-mode='carousel'] :global(.site-header .switcher-separator) {
     color: #FFFFFF;
   }
 
-  .home[data-display-mode='grid'] .home-header :global(.switcher-link),
-  .home[data-display-mode='grid'] .home-header :global(.switcher-separator) {
+  .home[data-display-mode='grid'] :global(.site-header .switcher-link),
+  .home[data-display-mode='grid'] :global(.site-header .switcher-separator) {
     color: var(--color-ink);
   }
 
-  .home-nav-link,
+  /* HOME-05 (D-06, unchanged by Phase 10 — D-05 explicitly excludes the
+     mode-toggle from the .home-* rename). Now composed via SiteHeader's
+     named `extra` slot instead of being a direct child of the old inline
+     <header>, but its own markup/behavior/CSS is untouched: an INVISIBLE,
+     tappable outer box (44px floor via min-width/min-height) around the
+     visible square .home-toggle__box below. */
   .home-toggle {
-    display: inline-flex; /* matches LanguageSwitcher's .switcher-link so text
-                              baselines line up across the whole header —
-                              a plain block/inline box top-aligns its text
-                              within the min-height box instead of centering
-                              it, which read as misaligned buttons */
+    display: inline-flex; /* matches .nav-link/.switcher-link so text
+                              baselines line up across the whole header */
     align-items: center;
+    justify-content: center;
     font-size: 14px; /* Label role */
     font-weight: var(--weight-regular);
     line-height: 1.5;
@@ -883,28 +800,9 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     background: none;
     border: none;
     cursor: pointer;
-    padding: var(--space-xs) var(--space-sm);
-    min-height: var(--tap-target-min);
-  }
-
-  .home-nav-link:hover,
-  .home-nav-link:focus-visible {
-    text-decoration: underline;
-  }
-
-  /* HOME-05 (D-06): the button's bounding box has no explicit width/height,
-     so it used to be whatever the 20x14 morph icon plus padding produced —
-     wider than tall. Fixed via two nested boxes: this outer .home-toggle
-     button is now the INVISIBLE, tappable box (44px floor via min-width/
-     min-height, D-08), and .home-toggle__box below is the visible square
-     the border traces. */
-  .home-toggle {
-    justify-content: center;
-    /* Overrides the shared .home-nav-link, .home-toggle padding shorthand —
-       the invisible hit box centers its visible .home-toggle__box child via
-       flex alignment, not padding. */
     padding: 0;
     min-width: var(--tap-target-min);
+    min-height: var(--tap-target-min);
   }
 
   /* Direct user feedback: the bare 20x20 icon (no border/background) didn't
@@ -1522,53 +1420,19 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
   /* Mobile responsive (D-10, UI-SPEC Layout Notes — Homepage Mobile). */
   @media (max-width: 767px) {
-    /* Direct request: FR|EN belongs in the top row alongside the logo/nav/
-       toggle, not wrapped onto its own row underneath. Original 4-item
-       measurement (pre-HOME-04/05) at 393px wide: logo(56) + nav(157) +
-       toggle(30) + switcher(79) plus .home-header's own gap between all four
-       (3 × 16px) totalled 386px — 10px over the 361px available (393 minus
-       the header's own 32px of side padding) BEFORE even counting
-       .home-nav's extra margin-left (below), which was adding a redundant
-       second gap on top of the header's own flex gap between the logo and
-       nav specifically. Trimming both — the header's inter-item gap (16px
-       to 8px) and that redundant nav margin — recovered ~40px, fitting all
-       four on one row (346px used of 361px available).
-
-       HOME-04/HOME-05 re-measurement: adding the Instagram link as a 5th
-       nav item (via .home-nav's own gap/padding trims below) grew the nav
-       to ~161.5px, AND HOME-05's 44px tap-target floor grew the toggle
-       button from ~30px to 44px (D-08 — a hard floor, not adjustable here).
-       New total: 56 + 161.5 + 44 + 79.4 + 3×8(header gap) = ~397px, ~4px
-       over the 393px budget, wrapping the row. Trimming the header's own
-       inter-item gap once more (8px to 4px, saving 12px) recovers enough
-       margin (measured 385px used of 393px available) to keep all five
-       items on one row again. flex-wrap stays on as a safety net for
-       narrower phones or longer translated labels. */
-    .home-header {
-      flex-wrap: wrap;
-      gap: var(--space-xs);
-    }
-
-    .home-nav {
-      margin-left: 0;
-      /* HOME-04 (D-03): re-measured after adding the Instagram link as a 5th
-         header item — projected ~29px over the 361px budget documented
-         above. Trimming the nav's own internal gap (var(--space-md) = 16px
-         desktop) down to var(--space-xs) (4px) here recovers ~24px (2 gaps
-         across About/Contact/Instagram) without touching the toggle/
-         switcher spacing, which is unrelated to this addition. */
-      gap: var(--space-xs);
-    }
-
-    /* HOME-04 (D-03): trims each nav link's own horizontal padding (desktop
-       var(--space-sm) = 8px each side, from the shared .home-nav-link,
-       .home-toggle rule) down to var(--space-xs) (4px) — scoped to .home-nav
-       links only, so the toggle/switcher's own tap-target padding is
-       untouched. Recovers a further ~24px (4px × 2 sides × 3 links). */
-    .home-nav .home-nav-link {
-      padding-left: var(--space-xs);
-      padding-right: var(--space-xs);
-    }
+    /* HOME-10 (Phase 10 Plan 02): the header/nav/nav-link mobile trims that
+       used to live here (flex-wrap + var(--space-xs) header gap, zeroed nav
+       margin + var(--space-xs) nav gap, var(--space-xs) nav-link padding)
+       are gone — not lost, PORTED FORWARD as SiteHeader.astro's own
+       is:global baseline mobile CSS in Plan 01 (10-01-SUMMARY.md), using
+       these exact live-tested values (they were copied from this file's own
+       prior tuning). Since SiteHeader's stylesheet applies site-wide, the
+       homepage inherits the identical trims automatically — duplicating
+       them here would just re-declare the same rule twice for no effect.
+       Re-verified live at 393px with the toggle now present via the extra
+       slot (a 5th flex item About/Contact never has): homepage.spec.ts's
+       393px no-overflow assertions (Instagram link, mode-toggle box) stay
+       GREEN with zero homepage-only additions needed. */
 
     /* Direct request: the photo should cover the full phone screen on
        arrival, like a true full-bleed mobile hero. .home-hero__photo
