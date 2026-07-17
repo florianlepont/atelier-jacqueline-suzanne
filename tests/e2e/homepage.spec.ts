@@ -91,13 +91,13 @@ test.describe('i18n non-regression guard', () => {
   test('homepage header still exposes the FR|EN switcher and differs between locales', async ({ page }) => {
     await page.goto('/');
 
-    const header = page.locator('[data-role="home-header"]');
+    const header = page.locator('[data-role="site-header"]');
     await expect(header).toBeVisible();
     await expect(header).toContainText('FR | EN');
     const frHeaderText = await header.innerText();
 
     await page.goto('/en/');
-    const enHeaderText = await page.locator('[data-role="home-header"]').innerText();
+    const enHeaderText = await page.locator('[data-role="site-header"]').innerText();
 
     expect(enHeaderText).not.toBe(frHeaderText);
   });
@@ -420,10 +420,10 @@ test.describe('Instagram nav link (HOME-04)', () => {
     await expect(header.getByRole('link', { name: 'Instagram', exact: false })).toHaveCount(1);
   });
 
-  test('DOM order: the Instagram link comes after the Contact link inside .home-nav', async ({ page }) => {
+  test('DOM order: the Instagram link comes after the Contact link inside .site-nav', async ({ page }) => {
     await page.goto('/');
 
-    const navLinks = page.locator('.home-nav > a');
+    const navLinks = page.locator('.site-nav > a');
     const hrefs = await navLinks.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
     const contactIndex = hrefs.findIndex((href) => href?.includes('contact'));
     const instagramIndex = hrefs.findIndex((href) => href === 'https://www.instagram.com/ajs_romanelepont/');
@@ -435,9 +435,9 @@ test.describe('Instagram nav link (HOME-04)', () => {
     await page.setViewportSize({ width: 393, height: 800 });
     await page.goto('/');
 
-    // Scoped to .home-nav — the pre-existing footer Instagram link also
+    // Scoped to .site-nav — the pre-existing footer Instagram link also
     // matches this href but is not the subject of this mobile-fit assertion.
-    const instagramLink = page.locator('.home-nav a[href="https://www.instagram.com/ajs_romanelepont/"]');
+    const instagramLink = page.locator('.site-nav a[href="https://www.instagram.com/ajs_romanelepont/"]');
     await expect(instagramLink).toBeVisible();
 
     const overflow = await page.evaluate(() => ({
@@ -453,13 +453,13 @@ test.describe('Instagram nav link (HOME-04)', () => {
     // strip the leading space this string is defined with.
     await page.goto('/en/');
     const enHint = await page
-      .locator('.home-nav a[href="https://www.instagram.com/ajs_romanelepont/"] .sr-only')
+      .locator('.site-nav a[href="https://www.instagram.com/ajs_romanelepont/"] .sr-only')
       .evaluate((el) => el.textContent);
     expect(enHint).toBe(' (opens in new tab)');
 
     await page.goto('/');
     const frHint = await page
-      .locator('.home-nav a[href="https://www.instagram.com/ajs_romanelepont/"] .sr-only')
+      .locator('.site-nav a[href="https://www.instagram.com/ajs_romanelepont/"] .sr-only')
       .evaluate((el) => el.textContent);
     expect(frHint).toBe(' (nouvelle fenêtre)');
   });
@@ -559,7 +559,7 @@ test.describe('mobile full-bleed hero regression (HOME-06)', () => {
   test('at an iPhone viewport, on first load the hero is full-bleed with no gap above the header and no footer bleed-through, and the morph stays active', async ({ page }) => {
     await page.goto('/');
 
-    const header = page.locator('[data-role="home-header"]');
+    const header = page.locator('[data-role="site-header"]');
     const photo = page.locator('.home-hero__photo');
     await expect(header).toBeVisible();
     await expect(photo).toBeVisible();
@@ -614,9 +614,9 @@ test.describe('progressive image loading (HOME-09)', () => {
   test('shell renders immediately without waiting on images', async ({ page }) => {
     await page.goto('/');
 
-    const header = page.locator('[data-role="home-header"]');
+    const header = page.locator('[data-role="site-header"]');
     await expect(header).toBeVisible();
-    const nav = page.locator('.home-nav');
+    const nav = page.locator('.site-nav');
     await expect(nav).toBeVisible();
     const toggle = page.locator('[data-role="mode-toggle"]');
     await expect(toggle).toBeVisible();

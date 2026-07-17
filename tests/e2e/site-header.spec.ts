@@ -75,3 +75,31 @@ test.describe('Shared SiteHeader — nav structure (HOME-10, D-01)', () => {
     expect(instagramIndex).toBeGreaterThan(contactIndex);
   });
 });
+
+// Phase 10 Plan 02 (HOME-10, success criterion #1/#2) — the gap RESEARCH.md
+// flags as untested by any existing e2e assertion: proving the homepage's
+// header is the SAME rendered component as About's, not a second,
+// independently-styled implementation that merely happens to look similar.
+// Expected RED until Plan 02's Task 2 rewires HomeCarousel.astro onto
+// <SiteHeader> — the homepage still renders its own .home-nav today, so
+// `.site-nav > a.nav-link` resolves to zero elements on '/'.
+test.describe('Shared SiteHeader — cross-page structural identity (HOME-10, D-01, D-05)', () => {
+  test('/ and /about/ render the same .site-nav .nav-link count and order (About, Contact, Instagram)', async ({ page }) => {
+    await page.goto('/');
+    const homeNavLinks = page.locator('.site-nav > a.nav-link');
+    await expect(homeNavLinks).toHaveCount(3);
+    const homeHrefs = await homeNavLinks.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
+
+    await page.goto('/about/');
+    const aboutNavLinks = page.locator('.site-nav > a.nav-link');
+    await expect(aboutNavLinks).toHaveCount(3);
+    const aboutHrefs = await aboutNavLinks.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
+
+    // Same count, same order, same hrefs — proves one shared component, not
+    // two divergent implementations that happen to agree by coincidence.
+    expect(homeHrefs).toEqual(aboutHrefs);
+    expect(homeHrefs[0]).toContain('about');
+    expect(homeHrefs[1]).toContain('contact');
+    expect(homeHrefs[2]).toBe(INSTAGRAM_HREF);
+  });
+});
