@@ -770,14 +770,14 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
      white/ink throughout, so the switcher needs its own override here too.
      Scoped to .site-header only so LanguageSwitcher's behavior everywhere
      else (SiteHeader's solid/transparent headers on About/Contact/
-     gallery-detail) is untouched. */
-  .home[data-display-mode='carousel'] :global(.site-header .switcher-link),
-  .home[data-display-mode='carousel'] :global(.site-header .switcher-separator) {
+     gallery-detail) is untouched. I18N-04/D-08 retired the current-language
+     link + .switcher-separator element entirely — only .switcher-link
+     remains to re-skin. */
+  .home[data-display-mode='carousel'] :global(.site-header .switcher-link) {
     color: #FFFFFF;
   }
 
-  .home[data-display-mode='grid'] :global(.site-header .switcher-link),
-  .home[data-display-mode='grid'] :global(.site-header .switcher-separator) {
+  .home[data-display-mode='grid'] :global(.site-header .switcher-link) {
     color: var(--color-ink);
   }
 

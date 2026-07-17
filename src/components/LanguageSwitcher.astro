@@ -1,33 +1,44 @@
 ---
-// Plain-text "FR | EN" locale toggle (D-11): two <a> tags separated by a
-// literal "|", each href computed at build time via getSwitcherHref so the
-// switcher always points at the equivalent page in the other locale (D-04).
+// Single-link locale switcher (I18N-04, D-07-D-11): one <a> pointing at the
+// OTHER language's version of the current page, preceded by an inline
+// dependency-free globe <svg> and a visible EN/FR code. getSwitcherHref is
+// called once, for the non-current locale only (D-08).
 import { getSwitcherHref } from '../lib/i18n-paths';
 
 const currentLocale = Astro.currentLocale === 'en' ? 'en' : 'fr';
-const frHref = getSwitcherHref(Astro.url.pathname, 'fr');
-const enHref = getSwitcherHref(Astro.url.pathname, 'en');
+const targetLocale = currentLocale === 'fr' ? 'en' : 'fr';
+const targetHref = getSwitcherHref(Astro.url.pathname, targetLocale);
+const targetLabel = targetLocale === 'en' ? 'EN' : 'FR';
+// D-11: mirrors BaseLayout.astro's existing instagramNewTabHint sr-only
+// pattern — locale-conditional hidden hint naming the language you'd switch
+// TO, phrased in the CURRENT page's language (not the target's).
+const switchHint = currentLocale === 'fr' ? 'Passer en anglais' : 'Switch to French';
 ---
 
 <nav class="language-switcher" aria-label="Language switcher">
-  <a
-    href={frHref}
-    class={`switcher-link${currentLocale === 'fr' ? ' is-current' : ''}`}
-    aria-current={currentLocale === 'fr' ? 'page' : undefined}
-    data-locale="fr"
-  >FR</a>{' '}<span class="switcher-separator" aria-hidden="true">|</span>{' '}<a
-    href={enHref}
-    class={`switcher-link${currentLocale === 'en' ? ' is-current' : ''}`}
-    aria-current={currentLocale === 'en' ? 'page' : undefined}
-    data-locale="en"
-  >EN</a>
+  <a href={targetHref} class="switcher-link" data-locale={targetLocale}>
+    <svg
+      aria-hidden="true"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.6"
+    >
+      <circle cx="12" cy="12" r="9.5" />
+      <ellipse cx="12" cy="12" rx="4.2" ry="9.5" />
+      <line x1="2.5" y1="12" x2="21.5" y2="12" />
+    </svg>
+    {targetLabel}
+    <span class="sr-only">{' '}{switchHint}</span>
+  </a>
 </nav>
 
 <style>
   .language-switcher {
     display: inline-flex;
     align-items: center;
-    gap: 4px; /* xs spacing token */
     font-size: 14px; /* Label role */
     font-weight: 400;
     line-height: 1.5;
@@ -37,6 +48,7 @@ const enHref = getSwitcherHref(Astro.url.pathname, 'en');
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: var(--space-xs); /* space between globe icon and label */
     min-height: 44px; /* WCAG 2.5.5 tap-target floor, applied via padding not font-size */
     padding: 8px; /* sm spacing token */
     color: var(--color-accent); /* D-06: switcher links render pink */
@@ -51,15 +63,6 @@ const enHref = getSwitcherHref(Astro.url.pathname, 'en');
   .switcher-link:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
-  }
-
-  .switcher-link.is-current {
-    font-weight: var(--weight-semibold);
-    text-decoration: underline;
-  }
-
-  .switcher-separator {
-    color: var(--color-ink);
   }
 </style>
 
