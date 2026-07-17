@@ -134,3 +134,15 @@ None - no external service configuration required.
 ---
 *Phase: 10-unified-header-simplified-language-switcher*
 *Completed: 2026-07-17*
+
+## Self-Check: PASSED
+
+All created/modified files and task commit hashes verified present:
+- `src/components/LanguageSwitcher.astro` - FOUND
+- `src/components/HomeCarousel.astro` - FOUND
+- `tests/e2e/i18n.spec.ts` - FOUND
+- `tests/e2e/homepage.spec.ts` - FOUND
+- `.planning/phases/10-unified-header-simplified-language-switcher/10-03-SUMMARY.md` - FOUND
+- Commit `d481309` (Task 1, RED) - FOUND
+- Commit `3850e1d` (Task 2, GREEN) - FOUND
+- Commit `fc9dcc2` (docs: summary + REQUIREMENTS.md) - FOUND
