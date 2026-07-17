@@ -64,7 +64,7 @@ Resolves the remaining homepage UX rough edges before the Phase 5 domain cutover
 - [x] **HOME-07**: Each gallery's own description text shows under its title on the homepage, replacing the generic "Un projet de Romane Lepont" byline
 - [x] **HOME-08**: Hovering a grid-mode tile reveals that collection's description
 - [x] **HOME-09**: Homepage photos load progressively (priority + blur-to-sharp transition), with no blocking full-screen loading state
-- [ ] **HOME-10**: Homepage header is visually identical to the About/Contact header by construction (single shared header component, not two independently-styled implementations)
+- [x] **HOME-10**: Homepage header is visually identical to the About/Contact header by construction (single shared header component, not two independently-styled implementations)
 
 ### Bilingual
 
@@ -170,7 +170,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HOME-07 | Phase 8 | Complete |
 | HOME-08 | Phase 8 | Complete |
 | HOME-09 | Phase 9 | Complete |
-| HOME-10 | Phase 10 | Pending |
+| HOME-10 | Phase 10 | Complete |
 | I18N-04 | Phase 10 | Complete |
 
 **Coverage:**
