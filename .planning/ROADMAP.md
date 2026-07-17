@@ -326,7 +326,7 @@ Plans:
   4. The language switcher shows only a link to the OTHER language (not both FR and EN) alongside a small globe icon, on every page site-wide.
   5. Clicking the language switcher link takes the visitor directly to the translated version of the current page (same destination behavior as before, just one link instead of two).
 
-**Plans**: 1/3 plans executed
+**Plans**: 2/3 plans executed
 Plans:
 **Wave 1**
 
@@ -334,7 +334,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 — needs `<SiteHeader>`; shares HomeCarousel/homepage/i18n specs)*
 
-- [ ] 10-02-PLAN.md — Homepage renders `<SiteHeader variant="transparent">` with the mode-toggle in the `extra` slot; retire `.home-*` classes (HOME-10 part 2, D-02/D-04/D-05/D-06) (Wave 2)
+- [x] 10-02-PLAN.md — Homepage renders `<SiteHeader variant="transparent">` with the mode-toggle in the `extra` slot; retire `.home-*` classes (HOME-10 part 2, D-02/D-04/D-05/D-06) (Wave 2)
 
 **Wave 3** *(blocked on Wave 2 — shares HomeCarousel/homepage/i18n specs)*
 
