@@ -157,3 +157,7 @@ None - no external service configuration required.
 ---
 *Phase: 10-unified-header-simplified-language-switcher*
 *Completed: 2026-07-17*
+
+## Self-Check: PASSED
+
+All created/modified files confirmed present on disk (`src/components/HomeCarousel.astro`, `tests/e2e/homepage.spec.ts`, `tests/e2e/i18n.spec.ts`, `tests/e2e/site-header.spec.ts`, this SUMMARY). All three task/docs commits confirmed present in git log (`b8d4286`, `d0b2772`, `c0f0a2c`).
