@@ -217,7 +217,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           <p class="home-grid__intro-body">{introBody}</p>
         </div>
         {galleries.map((gallery) => (
-          <a href={getRelativeLocaleUrl(locale, `galleries/${gallery.slug}`)} class="home-grid__tile">
+          <a
+            href={getRelativeLocaleUrl(locale, `galleries/${gallery.slug}`)}
+            class="home-grid__tile"
+            style={{ '--tile-accent': gallery.heroColor ?? 'var(--color-accent)' }}
+          >
             <img src={gallery.blurSrc} alt="" aria-hidden="true" class="home-grid__tile-img home-grid__tile-img-placeholder" />
             <img
               src={gallery.gridSrc}
@@ -231,7 +235,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             <div class="home-grid__tile-scrim" aria-hidden="true"></div>
             <span class="home-grid__tile-copy">
               <span class="home-grid__tile-title">{gallery.title}</span>
-              {gallery.statement && <span class="home-grid__tile-description">{gallery.statement}</span>}
+              <span class="home-grid__tile-description">{gallery.statement}</span>
             </span>
           </a>
         ))}
@@ -1399,6 +1403,28 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     background: linear-gradient(to top, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.15) 45%, rgba(0, 0, 0, 0) 70%);
   }
 
+  /* 260718-rhv: per-gallery hover tint — a separate layer over the dark
+     scrim above (not a replacement), so the dark gradient keeps doing its
+     job as the white caption text's legibility floor. --tile-accent is set
+     per-tile on the .home-grid__tile <a> (inline style) and inherits down
+     to this pseudo-element; it is deliberately its own custom property
+     (not --current-accent, the shared value the hero tile/carousel cycle
+     through) so each tile always tints toward its OWN gallery's color,
+     never whichever gallery the carousel currently happens to show. */
+  .home-grid__tile-scrim::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--tile-accent, var(--color-accent));
+    opacity: 0;
+    transition: opacity 180ms ease;
+  }
+
+  .home-grid__tile:hover .home-grid__tile-scrim::after,
+  .home-grid__tile:focus-visible .home-grid__tile-scrim::after {
+    opacity: 0.35;
+  }
+
   .home-grid__tile-copy {
     position: absolute;
     left: var(--space-md);
@@ -1414,10 +1440,40 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     font-size: 32px; /* Display role, fixed */
     font-weight: var(--weight-semibold);
     line-height: 1.2;
+    /* 260718-rhv (Rule 1 - bug, discovered live testing this task): longer
+       gallery titles (e.g. "The Victorian Tea room") wrap to 2 lines at this
+       font-size while short titles ("Silos", "Brume") stay on 1 — that
+       height difference shifts the title's own top position exactly like
+       the description-height bug this task fixes, since both sit inside
+       the same bottom-anchored .home-grid__tile-copy block. Clamped to a
+       single line with ellipsis truncation so every title reserves the
+       same height regardless of name length, matching the short-name
+       design intent (full titles remain available via the tile's visible
+       link destination/alt text).
+       */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* 260718-rhv: title lifts a few px on hover/focus, in sync with the
+       description's existing 180ms translateY reveal below. */
+    transition: transform 180ms ease;
+  }
+
+  .home-grid__tile:hover .home-grid__tile-title,
+  .home-grid__tile:focus-visible .home-grid__tile-title {
+    transform: translateY(-4px);
   }
 
   .home-grid__tile-description {
     display: -webkit-box;
+    /* 260718-rhv: fixed 3-line reservation (1.4 line-height * 3 = 3 line-
+       boxes at the 14px font-size below) so every tile's copy block is the
+       same height whether the statement is absent, short, or clamped at
+       three lines — opacity: 0 never collapsed layout, so an unreserved
+       block let statement-having tiles push their titles higher than
+       statement-less ones (the root-cause bug). Additive to the existing
+       reveal mechanics below; nothing else here changes. */
+    min-height: calc(1.4em * 3);
     margin-top: var(--space-sm);
     max-width: 52ch;
     overflow: hidden;
