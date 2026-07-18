@@ -27,3 +27,6 @@ test-results/
 playwright-report/
 blob-report/
 playwright/.cache/
+
+# GSD research cache
+.planning/research/.cache/
