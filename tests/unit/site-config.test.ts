@@ -51,4 +51,16 @@ describe('homepage hero colors', () => {
     expect(getHeroTextColor('#A6FD29')).toBe('#1A1A1A');
     expect(getHeroTextColor('#37013A')).toBe('#FFFFFF');
   });
+
+  it('resolves the correct paired text color for all five presets (260718-r2o)', () => {
+    // Dark presets: Violet and Plum must resolve to white text so the
+    // grid-mode hero tile stays legible on a dark accent background.
+    expect(getHeroTextColor(normalizeHeroColor('purple')!)).toBe('#FFFFFF');
+    expect(getHeroTextColor(normalizeHeroColor('plum')!)).toBe('#FFFFFF');
+
+    // Light presets: Rose, Turquoise, Citron vert must resolve to ink text.
+    expect(getHeroTextColor(normalizeHeroColor('pink')!)).toBe('#1A1A1A');
+    expect(getHeroTextColor(normalizeHeroColor('teal')!)).toBe('#1A1A1A');
+    expect(getHeroTextColor(normalizeHeroColor('lime')!)).toBe('#1A1A1A');
+  });
 });

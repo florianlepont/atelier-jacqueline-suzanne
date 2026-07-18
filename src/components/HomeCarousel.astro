@@ -99,6 +99,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     style={{
       '--wordmark-photo': `url(${firstGallery.heroSrc})`,
       '--current-accent': firstGallery.heroColor ?? 'var(--color-accent)',
+      '--current-accent-text': firstGallery.heroTextColor ?? 'var(--color-on-accent)',
     }}
   >
     <SiteHeader
@@ -431,6 +432,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             accentPanel.style.color = accent.text;
           }
           root!.style.setProperty('--current-accent', accent.bg);
+          root!.style.setProperty('--current-accent-text', accent.text);
           // D-08/D-09: keep the wordmark's photo-cutout background in sync
           // with the visible hero photo on every prev/next/auto-advance
           // tick, so the letters always reveal the currently-shown gallery.
@@ -1309,7 +1311,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
      source order. */
   .home-grid__tile.home-grid__tile--hero {
     background-color: var(--current-accent, var(--color-accent));
-    color: var(--color-on-accent);
+    color: var(--current-accent-text, var(--color-on-accent));
     padding: var(--space-md);
     display: flex;
     flex-direction: column;

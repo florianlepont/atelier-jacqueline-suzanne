@@ -744,3 +744,21 @@ test.describe('progressive image loading (HOME-09)', () => {
     expect(request.url()).toBe(nextHeroSrc);
   });
 });
+
+test.describe('grid hero tile text color tracks accent (260718-r2o)', () => {
+  test('grid hero tile color reads the --current-accent-text variable, not a hardcoded ink value', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+
+    // Set a sentinel value that is never a real accent text color, then read
+    // back the tile's computed color. If the tile still consumed a hardcoded
+    // ink value, the computed color would NOT match the sentinel.
+    await page.evaluate(() => {
+      document.querySelector('.home')!.style.setProperty('--current-accent-text', 'rgb(0, 255, 0)');
+    });
+
+    const heroTile = page.locator('.home-grid__tile--hero');
+    const color = await heroTile.evaluate((el) => getComputedStyle(el).color);
+    expect(color).toBe('rgb(0, 255, 0)');
+  });
+});
