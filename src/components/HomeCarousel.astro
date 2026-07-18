@@ -231,7 +231,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             <div class="home-grid__tile-scrim" aria-hidden="true"></div>
             <span class="home-grid__tile-copy">
               <span class="home-grid__tile-title">{gallery.title}</span>
-              {gallery.statement && <span class="home-grid__tile-description">{gallery.statement}</span>}
+              <span class="home-grid__tile-description">{gallery.statement}</span>
             </span>
           </a>
         ))}
@@ -1414,10 +1414,32 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     font-size: 32px; /* Display role, fixed */
     font-weight: var(--weight-semibold);
     line-height: 1.2;
+    /* 260718-rhv (Rule 1 - bug, discovered live testing this task): longer
+       gallery titles (e.g. "The Victorian Tea room") wrap to 2 lines at this
+       font-size while short titles ("Silos", "Brume") stay on 1 — that
+       height difference shifts the title's own top position exactly like
+       the description-height bug this task fixes, since both sit inside
+       the same bottom-anchored .home-grid__tile-copy block. Clamped to a
+       single line with ellipsis truncation so every title reserves the
+       same height regardless of name length, matching the short-name
+       design intent (full titles remain available via the tile's visible
+       link destination/alt text).
+       */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .home-grid__tile-description {
     display: -webkit-box;
+    /* 260718-rhv: fixed 3-line reservation (1.4 line-height * 3 = 3 line-
+       boxes at the 14px font-size below) so every tile's copy block is the
+       same height whether the statement is absent, short, or clamped at
+       three lines — opacity: 0 never collapsed layout, so an unreserved
+       block let statement-having tiles push their titles higher than
+       statement-less ones (the root-cause bug). Additive to the existing
+       reveal mechanics below; nothing else here changes. */
+    min-height: calc(1.4em * 3);
     margin-top: var(--space-sm);
     max-width: 52ch;
     overflow: hidden;

@@ -762,3 +762,76 @@ test.describe('grid hero tile text color tracks accent (260718-r2o)', () => {
     expect(color).toBe('rgb(0, 255, 0)');
   });
 });
+
+test.describe('grid-tile title alignment (260718-rhv)', () => {
+  test('every gallery tile title sits at the same offset from its own tile bottom edge', async ({ page }) => {
+    // Skips the shared-element view-transition animation (see the
+    // 'view-transition toggle — reduced-motion' describe block above for
+    // the same pattern) — without this, an evaluate() taken immediately
+    // after the toggle click can race the in-flight transition on
+    // whichever tile currently carries view-transition-name, momentarily
+    // reporting a zero-size bounding rect unrelated to this task's fix.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+
+    // Belt-and-braces alongside the reduced-motion emulation above: the
+    // shared-element view transition still briefly zeroes out the morph-
+    // named tile's rendered box while its snapshot pseudo-element is
+    // active, even with the animation itself instant, so wait for every
+    // title to report a real (non-zero) box before measuring geometry.
+    await page.waitForFunction(() => {
+      const titles = document.querySelectorAll<HTMLElement>('a.home-grid__tile .home-grid__tile-title');
+      return titles.length > 0 && Array.from(titles).every((title) => title.getBoundingClientRect().height > 0);
+    });
+
+    const tiles = page.locator('a.home-grid__tile');
+    const count = await tiles.count();
+    expect(count).toBeGreaterThan(0);
+
+    const offsets: number[] = [];
+    for (let index = 0; index < count; index += 1) {
+      const tile = tiles.nth(index);
+      const offset = await tile.evaluate((el) => {
+        const title = el.querySelector<HTMLElement>('.home-grid__tile-title')!;
+        const tileRect = el.getBoundingClientRect();
+        const titleRect = title.getBoundingClientRect();
+        return tileRect.bottom - titleRect.top;
+      });
+      offsets.push(offset);
+    }
+
+    expect(Math.max(...offsets) - Math.min(...offsets)).toBeLessThanOrEqual(1);
+  });
+
+  test('clearing a tile statement does not change its title offset (empty-statement defensive)', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+
+    await page.waitForFunction(() => {
+      const titles = document.querySelectorAll<HTMLElement>('a.home-grid__tile .home-grid__tile-title');
+      return titles.length > 0 && Array.from(titles).every((title) => title.getBoundingClientRect().height > 0);
+    });
+
+    const tile = page.locator('a.home-grid__tile').first();
+
+    const beforeOffset = await tile.evaluate((el) => {
+      const title = el.querySelector<HTMLElement>('.home-grid__tile-title')!;
+      const tileRect = el.getBoundingClientRect();
+      const titleRect = title.getBoundingClientRect();
+      return tileRect.bottom - titleRect.top;
+    });
+
+    const afterOffset = await tile.evaluate((el) => {
+      const description = el.querySelector<HTMLElement>('.home-grid__tile-description')!;
+      description.textContent = '';
+      const title = el.querySelector<HTMLElement>('.home-grid__tile-title')!;
+      const tileRect = el.getBoundingClientRect();
+      const titleRect = title.getBoundingClientRect();
+      return tileRect.bottom - titleRect.top;
+    });
+
+    expect(Math.abs(afterOffset - beforeOffset)).toBeLessThanOrEqual(1);
+  });
+});
