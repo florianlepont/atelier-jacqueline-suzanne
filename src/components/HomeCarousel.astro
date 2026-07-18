@@ -805,6 +805,22 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     min-height: var(--tap-target-min);
   }
 
+  /* HOME-10-REGRESSION: restores the per-mode color the removed
+     .home-header container used to provide before Phase 10's SiteHeader
+     refactor (d0b2772/3850e1d) — that refactor replaced the container-level
+     rule with narrower .nav-link/.switcher-link overrides only, silently
+     dropping the carousel-mode white override for .home-toggle. Setting
+     color here cascades via currentColor to .home-toggle__box's border and
+     each .home-toggle__morph-cell's background-color, mirroring the
+     .switcher-link per-mode pattern above. */
+  .home[data-display-mode='carousel'] .home-toggle {
+    color: #FFFFFF;
+  }
+
+  .home[data-display-mode='grid'] .home-toggle {
+    color: var(--color-ink);
+  }
+
   /* Direct user feedback: the bare 20x20 icon (no border/background) didn't
      read as an interactive button among the nav's plain text links — give
      it a visible box so it looks distinctly clickable, matching the site's
