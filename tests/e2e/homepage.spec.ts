@@ -508,6 +508,47 @@ test.describe('square mode-toggle box (HOME-05)', () => {
   });
 });
 
+// Regression guard for the mode-toggle icon color (HOME-10-REGRESSION): Phase
+// 10's SiteHeader refactor (commits d0b2772/3850e1d) retired the old
+// .home-header container that painted color per display mode and replaced it
+// with narrower per-element overrides for .nav-link/.switcher-link only — no
+// equivalent override was added for .home-toggle, so it silently regressed to
+// always inheriting body's ink color instead of flipping white in carousel
+// mode. These assertions lock both mode colors so a future header refactor
+// can't drop the carousel override again unnoticed.
+test.describe('mode-toggle icon color regression (HOME-10-REGRESSION)', () => {
+  test('carousel mode: .home-toggle__box and morph-cell render white', async ({ page }) => {
+    await page.goto('/');
+
+    const boxColor = await page.locator('.home-toggle__box').evaluate((el) => getComputedStyle(el).color);
+    expect(boxColor).toBe('rgb(255, 255, 255)');
+
+    const cellColor = await page
+      .locator('.home-toggle__morph-cell')
+      .first()
+      .evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(cellColor).toBe('rgb(255, 255, 255)');
+  });
+
+  test('grid mode: .home-toggle__box and morph-cell render ink (no regression)', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+
+    await expect
+      .poll(() => page.locator('.home-toggle__box').evaluate((el) => getComputedStyle(el).color))
+      .toBe('rgb(26, 26, 26)');
+
+    await expect
+      .poll(() =>
+        page
+          .locator('.home-toggle__morph-cell')
+          .first()
+          .evaluate((el) => getComputedStyle(el).backgroundColor)
+      )
+      .toBe('rgb(26, 26, 26)');
+  });
+});
+
 test.describe('mobile hero visibility (D-08)', () => {
   test('hero renders visibly at a 375px-wide viewport, not collapsed/blank', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
