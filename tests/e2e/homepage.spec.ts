@@ -835,3 +835,75 @@ test.describe('grid-tile title alignment (260718-rhv)', () => {
     expect(Math.abs(afterOffset - beforeOffset)).toBeLessThanOrEqual(1);
   });
 });
+
+test.describe('grid-tile hover polish (260718-rhv)', () => {
+  test('each non-hero tile carries its own --tile-accent custom property', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+
+    const tile = page.locator('a.home-grid__tile').first();
+    const accent = await tile.evaluate((el) => getComputedStyle(el).getPropertyValue('--tile-accent').trim());
+    expect(accent).not.toBe('');
+  });
+
+  test('hovering a tile raises its scrim tint pseudo-element opacity', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+
+    const tile = page.locator('a.home-grid__tile').first();
+    const scrim = tile.locator('.home-grid__tile-scrim');
+
+    const before = await scrim.evaluate((el) => parseFloat(getComputedStyle(el, '::after').opacity));
+    expect(before).toBeLessThanOrEqual(0.05);
+
+    await tile.hover();
+
+    await expect
+      .poll(async () => scrim.evaluate((el) => parseFloat(getComputedStyle(el, '::after').opacity)))
+      .toBeGreaterThan(0.05);
+  });
+
+  test('hovering a tile lifts its title (non-identity transform)', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+
+    const tile = page.locator('a.home-grid__tile').first();
+    const title = tile.locator('.home-grid__tile-title');
+
+    const before = await title.evaluate((el) => getComputedStyle(el).transform);
+    expect(['none', 'matrix(1, 0, 0, 1, 0, 0)']).toContain(before);
+
+    await tile.hover();
+
+    await expect
+      .poll(async () => title.evaluate((el) => getComputedStyle(el).transform))
+      .not.toBe(before);
+  });
+
+  test('keyboard focus applies the same tint and lift as hover', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+
+    const tile = page.locator('a.home-grid__tile').first();
+    const scrim = tile.locator('.home-grid__tile-scrim');
+    const title = tile.locator('.home-grid__tile-title');
+    const beforeTransform = await title.evaluate((el) => getComputedStyle(el).transform);
+
+    // Real Tab-key navigation (not locator.focus(), a scripted .focus()
+    // call that Chromium's :focus-visible heuristic does not reliably
+    // treat as keyboard-originated) so the shared `:hover, :focus-visible`
+    // CSS selector genuinely activates, matching how a real keyboard user
+    // reaches the tile.
+    await expect(async () => {
+      await page.keyboard.press('Tab');
+      await expect(tile).toBeFocused({ timeout: 200 });
+    }).toPass({ timeout: 10_000 });
+
+    await expect
+      .poll(async () => scrim.evaluate((el) => parseFloat(getComputedStyle(el, '::after').opacity)))
+      .toBeGreaterThan(0.05);
+    await expect
+      .poll(async () => title.evaluate((el) => getComputedStyle(el).transform))
+      .not.toBe(beforeTransform);
+  });
+});
