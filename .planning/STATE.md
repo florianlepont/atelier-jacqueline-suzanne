@@ -5,9 +5,9 @@ milestone_name: Homepage Polish (Pre-Launch)
 current_phase: 10
 status: complete
 stopped_at: Phase 10 complete — v1.2 milestone finished
-last_updated: "2026-07-17T17:55:03.113Z"
-last_activity: 2026-07-17
-last_activity_desc: Phase 10 complete
+last_updated: "2026-07-18T19:09:00.000Z"
+last_activity: 2026-07-18
+last_activity_desc: "Completed quick task 260718-qdz: Fix mode-toggle icon color regression on the homepage"
 progress:
   total_phases: 13
   completed_phases: 11
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-07-14)
 Phase: 10
 Phase: 10 (Unified Header & Simplified Language Switcher) — complete, 3/3 plans executed
 Status: Phase 10 complete — v1.2 milestone (Phases 7-10) finished
-Last activity: 2026-07-17 — Phase 10 complete
+Last activity: 2026-07-18 - Completed quick task 260718-qdz: Fix mode-toggle icon color regression on the homepage
 
 ## Performance Metrics
 
@@ -141,6 +141,7 @@ None currently open. Both prior research-carryover items were resolved during Ph
 | 260713-jfz | Add an animated transition between carousel and grid view modes using the View Transitions API, with shared-element morphing and graceful fallback | 2026-07-13 | 57733a8 | [260713-jfz-add-an-animated-transition-between-carou](./quick/260713-jfz-add-an-animated-transition-between-carou/) |
 | 260713-kit | Fix the pink accent panel's view-transition fade — corrected to a sequential handoff (photo morph finishes, then panel fades in cleanly), not overlapping or popping | 2026-07-13 | 2a943ef | [260713-kit-the-pink-accent-panel-now-appears-only-a](./quick/260713-kit-the-pink-accent-panel-now-appears-only-a/) |
 | 260714-d6h | Improve the Sanity Studio EditorialDashboard "À faire maintenant" panel UI — urgency-distinct priority-section headers (tonal Card + circular tonal count badge) and denser, more scannable attention cards (tonal left accent bar, truncated Manque line, tonal completion badge) | 2026-07-14 | 1a19972 | [260714-d6h-improve-the-sanity-studio-editorialdashb](./quick/260714-d6h-improve-the-sanity-studio-editorialdashb/) |
+| 260718-qdz | Fix mode-toggle icon color regression on the homepage — restored the carousel-mode white / grid-mode ink color split for the display-mode toggle, silently dropped when Phase 10's SiteHeader refactor replaced the old `.home-header` container-level color rule with narrower per-element overrides | 2026-07-18 | 292488a | [260718-qdz-fix-mode-toggle-icon-color-regression-on](./quick/260718-qdz-fix-mode-toggle-icon-color-regression-on/) |
 
 ## Deferred Items
 
