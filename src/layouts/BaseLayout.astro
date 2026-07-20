@@ -167,14 +167,14 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
       // the correct deployed path instead of assuming the site is served
       // from the domain root.
       (function () {
-        var COOKIE_NAME = 'ajs_locale';
-        var match = document.cookie.match(new RegExp('(?:^|; )' + COOKIE_NAME + '=([^;]*)'));
-        var preferred = match ? decodeURIComponent(match[1]) : null;
-        var basePath = base.endsWith('/') ? base : base + '/';
-        var pathAfterBase = location.pathname.startsWith(basePath)
+        const COOKIE_NAME = 'ajs_locale';
+        const match = document.cookie.match(new RegExp('(?:^|; )' + COOKIE_NAME + '=([^;]*)'));
+        const preferred = match ? decodeURIComponent(match[1]) : null;
+        const basePath = base.endsWith('/') ? base : base + '/';
+        const pathAfterBase = location.pathname.startsWith(basePath)
           ? location.pathname.slice(basePath.length - 1)
           : location.pathname;
-        var onFrenchRootPage = !pathAfterBase.startsWith('/en/');
+        const onFrenchRootPage = !pathAfterBase.startsWith('/en/');
         if (preferred === 'en' && onFrenchRootPage) {
           location.replace(basePath.slice(0, -1) + '/en' + pathAfterBase);
         }

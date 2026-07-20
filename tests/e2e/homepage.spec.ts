@@ -380,7 +380,7 @@ test.describe('view-transition accent-panel fade timing (quick-260713-kit)', () 
 
       const readAt = (t: number) => {
         panelAnim.currentTime = t;
-        document.documentElement.offsetHeight; // force style flush
+        void document.documentElement.offsetHeight; // force style flush
         return parseFloat(
           getComputedStyle(document.documentElement, '::view-transition-new(ajs-accent-panel)').opacity,
         );
