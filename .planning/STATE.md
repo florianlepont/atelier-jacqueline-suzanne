@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Homepage Polish (Pre-Launch)
 current_phase: 10
-current_phase_name: unified-header-simplified-language-switcher
 status: executing
-stopped_at: Phase 10 complete — v1.2 milestone finished
-last_updated: "2026-07-20T12:09:51.151Z"
+stopped_at: Phase 10 UI-SPEC approved
+last_updated: "2026-07-20T14:47:36.339Z"
 last_activity: 2026-07-20
-last_activity_desc: Phase 10 execution started
+last_activity_desc: Phase 10 complete
 progress:
   total_phases: 13
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 34
-  completed_plans: 34
-  percent: 77
+  completed_plans: 35
+  percent: 85
+current_phase_name: unified-header-simplified-language-switcher
 ---
 
 # Project State
@@ -28,16 +28,16 @@ See: .planning/PROJECT.md (updated 2026-07-14)
 
 ## Current Position
 
-Phase: 10 (unified-header-simplified-language-switcher) — EXECUTING
+Phase: 10
 Phase: 10 (Unified Header & Simplified Language Switcher) — complete, 3/3 plans executed
 Status: Executing Phase 10
-Last activity: 2026-07-20 — Phase 10 execution started
+Last activity: 2026-07-20 — Phase 10 complete
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 20
+- Total plans completed: 21
 - Average duration: - min
 - Total execution time: 0 hours
 
@@ -51,7 +51,7 @@ Last activity: 2026-07-20 — Phase 10 execution started
 | 04.3 | 3 | - | - |
 | 07 | 2 | - | - |
 | 09 | 2 | - | - |
-| 10 | 3 | - | - |
+| 10 | 4 | - | - |
 
 **Recent Trend:**
 

@@ -364,7 +364,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 7. Homepage Quick Fixes & Mobile Hero Correctness | 2/2 | Complete    | 2026-07-13 |
 | 8. Gallery Descriptions | 1/1 | Complete   | 2026-07-14 |
 | 9. Progressive Homepage Image Loading | 2/2 | Complete    | 2026-07-14 |
-| 10. Unified Header & Simplified Language Switcher | 4/4 | Complete   | 2026-07-17 |
+| 10. Unified Header & Simplified Language Switcher | 4/4 | Complete    | 2026-07-17 |
 
 ## Milestone Scope Note
 
