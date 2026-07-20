@@ -1,9 +1,22 @@
 import {useEffect, useMemo, useState} from 'react'
 import type {ComponentType} from 'react'
 import {Badge, Box, Button, Card, Flex, Heading, Spinner, Stack, Text} from '@sanity/ui'
-import {useClient, useHistoryStore, useUserStore} from 'sanity'
+import {IntentButton, useClient, useHistoryStore, useUserStore} from 'sanity'
 import {IntentLink} from 'sanity/router'
-import {AddIcon, ChevronRightIcon} from '@sanity/icons'
+import {
+  AddCircleIcon,
+  AddIcon,
+  ChevronRightIcon,
+  DocumentIcon,
+  EditIcon,
+  ErrorOutlineIcon,
+  FolderIcon,
+  PublishIcon,
+  SearchIcon,
+  TaskIcon,
+  UnpublishIcon,
+  WarningOutlineIcon,
+} from '@sanity/icons'
 import type {TransactionLogEventWithMutations, TransactionLogMutation, User} from '@sanity/types'
 import {deploymentLabel, getLatestDeployment, SITE_PREVIEW_URL} from './deployment'
 import type {DeploymentRun} from './deployment'
@@ -34,8 +47,11 @@ interface DashboardRow {
 interface DashboardActivity {
   authorName: string
   description: string
+  action: ActivityAction
   timestamp: string
 }
+
+type ActivityAction = 'created' | 'modified' | 'published' | 'unpublished'
 
 type DashboardTone = 'default' | 'primary' | 'positive' | 'caution' | 'critical'
 
@@ -43,6 +59,7 @@ interface AttentionGroup {
   id: string
   title: string
   description: string
+  icon: ComponentType
   tone: DashboardTone
   rows: DashboardRow[]
 }
@@ -60,6 +77,22 @@ const typeLabels: Record<string, string> = {
   contactPage: 'Page Contact',
   siteSettings: 'Réglages du site',
   exhibition: 'Exposition',
+}
+
+const rowTypeLabels: Record<string, string> = {
+  gallery: 'Collection photo',
+  homePage: 'Page',
+  aboutPage: 'Page',
+  contactPage: 'Page',
+  siteSettings: 'Réglages',
+  exhibition: 'Exposition',
+}
+
+const activityIcons: Record<ActivityAction, ComponentType> = {
+  created: AddCircleIcon,
+  modified: EditIcon,
+  published: PublishIcon,
+  unpublished: UnpublishIcon,
 }
 
 const fieldLabels: Record<string, string> = {
@@ -176,9 +209,16 @@ function describeTransaction(
       'create' in mutation || 'createOrReplace' in mutation || 'createIfNotExists' in mutation,
   )
 
-  if (publishedWrite && draftDeleted) return `a publié ${contentNoun(document)}`
-  if (publishedDeleted && !publishedWrite) return `a retiré ${contentNoun(document)} du site`
-  if (created) return `a créé ${contentNoun(document)}`
+  if (publishedWrite && draftDeleted) {
+    return {action: 'published' as const, description: `a publié ${contentNoun(document)}`}
+  }
+  if (publishedDeleted && !publishedWrite) {
+    return {
+      action: 'unpublished' as const,
+      description: `a retiré ${contentNoun(document)} du site`,
+    }
+  }
+  if (created) return {action: 'created' as const, description: `a créé ${contentNoun(document)}`}
 
   const labels = Array.from(
     new Set(
@@ -188,11 +228,21 @@ function describeTransaction(
         .filter(Boolean),
     ),
   )
-  if (labels.length === 1) return `a modifié ${labels[0]}`
-  if (labels.length === 2) return `a modifié ${labels[0]} et ${labels[1]}`
-  if (labels.length > 2)
-    return `a modifié ${labels[0]}, ${labels[1]} et ${labels.length - 2} autre(s) élément(s)`
-  return `a modifié ${contentNoun(document)}`
+  if (labels.length === 1)
+    return {action: 'modified' as const, description: `a modifié ${labels[0]}`}
+  if (labels.length === 2) {
+    return {
+      action: 'modified' as const,
+      description: `a modifié ${labels[0]} et ${labels[1]}`,
+    }
+  }
+  if (labels.length > 2) {
+    return {
+      action: 'modified' as const,
+      description: `a modifié ${labels[0]}, ${labels[1]} et ${labels.length - 2} autre(s) élément(s)`,
+    }
+  }
+  return {action: 'modified' as const, description: `a modifié ${contentNoun(document)}`}
 }
 
 function buildActivities(
@@ -213,9 +263,10 @@ function buildActivities(
       if (!document || activities[id]) continue
 
       const user = usersById.get(transaction.author)
+      const activity = describeTransaction(document, transaction.mutations, id)
       activities[id] = {
         authorName: user?.displayName || user?.email || 'Un membre de l’équipe',
-        description: describeTransaction(document, transaction.mutations, id),
+        ...activity,
         timestamp: transaction.timestamp,
       }
     }
@@ -336,12 +387,14 @@ export function EditorialDashboard() {
             </Text>
           </Stack>
           <Flex align="center" gap={2} wrap="wrap">
-            <QuickIntentAction
+            <IntentButton
               icon={AddIcon}
-              label="Nouvelle collection"
+              text="Nouvelle collection"
               intent="create"
               params={{type: 'gallery', template: 'gallery'}}
               tone="primary"
+              mode="default"
+              paddingY={3}
             />
             <Button
               as="a"
@@ -352,6 +405,7 @@ export function EditorialDashboard() {
               padding={3}
               text="Ouvrir le site ↗"
             />
+            <DeploymentStatus run={run} />
           </Flex>
         </Flex>
 
@@ -374,20 +428,26 @@ export function EditorialDashboard() {
 
         {!loading && !error && (
           <>
-            <Card radius={3} border tone="transparent" overflow="hidden">
+            <Card radius={3} tone="default" shadow={1} overflow="hidden">
               <div className="editorial-dashboard__metrics">
                 <MetricCard
+                  icon={FolderIcon}
                   label="Collections"
                   value={String(galleries.filter((row) => isGalleryOnline(row.current)).length)}
                   detail="sur le site"
                 />
                 <MetricCard
+                  icon={DocumentIcon}
                   label="Brouillons"
                   value={String(rows.filter((row) => row.hasDraft).length)}
                   detail="en cours"
                 />
-                <MetricCard label="À vérifier" value={String(attention.length)} detail="contenus" />
-                <DeploymentCard run={run} />
+                <MetricCard
+                  icon={WarningOutlineIcon}
+                  label="À vérifier"
+                  value={String(attention.length)}
+                  detail="contenus"
+                />
               </div>
             </Card>
 
@@ -441,7 +501,7 @@ export function EditorialDashboard() {
                     />
                   )}
                 </Flex>
-                <Card radius={3} tone="transparent" border>
+                <Card radius={3} tone="default" shadow={1}>
                   <Stack space={0}>
                     {recentRows.map((row, index) => (
                       <RecentRow
@@ -468,6 +528,7 @@ function buildAttentionGroups(rows: DashboardRow[]): AttentionGroup[] {
       id: 'blocking',
       title: 'À corriger',
       description: 'Informations indispensables manquantes',
+      icon: ErrorOutlineIcon,
       tone: 'critical',
       rows: [],
     },
@@ -475,6 +536,7 @@ function buildAttentionGroups(rows: DashboardRow[]): AttentionGroup[] {
       id: 'publish',
       title: 'Modifications à publier',
       description: 'Contenus modifiés depuis leur dernière publication',
+      icon: PublishIcon,
       tone: 'caution',
       rows: [],
     },
@@ -482,6 +544,7 @@ function buildAttentionGroups(rows: DashboardRow[]): AttentionGroup[] {
       id: 'finish',
       title: 'À finaliser',
       description: 'Contenus encore en préparation ou hors ligne',
+      icon: TaskIcon,
       tone: 'primary',
       rows: [],
     },
@@ -489,6 +552,7 @@ function buildAttentionGroups(rows: DashboardRow[]): AttentionGroup[] {
       id: 'recommended',
       title: 'À améliorer',
       description: 'SEO et informations recommandées',
+      icon: SearchIcon,
       tone: 'default',
       rows: [],
     },
@@ -541,58 +605,19 @@ function editorialStatus(row: DashboardRow): {label: string; tone: DashboardTone
   return {label: 'En préparation', tone: 'caution'}
 }
 
-function QuickIntentAction({
-  icon,
-  label,
-  intent,
-  params,
-  tone = 'default',
-}: {
-  icon: ComponentType
-  label: string
-  intent: 'create' | 'edit'
-  params: Record<string, string>
-  tone?: DashboardTone
-}) {
-  return (
-    <IntentLink intent={intent} params={params} style={{color: 'inherit', textDecoration: 'none'}}>
-      <QuickActionContent icon={icon} label={label} tone={tone} />
-    </IntentLink>
-  )
-}
-
-function QuickActionContent({
-  icon: Icon,
-  label,
-  tone,
-}: {
-  icon: ComponentType
-  label: string
-  tone: DashboardTone
-}) {
-  return (
-    <Card padding={3} radius={2} border tone={tone === 'default' ? 'transparent' : tone}>
-      <Flex align="center" gap={2}>
-        <Text size={1}>
-          <Icon />
-        </Text>
-        <Text size={1} weight="semibold">
-          {label}
-        </Text>
-      </Flex>
-    </Card>
-  )
-}
-
 function AttentionSection({group, showCount}: {group: AttentionGroup; showCount: boolean}) {
+  const Icon = group.icon
   return (
-    <Card radius={3} shadow={1} overflow="hidden">
+    <Card radius={3} tone="default" shadow={1} overflow="hidden">
       <Card
         tone={group.tone}
         padding={3}
         style={{borderBottom: '1px solid var(--card-border-color)'}}
       >
         <Flex align="center" gap={2} wrap="wrap">
+          <Text size={1}>
+            <Icon />
+          </Text>
           {showCount && (
             <Card
               tone={group.tone}
@@ -634,12 +659,22 @@ function AttentionSection({group, showCount}: {group: AttentionGroup; showCount:
   )
 }
 
-function MetricCard({label, value, detail}: {label: string; value: string; detail: string}) {
+function MetricCard({
+  icon: Icon,
+  label,
+  value,
+  detail,
+}: {
+  icon: ComponentType
+  label: string
+  value: string
+  detail: string
+}) {
   return (
     <div className="editorial-dashboard__metric-cell">
-      <Flex align="center" gap={2}>
-        <Heading size={2}>{value}</Heading>
-        <Stack space={1}>
+      <Flex align="flex-start" justify="space-between" gap={2}>
+        <Stack space={2}>
+          <Heading size={2}>{value}</Heading>
           <Text size={0} weight="semibold">
             {label}
           </Text>
@@ -647,12 +682,15 @@ function MetricCard({label, value, detail}: {label: string; value: string; detai
             {detail}
           </Text>
         </Stack>
+        <Text muted size={1}>
+          <Icon />
+        </Text>
       </Flex>
     </div>
   )
 }
 
-function DeploymentCard({run}: {run: DeploymentRun | null}) {
+function DeploymentStatus({run}: {run: DeploymentRun | null}) {
   const status = deploymentLabel(run)
   const tone = !run
     ? 'default'
@@ -666,38 +704,36 @@ function DeploymentCard({run}: {run: DeploymentRun | null}) {
     run?.status === 'completed' && run.conclusion === 'success' ? 'À jour' : status.label
 
   const content = (
-    <Flex align="center" justify="space-between" gap={2}>
-      <Stack space={1} style={{minWidth: 0}}>
-        <Text size={0} weight="semibold">
-          Mise en ligne
-        </Text>
-        <Text muted size={0}>
-          {dateLabel}
-        </Text>
-      </Stack>
+    <Flex align="center" gap={2}>
       <Badge tone={tone} mode="light" style={{whiteSpace: 'nowrap'}}>
         {shortStatusLabel}
       </Badge>
+      <Text muted size={0} style={{whiteSpace: 'nowrap'}}>
+        {dateLabel}
+      </Text>
     </Flex>
   )
 
-  return (
-    <div className="editorial-dashboard__metric-cell">
-      {run?.html_url ? (
-        <a
-          className="editorial-dashboard__metric-link"
-          href={run.html_url}
-          target="_blank"
-          rel="noreferrer"
-          title="Voir le détail de la dernière mise en ligne"
-          aria-label={`${shortStatusLabel}. ${dateLabel}. Voir le détail de la mise en ligne`}
-        >
-          {content}
-        </a>
-      ) : (
-        content
-      )}
-    </div>
+  return run?.html_url ? (
+    <Card
+      as="a"
+      href={run.html_url}
+      target="_blank"
+      rel="noreferrer"
+      title="Voir le détail de la dernière mise en ligne"
+      aria-label={`${shortStatusLabel}. ${dateLabel}. Voir le détail de la mise en ligne`}
+      padding={3}
+      radius={2}
+      border
+      tone="transparent"
+      style={{color: 'inherit', textDecoration: 'none'}}
+    >
+      {content}
+    </Card>
+  ) : (
+    <Card padding={3} radius={2} border tone="transparent">
+      {content}
+    </Card>
   )
 }
 
@@ -712,8 +748,7 @@ function ContentRow({
 }) {
   const status = editorialStatus(row)
   const title = documentTitle(row.current)
-  const typeLabel = typeLabels[row.current._type]
-  const showType = typeLabel !== title
+  const typeLabel = rowTypeLabels[row.current._type]
   const showStatus = status.tone !== 'positive'
   return (
     <IntentLink
@@ -727,7 +762,7 @@ function ContentRow({
       >
         <Flex>
           <Card tone={accentTone} style={{width: 4}} />
-          <Box padding={3} style={{minWidth: 0, flex: 1}}>
+          <Box paddingX={4} paddingY={4} style={{minWidth: 0, flex: 1}}>
             <Flex align="center" justify="space-between" gap={3} wrap="wrap">
               <Flex align="center" gap={3} wrap="wrap" style={{minWidth: 0, flex: 1}}>
                 <Text
@@ -738,7 +773,7 @@ function ContentRow({
                 >
                   {title}
                 </Text>
-                {showType && (
+                {typeLabel && (
                   <Text muted size={0}>
                     {typeLabel}
                   </Text>
@@ -773,6 +808,7 @@ function RecentRow({
 }) {
   const status = editorialStatus(row)
   const showStatus = status.tone !== 'positive'
+  const ActivityIcon = activity ? activityIcons[activity.action] : null
   return (
     <IntentLink
       intent="edit"
@@ -788,13 +824,18 @@ function RecentRow({
           <Text size={1} weight="semibold" textOverflow="ellipsis">
             {documentTitle(row.current)}
           </Text>
-          <Text muted size={0} style={{flex: '0 0 auto', textAlign: 'right'}}>
+          <Text muted size={0} className="editorial-dashboard__activity-date">
             {formatActivityDate(activity?.timestamp ?? row.lastUpdatedAt)}
           </Text>
         </Flex>
         <Flex align="center" gap={2} wrap="wrap">
           {activity ? (
             <>
+              {ActivityIcon && (
+                <Text muted size={1}>
+                  <ActivityIcon />
+                </Text>
+              )}
               <Text size={0} weight="semibold">
                 {activity.authorName}
               </Text>
