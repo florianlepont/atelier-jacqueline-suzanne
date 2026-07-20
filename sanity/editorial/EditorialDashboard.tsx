@@ -1,15 +1,15 @@
 import {useEffect, useMemo, useState} from 'react'
 import type {ComponentType} from 'react'
-import {Badge, Box, Button, Card, Flex, Grid, Heading, Spinner, Stack, Text} from '@sanity/ui'
+import {Badge, Box, Button, Card, Flex, Heading, Spinner, Stack, Text} from '@sanity/ui'
 import {useClient, useHistoryStore, useUserStore} from 'sanity'
 import {IntentLink} from 'sanity/router'
-import {AddIcon, HomeIcon} from '@sanity/icons'
+import {AddIcon, ChevronRightIcon, HomeIcon} from '@sanity/icons'
 import type {TransactionLogEventWithMutations, TransactionLogMutation, User} from '@sanity/types'
-import styled from 'styled-components'
 import {deploymentLabel, getLatestDeployment, SITE_PREVIEW_URL} from './deployment'
 import type {DeploymentRun} from './deployment'
 import {getDocumentChecks, summarizeChecks} from './checks'
 import type {CheckItem} from './checks'
+import './EditorialDashboard.css'
 
 interface DashboardDocument extends Record<string, unknown> {
   _id: string
@@ -46,16 +46,6 @@ interface AttentionGroup {
   tone: DashboardTone
   rows: DashboardRow[]
 }
-
-const EditorialColumns = styled.div`
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 24px;
-
-  @media (min-width: 64em) {
-    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
-  }
-`
 
 const query = `*[_type in ["gallery", "homePage", "aboutPage", "contactPage", "siteSettings", "exhibition"]] | order(_updatedAt desc) {
   _id, _type, _updatedAt, title, slug, isVisible, publicationStatus, statement, images, seo,
@@ -351,6 +341,7 @@ export function EditorialDashboard() {
               label="Nouvelle collection"
               intent="create"
               params={{type: 'gallery', template: 'gallery'}}
+              tone="primary"
             />
             <QuickIntentAction
               icon={HomeIcon}
@@ -389,22 +380,24 @@ export function EditorialDashboard() {
 
         {!loading && !error && (
           <>
-            <Grid columns={[2, 2, 4]} gap={3}>
-              <MetricCard
-                label="Collections"
-                value={String(galleries.filter((row) => isGalleryOnline(row.current)).length)}
-                detail="sur le site"
-              />
-              <MetricCard
-                label="Brouillons"
-                value={String(rows.filter((row) => row.hasDraft).length)}
-                detail="en cours"
-              />
-              <MetricCard label="À vérifier" value={String(attention.length)} detail="contenus" />
-              <DeploymentCard run={run} />
-            </Grid>
+            <Card radius={3} border tone="transparent" overflow="hidden">
+              <div className="editorial-dashboard__metrics">
+                <MetricCard
+                  label="Collections"
+                  value={String(galleries.filter((row) => isGalleryOnline(row.current)).length)}
+                  detail="sur le site"
+                />
+                <MetricCard
+                  label="Brouillons"
+                  value={String(rows.filter((row) => row.hasDraft).length)}
+                  detail="en cours"
+                />
+                <MetricCard label="À vérifier" value={String(attention.length)} detail="contenus" />
+                <DeploymentCard run={run} />
+              </div>
+            </Card>
 
-            <EditorialColumns>
+            <div className="editorial-dashboard__columns">
               <Stack space={3}>
                 <Stack space={2}>
                   <Heading as="h2" size={2}>
@@ -424,7 +417,11 @@ export function EditorialDashboard() {
                 ) : (
                   <Stack space={2}>
                     {attentionGroups.map((group) => (
-                      <AttentionSection key={group.id} group={group} />
+                      <AttentionSection
+                        key={group.id}
+                        group={group}
+                        showCount={attentionGroups.length > 1}
+                      />
                     ))}
                   </Stack>
                 )}
@@ -463,7 +460,7 @@ export function EditorialDashboard() {
                   </Stack>
                 </Card>
               </Stack>
-            </EditorialColumns>
+            </div>
           </>
         )}
       </Stack>
@@ -555,22 +552,32 @@ function QuickIntentAction({
   label,
   intent,
   params,
+  tone = 'default',
 }: {
   icon: ComponentType
   label: string
   intent: 'create' | 'edit'
   params: Record<string, string>
+  tone?: DashboardTone
 }) {
   return (
     <IntentLink intent={intent} params={params} style={{color: 'inherit', textDecoration: 'none'}}>
-      <QuickActionContent icon={icon} label={label} />
+      <QuickActionContent icon={icon} label={label} tone={tone} />
     </IntentLink>
   )
 }
 
-function QuickActionContent({icon: Icon, label}: {icon: ComponentType; label: string}) {
+function QuickActionContent({
+  icon: Icon,
+  label,
+  tone,
+}: {
+  icon: ComponentType
+  label: string
+  tone: DashboardTone
+}) {
   return (
-    <Card padding={3} radius={2} border tone="transparent">
+    <Card padding={3} radius={2} border tone={tone === 'default' ? 'transparent' : tone}>
       <Flex align="center" gap={2}>
         <Text size={1}>
           <Icon />
@@ -583,7 +590,7 @@ function QuickActionContent({icon: Icon, label}: {icon: ComponentType; label: st
   )
 }
 
-function AttentionSection({group}: {group: AttentionGroup}) {
+function AttentionSection({group, showCount}: {group: AttentionGroup; showCount: boolean}) {
   return (
     <Card radius={3} shadow={1} overflow="hidden">
       <Card
@@ -592,31 +599,31 @@ function AttentionSection({group}: {group: AttentionGroup}) {
         style={{borderBottom: '1px solid var(--card-border-color)'}}
       >
         <Flex align="center" gap={2} wrap="wrap">
-          <Card
-            tone={group.tone}
-            radius={4}
-            style={{
-              width: 24,
-              height: 24,
-              flex: '0 0 auto',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '50%',
-            }}
-          >
-            <Text size={0} weight="semibold">
-              {group.rows.length}
-            </Text>
-          </Card>
-          <Stack space={1}>
-            <Text size={1} weight="bold">
-              {group.title}
-            </Text>
-            <Text muted size={0}>
-              {group.description}
-            </Text>
-          </Stack>
+          {showCount && (
+            <Card
+              tone={group.tone}
+              radius={4}
+              style={{
+                width: 24,
+                height: 24,
+                flex: '0 0 auto',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '50%',
+              }}
+            >
+              <Text size={0} weight="semibold">
+                {group.rows.length}
+              </Text>
+            </Card>
+          )}
+          <Text size={1} weight="bold">
+            {group.title}
+          </Text>
+          <Text muted size={0}>
+            {group.description}
+          </Text>
         </Flex>
       </Card>
       <Stack space={0}>
@@ -635,7 +642,7 @@ function AttentionSection({group}: {group: AttentionGroup}) {
 
 function MetricCard({label, value, detail}: {label: string; value: string; detail: string}) {
   return (
-    <Card padding={3} radius={3} border tone="transparent">
+    <div className="editorial-dashboard__metric-cell">
       <Flex align="center" gap={2}>
         <Heading size={2}>{value}</Heading>
         <Stack space={1}>
@@ -647,7 +654,7 @@ function MetricCard({label, value, detail}: {label: string; value: string; detai
           </Text>
         </Stack>
       </Flex>
-    </Card>
+    </div>
   )
 }
 
@@ -660,9 +667,9 @@ function DeploymentCard({run}: {run: DeploymentRun | null}) {
       : run.conclusion === 'success'
         ? 'positive'
         : 'critical'
-  const dateLabel = run
-    ? `${run.status === 'completed' && run.conclusion === 'success' ? 'Dernière mise en ligne' : 'Dernière tentative'} : ${formatActivityDate(run.updated_at)}`
-    : 'Dernière mise en ligne inconnue'
+  const dateLabel = run ? formatActivityDate(run.updated_at) : 'Date inconnue'
+  const shortStatusLabel =
+    run?.status === 'completed' && run.conclusion === 'success' ? 'À jour' : status.label
 
   const content = (
     <Flex align="center" justify="space-between" gap={2}>
@@ -670,34 +677,33 @@ function DeploymentCard({run}: {run: DeploymentRun | null}) {
         <Text size={0} weight="semibold">
           Mise en ligne
         </Text>
-        <Text muted size={0} textOverflow="ellipsis">
+        <Text muted size={0}>
           {dateLabel}
         </Text>
       </Stack>
-      <Badge tone={tone} mode="light">
-        {status.label}
+      <Badge tone={tone} mode="light" style={{whiteSpace: 'nowrap'}}>
+        {shortStatusLabel}
       </Badge>
     </Flex>
   )
 
-  return run?.html_url ? (
-    <Card
-      as="a"
-      href={run.html_url}
-      target="_blank"
-      rel="noreferrer"
-      padding={3}
-      radius={3}
-      border
-      tone="transparent"
-      style={{color: 'inherit', textDecoration: 'none'}}
-    >
-      {content}
-    </Card>
-  ) : (
-    <Card padding={3} radius={3} border tone="transparent">
-      {content}
-    </Card>
+  return (
+    <div className="editorial-dashboard__metric-cell">
+      {run?.html_url ? (
+        <a
+          className="editorial-dashboard__metric-link"
+          href={run.html_url}
+          target="_blank"
+          rel="noreferrer"
+          title="Voir le détail de la dernière mise en ligne"
+          aria-label={`${shortStatusLabel}. ${dateLabel}. Voir le détail de la mise en ligne`}
+        >
+          {content}
+        </a>
+      ) : (
+        content
+      )}
+    </div>
   )
 }
 
@@ -711,6 +717,10 @@ function ContentRow({
   accentTone: DashboardTone
 }) {
   const status = editorialStatus(row)
+  const title = documentTitle(row.current)
+  const typeLabel = typeLabels[row.current._type]
+  const showType = typeLabel !== title
+  const showStatus = status.tone !== 'positive'
   return (
     <IntentLink
       intent="edit"
@@ -732,18 +742,22 @@ function ContentRow({
                   textOverflow="ellipsis"
                   style={{minWidth: 0, flex: '1 1 180px'}}
                 >
-                  {documentTitle(row.current)}
+                  {title}
                 </Text>
-                <Text muted size={0}>
-                  {typeLabels[row.current._type]}
-                </Text>
-                <Badge fontSize={0} mode="light" tone={status.tone}>
-                  {status.label}
-                </Badge>
+                {showType && (
+                  <Text muted size={0}>
+                    {typeLabel}
+                  </Text>
+                )}
+                {showStatus && (
+                  <Badge fontSize={0} mode="light" tone={status.tone}>
+                    {status.label}
+                  </Badge>
+                )}
               </Flex>
               <Flex align="center">
                 <Text muted size={1}>
-                  ›
+                  <ChevronRightIcon />
                 </Text>
               </Flex>
             </Flex>
@@ -764,6 +778,7 @@ function RecentRow({
   withBorder: boolean
 }) {
   const status = editorialStatus(row)
+  const showStatus = status.tone !== 'positive'
   return (
     <IntentLink
       intent="edit"
@@ -798,9 +813,11 @@ function RecentRow({
               Détail de l’activité non disponible
             </Text>
           )}
-          <Badge fontSize={0} mode="light" tone={status.tone}>
-            {status.label}
-          </Badge>
+          {showStatus && (
+            <Badge fontSize={0} mode="light" tone={status.tone}>
+              {status.label}
+            </Badge>
+          )}
         </Flex>
       </Stack>
     </IntentLink>
