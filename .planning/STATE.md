@@ -154,6 +154,7 @@ None currently open. Both prior research-carryover items were resolved during Ph
 | 260720-remove-dashboard-home-action | Remove the redundant « Modifier l’accueil » action from the Sanity dashboard header, leaving only collection creation and site preview | 2026-07-20 | a12a615 | [260720-remove-dashboard-home-action](./quick/260720-remove-dashboard-home-action/) |
 | 260720-apply-personal-dashboard-ui-audit | Apply the personal dashboard UI audit: primary collection action, semantic iconography, vertical KPI structure, separate deployment status, stable task metadata, comfortable targets, fixed activity dates, and native Sanity card depth | 2026-07-20 | ce8bbb6 | [260720-apply-personal-dashboard-ui-audit](./quick/260720-apply-personal-dashboard-ui-audit/) |
 | 260720-polish-dashboard-pixel-perfect | Complete the dashboard pixel-polish pass: tinted canvas and white surfaces, explicit low-emphasis site status, per-task icons, compact targets, resilient activity dates, responsive header/KPI behavior, and hover/focus/accessibility states | 2026-07-20 | cfa3d84 | [260720-polish-dashboard-pixel-perfect](./quick/260720-polish-dashboard-pixel-perfect/) |
+| 260720-fix-dashboard-spacing-and-task-details | Standardize dashboard control heights and icon spacing, rebuild priority rows on a stable grid, and explicitly display the remaining work for each content item | 2026-07-20 | ae2591c | [260720-fix-dashboard-spacing-and-task-details](./quick/260720-fix-dashboard-spacing-and-task-details/) |
 
 ## Deferred Items
 
