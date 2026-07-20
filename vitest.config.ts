@@ -10,5 +10,11 @@ export default getViteConfig({
     include: ['tests/unit/**/*.test.ts'],
     environment: 'node',
     watch: false,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'json-summary'],
+      reportsDirectory: './coverage',
+      include: ['src/**/*.ts'],
+    },
   },
 });
