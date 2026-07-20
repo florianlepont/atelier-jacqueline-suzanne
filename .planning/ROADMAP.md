@@ -326,7 +326,7 @@ Plans:
   4. The language switcher shows only a link to the OTHER language (not both FR and EN) alongside a small globe icon, on every page site-wide.
   5. Clicking the language switcher link takes the visitor directly to the translated version of the current page (same destination behavior as before, just one link instead of two).
 
-**Plans**: 3/3 plans executed
+**Plans**: 3 executed + 1 gap-closure plan (10-04) pending
 Plans:
 **Wave 1**
 
@@ -339,6 +339,10 @@ Plans:
 **Wave 3** *(blocked on Wave 2 — shares HomeCarousel/homepage/i18n specs)*
 
 - [x] 10-03-PLAN.md — Simplify `LanguageSwitcher` to one link + globe icon, accessible name + cookie/nav preserved (I18N-04, D-07–D-11) (Wave 3)
+
+**Gap closure** *(UAT Test 5, major — from `.planning/debug/header-backhome-overlap-logo.md`)*
+
+- [ ] 10-04-PLAN.md — Remove the duplicate `.gallery-detail__hero-back` link (+ dead CSS/import) overlapping the SiteHeader logo on both gallery-detail locale templates (HOME-10) (Wave 1)
 
 **UI hint**: yes
 
