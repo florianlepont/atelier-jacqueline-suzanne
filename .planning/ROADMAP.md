@@ -326,7 +326,7 @@ Plans:
   4. The language switcher shows only a link to the OTHER language (not both FR and EN) alongside a small globe icon, on every page site-wide.
   5. Clicking the language switcher link takes the visitor directly to the translated version of the current page (same destination behavior as before, just one link instead of two).
 
-**Plans**: 3 executed + 1 gap-closure plan (10-04) pending
+**Plans**: 4/4 plans complete
 Plans:
 **Wave 1**
 
@@ -342,7 +342,7 @@ Plans:
 
 **Gap closure** *(UAT Test 5, major — from `.planning/debug/header-backhome-overlap-logo.md`)*
 
-- [ ] 10-04-PLAN.md — Remove the duplicate `.gallery-detail__hero-back` link (+ dead CSS/import) overlapping the SiteHeader logo on both gallery-detail locale templates (HOME-10) (Wave 1)
+- [x] 10-04-PLAN.md — Remove the duplicate `.gallery-detail__hero-back` link (+ dead CSS/import) overlapping the SiteHeader logo on both gallery-detail locale templates (HOME-10) (Wave 1)
 
 **UI hint**: yes
 
@@ -364,7 +364,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 7. Homepage Quick Fixes & Mobile Hero Correctness | 2/2 | Complete    | 2026-07-13 |
 | 8. Gallery Descriptions | 1/1 | Complete   | 2026-07-14 |
 | 9. Progressive Homepage Image Loading | 2/2 | Complete    | 2026-07-14 |
-| 10. Unified Header & Simplified Language Switcher | 3/3 | Complete    | 2026-07-17 |
+| 10. Unified Header & Simplified Language Switcher | 4/4 | Complete   | 2026-07-17 |
 
 ## Milestone Scope Note
 

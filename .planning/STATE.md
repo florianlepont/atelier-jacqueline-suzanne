@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Homepage Polish (Pre-Launch)
 current_phase: 10
-status: complete
+current_phase_name: unified-header-simplified-language-switcher
+status: executing
 stopped_at: Phase 10 complete — v1.2 milestone finished
-last_updated: "2026-07-20T12:05:00.000Z"
+last_updated: "2026-07-20T12:09:51.151Z"
 last_activity: 2026-07-20
-last_activity_desc: "Completed a quality-auditor pass and 3 remediation quick tasks (CI/tooling gates, stale docs fix, HomeCarousel logic extraction), plus a live Sanity content fix (navLabels.about.fr typo)"
+last_activity_desc: Phase 10 execution started
 progress:
   total_phases: 13
-  completed_phases: 11
-  total_plans: 33
+  completed_phases: 10
+  total_plans: 34
   completed_plans: 34
-  percent: 85
-current_phase_name: unified-header-simplified-language-switcher
+  percent: 77
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-07-14)
 
 ## Current Position
 
-Phase: 10
+Phase: 10 (unified-header-simplified-language-switcher) — EXECUTING
 Phase: 10 (Unified Header & Simplified Language Switcher) — complete, 3/3 plans executed
-Status: Phase 10 complete — v1.2 milestone (Phases 7-10) finished
-Last activity: 2026-07-20 - Completed a quality-auditor pass and 3 remediation quick tasks (260720-dzi, 260720-dzo, 260720-dzs), plus a live Sanity content fix
+Status: Executing Phase 10
+Last activity: 2026-07-20 — Phase 10 execution started
 
 ## Performance Metrics
 
