@@ -314,7 +314,7 @@ Plans:
 
 ### Phase 10: Unified Header & Simplified Language Switcher
 
-**Goal**: The homepage renders from the same shared header component as About/Contact — so logo, nav, toggle, and switcher positioning stay aligned by construction instead of drifting — and the site-wide language switcher shows only the other language plus a globe icon.
+**Goal**: As a visitor, I want to see the same header component and language switcher on every page, so that logo, nav, toggle, and switcher positioning stay aligned by construction instead of drifting, and the switcher shows only the other language plus a globe icon.
 **Mode:** mvp
 **Depends on**: Phase 1, Phase 6, Phase 7
 **Requirements**: HOME-10, I18N-04
