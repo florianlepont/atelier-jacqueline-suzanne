@@ -3,7 +3,7 @@ import type {ComponentType} from 'react'
 import {Badge, Box, Button, Card, Flex, Heading, Spinner, Stack, Text} from '@sanity/ui'
 import {useClient, useHistoryStore, useUserStore} from 'sanity'
 import {IntentLink} from 'sanity/router'
-import {AddIcon, ChevronRightIcon, HomeIcon} from '@sanity/icons'
+import {AddIcon, ChevronRightIcon} from '@sanity/icons'
 import type {TransactionLogEventWithMutations, TransactionLogMutation, User} from '@sanity/types'
 import {deploymentLabel, getLatestDeployment, SITE_PREVIEW_URL} from './deployment'
 import type {DeploymentRun} from './deployment'
@@ -342,12 +342,6 @@ export function EditorialDashboard() {
               intent="create"
               params={{type: 'gallery', template: 'gallery'}}
               tone="primary"
-            />
-            <QuickIntentAction
-              icon={HomeIcon}
-              label="Modifier l’accueil"
-              intent="edit"
-              params={{id: 'homePage', type: 'homePage'}}
             />
             <Button
               as="a"
