@@ -150,6 +150,7 @@ None currently open. Both prior research-carryover items were resolved during Ph
 | 260720-sanity-dashboard-density | Simplify the Sanity dashboard density: retain two useful quick actions, remove redundant validation details from attention rows, and increase vertical rhythm throughout the main sections | 2026-07-20 | 7cee97a | [260720-sanity-dashboard-density](./quick/260720-sanity-dashboard-density/) |
 | 260720-sanity-dashboard-activity-authors | Turn the Sanity dashboard's recent activity into a real editorial log using transaction history: identify the author, classify the action, summarize changed fields, and retain a safe fallback for purged history | 2026-07-20 | 3bff5d7 | [260720-sanity-dashboard-activity-authors](./quick/260720-sanity-dashboard-activity-authors/) |
 | 260720-sanity-dashboard-compact-layout | Recompose the Sanity dashboard as a compact responsive editorial cockpit: header toolbar, horizontal metrics, single-line task rows, and a desktop 2/3 + 1/3 tasks/activity layout | 2026-07-20 | e64b856 | [260720-sanity-dashboard-compact-layout](./quick/260720-sanity-dashboard-compact-layout/) |
+| 260720-sanity-dashboard-three-pass-polish | Complete three consecutive UI audit/fix loops on the compact Sanity dashboard: fix hierarchy and repetition, consolidate responsive metrics, strengthen affordances, and remove a duplicate styled-components runtime caught during the final audit | 2026-07-20 | 46d57fe | [260720-sanity-dashboard-three-pass-polish](./quick/260720-sanity-dashboard-three-pass-polish/) |
 
 ## Deferred Items
 
