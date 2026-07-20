@@ -5,6 +5,7 @@ import {useClient, useHistoryStore, useUserStore} from 'sanity'
 import {IntentLink} from 'sanity/router'
 import {AddIcon, HomeIcon} from '@sanity/icons'
 import type {TransactionLogEventWithMutations, TransactionLogMutation, User} from '@sanity/types'
+import styled from 'styled-components'
 import {deploymentLabel, getLatestDeployment, SITE_PREVIEW_URL} from './deployment'
 import type {DeploymentRun} from './deployment'
 import {getDocumentChecks, summarizeChecks} from './checks'
@@ -45,6 +46,16 @@ interface AttentionGroup {
   tone: DashboardTone
   rows: DashboardRow[]
 }
+
+const EditorialColumns = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+
+  @media (min-width: 64em) {
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  }
+`
 
 const query = `*[_type in ["gallery", "homePage", "aboutPage", "contactPage", "siteSettings", "exhibition"]] | order(_updatedAt desc) {
   _id, _type, _updatedAt, title, slug, isVisible, publicationStatus, statement, images, seo,
@@ -324,9 +335,9 @@ export function EditorialDashboard() {
 
   return (
     <Box padding={[3, 4, 5]} style={{maxWidth: 1080, margin: '0 auto'}}>
-      <Stack space={6}>
+      <Stack space={4}>
         <Flex align="center" justify="space-between" gap={3} wrap="wrap">
-          <Stack space={3}>
+          <Stack space={2} style={{flex: '1 1 280px'}}>
             <Heading as="h1" size={3}>
               Tableau de bord
             </Heading>
@@ -334,21 +345,7 @@ export function EditorialDashboard() {
               L’essentiel du contenu et de la mise en ligne.
             </Text>
           </Stack>
-          <Button
-            as="a"
-            href={SITE_PREVIEW_URL}
-            target="_blank"
-            rel="noreferrer"
-            mode="ghost"
-            text="Ouvrir le site ↗"
-          />
-        </Flex>
-
-        <Stack space={4}>
-          <Heading as="h2" size={2}>
-            Actions rapides
-          </Heading>
-          <Grid columns={[1, 2]} gap={3}>
+          <Flex align="center" gap={2} wrap="wrap">
             <QuickIntentAction
               icon={AddIcon}
               label="Nouvelle collection"
@@ -361,8 +358,17 @@ export function EditorialDashboard() {
               intent="edit"
               params={{id: 'homePage', type: 'homePage'}}
             />
-          </Grid>
-        </Stack>
+            <Button
+              as="a"
+              href={SITE_PREVIEW_URL}
+              target="_blank"
+              rel="noreferrer"
+              mode="ghost"
+              padding={3}
+              text="Ouvrir le site ↗"
+            />
+          </Flex>
+        </Flex>
 
         {loading && (
           <Card padding={5} radius={3} tone="transparent">
@@ -398,68 +404,66 @@ export function EditorialDashboard() {
               <DeploymentCard run={run} />
             </Grid>
 
-            <Stack space={4}>
-              <Flex align="center" justify="space-between">
-                <Stack space={3}>
+            <EditorialColumns>
+              <Stack space={3}>
+                <Stack space={2}>
                   <Heading as="h2" size={2}>
                     À faire maintenant
                   </Heading>
-                  {attention.length > 5 && (
-                    <Text muted size={0}>
-                      Les 5 contenus les plus prioritaires sur {attention.length}
-                    </Text>
-                  )}
-                </Stack>
-                <Badge mode="outline" tone={attention.length ? 'caution' : 'positive'}>
-                  {attention.length || 'Tout est prêt'}
-                </Badge>
-              </Flex>
-
-              {attention.length === 0 ? (
-                <Card padding={4} radius={3} tone="positive">
-                  <Text size={1}>Aucun contenu ne nécessite votre attention.</Text>
-                </Card>
-              ) : (
-                <Stack space={3}>
-                  {attentionGroups.map((group) => (
-                    <AttentionSection key={group.id} group={group} />
-                  ))}
-                </Stack>
-              )}
-            </Stack>
-
-            <Stack space={4}>
-              <Flex align="center" justify="space-between" gap={3}>
-                <Stack space={2}>
-                  <Heading as="h2" size={2}>
-                    Activité récente
-                  </Heading>
                   <Text muted size={0}>
-                    Les dernières actions enregistrées dans Sanity
+                    {attention.length === 0
+                      ? 'Aucune priorité en attente'
+                      : `${visibleAttention.length} priorité${visibleAttention.length > 1 ? 's' : ''} sur ${attention.length}`}
                   </Text>
                 </Stack>
-                {rows.length > 4 && (
-                  <Button
-                    mode="bleed"
-                    fontSize={1}
-                    text={showAllActivity ? 'Réduire' : `Voir toute l’activité (${rows.length})`}
-                    onClick={() => setShowAllActivity((value) => !value)}
-                  />
+
+                {attention.length === 0 ? (
+                  <Card padding={3} radius={3} tone="positive">
+                    <Text size={1}>Aucun contenu ne nécessite votre attention.</Text>
+                  </Card>
+                ) : (
+                  <Stack space={2}>
+                    {attentionGroups.map((group) => (
+                      <AttentionSection key={group.id} group={group} />
+                    ))}
+                  </Stack>
                 )}
-              </Flex>
-              <Card radius={3} tone="transparent" border>
-                <Stack space={0}>
-                  {recentRows.map((row, index) => (
-                    <RecentRow
-                      key={row.id}
-                      row={row}
-                      activity={activities[row.id]}
-                      withBorder={index < recentRows.length - 1}
+              </Stack>
+
+              <Stack space={3}>
+                <Flex align="center" justify="space-between" gap={2}>
+                  <Stack space={2}>
+                    <Heading as="h2" size={2}>
+                      Activité récente
+                    </Heading>
+                    <Text muted size={0}>
+                      Qui a fait quoi
+                    </Text>
+                  </Stack>
+                  {rows.length > 4 && (
+                    <Button
+                      mode="bleed"
+                      fontSize={0}
+                      padding={2}
+                      text={showAllActivity ? 'Réduire' : `Tout voir (${rows.length})`}
+                      onClick={() => setShowAllActivity((value) => !value)}
                     />
-                  ))}
-                </Stack>
-              </Card>
-            </Stack>
+                  )}
+                </Flex>
+                <Card radius={3} tone="transparent" border>
+                  <Stack space={0}>
+                    {recentRows.map((row, index) => (
+                      <RecentRow
+                        key={row.id}
+                        row={row}
+                        activity={activities[row.id]}
+                        withBorder={index < recentRows.length - 1}
+                      />
+                    ))}
+                  </Stack>
+                </Card>
+              </Stack>
+            </EditorialColumns>
           </>
         )}
       </Stack>
@@ -566,7 +570,7 @@ function QuickIntentAction({
 
 function QuickActionContent({icon: Icon, label}: {icon: ComponentType; label: string}) {
   return (
-    <Card padding={4} radius={2} border tone="transparent">
+    <Card padding={3} radius={2} border tone="transparent">
       <Flex align="center" gap={2}>
         <Text size={1}>
           <Icon />
@@ -584,7 +588,7 @@ function AttentionSection({group}: {group: AttentionGroup}) {
     <Card radius={3} shadow={1} overflow="hidden">
       <Card
         tone={group.tone}
-        padding={4}
+        padding={3}
         style={{borderBottom: '1px solid var(--card-border-color)'}}
       >
         <Flex align="center" gap={2} wrap="wrap">
@@ -605,7 +609,7 @@ function AttentionSection({group}: {group: AttentionGroup}) {
               {group.rows.length}
             </Text>
           </Card>
-          <Stack space={2}>
+          <Stack space={1}>
             <Text size={1} weight="bold">
               {group.title}
             </Text>
@@ -631,18 +635,18 @@ function AttentionSection({group}: {group: AttentionGroup}) {
 
 function MetricCard({label, value, detail}: {label: string; value: string; detail: string}) {
   return (
-    <Card padding={3} radius={3} shadow={1}>
-      <Stack space={3}>
-        <Text muted size={1}>
-          {label}
-        </Text>
-        <Flex align="baseline" gap={2}>
-          <Heading size={3}>{value}</Heading>
-          <Text muted size={1}>
+    <Card padding={3} radius={3} border tone="transparent">
+      <Flex align="center" gap={2}>
+        <Heading size={2}>{value}</Heading>
+        <Stack space={1}>
+          <Text size={0} weight="semibold">
+            {label}
+          </Text>
+          <Text muted size={0}>
             {detail}
           </Text>
-        </Flex>
-      </Stack>
+        </Stack>
+      </Flex>
     </Card>
   )
 }
@@ -661,22 +665,19 @@ function DeploymentCard({run}: {run: DeploymentRun | null}) {
     : 'Dernière mise en ligne inconnue'
 
   const content = (
-    <Stack space={2}>
-      <Text muted size={1}>
-        Mise en ligne
-      </Text>
+    <Flex align="center" justify="space-between" gap={2}>
+      <Stack space={1} style={{minWidth: 0}}>
+        <Text size={0} weight="semibold">
+          Mise en ligne
+        </Text>
+        <Text muted size={0} textOverflow="ellipsis">
+          {dateLabel}
+        </Text>
+      </Stack>
       <Badge tone={tone} mode="light">
         {status.label}
       </Badge>
-      <Text muted size={0}>
-        {dateLabel}
-      </Text>
-      {run?.html_url && (
-        <Text size={0} weight="semibold">
-          Voir le détail ↗
-        </Text>
-      )}
-    </Stack>
+    </Flex>
   )
 
   return run?.html_url ? (
@@ -687,13 +688,14 @@ function DeploymentCard({run}: {run: DeploymentRun | null}) {
       rel="noreferrer"
       padding={3}
       radius={3}
-      shadow={1}
+      border
+      tone="transparent"
       style={{color: 'inherit', textDecoration: 'none'}}
     >
       {content}
     </Card>
   ) : (
-    <Card padding={3} radius={3} shadow={1}>
+    <Card padding={3} radius={3} border tone="transparent">
       {content}
     </Card>
   )
@@ -721,21 +723,24 @@ function ContentRow({
       >
         <Flex>
           <Card tone={accentTone} style={{width: 4}} />
-          <Box padding={4} style={{minWidth: 0, flex: 1}}>
+          <Box padding={3} style={{minWidth: 0, flex: 1}}>
             <Flex align="center" justify="space-between" gap={3} wrap="wrap">
-              <Stack space={3} style={{minWidth: 0, flex: '1 1 520px'}}>
-                <Text size={1} weight="semibold" textOverflow="ellipsis">
+              <Flex align="center" gap={3} wrap="wrap" style={{minWidth: 0, flex: 1}}>
+                <Text
+                  size={1}
+                  weight="semibold"
+                  textOverflow="ellipsis"
+                  style={{minWidth: 0, flex: '1 1 180px'}}
+                >
                   {documentTitle(row.current)}
                 </Text>
-                <Flex align="center" gap={2} wrap="wrap">
-                  <Text muted size={0}>
-                    {typeLabels[row.current._type]}
-                  </Text>
-                  <Badge fontSize={0} mode="light" tone={status.tone}>
-                    {status.label}
-                  </Badge>
-                </Flex>
-              </Stack>
+                <Text muted size={0}>
+                  {typeLabels[row.current._type]}
+                </Text>
+                <Badge fontSize={0} mode="light" tone={status.tone}>
+                  {status.label}
+                </Badge>
+              </Flex>
               <Flex align="center">
                 <Text muted size={1}>
                   ›
@@ -765,42 +770,39 @@ function RecentRow({
       params={{id: row.id, type: row.current._type}}
       style={{color: 'inherit', textDecoration: 'none'}}
     >
-      <Flex
-        align="center"
-        justify="space-between"
-        gap={3}
-        padding={[3, 4]}
-        wrap="wrap"
+      <Stack
+        space={2}
+        padding={3}
         style={{borderBottom: withBorder ? '1px solid var(--card-border-color)' : undefined}}
       >
-        <Stack space={2} style={{minWidth: 0, flex: '1 1 420px'}}>
+        <Flex align="center" justify="space-between" gap={2}>
           <Text size={1} weight="semibold" textOverflow="ellipsis">
             {documentTitle(row.current)}
           </Text>
-          <Flex align="center" gap={2} wrap="wrap">
-            {activity ? (
-              <>
-                <Text size={0} weight="semibold">
-                  {activity.authorName}
-                </Text>
-                <Text muted size={0}>
-                  {activity.description}
-                </Text>
-              </>
-            ) : (
-              <Text muted size={0}>
-                Détail de l’activité non disponible
+          <Text muted size={0} style={{flex: '0 0 auto', textAlign: 'right'}}>
+            {formatActivityDate(activity?.timestamp ?? row.lastUpdatedAt)}
+          </Text>
+        </Flex>
+        <Flex align="center" gap={2} wrap="wrap">
+          {activity ? (
+            <>
+              <Text size={0} weight="semibold">
+                {activity.authorName}
               </Text>
-            )}
-            <Badge fontSize={0} mode="light" tone={status.tone}>
-              {status.label}
-            </Badge>
-          </Flex>
-        </Stack>
-        <Text size={1} style={{flex: '0 0 auto', textAlign: 'right'}}>
-          {formatActivityDate(activity?.timestamp ?? row.lastUpdatedAt)}
-        </Text>
-      </Flex>
+              <Text muted size={0}>
+                {activity.description}
+              </Text>
+            </>
+          ) : (
+            <Text muted size={0}>
+              Détail de l’activité non disponible
+            </Text>
+          )}
+          <Badge fontSize={0} mode="light" tone={status.tone}>
+            {status.label}
+          </Badge>
+        </Flex>
+      </Stack>
     </IntentLink>
   )
 }
