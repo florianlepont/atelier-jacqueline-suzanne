@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 10-unified-header-simplified-language-switcher
 source: [10-01-SUMMARY.md, 10-02-SUMMARY.md, 10-03-SUMMARY.md]
 started: 2026-07-20T10:15:11Z
@@ -113,5 +113,13 @@ skipped: 0
   reason: "User reported: not approved. Return button is on the logo. Actually this one can be removed as the click on logo has the same behavior. (Observed on a gallery-detail page: the '← Back home' text link visually overlaps the AJS logo mark; user proposes removing the separate back-home link entirely since clicking the logo already navigates home.)"
   severity: major
   test: 5
-  artifacts: []
-  missing: []
+  root_cause: "Both gallery-detail templates (src/pages/galleries/[slug].astro and src/pages/en/galleries/[slug].astro) render a pre-existing, page-local .gallery-detail__hero-back link ('← Back home' / '← Retour à l'accueil'), absolutely positioned (top: var(--space-xl); left: var(--space-xl); z-index: 3) relative to the hero box. SiteHeader.astro's transparent variant is itself position: absolute (z-index: 2) and removed from document flow, so the hero box starts flush at page y=0 — placing this page-local link at nearly the same top-left coordinates as SiteHeader's logo, with a higher z-index that paints the link's text directly over the logo. The link is a functional duplicate: its backHref and the header logo's homeHref both resolve to the site root. This link predates the Phase 10 SiteHeader extraction (Plans 01-03) and was never reconciled with it."
+  artifacts:
+    - path: "src/pages/en/galleries/[slug].astro"
+      issue: "Duplicate '← Back home' link (markup ~line 77, CSS ~lines 140-155) overlapping SiteHeader's logo via absolute positioning + higher z-index"
+    - path: "src/pages/galleries/[slug].astro"
+      issue: "French sibling: duplicate '← Retour à l'accueil' link (markup ~line 80, same CSS block) with the identical overlap"
+  missing:
+    - "Remove the .gallery-detail__hero-back link and its dead CSS from both locale variants of the gallery-detail page template"
+    - "Confirm the SiteHeader logo alone provides equivalent 'return home' navigation on gallery-detail pages after removal"
+  debug_session: .planning/debug/header-backhome-overlap-logo.md
