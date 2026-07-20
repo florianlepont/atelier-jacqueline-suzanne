@@ -45,6 +45,10 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 **v1.2 (Progressive Homepage Image Loading — Phase 9, shipped 2026-07-14):**
 - [x] Homepage photos load progressively (priority + blur-to-sharp), no blocking loading screen (HOME-09) — Phase 9
 
+**v1.2 (Unified Header & Simplified Language Switcher — Phase 10, shipped 2026-07-20):**
+- [x] Homepage header is visually identical to the About/Contact header by construction (shared `<SiteHeader>` component) (HOME-10) — Phase 10
+- [x] Language switcher shows only the other language (plus a globe icon), not both FR/EN (I18N-04) — Phase 10
+
 ### Active
 
 **v1 (replace current site):**
@@ -133,4 +137,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-14 — Phase 9 (Progressive Homepage Image Loading) shipped within milestone v1.2 (Homepage Polish, Pre-Launch)*
+*Last updated: 2026-07-20 — Phase 10 (Unified Header & Simplified Language Switcher) shipped within milestone v1.2 (Homepage Polish, Pre-Launch) — all v1.2 target features now delivered; Phase 5 (domain cutover) remains the only open phase*
