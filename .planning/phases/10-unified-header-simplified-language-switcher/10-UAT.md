@@ -1,9 +1,9 @@
 ---
-status: diagnosed
+status: resolved
 phase: 10-unified-header-simplified-language-switcher
-source: [10-01-SUMMARY.md, 10-02-SUMMARY.md, 10-03-SUMMARY.md]
+source: [10-01-SUMMARY.md, 10-02-SUMMARY.md, 10-03-SUMMARY.md, 10-04-SUMMARY.md]
 started: 2026-07-20T10:15:11Z
-updated: 2026-07-20T10:30:00Z
+updated: 2026-07-20T12:45:00Z
 ---
 
 ## Current Test
@@ -109,7 +109,7 @@ skipped: 0
 ## Gaps
 
 - truth: "Resize the browser to a narrow/mobile width (~390px) on both / and /about/. On each page, all header items (logo, nav links, switcher, and the toggle where present) fit on one row with no wrapping or horizontal overflow."
-  status: failed
+  status: resolved
   reason: "User reported: not approved. Return button is on the logo. Actually this one can be removed as the click on logo has the same behavior. (Observed on a gallery-detail page: the '← Back home' text link visually overlaps the AJS logo mark; user proposes removing the separate back-home link entirely since clicking the logo already navigates home.)"
   severity: major
   test: 5
