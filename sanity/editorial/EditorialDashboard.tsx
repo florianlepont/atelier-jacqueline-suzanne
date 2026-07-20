@@ -396,7 +396,7 @@ export function EditorialDashboard() {
             </Stack>
             <Flex align="center" gap={2} wrap="wrap" className="editorial-dashboard__actions">
               <IntentButton
-                className="editorial-dashboard__primary-action"
+                className="editorial-dashboard__header-control editorial-dashboard__primary-action"
                 icon={AddIcon}
                 text="Nouvelle collection"
                 intent="create"
@@ -406,6 +406,7 @@ export function EditorialDashboard() {
                 paddingY={3}
               />
               <Button
+                className="editorial-dashboard__header-control"
                 as="a"
                 href={SITE_PREVIEW_URL}
                 target="_blank"
@@ -630,6 +631,29 @@ function attentionRowIcon(row: DashboardRow, group: AttentionGroup): ComponentTy
   return SearchIcon
 }
 
+function compactCheckLabel(label: string) {
+  return label
+    .replace(/français et anglais|française et anglaise|françaises et anglaises/gi, 'FR et EN')
+    .replace('Libellés FR et EN des liens professionnels', 'Libellés des liens FR et EN')
+    .replace('Descriptions manquantes :', 'Textes alternatifs :')
+    .replace('Descriptions accessibles de toutes les photos', 'Textes alternatifs des photos')
+}
+
+function attentionRowSummary(row: DashboardRow, group: AttentionGroup) {
+  if (group.id === 'publish') return 'À faire : publier les modifications en attente'
+  if (group.id === 'finish') return 'À faire : finaliser le contenu et le mettre en ligne'
+
+  const recommended = group.id === 'recommended'
+  const missing = row.checks
+    .filter((check) => !check.complete && Boolean(check.recommended) === recommended)
+    .map((check) => compactCheckLabel(check.label))
+  const visible = missing.slice(0, 3)
+  const remaining = missing.length - visible.length
+  const prefix = recommended ? 'À améliorer' : 'À compléter'
+
+  return `${prefix} : ${visible.join(' · ')}${remaining > 0 ? ` · +${remaining} autre${remaining > 1 ? 's' : ''}` : ''}`
+}
+
 function editorialStatus(row: DashboardRow): {label: string; tone: DashboardTone} {
   if (row.current.publicationStatus === 'archived') return {label: 'Archivé', tone: 'default'}
   if (
@@ -662,8 +686,8 @@ function AttentionSection({group, showCount}: {group: AttentionGroup; showCount:
         padding={3}
         style={{borderBottom: '1px solid var(--card-border-color)'}}
       >
-        <Flex align="center" gap={2} wrap="wrap">
-          <Text size={1}>
+        <Flex align="center" gap={3} wrap="wrap" className="editorial-dashboard__group-header">
+          <Text size={1} className="editorial-dashboard__group-icon">
             <Icon />
           </Text>
           {showCount && (
@@ -701,6 +725,7 @@ function AttentionSection({group, showCount}: {group: AttentionGroup; showCount:
             withBorder={index < group.rows.length - 1}
             accentTone={group.tone}
             issueIcon={attentionRowIcon(row, group)}
+            taskSummary={attentionRowSummary(row, group)}
           />
         ))}
       </Stack>
@@ -722,7 +747,7 @@ function MetricCard({
   return (
     <div className="editorial-dashboard__metric-cell">
       <Flex align="flex-start" justify="space-between" gap={2}>
-        <Stack space={2}>
+        <Stack space={1}>
           <Heading size={2}>{value}</Heading>
           <Text size={0} weight="semibold">
             {label}
@@ -779,10 +804,10 @@ function DeploymentStatus({run}: {run: DeploymentRun | null}) {
       title="Voir le détail de la dernière mise en ligne"
       aria-label={`${shortStatusLabel}. ${dateLabel}. Voir le détail de la mise en ligne`}
       paddingX={2}
-      paddingY={3}
+      paddingY={2}
       radius={2}
       tone="transparent"
-      className="editorial-dashboard__deployment-status"
+      className="editorial-dashboard__header-control editorial-dashboard__deployment-status"
       style={{color: 'inherit', textDecoration: 'none'}}
     >
       {content}
@@ -790,10 +815,10 @@ function DeploymentStatus({run}: {run: DeploymentRun | null}) {
   ) : (
     <Card
       paddingX={2}
-      paddingY={3}
+      paddingY={2}
       radius={2}
       tone="transparent"
-      className="editorial-dashboard__deployment-status"
+      className="editorial-dashboard__header-control editorial-dashboard__deployment-status"
     >
       {content}
     </Card>
@@ -805,11 +830,13 @@ function ContentRow({
   withBorder,
   accentTone,
   issueIcon: IssueIcon,
+  taskSummary,
 }: {
   row: DashboardRow
   withBorder: boolean
   accentTone: DashboardTone
   issueIcon: ComponentType
+  taskSummary: string
 }) {
   const status = editorialStatus(row)
   const title = documentTitle(row.current)
@@ -830,41 +857,58 @@ function ContentRow({
         <Flex>
           <Card tone={accentTone} style={{width: 4}} />
           <Box
-            paddingX={4}
+            paddingX={3}
             paddingY={3}
             className="editorial-dashboard__task-content"
             style={{minWidth: 0, flex: 1}}
           >
-            <Flex align="center" justify="space-between" gap={3} wrap="wrap">
-              <Flex align="center" gap={3} wrap="wrap" style={{minWidth: 0, flex: 1}}>
-                <Text muted size={1} className="editorial-dashboard__task-icon">
-                  <IssueIcon />
-                </Text>
-                <Text
-                  size={1}
-                  weight="semibold"
-                  textOverflow="ellipsis"
-                  style={{minWidth: 0, flex: '1 1 180px'}}
+            <div className="editorial-dashboard__task-grid">
+              <Text muted size={1} className="editorial-dashboard__task-icon">
+                <IssueIcon />
+              </Text>
+              <Stack space={1} className="editorial-dashboard__task-copy">
+                <Flex
+                  align="center"
+                  justify="space-between"
+                  gap={2}
+                  wrap="wrap"
+                  className="editorial-dashboard__task-heading"
                 >
-                  {title}
-                </Text>
-                {typeLabel && (
-                  <Text muted size={0}>
-                    {typeLabel}
+                  <Text
+                    size={1}
+                    weight="semibold"
+                    textOverflow="ellipsis"
+                    className="editorial-dashboard__task-title"
+                  >
+                    {title}
                   </Text>
-                )}
-                {showStatus && (
-                  <Badge fontSize={0} mode="light" tone={status.tone}>
-                    {status.label}
-                  </Badge>
-                )}
-              </Flex>
-              <Flex align="center">
-                <Text muted size={1}>
-                  <ChevronRightIcon />
+                  <Flex align="center" gap={2} className="editorial-dashboard__task-meta">
+                    {typeLabel && (
+                      <Text muted size={0}>
+                        {typeLabel}
+                      </Text>
+                    )}
+                    {showStatus && (
+                      <Badge fontSize={0} mode="light" tone={status.tone}>
+                        {status.label}
+                      </Badge>
+                    )}
+                  </Flex>
+                </Flex>
+                <Text
+                  muted
+                  size={0}
+                  textOverflow="ellipsis"
+                  title={taskSummary}
+                  className="editorial-dashboard__task-summary"
+                >
+                  {taskSummary}
                 </Text>
-              </Flex>
-            </Flex>
+              </Stack>
+              <Text muted size={1} className="editorial-dashboard__task-chevron">
+                <ChevronRightIcon />
+              </Text>
+            </div>
           </Box>
         </Flex>
       </Card>
@@ -892,7 +936,7 @@ function RecentRow({
       style={{color: 'inherit', textDecoration: 'none'}}
     >
       <Stack
-        space={2}
+        space={1}
         padding={3}
         className="editorial-dashboard__activity-row"
         style={{borderBottom: withBorder ? '1px solid var(--card-border-color)' : undefined}}
@@ -915,7 +959,7 @@ function RecentRow({
             {formatActivityDate(activity?.timestamp ?? row.lastUpdatedAt)}
           </Text>
         </Flex>
-        <Flex align="center" gap={2} wrap="wrap">
+        <Flex align="center" gap={2} wrap="wrap" className="editorial-dashboard__activity-meta">
           {activity ? (
             <>
               {ActivityIcon && (

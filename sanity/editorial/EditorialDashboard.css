@@ -13,6 +13,11 @@
   justify-content: flex-end;
 }
 
+.editorial-dashboard__header-control {
+  height: 44px;
+  box-sizing: border-box;
+}
+
 .editorial-dashboard__columns {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -30,6 +35,7 @@
 }
 
 .editorial-dashboard__metric-icon,
+.editorial-dashboard__group-icon,
 .editorial-dashboard__task-icon,
 .editorial-dashboard__activity-icon {
   display: inline-flex;
@@ -41,10 +47,13 @@
 }
 
 .editorial-dashboard__deployment-status {
+  display: flex;
   flex: 0 0 auto;
+  align-items: center;
 }
 
 .editorial-dashboard__deployment-content {
+  height: 100%;
   min-height: 24px;
 }
 
@@ -91,8 +100,46 @@
 }
 
 .editorial-dashboard__task-content {
-  min-height: 44px;
+  min-height: 56px;
   box-sizing: border-box;
+}
+
+.editorial-dashboard__task-grid {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 20px;
+  column-gap: 12px;
+  align-items: center;
+  min-width: 0;
+}
+
+.editorial-dashboard__task-copy,
+.editorial-dashboard__task-heading {
+  min-width: 0;
+}
+
+.editorial-dashboard__task-title {
+  min-width: 0;
+  flex: 1 1 180px;
+}
+
+.editorial-dashboard__task-meta {
+  flex: 0 0 auto;
+}
+
+.editorial-dashboard__task-summary {
+  min-width: 0;
+}
+
+.editorial-dashboard__task-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.editorial-dashboard__activity-meta {
+  min-height: 20px;
 }
 
 .editorial-dashboard__metric-cell:nth-child(n + 2) {
@@ -126,6 +173,16 @@
 
   .editorial-dashboard__deployment-status {
     flex: 1 1 auto;
+  }
+
+  .editorial-dashboard__task-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .editorial-dashboard__task-meta {
+    align-self: flex-start;
   }
 
   .editorial-dashboard__deployment-date {
