@@ -261,6 +261,8 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     </ul>
 
     <script>
+      import { computeWordmarkBackgroundPosition, detectSwipeDirection } from '../lib/home-carousel';
+
       interface GalleryEntry {
         title: string;
         heroSrc: string;
@@ -355,38 +357,23 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         // relative to a DIFFERENT (larger) box than the element's own".
         function syncWordmarkAlignment() {
           if (!heroImg || !wordmarkEl) return;
-          const naturalW = heroImg.naturalWidth;
-          const naturalH = heroImg.naturalHeight;
-          if (!naturalW || !naturalH) return;
           // Deliberately heroImg's own rect, not .home-hero's — heroImg now
           // has `inset: -6%` (the zoom fix above), so its actual rendered
           // box is already bigger than the visible hero container. Reading
           // it directly here means the crop math below automatically
           // reflects that expansion with no separate ZOOM_INSET_PCT term
           // needed — it's already baked into this rect.
-          const heroRect = heroImg.getBoundingClientRect();
-          const wordmarkRect = wordmarkEl.getBoundingClientRect();
-          if (heroRect.width === 0 || heroRect.height === 0) return;
-          // Same formula object-fit:cover itself uses: scale to fill,
-          // cropping whichever axis overflows.
-          const scale = Math.max(heroRect.width / naturalW, heroRect.height / naturalH);
-          const renderedW = naturalW * scale;
-          const renderedH = naturalH * scale;
-          // How much of the scaled image is cropped off each edge — must
-          // track heroImg's own object-position (OBJECT_POSITION_X/Y
-          // above), not assume the 50%/50% (dead center) default.
-          const cropX = (renderedW - heroRect.width) * OBJECT_POSITION_X;
-          const cropY = (renderedH - heroRect.height) * OBJECT_POSITION_Y;
-          // Where the wordmark box sits relative to the hero photo's own
-          // top-left — both rects read via getBoundingClientRect() in the
-          // same tick, so any scroll offset cancels out in the subtraction.
-          const offsetX = wordmarkRect.left - heroRect.left;
-          const offsetY = wordmarkRect.top - heroRect.top;
-          wordmarkEl.style.setProperty('--wordmark-bg-size', `${renderedW}px ${renderedH}px`);
-          wordmarkEl.style.setProperty(
-            '--wordmark-bg-position',
-            `${-(cropX + offsetX)}px ${-(cropY + offsetY)}px`,
+          const result = computeWordmarkBackgroundPosition(
+            heroImg.naturalWidth,
+            heroImg.naturalHeight,
+            heroImg.getBoundingClientRect(),
+            wordmarkEl.getBoundingClientRect(),
+            OBJECT_POSITION_X,
+            OBJECT_POSITION_Y,
           );
+          if (!result) return;
+          wordmarkEl.style.setProperty('--wordmark-bg-size', result.size);
+          wordmarkEl.style.setProperty('--wordmark-bg-position', result.position);
         }
 
         function render() {
@@ -554,11 +541,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           if (!touch) return;
           const deltaX = touch.clientX - touchStartX;
           const deltaY = touch.clientY - touchStartY;
-          if (Math.abs(deltaX) < SWIPE_MIN_DISTANCE) return;
-          if (Math.abs(deltaX) < Math.abs(deltaY) * SWIPE_DIRECTION_RATIO) return;
-          if (deltaX < 0) {
+          const direction = detectSwipeDirection(deltaX, deltaY, SWIPE_MIN_DISTANCE, SWIPE_DIRECTION_RATIO);
+          if (direction === 'next') {
             goToNext();
-          } else {
+          } else if (direction === 'prev') {
             goToPrev();
           }
         }, { passive: true });
