@@ -1,9 +1,10 @@
 import {useEffect, useMemo, useState} from 'react'
 import type {ComponentType} from 'react'
 import {Badge, Box, Button, Card, Flex, Grid, Heading, Spinner, Stack, Text} from '@sanity/ui'
-import {useClient} from 'sanity'
+import {useClient, useHistoryStore, useUserStore} from 'sanity'
 import {IntentLink} from 'sanity/router'
 import {AddIcon, HomeIcon} from '@sanity/icons'
+import type {TransactionLogEventWithMutations, TransactionLogMutation, User} from '@sanity/types'
 import {deploymentLabel, getLatestDeployment, SITE_PREVIEW_URL} from './deployment'
 import type {DeploymentRun} from './deployment'
 import {getDocumentChecks, summarizeChecks} from './checks'
@@ -27,6 +28,12 @@ interface DashboardRow {
   lastUpdatedAt: string
   checks: CheckItem[]
   summary: ReturnType<typeof summarizeChecks>
+}
+
+interface DashboardActivity {
+  authorName: string
+  description: string
+  timestamp: string
 }
 
 type DashboardTone = 'default' | 'primary' | 'positive' | 'caution' | 'critical'
@@ -54,6 +61,31 @@ const typeLabels: Record<string, string> = {
   exhibition: 'Exposition',
 }
 
+const fieldLabels: Record<string, string> = {
+  title: 'le titre',
+  slug: 'l’adresse',
+  statement: 'la présentation',
+  images: 'les photos',
+  seo: 'le SEO',
+  publicationStatus: 'la visibilité',
+  isVisible: 'la visibilité',
+  intro: 'l’introduction',
+  biography: 'la biographie',
+  practice: 'la pratique',
+  medium: 'les techniques',
+  publicEmail: 'l’adresse e-mail',
+  professionalLinks: 'les liens',
+  siteTitle: 'le nom du site',
+  navLabels: 'la navigation',
+  footerText: 'le pied de page',
+  defaultSeo: 'le SEO global',
+  startDate: 'la date',
+  venue: 'le lieu',
+  city: 'la ville',
+  description: 'la description',
+  image: 'l’image',
+}
+
 function baseId(id: string) {
   return id.replace(/^drafts\./, '')
 }
@@ -74,9 +106,129 @@ function isGalleryOnline(document: DashboardDocument) {
     : document.isVisible !== false
 }
 
+function mutationDocumentId(mutation: TransactionLogMutation) {
+  if ('patch' in mutation) return 'id' in mutation.patch ? mutation.patch.id : undefined
+  if ('delete' in mutation) return 'id' in mutation.delete ? mutation.delete.id : undefined
+  if ('create' in mutation) return mutation.create._id
+  if ('createOrReplace' in mutation) return mutation.createOrReplace._id
+  if ('createIfNotExists' in mutation) return mutation.createIfNotExists._id
+  if ('createSquashed' in mutation) return mutation.createSquashed.document._id
+  return undefined
+}
+
+function mutationFields(mutation: TransactionLogMutation) {
+  if (!('patch' in mutation)) return []
+
+  const patch = mutation.patch as unknown as Record<string, unknown>
+  const paths: string[] = []
+  for (const operation of ['set', 'setIfMissing', 'merge', 'diffMatchPatch', 'inc', 'dec']) {
+    const value = patch[operation]
+    if (value && typeof value === 'object') paths.push(...Object.keys(value))
+  }
+  if (Array.isArray(patch.unset))
+    paths.push(...patch.unset.filter((path): path is string => typeof path === 'string'))
+
+  const insert = patch.insert
+  if (insert && typeof insert === 'object') {
+    const position = insert as Record<string, unknown>
+    for (const key of ['before', 'after', 'replace']) {
+      if (typeof position[key] === 'string') paths.push(position[key])
+    }
+  }
+
+  return paths
+    .map((path) =>
+      path
+        .replace(/^\[['"]?/, '')
+        .split(/[.[]/, 1)[0]
+        .replace(/['"]?\]$/, ''),
+    )
+    .filter((field) => field && !field.startsWith('_'))
+}
+
+function contentNoun(document: DashboardDocument) {
+  if (document._type === 'gallery') return 'cette collection'
+  if (document._type === 'exhibition') return 'cette exposition'
+  if (document._type === 'siteSettings') return 'les réglages du site'
+  return 'cette page'
+}
+
+function describeTransaction(
+  document: DashboardDocument,
+  mutations: TransactionLogMutation[],
+  id: string,
+) {
+  const relevant = mutations.filter((mutation) => baseId(mutationDocumentId(mutation) || '') === id)
+  const publishedWrite = relevant.some(
+    (mutation) =>
+      mutationDocumentId(mutation) === id &&
+      ('create' in mutation || 'createOrReplace' in mutation || 'createIfNotExists' in mutation),
+  )
+  const draftDeleted = relevant.some(
+    (mutation) => 'delete' in mutation && mutationDocumentId(mutation) === `drafts.${id}`,
+  )
+  const publishedDeleted = relevant.some(
+    (mutation) => 'delete' in mutation && mutationDocumentId(mutation) === id,
+  )
+  const created = relevant.some(
+    (mutation) =>
+      'create' in mutation || 'createOrReplace' in mutation || 'createIfNotExists' in mutation,
+  )
+
+  if (publishedWrite && draftDeleted) return `a publié ${contentNoun(document)}`
+  if (publishedDeleted && !publishedWrite) return `a retiré ${contentNoun(document)} du site`
+  if (created) return `a créé ${contentNoun(document)}`
+
+  const labels = Array.from(
+    new Set(
+      relevant
+        .flatMap(mutationFields)
+        .map((field) => fieldLabels[field])
+        .filter(Boolean),
+    ),
+  )
+  if (labels.length === 1) return `a modifié ${labels[0]}`
+  if (labels.length === 2) return `a modifié ${labels[0]} et ${labels[1]}`
+  if (labels.length > 2)
+    return `a modifié ${labels[0]}, ${labels[1]} et ${labels.length - 2} autre(s) élément(s)`
+  return `a modifié ${contentNoun(document)}`
+}
+
+function buildActivities(
+  transactions: TransactionLogEventWithMutations[],
+  users: User[],
+  documents: DashboardDocument[],
+) {
+  const usersById = new Map(users.map((user) => [user.id, user]))
+  const documentsById = new Map(documents.map((document) => [baseId(document._id), document]))
+  const activities: Record<string, DashboardActivity> = {}
+
+  for (const transaction of [...transactions].sort(
+    (left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime(),
+  )) {
+    for (const transactionDocumentId of transaction.documentIDs) {
+      const id = baseId(transactionDocumentId)
+      const document = documentsById.get(id)
+      if (!document || activities[id]) continue
+
+      const user = usersById.get(transaction.author)
+      activities[id] = {
+        authorName: user?.displayName || user?.email || 'Un membre de l’équipe',
+        description: describeTransaction(document, transaction.mutations, id),
+        timestamp: transaction.timestamp,
+      }
+    }
+  }
+
+  return activities
+}
+
 export function EditorialDashboard() {
   const client = useClient({apiVersion: '2025-08-15'})
+  const historyStore = useHistoryStore()
+  const userStore = useUserStore()
   const [documents, setDocuments] = useState<DashboardDocument[]>([])
+  const [activities, setActivities] = useState<Record<string, DashboardActivity>>({})
   const [run, setRun] = useState<DeploymentRun | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -84,20 +236,44 @@ export function EditorialDashboard() {
 
   useEffect(() => {
     const controller = new AbortController()
+    let cancelled = false
     Promise.all([
       client.fetch<DashboardDocument[]>(query, {}, {perspective: 'raw'}),
       getLatestDeployment(controller.signal).catch(() => null),
     ])
-      .then(([content, deployment]) => {
+      .then(async ([content, deployment]) => {
+        if (cancelled) return
         setDocuments(content)
         setRun(deployment)
+
+        try {
+          const documentIds = Array.from(
+            new Set(
+              content.flatMap((document) => [
+                baseId(document._id),
+                `drafts.${baseId(document._id)}`,
+              ]),
+            ),
+          )
+          const transactions = await historyStore.getTransactions(documentIds)
+          const authorIds = Array.from(new Set(transactions.map(({author}) => author)))
+          const users = authorIds.length > 0 ? await userStore.getUsers(authorIds) : []
+          if (!cancelled) setActivities(buildActivities(transactions, users, content))
+        } catch {
+          // History is supplementary and subject to plan retention. The dashboard's
+          // primary content should remain available if it cannot be retrieved.
+          if (!cancelled) setActivities({})
+        }
       })
       .catch((reason: unknown) =>
         setError(reason instanceof Error ? reason.message : 'Erreur inconnue'),
       )
       .finally(() => setLoading(false))
-    return () => controller.abort()
-  }, [client])
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
+  }, [client, historyStore, userStore])
 
   const rows = useMemo(() => {
     const byId = new Map<string, {published?: DashboardDocument; draft?: DashboardDocument}>()
@@ -254,9 +430,14 @@ export function EditorialDashboard() {
 
             <Stack space={4}>
               <Flex align="center" justify="space-between" gap={3}>
-                <Heading as="h2" size={2}>
-                  Activité récente
-                </Heading>
+                <Stack space={2}>
+                  <Heading as="h2" size={2}>
+                    Activité récente
+                  </Heading>
+                  <Text muted size={0}>
+                    Les dernières actions enregistrées dans Sanity
+                  </Text>
+                </Stack>
                 {rows.length > 4 && (
                   <Button
                     mode="bleed"
@@ -269,7 +450,12 @@ export function EditorialDashboard() {
               <Card radius={3} tone="transparent" border>
                 <Stack space={0}>
                   {recentRows.map((row, index) => (
-                    <RecentRow key={row.id} row={row} withBorder={index < recentRows.length - 1} />
+                    <RecentRow
+                      key={row.id}
+                      row={row}
+                      activity={activities[row.id]}
+                      withBorder={index < recentRows.length - 1}
+                    />
                   ))}
                 </Stack>
               </Card>
@@ -563,9 +749,15 @@ function ContentRow({
   )
 }
 
-function RecentRow({row, withBorder}: {row: DashboardRow; withBorder: boolean}) {
-  const missing = row.summary.totalCount - row.summary.completeCount
-  const photoCount = Array.isArray(row.current.images) ? row.current.images.length : 0
+function RecentRow({
+  row,
+  activity,
+  withBorder,
+}: {
+  row: DashboardRow
+  activity?: DashboardActivity
+  withBorder: boolean
+}) {
   const status = editorialStatus(row)
   return (
     <IntentLink
@@ -586,24 +778,28 @@ function RecentRow({row, withBorder}: {row: DashboardRow; withBorder: boolean}) 
             {documentTitle(row.current)}
           </Text>
           <Flex align="center" gap={2} wrap="wrap">
-            <Text muted size={0}>
-              {typeLabels[row.current._type]}
-              {row.current._type === 'gallery'
-                ? ` · ${photoCount} photo${photoCount > 1 ? 's' : ''}`
-                : ''}
-              {missing > 0 ? ` · ${missing} à compléter` : ' · Contenu prêt'}
-            </Text>
+            {activity ? (
+              <>
+                <Text size={0} weight="semibold">
+                  {activity.authorName}
+                </Text>
+                <Text muted size={0}>
+                  {activity.description}
+                </Text>
+              </>
+            ) : (
+              <Text muted size={0}>
+                Détail de l’activité non disponible
+              </Text>
+            )}
             <Badge fontSize={0} mode="light" tone={status.tone}>
               {status.label}
             </Badge>
           </Flex>
         </Stack>
-        <Stack space={2} style={{flex: '0 0 auto', textAlign: 'right'}}>
-          <Text muted size={0}>
-            Dernière modification
-          </Text>
-          <Text size={1}>{formatActivityDate(row.lastUpdatedAt)}</Text>
-        </Stack>
+        <Text size={1} style={{flex: '0 0 auto', textAlign: 'right'}}>
+          {formatActivityDate(activity?.timestamp ?? row.lastUpdatedAt)}
+        </Text>
       </Flex>
     </IntentLink>
   )
