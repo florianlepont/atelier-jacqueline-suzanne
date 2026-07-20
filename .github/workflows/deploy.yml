@@ -40,6 +40,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # BLOCKING gate: a type error inside .astro frontmatter (or any .ts
+      # source) fails the run and prevents deploy. Runs before any build so
+      # type errors surface fast, before spending time on the build/e2e steps.
+      - name: Type-check (astro check)
+        run: npm run typecheck
+
       # Build once WITHOUT the GitHub Pages base path so the existing
       # Playwright/Vitest suite (which asserts root-relative paths like "/"
       # and "/en/", matching local dev) can hard-gate the deploy without

@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { getViteConfig } from 'astro/config';
 
 // Uses Astro's own `getViteConfig` (rather than plain `vitest/config`
