@@ -155,6 +155,7 @@ None currently open. Both prior research-carryover items were resolved during Ph
 | 260720-apply-personal-dashboard-ui-audit | Apply the personal dashboard UI audit: primary collection action, semantic iconography, vertical KPI structure, separate deployment status, stable task metadata, comfortable targets, fixed activity dates, and native Sanity card depth | 2026-07-20 | ce8bbb6 | [260720-apply-personal-dashboard-ui-audit](./quick/260720-apply-personal-dashboard-ui-audit/) |
 | 260720-polish-dashboard-pixel-perfect | Complete the dashboard pixel-polish pass: tinted canvas and white surfaces, explicit low-emphasis site status, per-task icons, compact targets, resilient activity dates, responsive header/KPI behavior, and hover/focus/accessibility states | 2026-07-20 | cfa3d84 | [260720-polish-dashboard-pixel-perfect](./quick/260720-polish-dashboard-pixel-perfect/) |
 | 260720-fix-dashboard-spacing-and-task-details | Standardize dashboard control heights and icon spacing, rebuild priority rows on a stable grid, and explicitly display the remaining work for each content item | 2026-07-20 | ae2591c | [260720-fix-dashboard-spacing-and-task-details](./quick/260720-fix-dashboard-spacing-and-task-details/) |
+| 260720-rebuild-dashboard-optical-grid | Rebuild the regressed dashboard header, priority rows, activity rows and KPI rhythm around shared optical text/icon axes, with two buttons and a separate compact site status | 2026-07-20 | 69b6f7d | [260720-rebuild-dashboard-optical-grid](./quick/260720-rebuild-dashboard-optical-grid/) |
 
 ## Deferred Items
 
