@@ -914,3 +914,19 @@ test.describe('grid-tile hover polish (260718-rhv)', () => {
       .not.toBe(beforeTransform);
   });
 });
+
+// quick-260720-nm3: UI audit finding — the homepage previously had zero
+// heading elements (both wordmarks were <p>). The grid wordmark sits inside
+// the [hidden] .home-grid container by default, so only the visible carousel
+// wordmark is exposed to the accessibility tree — exactly one top-level
+// heading, not two.
+test.describe('homepage semantic heading (quick-260720-nm3)', () => {
+  test('the homepage exposes exactly one accessible level-1 heading containing "Atelier"', async ({ page }) => {
+    await page.goto('/');
+
+    const heading = page.getByRole('heading', { level: 1 });
+    await expect(heading).toHaveCount(1);
+    await expect(heading).toBeVisible();
+    await expect(heading).toContainText(/Atelier/i);
+  });
+});
