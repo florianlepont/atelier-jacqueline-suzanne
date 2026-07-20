@@ -5,9 +5,9 @@ milestone_name: Homepage Polish (Pre-Launch)
 current_phase: 10
 status: complete
 stopped_at: Phase 10 complete — v1.2 milestone finished
-last_updated: "2026-07-18T20:49:00.000Z"
-last_activity: 2026-07-18
-last_activity_desc: "Completed quick task 260718-rhv: Fix grid-tile title misalignment and improve hover-reveal effect"
+last_updated: "2026-07-20T12:05:00.000Z"
+last_activity: 2026-07-20
+last_activity_desc: "Completed a quality-auditor pass and 3 remediation quick tasks (CI/tooling gates, stale docs fix, HomeCarousel logic extraction), plus a live Sanity content fix (navLabels.about.fr typo)"
 progress:
   total_phases: 13
   completed_phases: 11
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-07-14)
 Phase: 10
 Phase: 10 (Unified Header & Simplified Language Switcher) — complete, 3/3 plans executed
 Status: Phase 10 complete — v1.2 milestone (Phases 7-10) finished
-Last activity: 2026-07-18 - Completed quick task 260718-rhv: Fix grid-tile title misalignment and improve hover-reveal effect
+Last activity: 2026-07-20 - Completed a quality-auditor pass and 3 remediation quick tasks (260720-dzi, 260720-dzo, 260720-dzs), plus a live Sanity content fix
 
 ## Performance Metrics
 
@@ -144,6 +144,9 @@ None currently open. Both prior research-carryover items were resolved during Ph
 | 260718-qdz | Fix mode-toggle icon color regression on the homepage — restored the carousel-mode white / grid-mode ink color split for the display-mode toggle, silently dropped when Phase 10's SiteHeader refactor replaced the old `.home-header` container-level color rule with narrower per-element overrides | 2026-07-18 | 292488a | [260718-qdz-fix-mode-toggle-icon-color-regression-on](./quick/260718-qdz-fix-mode-toggle-icon-color-regression-on/) |
 | 260718-r2o | Fix grid-mode hero tile text legibility on dark per-gallery accents (Violet/Plum) — wired a `--current-accent-text` companion CSS variable, mirroring the existing `--current-accent` mechanism, so the grid tile's text color follows the same WCAG-contrast value the carousel accent panel already used correctly | 2026-07-18 | 7900284 | [260718-r2o-fix-the-homepage-per-gallery-accent-colo](./quick/260718-r2o-fix-the-homepage-per-gallery-accent-colo/) |
 | 260718-rhv | Fix grid-tile title misalignment (always-reserve description height + single-line title clamp for long gallery names) and add a per-tile accent-color hover tint + subtle title lift, human-verified live for alignment and on-brand legibility | 2026-07-18 | 0cd2741 | [260718-rhv-fix-grid-mode-tile-title-misalignment-an](./quick/260718-rhv-fix-grid-mode-tile-title-misalignment-an/) |
+| 260720-dzi | Add CI/tooling quality gates from the quality-auditor findings: blocking `astro check` type-check step in CI, root flat ESLint config + wired lint script, Sanity Studio lint script, and Vitest v8 coverage reporting — fixed 3 genuine pre-existing type errors and several real lint violations surfaced by the new gates | 2026-07-20 | 1ecfc21 | [260720-dzi-add-ci-tooling-quality-gates-astro-check](./quick/260720-dzi-add-ci-tooling-quality-gates-astro-check/) |
+| 260720-dzo | Fix stale CLAUDE.md/AGENTS.md/research/STACK.md "Technology Stack" docs (retired Cloudflare/Stripe-in-Workers plan replaced with the real static-Astro + GitHub Pages/OVH + Sanity architecture, e-commerce marked deferred to v1.x) and add a root README.md developer quick-reference | 2026-07-20 | 725871e | [260720-dzo-fix-the-stale-claude-md-agents-md-techno](./quick/260720-dzo-fix-the-stale-claude-md-agents-md-techno/) |
+| 260720-dzs | Extract HomeCarousel.astro's pure computational logic (wordmark crop/scale math, swipe-direction detection) into a testable `src/lib/home-carousel.ts` module with unit tests, mirroring the i18n-paths.ts/site-config.ts pattern — pure refactor, zero behavior change, full e2e suite green | 2026-07-20 | b1b0520 | [260720-dzs-extract-homecarousel-astro-s-pure-comput](./quick/260720-dzs-extract-homecarousel-astro-s-pure-comput/) |
 
 ## Deferred Items
 
