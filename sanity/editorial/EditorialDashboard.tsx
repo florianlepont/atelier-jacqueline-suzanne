@@ -12,6 +12,7 @@ import {
   ErrorOutlineIcon,
   FolderIcon,
   ImagesIcon,
+  LaunchIcon,
   PublishIcon,
   SearchIcon,
   TaskIcon,
@@ -380,7 +381,7 @@ export function EditorialDashboard() {
       <Box padding={[3, 4, 5]} style={{maxWidth: 1080, margin: '0 auto'}}>
         <Stack space={4}>
           <Flex
-            align="center"
+            align="flex-start"
             justify="space-between"
             gap={3}
             wrap="wrap"
@@ -394,29 +395,32 @@ export function EditorialDashboard() {
                 L’essentiel du contenu et de la mise en ligne.
               </Text>
             </Stack>
-            <Flex align="center" gap={2} wrap="wrap" className="editorial-dashboard__actions">
-              <IntentButton
-                className="editorial-dashboard__header-control editorial-dashboard__primary-action"
-                icon={AddIcon}
-                text="Nouvelle collection"
-                intent="create"
-                params={{type: 'gallery', template: 'gallery'}}
-                tone="primary"
-                mode="default"
-                paddingY={3}
-              />
-              <Button
-                className="editorial-dashboard__header-control"
-                as="a"
-                href={SITE_PREVIEW_URL}
-                target="_blank"
-                rel="noreferrer"
-                mode="ghost"
-                padding={3}
-                text="Ouvrir le site ↗"
-              />
+            <Stack space={2} className="editorial-dashboard__header-side">
+              <Flex align="center" gap={2} wrap="wrap" className="editorial-dashboard__actions">
+                <IntentButton
+                  className="editorial-dashboard__header-control editorial-dashboard__primary-action"
+                  icon={AddIcon}
+                  text="Nouvelle collection"
+                  intent="create"
+                  params={{type: 'gallery', template: 'gallery'}}
+                  tone="primary"
+                  mode="default"
+                  paddingY={3}
+                />
+                <Button
+                  className="editorial-dashboard__header-control"
+                  as="a"
+                  href={SITE_PREVIEW_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  iconRight={LaunchIcon}
+                  mode="ghost"
+                  padding={3}
+                  text="Ouvrir le site"
+                />
+              </Flex>
               <DeploymentStatus run={run} />
-            </Flex>
+            </Stack>
           </Flex>
 
           {loading && (
@@ -509,6 +513,7 @@ export function EditorialDashboard() {
                     </Stack>
                     {rows.length > 4 && (
                       <Button
+                        className="editorial-dashboard__activity-toggle"
                         mode="bleed"
                         fontSize={0}
                         padding={2}
@@ -640,8 +645,8 @@ function compactCheckLabel(label: string) {
 }
 
 function attentionRowSummary(row: DashboardRow, group: AttentionGroup) {
-  if (group.id === 'publish') return 'À faire : publier les modifications en attente'
-  if (group.id === 'finish') return 'À faire : finaliser le contenu et le mettre en ligne'
+  if (group.id === 'publish') return 'Publier les modifications en attente'
+  if (group.id === 'finish') return 'Finaliser le contenu et le mettre en ligne'
 
   const recommended = group.id === 'recommended'
   const missing = row.checks
@@ -649,9 +654,7 @@ function attentionRowSummary(row: DashboardRow, group: AttentionGroup) {
     .map((check) => compactCheckLabel(check.label))
   const visible = missing.slice(0, 3)
   const remaining = missing.length - visible.length
-  const prefix = recommended ? 'À améliorer' : 'À compléter'
-
-  return `${prefix} : ${visible.join(' · ')}${remaining > 0 ? ` · +${remaining} autre${remaining > 1 ? 's' : ''}` : ''}`
+  return `${visible.join(' · ')}${remaining > 0 ? ` · +${remaining} autre${remaining > 1 ? 's' : ''}` : ''}`
 }
 
 function editorialStatus(row: DashboardRow): {label: string; tone: DashboardTone} {
@@ -686,7 +689,7 @@ function AttentionSection({group, showCount}: {group: AttentionGroup; showCount:
         padding={3}
         style={{borderBottom: '1px solid var(--card-border-color)'}}
       >
-        <Flex align="center" gap={3} wrap="wrap" className="editorial-dashboard__group-header">
+        <Flex align="center" gap={2} wrap="wrap" className="editorial-dashboard__group-header">
           <Text size={1} className="editorial-dashboard__group-icon">
             <Icon />
           </Text>
@@ -749,12 +752,14 @@ function MetricCard({
       <Flex align="flex-start" justify="space-between" gap={2}>
         <Stack space={1}>
           <Heading size={2}>{value}</Heading>
-          <Text size={0} weight="semibold">
-            {label}
-          </Text>
-          <Text muted size={0}>
-            {detail}
-          </Text>
+          <Flex align="center" gap={1} wrap="wrap">
+            <Text size={0} weight="semibold">
+              {label}
+            </Text>
+            <Text muted size={0}>
+              · {detail}
+            </Text>
+          </Flex>
         </Stack>
         <Text muted size={1} className="editorial-dashboard__metric-icon">
           <Icon />
@@ -781,7 +786,7 @@ function DeploymentStatus({run}: {run: DeploymentRun | null}) {
 
   const content = (
     <Flex align="center" gap={2} className="editorial-dashboard__deployment-content">
-      <Card tone={tone} radius={4} padding={1} className="editorial-dashboard__deployment-icon">
+      <Card tone={tone} radius={4} className="editorial-dashboard__deployment-icon">
         <Text size={1}>
           <PublishIcon />
         </Text>
@@ -796,32 +801,18 @@ function DeploymentStatus({run}: {run: DeploymentRun | null}) {
   )
 
   return run?.html_url ? (
-    <Card
-      as="a"
+    <a
       href={run.html_url}
       target="_blank"
       rel="noreferrer"
       title="Voir le détail de la dernière mise en ligne"
       aria-label={`${shortStatusLabel}. ${dateLabel}. Voir le détail de la mise en ligne`}
-      paddingX={2}
-      paddingY={2}
-      radius={2}
-      tone="transparent"
-      className="editorial-dashboard__header-control editorial-dashboard__deployment-status"
-      style={{color: 'inherit', textDecoration: 'none'}}
+      className="editorial-dashboard__deployment-status"
     >
       {content}
-    </Card>
+    </a>
   ) : (
-    <Card
-      paddingX={2}
-      paddingY={2}
-      radius={2}
-      tone="transparent"
-      className="editorial-dashboard__header-control editorial-dashboard__deployment-status"
-    >
-      {content}
-    </Card>
+    <div className="editorial-dashboard__deployment-status">{content}</div>
   )
 }
 
@@ -928,6 +919,7 @@ function RecentRow({
   const status = editorialStatus(row)
   const showStatus = status.tone !== 'positive'
   const ActivityIcon = activity ? activityIcons[activity.action] : null
+  const fallbackDescription = 'Détail de l’activité non disponible'
   return (
     <IntentLink
       className="editorial-dashboard__row-link"
@@ -935,57 +927,53 @@ function RecentRow({
       params={{id: row.id, type: row.current._type}}
       style={{color: 'inherit', textDecoration: 'none'}}
     >
-      <Stack
-        space={1}
+      <Box
         padding={3}
         className="editorial-dashboard__activity-row"
         style={{borderBottom: withBorder ? '1px solid var(--card-border-color)' : undefined}}
       >
-        <Flex
-          align="center"
-          justify="space-between"
-          gap={2}
-          className="editorial-dashboard__activity-heading"
-        >
-          <Text
-            size={1}
-            weight="semibold"
-            textOverflow="ellipsis"
-            className="editorial-dashboard__activity-title"
-          >
-            {documentTitle(row.current)}
+        <div className="editorial-dashboard__activity-grid">
+          <Text muted size={1} className="editorial-dashboard__activity-icon">
+            {ActivityIcon ? <ActivityIcon /> : <DocumentIcon />}
           </Text>
-          <Text muted size={0} className="editorial-dashboard__activity-date">
-            {formatActivityDate(activity?.timestamp ?? row.lastUpdatedAt)}
-          </Text>
-        </Flex>
-        <Flex align="center" gap={2} wrap="wrap" className="editorial-dashboard__activity-meta">
-          {activity ? (
-            <>
-              {ActivityIcon && (
-                <Text muted size={1} className="editorial-dashboard__activity-icon">
-                  <ActivityIcon />
-                </Text>
-              )}
+          <Stack space={1} className="editorial-dashboard__activity-copy">
+            <Flex
+              align="center"
+              justify="space-between"
+              gap={2}
+              className="editorial-dashboard__activity-heading"
+            >
+              <Text
+                size={1}
+                weight="semibold"
+                textOverflow="ellipsis"
+                className="editorial-dashboard__activity-title"
+              >
+                {documentTitle(row.current)}
+              </Text>
+              <Text muted size={0} className="editorial-dashboard__activity-date">
+                {formatActivityDate(activity?.timestamp ?? row.lastUpdatedAt)}
+              </Text>
+            </Flex>
+            <Flex align="center" gap={1} wrap="wrap" className="editorial-dashboard__activity-meta">
               <Text size={0} weight="medium">
-                {activity.authorName}
+                {activity?.authorName ?? 'Activité indisponible'}
               </Text>
               <Text muted size={0}>
-                {activity.description}
+                ·
               </Text>
-            </>
-          ) : (
-            <Text muted size={0}>
-              Détail de l’activité non disponible
-            </Text>
-          )}
-          {showStatus && (
-            <Badge fontSize={0} mode="light" tone={status.tone}>
-              {status.label}
-            </Badge>
-          )}
-        </Flex>
-      </Stack>
+              <Text muted size={0}>
+                {activity?.description ?? fallbackDescription}
+              </Text>
+              {showStatus && (
+                <Badge fontSize={0} mode="light" tone={status.tone}>
+                  {status.label}
+                </Badge>
+              )}
+            </Flex>
+          </Stack>
+        </div>
+      </Box>
     </IntentLink>
   )
 }
