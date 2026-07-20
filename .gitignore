@@ -28,5 +28,8 @@ playwright-report/
 blob-report/
 playwright/.cache/
 
+# Coverage
+coverage/
+
 # GSD research cache
 .planning/research/.cache/

@@ -368,7 +368,11 @@ test.describe('view-transition accent-panel fade timing (quick-260713-kit)', () 
 
       const panelAnim = document
         .getAnimations()
-        .find((a) => a.effect?.pseudoElement === '::view-transition-new(ajs-accent-panel)');
+        .find(
+          (a) =>
+            (a.effect as KeyframeEffect | null)?.pseudoElement ===
+            '::view-transition-new(ajs-accent-panel)',
+        );
 
       if (!panelAnim) return null;
 
@@ -376,7 +380,7 @@ test.describe('view-transition accent-panel fade timing (quick-260713-kit)', () 
 
       const readAt = (t: number) => {
         panelAnim.currentTime = t;
-        document.documentElement.offsetHeight; // force style flush
+        void document.documentElement.offsetHeight; // force style flush
         return parseFloat(
           getComputedStyle(document.documentElement, '::view-transition-new(ajs-accent-panel)').opacity,
         );
@@ -754,7 +758,10 @@ test.describe('grid hero tile text color tracks accent (260718-r2o)', () => {
     // back the tile's computed color. If the tile still consumed a hardcoded
     // ink value, the computed color would NOT match the sentinel.
     await page.evaluate(() => {
-      document.querySelector('.home')!.style.setProperty('--current-accent-text', 'rgb(0, 255, 0)');
+      (document.querySelector('.home') as HTMLElement).style.setProperty(
+        '--current-accent-text',
+        'rgb(0, 255, 0)',
+      );
     });
 
     const heroTile = page.locator('.home-grid__tile--hero');

@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { getViteConfig } from 'astro/config';
 
 // Uses Astro's own `getViteConfig` (rather than plain `vitest/config`
@@ -9,5 +10,11 @@ export default getViteConfig({
     include: ['tests/unit/**/*.test.ts'],
     environment: 'node',
     watch: false,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'json-summary'],
+      reportsDirectory: './coverage',
+      include: ['src/**/*.ts'],
+    },
   },
 });
