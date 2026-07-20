@@ -3,7 +3,6 @@
 // French detail page at src/pages/galleries/[slug].astro — only import depth
 // and locale key differ.
 import type { GetStaticPaths } from 'astro';
-import { getRelativeLocaleUrl } from 'astro:i18n';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import GalleryGrid from '../../../components/GalleryGrid.astro';
 import Lightbox from '../../../components/Lightbox.astro';
@@ -29,7 +28,6 @@ const locale = 'en' as const;
 // but a document written outside the Studio's publish-time validation could
 // still be partially populated mid-edit.
 const statement = gallery.statement?.[locale] ?? '';
-const backHref = getRelativeLocaleUrl(locale, '');
 // D-07/UI-SPEC Layout Notes: hero-scrim uses the gallery's cover photo
 // (images[0]) at full size, same helper the Lightbox uses for its slides.
 const heroImage = gallery.images[0];
@@ -74,7 +72,6 @@ const structuredData = {
         decoding="async"
       />
       <div class="gallery-detail__hero-scrim" aria-hidden="true"></div>
-      <a href={backHref} class="gallery-detail__hero-back">← Back home</a>
       <h1 class="gallery-detail__hero-title">{gallery.title}</h1>
     </div>
     <div class="gallery-detail__content">
@@ -113,8 +110,8 @@ const structuredData = {
   }
 
   /* D-07: full-bleed hero photo + dark gradient scrim (matches the homepage
-     carousel's technique) with a white bottom-left Display title and a
-     white top-left back-link, under the transparent header variant. */
+     carousel's technique) with a white bottom-left Display title, under
+     the transparent header variant. */
   .gallery-detail__hero {
     position: relative;
     height: 70vh;
@@ -135,23 +132,6 @@ const structuredData = {
     inset: 0;
     background: linear-gradient(to top, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.15) 45%, rgba(0, 0, 0, 0) 70%);
     pointer-events: none;
-  }
-
-  .gallery-detail__hero-back {
-    position: absolute;
-    top: var(--space-xl);
-    left: var(--space-xl);
-    z-index: 3;
-    color: #FFFFFF;
-    font-size: 14px; /* Label role */
-    font-weight: var(--weight-regular);
-    line-height: 1.5;
-    text-decoration: none;
-  }
-
-  .gallery-detail__hero-back:hover,
-  .gallery-detail__hero-back:focus-visible {
-    text-decoration: underline;
   }
 
   .gallery-detail__hero-title {
