@@ -1,9 +1,9 @@
 import {useEffect, useMemo, useState} from 'react'
 import type {ComponentType} from 'react'
 import {Badge, Box, Button, Card, Flex, Grid, Heading, Spinner, Stack, Text} from '@sanity/ui'
-import {useClient, useWorkspace} from 'sanity'
-import {IntentLink, Link} from 'sanity/router'
-import {AddIcon, CalendarIcon, HomeIcon, ImagesIcon} from '@sanity/icons'
+import {useClient} from 'sanity'
+import {IntentLink} from 'sanity/router'
+import {AddIcon, HomeIcon} from '@sanity/icons'
 import {deploymentLabel, getLatestDeployment, SITE_PREVIEW_URL} from './deployment'
 import type {DeploymentRun} from './deployment'
 import {getDocumentChecks, summarizeChecks} from './checks'
@@ -76,7 +76,6 @@ function isGalleryOnline(document: DashboardDocument) {
 
 export function EditorialDashboard() {
   const client = useClient({apiVersion: '2025-08-15'})
-  const {basePath} = useWorkspace()
   const [documents, setDocuments] = useState<DashboardDocument[]>([])
   const [run, setRun] = useState<DeploymentRun | null>(null)
   const [loading, setLoading] = useState(true)
@@ -149,9 +148,9 @@ export function EditorialDashboard() {
 
   return (
     <Box padding={[3, 4, 5]} style={{maxWidth: 1080, margin: '0 auto'}}>
-      <Stack space={5}>
+      <Stack space={6}>
         <Flex align="center" justify="space-between" gap={3} wrap="wrap">
-          <Stack space={2}>
+          <Stack space={3}>
             <Heading as="h1" size={3}>
               Tableau de bord
             </Heading>
@@ -169,11 +168,11 @@ export function EditorialDashboard() {
           />
         </Flex>
 
-        <Stack space={3}>
+        <Stack space={4}>
           <Heading as="h2" size={2}>
             Actions rapides
           </Heading>
-          <Grid columns={[1, 2, 4]} gap={2}>
+          <Grid columns={[1, 2]} gap={3}>
             <QuickIntentAction
               icon={AddIcon}
               label="Nouvelle collection"
@@ -181,33 +180,11 @@ export function EditorialDashboard() {
               params={{type: 'gallery', template: 'gallery'}}
             />
             <QuickIntentAction
-              icon={CalendarIcon}
-              label="Nouvelle exposition"
-              intent="create"
-              params={{type: 'exhibition'}}
-            />
-            <QuickIntentAction
               icon={HomeIcon}
               label="Modifier l’accueil"
               intent="edit"
               params={{id: 'homePage', type: 'homePage'}}
             />
-            {/*
-              Deliberately `Link` (raw href), not `ToolLink`: this component is rendered
-              *inside* the active 'dashboard' tool's own view, which Studio wraps in a
-              `RouteScope` scoped to 'dashboard'. `ToolLink`/`StateLink` resolve their href
-              through that scoped router, which nests the target tool's state under the
-              current tool's own key instead of replacing it (e.g. `{tool: 'dashboard',
-              dashboard: {tool: 'media', ...}}`) — since the 'dashboard' tool has no router,
-              that nested state can't be mapped to a URL and crashes Studio's router. `Link`
-              bypasses state resolution entirely by taking an already-resolved absolute href.
-            */}
-            <Link
-              href={`${basePath.replace(/\/$/, '')}/media`}
-              style={{color: 'inherit', textDecoration: 'none'}}
-            >
-              <QuickActionContent icon={ImagesIcon} label="Photos et crédits" />
-            </Link>
           </Grid>
         </Stack>
 
@@ -245,9 +222,9 @@ export function EditorialDashboard() {
               <DeploymentCard run={run} />
             </Grid>
 
-            <Stack space={3}>
+            <Stack space={4}>
               <Flex align="center" justify="space-between">
-                <Stack space={1}>
+                <Stack space={3}>
                   <Heading as="h2" size={2}>
                     À faire maintenant
                   </Heading>
@@ -275,7 +252,7 @@ export function EditorialDashboard() {
               )}
             </Stack>
 
-            <Stack space={3}>
+            <Stack space={4}>
               <Flex align="center" justify="space-between" gap={3}>
                 <Heading as="h2" size={2}>
                   Activité récente
@@ -292,11 +269,7 @@ export function EditorialDashboard() {
               <Card radius={3} tone="transparent" border>
                 <Stack space={0}>
                   {recentRows.map((row, index) => (
-                    <RecentRow
-                      key={row.id}
-                      row={row}
-                      withBorder={index < recentRows.length - 1}
-                    />
+                    <RecentRow key={row.id} row={row} withBorder={index < recentRows.length - 1} />
                   ))}
                 </Stack>
               </Card>
@@ -407,7 +380,7 @@ function QuickIntentAction({
 
 function QuickActionContent({icon: Icon, label}: {icon: ComponentType; label: string}) {
   return (
-    <Card padding={3} radius={2} border tone="transparent">
+    <Card padding={4} radius={2} border tone="transparent">
       <Flex align="center" gap={2}>
         <Text size={1}>
           <Icon />
@@ -425,7 +398,7 @@ function AttentionSection({group}: {group: AttentionGroup}) {
     <Card radius={3} shadow={1} overflow="hidden">
       <Card
         tone={group.tone}
-        padding={3}
+        padding={4}
         style={{borderBottom: '1px solid var(--card-border-color)'}}
       >
         <Flex align="center" gap={2} wrap="wrap">
@@ -446,7 +419,7 @@ function AttentionSection({group}: {group: AttentionGroup}) {
               {group.rows.length}
             </Text>
           </Card>
-          <Stack space={1}>
+          <Stack space={2}>
             <Text size={1} weight="bold">
               {group.title}
             </Text>
@@ -549,8 +522,6 @@ function ContentRow({
   withBorder: boolean
   accentTone: DashboardTone
 }) {
-  const missing = row.summary.totalCount - row.summary.completeCount
-  const missingChecks = row.checks.filter((check) => !check.complete)
   const status = editorialStatus(row)
   return (
     <IntentLink
@@ -564,9 +535,9 @@ function ContentRow({
       >
         <Flex>
           <Card tone={accentTone} style={{width: 4}} />
-          <Box padding={3} style={{minWidth: 0, flex: 1}}>
+          <Box padding={4} style={{minWidth: 0, flex: 1}}>
             <Flex align="center" justify="space-between" gap={3} wrap="wrap">
-              <Stack space={2} style={{minWidth: 0, flex: '1 1 520px'}}>
+              <Stack space={3} style={{minWidth: 0, flex: '1 1 520px'}}>
                 <Text size={1} weight="semibold" textOverflow="ellipsis">
                   {documentTitle(row.current)}
                 </Text>
@@ -577,31 +548,9 @@ function ContentRow({
                   <Badge fontSize={0} mode="light" tone={status.tone}>
                     {status.label}
                   </Badge>
-                  {!row.summary.requiredComplete && (
-                    <Badge fontSize={0} mode="outline" tone="critical">
-                      Contenu incomplet
-                    </Badge>
-                  )}
-                  {row.summary.requiredComplete && !row.summary.recommendedComplete && (
-                    <Badge fontSize={0} mode="outline" tone="primary">
-                      SEO à compléter
-                    </Badge>
-                  )}
                 </Flex>
-                {missingChecks.length > 0 && (
-                  <Text muted size={0} textOverflow="ellipsis">
-                    Manque : {missingChecks.slice(0, 2).map((check) => check.label).join(' · ')}
-                    {missingChecks.length > 2 ? ` · +${missingChecks.length - 2} autre(s)` : ''}
-                  </Text>
-                )}
               </Stack>
-              <Flex align="center" gap={2}>
-                <Badge mode="light" tone={accentTone}>
-                  {missing}
-                </Badge>
-                <Text muted size={1}>
-                  à compléter
-                </Text>
+              <Flex align="center">
                 <Text muted size={1}>
                   ›
                 </Text>
@@ -628,11 +577,11 @@ function RecentRow({row, withBorder}: {row: DashboardRow; withBorder: boolean}) 
         align="center"
         justify="space-between"
         gap={3}
-        padding={[2, 3]}
+        padding={[3, 4]}
         wrap="wrap"
         style={{borderBottom: withBorder ? '1px solid var(--card-border-color)' : undefined}}
       >
-        <Stack space={1} style={{minWidth: 0, flex: '1 1 420px'}}>
+        <Stack space={2} style={{minWidth: 0, flex: '1 1 420px'}}>
           <Text size={1} weight="semibold" textOverflow="ellipsis">
             {documentTitle(row.current)}
           </Text>
