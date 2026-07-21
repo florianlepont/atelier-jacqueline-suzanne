@@ -56,7 +56,11 @@
   flex: 0 0 auto;
   align-items: center;
   align-self: flex-end;
-  min-height: 20px;
+  min-height: 44px;
+  padding: 0 var(--space-xs, 4px);
+  margin: 0 calc(var(--space-xs, 4px) * -1);
+  border-radius: 3px;
+  box-sizing: border-box;
   color: inherit;
   text-decoration: none;
 }
@@ -99,6 +103,13 @@
 }
 
 .editorial-dashboard__row-link:focus-visible {
+  position: relative;
+  z-index: 1;
+  box-shadow: var(--card-focus-ring-box-shadow, 0 0 0 2px var(--card-focus-ring-color));
+}
+
+.editorial-dashboard__deployment-status:focus-visible {
+  outline: none;
   position: relative;
   z-index: 1;
   box-shadow: var(--card-focus-ring-box-shadow, 0 0 0 2px var(--card-focus-ring-color));

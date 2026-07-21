@@ -524,6 +524,7 @@ export function EditorialDashboard() {
                     {rows.length > 4 && (
                       <Button
                         className="editorial-dashboard__activity-toggle"
+                        style={{minHeight: 44}}
                         mode="bleed"
                         fontSize={0}
                         padding={2}
@@ -892,7 +893,7 @@ function ContentRow({
               >
                 <IssueIcon style={{display: 'block'}} />
               </Text>
-              <Stack space={1} className="editorial-dashboard__task-copy">
+              <Stack space={3} className="editorial-dashboard__task-copy">
                 <Flex
                   align="center"
                   justify="space-between"
@@ -905,6 +906,7 @@ function ContentRow({
                     weight="semibold"
                     textOverflow="ellipsis"
                     className="editorial-dashboard__task-title"
+                    style={{padding: 0}}
                   >
                     {title}
                   </Text>
@@ -927,6 +929,7 @@ function ContentRow({
                   textOverflow="ellipsis"
                   title={taskSummary}
                   className="editorial-dashboard__task-summary"
+                  style={{padding: 0}}
                 >
                   {taskSummary}
                 </Text>
@@ -981,7 +984,7 @@ function RecentRow({
           >
             {ActivityIcon ? <ActivityIcon style={{display: 'block'}} /> : <DocumentIcon style={{display: 'block'}} />}
           </Text>
-          <Stack space={1} className="editorial-dashboard__activity-copy">
+          <Stack space={3} className="editorial-dashboard__activity-copy">
             <Flex
               align="center"
               justify="space-between"
@@ -993,21 +996,22 @@ function RecentRow({
                 weight="semibold"
                 textOverflow="ellipsis"
                 className="editorial-dashboard__activity-title"
+                style={{padding: 0}}
               >
                 {documentTitle(row.current)}
               </Text>
-              <Text muted size={0} className="editorial-dashboard__activity-date">
+              <Text muted size={0} className="editorial-dashboard__activity-date" style={{padding: 0}}>
                 {formatActivityDate(activity?.timestamp ?? row.lastUpdatedAt)}
               </Text>
             </Flex>
             <Flex align="center" gap={1} wrap="wrap" className="editorial-dashboard__activity-meta">
-              <Text size={0} weight="medium">
+              <Text size={0} weight="medium" style={{padding: 0}}>
                 {activity?.authorName ?? 'Activité indisponible'}
               </Text>
-              <Text muted size={0}>
+              <Text muted size={0} style={{padding: 0}}>
                 ·
               </Text>
-              <Text muted size={0}>
+              <Text muted size={0} style={{padding: 0}}>
                 {activity?.description ?? fallbackDescription}
               </Text>
               {showStatus && (
