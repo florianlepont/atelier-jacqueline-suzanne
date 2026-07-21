@@ -1,6 +1,6 @@
 .editorial-dashboard__page {
-  --dashboard-page-background: #f7f8fa;
-  --dashboard-surface-background: #ffffff;
+  --dashboard-page-background: color-mix(in srgb, var(--card-bg-color) 92%, var(--card-fg-color) 8%);
+  --dashboard-surface-background: var(--card-bg-color);
   min-height: calc(100vh - 49px);
   background: var(--dashboard-page-background);
 }
@@ -89,6 +89,7 @@
 
 .editorial-dashboard__task-row,
 .editorial-dashboard__activity-row {
+  background-color: var(--dashboard-surface-background);
   transition: background-color 120ms ease;
 }
 
