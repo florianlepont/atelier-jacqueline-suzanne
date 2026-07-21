@@ -218,9 +218,24 @@ const slides = images.map((img) => ({
     width: 100vw;
     height: 100vh;
     background: rgba(26, 26, 26, 0.96); /* Ink-equivalent scrim (var(--color-ink)) — documented exception, not var(--color-accent) */
+  }
+
+  /* Bug fix (lightbox-dialog-always-visible): `display` must only be `flex`
+     while the dialog is open. An unconditional `display: flex` on the bare
+     `dialog#lightbox` selector is author-origin CSS, which always wins over
+     the UA stylesheet's `dialog:not([open]) { display: none; }` rule
+     regardless of specificity — that made the closed dialog render as
+     ordinary 100vw x 100vh page content below the footer. The explicit
+     `:not([open])` rule below is a defensive backstop so this can never
+     regress even if a browser's UA-stylesheet default ever changes. */
+  dialog#lightbox[open] {
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  dialog#lightbox:not([open]) {
+    display: none;
   }
 
   dialog#lightbox::backdrop {
