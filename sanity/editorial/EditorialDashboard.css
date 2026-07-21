@@ -169,6 +169,16 @@ a.editorial-dashboard__deployment-status:hover {
   height: 20px;
 }
 
+.editorial-dashboard__task-verb--quiet {
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.editorial-dashboard__row-link:hover .editorial-dashboard__task-verb--quiet,
+.editorial-dashboard__row-link:focus-visible .editorial-dashboard__task-verb--quiet {
+  opacity: 1;
+}
+
 .editorial-dashboard__activity-toggle {
   background: transparent !important;
   min-height: 44px;

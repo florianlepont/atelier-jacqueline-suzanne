@@ -6,10 +6,13 @@ import {IntentLink} from 'sanity/router'
 import {
   AddIcon,
   BulbOutlineIcon,
+  CheckmarkCircleIcon,
   ChevronRightIcon,
+  CogIcon,
   DocumentIcon,
   ErrorOutlineIcon,
   FolderIcon,
+  ImagesIcon,
   LaunchIcon,
   PublishIcon,
   TaskIcon,
@@ -371,10 +374,34 @@ export function EditorialDashboard() {
   const galleries = rows.filter(({current}) => current._type === 'gallery')
   const onlineGalleryCount = galleries.filter((row) => isGalleryOnline(row.current)).length
   const draftCount = rows.filter((row) => row.hasDraft).length
-  const visibleAttention = showAllAttention ? attention : attention.slice(0, 5)
-  const attentionGroups = buildAttentionGroups(visibleAttention)
   const blockingRows = attention.filter((row) => !row.summary.requiredComplete)
+  // A single blocked content is fully covered by the banner (named title,
+  // missing-info message, direct CTA) — repeating it as a one-row group right
+  // below said the same thing twice. It leaves the list and the section
+  // counters, so banner and list each count their own story. With several
+  // blocked contents the banner only summarizes, so the group stays.
+  const hideBlockingGroup = blockingRows.length === 1
+  const listedAttention = hideBlockingGroup
+    ? attention.filter((row) => row.summary.requiredComplete)
+    : attention
+  const visibleAttention = showAllAttention ? listedAttention : listedAttention.slice(0, 5)
+  const attentionGroups = buildAttentionGroups(visibleAttention)
   const recentRows = showAllActivity ? rows : rows.slice(0, 4)
+  const subtitleParts: string[] = []
+  if (blockingRows.length > 0) {
+    subtitleParts.push(
+      `${blockingRows.length} ${pluralize(blockingRows.length, 'contenu bloqué', 'contenus bloqués')}`,
+    )
+  }
+  if (draftCount > 0) {
+    subtitleParts.push(`${draftCount} ${pluralize(draftCount, 'brouillon en cours', 'brouillons en cours')}`)
+  }
+  const subtitle =
+    loading || error
+      ? 'L’essentiel du contenu et de la mise en ligne.'
+      : subtitleParts.length > 0
+        ? subtitleParts.join(' · ')
+        : 'Tout est publié et à jour.'
 
   return (
     <div className="editorial-dashboard__page">
@@ -392,7 +419,7 @@ export function EditorialDashboard() {
                 Tableau de bord
               </Heading>
               <Text muted size={1}>
-                L’essentiel du contenu et de la mise en ligne.
+                {subtitle}
               </Text>
             </Stack>
             <Flex
@@ -538,10 +565,10 @@ export function EditorialDashboard() {
                 />
                 <MetricCard
                   icon={WarningOutlineIcon}
-                  label={pluralize(attention.length, 'contenu', 'contenus')}
-                  value={String(attention.length)}
+                  label={pluralize(listedAttention.length, 'contenu', 'contenus')}
+                  value={String(listedAttention.length)}
                   detail="à vérifier avant publication"
-                  accent={attention.length > 0 ? 'caution' : 'positive'}
+                  accent={listedAttention.length > 0 ? 'caution' : 'positive'}
                   activateLabel="Aller à la liste « À faire maintenant »"
                   onActivate={() => {
                     const heading = document.getElementById('editorial-dashboard-attention-heading')
@@ -559,12 +586,12 @@ export function EditorialDashboard() {
                         À faire maintenant
                       </Heading>
                       <Text muted size={0}>
-                        {attention.length === 0
+                        {listedAttention.length === 0
                           ? 'Aucun contenu en attente'
-                          : `${visibleAttention.length} ${pluralize(visibleAttention.length, 'contenu prioritaire', 'contenus prioritaires')} sur ${attention.length} à vérifier`}
+                          : `${visibleAttention.length} ${pluralize(visibleAttention.length, 'contenu prioritaire', 'contenus prioritaires')} sur ${listedAttention.length} à vérifier`}
                       </Text>
                     </Stack>
-                    {attention.length > 5 && (
+                    {listedAttention.length > 5 && (
                       <Button
                         className="editorial-dashboard__activity-toggle"
                         style={{minHeight: 44}}
@@ -574,7 +601,7 @@ export function EditorialDashboard() {
                         text={
                           showAllAttention
                             ? 'Réduire'
-                            : `Voir les ${attention.length} ${pluralize(attention.length, 'contenu', 'contenus')}`
+                            : `Voir les ${listedAttention.length} ${pluralize(listedAttention.length, 'contenu', 'contenus')}`
                         }
                         aria-expanded={showAllAttention}
                         aria-controls="editorial-dashboard-attention-list"
@@ -583,9 +610,37 @@ export function EditorialDashboard() {
                     )}
                   </Flex>
 
-                  {attention.length === 0 ? (
-                    <Card padding={3} radius={3} tone="positive">
-                      <Text size={1}>Aucun contenu ne nécessite votre attention.</Text>
+                  {listedAttention.length === 0 ? (
+                    <Card radius={3} shadow={1} padding={3} className="editorial-dashboard__surface">
+                      <Flex align="center" gap={3}>
+                        <div
+                          aria-hidden="true"
+                          style={{
+                            width: 38,
+                            height: 38,
+                            borderRadius: 10,
+                            flex: '0 0 auto',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: metricAccentStyles.positive.background,
+                            color: metricAccentStyles.positive.color,
+                            fontSize: 21,
+                          }}
+                        >
+                          <CheckmarkCircleIcon style={{display: 'block'}} />
+                        </div>
+                        <Stack space={2}>
+                          <Text size={1} weight="semibold">
+                            {blockingRows.length > 0 ? 'Rien d’autre à traiter' : 'Tout est en ordre'}
+                          </Text>
+                          <Text muted size={1} style={{fontSize: 12}}>
+                            {blockingRows.length > 0
+                              ? 'Occupez-vous d’abord du contenu bloqué ci-dessus.'
+                              : 'Aucun contenu ne nécessite votre attention.'}
+                          </Text>
+                        </Stack>
+                      </Flex>
                     </Card>
                   ) : (
                     <Stack space={2} id="editorial-dashboard-attention-list">
@@ -640,6 +695,30 @@ export function EditorialDashboard() {
                       {recentRows.map((row) => (
                         <RecentRow key={row.id} row={row} activity={activities[row.id]} />
                       ))}
+                    </Stack>
+                  </Card>
+
+                  <Card radius={3} shadow={1} padding={1} className="editorial-dashboard__surface">
+                    <Box paddingX={2} paddingTop={2} paddingBottom={1}>
+                      <Text
+                        muted
+                        size={0}
+                        weight="semibold"
+                        role="heading"
+                        aria-level={2}
+                        style={{fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em'}}
+                      >
+                        Raccourcis
+                      </Text>
+                    </Box>
+                    <Stack space={0}>
+                      <ShortcutRow href="/structure" icon={FolderIcon} label="Contenu du site" />
+                      <ShortcutRow href="/media" icon={ImagesIcon} label="Médiathèque" />
+                      <ShortcutRow
+                        icon={CogIcon}
+                        label="Réglages du site"
+                        intentParams={{id: 'siteSettings', type: 'siteSettings'}}
+                      />
                     </Stack>
                   </Card>
                 </Stack>
@@ -737,14 +816,28 @@ function compactCheckLabel(label: string) {
     .replace('Image de partage', 'Aperçu sur les réseaux sociaux')
 }
 
+// Title and description for Google almost always go missing together; naming
+// them as two list items doubled the "(FR et EN)" noise on every row.
+function mergePairedCheckLabels(labels: string[]) {
+  const title = 'Titre pour Google (FR et EN)'
+  const description = 'Description pour Google (FR et EN)'
+  if (!labels.includes(title) || !labels.includes(description)) return labels
+  return [
+    'Titre et description pour Google (FR et EN)',
+    ...labels.filter((label) => label !== title && label !== description),
+  ]
+}
+
 function attentionRowSummary(row: DashboardRow, group: AttentionGroup) {
   if (group.id === 'publish') return 'Publier les modifications en attente'
   if (group.id === 'finish') return 'Finaliser le contenu et le mettre en ligne'
 
   const recommended = group.id === 'recommended'
-  const missing = row.checks
-    .filter((check) => !check.complete && Boolean(check.recommended) === recommended)
-    .map((check) => compactCheckLabel(check.label))
+  const missing = mergePairedCheckLabels(
+    row.checks
+      .filter((check) => !check.complete && Boolean(check.recommended) === recommended)
+      .map((check) => compactCheckLabel(check.label)),
+  )
 
   // Naming the first couple of items outright ("Image de couverture,
   // description anglaise et 3 autres informations") lets the user gauge the
@@ -763,6 +856,7 @@ function attentionRowSummaryDetail(row: DashboardRow, group: AttentionGroup) {
   const missing = row.checks
     .filter((check) => !check.complete && Boolean(check.recommended) === recommended)
     .map((check) => compactCheckLabel(check.label))
+  // The tooltip keeps the unmerged list: it exists to show the full detail.
   return missing.join(' · ')
 }
 
@@ -956,6 +1050,80 @@ function MetricCard({
   return <div className="editorial-dashboard__metric-cell">{body}</div>
 }
 
+function ShortcutRow({
+  icon: Icon,
+  label,
+  href,
+  intentParams,
+}: {
+  icon: ComponentType<SVGProps<SVGSVGElement>>
+  label: string
+  href?: string
+  intentParams?: {id: string; type: string}
+}) {
+  const chip = metricAccentStyles.neutral
+  const content = (
+    <Flex
+      align="center"
+      gap={2}
+      paddingX={2}
+      className="editorial-dashboard__task-row"
+      style={{minHeight: 44, borderRadius: 6, boxSizing: 'border-box'}}
+    >
+      <div
+        aria-hidden="true"
+        style={{
+          width: 26,
+          height: 26,
+          borderRadius: 8,
+          flex: '0 0 auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: chip.background,
+          color: chip.color,
+          fontSize: 15,
+        }}
+      >
+        <Icon style={{display: 'block'}} />
+      </div>
+      <Text size={1} weight="medium" style={{flex: '1 1 auto', minWidth: 0}}>
+        {label}
+      </Text>
+      <Text
+        muted
+        size={1}
+        className="editorial-dashboard__task-chevron"
+        style={{lineHeight: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transform: 'none'}}
+      >
+        <ChevronRightIcon style={{display: 'block'}} />
+      </Text>
+    </Flex>
+  )
+
+  if (intentParams) {
+    return (
+      <IntentLink
+        className="editorial-dashboard__row-link"
+        intent="edit"
+        params={intentParams}
+        style={{color: 'inherit', textDecoration: 'none'}}
+      >
+        {content}
+      </IntentLink>
+    )
+  }
+  return (
+    <a
+      href={href}
+      className="editorial-dashboard__row-link"
+      style={{color: 'inherit', textDecoration: 'none'}}
+    >
+      {content}
+    </a>
+  )
+}
+
 const deploymentDotColors: Record<DashboardTone, string> = {
   default: '#9ca3af',
   primary: '#556bfc',
@@ -1105,6 +1273,9 @@ function ContentRow({
                   <Card
                     tone={accentTone}
                     radius={2}
+                    className={
+                      accentTone === 'default' ? 'editorial-dashboard__task-verb--quiet' : undefined
+                    }
                     style={{background: 'transparent', display: 'inline-flex'}}
                   >
                     <Text size={1} weight="semibold" style={{whiteSpace: 'nowrap'}}>
