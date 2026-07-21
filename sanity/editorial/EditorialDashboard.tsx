@@ -410,17 +410,6 @@ export function EditorialDashboard() {
               className="editorial-dashboard__actions editorial-dashboard__header-side"
             >
               <DeploymentStatus run={run} />
-              <IntentButton
-                className="editorial-dashboard__header-control"
-                style={{height: 44}}
-                icon={AddIcon}
-                text="Nouvelle collection"
-                intent="create"
-                params={{type: 'gallery', template: 'gallery'}}
-                tone="primary"
-                mode="default"
-                paddingY={3}
-              />
               <Button
                 className="editorial-dashboard__header-control"
                 style={{height: 44}}
@@ -433,6 +422,17 @@ export function EditorialDashboard() {
                 mode="ghost"
                 paddingY={3}
                 text="Ouvrir le site"
+              />
+              <IntentButton
+                className="editorial-dashboard__header-control"
+                style={{height: 44}}
+                icon={AddIcon}
+                text="Nouvelle collection"
+                intent="create"
+                params={{type: 'gallery', template: 'gallery'}}
+                tone="primary"
+                mode="default"
+                paddingY={3}
               />
             </Flex>
           </Flex>
@@ -951,13 +951,20 @@ function DeploymentStatus({run}: {run: DeploymentRun | null}) {
     shortStatusLabel === 'À jour' ? 'Site à jour' : `Site : ${shortStatusLabel}`
 
   const content = (
-    <Flex align="center" gap={2} className="editorial-dashboard__deployment-content">
-      <Card
-        tone={tone}
-        radius={4}
-        className="editorial-dashboard__deployment-icon"
-        style={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}
-      >
+    <Card
+      tone={tone}
+      radius={2}
+      paddingX={3}
+      className="editorial-dashboard__deployment-content"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        minHeight: 32,
+        boxSizing: 'border-box',
+        border: '1px solid var(--card-border-color)',
+      }}
+    >
+      <Flex align="center" gap={2}>
         <Text
           size={1}
           style={{
@@ -965,22 +972,22 @@ function DeploymentStatus({run}: {run: DeploymentRun | null}) {
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: 20,
-            height: 20,
+            width: 18,
+            height: 18,
             boxSizing: 'border-box',
             transform: 'none',
           }}
         >
           <PublishIcon style={{display: 'block'}} />
         </Text>
-      </Card>
-      <Text size={0} weight="semibold" style={{whiteSpace: 'nowrap'}}>
-        {siteStatusLabel}
-      </Text>
-      <Text muted size={0} className="editorial-dashboard__deployment-date">
-        {dateLabel}
-      </Text>
-    </Flex>
+        <Text size={1} weight="semibold" style={{whiteSpace: 'nowrap', fontSize: 12}}>
+          {siteStatusLabel}
+        </Text>
+        <Text muted size={1} className="editorial-dashboard__deployment-date" style={{fontSize: 12}}>
+          {dateLabel}
+        </Text>
+      </Flex>
+    </Card>
   )
 
   return run?.html_url ? (

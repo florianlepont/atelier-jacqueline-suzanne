@@ -89,20 +89,6 @@
   text-decoration: none;
 }
 
-.editorial-dashboard__deployment-content {
-  min-height: 20px;
-}
-
-.editorial-dashboard__deployment-icon {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  box-sizing: border-box;
-}
-
 .editorial-dashboard__deployment-date {
   white-space: nowrap;
 }
