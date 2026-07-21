@@ -306,7 +306,7 @@ function SectionHeader({
           {description}
         </Text>
       </Stack>
-      <Badge tone={tone} mode="light">
+      <Badge tone={tone}>
         {count}
       </Badge>
     </Flex>
@@ -459,7 +459,7 @@ function ReusedSection({
                 </Text>
                 <Flex align="center" gap={2} wrap="wrap">
                   {usages.map((usage) => (
-                    <Badge key={usage.id} fontSize={0} mode="light">
+                    <Badge key={usage.id} fontSize={0}>
                       {usage.title}
                     </Badge>
                   ))}

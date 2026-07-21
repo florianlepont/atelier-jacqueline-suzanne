@@ -200,11 +200,13 @@ export const gallery = defineType({
             return 'Ajouter au moins une photo. La première servira de couverture.'
           }
           const missingAlt = images.flatMap((image, index) => {
-            const alt = image?.alt
+            const alt = (image as {alt?: {fr?: string; en?: string}})?.alt
             return alt?.fr?.trim() && alt?.en?.trim() ? [] : [index + 1]
           })
           const missingRights = images.flatMap((image, index) => {
-            const rights = image?.rights
+            const rights = (
+              image as {rights?: {credit?: string; copyrightNotice?: string; usage?: string}}
+            )?.rights
             return rights?.credit?.trim() &&
               rights?.copyrightNotice?.trim() &&
               rights?.usage?.trim()

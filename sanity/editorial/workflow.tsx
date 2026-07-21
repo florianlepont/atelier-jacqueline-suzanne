@@ -34,10 +34,10 @@ const CollectionStatusBadge: DocumentBadgeComponent = ({draft, published}) => {
   const value = (draft ?? published ?? {}) as Record<string, unknown>
   if (value._type !== 'gallery') return null
   if (value.publicationStatus === 'archived') {
+    // No color: the badge palette has no explicit neutral, undefined renders gray.
     return {
       label: 'Archivée',
       title: 'Cette collection est conservée hors du site.',
-      color: 'default',
     }
   }
   if (

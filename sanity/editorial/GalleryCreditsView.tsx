@@ -78,7 +78,7 @@ export const GalleryCreditsView: UserViewComponent = ({document}) => {
             <Heading as="h1" size={2}>
               Crédits et droits
             </Heading>
-            <Badge tone={incompleteCount ? 'caution' : 'positive'} mode="light">
+            <Badge tone={incompleteCount ? 'caution' : 'positive'}>
               {incompleteCount ? `${incompleteCount} à compléter` : 'Tout est renseigné'}
             </Badge>
           </Flex>
@@ -119,7 +119,7 @@ export const GalleryCreditsView: UserViewComponent = ({document}) => {
                   checked={displayCredit}
                   onChange={(event) => setDisplayCredit(event.currentTarget.checked)}
                 />
-                <Label htmlFor="bulk-display-credit" size={1}>
+                <Label as="label" htmlFor="bulk-display-credit" size={1}>
                   Afficher le crédit sur le site
                 </Label>
               </Flex>
@@ -174,7 +174,7 @@ export const GalleryCreditsView: UserViewComponent = ({document}) => {
                         {image.rights?.credit || 'Crédit non renseigné'}
                       </Text>
                     </Stack>
-                    <Badge tone={complete ? 'positive' : 'caution'} mode="light">
+                    <Badge tone={complete ? 'positive' : 'caution'}>
                       {complete ? 'Complet' : 'À compléter'}
                     </Badge>
                   </Flex>

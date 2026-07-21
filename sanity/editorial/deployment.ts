@@ -1,3 +1,5 @@
+/// <reference types="vite/client" />
+
 export const SITE_PREVIEW_URL =
   import.meta.env.SANITY_STUDIO_PREVIEW_URL || 'https://florianlepont.github.io/ajs-website/'
 
