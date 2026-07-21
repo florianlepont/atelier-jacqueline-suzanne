@@ -1143,7 +1143,14 @@ function RecentRow({
         paddingX={3}
         paddingY={2}
         className="editorial-dashboard__activity-row"
-        style={{borderBottom: withBorder ? '1px solid var(--card-border-color)' : undefined}}
+        style={{
+          borderBottom: withBorder ? '1px solid var(--card-border-color)' : undefined,
+          minHeight: 46,
+          boxSizing: 'border-box',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+        }}
       >
         <div className="editorial-dashboard__activity-grid">
           <Text
