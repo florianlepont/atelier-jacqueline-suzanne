@@ -129,6 +129,10 @@ function baseId(id: string) {
   return id.replace(/^drafts\./, '')
 }
 
+function pluralize(count: number, singular: string, plural: string = `${singular}s`) {
+  return count > 1 ? plural : singular
+}
+
 function documentTitle(document: DashboardDocument) {
   if (document._type === 'gallery' || document._type === 'exhibition') {
     return (
@@ -373,8 +377,11 @@ export function EditorialDashboard() {
     })
     .sort((left, right) => attentionPriority(left) - attentionPriority(right))
   const galleries = rows.filter(({current}) => current._type === 'gallery')
+  const onlineGalleryCount = galleries.filter((row) => isGalleryOnline(row.current)).length
+  const draftCount = rows.filter((row) => row.hasDraft).length
   const visibleAttention = showAllAttention ? attention : attention.slice(0, 5)
   const attentionGroups = buildAttentionGroups(visibleAttention)
+  const blockingRows = attention.filter((row) => !row.summary.requiredComplete)
   const recentRows = showAllActivity ? rows : rows.slice(0, 4)
 
   return (
@@ -458,6 +465,45 @@ export function EditorialDashboard() {
             </Card>
           )}
 
+          {!loading && !error && blockingRows.length > 0 && (
+            <Card radius={3} tone="critical" shadow={1} padding={4}>
+              <Flex align="center" justify="space-between" gap={3} wrap="wrap">
+                <Stack space={2} style={{flex: '1 1 280px'}}>
+                  <Text size={1} weight="bold">
+                    {blockingRows.length === 1
+                      ? `« ${documentTitle(blockingRows[0].current)} » ne peut pas être publié`
+                      : `${blockingRows.length} contenus ne peuvent pas être publiés`}
+                  </Text>
+                  <Text size={0} muted>
+                    Des informations indispensables sont manquantes.
+                  </Text>
+                </Stack>
+                {blockingRows.length === 1 ? (
+                  <IntentButton
+                    tone="critical"
+                    mode="default"
+                    text={`Compléter ${contentNoun(blockingRows[0].current)}`}
+                    intent="edit"
+                    params={{id: blockingRows[0].id, type: blockingRows[0].current._type}}
+                    style={{minHeight: 44}}
+                  />
+                ) : (
+                  <Button
+                    tone="critical"
+                    mode="default"
+                    text="Voir les contenus bloqués"
+                    style={{minHeight: 44}}
+                    onClick={() => {
+                      const heading = document.getElementById('editorial-dashboard-attention-heading')
+                      heading?.scrollIntoView({behavior: 'smooth', block: 'start'})
+                      heading?.focus()
+                    }}
+                  />
+                )}
+              </Flex>
+            </Card>
+          )}
+
           {!loading && !error && (
             <>
               <Card
@@ -470,23 +516,23 @@ export function EditorialDashboard() {
                 <div className="editorial-dashboard__metrics">
                   <MetricCard
                     icon={FolderIcon}
-                    label="collections"
-                    value={String(galleries.filter((row) => isGalleryOnline(row.current)).length)}
-                    detail="publiées sur le site"
+                    label={pluralize(onlineGalleryCount, 'collection', 'collections')}
+                    value={String(onlineGalleryCount)}
+                    detail={pluralize(onlineGalleryCount, 'publiée sur le site', 'publiées sur le site')}
                     href="/structure"
                     activateLabel="Voir les collections dans Contenu du site"
                   />
                   <MetricCard
                     icon={DocumentIcon}
-                    label="brouillons"
-                    value={String(rows.filter((row) => row.hasDraft).length)}
+                    label={pluralize(draftCount, 'brouillon', 'brouillons')}
+                    value={String(draftCount)}
                     detail="en cours de rédaction"
                     href="/structure"
                     activateLabel="Voir le contenu dans Contenu du site"
                   />
                   <MetricCard
                     icon={WarningOutlineIcon}
-                    label="contenus"
+                    label={pluralize(attention.length, 'contenu', 'contenus')}
                     value={String(attention.length)}
                     detail="à vérifier avant publication"
                     activateLabel="Aller à la liste « À faire maintenant »"
@@ -508,8 +554,8 @@ export function EditorialDashboard() {
                       </Heading>
                       <Text muted size={0}>
                         {attention.length === 0
-                          ? 'Aucune priorité en attente'
-                          : `${visibleAttention.length} priorité${visibleAttention.length > 1 ? 's' : ''} sur ${attention.length}`}
+                          ? 'Aucun contenu en attente'
+                          : `${visibleAttention.length} ${pluralize(visibleAttention.length, 'contenu prioritaire', 'contenus prioritaires')} sur ${attention.length} à vérifier`}
                       </Text>
                     </Stack>
                     {attention.length > 5 && (
@@ -519,7 +565,11 @@ export function EditorialDashboard() {
                         mode="bleed"
                         fontSize={0}
                         padding={2}
-                        text={showAllAttention ? 'Réduire' : `Voir les ${attention.length} priorités`}
+                        text={
+                          showAllAttention
+                            ? 'Réduire'
+                            : `Voir les ${attention.length} ${pluralize(attention.length, 'contenu', 'contenus')}`
+                        }
                         aria-expanded={showAllAttention}
                         aria-controls="editorial-dashboard-attention-list"
                         onClick={() => setShowAllAttention((value) => !value)}
@@ -551,8 +601,7 @@ export function EditorialDashboard() {
                         Activité récente
                       </Heading>
                       <Text muted size={0}>
-                        {recentRows.length} dernière{recentRows.length > 1 ? 's' : ''} modification
-                        {recentRows.length > 1 ? 's' : ''}
+                        {recentRows.length} {pluralize(recentRows.length, 'dernière modification', 'dernières modifications')}
                       </Text>
                     </Stack>
                     {rows.length > 4 && (
@@ -562,7 +611,11 @@ export function EditorialDashboard() {
                         mode="bleed"
                         fontSize={0}
                         padding={2}
-                        text={showAllActivity ? 'Réduire' : `Voir les ${rows.length} modifications`}
+                        text={
+                          showAllActivity
+                            ? 'Réduire'
+                            : `Voir les ${rows.length} ${pluralize(rows.length, 'modification', 'modifications')}`
+                        }
                         aria-expanded={showAllActivity}
                         aria-controls="editorial-dashboard-activity-list"
                         onClick={() => setShowAllActivity((value) => !value)}
@@ -710,15 +763,15 @@ function attentionRowSummary(row: DashboardRow, group: AttentionGroup) {
     .filter((check) => !check.complete && Boolean(check.recommended) === recommended)
     .map((check) => compactCheckLabel(check.label))
 
-  // A single missing item reads better named outright ("Image de partage")
-  // than as a count. Multiple items are condensed to a count instead of
-  // concatenating every label -- repeating "Titres SEO FR et EN ·
-  // Descriptions SEO FR et EN · ..." verbatim on every row in a group made
-  // the list read as visually repetitive; the full detail is still reachable
-  // via this row's title/tooltip attribute (see AttentionRow's taskSummary).
+  // Naming the first couple of items outright ("Image de couverture,
+  // description anglaise et 3 autres informations") lets the user gauge the
+  // effort before opening the content -- a bare count ("5 informations à
+  // compléter") reads clearer for one item but leaves the rest abstract.
   if (missing.length === 0) return ''
   if (missing.length === 1) return missing[0]
-  return `${missing.length} informations à compléter`
+  if (missing.length === 2) return `${missing[0]} et ${missing[1]}`
+  const rest = missing.length - 2
+  return `${missing[0]}, ${missing[1]} et ${rest} ${pluralize(rest, 'autre information', 'autres informations')} à compléter`
 }
 
 function attentionRowSummaryDetail(row: DashboardRow, group: AttentionGroup) {
@@ -1039,9 +1092,15 @@ function ContentRow({
               </Stack>
               <Flex align="center" gap={1} className="editorial-dashboard__task-action" style={{flex: '0 0 auto'}}>
                 {actionVerb && (
-                  <Badge tone={accentTone} mode="outline" fontSize={0} style={{whiteSpace: 'nowrap'}}>
-                    {actionVerb}
-                  </Badge>
+                  <Card
+                    tone={accentTone}
+                    radius={2}
+                    style={{background: 'transparent', display: 'inline-flex'}}
+                  >
+                    <Text size={1} weight="semibold" style={{whiteSpace: 'nowrap'}}>
+                      {actionVerb}
+                    </Text>
+                  </Card>
                 )}
                 <Text
                   muted
