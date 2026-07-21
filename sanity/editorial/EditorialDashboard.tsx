@@ -56,10 +56,14 @@ type ActivityAction = 'created' | 'modified' | 'published' | 'unpublished'
 
 type DashboardTone = 'default' | 'primary' | 'positive' | 'caution' | 'critical'
 
+type Severity = 'Bloquant' | 'Important' | 'Suggestion'
+
 interface AttentionGroup {
   id: string
+  severity: Severity
   title: string
   description: string
+  actionVerb: string
   icon: ComponentType<SVGProps<SVGSVGElement>>
   tone: DashboardTone
   rows: DashboardRow[]
@@ -392,35 +396,38 @@ export function EditorialDashboard() {
                 L’essentiel du contenu et de la mise en ligne.
               </Text>
             </Stack>
-            <Stack space={2} className="editorial-dashboard__header-side">
-              <Flex align="center" gap={2} wrap="wrap" className="editorial-dashboard__actions">
-                <IntentButton
-                  className="editorial-dashboard__header-control"
-                  style={{height: 44}}
-                  icon={AddIcon}
-                  text="Nouvelle collection"
-                  intent="create"
-                  params={{type: 'gallery', template: 'gallery'}}
-                  tone="primary"
-                  mode="default"
-                  paddingY={3}
-                />
-                <Button
-                  className="editorial-dashboard__header-control"
-                  style={{height: 44}}
-                  as="a"
-                  href={SITE_PREVIEW_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="Ouvrir le site (nouvel onglet)"
-                  iconRight={LaunchIcon}
-                  mode="ghost"
-                  paddingY={3}
-                  text="Ouvrir le site"
-                />
-              </Flex>
+            <Flex
+              align="center"
+              gap={2}
+              wrap="wrap"
+              className="editorial-dashboard__actions editorial-dashboard__header-side"
+            >
               <DeploymentStatus run={run} />
-            </Stack>
+              <IntentButton
+                className="editorial-dashboard__header-control"
+                style={{height: 44}}
+                icon={AddIcon}
+                text="Nouvelle collection"
+                intent="create"
+                params={{type: 'gallery', template: 'gallery'}}
+                tone="primary"
+                mode="default"
+                paddingY={3}
+              />
+              <Button
+                className="editorial-dashboard__header-control"
+                style={{height: 44}}
+                as="a"
+                href={SITE_PREVIEW_URL}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Ouvrir le site (nouvel onglet)"
+                iconRight={LaunchIcon}
+                mode="ghost"
+                paddingY={3}
+                text="Ouvrir le site"
+              />
+            </Flex>
           </Flex>
 
           {loading && (
@@ -463,25 +470,25 @@ export function EditorialDashboard() {
                 <div className="editorial-dashboard__metrics">
                   <MetricCard
                     icon={FolderIcon}
-                    label="Collections"
+                    label="collections"
                     value={String(galleries.filter((row) => isGalleryOnline(row.current)).length)}
-                    detail="sur le site"
+                    detail="publiées sur le site"
                     href="/structure"
                     activateLabel="Voir les collections dans Contenu du site"
                   />
                   <MetricCard
                     icon={DocumentIcon}
-                    label="Brouillons"
+                    label="brouillons"
                     value={String(rows.filter((row) => row.hasDraft).length)}
-                    detail="en cours"
+                    detail="en cours de rédaction"
                     href="/structure"
                     activateLabel="Voir le contenu dans Contenu du site"
                   />
                   <MetricCard
                     icon={WarningOutlineIcon}
-                    label="À vérifier"
+                    label="contenus"
                     value={String(attention.length)}
-                    detail="contenus"
+                    detail="à vérifier avant publication"
                     activateLabel="Aller à la liste « À faire maintenant »"
                     onActivate={() => {
                       const heading = document.getElementById('editorial-dashboard-attention-heading')
@@ -512,7 +519,7 @@ export function EditorialDashboard() {
                         mode="bleed"
                         fontSize={0}
                         padding={2}
-                        text={showAllAttention ? 'Réduire' : `Tout voir (${attention.length})`}
+                        text={showAllAttention ? 'Réduire' : `Voir les ${attention.length} priorités`}
                         aria-expanded={showAllAttention}
                         aria-controls="editorial-dashboard-attention-list"
                         onClick={() => setShowAllAttention((value) => !value)}
@@ -544,7 +551,8 @@ export function EditorialDashboard() {
                         Activité récente
                       </Heading>
                       <Text muted size={0}>
-                        Qui a fait quoi
+                        {recentRows.length} dernière{recentRows.length > 1 ? 's' : ''} modification
+                        {recentRows.length > 1 ? 's' : ''}
                       </Text>
                     </Stack>
                     {rows.length > 4 && (
@@ -554,7 +562,7 @@ export function EditorialDashboard() {
                         mode="bleed"
                         fontSize={0}
                         padding={2}
-                        text={showAllActivity ? 'Réduire' : `Tout voir (${rows.length})`}
+                        text={showAllActivity ? 'Réduire' : `Voir les ${rows.length} modifications`}
                         aria-expanded={showAllActivity}
                         aria-controls="editorial-dashboard-activity-list"
                         onClick={() => setShowAllActivity((value) => !value)}
@@ -593,32 +601,40 @@ function buildAttentionGroups(rows: DashboardRow[]): AttentionGroup[] {
   const groups: AttentionGroup[] = [
     {
       id: 'blocking',
-      title: 'À corriger',
-      description: 'Informations indispensables manquantes',
+      severity: 'Bloquant',
+      title: 'Informations manquantes',
+      description: 'Empêche la publication de ce contenu',
+      actionVerb: 'Compléter',
       icon: ErrorOutlineIcon,
       tone: 'critical',
       rows: [],
     },
     {
       id: 'publish',
+      severity: 'Important',
       title: 'Modifications à publier',
-      description: 'Contenus modifiés depuis leur dernière publication',
+      description: 'Le site affiche encore l’ancienne version',
+      actionVerb: 'Publier',
       icon: PublishIcon,
       tone: 'caution',
       rows: [],
     },
     {
       id: 'finish',
+      severity: 'Important',
       title: 'À finaliser',
-      description: 'Contenus encore en préparation ou hors ligne',
+      description: 'Encore en préparation ou hors ligne',
+      actionVerb: 'Finaliser',
       icon: TaskIcon,
       tone: 'primary',
       rows: [],
     },
     {
       id: 'recommended',
-      title: 'À améliorer',
-      description: 'SEO et informations recommandées',
+      severity: 'Suggestion',
+      title: 'Améliorations recommandées',
+      description: 'Optionnel — améliore la visibilité sur Google',
+      actionVerb: 'Améliorer',
       icon: BulbOutlineIcon,
       tone: 'default',
       rows: [],
@@ -680,6 +696,9 @@ function compactCheckLabel(label: string) {
     .replace('Libellés FR et EN des liens professionnels', 'Libellés des liens FR et EN')
     .replace('Descriptions manquantes :', 'Textes alternatifs :')
     .replace('Descriptions accessibles de toutes les photos', 'Textes alternatifs des photos')
+    .replace('Titres SEO FR et EN', 'Titre pour Google (FR et EN)')
+    .replace('Descriptions SEO FR et EN', 'Description pour Google (FR et EN)')
+    .replace('Image de partage', 'Aperçu sur les réseaux sociaux')
 }
 
 function attentionRowSummary(row: DashboardRow, group: AttentionGroup) {
@@ -699,7 +718,7 @@ function attentionRowSummary(row: DashboardRow, group: AttentionGroup) {
   // via this row's title/tooltip attribute (see AttentionRow's taskSummary).
   if (missing.length === 0) return ''
   if (missing.length === 1) return missing[0]
-  return `${missing.length} champs à compléter`
+  return `${missing.length} informations à compléter`
 }
 
 function attentionRowSummaryDetail(row: DashboardRow, group: AttentionGroup) {
@@ -770,6 +789,9 @@ function AttentionSection({group, showCount}: {group: AttentionGroup; showCount:
               </Text>
             </Card>
           )}
+          <Badge tone={group.tone} mode="outline" fontSize={0}>
+            {group.severity}
+          </Badge>
           <Text size={1} weight="bold" role="heading" aria-level={3}>
             {group.title}
           </Text>
@@ -788,6 +810,7 @@ function AttentionSection({group, showCount}: {group: AttentionGroup; showCount:
             issueIcon={attentionRowIcon(row, group)}
             taskSummary={attentionRowSummary(row, group)}
             taskSummaryDetail={attentionRowSummaryDetail(row, group)}
+            actionVerb={group.actionVerb}
           />
         ))}
       </Stack>
@@ -821,7 +844,7 @@ function MetricCard({
             {label}
           </Text>
           <Text muted size={0}>
-            · {detail}
+            {detail}
           </Text>
         </Flex>
       </Stack>
@@ -930,6 +953,7 @@ function ContentRow({
   issueIcon: IssueIcon,
   taskSummary,
   taskSummaryDetail,
+  actionVerb,
 }: {
   row: DashboardRow
   withBorder: boolean
@@ -937,6 +961,7 @@ function ContentRow({
   issueIcon: ComponentType<SVGProps<SVGSVGElement>>
   taskSummary: string
   taskSummaryDetail?: string
+  actionVerb?: string
 }) {
   const status = editorialStatus(row)
   const title = documentTitle(row.current)
@@ -1012,14 +1037,21 @@ function ContentRow({
                   {taskSummary}
                 </Text>
               </Stack>
-              <Text
-                muted
-                size={1}
-                className="editorial-dashboard__task-chevron"
-                style={{lineHeight: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center'}}
-              >
-                <ChevronRightIcon style={{display: 'block'}} />
-              </Text>
+              <Flex align="center" gap={1} className="editorial-dashboard__task-action" style={{flex: '0 0 auto'}}>
+                {actionVerb && (
+                  <Badge tone={accentTone} mode="outline" fontSize={0} style={{whiteSpace: 'nowrap'}}>
+                    {actionVerb}
+                  </Badge>
+                )}
+                <Text
+                  muted
+                  size={1}
+                  className="editorial-dashboard__task-chevron"
+                  style={{lineHeight: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center'}}
+                >
+                  <ChevronRightIcon style={{display: 'block'}} />
+                </Text>
+              </Flex>
             </div>
           </Box>
         </Flex>
@@ -1049,7 +1081,8 @@ function RecentRow({
       style={{color: 'inherit', textDecoration: 'none'}}
     >
       <Box
-        padding={3}
+        paddingX={3}
+        paddingY={2}
         className="editorial-dashboard__activity-row"
         style={{borderBottom: withBorder ? '1px solid var(--card-border-color)' : undefined}}
       >
@@ -1062,7 +1095,7 @@ function RecentRow({
           >
             {ActivityIcon ? <ActivityIcon style={{display: 'block'}} /> : <DocumentIcon style={{display: 'block'}} />}
           </Text>
-          <Stack space={3} className="editorial-dashboard__activity-copy">
+          <Stack space={2} className="editorial-dashboard__activity-copy">
             <Flex
               align="center"
               justify="space-between"

@@ -150,10 +150,14 @@
 
 .editorial-dashboard__task-grid {
   display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) 20px;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
   column-gap: 8px;
   align-items: start;
   min-width: 0;
+}
+
+.editorial-dashboard__task-action {
+  margin-top: 1px;
 }
 
 .editorial-dashboard__task-copy,
@@ -191,10 +195,12 @@
 
 .editorial-dashboard__activity-toggle {
   background: transparent !important;
+  min-height: 44px;
+  box-sizing: border-box;
 }
 
 .editorial-dashboard__activity-row {
-  min-height: 64px;
+  min-height: 44px;
   box-sizing: border-box;
 }
 
