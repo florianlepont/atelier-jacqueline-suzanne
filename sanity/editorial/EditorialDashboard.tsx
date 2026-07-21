@@ -10,7 +10,6 @@ import {
   DocumentIcon,
   ErrorOutlineIcon,
   FolderIcon,
-  ImagesIcon,
   LaunchIcon,
   PublishIcon,
   TaskIcon,
@@ -727,25 +726,6 @@ function attentionPriority(row: DashboardRow) {
   return 3
 }
 
-function attentionRowIcon(row: DashboardRow, group: AttentionGroup): ComponentType<SVGProps<SVGSVGElement>> {
-  if (group.id === 'publish') return PublishIcon
-  if (group.id === 'finish') return TaskIcon
-
-  const missingLabels = row.checks
-    .filter((check) => !check.complete)
-    .map((check) => check.label.toLocaleLowerCase('fr-FR'))
-  const concernsOnlyImages =
-    missingLabels.length > 0 &&
-    missingLabels.every((label) =>
-      ['photo', 'image', 'crédit', 'copyright', 'droits'].some((term) => label.includes(term)),
-    )
-
-  if (concernsOnlyImages) return ImagesIcon
-  if (group.id === 'blocking') return ErrorOutlineIcon
-  if (row.current._type !== 'gallery' && row.current._type !== 'exhibition') return DocumentIcon
-  return BulbOutlineIcon
-}
-
 function compactCheckLabel(label: string) {
   return label
     .replace(/français et anglais|française et anglaise|françaises et anglaises/gi, 'FR et EN')
@@ -805,65 +785,61 @@ function editorialStatus(row: DashboardRow): {label: string; tone: DashboardTone
 
 function AttentionSection({group, showCount}: {group: AttentionGroup; showCount: boolean}) {
   const Icon = group.icon
+  const chip = toneChipStyles[group.tone]
   return (
-    <Card
-      radius={3}
-      tone="default"
-      shadow={1}
-      overflow="hidden"
-      className="editorial-dashboard__surface"
-    >
-      <Card
-        tone={group.tone}
-        padding={3}
-        style={{borderBottom: '1px solid var(--card-border-color)'}}
-      >
+    <Card radius={3} tone="default" shadow={1} padding={1} className="editorial-dashboard__surface">
+      <Box paddingX={2} paddingY={2}>
         <Flex align="center" gap={2} wrap="wrap" className="editorial-dashboard__group-header">
-          <Text
-            size={1}
-            className="editorial-dashboard__group-icon"
-            style={{lineHeight: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transform: 'none'}}
+          <div
+            aria-hidden="true"
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: 8,
+              flex: '0 0 auto',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: chip.background,
+              color: chip.color,
+              fontSize: 17,
+            }}
           >
             <Icon style={{display: 'block'}} />
+          </div>
+          <Text size={1} weight="semibold" role="heading" aria-level={3}>
+            {group.title}
           </Text>
           {showCount && (
-            <Card
-              tone={group.tone}
-              radius={4}
+            <span
               style={{
-                width: 24,
-                height: 24,
+                fontSize: 11,
+                fontWeight: 600,
+                lineHeight: '18px',
+                padding: '0 7px',
+                borderRadius: 999,
+                backgroundColor: 'color-mix(in srgb, var(--card-fg-color) 7%, transparent)',
+                color: 'var(--card-muted-fg-color)',
                 flex: '0 0 auto',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '50%',
               }}
             >
-              <Text size={0} weight="semibold">
-                {group.rows.length}
-              </Text>
-            </Card>
+              {group.rows.length}
+            </span>
           )}
           <Badge tone={group.tone} mode="outline" fontSize={0}>
             {group.severity}
           </Badge>
-          <Text size={1} weight="bold" role="heading" aria-level={3}>
-            {group.title}
-          </Text>
-          <Text muted size={0}>
+          <Text muted size={1} style={{fontSize: 12}}>
             {group.description}
           </Text>
         </Flex>
-      </Card>
+      </Box>
       <Stack space={0}>
-        {group.rows.map((row, index) => (
+        {group.rows.map((row) => (
           <ContentRow
             key={row.id}
             row={row}
-            withBorder={index < group.rows.length - 1}
             accentTone={group.tone}
-            issueIcon={attentionRowIcon(row, group)}
             taskSummary={attentionRowSummary(row, group)}
             taskSummaryDetail={attentionRowSummaryDetail(row, group)}
             actionVerb={group.actionVerb}
@@ -884,6 +860,14 @@ const metricAccentStyles: Record<MetricAccent, {background: string; color: strin
     background: 'color-mix(in srgb, var(--card-fg-color) 7%, transparent)',
     color: 'var(--card-muted-fg-color)',
   },
+}
+
+const toneChipStyles: Record<DashboardTone, {background: string; color: string}> = {
+  primary: metricAccentStyles.primary,
+  positive: metricAccentStyles.positive,
+  caution: metricAccentStyles.caution,
+  critical: {background: 'rgba(239, 68, 68, 0.13)', color: '#dc2626'},
+  default: metricAccentStyles.neutral,
 }
 
 function MetricCard({
@@ -1036,17 +1020,13 @@ function DeploymentStatus({run}: {run: DeploymentRun | null}) {
 
 function ContentRow({
   row,
-  withBorder,
   accentTone,
-  issueIcon: IssueIcon,
   taskSummary,
   taskSummaryDetail,
   actionVerb,
 }: {
   row: DashboardRow
-  withBorder: boolean
   accentTone: DashboardTone
-  issueIcon: ComponentType<SVGProps<SVGSVGElement>>
   taskSummary: string
   taskSummaryDetail?: string
   actionVerb?: string
@@ -1062,28 +1042,23 @@ function ContentRow({
       params={{id: row.id, type: row.current._type}}
       style={{color: 'inherit', textDecoration: 'none'}}
     >
-      <Card
-        tone="transparent"
-        className="editorial-dashboard__task-row"
-        style={{borderBottom: withBorder ? '1px solid var(--card-border-color)' : undefined}}
-      >
+      <Box className="editorial-dashboard__task-row" style={{borderRadius: 6}}>
         <Flex>
-          <Card tone={accentTone} style={{width: 4}} />
           <Box
-            paddingX={3}
-            paddingY={3}
+            paddingX={2}
+            paddingY={2}
             className="editorial-dashboard__task-content"
-            style={{minWidth: 0, flex: 1}}
+            style={{
+              minWidth: 0,
+              flex: 1,
+              minHeight: 56,
+              boxSizing: 'border-box',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+            }}
           >
             <div className="editorial-dashboard__task-grid">
-              <Text
-                muted
-                size={1}
-                className="editorial-dashboard__task-icon"
-                style={{lineHeight: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transform: 'none'}}
-              >
-                <IssueIcon style={{display: 'block'}} />
-              </Text>
               <Stack space={3} className="editorial-dashboard__task-copy">
                 <Flex
                   align="center"
@@ -1149,7 +1124,7 @@ function ContentRow({
             </div>
           </Box>
         </Flex>
-      </Card>
+      </Box>
     </IntentLink>
   )
 }
