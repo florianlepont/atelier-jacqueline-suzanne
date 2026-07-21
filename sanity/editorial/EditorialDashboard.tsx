@@ -643,7 +643,7 @@ export function EditorialDashboard() {
                       </Flex>
                     </Card>
                   ) : (
-                    <Stack space={2} id="editorial-dashboard-attention-list">
+                    <Stack space={3} id="editorial-dashboard-attention-list">
                       {attentionGroups.map((group) => (
                         <AttentionSection
                           key={group.id}
@@ -1439,7 +1439,15 @@ function ActivityAvatar({name, imageUrl}: {name: string; imageUrl?: string}) {
       <img
         src={imageUrl}
         alt=""
-        style={{width: 26, height: 26, borderRadius: '50%', objectFit: 'cover', display: 'block'}}
+        style={{
+          width: 26,
+          height: 26,
+          borderRadius: '50%',
+          objectFit: 'cover',
+          display: 'block',
+          boxSizing: 'border-box',
+          border: '1px solid color-mix(in srgb, var(--card-fg-color) 12%, transparent)',
+        }}
       />
     )
   }
