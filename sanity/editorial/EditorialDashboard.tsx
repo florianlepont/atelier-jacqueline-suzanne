@@ -1159,18 +1159,31 @@ function RecentRow({
               align="center"
               justify="space-between"
               gap={2}
+              wrap="wrap"
               className="editorial-dashboard__activity-heading"
             >
+              <Flex align="center" gap={2} style={{minWidth: 0, flex: '1 1 auto'}}>
+                <Text
+                  size={1}
+                  weight="semibold"
+                  textOverflow="ellipsis"
+                  className="editorial-dashboard__activity-title"
+                  style={{padding: 0}}
+                >
+                  {documentTitle(row.current)}
+                </Text>
+                {showStatus && (
+                  <Badge fontSize={0} mode="light" tone={status.tone} style={{flex: '0 0 auto', whiteSpace: 'nowrap'}}>
+                    {status.label}
+                  </Badge>
+                )}
+              </Flex>
               <Text
-                size={1}
-                weight="semibold"
-                textOverflow="ellipsis"
-                className="editorial-dashboard__activity-title"
-                style={{padding: 0}}
+                muted
+                size={0}
+                className="editorial-dashboard__activity-date"
+                style={{padding: 0, flex: '0 0 auto'}}
               >
-                {documentTitle(row.current)}
-              </Text>
-              <Text muted size={0} className="editorial-dashboard__activity-date" style={{padding: 0}}>
                 {formatActivityDate(activity?.timestamp ?? row.lastUpdatedAt)}
               </Text>
             </Flex>
@@ -1184,11 +1197,6 @@ function RecentRow({
               <Text muted size={0} style={{padding: 0, fontSize: 12, lineHeight: '16px', color: 'rgb(77, 80, 91)'}}>
                 {activity?.description ?? fallbackDescription}
               </Text>
-              {showStatus && (
-                <Badge fontSize={0} mode="light" tone={status.tone}>
-                  {status.label}
-                </Badge>
-              )}
             </Flex>
           </Stack>
         </div>
