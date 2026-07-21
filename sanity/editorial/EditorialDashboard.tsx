@@ -4,7 +4,6 @@ import {Badge, Box, Button, Card, Flex, Heading, Spinner, Stack, Text} from '@sa
 import {IntentButton, useClient, useHistoryStore, useUserStore} from 'sanity'
 import {IntentLink} from 'sanity/router'
 import {
-  AddCircleIcon,
   AddIcon,
   BulbOutlineIcon,
   ChevronRightIcon,
@@ -91,7 +90,7 @@ const rowTypeLabels: Record<string, string> = {
 }
 
 const activityIcons: Record<ActivityAction, ComponentType<SVGProps<SVGSVGElement>>> = {
-  created: AddCircleIcon,
+  created: AddIcon,
   modified: EditIcon,
   published: PublishIcon,
   unpublished: UnpublishIcon,
@@ -815,7 +814,7 @@ function MetricCard({
 }) {
   const body = (
     <Flex align="flex-start" justify="space-between" gap={2}>
-      <Stack space={1}>
+      <Stack space={3}>
         <Heading size={2}>{value}</Heading>
         <Flex align="center" gap={1} wrap="wrap">
           <Text size={0} weight="semibold">
@@ -1008,7 +1007,7 @@ function ContentRow({
                   textOverflow="ellipsis"
                   title={taskSummaryDetail || taskSummary}
                   className="editorial-dashboard__task-summary"
-                  style={{padding: 0, fontSize: 12, lineHeight: '16px'}}
+                  style={{padding: 0, fontSize: 12, lineHeight: '16px', color: 'rgb(77, 80, 91)'}}
                 >
                   {taskSummary}
                 </Text>
@@ -1087,10 +1086,10 @@ function RecentRow({
               <Text size={0} weight="medium" style={{padding: 0, fontSize: 12, lineHeight: '16px'}}>
                 {activity?.authorName ?? 'Activité indisponible'}
               </Text>
-              <Text muted size={0} style={{padding: 0, fontSize: 12, lineHeight: '16px'}}>
+              <Text muted size={0} style={{padding: 0, fontSize: 12, lineHeight: '16px', color: 'rgb(77, 80, 91)'}}>
                 ·
               </Text>
-              <Text muted size={0} style={{padding: 0, fontSize: 12, lineHeight: '16px'}}>
+              <Text muted size={0} style={{padding: 0, fontSize: 12, lineHeight: '16px', color: 'rgb(77, 80, 91)'}}>
                 {activity?.description ?? fallbackDescription}
               </Text>
               {showStatus && (

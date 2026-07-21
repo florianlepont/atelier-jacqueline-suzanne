@@ -37,6 +37,7 @@
 .editorial-dashboard__metric-cell {
   min-width: 0;
   padding: 12px;
+  box-sizing: border-box;
 }
 
 .editorial-dashboard__metric-cell--interactive {
