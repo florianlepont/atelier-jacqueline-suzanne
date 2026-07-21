@@ -362,13 +362,10 @@ export function EditorialDashboard() {
     .filter((row) => {
       const {current, summary} = row
       if (current.publicationStatus === 'archived') return false
-      return (
-        !summary.requiredComplete ||
-        !summary.recommendedComplete ||
-        row.hasDraft ||
-        current.publicationStatus === 'preparation' ||
-        (!current.publicationStatus && current.isVisible === false)
-      )
+      // A deliberate "preparation" draft is not, on its own, a reason to surface
+      // in the urgent to-do list — only a real issue (missing fields or an
+      // unpublished edit) earns a spot here, even for preparation content.
+      return !summary.requiredComplete || !summary.recommendedComplete || row.hasDraft
     })
     .sort((left, right) => attentionPriority(left) - attentionPriority(right))
   const galleries = rows.filter(({current}) => current._type === 'gallery')
@@ -398,7 +395,7 @@ export function EditorialDashboard() {
             <Stack space={2} className="editorial-dashboard__header-side">
               <Flex align="center" gap={2} wrap="wrap" className="editorial-dashboard__actions">
                 <IntentButton
-                  className="editorial-dashboard__header-control editorial-dashboard__primary-action"
+                  className="editorial-dashboard__header-control"
                   icon={AddIcon}
                   text="Nouvelle collection"
                   intent="create"
@@ -436,7 +433,18 @@ export function EditorialDashboard() {
 
           {error && (
             <Card padding={4} radius={3} tone="critical">
-              <Text size={1}>Impossible de charger le tableau de bord : {error}</Text>
+              <Stack space={3}>
+                <Text size={1}>
+                  Le tableau de bord n’a pas pu se charger. Réessayez dans quelques instants, ou
+                  contactez le développeur si le problème persiste.
+                </Text>
+                <details>
+                  <summary>Détail technique</summary>
+                  <Text muted size={0}>
+                    {error}
+                  </Text>
+                </details>
+              </Stack>
             </Card>
           )}
 
@@ -712,7 +720,7 @@ function AttentionSection({group, showCount}: {group: AttentionGroup; showCount:
               </Text>
             </Card>
           )}
-          <Text size={1} weight="bold">
+          <Text size={1} weight="bold" role="heading" aria-level={3}>
             {group.title}
           </Text>
           <Text muted size={0}>
@@ -771,13 +779,7 @@ function MetricCard({
 
 function DeploymentStatus({run}: {run: DeploymentRun | null}) {
   const status = deploymentLabel(run)
-  const tone = !run
-    ? 'default'
-    : run.status !== 'completed'
-      ? 'caution'
-      : run.conclusion === 'success'
-        ? 'positive'
-        : 'critical'
+  const tone = status.tone
   const dateLabel = run ? formatActivityDate(run.updated_at) : 'Date inconnue'
   const shortStatusLabel =
     run?.status === 'completed' && run.conclusion === 'success' ? 'À jour' : status.label

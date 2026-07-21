@@ -23,9 +23,11 @@ export async function getLatestDeployment(signal?: AbortSignal): Promise<Deploym
   return payload.workflow_runs?.[0] ?? null
 }
 
-export function deploymentLabel(run: DeploymentRun | null) {
-  if (!run) return {label: 'État inconnu', color: '#666666'}
-  if (run.status !== 'completed') return {label: 'Mise à jour en cours', color: '#9C6B00'}
-  if (run.conclusion === 'success') return {label: 'Site à jour', color: '#2E7D32'}
-  return {label: 'Échec du déploiement', color: '#B00020'}
+export type DeploymentTone = 'default' | 'caution' | 'positive' | 'critical'
+
+export function deploymentLabel(run: DeploymentRun | null): {label: string; tone: DeploymentTone} {
+  if (!run) return {label: 'État inconnu', tone: 'default'}
+  if (run.status !== 'completed') return {label: 'Mise à jour en cours', tone: 'caution'}
+  if (run.conclusion === 'success') return {label: 'Site à jour', tone: 'positive'}
+  return {label: 'Échec du déploiement', tone: 'critical'}
 }
