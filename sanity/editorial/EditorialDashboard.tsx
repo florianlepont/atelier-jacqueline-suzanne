@@ -8,14 +8,12 @@ import {
   BulbOutlineIcon,
   ChevronRightIcon,
   DocumentIcon,
-  EditIcon,
   ErrorOutlineIcon,
   FolderIcon,
   ImagesIcon,
   LaunchIcon,
   PublishIcon,
   TaskIcon,
-  UnpublishIcon,
   WarningOutlineIcon,
 } from '@sanity/icons'
 import type {TransactionLogEventWithMutations, TransactionLogMutation, User} from '@sanity/types'
@@ -47,6 +45,7 @@ interface DashboardRow {
 
 interface DashboardActivity {
   authorName: string
+  authorImageUrl?: string
   description: string
   action: ActivityAction
   timestamp: string
@@ -91,13 +90,6 @@ const rowTypeLabels: Record<string, string> = {
   contactPage: 'Page',
   siteSettings: 'Réglages',
   exhibition: 'Exposition',
-}
-
-const activityIcons: Record<ActivityAction, ComponentType<SVGProps<SVGSVGElement>>> = {
-  created: AddIcon,
-  modified: EditIcon,
-  published: PublishIcon,
-  unpublished: UnpublishIcon,
 }
 
 const fieldLabels: Record<string, string> = {
@@ -275,6 +267,7 @@ function buildActivities(
       const activity = describeTransaction(document, transaction.mutations, id)
       activities[id] = {
         authorName: user?.displayName || user?.email || 'Un membre de l’équipe',
+        authorImageUrl: user?.imageUrl,
         ...activity,
         timestamp: transaction.timestamp,
       }
@@ -627,16 +620,12 @@ export function EditorialDashboard() {
                     radius={3}
                     tone="default"
                     shadow={1}
+                    padding={1}
                     className="editorial-dashboard__surface"
                   >
                     <Stack space={0}>
-                      {recentRows.map((row, index) => (
-                        <RecentRow
-                          key={row.id}
-                          row={row}
-                          activity={activities[row.id]}
-                          withBorder={index < recentRows.length - 1}
-                        />
+                      {recentRows.map((row) => (
+                        <RecentRow key={row.id} row={row} activity={activities[row.id]} />
                       ))}
                     </Stack>
                   </Card>
@@ -1089,7 +1078,7 @@ function ContentRow({
                   textOverflow="ellipsis"
                   title={taskSummaryDetail || taskSummary}
                   className="editorial-dashboard__task-summary"
-                  style={{padding: 0, fontSize: 12, lineHeight: '16px', color: 'rgb(77, 80, 91)'}}
+                  style={{padding: 0, fontSize: 12, lineHeight: '16px', color: 'color-mix(in srgb, var(--card-muted-fg-color) 70%, var(--card-fg-color) 30%)'}}
                 >
                   {taskSummary}
                 </Text>
@@ -1123,19 +1112,12 @@ function ContentRow({
   )
 }
 
-function RecentRow({
-  row,
-  activity,
-  withBorder,
-}: {
-  row: DashboardRow
-  activity?: DashboardActivity
-  withBorder: boolean
-}) {
+function RecentRow({row, activity}: {row: DashboardRow; activity?: DashboardActivity}) {
   const status = editorialStatus(row)
   const showStatus = status.tone !== 'positive'
-  const ActivityIcon = activity ? activityIcons[activity.action] : null
-  const fallbackDescription = 'Détail de l’activité non disponible'
+  const timestamp = activity?.timestamp ?? row.lastUpdatedAt
+  const authorName = activity?.authorName
+  const authorFirstName = authorName?.split(/\s+/)[0]
   return (
     <IntentLink
       className="editorial-dashboard__row-link"
@@ -1144,34 +1126,20 @@ function RecentRow({
       style={{color: 'inherit', textDecoration: 'none'}}
     >
       <Box
-        paddingX={3}
+        paddingX={2}
         paddingY={2}
         className="editorial-dashboard__activity-row"
         style={{
-          borderBottom: withBorder ? '1px solid var(--card-border-color)' : undefined,
           minHeight: 50,
           boxSizing: 'border-box',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
+          borderRadius: 6,
         }}
       >
         <div className="editorial-dashboard__activity-grid" style={{alignItems: 'center'}}>
-          <Text
-            muted
-            size={1}
-            className="editorial-dashboard__activity-icon"
-            style={{
-              lineHeight: 0,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: 0,
-              transform: 'none',
-            }}
-          >
-            {ActivityIcon ? <ActivityIcon style={{display: 'block'}} /> : <DocumentIcon style={{display: 'block'}} />}
-          </Text>
+          <ActivityAvatar name={authorName ?? '?'} imageUrl={activity?.authorImageUrl} />
           <Stack space={3} className="editorial-dashboard__activity-copy">
             <Flex
               align="center"
@@ -1200,20 +1168,28 @@ function RecentRow({
                 muted
                 size={0}
                 className="editorial-dashboard__activity-date"
+                title={formatActivityDate(timestamp)}
                 style={{padding: 0, flex: '0 0 auto'}}
               >
-                {formatActivityDate(activity?.timestamp ?? row.lastUpdatedAt)}
+                {formatRelativeDate(timestamp)}
               </Text>
             </Flex>
             <Flex align="center" gap={1} wrap="wrap" className="editorial-dashboard__activity-meta">
-              <Text size={0} weight="medium" style={{padding: 0, fontSize: 12, lineHeight: '16px'}}>
-                {activity?.authorName ?? 'Activité indisponible'}
-              </Text>
-              <Text muted size={0} style={{padding: 0, fontSize: 12, lineHeight: '16px', color: 'rgb(77, 80, 91)'}}>
-                ·
-              </Text>
-              <Text muted size={0} style={{padding: 0, fontSize: 12, lineHeight: '16px', color: 'rgb(77, 80, 91)'}}>
-                {activity?.description ?? fallbackDescription}
+              <Text
+                muted
+                size={0}
+                title={authorName}
+                style={{padding: 0, fontSize: 12, lineHeight: '16px', color: 'color-mix(in srgb, var(--card-muted-fg-color) 70%, var(--card-fg-color) 30%)'}}
+              >
+                {authorFirstName ? (
+                  <>
+                    <span style={{fontWeight: 500, color: 'var(--card-fg-color)'}}>{authorFirstName}</span>
+                    {' '}
+                    {activity?.description}
+                  </>
+                ) : (
+                  'Détail de l’activité non disponible'
+                )}
               </Text>
             </Flex>
           </Stack>
@@ -1241,4 +1217,72 @@ function formatActivityDate(value: string) {
     month: 'short',
     year: 'numeric',
   })} à ${time}`
+}
+
+function formatRelativeDate(value: string) {
+  const date = new Date(value)
+  const now = new Date()
+  const minutes = Math.round((now.getTime() - date.getTime()) / 60000)
+  if (minutes < 1) return 'à l’instant'
+  if (minutes < 60) return `il y a ${minutes} min`
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return `il y a ${hours} h`
+  const yesterday = new Date(now)
+  yesterday.setDate(now.getDate() - 1)
+  const sameDay = (left: Date, right: Date) =>
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
+  if (sameDay(date, yesterday)) return 'hier'
+  const days = Math.round(hours / 24)
+  if (days < 7) return `il y a ${days} j`
+  return date.toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+    ...(date.getFullYear() !== now.getFullYear() ? {year: 'numeric'} : {}),
+  })
+}
+
+const avatarPalette = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6']
+
+function ActivityAvatar({name, imageUrl}: {name: string; imageUrl?: string}) {
+  if (imageUrl) {
+    return (
+      <img
+        src={imageUrl}
+        alt=""
+        style={{width: 26, height: 26, borderRadius: '50%', objectFit: 'cover', display: 'block'}}
+      />
+    )
+  }
+  const initials =
+    name
+      .split(/\s+/)
+      .map((part) => part[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join('')
+      .toUpperCase() || '?'
+  const hash = Array.from(name).reduce((sum, char) => sum + char.charCodeAt(0), 0)
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        width: 26,
+        height: 26,
+        borderRadius: '50%',
+        backgroundColor: avatarPalette[hash % avatarPalette.length],
+        color: '#fff',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 10,
+        fontWeight: 600,
+        letterSpacing: '0.03em',
+        flex: '0 0 auto',
+      }}
+    >
+      {initials}
+    </div>
+  )
 }

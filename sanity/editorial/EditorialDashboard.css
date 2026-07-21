@@ -69,8 +69,7 @@
 
 .editorial-dashboard__metric-icon,
 .editorial-dashboard__group-icon,
-.editorial-dashboard__task-icon,
-.editorial-dashboard__activity-icon {
+.editorial-dashboard__task-icon {
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
@@ -200,19 +199,15 @@ a.editorial-dashboard__deployment-status:hover {
 
 .editorial-dashboard__activity-grid {
   display: grid;
-  grid-template-columns: 20px minmax(0, 1fr);
-  column-gap: 8px;
-  align-items: start;
+  grid-template-columns: 26px minmax(0, 1fr);
+  column-gap: 10px;
+  align-items: center;
   min-width: 0;
 }
 
 .editorial-dashboard__activity-copy,
 .editorial-dashboard__activity-heading {
   min-width: 0;
-}
-
-.editorial-dashboard__activity-icon {
-  margin-top: 1px;
 }
 
 .editorial-dashboard__metric-cell:nth-child(n + 2) {
