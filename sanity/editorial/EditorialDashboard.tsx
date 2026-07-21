@@ -6,6 +6,7 @@ import {IntentLink} from 'sanity/router'
 import {
   AddCircleIcon,
   AddIcon,
+  BulbOutlineIcon,
   ChevronRightIcon,
   DocumentIcon,
   EditIcon,
@@ -14,7 +15,6 @@ import {
   ImagesIcon,
   LaunchIcon,
   PublishIcon,
-  SearchIcon,
   TaskIcon,
   UnpublishIcon,
   WarningOutlineIcon,
@@ -287,6 +287,7 @@ export function EditorialDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showAllActivity, setShowAllActivity] = useState(false)
+  const [showAllAttention, setShowAllAttention] = useState(false)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -369,7 +370,7 @@ export function EditorialDashboard() {
     })
     .sort((left, right) => attentionPriority(left) - attentionPriority(right))
   const galleries = rows.filter(({current}) => current._type === 'gallery')
-  const visibleAttention = attention.slice(0, 5)
+  const visibleAttention = showAllAttention ? attention : attention.slice(0, 5)
   const attentionGroups = buildAttentionGroups(visibleAttention)
   const recentRows = showAllActivity ? rows : rows.slice(0, 4)
 
@@ -466,12 +467,16 @@ export function EditorialDashboard() {
                     label="Collections"
                     value={String(galleries.filter((row) => isGalleryOnline(row.current)).length)}
                     detail="sur le site"
+                    href="/structure"
+                    activateLabel="Voir les collections dans Contenu du site"
                   />
                   <MetricCard
                     icon={DocumentIcon}
                     label="Brouillons"
                     value={String(rows.filter((row) => row.hasDraft).length)}
                     detail="en cours"
+                    href="/structure"
+                    activateLabel="Voir le contenu dans Contenu du site"
                   />
                   <MetricCard
                     icon={WarningOutlineIcon}
@@ -490,23 +495,38 @@ export function EditorialDashboard() {
 
               <div className="editorial-dashboard__columns">
                 <Stack space={3}>
-                  <Stack space={2}>
-                    <Heading as="h2" size={2} id="editorial-dashboard-attention-heading" tabIndex={-1}>
-                      À faire maintenant
-                    </Heading>
-                    <Text muted size={0}>
-                      {attention.length === 0
-                        ? 'Aucune priorité en attente'
-                        : `${visibleAttention.length} priorité${visibleAttention.length > 1 ? 's' : ''} sur ${attention.length}`}
-                    </Text>
-                  </Stack>
+                  <Flex align="flex-end" justify="space-between" gap={2}>
+                    <Stack space={2}>
+                      <Heading as="h2" size={2} id="editorial-dashboard-attention-heading" tabIndex={-1}>
+                        À faire maintenant
+                      </Heading>
+                      <Text muted size={0}>
+                        {attention.length === 0
+                          ? 'Aucune priorité en attente'
+                          : `${visibleAttention.length} priorité${visibleAttention.length > 1 ? 's' : ''} sur ${attention.length}`}
+                      </Text>
+                    </Stack>
+                    {attention.length > 5 && (
+                      <Button
+                        className="editorial-dashboard__activity-toggle"
+                        style={{minHeight: 44}}
+                        mode="bleed"
+                        fontSize={0}
+                        padding={2}
+                        text={showAllAttention ? 'Réduire' : `Tout voir (${attention.length})`}
+                        aria-expanded={showAllAttention}
+                        aria-controls="editorial-dashboard-attention-list"
+                        onClick={() => setShowAllAttention((value) => !value)}
+                      />
+                    )}
+                  </Flex>
 
                   {attention.length === 0 ? (
                     <Card padding={3} radius={3} tone="positive">
                       <Text size={1}>Aucun contenu ne nécessite votre attention.</Text>
                     </Card>
                   ) : (
-                    <Stack space={2}>
+                    <Stack space={2} id="editorial-dashboard-attention-list">
                       {attentionGroups.map((group) => (
                         <AttentionSection
                           key={group.id}
@@ -600,7 +620,7 @@ function buildAttentionGroups(rows: DashboardRow[]): AttentionGroup[] {
       id: 'recommended',
       title: 'À améliorer',
       description: 'SEO et informations recommandées',
-      icon: SearchIcon,
+      icon: BulbOutlineIcon,
       tone: 'default',
       rows: [],
     },
@@ -652,7 +672,7 @@ function attentionRowIcon(row: DashboardRow, group: AttentionGroup): ComponentTy
   if (concernsOnlyImages) return ImagesIcon
   if (group.id === 'blocking') return ErrorOutlineIcon
   if (row.current._type !== 'gallery' && row.current._type !== 'exhibition') return DocumentIcon
-  return SearchIcon
+  return BulbOutlineIcon
 }
 
 function compactCheckLabel(label: string) {
@@ -671,9 +691,25 @@ function attentionRowSummary(row: DashboardRow, group: AttentionGroup) {
   const missing = row.checks
     .filter((check) => !check.complete && Boolean(check.recommended) === recommended)
     .map((check) => compactCheckLabel(check.label))
-  const visible = missing.slice(0, 3)
-  const remaining = missing.length - visible.length
-  return `${visible.join(' · ')}${remaining > 0 ? ` · +${remaining} autre${remaining > 1 ? 's' : ''}` : ''}`
+
+  // A single missing item reads better named outright ("Image de partage")
+  // than as a count. Multiple items are condensed to a count instead of
+  // concatenating every label -- repeating "Titres SEO FR et EN ·
+  // Descriptions SEO FR et EN · ..." verbatim on every row in a group made
+  // the list read as visually repetitive; the full detail is still reachable
+  // via this row's title/tooltip attribute (see AttentionRow's taskSummary).
+  if (missing.length === 0) return ''
+  if (missing.length === 1) return missing[0]
+  return `${missing.length} champs à compléter`
+}
+
+function attentionRowSummaryDetail(row: DashboardRow, group: AttentionGroup) {
+  if (group.id === 'publish' || group.id === 'finish') return attentionRowSummary(row, group)
+  const recommended = group.id === 'recommended'
+  const missing = row.checks
+    .filter((check) => !check.complete && Boolean(check.recommended) === recommended)
+    .map((check) => compactCheckLabel(check.label))
+  return missing.join(' · ')
 }
 
 function editorialStatus(row: DashboardRow): {label: string; tone: DashboardTone} {
@@ -752,6 +788,7 @@ function AttentionSection({group, showCount}: {group: AttentionGroup; showCount:
             accentTone={group.tone}
             issueIcon={attentionRowIcon(row, group)}
             taskSummary={attentionRowSummary(row, group)}
+            taskSummaryDetail={attentionRowSummaryDetail(row, group)}
           />
         ))}
       </Stack>
@@ -766,6 +803,7 @@ function MetricCard({
   detail,
   onActivate,
   activateLabel,
+  href,
 }: {
   icon: ComponentType<SVGProps<SVGSVGElement>>
   label: string
@@ -773,6 +811,7 @@ function MetricCard({
   detail: string
   onActivate?: () => void
   activateLabel?: string
+  href?: string
 }) {
   const body = (
     <Flex align="flex-start" justify="space-between" gap={2}>
@@ -797,6 +836,19 @@ function MetricCard({
       </Text>
     </Flex>
   )
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        className="editorial-dashboard__metric-cell editorial-dashboard__metric-cell--interactive"
+        style={{color: 'inherit', textDecoration: 'none'}}
+        aria-label={activateLabel}
+      >
+        {body}
+      </a>
+    )
+  }
 
   if (onActivate) {
     return (
@@ -878,12 +930,14 @@ function ContentRow({
   accentTone,
   issueIcon: IssueIcon,
   taskSummary,
+  taskSummaryDetail,
 }: {
   row: DashboardRow
   withBorder: boolean
   accentTone: DashboardTone
   issueIcon: ComponentType<SVGProps<SVGSVGElement>>
   taskSummary: string
+  taskSummaryDetail?: string
 }) {
   const status = editorialStatus(row)
   const title = documentTitle(row.current)
@@ -952,7 +1006,7 @@ function ContentRow({
                   muted
                   size={0}
                   textOverflow="ellipsis"
-                  title={taskSummary}
+                  title={taskSummaryDetail || taskSummary}
                   className="editorial-dashboard__task-summary"
                   style={{padding: 0, fontSize: 12, lineHeight: '16px'}}
                 >
