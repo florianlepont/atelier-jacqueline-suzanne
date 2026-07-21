@@ -1,5 +1,5 @@
 import {useEffect, useMemo, useState} from 'react'
-import type {ComponentType} from 'react'
+import type {ComponentType, SVGProps} from 'react'
 import {Badge, Box, Button, Card, Flex, Heading, Spinner, Stack, Text} from '@sanity/ui'
 import {IntentButton, useClient, useHistoryStore, useUserStore} from 'sanity'
 import {IntentLink} from 'sanity/router'
@@ -61,7 +61,7 @@ interface AttentionGroup {
   id: string
   title: string
   description: string
-  icon: ComponentType
+  icon: ComponentType<SVGProps<SVGSVGElement>>
   tone: DashboardTone
   rows: DashboardRow[]
 }
@@ -90,7 +90,7 @@ const rowTypeLabels: Record<string, string> = {
   exhibition: 'Exposition',
 }
 
-const activityIcons: Record<ActivityAction, ComponentType> = {
+const activityIcons: Record<ActivityAction, ComponentType<SVGProps<SVGSVGElement>>> = {
   created: AddCircleIcon,
   modified: EditIcon,
   published: PublishIcon,
@@ -396,6 +396,7 @@ export function EditorialDashboard() {
               <Flex align="center" gap={2} wrap="wrap" className="editorial-dashboard__actions">
                 <IntentButton
                   className="editorial-dashboard__header-control"
+                  style={{height: 44}}
                   icon={AddIcon}
                   text="Nouvelle collection"
                   intent="create"
@@ -406,13 +407,14 @@ export function EditorialDashboard() {
                 />
                 <Button
                   className="editorial-dashboard__header-control"
+                  style={{height: 44}}
                   as="a"
                   href={SITE_PREVIEW_URL}
                   target="_blank"
                   rel="noreferrer"
                   iconRight={LaunchIcon}
                   mode="ghost"
-                  padding={3}
+                  paddingY={3}
                   text="Ouvrir le site"
                 />
               </Flex>
@@ -626,7 +628,7 @@ function attentionPriority(row: DashboardRow) {
   return 3
 }
 
-function attentionRowIcon(row: DashboardRow, group: AttentionGroup): ComponentType {
+function attentionRowIcon(row: DashboardRow, group: AttentionGroup): ComponentType<SVGProps<SVGSVGElement>> {
   if (group.id === 'publish') return PublishIcon
   if (group.id === 'finish') return TaskIcon
 
@@ -698,8 +700,12 @@ function AttentionSection({group, showCount}: {group: AttentionGroup; showCount:
         style={{borderBottom: '1px solid var(--card-border-color)'}}
       >
         <Flex align="center" gap={2} wrap="wrap" className="editorial-dashboard__group-header">
-          <Text size={1} className="editorial-dashboard__group-icon">
-            <Icon />
+          <Text
+            size={1}
+            className="editorial-dashboard__group-icon"
+            style={{lineHeight: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center'}}
+          >
+            <Icon style={{display: 'block'}} />
           </Text>
           {showCount && (
             <Card
@@ -750,7 +756,7 @@ function MetricCard({
   value,
   detail,
 }: {
-  icon: ComponentType
+  icon: ComponentType<SVGProps<SVGSVGElement>>
   label: string
   value: string
   detail: string
@@ -769,8 +775,13 @@ function MetricCard({
             </Text>
           </Flex>
         </Stack>
-        <Text muted size={1} className="editorial-dashboard__metric-icon">
-          <Icon />
+        <Text
+          muted
+          size={1}
+          className="editorial-dashboard__metric-icon"
+          style={{lineHeight: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center'}}
+        >
+          <Icon style={{display: 'block'}} />
         </Text>
       </Flex>
     </div>
@@ -788,9 +799,26 @@ function DeploymentStatus({run}: {run: DeploymentRun | null}) {
 
   const content = (
     <Flex align="center" gap={2} className="editorial-dashboard__deployment-content">
-      <Card tone={tone} radius={4} className="editorial-dashboard__deployment-icon">
-        <Text size={1}>
-          <PublishIcon />
+      <Card
+        tone={tone}
+        radius={4}
+        className="editorial-dashboard__deployment-icon"
+        style={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}
+      >
+        <Text
+          size={1}
+          style={{
+            lineHeight: 0,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 20,
+            height: 20,
+            boxSizing: 'border-box',
+            transform: 'none',
+          }}
+        >
+          <PublishIcon style={{display: 'block'}} />
         </Text>
       </Card>
       <Text size={0} weight="semibold" style={{whiteSpace: 'nowrap'}}>
@@ -828,7 +856,7 @@ function ContentRow({
   row: DashboardRow
   withBorder: boolean
   accentTone: DashboardTone
-  issueIcon: ComponentType
+  issueIcon: ComponentType<SVGProps<SVGSVGElement>>
   taskSummary: string
 }) {
   const status = editorialStatus(row)
@@ -856,8 +884,13 @@ function ContentRow({
             style={{minWidth: 0, flex: 1}}
           >
             <div className="editorial-dashboard__task-grid">
-              <Text muted size={1} className="editorial-dashboard__task-icon">
-                <IssueIcon />
+              <Text
+                muted
+                size={1}
+                className="editorial-dashboard__task-icon"
+                style={{lineHeight: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center'}}
+              >
+                <IssueIcon style={{display: 'block'}} />
               </Text>
               <Stack space={1} className="editorial-dashboard__task-copy">
                 <Flex
@@ -898,8 +931,13 @@ function ContentRow({
                   {taskSummary}
                 </Text>
               </Stack>
-              <Text muted size={1} className="editorial-dashboard__task-chevron">
-                <ChevronRightIcon />
+              <Text
+                muted
+                size={1}
+                className="editorial-dashboard__task-chevron"
+                style={{lineHeight: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center'}}
+              >
+                <ChevronRightIcon style={{display: 'block'}} />
               </Text>
             </div>
           </Box>
@@ -935,8 +973,13 @@ function RecentRow({
         style={{borderBottom: withBorder ? '1px solid var(--card-border-color)' : undefined}}
       >
         <div className="editorial-dashboard__activity-grid">
-          <Text muted size={1} className="editorial-dashboard__activity-icon">
-            {ActivityIcon ? <ActivityIcon /> : <DocumentIcon />}
+          <Text
+            muted
+            size={1}
+            className="editorial-dashboard__activity-icon"
+            style={{lineHeight: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center'}}
+          >
+            {ActivityIcon ? <ActivityIcon style={{display: 'block'}} /> : <DocumentIcon style={{display: 'block'}} />}
           </Text>
           <Stack space={1} className="editorial-dashboard__activity-copy">
             <Flex

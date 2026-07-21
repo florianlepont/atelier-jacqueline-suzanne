@@ -22,5 +22,8 @@
       "Bash(npm run dev)",
       "Bash(gsd-sdk query progress*)"
     ]
+  },
+  "enabledPlugins": {
+    "chrome-devtools-mcp@claude-plugins-official": true
   }
 }
