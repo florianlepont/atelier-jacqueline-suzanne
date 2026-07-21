@@ -459,18 +459,37 @@ export function EditorialDashboard() {
           )}
 
           {!loading && !error && blockingRows.length > 0 && (
-            <Card radius={3} tone="critical" shadow={1} padding={4}>
+            <Card radius={3} tone="critical" shadow={1} padding={3}>
               <Flex align="center" justify="space-between" gap={3} wrap="wrap">
-                <Stack space={2} style={{flex: '1 1 280px'}}>
-                  <Text size={1} weight="bold">
-                    {blockingRows.length === 1
-                      ? `« ${documentTitle(blockingRows[0].current)} » ne peut pas être publié`
-                      : `${blockingRows.length} contenus ne peuvent pas être publiés`}
-                  </Text>
-                  <Text size={0} muted>
-                    Des informations indispensables sont manquantes.
-                  </Text>
-                </Stack>
+                <Flex align="center" gap={3} style={{flex: '1 1 280px', minWidth: 0}}>
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: 10,
+                      flex: '0 0 auto',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: 'rgba(239, 68, 68, 0.13)',
+                      color: '#dc2626',
+                      fontSize: 21,
+                    }}
+                  >
+                    <ErrorOutlineIcon style={{display: 'block'}} />
+                  </div>
+                  <Stack space={2} style={{minWidth: 0}}>
+                    <Text size={1} weight="semibold">
+                      {blockingRows.length === 1
+                        ? `« ${documentTitle(blockingRows[0].current)} » ne peut pas être publié`
+                        : `${blockingRows.length} contenus ne peuvent pas être publiés`}
+                    </Text>
+                    <Text size={1} muted style={{fontSize: 12}}>
+                      Des informations indispensables sont manquantes.
+                    </Text>
+                  </Stack>
+                </Flex>
                 {blockingRows.length === 1 ? (
                   <IntentButton
                     tone="critical"
@@ -499,44 +518,39 @@ export function EditorialDashboard() {
 
           {!loading && !error && (
             <>
-              <Card
-                radius={3}
-                tone="default"
-                shadow={1}
-                overflow="hidden"
-                className="editorial-dashboard__surface"
-              >
-                <div className="editorial-dashboard__metrics">
-                  <MetricCard
-                    icon={FolderIcon}
-                    label={pluralize(onlineGalleryCount, 'collection', 'collections')}
-                    value={String(onlineGalleryCount)}
-                    detail={pluralize(onlineGalleryCount, 'publiée sur le site', 'publiées sur le site')}
-                    href="/structure"
-                    activateLabel="Voir les collections dans Contenu du site"
-                  />
-                  <MetricCard
-                    icon={DocumentIcon}
-                    label={pluralize(draftCount, 'brouillon', 'brouillons')}
-                    value={String(draftCount)}
-                    detail="en cours de rédaction"
-                    href="/structure"
-                    activateLabel="Voir le contenu dans Contenu du site"
-                  />
-                  <MetricCard
-                    icon={WarningOutlineIcon}
-                    label={pluralize(attention.length, 'contenu', 'contenus')}
-                    value={String(attention.length)}
-                    detail="à vérifier avant publication"
-                    activateLabel="Aller à la liste « À faire maintenant »"
-                    onActivate={() => {
-                      const heading = document.getElementById('editorial-dashboard-attention-heading')
-                      heading?.scrollIntoView({behavior: 'smooth', block: 'start'})
-                      heading?.focus()
-                    }}
-                  />
-                </div>
-              </Card>
+              <div className="editorial-dashboard__metrics">
+                <MetricCard
+                  icon={FolderIcon}
+                  label={pluralize(onlineGalleryCount, 'collection', 'collections')}
+                  value={String(onlineGalleryCount)}
+                  detail={pluralize(onlineGalleryCount, 'publiée sur le site', 'publiées sur le site')}
+                  accent="primary"
+                  href="/structure"
+                  activateLabel="Voir les collections dans Contenu du site"
+                />
+                <MetricCard
+                  icon={DocumentIcon}
+                  label={pluralize(draftCount, 'brouillon', 'brouillons')}
+                  value={String(draftCount)}
+                  detail="en cours de rédaction"
+                  accent="neutral"
+                  href="/structure"
+                  activateLabel="Voir le contenu dans Contenu du site"
+                />
+                <MetricCard
+                  icon={WarningOutlineIcon}
+                  label={pluralize(attention.length, 'contenu', 'contenus')}
+                  value={String(attention.length)}
+                  detail="à vérifier avant publication"
+                  accent={attention.length > 0 ? 'caution' : 'positive'}
+                  activateLabel="Aller à la liste « À faire maintenant »"
+                  onActivate={() => {
+                    const heading = document.getElementById('editorial-dashboard-attention-heading')
+                    heading?.scrollIntoView({behavior: 'smooth', block: 'start'})
+                    heading?.focus()
+                  }}
+                />
+              </div>
 
               <div className="editorial-dashboard__columns">
                 <Stack space={3}>
@@ -860,11 +874,24 @@ function AttentionSection({group, showCount}: {group: AttentionGroup; showCount:
   )
 }
 
+type MetricAccent = 'primary' | 'positive' | 'caution' | 'neutral'
+
+const metricAccentStyles: Record<MetricAccent, {background: string; color: string}> = {
+  primary: {background: 'rgba(85, 107, 252, 0.11)', color: '#556bfc'},
+  positive: {background: 'rgba(16, 185, 129, 0.12)', color: '#059669'},
+  caution: {background: 'rgba(245, 158, 11, 0.14)', color: '#d97706'},
+  neutral: {
+    background: 'color-mix(in srgb, var(--card-fg-color) 7%, transparent)',
+    color: 'var(--card-muted-fg-color)',
+  },
+}
+
 function MetricCard({
   icon: Icon,
   label,
   value,
   detail,
+  accent = 'neutral',
   onActivate,
   activateLabel,
   href,
@@ -873,32 +900,47 @@ function MetricCard({
   label: string
   value: string
   detail: string
+  accent?: MetricAccent
   onActivate?: () => void
   activateLabel?: string
   href?: string
 }) {
+  const accentStyle = metricAccentStyles[accent]
   const body = (
-    <Flex align="flex-start" justify="space-between" gap={2}>
-      <Stack space={3}>
-        <Heading size={2}>{value}</Heading>
-        <Flex align="center" gap={1} wrap="wrap">
-          <Text size={0} weight="semibold">
-            {label}
+    <Card
+      radius={3}
+      shadow={1}
+      padding={3}
+      className="editorial-dashboard__surface editorial-dashboard__metric-card"
+      style={{height: '100%', boxSizing: 'border-box'}}
+    >
+      <Flex align="center" gap={3}>
+        <div
+          aria-hidden="true"
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 10,
+            flex: '0 0 auto',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: accentStyle.background,
+            color: accentStyle.color,
+            fontSize: 21,
+          }}
+        >
+          <Icon style={{display: 'block'}} />
+        </div>
+        <Stack space={2} style={{minWidth: 0}}>
+          <Heading size={2}>{value}</Heading>
+          <Text size={1} style={{fontSize: 12}}>
+            <span style={{fontWeight: 600}}>{label}</span>{' '}
+            <span style={{color: 'var(--card-muted-fg-color)'}}>{detail}</span>
           </Text>
-          <Text muted size={0}>
-            {detail}
-          </Text>
-        </Flex>
-      </Stack>
-      <Text
-        muted
-        size={1}
-        className="editorial-dashboard__metric-icon"
-        style={{lineHeight: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transform: 'none'}}
-      >
-        <Icon style={{display: 'block'}} />
-      </Text>
-    </Flex>
+        </Stack>
+      </Flex>
+    </Card>
   )
 
   if (href) {
