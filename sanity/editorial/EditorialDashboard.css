@@ -23,6 +23,10 @@
   box-sizing: border-box;
 }
 
+.editorial-dashboard__header-link:not(:hover) {
+  background-color: transparent;
+}
+
 .editorial-dashboard__columns {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -81,12 +85,16 @@
   align-items: center;
   align-self: flex-end;
   min-height: 44px;
-  padding: 0 var(--space-xs, 4px);
-  margin: 0 calc(var(--space-xs, 4px) * -1);
+  padding: 0 var(--space-2, 8px);
   border-radius: 3px;
   box-sizing: border-box;
   color: inherit;
   text-decoration: none;
+  transition: background-color 120ms ease;
+}
+
+a.editorial-dashboard__deployment-status:hover {
+  background-color: var(--card-bg-color);
 }
 
 .editorial-dashboard__deployment-date {

@@ -411,7 +411,7 @@ export function EditorialDashboard() {
             >
               <DeploymentStatus run={run} />
               <Button
-                className="editorial-dashboard__header-control"
+                className="editorial-dashboard__header-control editorial-dashboard__header-link"
                 style={{height: 44}}
                 as="a"
                 href={SITE_PREVIEW_URL}
@@ -419,7 +419,7 @@ export function EditorialDashboard() {
                 rel="noreferrer"
                 aria-label="Ouvrir le site (nouvel onglet)"
                 iconRight={LaunchIcon}
-                mode="ghost"
+                mode="bleed"
                 paddingY={3}
                 text="Ouvrir le site"
               />
@@ -941,6 +941,14 @@ function MetricCard({
   return <div className="editorial-dashboard__metric-cell">{body}</div>
 }
 
+const deploymentDotColors: Record<DashboardTone, string> = {
+  default: '#9ca3af',
+  primary: '#556bfc',
+  positive: '#10b981',
+  caution: '#f59e0b',
+  critical: '#ef4444',
+}
+
 function DeploymentStatus({run}: {run: DeploymentRun | null}) {
   const status = deploymentLabel(run)
   const tone = status.tone
@@ -951,43 +959,32 @@ function DeploymentStatus({run}: {run: DeploymentRun | null}) {
     shortStatusLabel === 'À jour' ? 'Site à jour' : `Site : ${shortStatusLabel}`
 
   const content = (
-    <Card
-      tone={tone}
-      radius={2}
-      paddingX={3}
-      className="editorial-dashboard__deployment-content"
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        minHeight: 32,
-        boxSizing: 'border-box',
-        border: '1px solid var(--card-border-color)',
-      }}
-    >
-      <Flex align="center" gap={2}>
-        <Text
-          size={1}
-          style={{
-            lineHeight: 0,
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 18,
-            height: 18,
-            boxSizing: 'border-box',
-            transform: 'none',
-          }}
-        >
-          <PublishIcon style={{display: 'block'}} />
-        </Text>
-        <Text size={1} weight="semibold" style={{whiteSpace: 'nowrap', fontSize: 12}}>
-          {siteStatusLabel}
-        </Text>
-        <Text muted size={1} className="editorial-dashboard__deployment-date" style={{fontSize: 12}}>
-          {dateLabel}
-        </Text>
-      </Flex>
-    </Card>
+    <Flex align="center" gap={2} className="editorial-dashboard__deployment-content">
+      <span
+        aria-hidden="true"
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          flex: '0 0 auto',
+          backgroundColor: deploymentDotColors[tone],
+        }}
+      />
+      <Text
+        size={1}
+        weight="medium"
+        style={{
+          whiteSpace: 'nowrap',
+          fontSize: 13,
+          color: tone === 'critical' ? deploymentDotColors.critical : undefined,
+        }}
+      >
+        {siteStatusLabel}
+      </Text>
+      <Text muted size={1} className="editorial-dashboard__deployment-date" style={{fontSize: 13}}>
+        {dateLabel}
+      </Text>
+    </Flex>
   )
 
   return run?.html_url ? (
