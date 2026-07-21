@@ -819,7 +819,7 @@ function AttentionSection({group, showCount}: {group: AttentionGroup; showCount:
           <Text
             size={1}
             className="editorial-dashboard__group-icon"
-            style={{lineHeight: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center'}}
+            style={{lineHeight: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transform: 'none'}}
           >
             <Icon style={{display: 'block'}} />
           </Text>
@@ -905,7 +905,7 @@ function MetricCard({
         muted
         size={1}
         className="editorial-dashboard__metric-icon"
-        style={{lineHeight: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center'}}
+        style={{lineHeight: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transform: 'none'}}
       >
         <Icon style={{display: 'block'}} />
       </Text>
@@ -1045,7 +1045,7 @@ function ContentRow({
                 muted
                 size={1}
                 className="editorial-dashboard__task-icon"
-                style={{lineHeight: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center'}}
+                style={{lineHeight: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transform: 'none'}}
               >
                 <IssueIcon style={{display: 'block'}} />
               </Text>
@@ -1106,7 +1106,7 @@ function ContentRow({
                   muted
                   size={1}
                   className="editorial-dashboard__task-chevron"
-                  style={{lineHeight: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center'}}
+                  style={{lineHeight: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transform: 'none'}}
                 >
                   <ChevronRightIcon style={{display: 'block'}} />
                 </Text>
@@ -1145,23 +1145,30 @@ function RecentRow({
         className="editorial-dashboard__activity-row"
         style={{
           borderBottom: withBorder ? '1px solid var(--card-border-color)' : undefined,
-          minHeight: 46,
+          minHeight: 50,
           boxSizing: 'border-box',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
         }}
       >
-        <div className="editorial-dashboard__activity-grid">
+        <div className="editorial-dashboard__activity-grid" style={{alignItems: 'center'}}>
           <Text
             muted
             size={1}
             className="editorial-dashboard__activity-icon"
-            style={{lineHeight: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center'}}
+            style={{
+              lineHeight: 0,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: 0,
+              transform: 'none',
+            }}
           >
             {ActivityIcon ? <ActivityIcon style={{display: 'block'}} /> : <DocumentIcon style={{display: 'block'}} />}
           </Text>
-          <Stack space={2} className="editorial-dashboard__activity-copy">
+          <Stack space={3} className="editorial-dashboard__activity-copy">
             <Flex
               align="center"
               justify="space-between"
