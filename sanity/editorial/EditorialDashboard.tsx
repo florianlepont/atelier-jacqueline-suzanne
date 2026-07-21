@@ -412,6 +412,7 @@ export function EditorialDashboard() {
                   href={SITE_PREVIEW_URL}
                   target="_blank"
                   rel="noreferrer"
+                  aria-label="Ouvrir le site (nouvel onglet)"
                   iconRight={LaunchIcon}
                   mode="ghost"
                   paddingY={3}
@@ -477,6 +478,12 @@ export function EditorialDashboard() {
                     label="À vérifier"
                     value={String(attention.length)}
                     detail="contenus"
+                    activateLabel="Aller à la liste « À faire maintenant »"
+                    onActivate={() => {
+                      const heading = document.getElementById('editorial-dashboard-attention-heading')
+                      heading?.scrollIntoView({behavior: 'smooth', block: 'start'})
+                      heading?.focus()
+                    }}
                   />
                 </div>
               </Card>
@@ -484,7 +491,7 @@ export function EditorialDashboard() {
               <div className="editorial-dashboard__columns">
                 <Stack space={3}>
                   <Stack space={2}>
-                    <Heading as="h2" size={2}>
+                    <Heading as="h2" size={2} id="editorial-dashboard-attention-heading" tabIndex={-1}>
                       À faire maintenant
                     </Heading>
                     <Text muted size={0}>
@@ -644,6 +651,7 @@ function attentionRowIcon(row: DashboardRow, group: AttentionGroup): ComponentTy
 
   if (concernsOnlyImages) return ImagesIcon
   if (group.id === 'blocking') return ErrorOutlineIcon
+  if (row.current._type !== 'gallery' && row.current._type !== 'exhibition') return DocumentIcon
   return SearchIcon
 }
 
@@ -756,37 +764,54 @@ function MetricCard({
   label,
   value,
   detail,
+  onActivate,
+  activateLabel,
 }: {
   icon: ComponentType<SVGProps<SVGSVGElement>>
   label: string
   value: string
   detail: string
+  onActivate?: () => void
+  activateLabel?: string
 }) {
-  return (
-    <div className="editorial-dashboard__metric-cell">
-      <Flex align="flex-start" justify="space-between" gap={2}>
-        <Stack space={1}>
-          <Heading size={2}>{value}</Heading>
-          <Flex align="center" gap={1} wrap="wrap">
-            <Text size={0} weight="semibold">
-              {label}
-            </Text>
-            <Text muted size={0}>
-              · {detail}
-            </Text>
-          </Flex>
-        </Stack>
-        <Text
-          muted
-          size={1}
-          className="editorial-dashboard__metric-icon"
-          style={{lineHeight: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center'}}
-        >
-          <Icon style={{display: 'block'}} />
-        </Text>
-      </Flex>
-    </div>
+  const body = (
+    <Flex align="flex-start" justify="space-between" gap={2}>
+      <Stack space={1}>
+        <Heading size={2}>{value}</Heading>
+        <Flex align="center" gap={1} wrap="wrap">
+          <Text size={0} weight="semibold">
+            {label}
+          </Text>
+          <Text muted size={0}>
+            · {detail}
+          </Text>
+        </Flex>
+      </Stack>
+      <Text
+        muted
+        size={1}
+        className="editorial-dashboard__metric-icon"
+        style={{lineHeight: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center'}}
+      >
+        <Icon style={{display: 'block'}} />
+      </Text>
+    </Flex>
   )
+
+  if (onActivate) {
+    return (
+      <button
+        type="button"
+        className="editorial-dashboard__metric-cell editorial-dashboard__metric-cell--interactive"
+        onClick={onActivate}
+        aria-label={activateLabel}
+      >
+        {body}
+      </button>
+    )
+  }
+
+  return <div className="editorial-dashboard__metric-cell">{body}</div>
 }
 
 function DeploymentStatus({run}: {run: DeploymentRun | null}) {
@@ -837,7 +862,7 @@ function DeploymentStatus({run}: {run: DeploymentRun | null}) {
       target="_blank"
       rel="noreferrer"
       title="Voir le détail de la dernière mise en ligne"
-      aria-label={`${shortStatusLabel}. ${dateLabel}. Voir le détail de la mise en ligne`}
+      aria-label={`${shortStatusLabel}. ${dateLabel}. Voir le détail de la mise en ligne (nouvel onglet)`}
       className="editorial-dashboard__deployment-status"
     >
       {content}
@@ -929,7 +954,7 @@ function ContentRow({
                   textOverflow="ellipsis"
                   title={taskSummary}
                   className="editorial-dashboard__task-summary"
-                  style={{padding: 0}}
+                  style={{padding: 0, fontSize: 12, lineHeight: '16px'}}
                 >
                   {taskSummary}
                 </Text>
@@ -1005,13 +1030,13 @@ function RecentRow({
               </Text>
             </Flex>
             <Flex align="center" gap={1} wrap="wrap" className="editorial-dashboard__activity-meta">
-              <Text size={0} weight="medium" style={{padding: 0}}>
+              <Text size={0} weight="medium" style={{padding: 0, fontSize: 12, lineHeight: '16px'}}>
                 {activity?.authorName ?? 'Activité indisponible'}
               </Text>
-              <Text muted size={0} style={{padding: 0}}>
+              <Text muted size={0} style={{padding: 0, fontSize: 12, lineHeight: '16px'}}>
                 ·
               </Text>
-              <Text muted size={0} style={{padding: 0}}>
+              <Text muted size={0} style={{padding: 0, fontSize: 12, lineHeight: '16px'}}>
                 {activity?.description ?? fallbackDescription}
               </Text>
               {showStatus && (

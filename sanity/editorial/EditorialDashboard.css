@@ -39,6 +39,29 @@
   padding: 12px;
 }
 
+.editorial-dashboard__metric-cell--interactive {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  border-radius: 3px;
+  outline: none;
+  transition: background-color 120ms ease;
+}
+
+.editorial-dashboard__metric-cell--interactive:hover {
+  background-color: var(--dashboard-page-background);
+}
+
+.editorial-dashboard__metric-cell--interactive:focus-visible {
+  box-shadow: var(--card-focus-ring-box-shadow, 0 0 0 2px var(--card-focus-ring-color));
+}
+
 .editorial-dashboard__metric-icon,
 .editorial-dashboard__group-icon,
 .editorial-dashboard__task-icon,
