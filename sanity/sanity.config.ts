@@ -9,6 +9,7 @@ import {resolveActions, resolveBadges} from './editorial/workflow'
 import {checklistEnabledTypes, checklistInspector} from './editorial/DocumentChecklist'
 import {openSitePageInspector} from './editorial/OpenSitePage'
 import {MediaLibrary} from './editorial/MediaLibrary'
+import {StudioLayout} from './editorial/StudioLayout'
 
 export default defineConfig({
   name: 'default',
@@ -16,6 +17,12 @@ export default defineConfig({
 
   projectId: 'gwz8iug4',
   dataset: 'production',
+
+  studio: {
+    components: {
+      layout: StudioLayout,
+    },
+  },
 
   // French UI for the day-to-day editor. The developer-only Vision query
   // tool is deliberately omitted from the main navigation.
