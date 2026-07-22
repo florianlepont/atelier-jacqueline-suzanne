@@ -8,8 +8,12 @@ import type {
 import {useDocumentPane} from 'sanity/structure'
 import {getDocumentChecks, summarizeChecks} from './checks'
 import {checklistEnabledTypes} from './DocumentChecklist'
-
-const protectedTypes = new Set(['siteSettings', 'homePage', 'aboutPage', 'contactPage'])
+import {
+  collectionStatusBadge,
+  completenessBadge,
+  filterUnsafeSingletonActions,
+  shouldRenamePublishAction,
+} from './workflowLogic'
 
 // Invisible side-effect host (not a visible badge): auto-opens the Checklist
 // inspector once, on first ready render, for incomplete documents of a
@@ -39,66 +43,12 @@ const CompletenessBadge: DocumentBadgeComponent = ({draft, published}) => {
   const schemaType = typeof value._type === 'string' ? value._type : ''
   const summary = summarizeChecks(getDocumentChecks(schemaType, value))
 
-  if (!summary.requiredComplete) {
-    return {
-      label: 'À compléter',
-      title: 'Des informations obligatoires sont manquantes.',
-      color: 'warning',
-    }
-  }
-  if (!summary.recommendedComplete) {
-    return {
-      label: 'SEO à compléter',
-      title: 'Le contenu peut être publié, mais le SEO peut être amélioré.',
-      color: 'primary',
-    }
-  }
-  return {label: 'Prêt', title: 'Les contenus et recommandations sont complétés.', color: 'success'}
+  return completenessBadge(summary.requiredComplete, summary.recommendedComplete)
 }
 
 const CollectionStatusBadge: DocumentBadgeComponent = ({draft, published}) => {
   const value = (draft ?? published ?? {}) as Record<string, unknown>
-  if (value._type !== 'gallery') return null
-  if (value.publicationStatus === 'archived') {
-    // No color: the badge palette has no explicit neutral, undefined renders gray.
-    return {
-      label: 'Archivée',
-      title: 'Cette collection est conservée hors du site.',
-    }
-  }
-  if (
-    value.publicationStatus === 'preparation' ||
-    (!value.publicationStatus && value.isVisible === false)
-  ) {
-    return {
-      label: 'En préparation',
-      title: "Cette collection n'est pas encore affichée sur le site.",
-      color: 'warning',
-    }
-  }
-  // publicationStatus reflects editorial intent, not whether a published
-  // version actually exists (the "Nouvelle collection" template pre-sets it
-  // to 'published' so the field alone can't tell a live collection from one
-  // that has never been published). draft/published are the real signal.
-  if (!published) {
-    return {
-      label: 'Jamais publiée',
-      title: "Cette collection n'a encore jamais été publiée sur le site.",
-      color: 'warning',
-    }
-  }
-  if (draft) {
-    return {
-      label: 'Modifications non publiées',
-      title: 'Cette collection est en ligne, mais des modifications récentes ne sont pas encore publiées.',
-      color: 'primary',
-    }
-  }
-  return {
-    label: 'Sur le site',
-    title: 'Cette collection est affichée sur le site.',
-    color: 'success',
-  }
+  return collectionStatusBadge(value, Boolean(draft), Boolean(published))
 }
 
 export const resolveBadges: DocumentBadgesResolver = (prev, context) =>
@@ -121,18 +71,8 @@ function renamePublishAction(action: DocumentActionComponent): DocumentActionCom
 }
 
 export const resolveActions: DocumentActionsResolver = (prev, context) => {
-  const withoutUnsafeSingletonActions = protectedTypes.has(context.schemaType)
-    ? prev.filter((action) => !['delete', 'duplicate'].includes(action.action ?? ''))
-    : prev
-
-  const updatesPublicSite = [
-    'gallery',
-    'homePage',
-    'aboutPage',
-    'contactPage',
-    'siteSettings',
-  ].includes(context.schemaType)
+  const withoutUnsafeSingletonActions = filterUnsafeSingletonActions(prev, context.schemaType)
   return withoutUnsafeSingletonActions.map((action) =>
-    updatesPublicSite && action.action === 'publish' ? renamePublishAction(action) : action,
+    shouldRenamePublishAction(context.schemaType, action.action) ? renamePublishAction(action) : action,
   )
 }

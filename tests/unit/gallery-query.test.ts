@@ -43,6 +43,12 @@ describe('getGalleries', () => {
     expect(result).toEqual(galleries);
   });
 
+  it('returns an empty deterministic fixture when Sanity has no galleries', async () => {
+    fetchMock.mockResolvedValueOnce(null);
+    const { getGalleries } = await import('../../src/lib/sanity');
+    await expect(getGalleries()).resolves.toEqual([]);
+  });
+
   it('fetches with a GROQ query ordered by orderRank', async () => {
     fetchMock.mockResolvedValueOnce([]);
 
@@ -177,5 +183,24 @@ describe('getContactPage', () => {
     await getContactPage();
 
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('_id == "contactPage"'));
+  });
+});
+
+describe('getSiteSettings', () => {
+  beforeEach(() => {
+    fetchMock.mockReset();
+  });
+
+  it('returns null safely when the singleton is unavailable', async () => {
+    fetchMock.mockResolvedValueOnce(undefined);
+    const {getSiteSettings} = await import('../../src/lib/sanity');
+    await expect(getSiteSettings()).resolves.toBeNull();
+  });
+
+  it('queries the fixed siteSettings singleton', async () => {
+    fetchMock.mockResolvedValueOnce(null);
+    const {getSiteSettings} = await import('../../src/lib/sanity');
+    await getSiteSettings();
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('_type == "siteSettings"'));
   });
 });

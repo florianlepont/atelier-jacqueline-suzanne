@@ -32,6 +32,7 @@ test.describe('contact form success', () => {
 
     const status = page.locator('[data-role="form-status"]');
     await expect(status).toHaveText(/merci, votre message a bien été envoyé/i);
+    await expect(page.getByLabel(/^nom$/i)).toHaveValue('');
     expect(page.url()).toBe(urlBefore);
   });
 
@@ -115,6 +116,86 @@ test.describe('contact form validation', () => {
 
     await expect(page.getByText(/merci d.indiquer une adresse e-mail valide/i)).toBeVisible();
     expect(requestFired).toBe(false);
+  });
+
+  test('empty English message shows the localized error and fires no network call', async ({page}) => {
+    let requestFired = false;
+    await page.route(WEB3FORMS_URL, (route) => {
+      requestFired = true;
+      return route.abort();
+    });
+    await page.goto('/en/contact/');
+    await page.getByLabel(/^name$/i).fill('Jane Doe');
+    await page.getByLabel(/^email$/i).fill('jane@example.com');
+    await page.getByRole('button', {name: /send message/i}).click();
+    await expect(page.getByText(/please enter a message/i)).toBeVisible();
+    expect(requestFired).toBe(false);
+  });
+});
+
+test.describe('contact form submission failures', () => {
+  const fillValidForm = async (page: import('@playwright/test').Page) => {
+    await page.goto('/contact/');
+    await page.getByLabel(/^nom$/i).fill('Jeanne Dupont');
+    await page.getByLabel(/^e-mail$/i).fill('jeanne@example.com');
+    await page.getByLabel(/^message$/i).fill('Bonjour, je souhaite vous contacter.');
+  };
+
+  const expectRecoverableError = async (page: import('@playwright/test').Page) => {
+    await expect(page.locator('[data-role="form-status"]')).toContainText(/une erreur est survenue/i);
+    const submit = page.getByRole('button', {name: /envoyer le message/i});
+    await expect(submit).toBeEnabled();
+    await expect(page.getByLabel(/^nom$/i)).toHaveValue('Jeanne Dupont');
+  };
+
+  test('shows a recoverable error for an HTTP failure', async ({page}) => {
+    await page.route(WEB3FORMS_URL, (route) =>
+      route.fulfill({status: 503, contentType: 'application/json', body: '{"success":false}'}),
+    );
+    await fillValidForm(page);
+    await page.getByRole('button', {name: /envoyer le message/i}).click();
+    await expectRecoverableError(page);
+  });
+
+  test('shows a recoverable error for a rejected application response', async ({page}) => {
+    await page.route(WEB3FORMS_URL, (route) =>
+      route.fulfill({status: 200, contentType: 'application/json', body: '{"success":false}'}),
+    );
+    await fillValidForm(page);
+    await page.getByRole('button', {name: /envoyer le message/i}).click();
+    await expectRecoverableError(page);
+  });
+
+  test('shows a recoverable error for invalid JSON', async ({page}) => {
+    await page.route(WEB3FORMS_URL, (route) =>
+      route.fulfill({status: 200, contentType: 'text/plain', body: 'not json'}),
+    );
+    await fillValidForm(page);
+    await page.getByRole('button', {name: /envoyer le message/i}).click();
+    await expectRecoverableError(page);
+  });
+
+  test('shows a recoverable error when the network fails', async ({page}) => {
+    await page.route(WEB3FORMS_URL, (route) => route.abort('failed'));
+    await fillValidForm(page);
+    await page.getByRole('button', {name: /envoyer le message/i}).click();
+    await expectRecoverableError(page);
+  });
+
+  test('coalesces duplicate submit events into one request', async ({page}) => {
+    let requests = 0;
+    await page.route(WEB3FORMS_URL, async (route) => {
+      requests += 1;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      await route.fulfill({status: 200, contentType: 'application/json', body: '{"success":true}'});
+    });
+    await fillValidForm(page);
+    await page.locator('#contact-form').evaluate((form) => {
+      form.dispatchEvent(new Event('submit', {bubbles: true, cancelable: true}));
+      form.dispatchEvent(new Event('submit', {bubbles: true, cancelable: true}));
+    });
+    await expect(page.locator('[data-role="form-status"]')).toContainText(/merci/i);
+    expect(requests).toBe(1);
   });
 });
 

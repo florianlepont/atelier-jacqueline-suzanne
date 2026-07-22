@@ -173,7 +173,7 @@ const CONTACT_PAGE_QUERY = /* groq */ `*[_id == "contactPage"][0]{
  * maintained by `@sanity/orderable-document-list`).
  */
 export async function getGalleries(): Promise<Gallery[]> {
-  return sanityClient.fetch<Gallery[]>(GALLERIES_QUERY)
+  return (await sanityClient.fetch<Gallery[] | null>(GALLERIES_QUERY)) ?? []
 }
 
 /**

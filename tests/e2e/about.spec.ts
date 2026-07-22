@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test';
 // nav link) until then — do not stub or weaken them to make them pass early.
 
 test.describe('about page content', () => {
-  test('French About page renders bio, atelier/practice, and D-06 placeholder copy at "/about/"', async ({
+  test('French About page renders non-empty CMS bio, practice, and medium copy at "/about/"', async ({
     page,
   }) => {
     await page.goto('/about/');
@@ -16,20 +16,15 @@ test.describe('about page content', () => {
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
     await expect(page.locator('main h1')).toContainText('À propos');
 
-    const main = page.locator('main');
-    await expect(main).toContainText(
-      'Le texte de présentation de Romane sera bientôt disponible ici — en attente de sa version définitive.',
-    );
-    await expect(main).toContainText(
-      "Informations sur l'atelier et la pratique de Romane à venir prochainement.",
-    );
-    await expect(main).toContainText(
-      'Précisions sur le médium et la technique à venir — en attente de confirmation avec l\'artiste.',
-    );
     await expect(page.getByText('Atelier & pratique')).toBeVisible();
+    const editorialParagraphs = page.locator('.about-page > p').filter({hasNot: page.locator('a')});
+    await expect(editorialParagraphs).toHaveCount(3);
+    for (const paragraph of await editorialParagraphs.all()) {
+      expect((await paragraph.innerText()).trim().length).toBeGreaterThan(20);
+    }
   });
 
-  test('English About page renders bio, atelier/practice, and D-06 placeholder copy at "/en/about/"', async ({
+  test('English About page renders non-empty CMS bio, practice, and medium copy at "/en/about/"', async ({
     page,
   }) => {
     await page.goto('/en/about/');
@@ -37,17 +32,12 @@ test.describe('about page content', () => {
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(page.locator('main h1')).toContainText('About');
 
-    const main = page.locator('main');
-    await expect(main).toContainText(
-      "Romane's biography will be available here soon — pending her final text.",
-    );
-    await expect(main).toContainText(
-      "Information about Romane's studio and practice is coming soon.",
-    );
-    await expect(main).toContainText(
-      'Details on medium and technique coming soon — pending confirmation with the artist.',
-    );
     await expect(page.getByText('Studio & practice')).toBeVisible();
+    const editorialParagraphs = page.locator('.about-page > p').filter({hasNot: page.locator('a')});
+    await expect(editorialParagraphs).toHaveCount(3);
+    for (const paragraph of await editorialParagraphs.all()) {
+      expect((await paragraph.innerText()).trim().length).toBeGreaterThan(20);
+    }
   });
 
   test('About page copy differs between the French and English pages', async ({ page }) => {

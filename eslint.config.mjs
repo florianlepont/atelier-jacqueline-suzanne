@@ -35,6 +35,13 @@ export default [
     },
   },
   {
+    // Static-artifact verification runs directly under Node in local/CI.
+    files: ['tests/scripts/**/*.mjs'],
+    languageOptions: {
+      globals: {process: 'readonly', console: 'readonly', URL: 'readonly'},
+    },
+  },
+  {
     // `astroHTML` is Astro's ambient JSX namespace (declared globally by
     // astro/astro-jsx.d.ts) — real for frontmatter typing, but unknown to
     // `no-undef`, which only understands runtime globals.

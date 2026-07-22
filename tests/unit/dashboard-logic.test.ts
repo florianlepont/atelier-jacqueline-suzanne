@@ -17,7 +17,7 @@ import type {CheckItem} from '../../sanity/editorial/checks';
 
 function makeRow(
   checks: CheckItem[],
-  overrides: Partial<Omit<DashboardRow, 'checks' | 'summary'>> & {
+  overrides: Omit<Partial<Omit<DashboardRow, 'checks' | 'summary'>>, 'current'> & {
     current?: Partial<DashboardDocument>;
   } = {},
 ): DashboardRow {

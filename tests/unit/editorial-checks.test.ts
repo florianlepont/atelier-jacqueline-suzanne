@@ -68,4 +68,37 @@ describe('Sanity editorial checklist', () => {
 
     expect(summarizeChecks(checks).requiredComplete).toBe(true);
   });
+
+  it('covers singleton, settings, exhibition, and unknown document types', () => {
+    const localized = {fr: 'Texte', en: 'Text'};
+    expect(getDocumentChecks('homePage', {intro: localized})).toHaveLength(4);
+    expect(
+      getDocumentChecks('aboutPage', {
+        biography: localized,
+        practice: localized,
+        medium: localized,
+      })
+        .filter((item) => !item.recommended)
+        .every((item) => item.complete),
+    ).toBe(true);
+    expect(
+      getDocumentChecks('siteSettings', {
+        siteTitle: localized,
+        navLabels: {about: localized, contact: localized},
+        footerText: localized,
+      })
+        .filter((item) => !item.recommended)
+        .every((item) => item.complete),
+    ).toBe(true);
+    expect(
+      getDocumentChecks('exhibition', {
+        title: 'Expo',
+        startDate: '2026-08-01',
+        city: 'Paris',
+        description: localized,
+        image: {asset: {_ref: 'image'}},
+      }).every((item) => item.complete),
+    ).toBe(true);
+    expect(getDocumentChecks('unknown', {})).toEqual([]);
+  });
 });

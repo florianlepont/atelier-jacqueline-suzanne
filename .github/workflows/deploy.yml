@@ -40,6 +40,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Sanity Studio dependencies
+        run: npm ci --prefix sanity
+
+      - name: Lint and build Sanity Studio
+        run: |
+          npm --prefix sanity run lint
+          npm --prefix sanity run build
+
       # BLOCKING gate: a type error inside .astro frontmatter (or any .ts
       # source) fails the run and prevents deploy. Runs before any build so
       # type errors surface fast, before spending time on the build/e2e steps.
@@ -61,15 +69,18 @@ jobs:
           SANITY_DATASET: ${{ secrets.SANITY_DATASET }}
           SANITY_API_READ_TOKEN: ${{ secrets.SANITY_API_READ_TOKEN }}
 
+      - name: Verify root static artifact
+        run: npm run test:artifact
+
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium webkit
 
       # BLOCKING gate: a test failure fails the run and prevents deploy.
       - name: Run Playwright e2e tests
         run: npx playwright test
 
-      - name: Run Vitest unit tests
-        run: npx vitest run
+      - name: Run Vitest unit tests with coverage thresholds
+        run: npm run test:coverage
 
       # Rebuild WITH the GitHub Pages project-page base path so all baked
       # href/asset URLs in the deployed artifact are subpath-correct. This is
@@ -95,6 +106,11 @@ jobs:
             echo "::error::Found a hardcoded root-relative href that bypasses the GitHub Pages base path (see 01-REVIEW.md CR-01/WR-04). Use an astro:i18n URL helper instead of a literal string." >&2
             exit 1
           fi
+
+      - name: Verify GitHub Pages static artifact
+        run: npm run test:artifact
+        env:
+          EXPECTED_BASE: /ajs-website/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

@@ -14,7 +14,15 @@ export default getViteConfig({
       provider: 'v8',
       reporter: ['text', 'html', 'json-summary'],
       reportsDirectory: './coverage',
-      include: ['src/**/*.ts'],
+      // Measure directly unit-testable logic. Astro route/component wrappers
+      // are exercised against the built artifact by Playwright instead.
+      include: ['src/lib/**/*.ts', 'sanity/editorial/**/*.ts'],
+      thresholds: {
+        statements: 70,
+        branches: 65,
+        functions: 70,
+        lines: 70,
+      },
     },
   },
 });

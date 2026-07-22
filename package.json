@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "test:unit": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:artifact": "node tests/scripts/verify-static-artifact.mjs"
   },
   "dependencies": {
     "@fontsource/unbounded": "^5.2.8",
@@ -22,6 +23,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
+    "@axe-core/playwright": "^4.12.1",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "1.61.1",
     "@types/node": "^22.20.1",

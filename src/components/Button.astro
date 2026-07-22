@@ -47,7 +47,8 @@ const { variant = 'primary', size = 'md', disabled = false, type = 'button', ...
 
   .btn--primary {
     background: var(--color-accent);
-    color: var(--color-on-accent);
+    /* White reaches WCAG AA on the brand pink; ink was only 3.81:1. */
+    color: var(--color-dominant);
     border: var(--border-hairline) solid var(--color-accent);
   }
 
