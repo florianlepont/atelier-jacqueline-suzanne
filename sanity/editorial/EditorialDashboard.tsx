@@ -528,10 +528,16 @@ function AttentionSection({group, showCount}: {group: AttentionGroup; showCount:
   const chip = toneChipStyles[group.tone]
   return (
     <Card radius={3} tone="default" shadow={1} padding={1} className="editorial-dashboard__surface">
-      <Box paddingX={2} paddingY={2}>
+      <Box paddingX={2} paddingY={2} className="editorial-dashboard__group-header-band">
         <Flex align="center" gap={2} wrap="wrap" className="editorial-dashboard__group-header">
           <TintChip icon={Icon} size={30} radius={8} iconSize={17} tint={chip} />
-          <Text size={1} weight="semibold" role="heading" aria-level={3}>
+          <Text
+            size={1}
+            weight="semibold"
+            role="heading"
+            aria-level={3}
+            className="editorial-dashboard__group-title"
+          >
             {group.title}
           </Text>
           {showCount && (
