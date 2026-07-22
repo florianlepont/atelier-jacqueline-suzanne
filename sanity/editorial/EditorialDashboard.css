@@ -211,7 +211,7 @@ a.editorial-dashboard__deployment-status:hover {
 
 .editorial-dashboard__activity-title {
   min-width: 0;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
 }
 
 @media (max-width: 36em) {
