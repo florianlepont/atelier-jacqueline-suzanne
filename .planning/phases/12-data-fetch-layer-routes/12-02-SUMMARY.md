@@ -148,3 +148,12 @@ None — plan executed exactly as written. One environment gap was auto-fixed pe
 ---
 *Phase: 12-data-fetch-layer-routes*
 *Completed: 2026-07-22*
+
+## Self-Check: PASSED
+
+- FOUND: src/pages/editions/[slug].astro
+- FOUND: src/pages/en/editions/[slug].astro
+- FOUND: .planning/phases/12-data-fetch-layer-routes/12-02-SUMMARY.md
+- FOUND: commit 1b94288 (test)
+- FOUND: commit 0c8bec8 (feat)
+- FOUND: commit db8ac85 (docs)
