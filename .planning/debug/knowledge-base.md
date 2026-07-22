@@ -27,3 +27,11 @@ Resolved debug sessions. Used by `gsd-debugger` to surface known-pattern hypothe
 - **Fix:** Default both homepage wordmarks to their inherited solid accent text color. `render()` removes the `has-wordmark-photo` readiness class on every gallery swap and restores it only after the active sharp hero loads successfully (`naturalWidth > 0`), while error and slow states remain readable. Transparent clipped text is scoped to that ready class, including the mobile grid wordmark.
 - **Files changed:** src/components/HomeCarousel.astro, tests/e2e/critical.smoke.spec.ts, tests/e2e/homepage.spec.ts
 ---
+
+## tall-home-hero-footer — Tall desktop viewport exposed the footer below a 16:9 homepage hero
+- **Date:** 2026-07-22
+- **Error patterns:** image background, full screen, footer, enormous footer, responsive, tall desktop, 1280x1320, hero, photo, 16:9, aspect-ratio, max-height, min-height, 100svh, below fold
+- **Root cause:** `.home-hero__photo` used `aspect-ratio:16/9` and `max-height:100vh` on desktop without a viewport-height minimum. At 1280x1320, width therefore resolved the photo to 720 px and let the normal 145 px footer enter the initial viewport at y=720, making the footer appear oversized.
+- **Fix:** Move `min-height:100svh` from the mobile-only media query to the base `.home-hero__photo` rule, preserving `max-height:100vh` and `object-fit:cover`, and add a Playwright regression at 1280x1320 asserting the photo fills the viewport and the footer begins below the fold.
+- **Files changed:** src/components/HomeCarousel.astro, tests/e2e/homepage.spec.ts
+---
