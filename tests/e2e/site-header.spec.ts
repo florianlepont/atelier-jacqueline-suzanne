@@ -112,3 +112,74 @@ test.describe('Shared SiteHeader — cross-page structural identity (HOME-10, D-
     expect(homeHrefs[2]).toBe(INSTAGRAM_HREF);
   });
 });
+
+test.describe('Shared chrome — contextual neutral link colors', () => {
+  test('solid header links and language switcher match the header ink color', async ({ page }) => {
+    await page.goto('/about/');
+
+    const colors = await page.locator('[data-role="site-header"]').evaluate((header) => ({
+      header: getComputedStyle(header).color,
+      links: Array.from(header.querySelectorAll('.site-nav a, .language-switcher a')).map(
+        (link) => getComputedStyle(link).color
+      ),
+    }));
+
+    expect(colors.header).toBe('rgb(26, 26, 26)');
+    expect(colors.links.length).toBeGreaterThan(0);
+    expect(colors.links.every((color) => color === colors.header)).toBe(true);
+  });
+
+  test('transparent gallery header links and language switcher match the header white color', async ({ page }) => {
+    await page.goto('/galleries/silos/');
+
+    const colors = await page.locator('[data-role="site-header"]').evaluate((header) => ({
+      header: getComputedStyle(header).color,
+      links: Array.from(header.querySelectorAll('.site-nav a, .language-switcher a')).map(
+        (link) => getComputedStyle(link).color
+      ),
+    }));
+
+    expect(colors.header).toBe('rgb(255, 255, 255)');
+    expect(colors.links.length).toBeGreaterThan(0);
+    expect(colors.links.every((color) => color === colors.header)).toBe(true);
+  });
+
+  test('footer legal links match the footer ink color', async ({ page }) => {
+    await page.goto('/about/');
+
+    const colors = await page.locator('footer').evaluate((footer) => ({
+      footer: getComputedStyle(footer).color,
+      links: Array.from(footer.querySelectorAll('a')).map((link) => getComputedStyle(link).color),
+    }));
+
+    expect(colors.footer).toBe('rgb(26, 26, 26)');
+    expect(colors.links.length).toBeGreaterThan(0);
+    expect(colors.links.every((color) => color === colors.footer)).toBe(true);
+  });
+
+  test('desktop footer aligns copyright and legal links on one horizontal row', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/about/');
+
+    const footerText = await page.locator('footer .footer-text').boundingBox();
+    const legalNav = await page.locator('footer .footer-legal-nav').boundingBox();
+    expect(footerText).not.toBeNull();
+    expect(legalNav).not.toBeNull();
+
+    const textCenter = footerText!.y + footerText!.height / 2;
+    const navCenter = legalNav!.y + legalNav!.height / 2;
+    expect(Math.abs(textCenter - navCenter)).toBeLessThanOrEqual(1);
+    expect(legalNav!.x).toBeGreaterThan(footerText!.x + footerText!.width);
+  });
+
+  test('wrapped footer does not create horizontal overflow on mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 393, height: 800 });
+    await page.goto('/about/');
+
+    const widths = await page.evaluate(() => ({
+      viewport: window.innerWidth,
+      document: document.documentElement.scrollWidth,
+    }));
+    expect(widths.document).toBeLessThanOrEqual(widths.viewport);
+  });
+});

@@ -799,14 +799,12 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     background-color: var(--color-ink);
   }
 
-  /* LanguageSwitcher.astro hardcodes its own links pink (correct everywhere
-     else on the site, D-06) — but the homepage's own top bar is neutral
-     white/ink throughout, so the switcher needs its own override here too.
-     Scoped to .site-header only so LanguageSwitcher's behavior everywhere
-     else (SiteHeader's solid/transparent headers on About/Contact/
-     gallery-detail) is untouched. I18N-04/D-08 retired the current-language
-     link + .switcher-separator element entirely — only .switcher-link
-     remains to re-skin. */
+  /* SiteHeader normally derives the switcher color from its variant. The
+     homepage keeps variant="transparent" in the DOM while grid mode
+     visually re-skins that same header as solid, so these mode-specific
+     overrides keep the switcher synchronized with that runtime state.
+     I18N-04/D-08 retired the current-language link + .switcher-separator
+     element entirely — only .switcher-link remains to re-skin. */
   .home[data-display-mode='carousel'] :global(.site-header .switcher-link) {
     color: #FFFFFF;
   }

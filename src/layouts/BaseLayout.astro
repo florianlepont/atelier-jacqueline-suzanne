@@ -341,13 +341,19 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
   /* D-04: header/footer merge onto --color-dominant (white-on-white),
      delineated only by a 1px hairline border — no chrome-band tint.
      NOTE: .chrome-band's own padding rule (base + @media 768px variant) and
-     every .site-header*/.logo-mark*/.site-nav/.nav-link rule now live in
+     every site-header/logo-mark/site-nav/nav-link rule now lives in
      SiteHeader.astro's is:global stylesheet (HOME-10/D-01 extraction) — the
      <header> element they target no longer renders from this file's own
      template scope. footer.chrome-band's border-top rule stays here since
      the <footer> element is still directly in this component's template. */
   footer.chrome-band {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-md) var(--space-xl);
     text-align: left;
+    color: var(--color-ink);
     border-top: var(--border-hairline) solid var(--color-border);
   }
 
@@ -360,8 +366,13 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
 
   .footer-legal-nav {
     display: flex;
+    align-items: center;
     gap: var(--space-xl);
-    margin-top: var(--space-md);
+    margin-left: auto;
+  }
+
+  .footer-legal-nav .nav-link {
+    color: inherit;
   }
 
   main {

@@ -114,6 +114,7 @@ const {
 
   .site-header--solid {
     background-color: var(--color-dominant);
+    color: var(--color-ink);
     border-bottom: var(--border-hairline) solid var(--color-border);
   }
 
@@ -127,10 +128,18 @@ const {
     right: 0;
     z-index: 2;
     background: linear-gradient(to bottom, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.25) 60%, rgba(0, 0, 0, 0) 100%);
+    color: #FFFFFF;
   }
 
-  .site-header--transparent .nav-link {
-    color: #FFFFFF;
+  /* Header links are neutral chrome, not accent actions. Keep every link,
+     including LanguageSwitcher.astro's locally-styled link, aligned with
+     the variant's contrast color. The repeated .site-header class raises
+     specificity above the switcher's scoped accent-color declaration. */
+  .site-header.site-header--solid .nav-link,
+  .site-header.site-header--solid .switcher-link,
+  .site-header.site-header--transparent .nav-link,
+  .site-header.site-header--transparent .switcher-link {
+    color: inherit;
   }
 
   /* D-11/D-13/RESEARCH.md Pattern 3 (revised per logo-hover-and-font debug
