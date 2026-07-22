@@ -381,7 +381,7 @@ Plans:
 **Requirements**: EDN-02, EDN-03, EDN-04, EDN-06, EDN-07
 **Success Criteria** (what must be TRUE):
 
-  1. Visitor can open an Éditions overview page (at a French URL and at an English URL) listing each published édition by title and lead photo, in a grid.
+  1. Visitor can open an Éditions overview page (at a French URL and at an English URL) listing each published édition by title, lead photo, and full statement text, as a vertical editorial list (not a grid — refined during Phase 12 discussion, 2026-07-22).
   2. Visitor can click through from the overview to a per-édition detail page showing the full photo shoot in the existing gallery lightbox, a short description/statement, and format details (page count, print run, dimensions).
   3. No Éditions overview or detail page shows a price, a stock/availability indicator, or a purchase/buy button anywhere on the page.
   4. Both the overview and detail routes exist and render correctly at the French (root) and English (`/en/`) URL paths — no locale is missing either route.
