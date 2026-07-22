@@ -366,7 +366,11 @@ Plans:
   4. At least one real édition (e.g. "Rebut" or "Sillo") is seeded in Sanity Studio with real content, ready for the site to fetch and render in Phase 12.
   5. The naming overlap between the Portfolio gallery already titled "Rebut" and the new "Rebut" édition has been explicitly raised with and resolved by Romane, and the resolution is recorded in PROJECT.md's Key Decisions.
 
-**Plans**: TBD
+**Plans**: 2 plans, 2 waves
+
+Plans:
+- [ ] 11-01-PLAN.md — Create the `edition` schema type (leadPhoto + structured `format` group), register + wire the orderable "Éditions" desk item, and record the "Rebut" naming resolution in PROJECT.md (Wave 1)
+- [ ] 11-02-PLAN.md — Deploy the schema to the hosted Studio and seed the real "Rebut" édition, proving Romane's unassisted create/edit/publish/reorder workflow (Wave 2)
 
 ### Phase 12: Data-Fetch Layer & Routes
 
