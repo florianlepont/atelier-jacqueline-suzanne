@@ -230,23 +230,40 @@ test.describe('collection statements on the homepage', () => {
 });
 
 test.describe('carousel wordmark cutout (HOME-03, D-08)', () => {
-  test('the wordmark uses background-clip:text with a photo background-image', async ({ page }) => {
+  test('the wordmark uses one clipped photo and adapts its filter to panel contrast', async ({ page }) => {
     await page.goto('/');
 
     const wordmark = page.locator('.home-hero__wordmark');
     await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
-    const { clip, bg, textFill } = await wordmark.evaluate((el) => {
+    const { clip, bg, blendMode, bgColor, textFill, strokeWidth, filter } = await wordmark.evaluate((el) => {
       const style = getComputedStyle(el);
       return {
         clip: style.webkitBackgroundClip || style.backgroundClip,
         bg: style.backgroundImage,
+        blendMode: style.backgroundBlendMode,
+        bgColor: style.backgroundColor,
         textFill: style.webkitTextFillColor,
+        strokeWidth: style.webkitTextStrokeWidth,
+        filter: style.filter,
       };
     });
 
     expect(clip).toContain('text');
     expect(bg).toContain('url(');
+    expect(bg).not.toContain('linear-gradient');
+    expect(blendMode).toBe('normal');
+    expect(bgColor).toBe('rgba(0, 0, 0, 0)');
     expect(textFill).toBe('rgba(0, 0, 0, 0)');
+    expect(parseFloat(strokeWidth)).toBe(0);
+    expect(filter).toContain('brightness(0.65)');
+    expect(filter).toContain('contrast(1.12)');
+
+    // Brume uses a dark purple panel with white interface text. Its already
+    // dark photograph must be lifted rather than darkened further.
+    await page.getByRole('tab', { name: 'Brume (2/5)' }).click();
+    await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
+    await expect.poll(() => wordmark.evaluate((el) => getComputedStyle(el).filter)).toContain('brightness(1.38)');
+    await expect.poll(() => wordmark.evaluate((el) => getComputedStyle(el).filter)).toContain('contrast(0.92)');
     // Whether the photo is actually legible through the letters is confirmed
     // live in the phase's checkpoint task per D-08 — computed style alone
     // cannot assert visual legibility, so no pixel assertion here.

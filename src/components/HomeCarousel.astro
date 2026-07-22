@@ -80,6 +80,10 @@ const fallbackByline = isEn ? 'A project by Romane Lepont' : 'Un projet de Roman
 
 const totalLabel = String(galleries.length).padStart(2, '0');
 const firstGallery = galleries[0];
+const wordmarkPhotoFilter = (textColor?: string) =>
+  textColor?.toUpperCase() === '#FFFFFF'
+    ? 'brightness(1.38) contrast(0.92)'
+    : 'brightness(0.65) contrast(1.12)';
 
 // Base-aware logo paths (matches BaseLayout.astro's assetBase pattern) — a
 // bare root-relative "/logos/..." src 404s under the GitHub Pages deploy's
@@ -98,6 +102,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     data-display-mode="carousel"
     style={{
       '--wordmark-photo': `url(${firstGallery.heroSrc})`,
+      '--wordmark-photo-filter': wordmarkPhotoFilter(firstGallery.heroTextColor),
       '--current-accent': firstGallery.heroColor ?? 'var(--color-accent)',
       '--current-accent-text': firstGallery.heroTextColor ?? 'var(--color-on-accent)',
     }}
@@ -302,6 +307,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           { bg: 'var(--palette-lime)', text: 'var(--color-ink)' },
           { bg: 'var(--palette-plum)', text: '#FFFFFF' },
         ];
+        const wordmarkPhotoFilter = (textColor: string) =>
+          textColor.toUpperCase() === '#FFFFFF'
+            ? 'brightness(1.38) contrast(0.92)'
+            : 'brightness(0.65) contrast(1.12)';
 
         const heroImg = hero.querySelector<HTMLImageElement>('[data-role="hero-image"]');
         const heroPlaceholderImg = hero.querySelector<HTMLImageElement>('[data-role="hero-image-placeholder"]');
@@ -435,6 +444,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           }
           root!.style.setProperty('--current-accent', accent.bg);
           root!.style.setProperty('--current-accent-text', accent.text);
+          root!.style.setProperty('--wordmark-photo-filter', wordmarkPhotoFilter(accent.text));
           // D-08/D-09: keep the wordmark's photo-cutout background in sync
           // with the visible hero photo on every prev/next/auto-advance
           // tick, so the letters always reveal the currently-shown gallery.
@@ -1277,6 +1287,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
   @supports (background-clip: text) or (-webkit-background-clip: text) {
     .home-hero__wordmark {
+      /* Keep exactly one photographic background and no blended color layer.
+         Safari can produce raster seams when background-clip:text is combined
+         with extra paint layers on multiline text. Contrast is handled later
+         with a filter on the finished glyph pixels instead. */
       background-image: var(--wordmark-photo);
       /* --wordmark-bg-size/-position are computed live by
          syncWordmarkAlignment() in the <script> below, so the visible
@@ -1300,16 +1314,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     .home.has-wordmark-photo .home-hero__wordmark {
       color: transparent;
       -webkit-text-fill-color: transparent;
-      /* Live-verification finding (Task 3): the plain cutout is illegible
-         wherever the underlying photo crop is busy/low-contrast near a
-         letter's edge (confirmed on both the Silos and Brume galleries — the
-         third line consistently vanished into the photo). A soft dark
-         text-shadow paints around the glyph outline (independent of the
-         transparent fill) to give every letter a contrast edge against any
-         photo content, without adding a solid backing that would defeat the
-         cutout (D-08's own "must be verified live, must remain legible"
-         requirement, resolved via Claude's discretion per D-08/D-09). */
-      text-shadow: none; /* temporarily removed for comparison, per user request */
+      /* Adjust the already-rasterized photo in the direction that contrasts
+         with the panel: darker on light panels, lighter on dark panels. Keep
+         this as a single filter (no text-stroke/paint-order or extra paint
+         layer), since those produced geometric artifacts in Safari. */
+      filter: var(--wordmark-photo-filter, brightness(0.65) contrast(1.12));
     }
   }
 
