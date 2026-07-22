@@ -12,22 +12,7 @@ export const homePage = defineType({
   initialValue: {intro: defaultIntro},
   groups: [
     {name: 'content', title: 'Contenu', default: true},
-    {name: 'seo', title: 'SEO & partage'},
-  ],
-  fieldsets: [
-    {
-      name: 'content',
-      title: 'Contenu',
-      group: 'content',
-      description: 'Le texte affiché aux visiteurs dès leur arrivée sur le site.',
-    },
-    {
-      name: 'seo',
-      title: 'SEO & partage',
-      group: 'seo',
-      description:
-        "Comment cette page apparaît dans les résultats Google et lors d'un partage sur les réseaux sociaux.",
-    },
+    {name: 'seo', title: 'SEO'},
   ],
   fields: [
     defineField({
@@ -35,8 +20,8 @@ export const homePage = defineType({
       title: "Introduction de la page d'accueil",
       type: 'object',
       group: 'content',
-      fieldset: 'content',
-      description: "Court texte affiché dans le panneau coloré de la page d'accueil.",
+      description:
+        "Court texte affiché aux visiteurs dans le panneau coloré de la page d'accueil.",
       options: {columns: 2},
       fields: [
         defineField({
@@ -60,7 +45,6 @@ export const homePage = defineType({
       title: "SEO de la page d'accueil",
       type: 'seo',
       group: 'seo',
-      fieldset: 'seo',
       description: 'Facultatif : les réglages SEO globaux sont utilisés si ces champs sont vides.',
     }),
   ],

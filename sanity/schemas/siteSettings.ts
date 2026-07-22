@@ -9,7 +9,7 @@ function localeStringField(
   title: string,
   hidden = false,
   group?: string,
-  fieldset?: string,
+  description?: string,
 ) {
   return defineField({
     name,
@@ -17,7 +17,7 @@ function localeStringField(
     type: 'object',
     hidden,
     group,
-    fieldset,
+    description,
     options: {columns: 2},
     fields: [
       defineField({
@@ -78,43 +78,22 @@ export const siteSettings = defineType({
     {name: 'identity', title: 'Identité', default: true},
     {name: 'navigation', title: 'Navigation'},
     {name: 'footer', title: 'Pied de page'},
-    {name: 'seo', title: 'SEO & Partage'},
-  ],
-  fieldsets: [
-    {
-      name: 'identity',
-      title: 'Identité',
-      group: 'identity',
-      description: "Le nom du site, utilisé dans l'onglet du navigateur et lors des partages.",
-    },
-    {
-      name: 'navigation',
-      title: 'Navigation',
-      group: 'navigation',
-      description: 'Les libellés affichés dans le menu principal, sur toutes les pages.',
-    },
-    {
-      name: 'footer',
-      title: 'Pied de page',
-      group: 'footer',
-      description: 'Le texte affiché en bas de toutes les pages du site.',
-    },
-    {
-      name: 'seo',
-      title: 'SEO & Partage',
-      group: 'seo',
-      description: "Utilisé par défaut quand une page ne définit pas ses propres réglages SEO.",
-    },
+    {name: 'seo', title: 'SEO'},
   ],
   fields: [
-    localeStringField('siteTitle', 'Nom du site', false, 'identity', 'identity'),
+    localeStringField(
+      'siteTitle',
+      'Nom du site',
+      false,
+      'identity',
+      "Utilisé dans l'onglet du navigateur et lors des partages.",
+    ),
     defineField({
       name: 'navLabels',
       title: 'Libellés du menu',
       type: 'object',
       group: 'navigation',
-      fieldset: 'navigation',
-      description: 'Texte affiché dans le menu principal du site.',
+      description: 'Libellés affichés dans le menu principal, sur toutes les pages du site.',
       options: {columns: 2},
       fields: [
         defineField({
@@ -177,13 +156,18 @@ export const siteSettings = defineType({
         }),
       ],
     }),
-    localeStringField('footerText', 'Texte de copyright', false, 'footer', 'footer'),
+    localeStringField(
+      'footerText',
+      'Texte de copyright',
+      false,
+      'footer',
+      'Texte affiché en bas de toutes les pages du site.',
+    ),
     defineField({
       name: 'defaultSeo',
       title: 'SEO par défaut',
       type: 'seo',
       group: 'seo',
-      fieldset: 'seo',
       description: 'Utilisé lorsqu’une page ne possède pas ses propres réglages SEO.',
     }),
     // Obsolete text fields stay addressable during migration, but are hidden

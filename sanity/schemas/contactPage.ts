@@ -52,35 +52,8 @@ export const contactPage = defineType({
   groups: [
     {name: 'content', title: 'Présentation', default: true},
     {name: 'details', title: 'Coordonnées'},
-    {name: 'links', title: 'Liens professionnels'},
-    {name: 'seo', title: 'SEO & partage'},
-  ],
-  fieldsets: [
-    {
-      name: 'content',
-      title: 'Présentation',
-      group: 'content',
-      description: "Le texte d'introduction affiché en haut de la page Contact.",
-    },
-    {
-      name: 'details',
-      title: 'Coordonnées',
-      group: 'details',
-      description: 'Les informations affichées pour que les visiteurs puissent joindre Romane.',
-    },
-    {
-      name: 'links',
-      title: 'Liens professionnels',
-      group: 'links',
-      description: 'Les liens externes affichés sur la page (portfolio, réseaux, presse).',
-    },
-    {
-      name: 'seo',
-      title: 'SEO & partage',
-      group: 'seo',
-      description:
-        "Comment cette page apparaît dans les résultats Google et lors d'un partage sur les réseaux sociaux.",
-    },
+    {name: 'links', title: 'Liens'},
+    {name: 'seo', title: 'SEO'},
   ],
   initialValue: {
     intro: {
@@ -98,26 +71,29 @@ export const contactPage = defineType({
     ],
   },
   fields: [
-    {...localizedText('intro', 'Texte d’introduction', true), group: 'content', fieldset: 'content'},
+    {
+      ...localizedText('intro', 'Texte d’introduction', true),
+      group: 'content',
+      description: "Le texte affiché en haut de la page Contact.",
+    },
     defineField({
       name: 'publicEmail',
       title: 'Adresse e-mail publique',
       type: 'string',
       group: 'details',
-      fieldset: 'details',
       description: 'Affichée sur la page et utilisée comme solution de secours du formulaire.',
       validation: (rule) =>
         rule.required().email().error('Indiquer une adresse e-mail publique valide.'),
     }),
-    {...localizedString('location', 'Localisation'), group: 'details', fieldset: 'details'},
-    {...localizedText('availability', 'Disponibilités'), group: 'details', fieldset: 'details'},
+    {...localizedString('location', 'Localisation'), group: 'details'},
+    {...localizedText('availability', 'Disponibilités'), group: 'details'},
     defineField({
       name: 'professionalLinks',
       title: 'Liens professionnels',
       type: 'array',
       group: 'links',
-      fieldset: 'links',
-      description: 'Portfolio externe, galerie, réseau professionnel ou dossier de presse.',
+      description:
+        'Liens externes affichés sur la page : portfolio, galerie, réseau professionnel ou dossier de presse.',
       of: [
         defineArrayMember({
           type: 'object',
@@ -145,7 +121,7 @@ export const contactPage = defineType({
         }),
       ],
     }),
-    defineField({name: 'seo', title: 'SEO & partage', type: 'seo', group: 'seo', fieldset: 'seo'}),
+    defineField({name: 'seo', title: 'SEO & partage', type: 'seo', group: 'seo'}),
   ],
   preview: {
     select: {email: 'publicEmail'},

@@ -45,28 +45,13 @@ export const aboutPage = defineType({
   },
   groups: [
     {name: 'content', title: 'Contenu', default: true},
-    {name: 'seo', title: 'SEO & partage'},
-  ],
-  fieldsets: [
-    {
-      name: 'content',
-      title: 'Contenu',
-      group: 'content',
-      description: 'La présentation de Romane : biographie, atelier et technique.',
-    },
-    {
-      name: 'seo',
-      title: 'SEO & partage',
-      group: 'seo',
-      description:
-        "Comment cette page apparaît dans les résultats Google et lors d'un partage sur les réseaux sociaux.",
-    },
+    {name: 'seo', title: 'SEO'},
   ],
   fields: [
-    {...localizedText('biography', 'Biographie'), group: 'content', fieldset: 'content'},
-    {...localizedText('practice', 'Atelier & pratique'), group: 'content', fieldset: 'content'},
-    {...localizedText('medium', 'Médium & technique', 3), group: 'content', fieldset: 'content'},
-    defineField({name: 'seo', title: 'SEO & partage', type: 'seo', group: 'seo', fieldset: 'seo'}),
+    {...localizedText('biography', 'Biographie'), group: 'content'},
+    {...localizedText('practice', 'Atelier & pratique'), group: 'content'},
+    {...localizedText('medium', 'Médium & technique', 3), group: 'content'},
+    defineField({name: 'seo', title: 'SEO & partage', type: 'seo', group: 'seo'}),
   ],
   preview: {
     prepare() {
