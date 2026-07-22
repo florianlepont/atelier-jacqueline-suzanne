@@ -1,311 +1,260 @@
 # Pitfalls Research
 
-**Domain:** Small artist/photographer portfolio + e-commerce site, near-zero budget, built by a developer for a non-technical family member (French/EU market)
-**Researched:** 2026-07-05
-**Confidence:** MEDIUM-HIGH (legal/payment mechanics verified against official Stripe/CNIL/gouv sources; hosting-limit specifics are MEDIUM — verify exact current free-tier numbers at implementation time since providers change these often)
+**Domain:** Adding an "Éditions" showcase content type/nav section to the AJS website (v1.3 milestone) — a new non-transactional content type layered onto an existing static Astro + Sanity bilingual portfolio site, explicitly designed as a precursor to a future paid "product" (shop/checkout) milestone.
+**Researched:** 2026-07-22
+**Confidence:** HIGH for codebase-integration pitfalls (verified directly against `sanity/schemas/gallery.ts`, `sanity/schemas/exhibition.ts`, `sanity/schemas/structure.ts`, `src/components/SiteHeader.astro`, `src/layouts/BaseLayout.astro`, `src/lib/sanity.ts`, `src/lib/site-config.ts`, `src/pages/sitemap.xml.ts`, `src/pages/galleries/[slug].astro`). LOW for general Sanity/Astro-i18n ecosystem claims (uncross-checked web search, see Sources) — used only as supporting confirmation, not as the basis for any codebase-specific claim above.
 
 ## Critical Pitfalls
 
-### Pitfall 1: Overselling one-of-a-kind originals via a stock race condition
+### Pitfall 1: Modeling `edition` so the future "product" fields don't fit cleanly
 
 **What goes wrong:**
-Two visitors both open checkout for the same one-of-a-kind original within minutes of each other. Both checkouts "look" valid (stock shows 1 available to both), both complete payment, and now Romane owes two people the same physical, non-reproducible artwork. This is the single worst possible failure mode for this project because — unlike a limited-edition print — there is no way to fulfill the second order short of a refund and an apology.
+The édition schema is built purely as a "gallery clone" — title, slug, images, statement — with format details (page count, print run, dimensions) bolted on as loose top-level fields. When the v1.x shop milestone arrives and needs `price`, `stockQuantity`, `soldOut`, `sku`, or variant handling (e.g. different print runs at different price points), those fields get awkwardly grafted onto a document that was never designed to represent a sellable unit, or a second parallel `product` schema gets created that duplicates édition content, forcing Romane to maintain the same book in two places.
 
 **Why it happens:**
-Stripe Checkout/Payment Links do not manage inventory. A naive implementation checks "is this still in stock?" when rendering the product page or when creating the Checkout Session, then decrements stock only after payment succeeds (via webhook). Between "check" and "decrement," there's a window — sometimes minutes long, since a customer can sit on the Stripe-hosted payment page for a long time — during which a second buyer can also pass the same stale "in stock" check. Developers under time pressure often treat this as a low-probability edge case and skip it, especially for a project with modest expected traffic.
+This milestone explicitly forbids building pricing/availability now ("no pricing, availability, or purchase CTA — pure showcase"), which teams over-interpret as "don't even think about the shape it takes later." The path of least resistance is to copy `gallery.ts` verbatim (it is the closest existing pattern) rather than asking "what does this document look like with 3 more fields on it in six months."
 
 **How to avoid:**
-- Treat stock mutation as the single source of truth, not the product page render. Decrement/mark-as-reserved atomically (e.g., a DB transaction or conditional update: `UPDATE products SET status='reserved' WHERE id=? AND status='available'`) at Checkout Session **creation**, not just on payment success.
-- Set a short `expires_at` on the Stripe Checkout Session (Stripe defaults to 24h — reduce it) and listen for `checkout.session.expired` to release the reservation back to available.
-- Listen for `checkout.session.completed` / `payment_intent.succeeded` to finalize the sale, and for `checkout.session.expired` / `payment_intent.payment_failed` to release the hold.
-- For one-of-a-kind originals specifically, this reserve-then-confirm pattern matters far more than for prints/books with quantity > 1 — prioritize it there first.
-- Use Stripe idempotency keys on any server-side write to avoid double-processing retried webhooks.
+- Group format/commerce-adjacent fields under their own schema group now (e.g. a `format` group: `pageCount`, `printRun`, `dimensions`) so a later `commerce` group (`price`, `stockQuantity`, `soldOut`) is an *additive* group, not a restructuring.
+- Treat `printRun` as a plain number now (e.g. "300 copies") — do NOT model it as free text ("Tirage limité à 300 exemplaires") baked into the display string, since the future shop milestone needs `printRun` as the ceiling for `stockQuantity` decrementing. A numeric `printRun` field can be rendered as "run of {n}" in both locales today and reused as the stock ceiling later without re-authoring content.
+- Do not create a separate `product` document type that re-enters édition title/images/description — when v1.x ships, the shop should *extend* the `edition` document (add fields to the same schema) or reference it by `_ref`, not duplicate its content. Decide and note this intention directly in the schema file as a code comment, the same way this codebase already documents forward-looking intent in `gallery.ts` and `PROJECT.md`.
+- Reuse the existing `localeTextField` helper pattern from `gallery.ts` for the description/statement field rather than inlining a new locale-object shape — keeps one schema shape to extend later instead of two divergent ones.
+- Do not add a placeholder `price`/`stock` field "just in case" — that violates the milestone's explicit no-pricing scope and risks an editorial UI showing an empty price field to Romane before there's anything to put in it. Extensibility means good *grouping and typing*, not pre-adding disabled fields.
 
 **Warning signs:**
-- Product availability is only checked client-side or at page-render time, not re-verified atomically when checkout starts.
-- No webhook handler exists for expired/abandoned checkout sessions (stock never gets released, originals falsely show "sold out" forever after abandoned carts).
-- Load/concurrency testing was never done on the "buy" flow (even a simple two-tab manual test to open two checkouts for the same original catches this).
+- The schema file has no grouping at all (flat field list), making "add a commerce group" a restructuring rather than an addition.
+- `printRun` or `dimensions` are stored as a single free-text string per locale (impossible to validate, sort, or use programmatically later — e.g. "300 ex. / 21x29,7cm" as one blob).
+- A reviewer cannot answer "where would `price` and `stockQuantity` go" by looking at the schema file without redesigning it.
 
 **Phase to address:**
-The e-commerce/checkout implementation phase — before it is marked done. This should be a specific acceptance test, not an afterthought: "open checkout for the same one-of-a-kind item in two sessions, complete one, verify the other is blocked/refunded before capture."
+Schema/content-model phase (first phase of this milestone) — must be resolved before any route/page work depends on the shape.
 
 ---
 
-### Pitfall 2: Launching without mandatory French legal pages (mentions légales, CGV) and treating them as an afterthought
+### Pitfall 2: Scope creep — commerce language or UI creeping into a "no pricing" milestone
 
 **What goes wrong:**
-The site goes live and starts taking real payments without a "Mentions légales" page or a CGV (Conditions Générales de Vente) page. Both are treated by developers as boilerplate to add "later," but in France they are a hard legal requirement for any public website (mentions légales, LCEN art. 6-III) and any B2C online sale (CGV, Code de la consommation art. L.221-5 et seq.), independent of business size or revenue.
+Because the schema is explicitly designed with the future shop in mind, it's easy to let commerce concepts leak into what should be pure showcase UI: a "Disponible" badge, an availability note ("épuisé"), a mailing-list "notify me" CTA, or a props type that already includes `price?: number`. Any of these either (a) requires content Romane doesn't have yet (nobody has set a price), or (b) silently reintroduces the transactional surface this milestone explicitly defers, expanding scope and QA burden with no corresponding requirement.
 
 **Why it happens:**
-Developers coming from a "ship the product features first" mindset deprioritize legal/compliance pages because they don't look like "real work" and aren't part of the visible feature list (browse, buy, exhibitions, etc.). For a family project with no legal counsel involved, nobody flags it as blocking.
+Once a developer is thinking "this will be a product later," it's tempting to build the affordance now "since it's basically free," especially when copying patterns from e-commerce templates/tutorials found while researching the schema-extensibility question.
 
 **How to avoid:**
-- Mentions légales must include: Romane's name (or trade name), business status (for a micro-entrepreneur, "EI" + SIRET number — this presupposes she is actually registered as a business, see Pitfall 3), address/contact, hosting provider's identity and address, and the site's directeur de publication.
-- CGV must include: identity/contact of the seller, essential characteristics of the goods, price (all-inclusive, incl. any shipping), delivery timeframes, legal/commercial guarantees, right-of-withdrawal terms (see Pitfall 8), and dispute-resolution/mediator contact.
-- CGV acceptance must be an explicit action (a checkbox at checkout that isn't pre-ticked), not implied by clicking "pay."
-- Also required: a Politique de Confidentialité (GDPR/RGPD — what data is collected, why, retention, rights) since the checkout collects personal + payment data.
-- Build these as real content (in both languages, see Pitfall 5), not filler text, and put them in the footer of every page.
-- Penalties are real (LCEN: up to 1 year imprisonment / €75k fine for an individual for missing mentions légales) — low probability of enforcement for a small site, but the point is these aren't optional "nice to haves," they gate whether the shop can legally launch at all.
+- Treat "no pricing/availability/purchase CTA" as a hard UI-layer rule for this milestone: the `edition` schema may group fields for future extensibility (Pitfall 1), but the Astro page templates and GROQ projections for this milestone must not reference or render anything commerce-shaped, even conditionally.
+- Re-check the milestone's own "Active" requirement list before adding any UI element: if it's not one of the six listed v1.3 requirements in `.planning/PROJECT.md`, it doesn't belong in this milestone.
 
 **Warning signs:**
-- Footer has no "Mentions légales" / "CGV" / "Confidentialité" links.
-- CGV page is a generic template that doesn't mention delivery zones (France + Europe), right of withdrawal, or how originals vs. editions are handled on return.
-- No explicit checkbox/consent step in the checkout flow.
+- Any Astro template importing a `price` or `stock` field from Sanity, even behind a conditional.
+- Studio field labels using commerce language ("Prix", "Stock", "Disponibilité") for anything shipped in this milestone.
 
 **Phase to address:**
-A dedicated legal/compliance phase (or a checklist item inside the checkout phase) that runs in parallel with e-commerce build-out, completed before any real transaction goes live — not a "polish" task at the very end.
+Schema/content-model phase (schema itself) and routes/pages phase (templates) — both must independently hold this line since either could reintroduce it.
 
 ---
 
-### Pitfall 3: Assuming Stripe "just works" without business registration — payouts get blocked
+### Pitfall 3: Perpetuating the existing per-locale page-file duplication for a brand-new section
 
 **What goes wrong:**
-The team builds the whole checkout flow, connects a Stripe account, and only discovers at the very end that Stripe won't release payouts (or even fully activate the account) because Romane isn't registered as a business yet. Stripe requires KYC identity/business verification, and for a French individual selling goods this generally means a SIRET number (i.e., she must be a registered micro-entrepreneur/auto-entrepreneur or similar), not just a personal bank account.
+The codebase's current i18n pattern is two nearly-identical files per route — `src/pages/galleries/[slug].astro` and `src/pages/en/galleries/[slug].astro` — differing only in a hardcoded `locale` const and import depth. Copying this pattern for `src/pages/editions/[slug].astro` + `src/pages/en/editions/[slug].astro` (and an overview-page equivalent) means every future fix to the édition detail template must be applied twice, and it is easy to update one locale variant and forget the other — a bug that won't surface in French QA but silently breaks or serves stale markup in English (or vice versa).
 
 **Why it happens:**
-"Add Stripe" feels like a pure integration task to a developer, so business/administrative registration (which can take days to weeks through the guichet unique) isn't scheduled as a dependency, and gets discovered as a blocker right before launch.
+Mirroring the existing gallery pages is the fastest way to ship, and the codebase already has this precedent twice over (about/contact/galleries), so it looks like "the established pattern" rather than debt to avoid propagating further. General Astro i18n guidance explicitly flags this N-pages-times-M-locales duplication as the standard failure mode once a site adds more sections.
 
 **How to avoid:**
-- Confirm Romane's business registration status (auto-entrepreneur/micro-entreprise with a SIRET) as an early, non-technical checklist item — start this in parallel with the earliest development phases, since administrative registration has its own lead time independent of code.
-- Once registered, also confirm: the franchise en base de TVA thresholds (as of 2025: €85,000 for buying/reselling goods — art sales likely fall here rather than the €37,500 services threshold) so she knows whether she needs to charge VAT at all initially.
-- If sales to other EU countries are expected to be meaningful, be aware of the €10,000/year EU-wide distance-selling threshold, above which VAT is due in the buyer's country (managed via the One-Stop-Shop / OSS regime) — for a "France + Europe" shipping scope this is realistic to eventually cross and worth understanding even if not implemented on day one.
-- Mentions légales/CGV (Pitfall 2) require the SIRET number anyway — these two pitfalls share the same root dependency.
+- At minimum, factor the shared parts (the actual markup/logic, not just copy) into one shared Astro component consumed by two thin locale-specific page files that differ only in the `locale` constant and copy lookups — mirrors what `BaseLayout`/`SiteHeader` already do for chrome, just applied to page bodies too.
+- Add both locale variants and both route levels (overview + `[slug]` detail) to the same commit/PR so a missing counterpart is caught in review, not discovered later.
+- Add an e2e/build check (or extend an existing one) asserting the French and English Éditions routes both exist and both render the same slug set — catches "added an édition in Sanity, only shows up in one locale" regressions cheaply.
 
 **Warning signs:**
-- Stripe dashboard shows account restrictions / "more information needed" that block payouts, discovered only when trying to withdraw the first real sale's funds.
-- Nobody has confirmed whether Romane has (or is in the process of getting) a SIRET before checkout is built.
+- A change to the édition detail page touches only one of the two locale files in a diff.
+- `getStaticPaths` logic (fetch + slug mapping) is copy-pasted rather than imported from one shared module (as `getGalleries()` already is from `src/lib/sanity.ts` — reuse that pattern with a new `getEditions()`/`getEditionBySlug()`).
 
 **Phase to address:**
-Should be flagged as a project-setup / pre-requisite item in the earliest phase, run in parallel with technical work — this is an administrative critical path item, not a coding task.
+Routes/pages phase.
 
 ---
 
-### Pitfall 4: Free-tier hosting bandwidth/image limits get blown by a photography-heavy site
+### Pitfall 4: New section invisible to search engines and internal link-integrity checks
 
 **What goes wrong:**
-A photography portfolio is, by nature, image-heavy — large hero images, multiple galleries, high-resolution product photos for prints. Static hosts' free tiers (Netlify, Vercel, etc.) typically cap monthly bandwidth (commonly cited around 100GB/month, though exact numbers change and should be re-verified at build time — MEDIUM confidence, verify against current provider docs) and, in Vercel's case specifically, also cap the number of on-the-fly optimized images processed per month. Once exceeded, the host either throttles/pauses the site (Netlify) or starts charging (Vercel/AWS-style usage billing) — the opposite of the near-zero-budget goal.
+`src/pages/sitemap.xml.ts` builds its URL list from a manually maintained array (`galleries.map(...)`, plus hardcoded `about/`, `contact/`, etc.) — it does not auto-discover routes. If Éditions overview/detail pages are added to routing but not added to this file, the new section builds and renders correctly yet is silently absent from the sitemap (and, depending on what else keys off route lists — e.g. an existing "un-prefixed-link grep guard" in the CI pipeline per `CLAUDE.md` — could pass CI green while being unreachable/undiscoverable in ways that look "done" but aren't).
 
 **Why it happens:**
-Photography sites naturally push way more image bytes per visitor than a typical text/app site, and it's easy to upload originals or lightly-compressed exports without a deliberate image pipeline, especially once a non-technical CMS user (Romane) is uploading her own photos post-launch without any size/format constraints enforced.
+The sitemap generator is easy to overlook because it lives outside the obvious "add a page + add a schema" workflow, and nothing fails loudly when a route is missing from it — the site still builds and the pages still work when visited directly.
 
 **How to avoid:**
-- Don't serve raw uploaded images directly — put an image CDN/transform layer in front (Cloudflare Images, a self-hosted transform via `next/image`-style loader, or Cloudinary's free tier) that serves responsive, compressed, modern formats (WebP/AVIF).
-- Strongly prefer an object storage + CDN combination with **zero egress fees** for the image-heavy asset layer — Cloudflare R2 confirms no data-transfer/egress charges on any storage class (only storage itself, ~$0.015/GB-month, is billed after a free 10GB/month allowance) — this directly protects the near-zero-budget constraint against "bandwidth surprise" bills, which the default host's free bandwidth cap doesn't (source: Cloudflare R2 official pricing docs, HIGH confidence).
-- Enforce image constraints at the CMS/upload layer (max dimensions, automatic compression) so Romane can't accidentally upload a 40MB RAW-derived JPEG straight from her camera roll.
-- Re-verify the chosen host's exact current free-tier bandwidth/image-processing caps at implementation time — these numbers and enforcement behavior change over time and vary by provider (MEDIUM confidence from current provider marketing pages, not a stable long-term fact).
+- When adding `getEditions()`/`getEditionBySlug()` to `src/lib/sanity.ts`, add the corresponding entries to `sitemap.xml.ts`'s `localizedSitemapPaths` array in the same change — treat "new content type" as requiring a sitemap-file touch by default, the same way it requires a Studio `structure.ts` touch (Pitfall 7).
+- Add the Éditions overview + at least one detail URL to whatever the existing e2e suite already checks for gallery pages (internal links resolve, `noIndex` respected, etc.) rather than only smoke-testing that the page renders.
 
 **Warning signs:**
-- Product/gallery images are served at original upload resolution with no resizing/compression step.
-- No monitoring/alerting on hosting usage — the first sign of a problem is the site going down or an unexpected bill.
-- CMS upload UI has no client-side or server-side size/dimension limit.
+- `sitemap.xml.ts` has no `editions`/`getEditions` reference after the feature ships.
+- Nothing in the test suite asserts the sitemap contains an éditions URL.
 
 **Phase to address:**
-The stack-selection / architecture phase (choosing hosting + image pipeline together, not hosting first and images as an afterthought), reinforced in the CMS/content-editing phase (enforcing upload constraints for Romane).
+Routes/pages phase (implementation) with a checklist item carried into whichever phase runs final verification/UAT for this milestone.
 
 ---
 
-### Pitfall 5: Bilingual content drifts out of sync after launch
+### Pitfall 5: `<SiteHeader>`'s explicit-props contract makes nav integration look trivial but has real seams
 
 **What goes wrong:**
-At launch, French and English content are in parity. Months later, Romane adds a new exhibition date or a new gallery in French (the language she's most comfortable in) and forgets — or doesn't know how — to add the English version. Visitors switching to English see stale or missing content (an old exhibition list, a gallery that doesn't exist in English), which undermines the "professional bilingual site" goal the project was built for.
+`SiteHeader.astro` takes fully explicit, named props (`aboutLabel`, `aboutHref`, `contactLabel`, `contactHref`, etc.) — there is no data-driven nav array to just append an item to. Adding "Éditions" means: (1) extending `SiteHeader`'s `Props` interface and template with `editionsLabel`/`editionsHref`, (2) computing those two values in `BaseLayout.astro` (the single real call site post-Phase-10 unification) alongside the existing `aboutLabel`/`aboutHref` computation, and (3) deciding whether the label is hardcoded per-locale (like Instagram's `instagramNewTabHint`) or Sanity-editable (like `aboutLabel`/`contactLabel`, which read from `siteSettings.navLabels`). Skipping step 3's decision and just hardcoding "Éditions"/"Editions" creates an inconsistent editorial surface: Romane can rename "About"/"Contact" in Sanity but not "Éditions", with no visible reason why.
 
 **Why it happens:**
-Bilingual content maintenance is a process problem, not just a technical one. Once the developer isn't reviewing every content change, there's no enforcement that a French addition has a corresponding English one — especially for content Romane manages herself (galleries, exhibitions) as opposed to code-level UI strings.
+Because `BaseLayout.astro` is genuinely the single header call site today (the homepage was unified onto `<SiteHeader>` in Phase 10 — `index.astro` has no direct `SiteHeader` usage), it's easy to assume "just add one more prop" is the entire task and skip checking whether the new nav label should follow the existing `siteSettings.navLabels` CMS-editable pattern for consistency with About/Contact.
 
 **How to avoid:**
-- In the CMS content model, make translation fields structurally visible side-by-side (not buried in separate documents/tabs) so a missing English field is obvious when Romane is editing, not something she has to remember to go add separately.
-- Where good machine translation is acceptable as a stopgap (e.g., exhibition descriptions), consider a "draft translation" default so nothing is ever fully blank in one language — she edits/corrects rather than starting from nothing.
-- Keep the amount of content Romane must translate herself minimal and structurally simple (short fields: title, date, location, one-paragraph description) rather than long free-form bilingual essays, to reduce the chance of drift.
-- For static/code-level UI strings (buttons, labels, legal pages), this is the developer's responsibility to keep in sync — treat missing-translation as a build-time or pre-deploy check if the stack supports it, not something discovered by a visitor.
+- Extend `SiteSettings.navLabels` in `src/lib/sanity.ts` and `sanity/schemas/siteSettings.ts` with an `editions` locale pair, and extend `resolveSiteCopy()` in `src/lib/site-config.ts` with an `editionsLabel`, mirroring `aboutLabel`/`contactLabel` exactly — don't hardcode the label while its siblings are CMS-editable.
+- Add the new prop to `SiteHeader.astro`'s `Props` interface and template in the same change as `BaseLayout.astro`'s computed value, and re-run/extend whatever visual/e2e coverage already exists for the header (Phase 10's "homepage header identical to About/Contact header by construction" guarantee must still hold with a 4th nav link).
 
 **Warning signs:**
-- CMS shows French and English fields in separate tabs/entries rather than side by side, making omissions easy to miss.
-- No visual/editorial indicator in the CMS for "this field has no English translation yet."
-- After a few months of no developer involvement, spot-check the English version of the site against the French one.
+- "Éditions" appears as a literal string in `BaseLayout.astro` rather than via `siteCopy.editionsLabel`.
+- `SiteSettings.navLabels` type in `src/lib/sanity.ts` still only lists `about`/`contact` after the feature ships.
 
 **Phase to address:**
-The content model / CMS design phase (structure the data model to make drift visible and hard to miss), not the i18n technical implementation phase alone (which only handles routing/switching, not content completeness).
+Nav-integration phase, but the `siteSettings` schema/type extension technically belongs with the schema/content-model phase since it's a Sanity change — sequence schema work first so nav-integration has the field to read.
 
 ---
 
-### Pitfall 6: The site becomes unmaintainable once the developer isn't actively involved (bus factor of 1)
+### Pitfall 6: Header/mobile-nav regression from a 4th nav link, invisible in desktop-only manual checks
 
 **What goes wrong:**
-Everything works at launch because Florian is actively building and testing it. Six months later something breaks (a dependency update, an expired API key, a CMS quota hit, a design tweak Romane wants) and there's no documentation, no simple way for her to get unstuck, and Florian may not have bandwidth to jump back in immediately. This is the single most common failure mode for developer-built-for-family-member sites: functionally excellent at handoff, silently rotting a year later.
+`SiteHeader.astro`'s mobile breakpoint (`@media (max-width: 767px)`) CSS was tuned for exactly 3 `.nav-link` items (About, Contact, Instagram) plus the language switcher — the comments in the file note this was "ported forward from HomeCarousel.astro's own live-tested mobile pixel-budget CSS" and that Instagram becoming a 3rd link already required wrap/gap trims. Adding a 4th nav link (Éditions) without re-checking mobile wrapping can push the language switcher below the fold of the header band, cause an ugly two-line wrap, or shrink tap targets below the `--tap-target-min: 44px` the codebase otherwise enforces — none of which shows up if verification is done only on a desktop viewport.
 
 **Why it happens:**
-A solo developer building for one non-technical user has, by definition, a bus factor of 1 — all operational knowledge lives in one person's head. Documentation is deprioritized because "I'll remember how this works" and because writing docs doesn't feel like progress compared to shipping features. The stack is often optimized for developer convenience and cost, not for the eventual maintainer's technical comfort level.
+Nav-integration changes are typically eyeballed on a desktop browser during development; the header's own code comments make clear this exact regression class (nav item count vs. mobile pixel budget) has already happened once in this project's history (Instagram's addition), so it is a known recurrence risk, not a hypothetical one.
 
 **How to avoid:**
-- Pick boring, well-supported tools for anything Romane touches directly (CMS, image uploads, order/exhibition management) — avoid anything requiring a terminal, redeploys, or environment variable edits for routine content changes.
-- Write a short, non-technical runbook for Romane covering: how to add/edit a gallery, how to add an exhibition, how to check/fulfill an order, and — critically — "who to contact and what to say" if something looks broken (e.g., a specific error screenshot to send Florian, or a support-channel link for the CMS/host itself).
-- Document, even briefly, the "operator" facts a future maintainer (could be Florian in a year, could be someone else) needs: which services are used (host, CMS, Stripe, domain registrar), where credentials/API keys live, what the deploy process is, and any manual steps (e.g., stock corrections) that aren't self-service.
-- Prefer managed services with their own support/documentation (Stripe, a hosted CMS) over self-hosted infrastructure requiring server maintenance, patching, or backups that only the developer knows how to run.
-- Set expectations explicitly: decide upfront whether Florian will do occasional "maintenance passes" (e.g., dependency updates, renewing anything time-limited) or whether the goal is a fully "set and forget" build — this changes stack choices materially.
+- Explicitly test the header at mobile widths (< 768px) with the new 4-link nav, in both `solid` and `transparent` header variants (transparent is used on gallery-detail pages and will presumably also be used on édition-detail pages) and in both locales (English labels are typically longer than French, though "Éditions" vs "Editions" is close, unlike "À propos"/"About").
+- Re-verify the 44px minimum tap target survives on the smallest supported viewport once a 4th link is present, and check the wrap point doesn't visually separate the language switcher from the nav in a confusing way.
 
 **Warning signs:**
-- No written documentation exists beyond code comments.
-- Any routine content task (add a gallery, update agenda) requires touching code, redeploying, or using a CLI.
-- Credentials/API keys for hosting, CMS, Stripe, and the domain registrar are not recorded anywhere Romane (or a future helper) could find them if Florian were unavailable.
+- Nav-integration work only includes a desktop screenshot/manual check in its verification notes.
+- No mobile-viewport e2e test asserts nav-link count or layout after the change.
 
 **Phase to address:**
-Should be an explicit deliverable of the final/launch phase ("handoff & documentation"), but the stack decisions that make it *possible* (self-service CMS, managed hosting, no server maintenance) must be made in the earliest architecture/stack phase — retrofitting maintainability onto a developer-centric stack after the fact is expensive.
+Nav-integration phase.
 
 ---
 
-### Pitfall 7: DNS/domain cutover breaks email or causes visible downtime when replacing the live site
+### Pitfall 7: Studio editorial parity gaps — a "genuinely new" content type quietly missing the workflow scaffolding editors already rely on
 
 **What goes wrong:**
-The new site is ready, DNS is switched over to the new host, and either (a) there's a period where the domain resolves inconsistently (some visitors see the old Myportfolio site, some see the new one, some see errors) due to DNS propagation and caching, or (b) email tied to the domain (e.g., a `contact@atelierjacquelinesuzanne.fr` address, if one exists via the current provider) stops working because MX records were overwritten or not carried over during the switch.
+`gallery.ts` isn't just fields — it also carries a `publicationStatus` draft/published/archived workflow with radio UI and Studio-list-preview status decoration, a `PublishedPageLinks` "view on site" inspector, an `orderRank` field for Studio drag-reordering (hidden from the edit form per an existing documented pitfall), and a rich `preview()` function showing photo count/status/color at a glance in the document list. `exhibition.ts`, by contrast, is a plainer document type with no `publicationStatus`/orderRank/PublishedPageLinks — it's simply listed via `S.documentTypeListItem('exhibition')` in `structure.ts`. If `edition` is modeled on the *simpler* `exhibition` pattern (since it's "just a showcase," similar reasoning to exhibitions) rather than the richer `gallery` pattern, Romane loses the "En préparation" draft-without-publishing workflow and drag-reorder she's used to for galleries — but the milestone explicitly says éditions should mirror "Portfolio's gallery/gallery-detail structure," not exhibitions'. Conversely, if `edition` is registered in `structure.ts` only via the generic `S.documentTypeListItems()` fallback (forgetting a dedicated list item, as `gallery` and `exhibition` both get), it's harder for Romane to find/reorder in the Studio nav.
 
 **Why it happens:**
-DNS TTLs on the current record set may be high (hours or a day), so a same-day cutover can leave stale entries cached at ISPs/resolvers for a while. Developers focused on the new site's DNS (A/CNAME records for the web host) can forget that the same domain likely has other DNS records (MX for email, TXT for SPF/verification) that must be preserved or deliberately migrated, not silently dropped.
+There are two existing content-type patterns in this codebase of different richness (`gallery` = full workflow, `exhibition` = plain), and nothing forces a developer to notice the milestone spec says "mirror gallery" specifically before defaulting to whichever pattern feels closer in spirit ("show pieces" feels more like "list events" than "curate photos" at a glance).
 
 **How to avoid:**
-- Audit and document every existing DNS record on the domain (A, CNAME, MX, TXT/SPF/DKIM) *before* touching anything — treat the current Myportfolio/Format DNS zone as a source of truth to preserve or intentionally replace, not something to overwrite wholesale.
-- Lower TTLs on the records that will change (e.g., to 300 seconds) a day or more ahead of the actual cutover, so the eventual switch propagates fast and any rollback is also fast.
-- Fully build and test the new site on a temporary/staging URL (or via a local hosts-file override) before ever touching production DNS — never use the live DNS switch as the first real test of the new host.
-- Pick a low-traffic window for the actual cutover, and keep the old site/hosting account live and untouched for at least a week or two after cutover in case rollback is needed.
-- Explicitly confirm whether the domain has any active email service tied to it; if so, replicate the exact MX/SPF/DKIM records on the new DNS setup (or migrate mailboxes deliberately) rather than assuming "just the website" needs migrating.
-- Also plan for old URLs: if any of the current gallery/page URLs are indexed by Google or linked from Instagram, set up redirects (or accept short-term SEO impact) rather than letting old links 404 — full traffic recovery after a re-platform can otherwise take months.
+- Explicitly copy `gallery.ts`'s structure — `publicationStatus` + `initialValue`, the `orderRankField` (hidden), the `preview()` with status/count decoration, and a `PublishedPageLinks`-style inspector if one is added — rather than `exhibition.ts`'s simpler shape, per the milestone's own explicit instruction to mirror the gallery pattern.
+- Add a dedicated `orderableDocumentListDeskItem` entry for `edition` in `sanity/schemas/structure.ts` (as `gallery` has), not just an entry in the generic type-list fallback, and add its type name to the fallback's exclusion array so it isn't listed twice.
+- Reuse the `localeTextField` helper and the required bilingual `alt`+`rights` image-array-member shape verbatim from `gallery.ts` for the édition's own photo-shoot images, rather than re-deriving a new (and possibly less strict) image schema — this also keeps the existing "Crédits et droits" bulk-editing tool (`CreditsManager`) working across both content types if it queries by field shape rather than by document type.
 
 **Warning signs:**
-- Nobody has pulled the current DNS zone file / record list for the domain before starting the migration.
-- No plan exists for what to do if something breaks right after the DNS switch (no documented rollback = TTLs not lowered in advance = slow, painful rollback).
-- Uncertainty about whether `atelierjacquelinesuzanne.fr` has any email or other service beyond the website itself.
+- `edition.ts` has no `publicationStatus` field or no `orderRank`.
+- `structure.ts`'s exclusion array (the list passed to `.filter()`) doesn't include `'edition'`, meaning it will double-list once a dedicated desk item is added, or won't get a dedicated item at all.
 
 **Phase to address:**
-The final launch/cutover phase specifically — should have its own checklist and rehearsal, treated as a distinct, higher-risk activity from the rest of the build, not bundled into a generic "deploy" step.
+Schema/content-model phase.
 
 ---
 
-### Pitfall 8: Assuming one-of-a-kind art can't be returned, when French consumer law says otherwise
+### Pitfall 8: Existing gallery titles literally named "Édition" create editor and content-migration ambiguity
 
 **What goes wrong:**
-The team decides that because an original artwork is unique and "obviously can't be resold if returned," no right of withdrawal (droit de rétractation) applies. In reality, French consumer law's 14-day withdrawal right applies by default to any distance sale to a consumer — including a unique original — unless the item is genuinely "made to the consumer's specifications" or "clearly personalized" (e.g., a commissioned piece). A pre-existing original painting/photo print sold as-is to whoever buys it first is generally **not** exempt just because it's one-of-a-kind. Shipping a CGV that flatly denies all returns for originals is a compliance gap that could be challenged.
+Per this project's own `PROJECT.md` context, the site being replaced already lists galleries titled "Rebut - Édition" and "Silo - Édition" — i.e., the word "Édition" is already used as a *photo-collection* naming convention in the migrated content, unrelated to the new paper-éditions content type this milestone introduces. Once a top-level "Éditions" nav section exists, Romane (and visitors) may reasonably expect "Rebut - Édition" to live there, when it is actually a `gallery` document that belongs in Portfolio. This is a naming collision risk, not a technical one, but it will directly cause editor confusion ("where do I put this?") and potentially visitor confusion (nav label vs. existing gallery names) if not addressed explicitly.
 
 **Why it happens:**
-"Unique item, no returns" is an intuitive assumption for anyone used to physical-gallery norms (where cooling-off periods generally don't apply to in-person sales), and it's easy to conflate "can't be resold to someone else after a return" with "legally exempt from withdrawal rights" — these are not the same thing under French consumer law for online sales.
+The coincidental reuse of the word "édition" across two unrelated meanings (a gallery title suffix on the old site vs. this milestone's new paper-book content type) wasn't a deliberate content decision — it's inherited naming from the site being replaced, discovered only by cross-referencing `PROJECT.md`'s migration context against the new milestone's nav label choice.
 
 **How to avoid:**
-- Default to offering the standard 14-day withdrawal right on originals sold via the online store, and account for it operationally: what happens to "stock" if a returned original needs to go back to "available" status, and who pays return shipping (seller must reimburse standard delivery cost on a valid withdrawal, per statutory rules — return shipping cost allocation should be spelled out in CGV).
-- Only treat a piece as exempt from withdrawal if it is genuinely commissioned/made-to-order for that specific buyer after the order is placed — not simply because it happens to be a singular finished piece already in inventory.
-- Get this specific point confirmed (CGV wording for right of withdrawal on originals vs. editions vs. any future commissions) rather than guessing — it's a narrow, specific legal question worth 20 minutes of targeted verification against current Code de la consommation guidance rather than assumption.
+- Confirm with Romane during content-model/schema-phase discussion whether "Rebut - Édition"/"Silo - Édition" (as migrated `gallery` documents) should be renamed to avoid confusion once a distinct "Éditions" nav section exists (e.g. drop the "- Édition" suffix, since it was presumably describing something about those specific photo collections on the old Myportfolio site, not signaling they're paper books).
+- Add a one-line Studio field description or a `structure.ts` list-item subtitle disambiguating "Collections photo" from "Éditions (livres/zines papier)" so the two content types read as clearly distinct in the Studio nav, not just in the schema's internal `name`.
 
 **Warning signs:**
-- CGV draft says something like "no returns accepted on original artworks" without a specific, defensible exemption basis.
-- No operational plan for what happens to inventory/stock state if a return does happen on a one-of-a-kind item.
+- No confirmation from Romane/Florian on what "- Édition" in the existing migrated gallery titles is meant to signal, before the new nav section ships.
 
 **Phase to address:**
-Same legal/compliance phase as Pitfall 2 (CGV drafting) — resolve this as part of writing the CGV, not left ambiguous.
-
----
+Schema/content-model phase (raise as a discussion item, not an autonomous code decision — this is a content/naming question for Romane, not a technical one).
 
 ## Technical Debt Patterns
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
-|----------|-------------------|-----------------|------------------|
-| Skip webhook-based stock reservation, just decrement on payment success | Faster to build checkout | Real risk of overselling a one-of-a-kind original (Pitfall 1) | Never for one-of-a-kind originals; borderline tolerable for limited editions with quantity > 3-4 where the odds of a simultaneous race are low, but still not recommended |
-| Serve uploaded images at original resolution without a transform pipeline | No image pipeline to build initially | Blows free hosting bandwidth, slow page loads, bad SEO/Core Web Vitals (Pitfall 4) | Never beyond a short prototype/demo phase |
-| Hardcode legal pages (mentions légales/CGV) as static text in code rather than CMS content | Fast to ship the first version | Romane can't update her own SIRET/address changes or CGV wording without Florian; also easy to forget to translate | Acceptable only if genuinely static and reviewed once at launch — otherwise move to CMS |
-| Use a single flat "products" list without separating "original" (qty 1, needs reservation logic) from "edition/print" (qty N) as distinct types | Simpler initial data model | Forces the strict one-of-a-kind race-condition handling onto every product, or under-protects originals if handled uniformly and loosely | Acceptable only if the reservation logic (Pitfall 1) is applied universally and correctly regardless of quantity |
-| Deploy without a staging environment, testing directly against production DNS/host | Saves initial setup time | No safe way to validate the cutover before it's live; higher downtime/rollback risk (Pitfall 7) | Never for the final domain cutover; acceptable for early internal iteration before a domain is involved |
+|----------|--------------------|-----------------|------------------|
+| Copy-pasting `gallery.ts` into `edition.ts` field-for-field instead of factoring shared bits (locale-text helper, image-with-alt-and-rights shape) into a shared module | Faster to ship this milestone | Two schemas drift independently; a future fix to image-rights validation must be applied in two places | Acceptable only if the duplicated blocks are commented as intentionally mirrored (as `gallery.ts` already comments its own duplication of `siteSettings.ts`'s `localeTextField`) so future readers know it's deliberate, not accidental |
+| Hardcoding "Éditions"/"Editions" nav label instead of adding it to `siteSettings.navLabels` | Skips a schema + type + `resolveSiteCopy()` change | Inconsistent editorial surface (Romane can rename other nav labels but not this one), support-burden surprise later | Never — the pattern already exists for About/Contact; matching it costs little |
+| Reusing the "gallery" GROQ query pattern (fetch full array of images per document) for the Éditions overview page rather than a lightweight projection (title + first image only) | Simpler code, one query shape everywhere | Overview page ships the full photo-shoot payload for every édition just to show its cover, unnecessary Sanity CDN payload/build-time cost as the number of éditions grows | Acceptable at launch scale (a handful of éditions); revisit if the catalog grows past what makes an overview-page projection meaningfully lighter |
 
 ## Integration Gotchas
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|-----------------|-------------------|
-| Stripe Checkout | Assuming Stripe manages inventory/stock automatically | Stripe only handles payment; inventory reservation/decrement must be built in the application layer around Checkout Session lifecycle events |
-| Stripe payouts | Connecting Stripe before Romane is registered as a business (SIRET) | Confirm business registration status before building the payment flow; treat it as a pre-requisite, not a parallel task that can slip |
-| Domain registrar / DNS | Changing A/CNAME records for the new host without first inventorying MX/TXT/SPF records | Pull and document the full existing DNS zone before any change; migrate every record deliberately |
-| Headless CMS free tier (e.g., Sanity/Contentful-style) | Assuming free-tier API request/bandwidth/asset-storage limits are unlimited for a "small" site | Check current free-tier caps (API calls/month, asset storage GB, bandwidth) against expected image volume before committing; image-heavy sites are the use case most likely to hit these caps first |
-| Analytics/cookies (e.g., Google Analytics) | Adding analytics/embeds without a CNIL-compliant consent banner | Any non-strictly-necessary tracker requires prior, granular, revocable consent under CNIL rules; either use a consent-management banner or choose analytics exempted under CNIL's audience-measurement exemption conditions (anonymized IP, ≤13-month cookie life, no cross-site use) |
+| Sanity Studio `structure.ts` | Registering `edition` only via the generic `S.documentTypeListItems()` fallback, forgetting to add it to the exclusion filter array | Add a dedicated `orderableDocumentListDeskItem` (or plain `S.documentTypeListItem`) entry for `edition`, and add `'edition'` to the exclusion array so it isn't double-listed |
+| `siteSettings.navLabels` (Sanity + `src/lib/sanity.ts` type + `resolveSiteCopy()`) | Adding the new nav label only in the Astro layer (hardcoded string) without touching the Sanity schema/type | Extend all three together: schema field, TS interface, `resolveSiteCopy()` |
+| `src/pages/sitemap.xml.ts` | Forgetting to add the new route(s) to the manually maintained `localizedSitemapPaths` array | Add `editions/` overview + per-slug detail paths in the same change that adds the routes, using `getEditions()`'s `noIndex`/`seo` fields the same way galleries already do |
+| Existing "un-prefixed-link grep guard" in CI (per `CLAUDE.md`'s deploy pipeline description) | New Éditions nav links or internal cross-links written without the base-path-aware helper (`getRelativeLocaleUrl`) that every existing link already uses | Always build édition hrefs via `getRelativeLocaleUrl(locale, 'editions/...')`, exactly like `aboutHref`/`contactHref`/gallery hrefs already do, so the guard passes on both GitHub Pages' subpath base and OVH's root base |
 
 ## Performance Traps
 
 | Trap | Symptoms | Prevention | When It Breaks |
-|------|----------|------------|-----------------|
-| Unoptimized full-resolution photo uploads | Slow page loads, poor Lighthouse/Core Web Vitals scores, high bandwidth usage | Automated resize/compress/modern-format (WebP/AVIF) pipeline on upload or serve, enforced regardless of what the CMS user uploads | Becomes visible almost immediately on a photography-heavy site — this is a day-one risk, not a scale problem |
-| No CDN/egress-free storage for images | Free hosting bandwidth quota consumed quickly by a modest amount of traffic to an image-heavy site | Use zero-egress object storage (e.g., Cloudflare R2) or a CDN in front of the host | Breaks once monthly visits + gallery browsing exceed the host's free bandwidth allowance — realistic even at low visitor counts for an image-heavy site |
-| Blocking, synchronous stock checks under concurrent load | Two simultaneous buyers both "succeed" for the same one-of-a-kind item | Atomic conditional updates / DB transactions for stock state changes | Breaks the moment two people attempt to buy the same original close together — low overall traffic doesn't eliminate the risk, it just makes it rarer, not impossible |
+|------|----------|------------|----------------|
+| Éditions overview page fetching each édition's full `images[]` array (like `getGalleries()` does for the homepage) just to render one cover thumbnail per édition | Slightly heavier build-time Sanity fetch and larger page payload than necessary; unnoticeable with a handful of éditions | Write a dedicated lightweight GROQ projection for the overview page (title, slug, first image only) instead of reusing the full gallery-shaped query | Only matters once the number of éditions or images-per-édition grows well beyond a small curated catalog — not a v1.3 launch-blocking concern |
 
 ## Security Mistakes
 
+Not applicable at meaningful severity for this milestone — this is a read-only, non-transactional content addition with no new user input, auth, or payment surface. The one item worth a note:
+
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| Trusting client-side "add to cart"/price data | Buyer manipulates price or product ID client-side before checkout | Always create the Stripe Checkout Session server-side, deriving price/product from your own trusted data source, never from client input |
-| No webhook signature verification | Anyone could POST a fake "payment succeeded" event to your endpoint and get an order marked as paid/shipped for free | Verify Stripe webhook signatures using the webhook signing secret on every incoming event |
-| Storing Stripe/CMS API keys in code or committed config | Leaked keys in a public or shared repo compromise payments/content | Use environment variables / host-provided secret storage, never commit keys, rotate if ever exposed |
-| No rate limiting/bot protection on checkout or contact form | Spam orders, carding attempts (using checkout to test stolen card numbers), or contact-form spam flooding Romane's inbox | Basic bot protection (e.g., a CAPTCHA-free heuristic, honeypot fields) on the contact form; rely on Stripe's built-in fraud tooling (Radar) for payment abuse |
+| Adding a `SANITY_API_READ_TOKEN`-gated preview/draft view for éditions without the same care as existing content types | Could leak unpublished (e.g. "En préparation") édition content or accidentally bundle the read token into client-side JS | Reuse the existing `sanityClient` build-time-only pattern from `src/lib/sanity.ts` verbatim (published perspective only, frontmatter-only import) — do not introduce a new client instance or a client-side Sanity fetch for this feature |
 
 ## UX Pitfalls
 
 | Pitfall | User Impact | Better Approach |
-|---------|-------------|-------------------|
-| No clear "sold" state distinguishing a one-of-a-kind original from a limited edition still in stock | Buyer confusion about whether more are available, or disappointment discovering an "available" item was actually just purchased | Explicit, distinct UI states: "Original — Sold", "Edition — X of Y remaining", refreshed reliably from server-side stock state, not cached |
-| Checkout flow forces language switch or loses selected language | Frustration for an English-reading buyer suddenly seeing French checkout text (or vice versa) | Persist language selection through the entire cart/checkout/confirmation flow, including transactional emails |
-| Exhibitions/agenda page shows past events prominently without distinguishing upcoming vs. past | Visitors can't tell what's currently relevant | Clearly separate "Upcoming" and "Past" exhibitions, sorted with upcoming first |
-| CGV/mentions légales pages only in French | Non-French-speaking buyers can't understand terms they're legally agreeing to | Translate legal pages into English too, consistent with the site's bilingual promise |
+|---------|-------------|-----------------|
+| Showing format details (page count, print run, dimensions) in a way that reads like a product spec sheet (e.g. a table with "Prix: —" or an empty availability row) | Visitors may read the absence of price as a broken/incomplete page rather than an intentional showcase-only page | Present format details as editorial/curatorial facts ("64 pages, 300 exemplaires, 21 × 29,7 cm") in prose or a simple list, with no price/availability row present at all — absence, not an empty field |
+| Éditions leaking into the homepage carousel/grid despite the milestone explicitly excluding them | Contradicts the milestone's explicit "not surfaced on the homepage... which stays pure photography" requirement, and risks visitors expecting to buy something they see featured prominently | Do not reuse `gallery`'s `showOnHomePage` boolean pattern on `edition` at all — since éditions should never appear there, omit the field entirely rather than adding it and defaulting it to `false` (a field that always must be `false` is a footgun waiting for someone to flip it) |
+| Per-édition detail page reusing the gallery-detail page's transparent hero-header pattern verbatim without adjusting for a book/zine's likely portrait-oriented cover images (vs. galleries' typically landscape hero photography) | A tall/portrait cover image forced into the existing `70vh` full-bleed landscape-oriented hero crop (`object-fit: cover`) can crop out the book's own title/cover art awkwardly | Check the hero treatment against a real portrait-oriented book-cover photo before shipping, and adjust `object-position`/crop framing if needed rather than assuming the landscape-tuned gallery hero style transfers as-is |
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **Checkout flow:** Often missing server-side, atomic stock reservation tied to Checkout Session lifecycle — verify by testing two concurrent purchase attempts on the same one-of-a-kind item.
-- [ ] **Legal pages:** Often missing an actual, complete CGV (not a placeholder) with delivery zones, right-of-withdrawal terms specific to originals vs. editions, and a real SIRET-backed mentions légales — verify by reading the CGV against the Code de la consommation checklist, not just checking that a page exists.
-- [ ] **Stripe account:** Often "connected" in test mode only, with live payouts still blocked pending business/identity verification — verify by confirming Romane's Stripe account is fully activated for live payouts, not just accepting test payments.
-- [ ] **Bilingual content:** Often complete at launch but with no mechanism preventing drift — verify by checking the CMS UX itself surfaces missing translations, not just that both languages exist today.
-- [ ] **Image pipeline:** Often "working" in that images display, but unoptimized — verify by checking actual served file sizes/formats (not just that the gallery renders), and confirm the CMS enforces limits on new uploads too.
-- [ ] **DNS/domain:** Often "migrated" without preserving email or non-web DNS records — verify by listing every DNS record on the domain before and after cutover and confirming email (if any) still works.
-- [ ] **Handoff docs:** Often nonexistent even when the code itself is clean — verify by asking Romane to attempt one routine task (add a gallery photo, add an exhibition) using only the written instructions, without Florian's help.
-- [ ] **Cookie/consent:** Often missing entirely if analytics or embeds (e.g., Instagram embed, YouTube) were added ad hoc — verify by auditing every third-party script/embed against CNIL consent requirements.
+- [ ] **Éditions overview + detail pages render**: Often missing — parity in *both* locale directories (`src/pages/editions/` and `src/pages/en/editions/`); verify by visiting both `/editions/` and `/en/editions/`, not just one.
+- [ ] **New nav item**: Often missing — the `siteSettings.navLabels.editions` Sanity field actually wired end-to-end (schema → type → `resolveSiteCopy` → `BaseLayout` → `SiteHeader` prop); verify by renaming the label in Sanity Studio and confirming it changes on the live nav without a code change.
+- [ ] **Sitemap/SEO discoverability**: Often missing — `sitemap.xml.ts` entries for the new routes; verify by checking the built `sitemap.xml` for `editions/` URLs.
+- [ ] **Mobile nav with 4 links**: Often missing — a mobile-viewport check of the header with Éditions added; verify at < 768px width in both header variants (`solid`/`transparent`) and both locales.
+- [ ] **Studio editorial parity**: Often missing — draft/publish (`publicationStatus`) workflow and drag-reorder (`orderRank`) on the `edition` type, matching `gallery`; verify a non-technical editor can put an édition "En préparation" without it appearing live, and can drag-reorder the Éditions list in Studio.
+- [ ] **No stray commerce UI**: Often missing as a negative-check — grep the new templates/schema for `price`, `stock`, `disponib`, `acheter`, `buy` to confirm none slipped in; verify by reviewing the diff for these terms before merge.
+- [ ] **Schema extensibility groundwork**: Often missing — confirm `printRun`/`pageCount`/`dimensions` are typed fields (numbers/structured), not one free-text blob, and confirm a code comment states the intended path for adding commerce fields later (extend in place vs. reference from a future `product` type).
 
 ## Recovery Strategies
 
 | Pitfall | Recovery Cost | Recovery Steps |
-|---------|-----------------|------------------|
-| Overselling a one-of-a-kind original | MEDIUM | Immediately refund the second buyer via Stripe, communicate transparently and quickly, consider a discount/goodwill gesture on a future purchase; then retroactively add the atomic-reservation fix before continuing to sell |
-| Missing/incomplete legal pages discovered post-launch | LOW | Draft and publish mentions légales/CGV/politique de confidentialité promptly (many generators exist for the boilerplate parts); low likelihood of enforcement action for a small site if fixed promptly, but don't leave it unresolved |
-| Free-tier hosting bandwidth exceeded / site paused | LOW-MEDIUM | Move image assets to a zero-egress store (e.g., Cloudflare R2) fronted by a CDN; this is a bounded, well-understood migration, not a rewrite |
-| DNS cutover breaks email or causes visible downtime | LOW-MEDIUM | Because TTLs were (hopefully) lowered in advance, rollback to old DNS records is fast; if email breaks, restore the original MX/TXT records immediately from the pre-migration audit |
-| Bilingual content drifts significantly after months of neglect | LOW | A focused one-time audit/translation pass to re-sync both languages; then fix the CMS UX so it doesn't recur (see Pitfall 5 prevention) |
-| Handoff gaps discovered when Florian is unavailable | MEDIUM-HIGH | Depends entirely on whether documentation exists at all; if none, this becomes an emergency reverse-engineering exercise — this is why prevention (Pitfall 6) is much cheaper than recovery |
+|---------|---------------|-----------------|
+| Format details stored as one free-text blob per locale, discovered only when the v1.x shop milestone needs `printRun` as a numeric stock ceiling | MEDIUM | Add new structured fields (`printRun` number, `dimensions` structured width/height/unit), write a one-off Sanity migration script to parse the existing free-text values into the new fields for already-published éditions, then drop the old free-text field once verified |
+| Nav label for Éditions hardcoded instead of Sanity-editable, discovered after several éditions are live | LOW | Add the `navLabels.editions` field to the schema + type + `resolveSiteCopy()`, backfill the current French/English strings as its `initialValue`, swap the hardcoded string in `BaseLayout.astro` for the resolved value — no content migration needed, purely additive |
+| A separate `product` schema was created for v1.x that duplicates édition title/images instead of extending `edition` in place | HIGH | Requires a genuine content migration: either delete the duplicate `product` documents and extend `edition` with the missing commerce fields (re-authoring any product-only copy back onto the original édition documents), or wire the `product` type to reference `edition` by `_ref` and strip the duplicated fields — both are non-trivial once Romane has been editing both in parallel for a while, which is exactly why Pitfall 1 flags this as the single biggest forward-compatibility risk to get right now |
 
 ## Pitfall-to-Phase Mapping
 
 | Pitfall | Prevention Phase | Verification |
 |---------|-------------------|----------------|
-| Overselling one-of-a-kind originals (race condition) | E-commerce/checkout implementation phase | Manual concurrent-purchase test on a single-stock item before launch |
-| Missing mentions légales/CGV | Legal/compliance phase (parallel to checkout build) | Legal pages reviewed against Code de la consommation / LCEN checklist before first live transaction |
-| Stripe payouts blocked by missing business registration | Project-setup phase (earliest, non-technical, parallel track) | Stripe account confirmed fully activated for live payouts, not just test mode |
-| Free-tier hosting/image bandwidth limits | Stack-selection/architecture phase | Confirm chosen host + image pipeline combination against expected image volume; re-check current free-tier numbers immediately before committing |
-| Bilingual content drift | Content model/CMS design phase | CMS UI reviewed to confirm missing translations are visually obvious to Romane, not hidden |
-| Unmaintainable handoff (bus factor 1) | Architecture phase (stack choice) + final launch/handoff phase (docs) | Romane successfully completes one routine content task using only written docs, unassisted |
-| DNS/domain cutover risk | Final launch/cutover phase (dedicated, rehearsed) | Full DNS record audit before/after; rollback plan tested by lowering TTLs in advance |
-| Right-of-withdrawal misapplied to originals | Legal/compliance phase (same as CGV drafting) | CGV wording on returns for originals specifically reviewed, not left as a generic denial |
+| 1: Schema not extensible for future shop fields | Schema/content-model phase | Reviewer can point to where `price`/`stockQuantity` would go without restructuring the schema; `printRun`/`pageCount`/`dimensions` are typed, not free text |
+| 2: Commerce scope creep | Schema/content-model phase + routes/pages phase | Grep diff for price/stock/availability terms before merge; cross-check against the 6 listed v1.3 Active requirements in `PROJECT.md` |
+| 3: Per-locale page duplication drift | Routes/pages phase | Both locale directories touched in the same commit; shared logic factored into one module/component, not copy-pasted |
+| 4: Sitemap/SEO omission | Routes/pages phase (implementation), verified at milestone UAT | Built `sitemap.xml` contains `editions/` overview + detail URLs |
+| 5: Nav prop threading + label CMS-editability inconsistency | Nav-integration phase (with schema piece sequenced into schema/content-model phase) | `siteCopy.editionsLabel` used, not a literal string; renaming in Studio changes the live label |
+| 6: Mobile nav regression with a 4th link | Nav-integration phase | Manual or e2e check at < 768px, both header variants, both locales |
+| 7: Studio editorial parity gap (draft workflow, ordering, image-rights shape) | Schema/content-model phase | `edition.ts` has `publicationStatus`, hidden `orderRank`, dedicated `structure.ts` desk item, and reuses the `alt`+`rights` image shape |
+| 8: "Édition"-named existing galleries causing content confusion | Schema/content-model phase (discussion, not code) | Explicit confirmation from Romane/Florian recorded (e.g. in `PROJECT.md` Key Decisions) on whether existing gallery titles are renamed |
 
 ## Sources
 
-- [Stripe: Manage limited inventory with Checkout](https://stripe.com/docs/payments/checkout/managing-limited-inventory) — HIGH confidence, official Stripe docs
-- [Stripe Webhooks: Solving Race Conditions](https://www.pedroalonso.net/blog/stripe-webhooks-solving-race-conditions/) — MEDIUM confidence, community write-up consistent with Stripe's own guidance
-- [Vendure GitHub issue: Unhandled race condition during checkout with limited stock](https://github.com/vendure-ecommerce/vendure/issues/3065) — MEDIUM confidence, real-world reported issue in an e-commerce framework, illustrates the failure mode concretely
-- [Mentions légales et CGV obligatoires pour un site e-commerce en France](https://blog.lueurexterne.com/fr/blog/mentions-legales-et-cgv-obligatoires-pour-un-site-e-commerce-en-france/) — MEDIUM confidence, cross-checked against economie.gouv.fr
-- [economie.gouv.fr: Mentions sur votre site internet](https://www.economie.gouv.fr/entreprises/developper-son-entreprise/innover-et-numeriser-son-entreprise/mentions-sur-votre-site-internet-les-obligations-respecter) — HIGH confidence, official French government source
-- [LegalPlace: CGV pour un auto-entrepreneur](https://www.legalplace.fr/guides/conditions-generales-vente-auto-entrepreneur/) — MEDIUM confidence
-- [Stripe: SIRET number guide](https://stripe.com/resources/more/siret-siren-numbers) — HIGH confidence, official Stripe docs
-- [Stripe: SIREN and SIRET numbers support article](https://support.stripe.com/questions/siren-and-siret-numbers?locale=en-GB) — HIGH confidence, official Stripe support
-- [Nouveaux seuils de TVA 2025 en Auto-Entreprise](https://www.mon-autoentreprise.fr/nouveaux-seuils-franchise-tva-2025/) — MEDIUM confidence
-- [Portail Auto-Entrepreneur: TVA 2026](https://www.portail-autoentrepreneur.fr/academie/statut-auto-entrepreneur/tva) — MEDIUM confidence
-- [Cloudflare R2 pricing (official)](https://developers.cloudflare.com/r2/pricing/) — HIGH confidence, official docs, confirms zero egress fees
-- [Netlify Pricing](https://www.netlify.com/pricing/) — LOW-MEDIUM confidence; official page but did not clearly state overage behavior at fetch time — re-verify exact current free-tier bandwidth limits and overage handling before committing to a host
-- [Vercel vs Netlify 2026 comparisons](https://redstapler.co/netlify-vs-vercel-which-free-portfolio-hosting-2026/) — LOW-MEDIUM confidence, third-party blog aggregation, treat specific numbers as directional and re-verify against official docs at build time
-- [CNIL: Cookies et autres traceurs — les règles](https://www.cnil.fr/fr/cookies-et-autres-traceurs/regles) — HIGH confidence, official CNIL source
-- [CNIL: Cookies, solutions pour les outils de mesure d'audience](https://www.cnil.fr/fr/cookies-solutions-pour-les-outils-de-mesure-daudience) — HIGH confidence, official CNIL source, defines analytics-exemption conditions
-- [Droit de rétractation lors de l'achat d'une œuvre d'art](https://mr-expert.com/droit-de-retractation-lors-de-lachat-dune-oeuvre-dart/) — MEDIUM confidence
-- [service-public.gouv.fr: Droit de rétractation](https://www.service-public.gouv.fr/particuliers/vosdroits/F10485?lang=en) — HIGH confidence, official French government source
-- [Website Migration SEO: Avoid 50% Traffic Loss](https://www.numentechnology.co.uk/blog/website-migration-seo-strategy) — MEDIUM confidence, industry blog, directionally consistent with widely reported migration-risk patterns
-- [DCHost: Domain and DNS Migration Checklist](https://www.dchost.com/blog/en/domain-and-dns-migration-checklist-when-changing-hosting-provider/) — MEDIUM confidence
-- [Livable Software: Calculate the bus factor of your software project](https://livablesoftware.com/calculate-bus-factor-software-project/) — MEDIUM confidence, conceptual framing of the handoff/maintainability risk
-- [SimpleLocalize: The complete technical guide to i18n](https://simplelocalize.io/blog/posts/internationalization-guide-software-localization/) — MEDIUM confidence, on translation debt/content drift
+- Direct inspection of this repository (HIGH confidence, verified by reading the files): `sanity/schemas/gallery.ts`, `sanity/schemas/exhibition.ts`, `sanity/schemas/structure.ts`, `src/components/SiteHeader.astro`, `src/layouts/BaseLayout.astro`, `src/lib/sanity.ts`, `src/lib/site-config.ts`, `src/pages/sitemap.xml.ts`, `src/pages/galleries/[slug].astro`, `.planning/PROJECT.md`.
+- [How to Design Flexible, Scalable Sanity Schemas (Without Regrets Later) — Halo Lab](https://www.halo-lab.com/blog/creating-schema-in-sanity) (web search, LOW confidence, uncross-checked)
+- [Deciding on fields and relationships | Sanity Docs](https://www.sanity.io/docs/developer-guides/deciding-fields-and-relationships) (web search, LOW confidence, uncross-checked)
+- [Easton Dev Blog — Astro i18n Configuration Guide](https://eastondev.com/blog/en/posts/dev/20251202-astro-i18n-guide/) — documents the N-pages-times-M-locales duplication pitfall this codebase already exhibits (web search, LOW confidence, uncross-checked)
+- [Kontent.ai — Systems for success: UX design using a headless CMS](https://kontent.ai/resources/ux-design-using-headless-cms/) (web search, LOW confidence, uncross-checked)
 
 ---
-*Pitfalls research for: artist/photographer portfolio + e-commerce site (near-zero budget, developer building for non-technical family member, France/EU market)*
-*Researched: 2026-07-05*
+*Pitfalls research for: Adding an "Éditions" showcase content type/nav section to the AJS website (v1.3 milestone)*
+*Researched: 2026-07-22*
