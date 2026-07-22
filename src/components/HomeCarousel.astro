@@ -379,6 +379,12 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         function render() {
           const gallery = galleries[carouselIndex];
           if (!gallery) return;
+          // The clipped wordmark has no visible glyph fill until its photo
+          // exists. Return to the solid inherited text fallback for every
+          // swap, then opt into the cutout only after the active sharp hero
+          // has loaded successfully. This keeps the title readable while
+          // the independent blur placeholder is the only painted image.
+          root!.classList.remove('has-wordmark-photo');
           const fallbackAccent = ACCENTS[carouselIndex % ACCENTS.length];
           const accent = gallery.heroColor
             ? { bg: gallery.heroColor, text: gallery.heroTextColor ?? 'var(--color-on-accent)' }
@@ -394,17 +400,22 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             pendingHeroLoadCtrl?.abort();
             if (heroImg.complete) {
               showSharp(heroImg);
-              syncWordmarkAlignment();
+              if (heroImg.naturalWidth > 0) {
+                syncWordmarkAlignment();
+                root!.classList.add('has-wordmark-photo');
+              }
             } else {
               pendingHeroLoadCtrl = new AbortController();
-              const onSettle = () => {
+              const onLoad = () => {
                 showSharp(heroImg);
                 syncWordmarkAlignment();
+                root!.classList.add('has-wordmark-photo');
               };
+              const onError = () => showSharp(heroImg);
               // 'error' covers a failed fetch (bad asset, transient CDN issue) —
               // without it the hero stays stuck on the blurred placeholder forever.
-              heroImg.addEventListener('load', onSettle, { once: true, signal: pendingHeroLoadCtrl.signal });
-              heroImg.addEventListener('error', onSettle, { once: true, signal: pendingHeroLoadCtrl.signal });
+              heroImg.addEventListener('load', onLoad, { once: true, signal: pendingHeroLoadCtrl.signal });
+              heroImg.addEventListener('error', onError, { once: true, signal: pendingHeroLoadCtrl.signal });
             }
           }
           if (indexLabel) {
@@ -1264,10 +1275,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     line-height: 0.9;
     letter-spacing: 0.02em;
     margin: 0 0 var(--space-md);
-    /* Fallback (unsupported engines, effectively unreachable in 2026
-       evergreen browsers): solid on-accent color, no background-image, so
-       the wordmark is never invisible/blank. */
-    color: var(--color-on-accent);
+    /* Solid inherited accent-text color is both the unsupported-engine
+       fallback and the loading/error state. The photo cutout below becomes
+       transparent only after render() confirms the sharp hero succeeded. */
+    color: inherit;
   }
 
   @supports (background-clip: text) or (-webkit-background-clip: text) {
@@ -1290,6 +1301,9 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       background-repeat: no-repeat;
       -webkit-background-clip: text;
       background-clip: text;
+    }
+
+    .home.has-wordmark-photo .home-hero__wordmark {
       color: transparent;
       -webkit-text-fill-color: transparent;
       /* Live-verification finding (Task 3): the plain cutout is illegible
@@ -1642,6 +1656,9 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         background-repeat: no-repeat;
         -webkit-background-clip: text;
         background-clip: text;
+      }
+
+      .home.has-wordmark-photo .home-grid__wordmark {
         color: transparent;
         -webkit-text-fill-color: transparent;
       }

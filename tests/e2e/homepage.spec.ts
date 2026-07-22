@@ -234,16 +234,19 @@ test.describe('carousel wordmark cutout (HOME-03, D-08)', () => {
     await page.goto('/');
 
     const wordmark = page.locator('.home-hero__wordmark');
-    const { clip, bg } = await wordmark.evaluate((el) => {
+    await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
+    const { clip, bg, textFill } = await wordmark.evaluate((el) => {
       const style = getComputedStyle(el);
       return {
         clip: style.webkitBackgroundClip || style.backgroundClip,
         bg: style.backgroundImage,
+        textFill: style.webkitTextFillColor,
       };
     });
 
     expect(clip).toContain('text');
     expect(bg).toContain('url(');
+    expect(textFill).toBe('rgba(0, 0, 0, 0)');
     // Whether the photo is actually legible through the letters is confirmed
     // live in the phase's checkpoint task per D-08 — computed style alone
     // cannot assert visual legibility, so no pixel assertion here.
