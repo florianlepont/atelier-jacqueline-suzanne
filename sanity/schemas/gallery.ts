@@ -19,12 +19,13 @@ const previewImageKeys = Object.fromEntries(
  * `localeTextField` helper (no shared schema-lib module exists yet to import
  * it from — see 02-PATTERNS.md's guidance to duplicate the shape inline).
  */
-function localeTextField(name: string, title: string, group?: string) {
+function localeTextField(name: string, title: string, group?: string, fieldset?: string) {
   return defineField({
     name,
     title,
     type: 'object',
     group,
+    fieldset,
     description: 'Renseigner les deux langues avant de publier.',
     options: {columns: 2},
     fields: [
@@ -58,12 +59,46 @@ export const gallery = defineType({
     {name: 'photos', title: 'Photos'},
     {name: 'seo', title: 'SEO & partage'},
   ],
+  fieldsets: [
+    {
+      name: 'publication',
+      title: 'Publication',
+      group: 'publication',
+      description: 'Contrôle si la collection est visible sur le site et donne accès à sa page publiée.',
+    },
+    {
+      name: 'content',
+      title: 'Présentation',
+      group: 'content',
+      description: 'Le nom et le texte de présentation de la collection.',
+    },
+    {
+      name: 'homepage',
+      title: "Page d'accueil",
+      group: 'homepage',
+      description: "Comment la collection apparaît sur la page d'accueil.",
+    },
+    {
+      name: 'photos',
+      title: 'Photos',
+      group: 'photos',
+      description: 'Les photos de la collection : descriptions, ordre et crédits.',
+    },
+    {
+      name: 'seo',
+      title: 'SEO & partage',
+      group: 'seo',
+      description:
+        "Comment cette page apparaît dans les résultats Google et lors d'un partage sur les réseaux sociaux.",
+    },
+  ],
   fields: [
     defineField({
       name: 'publicationStatus',
       title: 'Statut de la collection',
       type: 'string',
       group: 'publication',
+      fieldset: 'publication',
       description:
         '« En préparation » reste dans Sanity, « Publiée » apparaît sur le site, « Archivée » est conservée mais retirée du site.',
       initialValue: 'published',
@@ -82,6 +117,7 @@ export const gallery = defineType({
       title: 'Page publiée',
       type: 'string',
       group: 'publication',
+      fieldset: 'publication',
       readOnly: true,
       components: {input: PublishedPageLinks},
     }),
@@ -98,6 +134,7 @@ export const gallery = defineType({
       title: 'Nom de la collection',
       type: 'string',
       group: 'content',
+      fieldset: 'content',
       validation: (rule) => rule.required().error('Le nom de la collection est obligatoire.'),
     }),
     defineField({
@@ -105,17 +142,19 @@ export const gallery = defineType({
       title: 'Adresse de la page',
       type: 'slug',
       group: 'content',
+      fieldset: 'content',
       description:
         'Cliquer sur « Générer » après avoir saisi le nom. À modifier uniquement avant la première publication.',
       options: {source: 'title'},
       validation: (rule) => rule.required().error("L'adresse de la page est obligatoire."),
     }),
-    localeTextField('statement', 'Texte de présentation', 'content'),
+    localeTextField('statement', 'Texte de présentation', 'content', 'content'),
     defineField({
       name: 'showOnHomePage',
       title: "Afficher sur la page d'accueil",
       type: 'boolean',
       group: 'homepage',
+      fieldset: 'homepage',
       description:
         'Désactiver pour conserver la page publique de la collection sans la montrer dans le carrousel ni dans la grille de l’accueil.',
       initialValue: true,
@@ -125,6 +164,7 @@ export const gallery = defineType({
       title: "Couleur sur la page d'accueil",
       type: 'string',
       group: 'homepage',
+      fieldset: 'homepage',
       description:
         'Choisir le fond du panneau associé à cette collection, ou conserver la palette automatique.',
       options: {
@@ -137,6 +177,7 @@ export const gallery = defineType({
       title: 'Photos de la collection',
       type: 'array',
       group: 'photos',
+      fieldset: 'photos',
       description:
         "Glisser-déposer plusieurs images ici. La première photo sert de couverture sur la page d'accueil ; réordonner les photos par glisser-déposer. Pour réutiliser une image existante, choisir « Ajouter » puis « Sélectionner ».",
       // D-01/D-02/CMS-01: `alt` fields are attached directly onto an `image`-
@@ -227,7 +268,7 @@ export const gallery = defineType({
     // Fractional-index ordering field for Studio drag-reorder (CMS-01/D-10).
     // Hidden per Pitfall 4 so Romane never sees the raw field in the edit form.
     {...orderRankField({type: 'gallery'}), hidden: true},
-    defineField({name: 'seo', title: 'SEO & partage', type: 'seo', group: 'seo'}),
+    defineField({name: 'seo', title: 'SEO & partage', type: 'seo', group: 'seo', fieldset: 'seo'}),
   ],
   preview: {
     select: {
