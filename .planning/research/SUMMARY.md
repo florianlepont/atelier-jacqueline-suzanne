@@ -1,177 +1,143 @@
 # Project Research Summary
 
-**Project:** Atelier Jacqueline Suzanne — Website
-**Domain:** Bilingual (FR/EN) photographer/artist portfolio with integrated low-volume fine-art e-commerce, near-zero budget, built by a developer for a non-technical family member
-**Researched:** 2026-07-05
-**Confidence:** MEDIUM-HIGH
+**Project:** Atelier Jacqueline Suzanne — v1.3 "Éditions" Milestone
+**Domain:** Non-transactional content showcase added to an existing shipped bilingual Astro + Sanity photography site
+**Researched:** 2026-07-22
+**Confidence:** HIGH
 
 ## Executive Summary
 
-This is a small, content-heavy artist portfolio with a real (not inquiry-based) shop bolted on — a well-trodden category the ecosystem has converged on solving with a **Jamstack-with-islands** architecture: a static-site generator (Astro) pulling content and product/stock data from a headless CMS (Sanity), with a couple of thin serverless functions (on Cloudflare Pages) handling Stripe Checkout session creation and webhook-driven stock decrements. No traditional backend or database is needed — the CMS document store doubles as the inventory system. This stack was chosen specifically because Cloudflare Pages has uncapped free-tier bandwidth (the binding constraint for an image-heavy site, where Vercel/Netlify free tiers are a real risk) and Sanity's free plan comfortably covers a single-artist catalog with zero recurring cost. Total baseline recurring cost is 0€/month; the only unavoidable cost is Stripe's per-transaction fee (~1.5% + €0.25 domestic).
+This milestone adds a new "Éditions" showcase section (paper zines/artist books like "Rebut" and "Sillo") to the already-shipped v1 site — one new Sanity document type, one new top-level nav entry, and a paired overview + detail Astro route, all bilingual FR/EN, all self-serve editable by Romane. Critically, this is not new capability: it is a content-type-and-route addition on the exact stack already in production (Astro 7.0.6 static, Sanity Content Lake + Studio, `astro:i18n`), with strong existing precedent to copy from — the `gallery` document schema and `galleries/[slug].astro` detail page are near-verbatim templates. No new dependency, hosting adapter, or compute is required, and the research is unusually high-confidence because it is grounded in direct inspection of this specific codebase rather than generic ecosystem guidance.
 
-The recommended approach treats three things as first-class from day one rather than retrofits: (1) **bilingual content** — FR/EN cross-cuts every content type, URL, and transactional email, so locale-aware fields belong in the initial content model, not a later "translation phase"; (2) **stock correctness** — because originals are one-of-a-kind, the CMS must be the single source of truth for stock, with server-side re-validation at Checkout Session creation (not just on payment success) to prevent overselling; and (3) **non-technical maintainability** — Romane must be able to add galleries and exhibitions herself through a real CMS UI, which shapes both the CMS choice and the project's long-term viability once the developer isn't actively involved.
+The recommended approach is: mirror `gallery.ts`'s richer editorial workflow (not the plainer `exhibition.ts` pattern) for the new `edition` schema — including `publicationStatus`, hidden `orderRank`, and the same image-array-with-alt-and-rights shape — add three named format-detail fields (page count, print run, dimensions) grouped in their own schema object, and build the overview page as a genuinely new route (galleries have no equivalent since the homepage itself is their overview). The detail page has a direct mirror to copy; the overview page requires original design judgment.
 
-The two biggest risks identified are technical/correctness and legal/administrative, not technology selection. Technically, a stock race condition on one-of-a-kind originals (two simultaneous buyers both "succeeding") is the single worst failure mode — it must be explicitly tested (two concurrent checkout attempts) before the checkout phase is considered done. Administratively, French legal requirements (mentions légales, CGV with correct right-of-withdrawal language, GDPR/cookie consent) and Romane's business registration (SIRET, needed for Stripe payouts to activate) are hard gates that are easy to deprioritize as "not real work" but will block launch or expose legal risk if skipped — both should start on a parallel, non-technical track from the earliest phase rather than being left to the end.
+The primary risk is not technical difficulty but scope and modeling discipline: (1) commerce concepts (price, stock, "notify me," disabled buy buttons) creeping into what must remain a pure showcase, and (2) modeling `printRun`/`dimensions` as loose free-text or unstructured fields that will need a painful migration when the deferred v1.x shop milestone needs `printRun` as a numeric stock ceiling. Both risks are cheap to avoid now (typed fields, grouped schema, a hard "no commerce language" rule) and expensive to fix later. Secondary risks are process-level rather than architectural: this codebase's per-locale page duplication, an every-page shared-chrome component (`SiteHeader`) fed via explicit named props from two independent call sites, and a manually-maintained sitemap generator all create "looks done but isn't" gaps (missing English route, missing nav wiring on the homepage specifically, missing sitemap entry) that are well-documented failure modes specific to this repo's existing conventions.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The stack converges on **Astro 7 + @astrojs/cloudflare on Cloudflare Pages** for hosting/rendering, **Sanity** as the headless CMS (content + product/stock data), and **Stripe Checkout Sessions** (via Cloudflare Pages Functions using the async/Web-Crypto webhook verification path, not Node's `crypto`) for payments. All core version numbers were verified live against the npm registry and official docs (HIGH confidence). This combination keeps the site fully static for all content pages (fast, cheap, SEO-friendly) while a handful of serverless endpoints handle checkout and stock mutation.
+No new stack decision is needed for this milestone — it is additive schema and additive Astro routes on the already-shipped, validated stack. The right framing for planning purposes is "what does the existing stack already give us for free" rather than "what should we choose."
 
-**Core technologies:**
-- **Astro 7** (`@astrojs/cloudflare` adapter): static-first site framework with islands architecture and built-in i18n routing — ships minimal JS for a mostly-static portfolio+shop.
-- **Cloudflare Pages**: hosting + CDN + serverless Functions — the only major free tier with no hard bandwidth cap, critical for an image-heavy site.
-- **Sanity** (Content Lake + Studio): headless CMS for galleries, about, exhibitions, and product/stock records — free plan (20 seats, 100GB bandwidth/asset storage, 2 GROQ webhooks) is generous enough to run everything at zero cost, and gives Romane a real editor UI rather than a git-based tool.
-- **Stripe** (Checkout Sessions + Webhooks): hosted payment page, no monthly fee, standard for a solo EU seller; requires custom stock-reservation logic since Stripe does not enforce inventory limits itself.
-- **`sharp`** (build-time only) + **`@sanity/image-url`**: image optimization pipeline that keeps runtime image bandwidth on Cloudflare's uncapped free tier rather than Sanity's capped quota; must not be relied on for on-demand/SSR image transforms on the Cloudflare Workers runtime (documented incompatibility).
-
-Fallback alternatives worth knowing: Keystatic (git-based CMS) if zero third-party SaaS accounts is a hard requirement; Stripe Payment Links if development time becomes more binding than budget (but this sacrifices auto-synced stock, which is an explicit requirement).
+**Core technologies (all unchanged, reused as-is):**
+- Astro 7.0.6 (static output) — new `editions/index.astro` + `editions/[slug].astro` route pairs (fr + en), same static-build model as galleries/about/contact
+- Sanity Content Lake + Studio — new `edition` document type, modeled directly on `gallery.ts`'s schema shape plus format-detail fields
+- `@sanity/image-url` — reused verbatim for lead-photo and full-shoot image rendering, zero code changes
+- `astro:i18n` (Astro 7 core) — fr root / en `/en/` routing extends automatically to the new route tree with zero config changes
+- `@sanity/orderable-document-list` — reused for Studio drag-reorder of éditions, identical to galleries' `orderRank` pattern
 
 ### Expected Features
 
-Feature research strongly confirms the requirements already captured in PROJECT.md are genuine table stakes, not scope creep — no significant gaps or excesses were found between what's "Active" in PROJECT.md and what expert sources say a real photographer/e-commerce site needs.
+**Must have (table stakes, P1 — all six are this milestone's explicit scope):**
+- Éditions overview page: title + lead photo per édition, grid listing
+- Per-édition detail page: full photo shoot (reusing the existing gallery-detail lightbox), short statement, format details (page count, print run, dimensions)
+- "Éditions" main-nav entry (nav-only — explicitly not on the homepage)
+- Bilingual FR/EN content, using the existing i18n routing
+- Self-serve Sanity editing mirroring the `gallery` schema pattern
 
-**Must have (table stakes):**
-- Portfolio/gallery browsing grouped by project, About/bio page, exhibitions/agenda list (informational only)
-- Product listings with clear price/medium/size/availability across print, original, book/zine, and merch types
-- Real cart + checkout (Stripe), with accurate stock/sold-out state (no overselling)
-- Shipping cost/delivery-time display for France + EU zones
-- Bilingual FR/EN with a persistent, cart-safe language switcher
-- Legal pages (mentions légales, CGV, privacy/GDPR), cookie consent, contact form
-- Non-technical editing for galleries and exhibitions only (product/shop editing can stay developer-assisted for v1 — deliberately narrower scope)
+**Should have (differentiators, P2/P3 — cheap given existing material, non-blocking):**
+- Lead with lifestyle/behind-the-scenes photography (hands holding/reading the book) rather than flat product shots — pure curation, no engineering cost
+- "Édition de N" scarcity framing as descriptive (not transactional) copy on top of the format-detail fields
+- Optional cross-link between an édition and a related Portfolio gallery, via a new Sanity reference field — additive, only if a matching gallery exists
 
-**Should have (competitive differentiators, v1.x — add after launch validates the core):**
-- Certificate of authenticity messaging + edition numbering ("N/M") for originals/limited editions
-- Room-view/scale mockup images for prints
-- Per-project artist statements beyond the general bio
-- Newsletter signup
-- Properly implemented bilingual SEO (hreflang, translated metadata/URLs)
-
-**Defer (v2+ / anti-features — explicitly avoid):**
-- Print-on-demand fulfillment (conflicts with originals/limited-edition model), multi-vendor/marketplace features, customer accounts, live chat, AR "view on your wall," elaborate framing configurators, worldwide shipping, multi-channel inventory sync, self-service product/shop editing.
+**Defer (explicitly out of scope for this milestone, belongs to the future v1.x shop milestone):**
+- Price display, buy/checkout CTA, stock/availability tracking, waitlist/"notify me" signup — all require infrastructure (Stripe, request-time compute, real inventory) this milestone must not pre-build even as placeholders or disabled affordances
 
 ### Architecture Approach
 
-The system is a **Jamstack-with-islands** pattern: a headless CMS (content/editing layer) is the single source of truth for both editorial content and stock; a static Astro frontend queries it at build time and renders fully static pages for galleries/about/exhibitions, with small interactive islands (cart, language switcher, lightbox) as the only client JS; a thin serverless layer (two Cloudflare Pages Functions) bridges checkout and stock — one creates the Stripe Checkout Session after re-validating price/stock server-side, the other is an idempotent Stripe webhook receiver that decrements CMS stock and triggers a rebuild. Locale is carried entirely in the URL path (`/fr/*`, `/en/*`) so CDN caching works unmodified per language, and content publishing flows one-directionally from CMS → webhook → rebuild.
+Éditions integrates as a second, fully parallel content-fetch module and route tree alongside galleries, not a generalized "content type" abstraction — this codebase consistently favors explicit, typed, per-content-type functions (`getGalleries`/`getGallery` stay separate from a new `getEditions`/`getEdition`, not unified into a generic `getDocuments(type)`). Shared, content-agnostic components (`GalleryGrid.astro`, `Lightbox.astro`, `src/lib/image.ts`) need zero modification since they're typed against `GalleryImage`/`SanityImage`, not against "gallery" as a concept.
 
 **Major components:**
-1. **Content/CMS layer (Sanity)** — single source of truth for galleries, about, exhibitions, and product/stock fields, with locale-aware fields for FR/EN.
-2. **Frontend/rendering layer (Astro, static + islands)** — renders all pages, owns SEO/performance; only cart, language switcher, and lightbox ship client JS.
-3. **Serverless functions layer (Cloudflare Pages Functions)** — `create-checkout-session` (re-validates stock/price server-side, creates a short-expiry Stripe session) and `stripe-webhook` (verifies signature, idempotently decrements CMS stock, sends fulfillment notification).
-4. **Stripe Checkout** — hosted payment page; treated purely as a payment executor, never as an inventory system.
-
-Key anti-patterns to avoid: trusting client-submitted price/stock, storing images in the git repo instead of the CMS's asset CDN, maintaining two sources of truth for stock (CMS + Stripe/spreadsheet), and building the portfolio as a client-rendered SPA (hurts SEO/perf for a discovery-driven image site).
+1. `sanity/schemas/edition.ts` (NEW) — sibling document type to `gallery.ts`, not a shared base/subtype; mirrors its richer editorial workflow (`publicationStatus`, hidden `orderRank`, `preview()`) plus a new grouped `format` object (`pageCount`, `printRun`, `dimensions`)
+2. `src/lib/sanity.ts` (MODIFIED, additive) — new `Edition` interface, `EDITIONS_QUERY`/`EDITION_BY_SLUG_QUERY`, `getEditions()`/`getEdition(slug)`, parallel to the existing `Gallery` block
+3. `src/pages/editions/{index,[slug]}.astro` + `en/` equivalents (NEW) — the detail page mirrors `galleries/[slug].astro` closely; the overview page is genuinely new (galleries have no standalone overview — the homepage itself fills that role)
+4. Nav-wiring chain (MODIFIED, additive across 4 files) — `siteSettings.navLabels.editions` → `resolveSiteCopy()` → **both** `BaseLayout.astro` **and** `HomeCarousel.astro` (two independent `<SiteHeader>` call sites) → `SiteHeader.astro`'s two new named props
+5. `sitemap.xml.ts` (MODIFIED, additive) — manually maintained URL array must gain Éditions entries or the new section silently ships undiscoverable by search engines
 
 ### Critical Pitfalls
 
-1. **Overselling one-of-a-kind originals via a stock race condition** — the single worst failure mode (no "reprint and apologize" option for a unique piece). Avoid by treating stock mutation as atomic at Checkout Session *creation* (not just on payment success), using a short `expires_at` on sessions, and handling `checkout.session.expired` to release holds. Must be verified with an explicit two-concurrent-checkout test before the checkout phase is done.
-2. **Launching without mandatory French legal pages (mentions légales, CGV, GDPR notice)** — hard legal requirement in France (LCEN, Code de la consommation), independent of business size; not a "polish" task. Must include a real, non-pre-ticked CGV-acceptance checkbox at checkout.
-3. **Assuming Stripe "just works" without business registration** — Stripe payouts can be blocked if Romane isn't registered (SIRET) as a business; this has its own administrative lead time and should be flagged as a parallel, non-technical, earliest-phase item, not discovered right before launch.
-4. **Free-tier hosting/image bandwidth blown by a photography-heavy site** — mitigated by the chosen stack (Cloudflare's uncapped bandwidth + Sanity's image CDN + build-time `sharp` optimization) but only if upload constraints are enforced so Romane can't accidentally upload unoptimized originals.
-5. **Bilingual content drift after launch** — once the developer stops actively reviewing every change, French-only updates (galleries, exhibitions) silently go stale in English. Mitigated by structuring CMS fields so both languages sit side-by-side per document, making omissions visually obvious.
-6. **Unmaintainable handoff (bus factor of 1)** — the project must ship with a non-technical runbook for Romane and documented "operator facts" (services, credentials, deploy process) or it will silently rot once Florian isn't actively involved; this is a deliberate deliverable, not an afterthought.
-
-Two additional pitfalls worth carrying into planning: DNS/domain cutover risk when replacing the live Myportfolio site (audit all existing DNS records, especially email/MX, before touching anything), and the mistaken assumption that unique originals are exempt from the 14-day EU right-of-withdrawal (they generally are not, unless made-to-order).
+1. **Schema modeled so future shop fields don't fit cleanly** — group format fields (`pageCount`, `printRun`, `dimensions`) in their own schema object now, type `printRun` as a number (not free text), so a later `commerce` field group is additive rather than a restructuring. Avoid it.
+2. **Commerce scope creep into "no pricing" UI** — no `price`/`stock`/availability language, even conditionally rendered or as Studio field labels, in this milestone's templates or GROQ projections; check every addition against the six explicit v1.3 requirements in PROJECT.md.
+3. **Per-locale page duplication drift** — factor shared markup/logic into one component consumed by two thin locale page files, and land both locale directories + both route levels (overview + detail) in the same commit, so a missing English (or French) counterpart is caught in review.
+4. **Sitemap/SEO omission** — `sitemap.xml.ts`'s manually maintained path array has no auto-discovery; add Éditions entries in the same change that adds `getEditions()`, or the section builds fine but is invisible to search engines.
+5. **Nav integration is 4 files, not 1** — `SiteHeader.astro` takes explicit named props with no data-driven array; wiring "Éditions" correctly means schema + type + `resolveSiteCopy()` + **both** `BaseLayout.astro` and `HomeCarousel.astro` call sites, and skipping the Sanity-editable path (hardcoding the label) creates an inconsistent editorial surface Romane will notice.
 
 ## Implications for Roadmap
 
-Based on combined research, suggested phase structure:
+Based on research, suggested phase structure:
 
-### Phase 1: Foundation & Administrative Kickoff
-**Rationale:** Bilingual routing and the CMS content model are cross-cutting concerns that are far cheaper to build in from day one than retrofit later (per FEATURES.md dependency analysis); meanwhile, business registration (SIRET) and DNS/domain audit have their own lead times independent of code and must start in parallel immediately (PITFALLS #3, #7).
-**Delivers:** Astro + Cloudflare Pages + Sanity scaffolding deployed to a staging URL; working `/fr/` and `/en/` locale routing; Sanity Studio connected with a first locale-aware content type; DNS zone for atelierjacquelinesuzanne.fr fully audited/documented; Romane's business-registration status confirmed as an explicit checklist item.
-**Addresses:** Bilingual FR/EN requirement (infrastructure), non-technical editing infrastructure (CMS access set up).
-**Avoids:** Pitfall 6 (bus factor) by choosing the boring/managed stack from day one; Pitfall 3 and Pitfall 7 by starting their long lead-time administrative tracks immediately rather than late.
+### Phase 1: Schema & Content Model
+**Rationale:** Every later phase (data-fetch layer, routes, nav) depends on the `edition` document shape existing and being seeded with real content; PITFALLS.md flags this as the phase where the single biggest forward-compatibility risk (Pitfall 1) must be resolved before anything downstream is built on top of it.
+**Delivers:** `sanity/schemas/edition.ts` (mirroring `gallery.ts`'s richer editorial workflow: `publicationStatus`, hidden `orderRank`, image-array-with-alt-and-rights, grouped `format` object with typed `pageCount`/`printRun`/`dimensions`), registered in `index.ts` and `structure.ts` with a dedicated orderable desk item; `siteSettings.navLabels.editions` field added at the same time so it's ready for nav wiring later; 1-2 real seeded éditions in Studio.
+**Addresses:** Self-serve editing feature (P1); format details feature (P1)
+**Avoids:** Pitfall 1 (schema not extensible for future shop fields), Pitfall 7 (Studio editorial parity gap vs. `gallery`), Pitfall 8 (raise the "Rebut - Édition"/"Silo - Édition" naming-collision discussion with Romane explicitly here, not as a code decision)
 
-### Phase 2: Portfolio & Content (Galleries, About, Exhibitions)
-**Rationale:** This is the core reason visitors arrive (FEATURES.md) and carries no payment/legal risk, making it the right place to validate the CMS content model and non-technical editing experience before the higher-stakes e-commerce build.
-**Delivers:** Migrated galleries (Rebut, Silos, Brume, Adults, etc.), About/bio page, exhibitions/agenda list (reverse-chronological, upcoming/past distinction), build-time image optimization pipeline wired to Sanity's asset CDN.
-**Addresses:** Portfolio browsing, About page, exhibitions list, non-technical editing for galleries + exhibitions (all P1 in FEATURES.md).
-**Avoids:** Pitfall 4 (image bandwidth) by establishing the CMS-CDN image pipeline now, before large photo volumes accumulate; Pitfall 5 (bilingual drift) by designing CMS fields with FR/EN side-by-side from the start.
+### Phase 2: Data-Fetch Layer & Routes
+**Rationale:** The build-time GROQ fetch layer is fully verifiable in isolation before any UI exists (per ARCHITECTURE.md's suggested build order); the detail page has a direct existing mirror (`galleries/[slug].astro`) making it lower-ambiguity than the overview page, which has no gallery precedent and needs original design judgment.
+**Delivers:** `Edition` type + `EDITIONS_QUERY`/`EDITION_BY_SLUG_QUERY` + `getEditions()`/`getEdition()` in `src/lib/sanity.ts` (with a unit test mirroring `gallery-query.test.ts`); `src/pages/editions/[slug].astro` + `en/` (detail, mirroring the gallery detail page, reusing `Lightbox`/`GalleryGrid` unchanged, with attention to portrait-oriented book-cover hero framing per PITFALLS.md's UX note); `src/pages/editions/index.astro` + `en/` (overview, new pattern: title + lead photo grid); `sitemap.xml.ts` entries for both routes.
+**Uses:** Astro static routing, `astro:i18n`, `@sanity/image-url`
+**Implements:** Parallel build-time content-fetch module pattern; both locale directories in the same commit
 
-### Phase 3: E-commerce Core (Catalog, Stock, Checkout)
-**Rationale:** Highest complexity and risk in the project; depends on the content model and stack from Phases 1-2 being in place; this is the project's explicit core value (PROJECT.md) and where the most severe pitfall (overselling) lives.
-**Delivers:** Product listings for print/original/book-zine/merch types; client-side cart; `create-checkout-session` and `stripe-webhook` Cloudflare Pages Functions; atomic stock reservation with short session expiry; order confirmation emails; shipping cost/delivery-time display for France + EU zones.
-**Uses:** Stripe Checkout Sessions (async webhook verification pattern), Sanity as stock source of truth, Cloudflare Pages Functions.
-**Implements:** The `create-checkout-session` / `stripe-webhook` architectural pattern documented in ARCHITECTURE.md, with idempotency on the Checkout Session ID.
-**Avoids:** Pitfall 1 (overselling race condition) via server-side stock re-validation at session creation, not just on payment success — must be verified with a concurrent-purchase test before this phase is marked done. Also depends on Pitfall 3 (business registration) being resolved by now, or live payouts will be blocked at the worst possible time.
+### Phase 3: Nav Integration
+**Rationale:** This is the only part of the feature that touches shared, every-page chrome (`SiteHeader`, rendered from two independent call sites); ARCHITECTURE.md and PITFALLS.md both flag it as safest to land last, once the underlying routes are already built and verified, so a nav link never points at an unready route and any header regression is easy to attribute to this one change.
+**Delivers:** `resolveSiteCopy()` extended with `editionsLabel`; `SiteHeader.astro`'s `Props` interface + template extended with `editionsLabel`/`editionsHref`; **both** `BaseLayout.astro` and `HomeCarousel.astro` updated to compute `editionsHref` via `getRelativeLocaleUrl` and pass the new props; mobile-viewport verification of the header at <768px with a 4th nav link, in both `solid`/`transparent` variants and both locales.
+**Addresses:** "Éditions" main-nav entry feature (P1)
+**Avoids:** Pitfall 5 (nav prop-threading + CMS-editability inconsistency), Pitfall 6 (mobile nav regression from a 4th link), Anti-Pattern 3 in ARCHITECTURE.md (forgetting the homepage's second `<SiteHeader>` call site)
 
-### Phase 4: Legal & Compliance
-**Rationale:** A hard gate on launch, not a "polish" pass — can be drafted in parallel with Phase 3's build but must be resolved before any real transaction goes live.
-**Delivers:** Mentions légales (with SIRET), CGV (with delivery zones, right-of-withdrawal terms specific to originals vs. editions, non-pre-ticked acceptance checkbox at checkout), Politique de Confidentialité/GDPR notice, CNIL-compliant cookie consent banner — all bilingual.
-**Addresses:** Legally mandatory French e-commerce requirements (FEATURES.md P1).
-**Avoids:** Pitfall 2 (missing legal pages) and Pitfall 8 (incorrectly denying right-of-withdrawal on unique originals).
-
-### Phase 5: Launch, Cutover & Handoff
-**Rationale:** DNS cutover and long-term maintainability are both one-shot, high-risk activities that research flags as deserving deliberate treatment, not being bundled into a generic "deploy" step.
-**Delivers:** Rehearsed DNS cutover (lowered TTLs, preserved MX/email records, redirects for indexed old URLs) from the current Myportfolio site to the new stack; a non-technical runbook for Romane (add a gallery, add an exhibition, check/fulfill an order, who to contact if something breaks); documented operator facts (services, credential locations, deploy process).
-**Avoids:** Pitfall 7 (DNS/email breakage during cutover) and Pitfall 6 (unmaintainable handoff) — verified by having Romane complete one routine task using only the written docs, unassisted.
+### Phase 4: Verification & UAT
+**Rationale:** Several of this milestone's risks are exactly the "looks done but isn't" class (per PITFALLS.md's checklist) that don't surface from a single happy-path check — they need a deliberate, itemized pass.
+**Delivers:** `edition-query.test.ts` (unit) and `editions.spec.ts` (e2e) covering: both locales' overview + detail pages render; nav link present and correctly localized on every page including the homepage specifically; sitemap contains Éditions URLs; a negative check (grep the diff for `price`/`stock`/`disponib`/`acheter`/`buy`) confirming no commerce language slipped in; Studio editorial parity (draft/publish + drag-reorder) confirmed by a non-technical-editor-style manual pass; closure of all "Looks Done But Isn't" checklist items from PITFALLS.md.
 
 ### Phase Ordering Rationale
 
-- Content/i18n infrastructure comes before content population, which comes before commerce, because bilingual routing and the CMS schema are foundational and expensive to retrofit (FEATURES.md dependency graph: bilingual cross-cuts everything).
-- E-commerce is deliberately sequenced after the portfolio/content phase so the highest-risk, highest-complexity work (stock correctness, Stripe integration) happens once the underlying content model and CMS habits are already proven with lower-stakes content.
-- Legal/compliance runs conceptually in parallel with e-commerce (both can be worked on simultaneously) but is called out as its own phase/gate so it isn't silently deprioritized as "not real work," per Pitfall 2's root cause.
-- Administrative tracks (SIRET registration, DNS audit) start in Phase 1 specifically because they have external lead times the code timeline doesn't control — starting them late is the single most avoidable self-inflicted delay identified in PITFALLS.md.
-- Launch/handoff is last and treated as its own phase because both of its core risks (DNS cutover, maintainability) are one-shot or long-tail risks that are cheap to prevent up front and expensive to recover from later.
+- Schema must exist and be seeded before the data-fetch layer can be verified against anything real (an empty content set makes `getStaticPaths` silently produce zero pages, which "looks like success but proves nothing" per ARCHITECTURE.md).
+- Routes come before nav wiring specifically because nav is the one part of this feature touching shared chrome used by every existing page — sequencing it last minimizes the blast radius and makes any regression easy to attribute.
+- Verification is deliberately its own phase/pass rather than folded into implementation, because this milestone's pitfalls are dominated by omission-class bugs (missing locale, missing sitemap entry, missing nav call site) that don't fail loudly and need an explicit checklist, not incidental testing.
 
 ### Research Flags
 
 Phases likely needing deeper research during planning:
-- **Phase 3 (E-commerce Core):** Cloudflare Workers-specific Stripe webhook verification (`constructEventAsync` + Web Crypto provider), atomic stock reservation pattern implementation details in Sanity, and idempotency handling for retried webhooks — documented but non-trivial integration, worth a `--research-phase` pass.
-- **Phase 4 (Legal & Compliance):** Exact CGV/mentions légales legal copy for Romane's specific business status, and the precise right-of-withdrawal wording for originals vs. editions vs. any future commissions — research confirms *that* these are required but not their precise legal text; recommend verification against a French legal resource or accountant, not just developer research.
+- None flagged as needing additional research-phase investigation — this milestone's ARCHITECTURE.md and PITFALLS.md are both HIGH confidence, verified by direct codebase inspection rather than general ecosystem claims, and the build order is already fully specified.
 
 Phases with standard patterns (skip research-phase):
-- **Phase 1 (Foundation):** Astro + Cloudflare + Sanity scaffolding and i18n routing are well-documented, officially supported patterns with verified current versions (STACK.md, HIGH confidence).
-- **Phase 2 (Portfolio & Content):** Static content pages and CMS-driven galleries are Astro/Sanity's core, best-documented use case.
-- **Phase 5 (Launch & Cutover):** DNS migration and handoff documentation are well-understood, checklist-driven activities rather than novel technical problems.
+- **Phase 1 (Schema):** Direct mirror of `gallery.ts`, an already-shipped, tested pattern in this repo.
+- **Phase 2 (Data-fetch & routes):** Detail page directly mirrors `galleries/[slug].astro`; data-fetch layer directly mirrors `getGalleries`/`getGallery`. Overview page has no direct mirror but is low-complexity (a grid of cards, reusing `GalleryGrid`).
+- **Phase 3 (Nav):** Pattern (named props threaded through two call sites) is already fully documented in this repo's own code comments and in ARCHITECTURE.md's Pattern 2.
+- **Phase 4 (Verification):** Existing Vitest/Playwright conventions and CI pipeline require no new tooling.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Core framework/hosting/CMS versions verified live against npm registry and official docs; commerce-integration pattern (Stripe + Astro + Cloudflare Workers) verified via official Cloudflare/Stripe docs, though not an Astro-blessed one-liner (community/custom pattern). |
-| Features | MEDIUM-HIGH | Table-stakes and legal requirements converge strongly across multiple sources including an official French government source; differentiator value judgments are reasoned but inherently more subjective; exact CGV legal wording needs a final legal-copy pass, not just research. |
-| Architecture | HIGH (patterns) / MEDIUM (exact free-tier numbers) | Component boundaries, data flow, and Astro/Sanity/Stripe integration patterns verified against official docs; specific free-tier quota numbers shift over time and should be re-verified immediately before implementation. |
-| Pitfalls | MEDIUM-HIGH | Legal/payment mechanics verified against official Stripe/CNIL/gouv.fr sources (HIGH); hosting free-tier specifics and some comparison sources are MEDIUM — re-verify current numbers at implementation time. |
+| Stack | HIGH | No new stack decision — direct confirmation that the shipped, production stack already covers this milestone's needs, verified against actual `package.json` files and shipped code |
+| Features | MEDIUM | Table-stakes/anti-features for the Éditions addendum are a synthesis (no single canonical source for "indie zine showcase" conventions exists); cross-checked across two independent web queries, and the "no commerce affordance pre-shop" pattern is corroborated by comparable-site observation. The original full-project feature research (shop/checkout/legal) is separately MEDIUM-HIGH but out of scope for this milestone's synthesis. |
+| Architecture | HIGH | Based on direct inspection of the actual codebase (schema files, page routes, shared components) — an integration question fully answerable from committed code, not general docs |
+| Pitfalls | HIGH (codebase-integration) / LOW (general ecosystem claims, used only as supporting corroboration) | Verified directly against `gallery.ts`, `exhibition.ts`, `structure.ts`, `SiteHeader.astro`, `BaseLayout.astro`, `sanity.ts`, `site-config.ts`, `sitemap.xml.ts`, `galleries/[slug].astro` |
 
-**Overall confidence:** MEDIUM-HIGH
+**Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **Romane's business registration status (SIRET, VAT franchise threshold)** — a non-technical, business/legal question that gates both Stripe payouts and the legal pages; not resolvable by research alone, must be confirmed directly with Romane early (Phase 1).
-- **Exact CGV/mentions légales legal text and right-of-withdrawal wording for originals** — research establishes the requirements and structure with high confidence but not Romane-specific final copy; recommend a French legal-resource or accountant review before Phase 4 is considered complete.
-- **Current exact free-tier numbers (Cloudflare Pages Functions quota, Sanity API/bandwidth limits, Stripe fee percentages)** — all cited with reasonable confidence from official sources as of 2026-07-05, but these change over time; re-verify immediately before committing during Phase 1 setup.
-- **Whether the domain currently has an active email service** — must be confirmed before any DNS cutover in Phase 5; unresolved as of this research and flagged as a specific pre-cutover checklist item.
-- **Romane's actual sales volume expectations** — architecture and stock-tracking recommendations assume low order volume (tens/month); if this assumption is wrong, the "rebuild on every sale" and CMS-as-inventory patterns should be revisited sooner.
+- **Naming collision on "Édition":** the migrated content already contains gallery titles "Rebut - Édition" and "Silo - Édition" (unrelated photo-collection naming from the old Myportfolio site) that will sit alongside a new "Éditions" nav section with a different meaning (paper zines/books). This needs an explicit conversation with Romane during Phase 1 (schema/content-model) — not an autonomous naming decision — to confirm whether those gallery titles should be renamed, and should be recorded in PROJECT.md's Key Decisions once resolved.
+- **Overview page visual design has no direct precedent:** unlike the detail page, the Éditions overview page is the one genuinely new route pattern in this milestone (galleries never had a standalone overview since the homepage fills that role). Plan for slightly more design/UX judgment time on this one page during Phase 2.
+- **Portrait-oriented hero images:** the existing gallery-detail hero treatment is tuned for landscape photography; PITFALLS.md flags that a book/zine cover shot is more likely portrait-oriented and may need `object-position`/crop adjustments — worth a concrete check against real content early in Phase 2, not assumed to transfer as-is.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- npm registry live queries (2026-07-05) — current package versions (astro, @astrojs/cloudflare, stripe, @sanity/client, etc.)
-- https://developers.cloudflare.com/pages/platform/limits/ and /pages/functions/pricing/ — Cloudflare free-tier limits
-- https://www.sanity.io/pricing and https://www.sanity.io/docs/platform-management/plans-and-payments — Sanity free-tier limits
-- https://docs.stripe.com/payments/checkout/managing-limited-inventory and /product-catalog — official Stripe inventory/checkout guidance
-- https://blog.cloudflare.com/announcing-stripe-support-in-workers/ — Stripe SDK on Cloudflare Workers
-- https://docs.astro.build/en/guides/internationalization/ — Astro native i18n routing
-- https://developers.cloudflare.com/r2/pricing/ — zero-egress object storage confirmation
-- https://www.economie.gouv.fr (mentions légales) and https://www.service-public.gouv.fr (droit de rétractation) — official French government sources
-- https://www.cnil.fr (cookies/traceurs rules) — official CNIL sources
-- https://stripe.com/resources/more/siret-siren-numbers and Stripe support — SIRET requirement for French payouts
+- Direct codebase inspection: `sanity/schemas/gallery.ts`, `sanity/schemas/exhibition.ts`, `sanity/schemas/structure.ts`, `sanity/schemas/index.ts`, `src/lib/sanity.ts`, `src/lib/image.ts`, `src/lib/site-config.ts`, `src/components/SiteHeader.astro`, `src/components/GalleryGrid.astro`, `src/components/Lightbox.astro`, `src/components/HomeCarousel.astro`, `src/layouts/BaseLayout.astro`, `src/pages/index.astro`, `src/pages/galleries/[slug].astro`, `src/pages/en/galleries/[slug].astro`, `src/pages/about.astro`, `src/pages/sitemap.xml.ts`, `astro.config.mjs`, `tests/unit/gallery-query.test.ts`, `sanity/package.json`, `package.json`
+- `.planning/PROJECT.md` — v1.3 milestone scope, explicit requirements and exclusions
+- `CLAUDE.md` (repo root) — documents the already-validated, shipped v1.0 stack and the "Deferred to v1.x" e-commerce boundary
 
 ### Secondary (MEDIUM confidence)
-- WebSearch aggregation on Snipcart pricing, Stripe France fee rates, Keystatic/Decap/TinaCMS comparisons, Cloudflare vs Netlify vs Vercel bandwidth
-- GitHub `withastro/adapters` issues #191/#266 — Sharp/Cloudflare runtime incompatibility
-- Multiple French legal-guidance blogs (Anov, LegalPlace, lueurexterne) — cross-checked against economie.gouv.fr
-- PhotoBiz, PetaPixel, PhotoDeck, Improve Photography, AGI Fine Art, MyArtBroker — fine-art/print-selling feature conventions
-- Contemporary Art Issue, Portfoliobox — standard artist-site page structure
+- Domain knowledge of indie photobook/zine publishing conventions (Self Publish Be Happy, Indie Photobook Library, Setanta Books) — cross-checked across two independent queries on format/edition-size conventions, raising practical confidence to MEDIUM for format-metadata and "no live commerce affordance pre-shop" findings specifically
 
 ### Tertiary (LOW confidence)
-- Bello.art print-size chart (single source, general convention only)
-- Netlify pricing page overage behavior (unclear at fetch time — re-verify before committing to any alternative host)
-- Vercel vs Netlify third-party blog comparisons (directional only)
+- [How to Design Flexible, Scalable Sanity Schemas — Halo Lab](https://www.halo-lab.com/blog/creating-schema-in-sanity) — uncross-checked web search, used only as supporting corroboration
+- [Deciding on fields and relationships — Sanity Docs](https://www.sanity.io/docs/developer-guides/deciding-fields-and-relationships) — uncross-checked
+- [Easton Dev Blog — Astro i18n Configuration Guide](https://eastondev.com/blog/en/posts/dev/20251202-astro-i18n-guide/) — documents the N-pages-times-M-locales duplication pattern this codebase already exhibits, uncross-checked
+- [Kontent.ai — UX design using a headless CMS](https://kontent.ai/resources/ux-design-using-headless-cms/) — uncross-checked
 
 ---
-*Research completed: 2026-07-05*
+*Research completed: 2026-07-22*
 *Ready for roadmap: yes*
