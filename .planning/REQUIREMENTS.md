@@ -195,6 +195,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HOME-09 | Phase 9 | Complete |
 | HOME-10 | Phase 10 | Complete |
 | I18N-04 | Phase 10 | Complete |
+| CMS-04 | Phase 11 | Pending |
+| EDN-05 | Phase 11 | Pending |
+| EDN-02 | Phase 12 | Pending |
+| EDN-03 | Phase 12 | Pending |
+| EDN-04 | Phase 12 | Pending |
+| EDN-06 | Phase 12 | Pending |
+| EDN-07 | Phase 12 | Pending |
+| EDN-01 | Phase 13 | Pending |
 
 **Coverage:**
 
@@ -207,11 +215,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 - v1.2 (Homepage Polish, Pre-Launch) requirements: 8 total (HOME-04..HOME-10, I18N-04)
 - Mapped to phases: 8/8 ✓ (Phases 7–10)
 - Unmapped: 0
-- v1.3 (Éditions) requirements: 8 total (EDN-01..EDN-07, CMS-04), not yet mapped to phases (roadmap creation pending)
-- Unmapped: 8 ⚠️ (expected — roadmap not yet created for this milestone)
+- v1.3 (Éditions) requirements: 8 total (EDN-01..EDN-07, CMS-04)
+- Mapped to phases: 8/8 ✓ (Phase 11: CMS-04, EDN-05; Phase 12: EDN-02, EDN-03, EDN-04, EDN-06, EDN-07; Phase 13: EDN-01; Phase 14 is a cross-cutting verification pass over Phases 11–13, owns no requirement directly)
+- Unmapped: 0
 - v2 (v1.x fast-follow) requirements: 18 tracked, not yet in roadmap (out of scope for this roadmap by design)
 
 ---
 *Requirements defined: 2026-07-05*
-*Last updated: 2026-07-22 — defined v1.3 (Éditions) requirements: EDN-01..EDN-07, CMS-04; deferred cross-link differentiator EDN-08 to v2*
-</content>
+*Last updated: 2026-07-22 — roadmapped v1.3 (Éditions) to Phases 11–14; EDN-01..EDN-07/CMS-04 mapped and marked Pending*
