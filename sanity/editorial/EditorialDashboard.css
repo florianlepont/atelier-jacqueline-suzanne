@@ -1,12 +1,24 @@
 .editorial-dashboard__page {
   --dashboard-page-background: color-mix(in srgb, var(--card-bg-color) 92%, var(--card-fg-color) 8%);
   --dashboard-surface-background: var(--card-bg-color);
+  --dashboard-group-header-background: color-mix(in srgb, var(--card-bg-color) 87%, var(--card-fg-color) 13%);
   min-height: calc(100vh - 49px);
   background: var(--dashboard-page-background);
 }
 
 .editorial-dashboard__surface {
   background-color: var(--dashboard-surface-background);
+}
+
+.editorial-dashboard__group-header-band {
+  background-color: var(--dashboard-group-header-background);
+  border-bottom: 1px solid color-mix(in srgb, var(--card-fg-color) 10%, transparent);
+  border-radius: 4px 4px 0 0;
+}
+
+.editorial-dashboard__group-title {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .editorial-dashboard__actions {
