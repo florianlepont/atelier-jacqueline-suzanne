@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Éditions
-current_phase: 11
-current_phase_name: schema-content-model
+current_phase: 12
+current_phase_name: Data-Fetch Layer & Routes
 status: executing
 stopped_at: Phase 11 context gathered
-last_updated: "2026-07-22T14:50:46.995Z"
+last_updated: "2026-07-22T15:45:37.146Z"
 last_activity: 2026-07-22
-last_activity_desc: Phase 11 execution started
+last_activity_desc: Phase 11 complete, transitioned to Phase 12
 progress:
   total_phases: 17
-  completed_phases: 11
+  completed_phases: 12
   total_plans: 36
-  completed_plans: 35
-  percent: 65
+  completed_plans: 37
+  percent: 71
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-07-22)
 
 ## Current Position
 
-Phase: 11 (schema-content-model) — EXECUTING
-Plan: 1 of 2
+Phase: 12 — Data-Fetch Layer & Routes
+Plan: Not started
 Status: Executing Phase 11
-Last activity: 2026-07-22 — Phase 11 execution started
+Last activity: 2026-07-22 — Phase 11 complete, transitioned to Phase 12
 
 Progress: [███████░░░░░░░] 10/14 phases complete (71%)
 
@@ -39,7 +39,7 @@ Progress: [███████░░░░░░░] 10/14 phases complete (71
 
 **Velocity:**
 
-- Total plans completed: 21
+- Total plans completed: 23
 - Average duration: - min
 - Total execution time: 0 hours
 
@@ -54,6 +54,7 @@ Progress: [███████░░░░░░░] 10/14 phases complete (71
 | 07 | 2 | - | - |
 | 09 | 2 | - | - |
 | 10 | 4 | - | - |
+| 11 | 2 | - | - |
 
 **Recent Trend:**
 

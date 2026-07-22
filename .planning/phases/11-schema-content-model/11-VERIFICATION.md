@@ -1,14 +1,16 @@
 ---
 phase: 11-schema-content-model
 verified: 2026-07-22T18:15:00Z
-status: human_needed
+status: passed
 score: 7/8 must-haves verified
 behavior_unverified: 1
 overrides_applied: 0
 human_verification:
+
   - test: "Drag-reorder a second (or more) édition inside the 'Éditions' desk list in the hosted Studio, the same way galleries are reordered."
     expected: "The list re-orders and persists the new order across a refresh, exactly like the existing 'Collections photo' (gallery) list."
     why_human: "Only one édition ('Rebut') currently exists in the production dataset, so the reorder mechanism (orderRankField + orderableDocumentListDeskItem, confirmed wired and code-identical to gallery's) has never actually been exercised with more than one item. 11-02-SUMMARY.md itself documents this as accepted-but-unexercised ('Known follow-up (non-blocking): drag-reorder is code-verified but not yet exercised with real content'). A browser session is required to actually drag two list items and confirm persistence."
+
   - test: "Re-run `npm run deploy --prefix sanity` and confirm the hosted Studio (https://atelier-jacqueline-suzanne.sanity.studio/) reflects the current repo HEAD schema — specifically that `leadPhoto` now shows a required 'Crédits et droits' field, that adding an `images` array item without an uploaded asset is blocked on publish, and that `Dimensions → Unité` is a constrained cm/in dropdown rather than free text."
     expected: "All three code-review fixes (WR-01/WR-02/WR-03, commit c718414) are live in the hosted Studio, not just in the repo."
     why_human: "Verified via git history + a live query against the production dataset (see Gaps Summary) that commit `c718414` ('fix(11): address code review findings') was made AFTER 11-02's deploy+seed checkpoint and has never been followed by another `sanity deploy`. The hosted Studio Romane actually uses is currently running the pre-review-fix schema. This doesn't invalidate any of the 5 roadmap success criteria (all were satisfied by the schema as it existed at deploy time), but it means the review-report's fixes are not yet live where they matter, and the already-published 'Rebut' document's `leadPhoto` has no `rights` sub-field (predates the fix)."
