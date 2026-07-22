@@ -387,11 +387,11 @@ Plans:
   4. Both the overview and detail routes exist and render correctly at the French (root) and English (`/en/`) URL paths — no locale is missing either route.
   5. The Éditions overview and detail URLs appear in the site's `sitemap.xml`.
 
-**Plans**: 3 plans
+**Plans**: 1/3 plans executed
 Plans:
 **Wave 1**
 
-- [ ] 12-01-PLAN.md — Éditions overview vertical slice: `edition` data-fetch layer (`getEditions`/`getEdition`, no-isVisible/no-seo filter) + FR/EN vertical zigzag list + Wave 0 unit/e2e (EDN-02, EDN-06, EDN-07) (Wave 1)
+- [x] 12-01-PLAN.md — Éditions overview vertical slice: `edition` data-fetch layer (`getEditions`/`getEdition`, no-isVisible/no-seo filter) + FR/EN vertical zigzag list + Wave 0 unit/e2e (EDN-02, EDN-06, EDN-07) (Wave 1)
 
 **Wave 2** *(blocked on 12-01 — needs the data-fetch layer + overview links)*
 
@@ -455,7 +455,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 9. Progressive Homepage Image Loading | 2/2 | Complete    | 2026-07-14 |
 | 10. Unified Header & Simplified Language Switcher | 4/4 | Complete    | 2026-07-17 |
 | 11. Schema & Content Model | 2/2 | Complete    | 2026-07-22 |
-| 12. Data-Fetch Layer & Routes | 0/3 | Planned | - |
+| 12. Data-Fetch Layer & Routes | 1/3 | In Progress|  |
 | 13. Nav Integration | 0/TBD | Not started | - |
 | 14. Verification & UAT | 0/TBD | Not started | - |
 

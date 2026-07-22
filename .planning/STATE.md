@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Éditions
 current_phase: 12
-current_phase_name: Data-Fetch Layer & Routes
+current_phase_name: data-fetch-layer-routes
 status: executing
 stopped_at: Phase 12 UI-SPEC approved
-last_updated: "2026-07-22T20:16:19.825Z"
+last_updated: "2026-07-22T21:03:47.164Z"
 last_activity: 2026-07-22
-last_activity_desc: Phase 11 complete, transitioned to Phase 12
+last_activity_desc: Phase 12 execution started
 progress:
   total_phases: 17
   completed_phases: 12
-  total_plans: 36
+  total_plans: 39
   completed_plans: 37
   percent: 71
 ---
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-22)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; v1.3 adds a non-transactional Éditions showcase; checkout still follows in the future v1.x shop milestone.)
-**Current focus:** Phase 11 — schema-content-model
+**Current focus:** Phase 12 — data-fetch-layer-routes
 
 ## Current Position
 
-Phase: 12 — Data-Fetch Layer & Routes
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-07-22 — Phase 11 complete, transitioned to Phase 12
+Phase: 12 (data-fetch-layer-routes) — EXECUTING
+Plan: 1 of 3
+Status: Executing Phase 12
+Last activity: 2026-07-22 — Phase 12 execution started
 
 Progress: [███████░░░░░░░] 10/14 phases complete (71%)
 
