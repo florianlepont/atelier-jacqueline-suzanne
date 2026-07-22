@@ -387,7 +387,7 @@ Plans:
   4. Both the overview and detail routes exist and render correctly at the French (root) and English (`/en/`) URL paths — no locale is missing either route.
   5. The Éditions overview and detail URLs appear in the site's `sitemap.xml`.
 
-**Plans**: 1/3 plans executed
+**Plans**: 2/3 plans executed
 Plans:
 **Wave 1**
 
@@ -395,7 +395,7 @@ Plans:
 
 **Wave 2** *(blocked on 12-01 — needs the data-fetch layer + overview links)*
 
-- [ ] 12-02-PLAN.md — Per-édition detail vertical slice: FR/EN `[slug]` pages (clickable hero, combined `[leadPhoto, ...images]` Lightbox, format line, in-flow back-link) + detail/lightbox/no-commerce e2e (EDN-03, EDN-04, EDN-06, EDN-07) (Wave 2)
+- [x] 12-02-PLAN.md — Per-édition detail vertical slice: FR/EN `[slug]` pages (clickable hero, combined `[leadPhoto, ...images]` Lightbox, format line, in-flow back-link) + detail/lightbox/no-commerce e2e (EDN-03, EDN-04, EDN-06, EDN-07) (Wave 2)
 
 **Wave 3** *(blocked on 12-01/12-02 — hardens the shipped routes)*
 
@@ -455,7 +455,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 9. Progressive Homepage Image Loading | 2/2 | Complete    | 2026-07-14 |
 | 10. Unified Header & Simplified Language Switcher | 4/4 | Complete    | 2026-07-17 |
 | 11. Schema & Content Model | 2/2 | Complete    | 2026-07-22 |
-| 12. Data-Fetch Layer & Routes | 1/3 | In Progress|  |
+| 12. Data-Fetch Layer & Routes | 2/3 | In Progress|  |
 | 13. Nav Integration | 0/TBD | Not started | - |
 | 14. Verification & UAT | 0/TBD | Not started | - |
 
