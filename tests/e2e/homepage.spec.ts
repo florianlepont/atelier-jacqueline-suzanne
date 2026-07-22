@@ -312,91 +312,104 @@ test.describe('view-transition toggle — reduced-motion still swaps modes', () 
     await page.getByRole('button', { name: 'Carrousel' }).click();
     await expect(carousel).toBeVisible();
     await expect(grid).toBeHidden();
+
+    const accentPanel = page.locator('[data-role="accent-panel"]');
+    await expect(accentPanel).toHaveCSS('opacity', '1');
+    await expect
+      .poll(() => accentPanel.evaluate((panel) => panel.getAnimations().length))
+      .toBe(0);
   });
 });
 
-// quick-260713-kit: regression guard for the accent-panel fade timing fix.
-// Pauses and scrubs the real ::view-transition-new(ajs-accent-panel)
-// animation instead of asserting the CSS rule's text exists — a rule can be
-// present in the stylesheet yet silently not take effect (this was exactly
-// the original bug class: animation-fill-mode falling through to whatever
-// the browser's own default happens to be). Chromium-only (view transitions
-// are feature-detected; the test itself skips gracefully if unsupported).
-test.describe('view-transition accent-panel fade timing (quick-260713-kit)', () => {
-  test('accent panel is near-invisible during the entrance delay window and fully visible by transition end', async ({
+// Safari/WebKit can report an entering View Transition pseudo-animation at
+// its final time as soon as `ready` resolves. The portable contract is now
+// explicit: keep the real panel hidden throughout the photo morph, then run
+// a real DOM fade after the View Transition overlay has finished. Scrubbing
+// that DOM animation proves the reveal is progressive rather than a final pop.
+test.describe('view-transition accent-panel sequencing', () => {
+  test('keeps the real accent panel hidden through the photo morph, then progressively fades it in', async ({
     page,
-    browserName,
   }) => {
-    test.skip(browserName !== 'chromium', 'View Transitions scrubbing is Chromium-only in this suite');
-
     await page.goto('/');
 
     const supported = await page.evaluate(() => typeof document.startViewTransition === 'function');
     test.skip(!supported, 'document.startViewTransition unsupported in this browser');
 
-    // Capture the transition object so we can await `ready` (pseudo-element
-    // tree + animations guaranteed to exist) instead of an arbitrary delay.
+    // Capture the transition object so this test can assert the sequencing
+    // boundary directly. The real panel must remain hidden for the whole
+    // photo morph; relying only on a delayed pseudo-element animation is not
+    // portable because WebKit can expose that enter-only animation already
+    // at its final time when `ready` resolves.
     await page.evaluate(() => {
-      const orig = document.startViewTransition.bind(document);
+      const original = document.startViewTransition.bind(document);
       (window as unknown as { __lastVT: unknown }).__lastVT = null;
-      document.startViewTransition = (cb: () => void) => {
-        const vt = orig(cb);
-        (window as unknown as { __lastVT: unknown }).__lastVT = vt;
-        return vt;
+      document.startViewTransition = (callback: () => void) => {
+        const transition = original(callback);
+        (window as unknown as { __lastVT: unknown }).__lastVT = transition;
+        return transition;
       };
     });
 
     const toggle = page.locator('[data-role="mode-toggle"]');
-    await expect(page.locator('[data-role="home-carousel"]')).toBeVisible();
-
-    // Go to grid first, then back to carousel — the accent panel's entrance
-    // fade (::view-transition-new) is on the grid->carousel direction.
     await toggle.click();
-    await expect(page.locator('[data-role="home-grid"]')).toBeVisible();
-
-    const opacities = await page.evaluate(async () => {
-      const toggleBtn = document.querySelector<HTMLButtonElement>('[data-role="mode-toggle"]');
-      toggleBtn?.click();
-
-      const win = window as unknown as { __lastVT: { ready?: Promise<void> } | null };
-      for (let i = 0; i < 50 && !win.__lastVT; i++) {
-        await new Promise((r) => setTimeout(r, 2));
-      }
-      if (win.__lastVT?.ready) {
-        await win.__lastVT.ready;
-      }
-
-      const panelAnim = document
-        .getAnimations()
-        .find(
-          (a) =>
-            (a.effect as KeyframeEffect | null)?.pseudoElement ===
-            '::view-transition-new(ajs-accent-panel)',
-        );
-
-      if (!panelAnim) return null;
-
-      panelAnim.pause();
-
-      const readAt = (t: number) => {
-        panelAnim.currentTime = t;
-        void document.documentElement.offsetHeight; // force style flush
-        return parseFloat(
-          getComputedStyle(document.documentElement, '::view-transition-new(ajs-accent-panel)').opacity,
-        );
-      };
-
-      return { at200: readAt(200), at760: readAt(760) };
+    await page.evaluate(async () => {
+      const transition = (window as unknown as {
+        __lastVT: { finished: Promise<void> };
+      }).__lastVT;
+      await transition.finished;
     });
 
-    expect(opacities).not.toBeNull();
-    // Inside the 420ms animation-delay window (the panel waits for the
-    // photo/root/header group to fully finish before starting its own
-    // fade — sequential, not overlapping): still fully invisible.
-    expect(opacities!.at200).toBeLessThanOrEqual(0.05);
-    // Well past the fade's end (420ms delay + 320ms duration = 740ms):
-    // fully visible.
-    expect(opacities!.at760).toBeGreaterThanOrEqual(0.95);
+    await page.evaluate(() => {
+      document.querySelector<HTMLButtonElement>('[data-role="mode-toggle"]')?.click();
+    });
+    await page.evaluate(async () => {
+      const transition = (window as unknown as {
+        __lastVT: { ready: Promise<void> };
+      }).__lastVT;
+      await transition.ready;
+    });
+
+    const accentPanel = page.locator('[data-role="accent-panel"]');
+    await expect(accentPanel).toHaveCSS('opacity', '0');
+
+    const fadeOpacities = await page.evaluate(async () => {
+      const transition = (window as unknown as {
+        __lastVT: { finished: Promise<void> };
+      }).__lastVT;
+      await transition.finished;
+
+      const panel = document.querySelector<HTMLElement>('[data-role="accent-panel"]');
+      if (!panel) return null;
+
+      const fade = panel.getAnimations().find((animation) => {
+        const effect = animation.effect as KeyframeEffect | null;
+        return effect?.pseudoElement == null && Number(effect?.getTiming().duration) === 320;
+      });
+      if (!fade) return null;
+
+      fade.pause();
+      const readAt = (time: number) => {
+        fade.currentTime = time;
+        void panel.offsetHeight;
+        return parseFloat(getComputedStyle(panel).opacity);
+      };
+
+      const samples = {
+        start: readAt(0),
+        halfway: readAt(160),
+        end: readAt(320),
+      };
+      fade.finish();
+      await Promise.resolve();
+      return samples;
+    });
+
+    expect(fadeOpacities).not.toBeNull();
+    expect(fadeOpacities!.start).toBeLessThanOrEqual(0.05);
+    expect(fadeOpacities!.halfway).toBeGreaterThan(0.05);
+    expect(fadeOpacities!.halfway).toBeLessThan(0.95);
+    expect(fadeOpacities!.end).toBeGreaterThanOrEqual(0.95);
+    await expect(accentPanel).toHaveCSS('opacity', '1');
   });
 });
 

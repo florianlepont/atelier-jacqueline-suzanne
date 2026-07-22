@@ -630,7 +630,38 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           const mutate = goingToGrid ? showGrid : showCarousel;
 
           if (typeof vtDoc.startViewTransition === 'function') {
-            vtDoc.startViewTransition(mutate);
+            // WebKit can expose the entering accent-panel pseudo-element at
+            // its final opacity as soon as `ready` resolves, ignoring the
+            // intended delayed entrance. Keep the real panel (and therefore
+            // its new-state capture) transparent until the photo transition
+            // has finished, then restore its normal CSS opacity. This guard
+            // is only needed when the panel enters (grid -> carousel).
+            const guardedAccentPanel = goingToGrid ? null : accentPanel;
+            guardedAccentPanel?.style.setProperty('opacity', '0');
+
+            const transition = vtDoc.startViewTransition(mutate);
+            if (guardedAccentPanel) {
+              const revealAccentPanel = () => {
+                guardedAccentPanel.style.removeProperty('opacity');
+                if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+                // The View Transition overlay is gone, so this animation
+                // affects the real panel rather than another engine-owned
+                // snapshot. Cancel after completion to hand opacity back to
+                // the component stylesheet without a visual discontinuity.
+                const fade = guardedAccentPanel.animate(
+                  [{ opacity: 0 }, { opacity: 1 }],
+                  {
+                    duration: 320,
+                    easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                    fill: 'both',
+                  },
+                );
+                const releaseFade = () => fade.cancel();
+                void fade.finished.then(releaseFade, releaseFade);
+              };
+              void transition.finished.then(revealAccentPanel, revealAccentPanel);
+            }
           } else {
             mutate();
           }
@@ -1658,28 +1689,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* quick-260713-kit: locally-defined keyframes for the accent panel's
-       enter/exit fade, referenced via the FULL `animation` shorthand
-       (name + duration + timing + delay + fill-mode) below, instead of
-       the previous longhand-only override (duration/delay/timing-function
-       only). The longhand-only rule left animation-name and
-       animation-fill-mode to fall through the cascade from the browser's
-       own UA view-transition stylesheet — in the Chromium version used for
-       this fix, that UA default already happens to be `both`, so the
-       delay-window hold-at-0 already worked there, but relying on an
-       unspecified, engine-defined default for a load-bearing visual
-       guarantee is fragile (other engines are not guaranteed to default to
-       `both`). Setting the full shorthand replaces 100% of the animation
-       sub-properties, so the fade no longer depends on any UA default. */
-    @keyframes ajs-panel-fade-in {
-      from {
-        opacity: 0;
-      }
-      to {
-        opacity: 1;
-      }
-    }
-
+    /* The panel's exit remains a pseudo-element fade. Its entrance is
+       deliberately absent here: WebKit can start that pseudo-animation at
+       its final time. The click handler instead captures the entering panel
+       transparent, waits for the photo View Transition to finish, and then
+       fades the real DOM panel in with the Web Animations API. */
     @keyframes ajs-panel-fade-out {
       from {
         opacity: 1;
@@ -1687,31 +1701,6 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       to {
         opacity: 0;
       }
-    }
-
-    /* Direct follow-up: the accent panel (ajs-accent-panel, named above)
-       gets its own fade rather than riding along with the root cross-fade —
-       naming it moves it into its own group, stacked above ajs-hero-morph,
-       so it's no longer hidden behind the still-growing photo for the whole
-       transition (see the comment on .home-hero__accent's view-transition-
-       name for the full root-cause).
-
-       Sequential, not overlapping: the panel's fade is intended to start
-       only once the photo/root/header group has fully finished (420ms),
-       then fade in on its own over the following stretch — "the photo
-       settles into place, THEN the panel fades in," not both moving at
-       once. An earlier pass (wrongly) treated "the panel appears after the
-       transition is finished" as a bug to eliminate by cramming the fade
-       INSIDE the 420ms window (40ms delay + 320ms, overlapping the photo
-       morph) — that was a misreading of the actual complaint, which was
-       about a jarring POP (a broken fade, snapping straight to opaque)
-       landing after the morph, not about the sequential timing itself;
-       the sequential reveal was the intended design all along. Delay is
-       set to the photo/root/header's own 420ms duration exactly, so the
-       fade begins the instant they finish — a clean handoff, not a gap
-       and not an overlap. */
-    ::view-transition-new(ajs-accent-panel) {
-      animation: ajs-panel-fade-in 320ms cubic-bezier(0.4, 0, 0.2, 1) 420ms both;
     }
 
     /* Exit fade (carousel->grid direction) — no entrance delay needed
