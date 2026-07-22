@@ -32,7 +32,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 8: Gallery Descriptions** - Each gallery's own description text replaces the generic byline under its title, and reveals on hover in grid mode (completed 2026-07-14)
 - [x] **Phase 9: Progressive Homepage Image Loading** - Homepage photos load with priority and a blur-to-sharp transition, with no blocking full-screen loader (completed 2026-07-14)
 - [x] **Phase 10: Unified Header & Simplified Language Switcher** - Homepage header consolidated into the shared About/Contact header component; language switcher shows only the other language plus a globe icon (completed 2026-07-17)
-- [ ] **Phase 11: Schema & Content Model** - A dedicated `edition` Sanity content type exists, seeded with real éditions content, ready for the site to fetch and render
+- [x] **Phase 11: Schema & Content Model** - A dedicated `edition` Sanity content type exists, seeded with real éditions content, ready for the site to fetch and render (completed 2026-07-22)
 - [ ] **Phase 12: Data-Fetch Layer & Routes** - Visitors can browse an Éditions overview page and open per-édition detail pages, bilingually, with zero commerce affordances
 - [ ] **Phase 13: Nav Integration** - Visitors can discover Éditions from the main site nav on every page, without it appearing on the homepage's photography carousel/grid
 - [ ] **Phase 14: Verification & UAT** - The Éditions feature closes with no omission-class gaps (locale, sitemap, nav call sites) and the "no commerce" boundary confirmed to hold
@@ -366,12 +366,12 @@ Plans:
   4. At least one real édition (e.g. "Rebut" or "Sillo") is seeded in Sanity Studio with real content, ready for the site to fetch and render in Phase 12.
   5. The naming overlap between the Portfolio gallery already titled "Rebut" and the new "Rebut" édition has been explicitly raised with and resolved by Romane, and the resolution is recorded in PROJECT.md's Key Decisions.
 
-**Plans**: 1/2 plans executed
+**Plans**: 2/2 plans complete
 
 Plans:
 
 - [x] 11-01-PLAN.md — Create the `edition` schema type (leadPhoto + structured `format` group), register + wire the orderable "Éditions" desk item, and record the "Rebut" naming resolution in PROJECT.md (Wave 1)
-- [ ] 11-02-PLAN.md — Deploy the schema to the hosted Studio and seed the real "Rebut" édition, proving Romane's unassisted create/edit/publish/reorder workflow (Wave 2)
+- [x] 11-02-PLAN.md — Deploy the schema to the hosted Studio and seed the real "Rebut" édition, proving Romane's unassisted create/edit/publish/reorder workflow (Wave 2)
 
 ### Phase 12: Data-Fetch Layer & Routes
 
@@ -441,7 +441,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 8. Gallery Descriptions | 1/1 | Complete   | 2026-07-14 |
 | 9. Progressive Homepage Image Loading | 2/2 | Complete    | 2026-07-14 |
 | 10. Unified Header & Simplified Language Switcher | 4/4 | Complete    | 2026-07-17 |
-| 11. Schema & Content Model | 1/2 | In Progress|  |
+| 11. Schema & Content Model | 2/2 | Complete   | 2026-07-22 |
 | 12. Data-Fetch Layer & Routes | 0/TBD | Not started | - |
 | 13. Nav Integration | 0/TBD | Not started | - |
 | 14. Verification & UAT | 0/TBD | Not started | - |
