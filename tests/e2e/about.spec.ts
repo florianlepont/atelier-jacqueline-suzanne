@@ -17,6 +17,7 @@ test.describe('about page content', () => {
     await expect(page.locator('main h1')).toContainText('À propos');
 
     await expect(page.getByText('Atelier & pratique')).toBeVisible();
+    await expect(page.getByRole('heading', {name: 'Médium & technique'})).toBeVisible();
     const editorialParagraphs = page.locator('.about-page > p').filter({hasNot: page.locator('a')});
     await expect(editorialParagraphs).toHaveCount(3);
     for (const paragraph of await editorialParagraphs.all()) {
@@ -33,6 +34,7 @@ test.describe('about page content', () => {
     await expect(page.locator('main h1')).toContainText('About');
 
     await expect(page.getByText('Studio & practice')).toBeVisible();
+    await expect(page.getByRole('heading', {name: 'Medium & technique'})).toBeVisible();
     const editorialParagraphs = page.locator('.about-page > p').filter({hasNot: page.locator('a')});
     await expect(editorialParagraphs).toHaveCount(3);
     for (const paragraph of await editorialParagraphs.all()) {

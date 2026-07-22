@@ -43,71 +43,184 @@ const structuredData = {
   structuredData={structuredData}
 >
   <div class="contact-page">
-    <h1>Contact</h1>
-    <p class="contact-page__lead">{intro}</p>
-    <div class="contact-page__details">
-      <p><a href={`mailto:${publicEmail}`}>{publicEmail}</a></p>
-      {location && <p>{location}</p>}
-      {availability && <p>{availability}</p>}
-      {instagramLink && (
-        <p class="contact-page__social">
-          Vous pouvez aussi me suivre sur Instagram :
-          <a href={instagramLink.url} target="_blank" rel="noopener noreferrer">
-            {instagramLink.label?.fr}<span class="sr-only"> (nouvelle fenêtre)</span>
+    <section class="contact-page__intro" aria-labelledby="contact-title">
+      <p class="contact-page__eyebrow">Atelier Jacqueline Suzanne</p>
+      <h1 id="contact-title">Contact</h1>
+      <p class="contact-page__lead">{intro}</p>
+
+      <div class="contact-page__details">
+        <div class="contact-page__channels">
+          <a class="contact-page__detail" href={`mailto:${publicEmail}`}>
+            <span class="contact-page__detail-copy">
+              <span class="contact-page__label">E-mail</span>
+              <span class="contact-page__value">{publicEmail}</span>
+            </span>
+            <span class="contact-page__arrow" aria-hidden="true">↗</span>
           </a>
-        </p>
-      )}
-      {otherProfessionalLinks.length > 0 && (
-        <ul class="contact-page__links">
-          {otherProfessionalLinks.map((link) => (
-            <li>
-              <a href={link.url} target="_blank" rel="noopener noreferrer">
-                {link.label?.fr}<span class="sr-only"> (nouvelle fenêtre)</span>
-              </a>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-    <ContactForm locale={locale} publicEmail={publicEmail} />
+          {instagramLink && (
+            <a
+              class="contact-page__detail contact-page__social"
+              href={instagramLink.url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span class="contact-page__detail-copy">
+                <span class="contact-page__label">Instagram</span>
+                <span class="contact-page__value">{instagramLink.label?.fr}</span>
+              </span>
+              <span class="contact-page__arrow" aria-hidden="true">↗</span>
+              <span class="sr-only"> (nouvelle fenêtre)</span>
+            </a>
+          )}
+        </div>
+        {(location || availability) && (
+          <div class="contact-page__detail contact-page__detail--meta">
+            {location && <p>{location}</p>}
+            {availability && <p>{availability}</p>}
+          </div>
+        )}
+        {otherProfessionalLinks.length > 0 && (
+          <ul class="contact-page__links">
+            {otherProfessionalLinks.map((link) => (
+              <li>
+                <a href={link.url} target="_blank" rel="noopener noreferrer">
+                  {link.label?.fr}<span class="sr-only"> (nouvelle fenêtre)</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
+
+    <section class="contact-page__form-panel" aria-labelledby="contact-form-title">
+      <div class="contact-page__form-heading">
+        <p class="contact-page__step" aria-hidden="true">01</p>
+        <div>
+          <h2 id="contact-form-title">Écrivez-moi</h2>
+          <p>Je vous répondrai dès que possible.</p>
+        </div>
+      </div>
+      <ContactForm locale={locale} publicEmail={publicEmail} />
+    </section>
   </div>
 </BaseLayout>
 
 <style>
   .contact-page {
-    max-width: 640px;
+    display: grid;
+    grid-template-columns: minmax(280px, 0.8fr) minmax(440px, 1.2fr);
+    gap: clamp(var(--space-2xl), 7vw, 112px);
+    width: min(100%, 1240px);
     margin: 0 auto;
-    padding: var(--space-2xl) var(--space-md);
+    padding: clamp(var(--space-2xl), 7vw, 96px) clamp(var(--space-md), 4vw, var(--space-2xl));
+  }
+
+  .contact-page__intro {
+    align-self: start;
+  }
+
+  .contact-page__eyebrow,
+  .contact-page__label,
+  .contact-page__step {
+    margin: 0;
+    font-size: var(--text-label-size);
+    font-weight: var(--weight-semibold);
+    line-height: var(--text-label-leading);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
   .contact-page h1 {
-    font-size: var(--text-display-size); /* Display role */
+    margin: var(--space-sm) 0 var(--space-lg);
+    font-size: clamp(52px, 6vw, 88px);
     font-weight: var(--weight-semibold);
     font-family: var(--font-display);
-    line-height: 1.2;
-    margin: 0 0 var(--space-xl);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
   }
 
   .contact-page__lead {
-    font-size: var(--text-body-size); /* Body role */
+    max-width: 28ch;
+    margin: 0;
+    font-size: clamp(20px, 2vw, 28px);
     font-weight: var(--weight-regular);
-    line-height: 1.5;
-    margin: 0 0 var(--space-2xl);
+    line-height: 1.35;
   }
 
   .contact-page__details {
-    font-size: var(--text-body-size); /* Body role */
-    font-weight: var(--weight-regular);
-    line-height: 1.5;
-    margin: 0 0 var(--space-2xl);
+    display: grid;
+    gap: var(--space-lg);
+    margin-top: clamp(var(--space-xl), 5vw, var(--space-3xl));
+    border-top: var(--border-hairline) solid var(--color-ink);
   }
 
-  .contact-page__details p {
-    margin: 0 0 var(--space-sm);
+  .contact-page__channels {
+    display: grid;
   }
 
-  .contact-page__social a {
-    margin-left: 0.35em;
+  .contact-page__detail {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md) 0;
+    color: var(--color-ink);
+    border-bottom: var(--border-hairline) solid var(--color-border);
+    text-decoration: none;
+    transition:
+      padding 160ms ease,
+      border-color 160ms ease;
+  }
+
+  .contact-page__detail:hover,
+  .contact-page__detail:focus-visible {
+    padding-right: var(--space-sm);
+    padding-left: var(--space-sm);
+    border-color: var(--color-accent);
+  }
+
+  .contact-page__detail-copy,
+  .contact-page__value {
+    display: block;
+  }
+
+  .contact-page__value {
+    max-width: 100%;
+    margin-top: var(--space-xs);
+    font-size: clamp(17px, 1.5vw, 20px);
+    line-height: 1.3;
+    color: var(--color-accent);
+    overflow-wrap: anywhere;
+  }
+
+  .contact-page__arrow {
+    display: grid;
+    width: 32px;
+    height: 32px;
+    place-items: center;
+    color: var(--color-accent);
+    border: var(--border-hairline) solid var(--color-accent);
+    transition: transform 160ms ease;
+  }
+
+  .contact-page__detail:hover .contact-page__arrow,
+  .contact-page__detail:focus-visible .contact-page__arrow {
+    transform: translate(2px, -2px);
+  }
+
+  .contact-page__detail--meta {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-xs);
+    padding: 0;
+    border: 0;
+  }
+
+  .contact-page__detail--meta p {
+    margin: 0;
+    line-height: var(--text-body-leading);
   }
 
   .contact-page__links {
@@ -117,5 +230,69 @@ const structuredData = {
     margin: var(--space-md) 0 0;
     padding: 0;
     list-style: none;
+  }
+
+  .contact-page__form-panel {
+    align-self: start;
+    padding: clamp(var(--space-lg), 4vw, var(--space-2xl));
+    border: var(--border-hairline) solid var(--color-ink);
+    box-shadow: 10px 10px 0 var(--color-accent);
+  }
+
+  .contact-page__form-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+    padding-bottom: var(--space-lg);
+    border-bottom: var(--border-hairline) solid var(--color-border);
+  }
+
+  .contact-page__step {
+    color: var(--color-accent);
+  }
+
+  .contact-page__form-heading h2 {
+    margin: 0 0 var(--space-xs);
+    font-family: var(--font-display);
+    font-size: clamp(24px, 3vw, 36px);
+    font-weight: var(--weight-semibold);
+    line-height: 1.1;
+  }
+
+  .contact-page__form-heading p {
+    margin: 0;
+    line-height: var(--text-body-leading);
+  }
+
+  @media (max-width: 800px) {
+    .contact-page {
+      grid-template-columns: 1fr;
+      gap: var(--space-2xl);
+    }
+
+    .contact-page__lead {
+      max-width: 34ch;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .contact-page {
+      padding-top: var(--space-xl);
+      padding-bottom: var(--space-3xl);
+    }
+
+    .contact-page h1 {
+      font-size: clamp(44px, 16vw, 64px);
+    }
+
+    .contact-page__form-panel {
+      padding: var(--space-lg) var(--space-md);
+      box-shadow: 6px 6px 0 var(--color-accent);
+    }
+
+    .contact-page__form-heading {
+      gap: var(--space-md);
+    }
   }
 </style>

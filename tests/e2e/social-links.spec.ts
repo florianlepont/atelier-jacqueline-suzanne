@@ -11,78 +11,52 @@ test('Instagram is absent from the site-wide footer', async ({ page }) => {
 });
 
 test.describe('About page Instagram mention', () => {
-  test('French About page links @ajs_romanelepont from the main content', async ({ page }) => {
-    await page.goto('/about/');
-
-    const main = page.locator('main');
-    await expect(main).toContainText('Suivez le travail de Romane sur Instagram');
-
-    const link = main.getByRole('link', { name: /@ajs_romanelepont/i });
-    await expect(link).toHaveAttribute('href', INSTAGRAM_HREF);
-    await expect(link).toHaveAttribute('target', '_blank');
-    const rel = await link.getAttribute('rel');
-    expect(rel).toContain('noopener');
-    expect(rel).toContain('noreferrer');
-  });
-
-  test('English About page links @ajs_romanelepont from the main content', async ({ page }) => {
-    await page.goto('/en/about/');
-
-    const main = page.locator('main');
-    await expect(main).toContainText("Follow Romane's work on Instagram");
-
-    const link = main.getByRole('link', { name: /@ajs_romanelepont/i });
-    await expect(link).toHaveAttribute('href', INSTAGRAM_HREF);
-    await expect(link).toHaveAttribute('target', '_blank');
-    const rel = await link.getAttribute('rel');
-    expect(rel).toContain('noopener');
-    expect(rel).toContain('noreferrer');
-  });
+  for (const path of ['/about/', '/en/about/']) {
+    test(`${path} has no Instagram mention in the main content`, async ({page}) => {
+      await page.goto(path);
+      await expect(page.locator('main a[href*="instagram.com"]')).toHaveCount(0);
+    });
+  }
 });
 
 test.describe('Contact page Instagram mention', () => {
   test('French Contact page links @ajs_romanelepont above the contact form', async ({ page }) => {
     await page.goto('/contact/');
 
-    const socialParagraph = page.locator('.contact-page__social');
-    await expect(socialParagraph).toContainText('Vous pouvez aussi me suivre sur Instagram');
-
-    const link = socialParagraph.getByRole('link', {
-      name: /@ajs_romanelepont/i,
-    });
+    const link = page.locator('.contact-page__social');
+    await expect(link).toContainText('Instagram');
+    await expect(link).toContainText('@ajs_romanelepont');
     await expect(link).toHaveAttribute('href', INSTAGRAM_HREF);
     await expect(link).toHaveAttribute('target', '_blank');
     const rel = await link.getAttribute('rel');
     expect(rel).toContain('noopener');
     expect(rel).toContain('noreferrer');
 
-    // Positioned above the contact form.
-    const socialBox = await socialParagraph.boundingBox();
-    const formBox = await page.locator('form').boundingBox();
-    expect(socialBox).not.toBeNull();
-    expect(formBox).not.toBeNull();
-    expect(socialBox!.y).toBeLessThan(formBox!.y);
+    // The editorial desktop layout places details beside the form, while
+    // keeping the social link before it in reading and keyboard order.
+    const socialPrecedesForm = await link.evaluate((social) => {
+      const form = document.querySelector('form');
+      return Boolean(form && social.compareDocumentPosition(form) & Node.DOCUMENT_POSITION_FOLLOWING);
+    });
+    expect(socialPrecedesForm).toBe(true);
   });
 
   test('English Contact page links @ajs_romanelepont above the contact form', async ({ page }) => {
     await page.goto('/en/contact/');
 
-    const socialParagraph = page.locator('.contact-page__social');
-    await expect(socialParagraph).toContainText('You can also follow me on Instagram');
-
-    const link = socialParagraph.getByRole('link', {
-      name: /@ajs_romanelepont/i,
-    });
+    const link = page.locator('.contact-page__social');
+    await expect(link).toContainText('Instagram');
+    await expect(link).toContainText('@ajs_romanelepont');
     await expect(link).toHaveAttribute('href', INSTAGRAM_HREF);
     await expect(link).toHaveAttribute('target', '_blank');
     const rel = await link.getAttribute('rel');
     expect(rel).toContain('noopener');
     expect(rel).toContain('noreferrer');
 
-    const socialBox = await socialParagraph.boundingBox();
-    const formBox = await page.locator('form').boundingBox();
-    expect(socialBox).not.toBeNull();
-    expect(formBox).not.toBeNull();
-    expect(socialBox!.y).toBeLessThan(formBox!.y);
+    const socialPrecedesForm = await link.evaluate((social) => {
+      const form = document.querySelector('form');
+      return Boolean(form && social.compareDocumentPosition(form) & Node.DOCUMENT_POSITION_FOLLOWING);
+    });
+    expect(socialPrecedesForm).toBe(true);
   });
 });

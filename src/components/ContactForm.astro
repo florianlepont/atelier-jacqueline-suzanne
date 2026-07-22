@@ -229,15 +229,34 @@ const errMessageBlank = locale === 'en' ? 'Please enter a message.' : 'Merci dâ€
 
 <style>
   .contact-form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-xl);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-lg) var(--space-md);
   }
 
   .contact-form__field {
     display: flex;
     flex-direction: column;
-    gap: var(--space-sm);
+    gap: var(--space-xs);
+  }
+
+  .contact-form__field:nth-of-type(3) {
+    grid-column: 1 / -1;
+  }
+
+  .contact-form :global(.field__input),
+  .contact-form :global(.field__textarea) {
+    background: transparent;
+    border-color: var(--color-ink);
+  }
+
+  .contact-form :global(.field__input) {
+    min-height: 52px;
+  }
+
+  .contact-form :global(.field__textarea) {
+    min-height: 160px;
+    resize: vertical;
   }
 
   /* D-03 ink-only error convention: thicker ink border on the field's
@@ -256,7 +275,10 @@ const errMessageBlank = locale === 'en' ? 'Please enter a message.' : 'Merci dâ€
     font-weight: var(--weight-semibold);
     line-height: var(--text-label-leading);
     color: var(--color-ink);
-    min-height: 1.5em;
+  }
+
+  .contact-form__error:empty {
+    display: none;
   }
 
   .contact-form__honeypot {
@@ -265,6 +287,7 @@ const errMessageBlank = locale === 'en' ? 'Please enter a message.' : 'Merci dâ€
   }
 
   .contact-form__submit-wrap {
+    grid-column: 1 / -1;
     align-self: flex-start;
   }
 
@@ -280,5 +303,21 @@ const errMessageBlank = locale === 'en' ? 'Please enter a message.' : 'Merci dâ€
      inline style.color pointing at a since-removed semantic error token. */
   .contact-form__status--error {
     font-weight: var(--weight-semibold);
+  }
+
+  @media (max-width: 560px) {
+    .contact-form {
+      grid-template-columns: 1fr;
+    }
+
+    .contact-form__field:nth-of-type(3),
+    .contact-form__submit-wrap {
+      grid-column: auto;
+    }
+
+    .contact-form__submit-wrap,
+    .contact-form__submit-wrap :global(.btn) {
+      width: 100%;
+    }
   }
 </style>
