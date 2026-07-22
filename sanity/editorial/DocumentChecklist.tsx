@@ -1,5 +1,7 @@
 import {useState} from 'react'
-import type {UserViewComponent} from 'sanity/structure'
+import {useEditState} from 'sanity'
+import type {DocumentInspector, DocumentInspectorComponent} from 'sanity'
+import {TaskIcon} from '@sanity/icons'
 import {getDocumentChecks, summarizeChecks} from './checks'
 import {compactCheckLabel} from './dashboardLogic'
 
@@ -9,10 +11,14 @@ const colors = {
   recommended: '#E7A72E',
 } as const
 
-export const DocumentChecklist: UserViewComponent = ({document, schemaType}) => {
+// An inspector (same mechanism as the built-in Validation/Comments toolbar
+// buttons) rather than a separate view tab, so the checklist is one click
+// away from the actual form instead of a full navigation away from it.
+const ChecklistPanel: DocumentInspectorComponent = ({documentId, documentType}) => {
   const [showCompleted, setShowCompleted] = useState(false)
-  const value = (document.displayed ?? {}) as Record<string, unknown>
-  const checks = getDocumentChecks(schemaType.name, value)
+  const {draft, published} = useEditState(documentId, documentType)
+  const value = (draft ?? published ?? {}) as Record<string, unknown>
+  const checks = getDocumentChecks(documentType, value)
   const summary = summarizeChecks(checks)
   const pending = checks.filter((item) => !item.complete)
   const completed = checks.filter((item) => item.complete)
@@ -190,6 +196,33 @@ export const DocumentChecklist: UserViewComponent = ({document, schemaType}) => 
       )}
     </div>
   )
+}
+
+// Every schema type that previously carried a "Checklist" view tab
+// (schemas/structure.ts's editorViews/galleryViews/checklistViews).
+export const checklistEnabledTypes = new Set([
+  'gallery',
+  'homePage',
+  'aboutPage',
+  'contactPage',
+  'siteSettings',
+  'exhibition',
+])
+
+export const checklistInspector: DocumentInspector = {
+  name: 'checklist',
+  component: ChecklistPanel,
+  useMenuItem({documentId, documentType}) {
+    const {draft, published} = useEditState(documentId, documentType)
+    const value = (draft ?? published ?? {}) as Record<string, unknown>
+    const summary = summarizeChecks(getDocumentChecks(documentType, value))
+    return {
+      title: 'Checklist',
+      icon: TaskIcon,
+      showAsAction: true,
+      tone: !summary.requiredComplete ? 'critical' : !summary.recommendedComplete ? 'caution' : 'positive',
+    }
+  },
 }
 
 const panelStyle = {

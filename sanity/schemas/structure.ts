@@ -6,26 +6,20 @@ import type {
 import {orderableDocumentListDeskItem} from '@sanity/orderable-document-list'
 import {CalendarIcon, CogIcon, EnvelopeIcon, HomeIcon, ImagesIcon, UserIcon} from '@sanity/icons'
 import {ContentPreview} from './ContentPreview'
-import {DocumentChecklist} from '../editorial/DocumentChecklist'
 import {GalleryCreditsView} from '../editorial/GalleryCreditsView'
 
 const editorViews = (S: StructureBuilder) => [
   S.view.form().title('Édition'),
-  S.view.component(DocumentChecklist).title('Checklist'),
   S.view.component(ContentPreview).title('Aperçu du brouillon'),
 ]
 
 const galleryViews = (S: StructureBuilder) => [
   S.view.form().title('Édition'),
   S.view.component(GalleryCreditsView).title('Crédits et droits'),
-  S.view.component(DocumentChecklist).title('Checklist'),
   S.view.component(ContentPreview).title('Aperçu du brouillon'),
 ]
 
-const checklistViews = (S: StructureBuilder) => [
-  S.view.form().title('Édition'),
-  S.view.component(DocumentChecklist).title('Checklist'),
-]
+const checklistViews = (S: StructureBuilder) => [S.view.form().title('Édition')]
 
 export const defaultDocumentNode: DefaultDocumentNodeResolver = (S, {schemaType}) => {
   if (schemaType === 'gallery') {

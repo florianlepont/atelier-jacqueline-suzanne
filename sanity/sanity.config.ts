@@ -6,6 +6,7 @@ import {schemaTypes} from './schemas'
 import {defaultDocumentNode, structure} from './schemas/structure'
 import {EditorialDashboard} from './editorial/EditorialDashboard'
 import {resolveActions, resolveBadges} from './editorial/workflow'
+import {checklistEnabledTypes, checklistInspector} from './editorial/DocumentChecklist'
 import {MediaLibrary} from './editorial/MediaLibrary'
 
 export default defineConfig({
@@ -62,6 +63,8 @@ export default defineConfig({
     // src/lib/sanity.ts non-deterministic, silently breaking Romane's edits.
     actions: resolveActions,
     badges: resolveBadges,
+    inspectors: (prev, context) =>
+      checklistEnabledTypes.has(context.documentType) ? [checklistInspector, ...prev] : prev,
     newDocumentOptions: (prev, context) =>
       context.creationContext.type === 'global'
         ? prev.filter(
