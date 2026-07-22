@@ -33,7 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 9: Progressive Homepage Image Loading** - Homepage photos load with priority and a blur-to-sharp transition, with no blocking full-screen loader (completed 2026-07-14)
 - [x] **Phase 10: Unified Header & Simplified Language Switcher** - Homepage header consolidated into the shared About/Contact header component; language switcher shows only the other language plus a globe icon (completed 2026-07-17)
 - [x] **Phase 11: Schema & Content Model** - A dedicated `edition` Sanity content type exists, seeded with real éditions content, ready for the site to fetch and render (completed 2026-07-22)
-- [ ] **Phase 12: Data-Fetch Layer & Routes** - Visitors can browse an Éditions overview page and open per-édition detail pages, bilingually, with zero commerce affordances
+- [x] **Phase 12: Data-Fetch Layer & Routes** - Visitors can browse an Éditions overview page and open per-édition detail pages, bilingually, with zero commerce affordances (completed 2026-07-22)
 - [ ] **Phase 13: Nav Integration** - Visitors can discover Éditions from the main site nav on every page, without it appearing on the homepage's photography carousel/grid
 - [ ] **Phase 14: Verification & UAT** - The Éditions feature closes with no omission-class gaps (locale, sitemap, nav call sites) and the "no commerce" boundary confirmed to hold
 
@@ -387,7 +387,7 @@ Plans:
   4. Both the overview and detail routes exist and render correctly at the French (root) and English (`/en/`) URL paths — no locale is missing either route.
   5. The Éditions overview and detail URLs appear in the site's `sitemap.xml`.
 
-**Plans**: 2/3 plans executed
+**Plans**: 3/3 plans complete
 Plans:
 **Wave 1**
 
@@ -399,7 +399,7 @@ Plans:
 
 **Wave 3** *(blocked on 12-01/12-02 — hardens the shipped routes)*
 
-- [ ] 12-03-PLAN.md — Sitemap inclusion (both locales, no noIndex) + EDN-06 build-blocking commerce-string guard over `dist/editions/**` (EDN-02, EDN-06, EDN-07) (Wave 3)
+- [x] 12-03-PLAN.md — Sitemap inclusion (both locales, no noIndex) + EDN-06 build-blocking commerce-string guard over `dist/editions/**` (EDN-02, EDN-06, EDN-07) (Wave 3)
 
 **UI hint**: yes
 
@@ -455,7 +455,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 9. Progressive Homepage Image Loading | 2/2 | Complete    | 2026-07-14 |
 | 10. Unified Header & Simplified Language Switcher | 4/4 | Complete    | 2026-07-17 |
 | 11. Schema & Content Model | 2/2 | Complete    | 2026-07-22 |
-| 12. Data-Fetch Layer & Routes | 2/3 | In Progress|  |
+| 12. Data-Fetch Layer & Routes | 3/3 | Complete   | 2026-07-22 |
 | 13. Nav Integration | 0/TBD | Not started | - |
 | 14. Verification & UAT | 0/TBD | Not started | - |
 
