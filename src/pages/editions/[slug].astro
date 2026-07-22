@@ -1,0 +1,292 @@
+---
+// French édition detail page (EDN-03/04/06/07): one static page per édition
+// slug via getStaticPaths(). The full édition list is fetched once in
+// getStaticPaths and passed as props, avoiding a second per-page fetch
+// (mirrors src/pages/galleries/[slug].astro's fetch-once-pass-as-props
+// convention). Mirrors the EN counterpart at
+// src/pages/en/editions/[slug].astro — only import depth and locale key
+// differ.
+//
+// Three deliberate deviations from the gallery detail page (12-CONTEXT.md):
+// D-05 the hero is clickable (opens the Lightbox at index 0), D-06/D-07 the
+// Lightbox receives the combined [leadPhoto, ...images] array with the grid
+// mapping images with NO .slice(1) (leadPhoto is a separate field, nothing
+// to skip — data-index = i + 1 is the combined-array offset, not a
+// dedup skip), D-08 an in-flow "Retour aux éditions" back-link (the
+// deliberate fix for the Phase 10 header-backhome-overlap-logo regression —
+// never position:absolute, never inside the hero).
+//
+// edition has NO seo field/group (confirmed absent from
+// sanity/schemas/edition.ts) — SEO title/description/social image are built
+// directly from edition.title / edition.statement[locale] / edition.leadPhoto.
+// Do not reach for a nonexistent edition.seo.
+import type { GetStaticPaths } from 'astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import GalleryGrid from '../../components/GalleryGrid.astro';
+import Lightbox from '../../components/Lightbox.astro';
+import { getEditions } from '../../lib/sanity';
+import { thumbnailUrl, fullSizeUrl, responsiveImageSrcSet, responsiveThumbnailSrcSet } from '../../lib/image';
+import type { Edition } from '../../lib/sanity';
+
+export const getStaticPaths = (async () => {
+  const editions = await getEditions();
+  return editions.map((edition) => ({
+    params: { slug: edition.slug },
+    props: { edition },
+  }));
+}) satisfies GetStaticPaths;
+
+interface Props {
+  edition: Edition;
+}
+
+const { edition } = Astro.props;
+const locale = 'fr' as const;
+
+const statement = edition.statement?.[locale] ?? '';
+const leadPhotoSrc = fullSizeUrl(edition.leadPhoto, 2000);
+const leadPhotoAlt = edition.leadPhoto.alt?.[locale] ?? '';
+
+// SEO built WITHOUT any seo field (edition has none) — see file-level note.
+const seoTitle = `${edition.title} — Atelier Jacqueline Suzanne`;
+const seoDescription = statement;
+const socialImage = fullSizeUrl(edition.leadPhoto, 1200);
+
+// D-06: the Lightbox receives leadPhoto + images as one combined array so
+// the counter total is images.length + 1.
+const lightboxImages = [edition.leadPhoto, ...edition.images];
+const total = lightboxImages.length;
+
+// D-09: compact single-line format-details string (informational, not a
+// product-spec table — EDN-06 boundary).
+const dimensionsText = `${edition.dimensions.width} × ${edition.dimensions.height} ${edition.dimensions.unit}`;
+const formatText = `Pages : ${edition.pageCount} · Tirage : ${edition.printRun} exemplaires · Dimensions : ${dimensionsText}`;
+---
+
+<BaseLayout title={seoTitle} description={seoDescription} socialImage={socialImage} headerVariant="transparent">
+  <div class="edition-detail">
+    <div class="edition-detail__hero">
+      <button
+        type="button"
+        class="edition-detail__hero-trigger"
+        data-gallery-thumb
+        data-index="0"
+        aria-label={`Voir en taille réelle, image 1 sur ${total}`}
+      >
+        <img
+          src={leadPhotoSrc}
+          srcset={responsiveImageSrcSet(edition.leadPhoto)}
+          sizes="100vw"
+          alt={leadPhotoAlt}
+          class="edition-detail__hero-img"
+          loading="eager"
+          decoding="async"
+        />
+      </button>
+      <div class="edition-detail__hero-scrim" aria-hidden="true"></div>
+      <h1 class="edition-detail__hero-title">{edition.title}</h1>
+      <svg
+        class="edition-detail__hero-expand-icon"
+        viewBox="0 0 24 24"
+        width="24"
+        height="24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        aria-hidden="true"
+      >
+        <polyline points="9 3 3 3 3 9"></polyline>
+        <polyline points="15 3 21 3 21 9"></polyline>
+        <polyline points="21 15 21 21 15 21"></polyline>
+        <polyline points="9 21 3 21 3 15"></polyline>
+      </svg>
+    </div>
+    <div class="edition-detail__content">
+      <a class="edition-detail__back-link" href="/editions/">
+        <span aria-hidden="true">←</span> Retour aux éditions
+      </a>
+      <p class="edition-detail__statement">{statement}</p>
+      <p class="edition-detail__format">{formatText}</p>
+      {
+        edition.images.length > 0 && (
+          <GalleryGrid>
+            {
+              edition.images.map((img, i) => {
+                const index = i + 1;
+                const alt = img.alt?.[locale] ?? '';
+                return (
+                  <button
+                    type="button"
+                    class="edition-detail__thumb-button"
+                    data-gallery-thumb
+                    data-index={index}
+                    aria-label={`Voir en taille réelle, image ${i + 2} sur ${total}`}
+                  >
+                    <img
+                      src={thumbnailUrl(img, 600)}
+                      srcset={responsiveThumbnailSrcSet(img)}
+                      sizes="(max-width: 767px) calc(100vw - 32px), 33vw"
+                      width="600"
+                      height="600"
+                      alt={alt}
+                      loading="lazy"
+                      decoding="async"
+                      class="edition-detail__thumb"
+                    />
+                  </button>
+                );
+              })
+            }
+          </GalleryGrid>
+        )
+      }
+    </div>
+  </div>
+  <Lightbox images={lightboxImages} locale={locale} />
+</BaseLayout>
+
+<style>
+  .edition-detail {
+    padding: 0 0 var(--space-2xl);
+  }
+
+  /* D-05/D-06/D-07: mirrors .gallery-detail__hero's visual treatment
+     exactly — only the interactivity (button + expand icon) is new. */
+  .edition-detail__hero {
+    position: relative;
+    height: 70vh;
+    min-height: 420px;
+    overflow: hidden;
+  }
+
+  .edition-detail__hero-trigger {
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .edition-detail__hero-trigger:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  .edition-detail__hero-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.2s ease;
+  }
+
+  .edition-detail__hero-trigger:hover .edition-detail__hero-img,
+  .edition-detail__hero-trigger:focus-visible .edition-detail__hero-img {
+    transform: scale(1.02);
+  }
+
+  .edition-detail__hero-scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.15) 45%, rgba(0, 0, 0, 0) 70%);
+    pointer-events: none;
+  }
+
+  .edition-detail__hero-title {
+    position: absolute;
+    left: var(--space-xl);
+    bottom: var(--space-xl);
+    right: var(--space-xl);
+    z-index: 3;
+    margin: 0;
+    font-size: var(--text-display-size);
+    font-weight: var(--weight-semibold);
+    font-family: var(--font-display);
+    line-height: 1.2;
+    color: #FFFFFF;
+    pointer-events: none;
+  }
+
+  .edition-detail__hero-expand-icon {
+    position: absolute;
+    bottom: var(--space-lg);
+    right: var(--space-lg);
+    z-index: 3;
+    color: #FFFFFF;
+    opacity: 0.9;
+    pointer-events: none;
+  }
+
+  .edition-detail__content {
+    padding: var(--space-2xl) var(--space-md) 0;
+  }
+
+  /* D-08: the "Retour aux éditions" back-link lives in NORMAL document flow
+     as the first child of .edition-detail__content — below the full-bleed
+     hero, above the statement — never absolutely positioned, never inside
+     the hero/scrim area. This is the deliberate fix for the Phase 10
+     header-backhome-overlap-logo regression, which came from an
+     absolutely-positioned link competing with SiteHeader's logo inside the
+     transparent-header hero zone. */
+  .edition-detail__back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    min-height: var(--tap-target-min);
+    font-size: var(--text-label-size);
+    font-weight: var(--weight-regular);
+    line-height: var(--text-label-leading);
+    color: var(--color-ink);
+    text-decoration: none;
+    margin-bottom: var(--space-lg);
+  }
+
+  .edition-detail__back-link:hover,
+  .edition-detail__back-link:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  .edition-detail__statement {
+    max-width: 640px;
+    font-size: var(--text-body-size);
+    font-weight: var(--weight-regular);
+    line-height: 1.5;
+    margin: 0 0 var(--space-2xl);
+  }
+
+  /* D-09/D-10: compact Label-role line, deliberately the quietest role —
+     reinforces the "informational, not product-spec" EDN-06 boundary. */
+  .edition-detail__format {
+    font-size: var(--text-label-size);
+    font-weight: var(--weight-regular);
+    line-height: var(--text-label-leading);
+    color: var(--color-ink);
+    margin: var(--space-2xl) 0;
+  }
+
+  .edition-detail__thumb-button {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .edition-detail__thumb-button:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  .edition-detail__thumb {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+  }
+</style>
