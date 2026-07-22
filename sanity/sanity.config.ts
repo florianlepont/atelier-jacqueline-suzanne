@@ -3,7 +3,7 @@ import {structureTool} from 'sanity/structure'
 import {frFRLocale} from '@sanity/locale-fr-fr'
 import {DashboardIcon, DocumentsIcon, ImagesIcon} from '@sanity/icons'
 import {schemaTypes} from './schemas'
-import {defaultDocumentNode, structure} from './schemas/structure'
+import {structure} from './schemas/structure'
 import {EditorialDashboard} from './editorial/EditorialDashboard'
 import {resolveActions, resolveBadges} from './editorial/workflow'
 import {checklistEnabledTypes, checklistInspector} from './editorial/DocumentChecklist'
@@ -24,7 +24,6 @@ export default defineConfig({
       title: 'Contenu du site',
       icon: DocumentsIcon,
       structure,
-      defaultDocumentNode,
     }),
     frFRLocale({title: 'Français'}),
   ],
