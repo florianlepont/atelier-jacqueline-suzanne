@@ -19,3 +19,11 @@ Resolved debug sessions. Used by `gsd-debugger` to surface known-pattern hypothe
 - **Fix:** Capture the entering panel with `opacity: 0`, await `ViewTransition.finished`, remove the guard, and fade the real DOM panel from 0 to 1 over 320ms with the Web Animations API. Cancel the completed animation to return opacity ownership to CSS, skip it under `prefers-reduced-motion`, remove the pseudo-element entrance animation, and cover the progressive sequence in WebKit and Chromium.
 - **Files changed:** src/components/HomeCarousel.astro, tests/e2e/homepage.spec.ts
 ---
+
+## missing-homepage-title — Homepage wordmark disappeared during cold or slow initial hero loading
+- **Date:** 2026-07-22
+- **Error patterns:** homepage, title, wordmark, intermittently missing, initial load, refresh, carousel advance, progressive image, placeholder, transparent text, background-clip, sharp hero
+- **Root cause:** The progressive hero renders a separate low-resolution placeholder before the full hero is available, but the wordmark's supported CSS immediately forced its text fill transparent and supplied only the full hero as the clipped background. During a cold, slow, or failed full-image request, the page therefore showed the placeholder and panel while the wordmark painted no pixels; cache warming or carousel advancement supplied a loaded background and made it reappear.
+- **Fix:** Default both homepage wordmarks to their inherited solid accent text color. `render()` removes the `has-wordmark-photo` readiness class on every gallery swap and restores it only after the active sharp hero loads successfully (`naturalWidth > 0`), while error and slow states remain readable. Transparent clipped text is scoped to that ready class, including the mobile grid wordmark.
+- **Files changed:** src/components/HomeCarousel.astro, tests/e2e/critical.smoke.spec.ts, tests/e2e/homepage.spec.ts
+---

@@ -1,6 +1,24 @@
 import {expect, test} from '@playwright/test'
 
 test.describe('critical cross-browser smoke', () => {
+  test('homepage wordmark stays readable while the sharp hero is unavailable', async ({page}) => {
+    await page.route(/cdn\.sanity\.io\/images\//, (route) => {
+      const url = new URL(route.request().url())
+      return url.searchParams.get('w') === '2000' ? route.abort('failed') : route.continue()
+    })
+
+    await page.goto('/', {waitUntil: 'domcontentloaded'})
+    await page.waitForFunction(() => {
+      const placeholder = document.querySelector<HTMLImageElement>('[data-role="hero-image-placeholder"]')
+      return Boolean(placeholder?.complete && placeholder.naturalWidth > 0)
+    })
+
+    const wordmark = page.locator('.home-hero__wordmark')
+    await expect(wordmark).toBeVisible()
+    await expect(wordmark).not.toHaveCSS('-webkit-text-fill-color', 'rgba(0, 0, 0, 0)')
+    await expect(wordmark).not.toHaveCSS('color', 'rgba(0, 0, 0, 0)')
+  })
+
   test('mobile homepage toggles modes without horizontal overflow', async ({page}) => {
     await page.goto('/')
     await page.getByRole('button', {name: /grille|grid/i}).click()
