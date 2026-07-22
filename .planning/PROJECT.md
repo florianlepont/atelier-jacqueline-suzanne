@@ -83,6 +83,7 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 ## Context
 
 - Replaces an existing live site (atelierjacquelinesuzanne.fr), currently built on Myportfolio/Format, French-only, with galleries (Rebut - Édition, Silo - Édition, Silos, Brume, Adults, The Victorian Tea Room, Paysages, Accumulation, MADO), a Contact page, and an Instagram link (@ajs_romanelepont). No shop or exhibitions section exists today.
+- **Open item (v1.3):** the shipped Portfolio already has a gallery titled "Rebut" (migrated in Phase 2, alongside Silos/Brume/etc.), and the new "Éditions" milestone adds a paper édition also named "Rebut" documented via its own photo shoot. It's unconfirmed whether these are the same subject (Portfolio's "Rebut" gallery migrated into the wrong section and should move to Éditions) or two unrelated things that happen to share a name. Needs a direct check with Romane during Phase 1 content work — not resolved autonomously.
 - This is a full replacement, not an addition — the old site's content (galleries) migrates in; the platform itself is being replaced.
 - Builder (Florian) is Romane's brother, building this as a custom-coded project rather than configuring an existing SaaS builder.
 - Budget is near-zero: free-tier hosting and free/open-source tooling preferred, accepting only unavoidable per-transaction payment processing fees (e.g. Stripe).
