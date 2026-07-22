@@ -4,6 +4,14 @@ import { test, expect } from '@playwright/test';
 // (getEditions/getEdition + editions/index.astro + en/editions/index.astro
 // are built in Tasks 2-3 of this plan) — this file is RED until then. Do not
 // hardcode a slug and do not use the main nav (nav wiring is Phase 13).
+//
+// Phase 12 Plan 02 (this extension): the per-édition détail routes
+// (`/editions/{slug}/`, `/en/editions/{slug}/`) do not exist yet either —
+// the `editions detail`, `editions lightbox`, and
+// `no commerce affordances (detail)` blocks below are RED until Task 2
+// builds src/pages/editions/[slug].astro + the en/ twin. Discover the détail
+// URL dynamically from the overview's first `.editions-list__row` href —
+// never hardcode a slug, never use the main nav (nav wiring is Phase 13).
 
 // <!-- planner-discipline-allow: prix price acheter buy panier cart stock disponib availab épuisé -->
 const FORBIDDEN_COMMERCE_TOKENS =
@@ -65,6 +73,116 @@ test.describe('editions overview', () => {
     expect(frMainText).not.toMatch(FORBIDDEN_COMMERCE_TOKENS);
 
     await page.goto('/en/editions/');
+    const enMainText = await page.locator('main').innerText();
+    expect(enMainText).not.toMatch(FORBIDDEN_COMMERCE_TOKENS);
+  });
+});
+
+// Phase 12 Plan 02: détail routes. Discover the détail URL dynamically from
+// the overview's first `.editions-list__row` href (never hardcode a slug,
+// never use the main nav — nav wiring is Phase 13).
+
+test.describe('editions detail', () => {
+  test('shows a bilingual statement, a format-details line, and a back-link to the overview', async ({
+    page,
+  }) => {
+    await page.goto('/editions/');
+    const frHref = await page.locator('.editions-list__row').first().getAttribute('href');
+    expect(frHref).toBeTruthy();
+
+    const slugMatch = frHref!.match(/\/editions\/([^/]+)\/?$/);
+    const slug = slugMatch?.[1];
+    expect(slug).toBeTruthy();
+    const enHref = `/en/editions/${slug}/`;
+
+    await page.goto(frHref!);
+    const frStatement = (await page.locator('.edition-detail__statement').innerText()).trim();
+    expect(frStatement.length).toBeGreaterThan(0);
+
+    const frFormat = page.locator('.edition-detail__format');
+    await expect(frFormat).toBeVisible();
+    const frFormatText = await frFormat.innerText();
+    expect(frFormatText).toMatch(/\d/);
+    expect(frFormatText).toMatch(/Tirage/);
+    expect(frFormatText).toMatch(/cm|in/);
+
+    const frBackLink = page.locator('.edition-detail__back-link');
+    await expect(frBackLink).toBeVisible();
+    await expect(frBackLink).toHaveAttribute('href', /\/editions\/$/);
+
+    await page.goto(enHref);
+    const enStatement = (await page.locator('.edition-detail__statement').innerText()).trim();
+    expect(enStatement.length).toBeGreaterThan(0);
+    expect(enStatement).not.toBe(frStatement);
+
+    const enFormat = page.locator('.edition-detail__format');
+    await expect(enFormat).toBeVisible();
+    const enFormatText = await enFormat.innerText();
+    expect(enFormatText).toMatch(/\d/);
+    expect(enFormatText).toMatch(/Print run/);
+    expect(enFormatText).toMatch(/cm|in/);
+
+    const enBackLink = page.locator('.edition-detail__back-link');
+    await expect(enBackLink).toBeVisible();
+    await expect(enBackLink).toHaveAttribute('href', /\/en\/editions\/$/);
+  });
+});
+
+test.describe('editions lightbox', () => {
+  test('the hero opens the lightbox at 1/N; the first grid thumbnail opens it at 2/N (combined leadPhoto+images array, EDN-03)', async ({
+    page,
+  }) => {
+    await page.goto('/editions/');
+    const rowHref = await page.locator('.editions-list__row').first().getAttribute('href');
+    expect(rowHref).toBeTruthy();
+
+    await page.goto(rowHref!);
+
+    const heroTrigger = page.locator('[data-gallery-thumb][data-index="0"]');
+    await expect(heroTrigger).toBeVisible();
+
+    await heroTrigger.click();
+    const dialog = page.locator('dialog[open]');
+    await expect(dialog).toBeVisible();
+
+    const counter = dialog.locator('[data-role="counter"]');
+    const counterText = await counter.innerText();
+    const match = counterText.match(/^1 \/ (\d+)$/);
+    expect(match).not.toBeNull();
+    const total = match![1];
+
+    await page.keyboard.press('Escape');
+    await expect(dialog).not.toBeVisible();
+    await expect(heroTrigger).toBeFocused();
+
+    const firstGridThumb = page.locator('.edition-detail__thumb-button').first();
+    await expect(firstGridThumb).toHaveAttribute('data-index', '1');
+    await firstGridThumb.click();
+    await expect(dialog).toBeVisible();
+    await expect(counter).toHaveText(`2 / ${total}`);
+
+    const heroImg = heroTrigger.locator('img');
+    await expect(heroImg).toHaveAttribute('srcset', /\d+w/);
+    const thumbImg = firstGridThumb.locator('img');
+    await expect(thumbImg).toHaveAttribute('srcset', /\d+w/);
+  });
+});
+
+test.describe('no commerce affordances (detail)', () => {
+  test('shows no price, availability, or purchase affordance (EDN-06)', async ({ page }) => {
+    await page.goto('/editions/');
+    const rowHref = await page.locator('.editions-list__row').first().getAttribute('href');
+    expect(rowHref).toBeTruthy();
+
+    const slugMatch = rowHref!.match(/\/editions\/([^/]+)\/?$/);
+    const slug = slugMatch?.[1];
+    expect(slug).toBeTruthy();
+
+    await page.goto(rowHref!);
+    const frMainText = await page.locator('main').innerText();
+    expect(frMainText).not.toMatch(FORBIDDEN_COMMERCE_TOKENS);
+
+    await page.goto(`/en/editions/${slug}/`);
     const enMainText = await page.locator('main').innerText();
     expect(enMainText).not.toMatch(FORBIDDEN_COMMERCE_TOKENS);
   });
