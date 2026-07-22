@@ -2,15 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Éditions
+current_phase: 11
+current_phase_name: Schema & Content Model
 status: planning
-last_updated: "2026-07-22T09:56:01.942Z"
+stopped_at: Phase 11 context gathered
+last_updated: "2026-07-22T10:38:04.296Z"
 last_activity: 2026-07-22
+last_activity_desc: "Roadmap created for v1.3 (Éditions): Phases 11–14, all 8 requirements (EDN-01..EDN-07, CMS-04) mapped"
 progress:
-  total_phases: 14
-  completed_phases: 10
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 17
+  completed_phases: 11
+  total_plans: 34
+  completed_plans: 35
+  percent: 65
 ---
 
 # Project State
@@ -175,8 +179,8 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-22T09:56:01.942Z
-Stopped at: v1.3 (Éditions) roadmap created — Phases 11–14 written to ROADMAP.md, REQUIREMENTS.md traceability updated
-Resume file: None
+Last session: 2026-07-22T10:38:04.288Z
+Stopped at: Phase 11 context gathered
+Resume file: .planning/phases/11-schema-content-model/11-CONTEXT.md
 
 **Next up:** `/gsd-plan-phase 11` — Schema & Content Model (CMS-04, EDN-05).
