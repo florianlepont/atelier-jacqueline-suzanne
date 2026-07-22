@@ -862,7 +862,6 @@ function ContentRow({
               <Stack space={3} className="editorial-dashboard__task-copy">
                 <Flex
                   align="center"
-                  justify="space-between"
                   gap={2}
                   wrap="wrap"
                   className="editorial-dashboard__task-heading"
@@ -876,18 +875,16 @@ function ContentRow({
                   >
                     {title}
                   </Text>
-                  <Flex align="center" gap={2} className="editorial-dashboard__task-meta">
-                    {typeLabel && (
-                      <Text muted size={0}>
-                        {typeLabel}
-                      </Text>
-                    )}
-                    {showStatus && (
-                      <Badge fontSize={0} tone={status.tone}>
-                        {status.label}
-                      </Badge>
-                    )}
-                  </Flex>
+                  {typeLabel && (
+                    <Text muted size={0} style={{flex: '0 0 auto'}}>
+                      {typeLabel}
+                    </Text>
+                  )}
+                  {showStatus && (
+                    <Badge fontSize={0} tone={status.tone} style={{flex: '0 0 auto'}}>
+                      {status.label}
+                    </Badge>
+                  )}
                 </Flex>
                 <Text
                   muted

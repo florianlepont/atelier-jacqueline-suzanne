@@ -148,11 +148,7 @@ a.editorial-dashboard__deployment-status:hover {
 
 .editorial-dashboard__task-title {
   min-width: 0;
-  flex: 1 1 180px;
-}
-
-.editorial-dashboard__task-meta {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
 }
 
 .editorial-dashboard__task-summary {
@@ -243,10 +239,6 @@ a.editorial-dashboard__deployment-status:hover {
     align-items: flex-start;
     flex-direction: column;
     gap: 4px;
-  }
-
-  .editorial-dashboard__task-meta {
-    align-self: flex-start;
   }
 
   .editorial-dashboard__deployment-date {
