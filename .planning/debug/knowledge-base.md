@@ -11,3 +11,11 @@ Resolved debug sessions. Used by `gsd-debugger` to surface known-pattern hypothe
 - **Fix:** Split the declaration into `dialog#lightbox[open] { display: flex; align-items: center; justify-content: center; }` plus an explicit `dialog#lightbox:not([open]) { display: none; }` backstop rule. Other declarations (padding/border/sizing/background) stayed on the base `dialog#lightbox` selector.
 - **Files changed:** src/components/Lightbox.astro, tests/e2e/gallery.spec.ts
 ---
+
+## safari-grid-carousel — Safari revealed the accent panel before the photo during grid-to-carousel transition
+- **Date:** 2026-07-22
+- **Error patterns:** Safari, WebKit, grid, carousel, accent panel, hero, photo background, appears before photo, View Transition, ViewTransition.ready, pseudo-element animation, opacity, animation delay, z-index, timing
+- **Root cause:** WebKit initialized `::view-transition-new(ajs-accent-panel)` at its final 740ms time as soon as `ViewTransition.ready` resolved, despite the CSS 320ms duration plus 420ms delay. Because the real panel was not explicitly hidden during the photo morph and its transition group sits above the photo, it appeared opaque while `ajs-hero-morph` was still starting at opacity 0. The prior regression test only ran in Chromium and manually scrubbed the pseudo-animation, so it did not observe WebKit's initial clock state.
+- **Fix:** Capture the entering panel with `opacity: 0`, await `ViewTransition.finished`, remove the guard, and fade the real DOM panel from 0 to 1 over 320ms with the Web Animations API. Cancel the completed animation to return opacity ownership to CSS, skip it under `prefers-reduced-motion`, remove the pseudo-element entrance animation, and cover the progressive sequence in WebKit and Chromium.
+- **Files changed:** src/components/HomeCarousel.astro, tests/e2e/homepage.spec.ts
+---
