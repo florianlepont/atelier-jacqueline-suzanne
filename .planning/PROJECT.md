@@ -47,6 +47,12 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 - [x] Homepage header is visually identical to the About/Contact header by construction (shared `<SiteHeader>` component) (HOME-10) — Phase 10
 - [x] Language switcher shows only the other language (plus a globe icon), not both FR/EN (I18N-04) — Phase 10
 
+**v1.3 (Data-Fetch Layer & Routes — Phase 12, shipped 2026-07-22):**
+- [x] Visitor can browse an overview list of Romane's paper éditions (title + lead photo per édition) (EDN-02) — Phase 12
+- [x] Visitor can open a per-édition detail page showing its full photo shoot, a short description/statement, and format details (page count, print run, dimensions) (EDN-03, EDN-04) — Phase 12
+- [x] Éditions overview/detail pages carry no pricing, availability, or purchase CTA (EDN-06, build-blocking guard) — Phase 12
+- [x] Éditions content is available in French and English (EDN-07) — Phase 12
+
 ### Active
 
 **v1 (replace current site):**
@@ -59,11 +65,7 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 
 **v1.3 (Éditions, this milestone):**
 - [ ] Visitor can discover a dedicated "Éditions" section from the main site navigation
-- [ ] Visitor can browse an overview list of Romane's paper éditions (title + lead photo per édition)
-- [ ] Visitor can open a per-édition detail page showing its full photo shoot, a short description/statement, and format details (page count, print run, dimensions)
-- [ ] Éditions overview/detail pages carry no pricing, availability, or purchase CTA (showcase only — selling deferred to v1.x shop/checkout)
 - [ ] Romane (non-technical) can independently add/edit éditions via Sanity without touching code
-- [ ] Éditions content is available in French and English
 
 **v1.x (add shop, deferred until v1 is live — see REQUIREMENTS.md v2 section):**
 - [ ] Visitor can view a list of upcoming and past exhibitions (dates, location, description)
@@ -141,4 +143,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-22 — milestone v1.3 (Éditions) started; v1.2 (Homepage Polish) fully delivered aside from the still-deferred Phase 5 domain cutover*
+*Last updated: 2026-07-22 — Phase 12 (Data-Fetch Layer & Routes) complete: Éditions overview + detail pages live, bilingual, zero commerce affordances; v1.2 (Homepage Polish) fully delivered aside from the still-deferred Phase 5 domain cutover*
