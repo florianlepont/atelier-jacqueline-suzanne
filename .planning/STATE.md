@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-07-14)
 Phase: 10
 Phase: 10 (Unified Header & Simplified Language Switcher) — complete, 3/3 plans executed
 Status: Executing Phase 10
-Last activity: 2026-07-21 - Completed quick task 260721-jm0: Sanity dashboard fixes (dark mode, gray rows, error copy, preparation exclusion, a11y headings, dead code)
+Last activity: 2026-07-22 - Completed quick task 260722-afi: Sanity dashboard attention-section header contrast fix
 
 ## Performance Metrics
 
@@ -158,6 +158,7 @@ None currently open. Both prior research-carryover items were resolved during Ph
 | 260720-polish-dashboard-pixel-perfect | Complete the dashboard pixel-polish pass: tinted canvas and white surfaces, explicit low-emphasis site status, per-task icons, compact targets, resilient activity dates, responsive header/KPI behavior, and hover/focus/accessibility states | 2026-07-20 | cfa3d84 | [260720-polish-dashboard-pixel-perfect](./quick/260720-polish-dashboard-pixel-perfect/) |
 | 260720-fix-dashboard-spacing-and-task-details | Standardize dashboard control heights and icon spacing, rebuild priority rows on a stable grid, and explicitly display the remaining work for each content item | 2026-07-20 | ae2591c | [260720-fix-dashboard-spacing-and-task-details](./quick/260720-fix-dashboard-spacing-and-task-details/) |
 | 260720-rebuild-dashboard-optical-grid | Rebuild the regressed dashboard header, priority rows, activity rows and KPI rhythm around shared optical text/icon axes, with two buttons and a separate compact site status | 2026-07-20 | 69b6f7d | [260720-rebuild-dashboard-optical-grid](./quick/260720-rebuild-dashboard-optical-grid/) |
+| 260722-afi | Corriger le contraste visuel entre l'en-tête et les items du tableau de bord éditorial (section Informations manquantes) — recessed header band, hairline divider, uppercase section-label title, human-verified via mockup replicating the exact CSS in light + dark mode | 2026-07-22 | 9762000 | Verified | [260722-afi-corriger-le-contraste-visuel-entre-l-en-](./quick/260722-afi-corriger-le-contraste-visuel-entre-l-en-/) |
 
 ## Deferred Items
 
