@@ -5,18 +5,13 @@ import type {
 } from 'sanity/structure'
 import {orderableDocumentListDeskItem} from '@sanity/orderable-document-list'
 import {CalendarIcon, CogIcon, EnvelopeIcon, HomeIcon, ImagesIcon, UserIcon} from '@sanity/icons'
-import {ContentPreview} from './ContentPreview'
 import {GalleryCreditsView} from '../editorial/GalleryCreditsView'
 
-const editorViews = (S: StructureBuilder) => [
-  S.view.form().title('Édition'),
-  S.view.component(ContentPreview).title('Aperçu du brouillon'),
-]
+const editorViews = (S: StructureBuilder) => [S.view.form().title('Édition')]
 
 const galleryViews = (S: StructureBuilder) => [
   S.view.form().title('Édition'),
   S.view.component(GalleryCreditsView).title('Crédits et droits'),
-  S.view.component(ContentPreview).title('Aperçu du brouillon'),
 ]
 
 const checklistViews = (S: StructureBuilder) => [S.view.form().title('Édition')]

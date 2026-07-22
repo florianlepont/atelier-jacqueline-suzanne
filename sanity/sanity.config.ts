@@ -7,6 +7,7 @@ import {defaultDocumentNode, structure} from './schemas/structure'
 import {EditorialDashboard} from './editorial/EditorialDashboard'
 import {resolveActions, resolveBadges} from './editorial/workflow'
 import {checklistEnabledTypes, checklistInspector} from './editorial/DocumentChecklist'
+import {openSitePageInspector} from './editorial/OpenSitePage'
 import {MediaLibrary} from './editorial/MediaLibrary'
 
 export default defineConfig({
@@ -64,7 +65,9 @@ export default defineConfig({
     actions: resolveActions,
     badges: resolveBadges,
     inspectors: (prev, context) =>
-      checklistEnabledTypes.has(context.documentType) ? [checklistInspector, ...prev] : prev,
+      checklistEnabledTypes.has(context.documentType)
+        ? [openSitePageInspector, checklistInspector, ...prev]
+        : [openSitePageInspector, ...prev],
     newDocumentOptions: (prev, context) =>
       context.creationContext.type === 'global'
         ? prev.filter(
