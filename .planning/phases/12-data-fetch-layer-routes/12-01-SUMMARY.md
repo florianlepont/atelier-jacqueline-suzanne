@@ -147,3 +147,7 @@ None - no external service configuration required. (The worktree-local `.env` cr
 ---
 *Phase: 12-data-fetch-layer-routes*
 *Completed: 2026-07-22*
+
+## Self-Check: PASSED
+
+All created files confirmed present on disk (`tests/unit/edition-query.test.ts`, `tests/e2e/edition.spec.ts`, `src/pages/editions/index.astro`, `src/pages/en/editions/index.astro`, `.planning/phases/12-data-fetch-layer-routes/deferred-items.md`). All task commits confirmed present in `git log` (`cd2d4e7`, `ac0b16a`, `6f32c78`, plus the SUMMARY commit `cf45826`).
