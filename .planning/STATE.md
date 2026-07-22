@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Éditions
-current_phase: 12
-current_phase_name: data-fetch-layer-routes
+current_phase: 13
+current_phase_name: Nav Integration
 status: executing
 stopped_at: Phase 12 UI-SPEC approved
-last_updated: "2026-07-22T21:03:47.164Z"
+last_updated: "2026-07-22T21:55:54.786Z"
 last_activity: 2026-07-22
-last_activity_desc: Phase 12 execution started
+last_activity_desc: Phase 12 complete, transitioned to Phase 13
 progress:
   total_phases: 17
-  completed_phases: 12
+  completed_phases: 13
   total_plans: 39
-  completed_plans: 37
-  percent: 71
+  completed_plans: 40
+  percent: 76
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-07-22)
 
 ## Current Position
 
-Phase: 12 (data-fetch-layer-routes) — EXECUTING
-Plan: 1 of 3
+Phase: 13 — Nav Integration
+Plan: Not started
 Status: Executing Phase 12
-Last activity: 2026-07-22 — Phase 12 execution started
+Last activity: 2026-07-22 — Phase 12 complete, transitioned to Phase 13
 
 Progress: [███████░░░░░░░] 10/14 phases complete (71%)
 
@@ -39,7 +39,7 @@ Progress: [███████░░░░░░░] 10/14 phases complete (71
 
 **Velocity:**
 
-- Total plans completed: 23
+- Total plans completed: 26
 - Average duration: - min
 - Total execution time: 0 hours
 
@@ -55,6 +55,7 @@ Progress: [███████░░░░░░░] 10/14 phases complete (71
 | 09 | 2 | - | - |
 | 10 | 4 | - | - |
 | 11 | 2 | - | - |
+| 12 | 3 | - | - |
 
 **Recent Trend:**
 

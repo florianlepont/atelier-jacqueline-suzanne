@@ -77,12 +77,12 @@ Adds a dedicated, non-transactional showcase for Romane's self-published paper �
 ### Éditions
 
 - [ ] **EDN-01**: Visitor can discover an "Éditions" section via a new top-level main-nav entry (not surfaced on the homepage carousel/grid, which stays pure photography)
-- [ ] **EDN-02**: Visitor can browse an Éditions overview page listing each édition by title and lead photo
-- [ ] **EDN-03**: Visitor can open a per-édition detail page showing its full photo shoot (reusing the existing gallery lightbox)
-- [ ] **EDN-04**: Each édition detail page shows a short description/statement
+- [x] **EDN-02**: Visitor can browse an Éditions overview page listing each édition by title and lead photo
+- [x] **EDN-03**: Visitor can open a per-édition detail page showing its full photo shoot (reusing the existing gallery lightbox)
+- [x] **EDN-04**: Each édition detail page shows a short description/statement
 - [x] **EDN-05**: Each édition detail page shows format details (page count, print run size, dimensions)
-- [ ] **EDN-06**: Éditions overview/detail pages carry no pricing, availability, or purchase CTA — pure showcase (selling deferred to the v1.x Shop/Checkout requirements below)
-- [ ] **EDN-07**: Éditions content (overview + detail pages) is available in French and English, consistent with the site's existing i18n routing
+- [x] **EDN-06**: Éditions overview/detail pages carry no pricing, availability, or purchase CTA — pure showcase (selling deferred to the v1.x Shop/Checkout requirements below)
+- [x] **EDN-07**: Éditions content (overview + detail pages) is available in French and English, consistent with the site's existing i18n routing
 
 ### Content Editing
 
@@ -197,11 +197,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | I18N-04 | Phase 10 | Complete |
 | CMS-04 | Phase 11 | Complete |
 | EDN-05 | Phase 11 | Complete |
-| EDN-02 | Phase 12 | Pending |
-| EDN-03 | Phase 12 | Pending |
-| EDN-04 | Phase 12 | Pending |
-| EDN-06 | Phase 12 | Pending |
-| EDN-07 | Phase 12 | Pending |
+| EDN-02 | Phase 12 | Complete |
+| EDN-03 | Phase 12 | Complete |
+| EDN-04 | Phase 12 | Complete |
+| EDN-06 | Phase 12 | Complete |
+| EDN-07 | Phase 12 | Complete |
 | EDN-01 | Phase 13 | Pending |
 
 **Coverage:**

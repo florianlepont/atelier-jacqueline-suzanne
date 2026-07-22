@@ -455,7 +455,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 9. Progressive Homepage Image Loading | 2/2 | Complete    | 2026-07-14 |
 | 10. Unified Header & Simplified Language Switcher | 4/4 | Complete    | 2026-07-17 |
 | 11. Schema & Content Model | 2/2 | Complete    | 2026-07-22 |
-| 12. Data-Fetch Layer & Routes | 3/3 | Complete   | 2026-07-22 |
+| 12. Data-Fetch Layer & Routes | 3/3 | Complete    | 2026-07-22 |
 | 13. Nav Integration | 0/TBD | Not started | - |
 | 14. Verification & UAT | 0/TBD | Not started | - |
 
