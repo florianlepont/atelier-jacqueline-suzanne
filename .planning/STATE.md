@@ -5,8 +5,8 @@ milestone_name: Éditions
 current_phase: 12
 current_phase_name: Data-Fetch Layer & Routes
 status: executing
-stopped_at: Phase 12 context gathered
-last_updated: "2026-07-22T16:01:43.410Z"
+stopped_at: Phase 12 UI-SPEC approved
+last_updated: "2026-07-22T20:16:19.825Z"
 last_activity: 2026-07-22
 last_activity_desc: Phase 11 complete, transitioned to Phase 12
 progress:
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-07-22)
 
 Phase: 12 — Data-Fetch Layer & Routes
 Plan: Not started
-Status: Executing Phase 11
+Status: Ready to execute
 Last activity: 2026-07-22 — Phase 11 complete, transitioned to Phase 12
 
 Progress: [███████░░░░░░░] 10/14 phases complete (71%)
@@ -180,8 +180,8 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-22T16:01:43.405Z
-Stopped at: Phase 12 context gathered
-Resume file: .planning/phases/12-data-fetch-layer-routes/12-CONTEXT.md
+Last session: 2026-07-22T16:24:56.427Z
+Stopped at: Phase 12 UI-SPEC approved
+Resume file: .planning/phases/12-data-fetch-layer-routes/12-UI-SPEC.md
 
 **Next up:** `/gsd-plan-phase 11` — Schema & Content Model (CMS-04, EDN-05).
