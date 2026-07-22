@@ -35,6 +35,12 @@ describe('static route helpers', () => {
     ).toEqual(['', 'en/', 'galleries/a&b/', 'en/galleries/a&b/'])
   })
 
+  it('expands édition paths (overview + detail) into both locales, mirroring galleries', () => {
+    expect(
+      localizedSitemapPaths([{path: 'editions/'}, {path: 'editions/rebut/'}]),
+    ).toEqual(['editions/', 'en/editions/', 'editions/rebut/', 'en/editions/rebut/'])
+  })
+
   it('builds a base-aware robots file', () => {
     expect(buildRobotsText(new URL('https://example.com'), '/ajs-website')).toContain(
       'Sitemap: https://example.com/ajs-website/sitemap.xml',
