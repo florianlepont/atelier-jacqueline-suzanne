@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Éditions
 current_phase: 11
-current_phase_name: Schema & Content Model
-status: planning
+current_phase_name: schema-content-model
+status: executing
 stopped_at: Phase 11 context gathered
-last_updated: "2026-07-22T10:38:04.296Z"
+last_updated: "2026-07-22T14:50:46.995Z"
 last_activity: 2026-07-22
-last_activity_desc: "Roadmap created for v1.3 (Éditions): Phases 11–14, all 8 requirements (EDN-01..EDN-07, CMS-04) mapped"
+last_activity_desc: Phase 11 execution started
 progress:
   total_phases: 17
   completed_phases: 11
-  total_plans: 34
+  total_plans: 36
   completed_plans: 35
   percent: 65
 ---
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-22)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; v1.3 adds a non-transactional Éditions showcase; checkout still follows in the future v1.x shop milestone.)
-**Current focus:** Phase 11 — schema-content-model (v1.3 Éditions roadmap just created; ready to plan)
+**Current focus:** Phase 11 — schema-content-model
 
 ## Current Position
 
-Phase: 11 of 14 (Schema & Content Model)
-Plan: — (not yet planned)
-Status: Roadmap created — ready to plan Phase 11
-Last activity: 2026-07-22 — Roadmap created for v1.3 (Éditions): Phases 11–14, all 8 requirements (EDN-01..EDN-07, CMS-04) mapped
+Phase: 11 (schema-content-model) — EXECUTING
+Plan: 1 of 2
+Status: Executing Phase 11
+Last activity: 2026-07-22 — Phase 11 execution started
 
 Progress: [███████░░░░░░░] 10/14 phases complete (71%)
 

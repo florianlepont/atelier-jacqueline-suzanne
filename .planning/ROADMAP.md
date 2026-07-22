@@ -366,10 +366,11 @@ Plans:
   4. At least one real édition (e.g. "Rebut" or "Sillo") is seeded in Sanity Studio with real content, ready for the site to fetch and render in Phase 12.
   5. The naming overlap between the Portfolio gallery already titled "Rebut" and the new "Rebut" édition has been explicitly raised with and resolved by Romane, and the resolution is recorded in PROJECT.md's Key Decisions.
 
-**Plans**: 2 plans, 2 waves
+**Plans**: 1/2 plans executed
 
 Plans:
-- [ ] 11-01-PLAN.md — Create the `edition` schema type (leadPhoto + structured `format` group), register + wire the orderable "Éditions" desk item, and record the "Rebut" naming resolution in PROJECT.md (Wave 1)
+
+- [x] 11-01-PLAN.md — Create the `edition` schema type (leadPhoto + structured `format` group), register + wire the orderable "Éditions" desk item, and record the "Rebut" naming resolution in PROJECT.md (Wave 1)
 - [ ] 11-02-PLAN.md — Deploy the schema to the hosted Studio and seed the real "Rebut" édition, proving Romane's unassisted create/edit/publish/reorder workflow (Wave 2)
 
 ### Phase 12: Data-Fetch Layer & Routes
@@ -440,7 +441,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 8. Gallery Descriptions | 1/1 | Complete   | 2026-07-14 |
 | 9. Progressive Homepage Image Loading | 2/2 | Complete    | 2026-07-14 |
 | 10. Unified Header & Simplified Language Switcher | 4/4 | Complete    | 2026-07-17 |
-| 11. Schema & Content Model | 0/TBD | Not started | - |
+| 11. Schema & Content Model | 1/2 | In Progress|  |
 | 12. Data-Fetch Layer & Routes | 0/TBD | Not started | - |
 | 13. Nav Integration | 0/TBD | Not started | - |
 | 14. Verification & UAT | 0/TBD | Not started | - |
