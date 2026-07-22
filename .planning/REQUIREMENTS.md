@@ -80,13 +80,13 @@ Adds a dedicated, non-transactional showcase for Romane's self-published paper �
 - [ ] **EDN-02**: Visitor can browse an Éditions overview page listing each édition by title and lead photo
 - [ ] **EDN-03**: Visitor can open a per-édition detail page showing its full photo shoot (reusing the existing gallery lightbox)
 - [ ] **EDN-04**: Each édition detail page shows a short description/statement
-- [ ] **EDN-05**: Each édition detail page shows format details (page count, print run size, dimensions)
+- [x] **EDN-05**: Each édition detail page shows format details (page count, print run size, dimensions)
 - [ ] **EDN-06**: Éditions overview/detail pages carry no pricing, availability, or purchase CTA — pure showcase (selling deferred to the v1.x Shop/Checkout requirements below)
 - [ ] **EDN-07**: Éditions content (overview + detail pages) is available in French and English, consistent with the site's existing i18n routing
 
 ### Content Editing
 
-- [ ] **CMS-04**: Romane can add/edit éditions (title, photo shoot, statement, format details) herself via Sanity, without touching code
+- [x] **CMS-04**: Romane can add/edit éditions (title, photo shoot, statement, format details) herself via Sanity, without touching code
 
 ## v2 Requirements
 
@@ -195,8 +195,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HOME-09 | Phase 9 | Complete |
 | HOME-10 | Phase 10 | Complete |
 | I18N-04 | Phase 10 | Complete |
-| CMS-04 | Phase 11 | Pending |
-| EDN-05 | Phase 11 | Pending |
+| CMS-04 | Phase 11 | Complete |
+| EDN-05 | Phase 11 | Complete |
 | EDN-02 | Phase 12 | Pending |
 | EDN-03 | Phase 12 | Pending |
 | EDN-04 | Phase 12 | Pending |
