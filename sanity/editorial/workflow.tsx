@@ -50,6 +50,24 @@ const CollectionStatusBadge: DocumentBadgeComponent = ({draft, published}) => {
       color: 'warning',
     }
   }
+  // publicationStatus reflects editorial intent, not whether a published
+  // version actually exists (the "Nouvelle collection" template pre-sets it
+  // to 'published' so the field alone can't tell a live collection from one
+  // that has never been published). draft/published are the real signal.
+  if (!published) {
+    return {
+      label: 'Jamais publiée',
+      title: "Cette collection n'a encore jamais été publiée sur le site.",
+      color: 'warning',
+    }
+  }
+  if (draft) {
+    return {
+      label: 'Modifications non publiées',
+      title: 'Cette collection est en ligne, mais des modifications récentes ne sont pas encore publiées.',
+      color: 'primary',
+    }
+  }
   return {
     label: 'Sur le site',
     title: 'Cette collection est affichée sur le site.',

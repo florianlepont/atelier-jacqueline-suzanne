@@ -78,8 +78,12 @@ export const GalleryCreditsView: UserViewComponent = ({document}) => {
             <Heading as="h1" size={2}>
               Crédits et droits
             </Heading>
-            <Badge tone={incompleteCount ? 'caution' : 'positive'}>
-              {incompleteCount ? `${incompleteCount} à compléter` : 'Tout est renseigné'}
+            <Badge tone={images.length === 0 ? 'default' : incompleteCount ? 'caution' : 'positive'}>
+              {images.length === 0
+                ? 'Aucune photo'
+                : incompleteCount
+                  ? `${incompleteCount} à compléter`
+                  : 'Tout est renseigné'}
             </Badge>
           </Flex>
           <Text muted size={1}>

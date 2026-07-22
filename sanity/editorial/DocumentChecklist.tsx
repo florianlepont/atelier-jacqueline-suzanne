@@ -1,6 +1,7 @@
 import {useState} from 'react'
 import type {UserViewComponent} from 'sanity/structure'
 import {getDocumentChecks, summarizeChecks} from './checks'
+import {compactCheckLabel} from './dashboardLogic'
 
 const colors = {
   complete: '#2BD69F',
@@ -124,7 +125,7 @@ export const DocumentChecklist: UserViewComponent = ({document, schemaType}) => 
             {pending.map((item, index) => (
               <ChecklistRow
                 key={item.label}
-                label={item.label}
+                label={compactCheckLabel(item.label)}
                 recommended={item.recommended}
                 divider={index < pending.length - 1}
               />
@@ -171,7 +172,7 @@ export const DocumentChecklist: UserViewComponent = ({document, schemaType}) => 
               {completed.map((item, index) => (
                 <ChecklistRow
                   key={item.label}
-                  label={item.label}
+                  label={compactCheckLabel(item.label)}
                   complete
                   divider={index < completed.length - 1}
                 />

@@ -231,6 +231,7 @@ export const gallery = defineType({
   ],
   preview: {
     select: {
+      id: '_id',
       title: 'title',
       media: 'images.0',
       heroColor: 'heroColor',
@@ -239,16 +240,32 @@ export const gallery = defineType({
       isVisible: 'isVisible',
       ...previewImageKeys,
     },
-    prepare({title, media, heroColor, publicationStatus, showOnHomePage, isVisible, ...imageKeys}) {
+    prepare({
+      id,
+      title,
+      media,
+      heroColor,
+      publicationStatus,
+      showOnHomePage,
+      isVisible,
+      ...imageKeys
+    }) {
       const count = Object.values(imageKeys).filter(Boolean).length
       const color = HERO_COLOR_OPTIONS.find((option) => option.value === heroColor)?.title
       const photoLabel = `${count}${count === PREVIEW_IMAGE_LIMIT ? '+' : ''} photo${count > 1 ? 's' : ''}`
+      // publicationStatus is editorial intent, not proof a published version
+      // exists (new collections default to 'published' before ever being
+      // published) -- a pending draft (id starts with "drafts.") means this
+      // exact content, published or not, isn't live yet.
+      const hasUnpublishedDraft = typeof id === 'string' && id.startsWith('drafts.')
       const status =
         publicationStatus === 'archived'
           ? 'Archivée'
           : publicationStatus === 'preparation' || (!publicationStatus && isVisible === false)
             ? 'En préparation'
-            : 'Publiée'
+            : hasUnpublishedDraft
+              ? 'Modifications non publiées'
+              : 'Publiée'
       return {
         title: title || 'Collection sans nom',
         subtitle: `${status}${showOnHomePage === false ? ' · Hors accueil' : ''} · ${photoLabel} · ${color || 'Palette automatique'}`,
