@@ -70,6 +70,24 @@ Resolves the remaining homepage UX rough edges before the Phase 5 domain cutover
 
 - [x] **I18N-04**: Language switcher shows only the other language (plus a globe icon indicating it's a language control), not both FR/EN — clicking switches directly to the translated version of the current page
 
+## v1.3 Requirements (Éditions)
+
+Adds a dedicated, non-transactional showcase for Romane's self-published paper éditions (zines/artist books, e.g. "Rebut", "Sillo") — separate from the photography Portfolio. Pulls the "books/zines" category forward from the v2 Shop section as a pure showcase; pricing, availability, and checkout remain deferred to that future milestone.
+
+### Éditions
+
+- [ ] **EDN-01**: Visitor can discover an "Éditions" section via a new top-level main-nav entry (not surfaced on the homepage carousel/grid, which stays pure photography)
+- [ ] **EDN-02**: Visitor can browse an Éditions overview page listing each édition by title and lead photo
+- [ ] **EDN-03**: Visitor can open a per-édition detail page showing its full photo shoot (reusing the existing gallery lightbox)
+- [ ] **EDN-04**: Each édition detail page shows a short description/statement
+- [ ] **EDN-05**: Each édition detail page shows format details (page count, print run size, dimensions)
+- [ ] **EDN-06**: Éditions overview/detail pages carry no pricing, availability, or purchase CTA — pure showcase (selling deferred to the v1.x Shop/Checkout requirements below)
+- [ ] **EDN-07**: Éditions content (overview + detail pages) is available in French and English, consistent with the site's existing i18n routing
+
+### Content Editing
+
+- [ ] **CMS-04**: Romane can add/edit éditions (title, photo shoot, statement, format details) herself via Sanity, without touching code
+
 ## v2 Requirements
 
 Deferred to v1.x fast-follow (shop + exhibitions wave) and beyond. Tracked but not in current roadmap.
@@ -80,9 +98,13 @@ Deferred to v1.x fast-follow (shop + exhibitions wave) and beyond. Tracked but n
 - **EXHB-02**: Visitor can view a reverse-chronological list of past exhibitions
 - **CMS-02**: Romane can add/edit exhibitions/agenda entries herself without code
 
+### Éditions (v1.x+, deferred from v1.3)
+
+- **EDN-08**: Visitor can see an optional cross-link between an édition and a related Portfolio gallery, where a matching gallery exists
+
 ### Shop (v1.x)
 
-- **SHOP-01**: Visitor can browse products for sale: fine art prints, original artworks, books/zines, other merchandise
+- **SHOP-01**: Visitor can browse products for sale: fine art prints, original artworks, books/zines (building on the v1.3 `edition` content model), other merchandise
 - **SHOP-02**: Each product listing shows price, medium/size, and availability status
 - **SHOP-03**: One-of-a-kind originals show a "sold out" state once purchased
 - **SHOP-04**: Limited edition prints show remaining quantity and go "sold out" when the edition is exhausted
@@ -140,6 +162,7 @@ Explicitly excluded. Documented to prevent scope creep.
 | Multi-channel inventory sync (Instagram/Etsy/in-person) | Hard problem disproportionate to scale; manually marking an item sold is sufficient |
 | "View on your wall" AR feature | High implementation complexity for uncertain gain vs. static room-view mockups |
 | Press/mentions section | Not requested for v1 |
+| Placeholder pricing, "notify me"/waitlist signup, or disabled buy buttons on Éditions pages (v1.3) | Would require rework once real inventory/checkout lands in the future shop milestone; a pure showcase with zero commerce affordance is the deliberate choice until that infrastructure exists |
 
 ## Traceability
 
@@ -184,9 +207,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 - v1.2 (Homepage Polish, Pre-Launch) requirements: 8 total (HOME-04..HOME-10, I18N-04)
 - Mapped to phases: 8/8 ✓ (Phases 7–10)
 - Unmapped: 0
-- v2 (v1.x fast-follow) requirements: 17 tracked, not yet in roadmap (out of scope for this roadmap by design)
+- v1.3 (Éditions) requirements: 8 total (EDN-01..EDN-07, CMS-04), not yet mapped to phases (roadmap creation pending)
+- Unmapped: 8 ⚠️ (expected — roadmap not yet created for this milestone)
+- v2 (v1.x fast-follow) requirements: 18 tracked, not yet in roadmap (out of scope for this roadmap by design)
 
 ---
 *Requirements defined: 2026-07-05*
-*Last updated: 2026-07-14 — HOME-07/HOME-08 (Phase 8) marked complete; implemented and verified directly on `main` ahead of the formal plan/execute cycle (see `.planning/phases/08-gallery-descriptions/08-SUMMARY.md`)*
+*Last updated: 2026-07-22 — defined v1.3 (Éditions) requirements: EDN-01..EDN-07, CMS-04; deferred cross-link differentiator EDN-08 to v2*
 </content>
