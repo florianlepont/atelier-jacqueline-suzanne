@@ -8,21 +8,19 @@ A bilingual (French/English) website for Romane Lepont's photography and artisti
 
 Visitors can browse Romane's photographic work and buy a piece (print, original, book, or merch) through a real, working checkout — everything else supports that. **Delivered in two milestones**: v1 replaces the current site fast with portfolio/about/contact so the old Myportfolio site can be retired sooner; v1.x adds exhibitions, the shop, and checkout on top of that foundation.
 
-## Current Milestone: v1.2 Homepage Polish (Pre-Launch)
+## Current Milestone: v1.3 Éditions
 
-**Goal:** Resolve the remaining homepage UX rough edges before the Phase 5 domain cutover — social presence, visual consistency, mobile correctness, and richer per-gallery content.
+**Goal:** Give Romane's paper éditions (zines/books) their own dedicated, self-serve showcase on the site — separate from the photography portfolio — laying groundwork for selling them later.
 
 **Target features:**
-- Instagram icon link in the header nav (icon, not text — Instagram already exists in the footer/About/Contact, not yet in the main nav)
-- Square (not rectangular) border on the carousel/grid toggle button
-- Fix the mobile full-bleed hero bug: a white gap appears above the header and the footer is still slightly visible on first load (reported on iPhone 17 Pro) — a regression/gap in the existing 100svh full-bleed work from v1.1
-- Show each gallery's own description text under its title on the homepage, replacing the generic "Un projet de Romane Lepont" byline
-- Language switcher shows only the OTHER language (not both FR/EN) plus a small globe icon indicating it's a language control; clicking switches directly to the translated version of the current page (same behavior as today, just one link shown instead of two)
-- Progressive/optimized image loading: page renders immediately, hero/gallery photos load with priority and a smooth blur-to-sharp transition — no blocking full-screen loader
-- Unify the homepage's header with the shared header component used by About/Contact, so item positioning stays aligned by construction instead of drifting
-- Grid-mode tile hover effect revealing the collection's description
+- New "Éditions" top-level nav item (main nav only, not surfaced on the homepage carousel/grid, which stays pure photography)
+- Éditions overview page listing each édition (title + lead photo)
+- Per-édition detail page: full photo shoot, short description/statement, format details (page count, print run, dimensions)
+- No pricing/availability/buy button yet — pure showcase; selling is deferred to the existing v1.x shop/checkout milestone (this pulls the "books/zines" category from REQUIREMENTS.md's v2 Shop section forward as a non-transactional teaser)
+- Romane can self-serve add new éditions via Sanity, same content-editing pattern as galleries (overview + detail page, mirroring Portfolio's gallery/gallery-detail structure)
+- Bilingual FR/EN like the rest of the site
 
-**Note:** v1.0 is functionally complete (Phases 1–4.3) and v1.1 (Homepage Refinements, Phase 6) shipped 2026-07-13 — Phase 5 (DNS cutover to atelierjacquelinesuzanne.fr) remains deliberately deferred until after this milestone too, by explicit user choice.
+**Note:** Prior milestones — v1.0 (Phases 1–4.3), v1.1 Homepage Refinements (Phase 6, shipped 2026-07-13), and v1.2 Homepage Polish (Phases 7–10, shipped 2026-07-20) — are functionally complete. Phase 5 (DNS cutover to atelierjacquelinesuzanne.fr) remains open and deliberately deferred, by explicit user choice; it is not part of this milestone.
 
 ## Requirements
 
@@ -59,9 +57,13 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 - [ ] Romane (non-technical) can independently update galleries/photos without touching code
 - [ ] Site is reachable at the existing domain, atelierjacquelinesuzanne.fr
 
-**v1.2 (homepage polish, this milestone):**
-- [ ] Language switcher shows only the other language (plus a globe icon), not both FR/EN
-- [ ] Homepage header is visually identical to the About/Contact header by construction (shared component)
+**v1.3 (Éditions, this milestone):**
+- [ ] Visitor can discover a dedicated "Éditions" section from the main site navigation
+- [ ] Visitor can browse an overview list of Romane's paper éditions (title + lead photo per édition)
+- [ ] Visitor can open a per-édition detail page showing its full photo shoot, a short description/statement, and format details (page count, print run, dimensions)
+- [ ] Éditions overview/detail pages carry no pricing, availability, or purchase CTA (showcase only — selling deferred to v1.x shop/checkout)
+- [ ] Romane (non-technical) can independently add/edit éditions via Sanity without touching code
+- [ ] Éditions content is available in French and English
 
 **v1.x (add shop, deferred until v1 is live — see REQUIREMENTS.md v2 section):**
 - [ ] Visitor can view a list of upcoming and past exhibitions (dates, location, description)
@@ -137,4 +139,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-20 — Phase 10 (Unified Header & Simplified Language Switcher) shipped within milestone v1.2 (Homepage Polish, Pre-Launch) — all v1.2 target features now delivered; Phase 5 (domain cutover) remains the only open phase*
+*Last updated: 2026-07-22 — milestone v1.3 (Éditions) started; v1.2 (Homepage Polish) fully delivered aside from the still-deferred Phase 5 domain cutover*

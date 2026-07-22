@@ -1,20 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: Homepage Polish (Pre-Launch)
-current_phase: 10
-status: executing
-stopped_at: Phase 10 UI-SPEC approved
-last_updated: "2026-07-20T14:47:36.339Z"
-last_activity: 2026-07-20
-last_activity_desc: Phase 10 complete
+milestone: v1.3
+milestone_name: Éditions
+status: planning
+last_updated: "2026-07-22T09:56:01.942Z"
+last_activity: 2026-07-22
 progress:
-  total_phases: 13
-  completed_phases: 11
-  total_plans: 34
-  completed_plans: 35
-  percent: 85
-current_phase_name: unified-header-simplified-language-switcher
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -28,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-07-14)
 
 ## Current Position
 
-Phase: 10
-Phase: 10 (Unified Header & Simplified Language Switcher) — complete, 3/3 plans executed
-Status: Executing Phase 10
-Last activity: 2026-07-22 - Completed quick task 260722-afi: Sanity dashboard attention-section header contrast fix
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-07-22 — Milestone v1.3 started
 
 ## Performance Metrics
 
