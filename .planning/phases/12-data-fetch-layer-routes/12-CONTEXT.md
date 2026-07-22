@@ -16,7 +16,7 @@ Does not touch: main-nav wiring to the new routes (Phase 13 — `SiteHeader`/`Ba
 ## Implementation Decisions
 
 ### Roadmap correction (made during this discussion)
-- **D-00:** ROADMAP.md's Phase 12 success criterion #1 originally locked the overview page as "in a grid" — written before this discussion happened. The user explicitly chose a vertical editorial list instead (see D-01). ROADMAP.md was updated in place (2026-07-22) to say "as a vertical editorial list (not a grid)" so the criterion matches the actual decision. All other Phase 12 success criteria (sitemap entries, no commerce affordances, both locales, lightbox reuse) are unchanged.
+- **D-00 [informational]:** ROADMAP.md's Phase 12 success criterion #1 originally locked the overview page as "in a grid" — written before this discussion happened. The user explicitly chose a vertical editorial list instead (see D-01). ROADMAP.md was updated in place (2026-07-22) to say "as a vertical editorial list (not a grid)" so the criterion matches the actual decision. All other Phase 12 success criteria (sitemap entries, no commerce affordances, both locales, lightbox reuse) are unchanged. No plan action required — this is an audit-trail note about the ROADMAP.md edit itself; the actual implementable decision is D-01, which plans do cover.
 
 ### Overview page layout
 - **D-01:** Vertical editorial list, NOT a grid of cards — one row per édition. This is a genuinely new visual pattern; there is no gallery-page equivalent to mirror (the standalone Galleries overview page was removed in Phase 04.3 — the homepage grid is the sole photography-browsing entry point, and Éditions must never appear there).
