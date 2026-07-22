@@ -670,6 +670,24 @@ test.describe('mobile full-bleed hero regression (HOME-06)', () => {
   });
 });
 
+test.describe('tall-desktop full-bleed hero regression', () => {
+  test('at 1280x1320 the photo fills the initial viewport and the footer stays below the fold', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 1320 });
+    await page.goto('/');
+
+    const viewportSize = page.viewportSize();
+    expect(viewportSize).not.toBeNull();
+
+    const photoBox = await page.locator('.home-hero__photo').boundingBox();
+    expect(photoBox).not.toBeNull();
+    expect(photoBox!.height).toBeGreaterThanOrEqual(viewportSize!.height - 2);
+
+    const footerBox = await page.locator('footer').boundingBox();
+    expect(footerBox).not.toBeNull();
+    expect(footerBox!.y).toBeGreaterThanOrEqual(viewportSize!.height - 1);
+  });
+});
+
 // Phase 9 (HOME-09): progressive image loading — page chrome renders
 // immediately (no blocking full-screen loader), the hero photo loads with
 // priority and blurs-to-sharp on first paint and every swap, and grid tiles

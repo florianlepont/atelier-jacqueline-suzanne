@@ -981,9 +981,8 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
      The UI-SPEC's original min-height floor (680px, then lowered to 600px)
      still cropped the hero on a real MacBook Air 13" (confirmed by direct
      user report both times) — any fixed floor can exceed an unknown real
-     window's innerHeight. Removed entirely: height:100vh alone can never
-     exceed the actual viewport, so this eliminates the whole bug class
-     instead of chasing another guessed pixel value. */
+     window's innerHeight. A viewport-relative floor fills the visible screen
+     without chasing another guessed pixel value. */
   .home-hero {
     position: relative;
   }
@@ -993,8 +992,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
      sibling below (see its mobile override) and would otherwise force
      .home-hero itself to grow taller than the photo. Everything visually
      "part of the photo" is absolutely positioned against *this* box, so it
-     stays confined to a proper 16:9 band no matter how tall the panel
-     below makes .home-hero grow. */
+     stays confined to the photo box no matter how tall .home-hero grows. */
   .home-hero__photo {
     position: relative;
     /* Explicit width required: without it, the browser treats aspect-ratio
@@ -1005,13 +1003,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        height and keeping it full-bleed. */
     width: 100%;
     aspect-ratio: 16 / 9;
-    /* Without a ceiling, aspect-ratio derives height purely from width — on
-       a wide/short browser window that height can exceed the actual
-       viewport (unlike the previous height:100vh, which was always capped
-       to the viewport by definition), making the whole page noticeably
-       taller/scrollier than before. max-height keeps the 16:9 look on
-       narrower windows while never letting the hero alone exceed one
-       screen's height. */
+    /* Keep the photo between the small and large viewport heights. The
+       minimum prevents 16:9 from exposing the footer in a tall desktop
+       window; the maximum prevents a wide/short window from growing the
+       hero beyond one screen. */
+    min-height: 100svh;
     max-height: 100vh;
     overflow: hidden;
     /* HOME-06 (D-10/D-12) fix: view-transition-name is NO LONGER set here.
@@ -1540,10 +1536,9 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        GREEN with zero homepage-only additions needed. */
 
     /* Direct request: the photo should cover the full phone screen on
-       arrival, like a true full-bleed mobile hero. .home-hero__photo
-       already has max-height:100vh from the base rule; pairing it with an
-       equal min-height forces the full viewport height regardless of the
-       16:9 aspect-ratio, and object-fit:cover on .home-hero__img (unchanged)
+       arrival, like a true full-bleed mobile hero. The base photo rule pairs
+       max-height:100vh with min-height:100svh regardless of the 16:9
+       aspect-ratio, and object-fit:cover on .home-hero__img (unchanged)
        naturally crops/zooms the photo to fill that box — a portrait phone
        screen against a landscape photo crops in hard on its own, no extra
        transform needed. The base rule's top:50% arrow centering and
@@ -1560,10 +1555,6 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        caption on arrival. svh always resolves to the SMALL viewport (chrome
        visible, the worst case), so the hero is guaranteed to fit within
        whatever is actually on screen before any scrolling happens. */
-    .home-hero__photo {
-      min-height: 100svh;
-    }
-
     .home-hero__caption {
       right: var(--space-md);
       max-width: none;
