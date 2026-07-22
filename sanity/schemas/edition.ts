@@ -130,6 +130,23 @@ export const edition = defineType({
             }),
           ],
         }),
+        // Review WR-02: leadPhoto is a genuinely published, standalone photo
+        // (used on the Éditions listing) -- give it the same rights/credit
+        // sub-field every other photo in this schema carries.
+        defineField({
+          name: 'rights',
+          title: 'Crédits et droits',
+          type: 'imageRights',
+          description:
+            'Ces informations permettent de tracer les droits et, si souhaité, d’afficher le crédit sur la page.',
+          initialValue: {
+            credit: 'Romane Lepont',
+            copyrightNotice: '© Romane Lepont — Tous droits réservés',
+            usage: 'allRightsReserved',
+            displayCredit: true,
+          },
+          validation: (rule) => rule.required().error('Ajouter les crédits et les droits.'),
+        }),
       ],
       // Pitfall B: required() alone can pass even when no actual image asset
       // was uploaded, only the sub-fields being set -- pair with
@@ -156,6 +173,10 @@ export const edition = defineType({
         defineArrayMember({
           type: 'image',
           options: {hotspot: true},
+          // Review WR-01: mirror leadPhoto's Pitfall B fix -- required() alone
+          // can pass on an array item that has alt/rights filled in but no
+          // actual uploaded asset (e.g. an interrupted upload).
+          validation: (rule) => rule.required().assetRequired(),
           fields: [
             defineField({
               name: 'alt',
@@ -272,6 +293,15 @@ export const edition = defineType({
           title: 'Unité',
           type: 'string',
           initialValue: 'cm',
+          // Review WR-03: constrain to a fixed set so the value stays
+          // machine-usable (Phase 12 fetch, future i18n label lookups)
+          // instead of arbitrary free text ("CM", "pouces", etc.).
+          options: {
+            list: [
+              {title: 'cm', value: 'cm'},
+              {title: 'in', value: 'in'},
+            ],
+          },
           validation: (rule) => rule.required().error("L'unité est obligatoire."),
         }),
       ],
