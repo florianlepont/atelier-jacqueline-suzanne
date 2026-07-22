@@ -1,5 +1,5 @@
 .editorial-dashboard__page {
-  --dashboard-page-background: color-mix(in srgb, var(--card-bg-color) 92%, var(--card-fg-color) 8%);
+  --dashboard-page-background: color-mix(in srgb, var(--card-bg-color) 97%, var(--card-fg-color) 3%);
   --dashboard-surface-background: var(--card-bg-color);
   --dashboard-group-header-background: color-mix(in srgb, var(--card-bg-color) 96%, var(--card-fg-color) 4%);
   min-height: calc(100vh - 49px);
