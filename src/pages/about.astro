@@ -4,7 +4,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getAboutPage, getSiteSettings } from '../lib/sanity';
 import { resolveSiteCopy } from '../lib/site-config';
-import { fullSizeUrl } from '../lib/image';
+import { fullSizeUrl, responsiveImageSrcSet } from '../lib/image';
 
 const siteCopy = resolveSiteCopy(await getSiteSettings(), 'fr');
 const about = await getAboutPage();
@@ -14,6 +14,8 @@ const medium = about?.medium?.fr ?? 'Précisions sur le médium et la technique 
 const seoTitle = about?.seo?.title?.fr ?? 'À propos — Atelier Jacqueline Suzanne';
 const seoDescription = about?.seo?.description?.fr ?? biography;
 const socialImage = about?.seo?.image ? fullSizeUrl(about.seo.image, 1200) : undefined;
+const portraitImage = about?.image;
+const exhibitionImage = about?.exhibitionImage;
 const structuredData = {
   '@context': 'https://schema.org',
   '@type': 'Person',
@@ -32,44 +34,212 @@ const structuredData = {
   noIndex={about?.seo?.noIndex}
   structuredData={structuredData}
 >
-  <div class="about-page">
-    <h1>À propos</h1>
-    <p>{biography}</p>
-    <h2>Atelier &amp; pratique</h2>
-    <p>{practice}</p>
-    <h2>Médium &amp; technique</h2>
-    <p>{medium}</p>
-  </div>
+  <article class="about-page">
+    <header class:list={['about-page__hero', {'about-page__hero--with-portrait': portraitImage}]}>
+      <div class="about-page__identity">
+        <p class="about-page__eyebrow">Atelier Jacqueline Suzanne</p>
+        <h1>À propos</h1>
+      </div>
+      {portraitImage && (
+        <figure class="about-page__portrait">
+          <img
+            src={fullSizeUrl(portraitImage, 480)}
+            srcset={responsiveImageSrcSet(portraitImage, [160, 240, 320, 480])}
+            sizes="(max-width: 767px) 72px, 112px"
+            alt={portraitImage.alt?.fr ?? ''}
+            loading="lazy"
+            decoding="async"
+          />
+        </figure>
+      )}
+      <p class="about-page__lead">{biography}</p>
+    </header>
+
+    {exhibitionImage && (
+      <figure class="about-page__exhibition">
+        <img
+          src={fullSizeUrl(exhibitionImage, 1600)}
+          srcset={responsiveImageSrcSet(exhibitionImage, [480, 768, 1200, 1600])}
+          sizes="(max-width: 767px) 100vw, 1180px"
+          alt={exhibitionImage.alt?.fr ?? ''}
+          loading="lazy"
+          decoding="async"
+        />
+      </figure>
+    )}
+
+    <div class="about-page__sections">
+      <section class="about-page__section">
+        <p class="about-page__number" aria-hidden="true">01</p>
+        <div>
+          <h2>Atelier &amp; pratique</h2>
+          <p>{practice}</p>
+        </div>
+      </section>
+      <section class="about-page__section">
+        <p class="about-page__number" aria-hidden="true">02</p>
+        <div>
+          <h2>Médium &amp; technique</h2>
+          <p>{medium}</p>
+        </div>
+      </section>
+    </div>
+  </article>
 </BaseLayout>
 
 <style>
   .about-page {
-    max-width: 640px;
+    width: min(100%, var(--editorial-page-max));
     margin: 0 auto;
-    padding: var(--space-2xl) var(--space-md);
+    padding: var(--editorial-page-padding-block) var(--editorial-page-padding-inline);
+  }
+
+  .about-page__hero {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr);
+    gap: clamp(var(--space-lg), 3.5vw, 48px);
+    align-items: center;
+    padding-top: var(--space-md);
+    border-top: var(--border-hairline) solid var(--color-ink);
+  }
+
+  .about-page__hero--with-portrait {
+    grid-template-columns: minmax(240px, 0.75fr) 112px minmax(0, 1.25fr);
+  }
+
+  .about-page__eyebrow,
+  .about-page__number {
+    margin: 0;
+    font-size: var(--text-label-size);
+    font-weight: var(--weight-semibold);
+    line-height: var(--text-label-leading);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
   .about-page h1 {
-    font-size: var(--text-display-size); /* Display role */
+    margin: var(--space-md) 0 0;
+    font-size: var(--editorial-page-title-size);
     font-weight: var(--weight-semibold);
     font-family: var(--font-display);
-    line-height: 1.2;
-    margin: 0 0 var(--space-xl);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+  }
+
+  .about-page__lead {
+    grid-column: 2;
+    margin: 0;
+    font-size: var(--editorial-page-lead-size);
+    font-weight: var(--weight-regular);
+    line-height: var(--editorial-page-lead-leading);
+  }
+
+  .about-page__hero--with-portrait .about-page__lead {
+    grid-column: 3;
+  }
+
+  .about-page__portrait {
+    grid-column: 2;
+    width: 112px;
+    height: 112px;
+    margin: 0;
+    overflow: hidden;
+    border: var(--border-hairline) solid var(--color-ink);
+    border-radius: 50%;
+  }
+
+  .about-page__exhibition {
+    width: 100%;
+    height: clamp(360px, 44vw, 520px);
+    margin: clamp(var(--space-2xl), 6vw, 80px) 0 0;
+    overflow: hidden;
+  }
+
+  .about-page__portrait img,
+  .about-page__exhibition img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .about-page__sections {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--editorial-page-column-gap);
+    margin-top: clamp(var(--space-lg), 3vw, 40px);
+  }
+
+  .about-page__section {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: var(--space-md);
+    padding-top: var(--space-md);
+    border-top: var(--border-hairline) solid var(--color-ink);
   }
 
   .about-page h2 {
-    font-size: var(--text-heading-size); /* Heading role */
+    font-size: var(--editorial-page-section-title-size);
     font-weight: var(--weight-semibold);
     font-family: var(--font-display);
-    line-height: 1.2;
-    margin: var(--space-2xl) 0 var(--space-md);
-  }
-
-  .about-page p {
-    font-size: var(--text-body-size); /* Body role */
-    font-weight: var(--weight-regular);
-    line-height: 1.5;
+    line-height: var(--editorial-page-section-title-leading);
     margin: 0 0 var(--space-md);
   }
 
+  .about-page__section p:not(.about-page__number) {
+    font-size: var(--text-body-size); /* Body role */
+    font-weight: var(--weight-regular);
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  @media (max-width: 767px) {
+    .about-page__hero,
+    .about-page__hero--with-portrait {
+      grid-template-columns: minmax(0, 1fr) auto;
+      column-gap: var(--space-md);
+    }
+
+    .about-page__identity {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .about-page__portrait {
+      grid-column: 2;
+      grid-row: 1;
+      width: 72px;
+      height: 72px;
+    }
+
+    .about-page__lead,
+    .about-page__hero--with-portrait .about-page__lead {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+
+    .about-page__lead {
+      margin-top: var(--space-xl);
+    }
+
+    .about-page__exhibition {
+      height: auto;
+      aspect-ratio: 16 / 10;
+    }
+
+    .about-page__sections {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .about-page {
+      padding-top: var(--space-xl);
+      padding-bottom: var(--space-3xl);
+    }
+
+    .about-page h1 {
+      font-size: clamp(38px, 13vw, 52px);
+    }
+  }
 </style>

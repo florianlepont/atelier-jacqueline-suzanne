@@ -14,8 +14,8 @@ export const HERO_COLORS = {
 } as const
 
 const DEFAULT_HOMEPAGE_INTRO: Record<Locale, string> = {
-  fr: "Le site présente le travail photographique de Romane Lepont et permet l'achat d'une œuvre directement en ligne.",
-  en: "This site showcases Romane Lepont's photographic work and lets you buy a piece directly online.",
+  fr: 'Le site présente le travail photographique de Romane Lepont à travers ses différentes séries et éditions.',
+  en: "This site showcases Romane Lepont's photographic work through her different series and editions.",
 }
 
 export function resolveSiteCopy(settings: SiteSettings | null, locale: Locale) {

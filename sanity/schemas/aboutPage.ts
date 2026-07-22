@@ -25,6 +25,40 @@ function localizedText(name: string, title: string, rows = 5) {
   })
 }
 
+function editorialImage(name: string, title: string, description: string) {
+  return defineField({
+    name,
+    title,
+    type: 'image',
+    group: 'content',
+    description,
+    options: {hotspot: true},
+    fields: [
+      defineField({
+        name: 'alt',
+        title: "Description de l'image (accessibilité)",
+        type: 'object',
+        options: {columns: 2},
+        validation: (rule) => rule.required().error("La description de l'image est obligatoire."),
+        fields: [
+          defineField({
+            name: 'fr',
+            title: 'Français',
+            type: 'string',
+            validation: (rule) => rule.required().error('La description française est obligatoire.'),
+          }),
+          defineField({
+            name: 'en',
+            title: 'Anglais',
+            type: 'string',
+            validation: (rule) => rule.required().error('La description anglaise est obligatoire.'),
+          }),
+        ],
+      }),
+    ],
+  })
+}
+
 export const aboutPage = defineType({
   name: 'aboutPage',
   title: 'Page À propos',
@@ -51,6 +85,16 @@ export const aboutPage = defineType({
     {...localizedText('biography', 'Biographie'), group: 'content'},
     {...localizedText('practice', 'Atelier & pratique'), group: 'content'},
     {...localizedText('medium', 'Médium & technique', 3), group: 'content'},
+    editorialImage(
+      'image',
+      'Portrait de Romane',
+      'Portrait vertical de Romane, affiché dans la colonne étroite.',
+    ),
+    editorialImage(
+      'exhibitionImage',
+      "Vue d'exposition",
+      "Photo horizontale d'une exposition ou d'une installation du travail de Romane, affichée dans la colonne large.",
+    ),
     defineField({name: 'seo', title: 'SEO & partage', type: 'seo', group: 'seo'}),
   ],
   preview: {

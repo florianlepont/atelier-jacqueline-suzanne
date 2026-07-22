@@ -26,7 +26,9 @@ interface GalleryEntry {
   slug: string;
   title: string;
   heroSrc: string;
+  heroSrcSet: string;
   gridSrc: string;
+  gridSrcSet: string;
   blurSrc: string;
   alt: string;
   statement: string;
@@ -74,6 +76,8 @@ const contactHref = getRelativeLocaleUrl(locale, 'contact');
 const instagramNewTabHint = isEn ? ' (opens in new tab)' : ' (nouvelle fenêtre)';
 const toggleCarouselLabel = isEn ? 'Carousel' : 'Carrousel';
 const toggleGridLabel = isEn ? 'Grid' : 'Grille';
+const pauseCarouselLabel = isEn ? 'Pause automatic carousel' : 'Mettre le carrousel en pause';
+const playCarouselLabel = isEn ? 'Play automatic carousel' : 'Relancer le carrousel';
 const wordmark = 'Atelier Jacqueline Suzanne';
 const introBody = siteCopy.homepageIntro;
 const fallbackByline = isEn ? 'A project by Romane Lepont' : 'Un projet de Romane Lepont';
@@ -101,7 +105,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     class="home"
     data-display-mode="carousel"
     style={{
-      '--wordmark-photo': `url(${firstGallery.heroSrc})`,
+      '--wordmark-photo': 'none',
       '--wordmark-photo-filter': wordmarkPhotoFilter(firstGallery.heroTextColor),
       '--current-accent': firstGallery.heroColor ?? 'var(--color-accent)',
       '--current-accent-text': firstGallery.heroTextColor ?? 'var(--color-on-accent)',
@@ -163,7 +167,15 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           .home-hero grow. */}
       <div class="home-hero__photo">
         <img data-role="hero-image-placeholder" src={firstGallery.blurSrc} alt="" aria-hidden="true" class="home-hero__img home-hero__img-placeholder" />
-        <img data-role="hero-image" src={firstGallery.heroSrc} alt={firstGallery.alt} fetchpriority="high" class="home-hero__img home-hero__img--sharp" />
+        <img
+          data-role="hero-image"
+          src={firstGallery.heroSrc}
+          srcset={firstGallery.heroSrcSet}
+          sizes="100vw"
+          alt={firstGallery.alt}
+          fetchpriority="high"
+          class="home-hero__img home-hero__img--sharp"
+        />
         <div class="home-hero__scrim" aria-hidden="true"></div>
 
         <div class="home-hero__caption">
@@ -179,18 +191,32 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
               index/title/byline instead of needing its own hardcoded
               vertical offset — one less pixel-math dependency to keep in
               sync with the rest of the caption's content. */}
-          <div class="home-hero__progress" data-role="progress" role="tablist" aria-label={isEn ? 'Choose a gallery' : 'Choisir une galerie'}>
-            {galleries.map((gallery, i) => (
-              <button
-                type="button"
-                class="home-hero__progress-dash"
-                data-action="go-to"
-                data-index={i}
-                role="tab"
-                aria-current={i === 0 ? 'true' : 'false'}
-                aria-label={`${gallery.title} (${i + 1}/${galleries.length})`}
-              />
-            ))}
+          <div class="home-hero__carousel-controls">
+            <div class="home-hero__progress" data-role="progress" role="tablist" aria-label={isEn ? 'Choose a gallery' : 'Choisir une galerie'}>
+              {galleries.map((gallery, i) => (
+                <button
+                  type="button"
+                  class="home-hero__progress-dash"
+                  data-action="go-to"
+                  data-index={i}
+                  role="tab"
+                  aria-current={i === 0 ? 'true' : 'false'}
+                  aria-label={`${gallery.title} (${i + 1}/${galleries.length})`}
+                />
+              ))}
+            </div>
+            <button
+              type="button"
+              class="home-hero__autoplay-toggle"
+              data-role="autoplay-toggle"
+              data-label-pause={pauseCarouselLabel}
+              data-label-play={playCarouselLabel}
+              aria-label={pauseCarouselLabel}
+              aria-pressed="false"
+            >
+              <span class="home-hero__pause-icon" aria-hidden="true"><span></span><span></span></span>
+              <span class="home-hero__play-icon" aria-hidden="true"></span>
+            </button>
           </div>
           <p class="home-hero__index" data-role="index-label">01 / {totalLabel}</p>
           <a class="home-hero__title" data-role="gallery-title" href={getRelativeLocaleUrl(locale, `galleries/${firstGallery.slug}`)}>{firstGallery.title.toUpperCase()}</a>
@@ -203,10 +229,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         data-role="accent-panel"
         style={{ color: firstGallery.heroTextColor ?? 'var(--color-on-accent)' }}
       >
-        {/* D-08: --wordmark-photo is server-rendered on the .home section
-            (above) from firstGallery.heroSrc, so the transparent cutout text
-            reveals a photo immediately, before and without JS; render() keeps
-            it synced with heroImg.src on every prev/next/auto-advance tick. */}
+        {/* D-08: the solid title is the no-JS/loading fallback. Once the
+            responsive hero has loaded, render() uses its browser-selected
+            currentSrc for this photo cutout, avoiding a second 2000px image
+            download on narrow screens. */}
         <h1 class="home-hero__wordmark">Atelier<br />Jacqueline<br />Suzanne</h1>
         <p class="home-hero__intro">{introBody}</p>
       </div>
@@ -230,6 +256,8 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             <img src={gallery.blurSrc} alt="" aria-hidden="true" class="home-grid__tile-img home-grid__tile-img-placeholder" />
             <img
               src={gallery.gridSrc}
+              srcset={gallery.gridSrcSet}
+              sizes="(max-width: 767px) 100vw, 33vw"
               width="600"
               height="600"
               alt={gallery.alt}
@@ -255,6 +283,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         <li
           data-title={gallery.title}
           data-hero-src={gallery.heroSrc}
+          data-hero-srcset={gallery.heroSrcSet}
           data-blur-src={gallery.blurSrc}
           data-alt={gallery.alt}
           data-statement={gallery.statement}
@@ -271,6 +300,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       interface GalleryEntry {
         title: string;
         heroSrc: string;
+        heroSrcSet: string;
         blurSrc: string;
         alt: string;
         statement: string;
@@ -288,6 +318,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         const galleries: GalleryEntry[] = Array.from(dataEl.querySelectorAll('li')).map((li) => ({
           title: li.dataset.title ?? '',
           heroSrc: li.dataset.heroSrc ?? '',
+          heroSrcSet: li.dataset.heroSrcset ?? '',
           blurSrc: li.dataset.blurSrc ?? '',
           alt: li.dataset.alt ?? '',
           statement: li.dataset.statement ?? '',
@@ -320,6 +351,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         const accentPanel = hero.querySelector<HTMLElement>('[data-role="accent-panel"]');
         const wordmarkEl = hero.querySelector<HTMLElement>('.home-hero__wordmark');
         const progressDashes = Array.from(hero.querySelectorAll<HTMLButtonElement>('[data-role="progress"] .home-hero__progress-dash'));
+        const autoplayToggle = hero.querySelector<HTMLButtonElement>('[data-role="autoplay-toggle"]');
 
         // HOME-09 (D-03/D-06): grid tiles are server-rendered once and never
         // re-rendered by render() — a one-time load-listener setup here
@@ -339,6 +371,9 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
         let carouselIndex = 0;
         let timer: ReturnType<typeof setInterval> | null = null;
+        const reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+        let autoAdvancePausedByUser = reduceMotionQuery.matches;
+        let hasUserChosenAutoplay = false;
         // Cancels the previous render()'s pending hero load/error listeners so
         // rapid swaps (fast clicks/swipes) don't stack up never-fired 'load'
         // listeners on heroImg (each abandoned request never fires 'load').
@@ -346,6 +381,15 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
         function showSharp(img: HTMLImageElement) {
           img.classList.add('is-loaded');
+        }
+
+        function revealWordmarkPhoto() {
+          if (!heroImg) return;
+          const selectedSrc = heroImg.currentSrc || heroImg.src;
+          if (!selectedSrc) return;
+          root!.style.setProperty('--wordmark-photo', `url(${selectedSrc})`);
+          syncWordmarkAlignment();
+          root!.classList.add('has-wordmark-photo');
         }
 
         // .home-hero__img uses the default object-position (50% 50%,
@@ -394,6 +438,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           // has loaded successfully. This keeps the title readable while
           // the independent blur placeholder is the only painted image.
           root!.classList.remove('has-wordmark-photo');
+          root!.style.setProperty('--wordmark-photo', 'none');
           const fallbackAccent = ACCENTS[carouselIndex % ACCENTS.length];
           const accent = gallery.heroColor
             ? { bg: gallery.heroColor, text: gallery.heroTextColor ?? 'var(--color-on-accent)' }
@@ -401,6 +446,8 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           if (heroImg && heroPlaceholderImg) {
             heroPlaceholderImg.src = gallery.blurSrc;
             heroImg.classList.remove('is-loaded'); // Pitfall 3: must precede src reassignment
+            heroImg.srcset = gallery.heroSrcSet;
+            heroImg.sizes = '100vw';
             heroImg.src = gallery.heroSrc;
             heroImg.alt = gallery.alt;
             // Abort the previous render()'s pending listeners first — a superseded
@@ -410,15 +457,13 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             if (heroImg.complete) {
               showSharp(heroImg);
               if (heroImg.naturalWidth > 0) {
-                syncWordmarkAlignment();
-                root!.classList.add('has-wordmark-photo');
+                revealWordmarkPhoto();
               }
             } else {
               pendingHeroLoadCtrl = new AbortController();
               const onLoad = () => {
                 showSharp(heroImg);
-                syncWordmarkAlignment();
-                root!.classList.add('has-wordmark-photo');
+                revealWordmarkPhoto();
               };
               const onError = () => showSharp(heroImg);
               // 'error' covers a failed fetch (bad asset, transient CDN issue) —
@@ -445,10 +490,6 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           root!.style.setProperty('--current-accent', accent.bg);
           root!.style.setProperty('--current-accent-text', accent.text);
           root!.style.setProperty('--wordmark-photo-filter', wordmarkPhotoFilter(accent.text));
-          // D-08/D-09: keep the wordmark's photo-cutout background in sync
-          // with the visible hero photo on every prev/next/auto-advance
-          // tick, so the letters always reveal the currently-shown gallery.
-          root!.style.setProperty('--wordmark-photo', `url(${gallery.heroSrc})`);
           progressDashes.forEach((dash, i) => {
             dash.setAttribute('aria-current', i === carouselIndex ? 'true' : 'false');
           });
@@ -460,6 +501,8 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           const nextSrc = galleries[nextIndex]?.heroSrc;
           if (nextSrc) {
             const preload = new Image();
+            preload.srcset = galleries[nextIndex]?.heroSrcSet ?? '';
+            preload.sizes = '100vw';
             preload.src = nextSrc;
           }
         }
@@ -473,11 +516,43 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         // mouseleave/focusout — never paused permanently.
         function startAutoAdvance() {
           stopAutoAdvance();
+          if (autoAdvancePausedByUser || root!.dataset.displayMode !== 'carousel') return;
           timer = setInterval(() => {
             carouselIndex = (carouselIndex + 1) % galleries.length;
             render();
           }, 6000);
         }
+
+        function syncAutoplayControl() {
+          if (!autoplayToggle) return;
+          autoplayToggle.classList.toggle('is-paused', autoAdvancePausedByUser);
+          autoplayToggle.setAttribute('aria-pressed', String(autoAdvancePausedByUser));
+          autoplayToggle.setAttribute(
+            'aria-label',
+            autoAdvancePausedByUser
+              ? autoplayToggle.dataset.labelPlay ?? ''
+              : autoplayToggle.dataset.labelPause ?? '',
+          );
+        }
+
+        autoplayToggle?.addEventListener('click', () => {
+          hasUserChosenAutoplay = true;
+          autoAdvancePausedByUser = !autoAdvancePausedByUser;
+          syncAutoplayControl();
+          if (autoAdvancePausedByUser) {
+            stopAutoAdvance();
+          } else {
+            startAutoAdvance();
+          }
+        });
+
+        reduceMotionQuery.addEventListener('change', (event) => {
+          if (hasUserChosenAutoplay) return;
+          autoAdvancePausedByUser = event.matches;
+          syncAutoplayControl();
+          if (autoAdvancePausedByUser) stopAutoAdvance();
+          else startAutoAdvance();
+        });
 
         function showCarousel() {
           root!.dataset.displayMode = 'carousel';
@@ -689,6 +764,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         });
 
         render();
+        syncAutoplayControl();
         startAutoAdvance();
 
         // Re-align the wordmark cutout on resize — both the hero photo's
@@ -1077,11 +1153,63 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
      width" request — min() keeps it from ballooning on very wide desktop
      windows while staying comfortably tappable (3 dashes + gaps) on
      narrow phones. */
+  .home-hero__carousel-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    width: min(calc(25vw + 48px), 268px);
+    margin: 0;
+  }
+
   .home-hero__progress {
     display: flex;
+    flex: 1 1 auto;
     gap: var(--space-xs);
-    width: min(25vw, 220px);
+    min-width: 0;
     margin: 0;
+  }
+
+  .home-hero__autoplay-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 var(--tap-target-min);
+    width: var(--tap-target-min);
+    height: var(--tap-target-min);
+    padding: 0;
+    color: #FFFFFF;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+  }
+
+  .home-hero__pause-icon {
+    display: flex;
+    gap: 4px;
+  }
+
+  .home-hero__pause-icon span {
+    width: 2px;
+    height: 12px;
+    background: currentColor;
+  }
+
+  .home-hero__play-icon {
+    display: none;
+    width: 0;
+    height: 0;
+    margin-left: 2px;
+    border-top: 7px solid transparent;
+    border-bottom: 7px solid transparent;
+    border-left: 11px solid currentColor;
+  }
+
+  .home-hero__autoplay-toggle.is-paused .home-hero__pause-icon {
+    display: none;
+  }
+
+  .home-hero__autoplay-toggle.is-paused .home-hero__play-icon {
+    display: block;
   }
 
   .home-hero__progress-dash {
@@ -1664,6 +1792,13 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
     .home-grid__tiles {
       grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 359px) {
+    .home-hero__wordmark,
+    .home-grid__wordmark {
+      font-size: 9.8vw;
     }
   }
 </style>

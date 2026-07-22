@@ -200,6 +200,30 @@ test.describe('contact form submission failures', () => {
 });
 
 test.describe('contact reachability', () => {
+  test('alternative contact channels continue the editorial sequence with 02 and 03', async ({
+    page,
+  }) => {
+    for (const path of ['/contact/', '/en/contact/']) {
+      await page.goto(path);
+      await expect(page.locator('.contact-page__number')).toHaveText(['02', '03']);
+    }
+  });
+
+  test('Contact uses neutral black accents in both locales', async ({ page }) => {
+    for (const path of ['/contact/', '/en/contact/']) {
+      await page.goto(path);
+      const colors = await page.locator('.contact-page').evaluate((element) => {
+        const styles = getComputedStyle(element);
+        return {
+          accent: styles.getPropertyValue('--color-accent').trim(),
+          ink: styles.getPropertyValue('--color-ink').trim(),
+        };
+      });
+
+      expect(colors.accent).toBe(colors.ink);
+    }
+  });
+
   test('visitor can reach the Contact page from the header nav link', async ({ page }) => {
     // Phase 04.1: the homepage ("/") intentionally renders its own minimal,
     // immersive nav (Accueil/Galeries + carousel-grid toggle + switcher only

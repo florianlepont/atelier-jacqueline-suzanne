@@ -125,6 +125,8 @@ export interface AboutPage {
   biography?: Partial<LocaleString>
   practice?: Partial<LocaleString>
   medium?: Partial<LocaleString>
+  image?: SanityImage & {alt?: Partial<LocaleString>}
+  exhibitionImage?: SanityImage & {alt?: Partial<LocaleString>}
   seo?: SeoSettings
 }
 
@@ -155,6 +157,8 @@ const ABOUT_PAGE_QUERY = /* groq */ `*[_id == "aboutPage"][0]{
   biography,
   practice,
   medium,
+  image,
+  exhibitionImage,
   seo
 }`
 

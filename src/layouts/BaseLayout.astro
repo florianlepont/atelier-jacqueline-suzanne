@@ -281,6 +281,19 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
     --space-xl: 32px;
     --space-2xl: 48px;
     --space-3xl: 64px;
+
+    /* Shared editorial-page roles — About and Contact deliberately consume
+       the same frame, type scale, and column rhythm while keeping distinct
+       content structures. */
+    --editorial-page-max: 1180px;
+    --editorial-page-padding-block: clamp(var(--space-2xl), 7vw, 96px);
+    --editorial-page-padding-inline: clamp(var(--space-md), 4vw, var(--space-2xl));
+    --editorial-page-column-gap: clamp(var(--space-2xl), 6vw, 96px);
+    --editorial-page-title-size: clamp(40px, 4vw, 56px);
+    --editorial-page-lead-size: clamp(18px, 1.5vw, 22px);
+    --editorial-page-lead-leading: 1.35;
+    --editorial-page-section-title-size: clamp(22px, 2.25vw, 30px);
+    --editorial-page-section-title-leading: 1.15;
   }
 
   * {

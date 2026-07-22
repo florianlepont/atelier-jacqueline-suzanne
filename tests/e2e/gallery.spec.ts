@@ -55,6 +55,26 @@ test.describe('gallery detail', () => {
 
     expect(enStatement).not.toBe(frStatement);
   });
+
+  test('serves responsive hero, thumbnail, and lightbox image candidates', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    expect(firstTileHref).toBeTruthy();
+
+    await page.goto(firstTileHref!);
+    const hero = page.locator('.gallery-detail__hero-img');
+    await expect(hero).toHaveAttribute('srcset', /480w.*2000w/);
+    await expect(hero).toHaveAttribute('sizes', '100vw');
+
+    const thumbnail = page.locator('[data-gallery-thumb] img').first();
+    await expect(thumbnail).toHaveAttribute('srcset', /320w.*900w/);
+
+    await page.locator('[data-gallery-thumb]').first().click();
+    const lightboxImage = page.locator('[data-role="lightbox-image"]');
+    await expect(lightboxImage).toHaveAttribute('srcset', /640w.*2000w/);
+    await expect(lightboxImage).toHaveAttribute('sizes', '100vw');
+  });
 });
 
 test.describe('lightbox', () => {

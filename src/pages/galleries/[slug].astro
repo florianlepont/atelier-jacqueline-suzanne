@@ -10,7 +10,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import GalleryGrid from '../../components/GalleryGrid.astro';
 import Lightbox from '../../components/Lightbox.astro';
 import { getGalleries } from '../../lib/sanity';
-import { thumbnailUrl, fullSizeUrl } from '../../lib/image';
+import { thumbnailUrl, fullSizeUrl, responsiveImageSrcSet, responsiveThumbnailSrcSet } from '../../lib/image';
 import type { Gallery } from '../../lib/sanity';
 
 export const getStaticPaths = (async () => {
@@ -69,6 +69,8 @@ const structuredData = {
     <div class="gallery-detail__hero">
       <img
         src={heroSrc}
+        srcset={responsiveImageSrcSet(heroImage)}
+        sizes="100vw"
         alt={heroAlt}
         class="gallery-detail__hero-img"
         loading="eager"
@@ -100,6 +102,8 @@ const structuredData = {
                   >
                     <img
                       src={thumbnailUrl(img, 600)}
+                      srcset={responsiveThumbnailSrcSet(img)}
+                      sizes="(max-width: 767px) calc(100vw - 32px), 33vw"
                       width="600"
                       height="600"
                       alt=""

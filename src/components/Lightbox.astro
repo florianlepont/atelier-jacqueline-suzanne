@@ -13,7 +13,7 @@
 // index and stores the element as the return-focus target for when the
 // dialog closes. See src/pages/galleries/[slug].astro and the EN
 // counterpart for the trigger markup (Plan 03/04).
-import { fullSizeUrl } from '../lib/image';
+import { fullSizeUrl, responsiveImageSrcSet } from '../lib/image';
 import type { GalleryImage } from '../lib/sanity';
 
 interface Props {
@@ -34,6 +34,7 @@ const nextLabel = locale === 'en' ? 'Next image' : 'Image suivante';
 // shipped client JS).
 const slides = images.map((img) => ({
   src: fullSizeUrl(img, 2000),
+  srcset: responsiveImageSrcSet(img, [640, 960, 1440, 2000]),
   alt: img.alt?.[locale] ?? '',
   credit: img.rights?.displayCredit === false ? '' : img.rights?.credit ?? 'Romane Lepont',
   copyright: img.rights?.displayCredit === false
@@ -59,7 +60,7 @@ const slides = images.map((img) => ({
       <polyline points="9 18 15 12 9 6"></polyline>
     </svg>
   </button>
-  <img data-role="lightbox-image" class="lightbox__image" alt="" />
+  <img data-role="lightbox-image" class="lightbox__image" alt="" sizes="100vw" />
   <p data-role="credit" class="lightbox__credit"></p>
   <p data-role="counter" class="lightbox__counter" aria-live="polite"></p>
 </dialog>
@@ -71,13 +72,14 @@ const slides = images.map((img) => ({
     parse embedded JSON. */}
 <ul hidden data-role="lightbox-data">
   {slides.map((slide) => (
-    <li data-src={slide.src} data-alt={slide.alt} data-credit={slide.credit} data-copyright={slide.copyright} />
+    <li data-src={slide.src} data-srcset={slide.srcset} data-alt={slide.alt} data-credit={slide.credit} data-copyright={slide.copyright} />
   ))}
 </ul>
 
 <script>
   interface Slide {
     src: string;
+    srcset: string;
     alt: string;
     credit: string;
     copyright: string;
@@ -89,6 +91,7 @@ const slides = images.map((img) => ({
   if (dialog && dataEl) {
     const slides: Slide[] = Array.from(dataEl.querySelectorAll<HTMLLIElement>('li')).map((li) => ({
       src: li.dataset.src ?? '',
+      srcset: li.dataset.srcset ?? '',
       alt: li.dataset.alt ?? '',
       credit: li.dataset.credit ?? '',
       copyright: li.dataset.copyright ?? '',
@@ -106,12 +109,16 @@ const slides = images.map((img) => ({
     function preload(index: number) {
       if (index < 0 || index >= slides.length) return;
       const img = new Image();
+      img.srcset = slides[index].srcset;
+      img.sizes = '100vw';
       img.src = slides[index].src;
     }
 
     function render() {
       const slide = slides[current];
       if (!slide || !imageEl || !counterEl) return;
+      imageEl.srcset = slide.srcset;
+      imageEl.sizes = '100vw';
       imageEl.src = slide.src;
       imageEl.alt = slide.alt;
       counterEl.textContent = `${current + 1} / ${slides.length}`;

@@ -4,7 +4,10 @@ test.describe('critical cross-browser smoke', () => {
   test('homepage wordmark stays readable while the sharp hero is unavailable', async ({page}) => {
     await page.route(/cdn\.sanity\.io\/images\//, (route) => {
       const url = new URL(route.request().url())
-      return url.searchParams.get('w') === '2000' ? route.abort('failed') : route.continue()
+      // Responsive delivery lets each engine choose 480/768/1200/1600/2000.
+      // Block every sharp rendition while preserving the 24px blur
+      // placeholder so this remains a genuine loading-error fallback test.
+      return url.searchParams.get('w') !== '24' ? route.abort('failed') : route.continue()
     })
 
     await page.goto('/', {waitUntil: 'domcontentloaded'})

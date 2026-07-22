@@ -85,6 +85,40 @@ test.describe('auto-advance + pause (D-09)', () => {
     await page.clock.fastForward(6000);
     await expect(indexLabel).toHaveText(labelAfterFirstAdvance);
   });
+
+  test('the explicit pause control persists after pointer movement and can resume playback', async ({ page }) => {
+    await page.clock.install();
+    await page.goto('/');
+
+    const indexLabel = page.locator('[data-role="index-label"]');
+    const pauseButton = page.locator('[data-role="autoplay-toggle"]');
+    const initialLabel = await indexLabel.innerText();
+
+    await expect(pauseButton).toHaveAttribute('aria-label', 'Mettre le carrousel en pause');
+    await pauseButton.click();
+    await expect(pauseButton).toHaveAttribute('aria-pressed', 'true');
+    await expect(pauseButton).toHaveAttribute('aria-label', 'Relancer le carrousel');
+    await page.mouse.move(0, 0);
+    await page.clock.fastForward(12000);
+    await expect(indexLabel).toHaveText(initialLabel);
+
+    await pauseButton.click();
+    await expect(pauseButton).toHaveAttribute('aria-pressed', 'false');
+    await page.clock.fastForward(6000);
+    await expect(indexLabel).not.toHaveText(initialLabel);
+  });
+
+  test('reduced-motion visitors start with automatic playback paused', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.clock.install();
+    await page.goto('/');
+
+    const indexLabel = page.locator('[data-role="index-label"]');
+    const initialLabel = await indexLabel.innerText();
+    await expect(page.getByRole('button', { name: 'Relancer le carrousel' })).toHaveAttribute('aria-pressed', 'true');
+    await page.clock.fastForward(12000);
+    await expect(indexLabel).toHaveText(initialLabel);
+  });
 });
 
 test.describe('i18n non-regression guard', () => {
@@ -617,6 +651,23 @@ test.describe('mobile hero visibility (D-08)', () => {
   });
 });
 
+test.describe('narrow-phone header regression', () => {
+  test('the full header stays on one row without horizontal overflow at 320px', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 700 });
+    await page.goto('/');
+
+    const measurements = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+      headerHeight: document.querySelector<HTMLElement>('[data-role="site-header"]')?.getBoundingClientRect().height ?? 0,
+    }));
+
+    expect(measurements.scrollWidth).toBeLessThanOrEqual(measurements.clientWidth);
+    expect(measurements.headerHeight).toBeLessThanOrEqual(80);
+    await expect(page.getByRole('link', { name: /Passer en anglais/ })).toBeVisible();
+  });
+});
+
 // Phase 07 Plan 02 (HOME-06, D-10/D-11/D-12): mobile-emulation regression
 // guard for the real-device (iPhone 17 Pro) full-bleed hero bug — a white
 // gap above the header plus the site footer bleeding through on first load.
@@ -729,6 +780,8 @@ test.describe('progressive image loading (HOME-09)', () => {
     const heroImg = page.locator('[data-role="hero-image"]');
     await expect(heroImg).toHaveAttribute('fetchpriority', 'high');
     await expect(heroImg).not.toHaveAttribute('loading', 'lazy');
+    await expect(heroImg).toHaveAttribute('srcset', /480w.*2000w/);
+    await expect(heroImg).toHaveAttribute('sizes', '100vw');
   });
 
   test('hero blur-up: placeholder present and sharp fades in on first paint and after a swap', async ({ page }) => {
@@ -763,6 +816,7 @@ test.describe('progressive image loading (HOME-09)', () => {
       const placeholder = tile.locator('.home-grid__tile-img-placeholder');
       await expect(placeholder).toHaveAttribute('src', /cdn\.sanity\.io/);
       const sharp = tile.locator('.home-grid__tile-img--sharp');
+      await expect(sharp).toHaveAttribute('srcset', /320w.*900w/);
       await expect(sharp).toHaveClass(/is-loaded/);
     }
   });
@@ -793,10 +847,11 @@ test.describe('progressive image loading (HOME-09)', () => {
     // Reload and confirm the browser actually issues that request — a
     // predicate (not a glob string) avoids Sanity CDN query-string characters
     // being misinterpreted as glob wildcards.
-    const prefetchRequest = page.waitForRequest((req) => req.url() === nextHeroSrc, { timeout: 5000 });
+    const nextHeroPath = new URL(nextHeroSrc!).pathname;
+    const prefetchRequest = page.waitForRequest((req) => new URL(req.url()).pathname === nextHeroPath, { timeout: 5000 });
     await page.reload();
     const request = await prefetchRequest;
-    expect(request.url()).toBe(nextHeroSrc);
+    expect(new URL(request.url()).pathname).toBe(nextHeroPath);
   });
 });
 

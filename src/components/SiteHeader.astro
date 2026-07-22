@@ -290,4 +290,47 @@ const {
       padding-right: var(--space-xs);
     }
   }
+
+  /* Keep the full navigation usable on genuinely narrow phones without a
+     second header row or horizontal scrolling. Every control retains its
+     44px vertical tap target; only horizontal padding and icon/logo width
+     are tightened. */
+  @media (max-width: 359px) {
+    .chrome-band {
+      padding: var(--space-sm);
+    }
+
+    .site-header {
+      flex-wrap: nowrap;
+      gap: 0;
+    }
+
+    .logo-mark__img {
+      width: 40px;
+    }
+
+    .site-nav {
+      min-width: 0;
+      margin-left: var(--space-xs);
+      gap: 0;
+    }
+
+    .site-nav .nav-link {
+      min-width: 0;
+      padding-right: 2px;
+      padding-left: 2px;
+      font-size: 12px;
+    }
+
+    .site-nav .nav-link svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .site-header .language-switcher .switcher-link {
+      padding-right: 2px;
+      padding-left: 2px;
+      font-size: 12px;
+    }
+  }
 </style>

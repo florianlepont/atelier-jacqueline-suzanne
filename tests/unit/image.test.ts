@@ -35,7 +35,13 @@ vi.mock('@sanity/image-url', () => {
 
 vi.mock('../../src/lib/sanity', () => ({sanityClient: {}}))
 
-import {blurPlaceholderUrl, fullSizeUrl, thumbnailUrl} from '../../src/lib/image'
+import {
+  blurPlaceholderUrl,
+  fullSizeUrl,
+  responsiveImageSrcSet,
+  responsiveThumbnailSrcSet,
+  thumbnailUrl,
+} from '../../src/lib/image'
 
 const image = {asset: {_ref: 'image-test-100x100-jpg'}}
 
@@ -54,5 +60,18 @@ describe('Sanity image URL helpers', () => {
 
   it('builds the tiny blurred placeholder rendition', () => {
     expect(blurPlaceholderUrl(image as never)).toContain('width:24|blur:50|auto:format')
+  })
+
+  it('builds sorted, deduplicated responsive full-size candidates', () => {
+    const srcset = responsiveImageSrcSet(image as never, [1200, 480, 1200])
+    expect(srcset).toContain(' 480w')
+    expect(srcset).toContain(' 1200w')
+    expect(srcset.match(/ 1200w/g)).toHaveLength(1)
+  })
+
+  it('builds responsive square thumbnail candidates', () => {
+    const srcset = responsiveThumbnailSrcSet(image as never, [320, 600])
+    expect(srcset).toContain('width:320|height:320|fit:crop|auto:format')
+    expect(srcset).toContain(' 600w')
   })
 })

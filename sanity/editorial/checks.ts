@@ -92,6 +92,18 @@ export function getDocumentChecks(schemaType: string, value: EditorialDocument):
       {label: 'Biographie française et anglaise', complete: localized(value.biography)},
       {label: 'Pratique française et anglaise', complete: localized(value.practice)},
       {label: 'Médium français et anglais', complete: localized(value.medium)},
+      {
+        label: "Photo portrait et descriptions française et anglaise",
+        complete: Boolean(record(value.image).asset) && localized(record(value.image).alt),
+        recommended: true,
+      },
+      {
+        label: "Vue d'exposition et descriptions française et anglaise",
+        complete:
+          Boolean(record(value.exhibitionImage).asset) &&
+          localized(record(value.exhibitionImage).alt),
+        recommended: true,
+      },
       ...seoChecks(value.seo),
     ]
   }
