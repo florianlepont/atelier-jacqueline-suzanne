@@ -22,6 +22,8 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 
 **Note:** Prior milestones — v1.0 (Phases 1–4.3), v1.1 Homepage Refinements (Phase 6, shipped 2026-07-13), and v1.2 Homepage Polish (Phases 7–10, shipped 2026-07-20) — are functionally complete. Phase 5 (DNS cutover to atelierjacquelinesuzanne.fr) remains open and deliberately deferred, by explicit user choice; it is not part of this milestone.
 
+**Status (2026-07-23): all 4 planned phases (11-14) are complete** — this milestone's code/content work is done and verified. **Not yet live**, however: the entire milestone (112 commits) has been built on branch `claude/gsd-new-milestone-editions-ubjvt0` and has never been merged into `main`, so the public GitHub Pages staging URL does not yet serve the Éditions feature. Merging to `main` (which triggers the GitHub Actions deploy) is the remaining cutover step before this milestone is actually visible to a real visitor.
+
 ## Requirements
 
 ### Validated
@@ -56,6 +58,9 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 **v1.3 (Nav Integration — Phase 13, shipped 2026-07-23):**
 - [x] Visitor can discover a dedicated "Éditions" section from the main site navigation, on every page, in both languages, with the nav label editable by Romane via Sanity (EDN-01) — Phase 13
 
+**v1.3 (Verification & UAT — Phase 14, shipped 2026-07-23):**
+- [x] Romane (non-technical) can independently add/edit éditions via Sanity without touching code (CMS-04) — genuinely confirmed by Romane's own hands-on create/edit/publish/drag-reorder pass in the hosted Studio (closing the drag-reorder gap `11-UAT.md` waived), not just Phase 11's automated implementation — Phase 14
+
 ### Active
 
 **v1 (replace current site):**
@@ -65,9 +70,6 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 - [ ] Site is available in French and English with a language switcher
 - [ ] Romane (non-technical) can independently update galleries/photos without touching code
 - [ ] Site is reachable at the existing domain, atelierjacquelinesuzanne.fr
-
-**v1.3 (Éditions, this milestone):**
-- [ ] Romane (non-technical) can independently add/edit éditions via Sanity without touching code
 
 **v1.x (add shop, deferred until v1 is live — see REQUIREMENTS.md v2 section):**
 - [ ] Visitor can view a list of upcoming and past exhibitions (dates, location, description)
@@ -145,4 +147,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-23 — Phase 13 (Nav Integration) complete: EDN-01 fully satisfied — "Éditions" nav entry live on every page in both languages, Sanity-editable, and fits without wrapping across the full 320-767px mobile range (gap-closure plan 13-02 fixed a 360-390px header-wrap regression found during Phase 13 verification); v1.2 (Homepage Polish) fully delivered aside from the still-deferred Phase 5 domain cutover*
+*Last updated: 2026-07-23 — Phase 14 (Verification & UAT) complete: all 4 v1.3 Éditions phases (11-14) now shipped on branch. CMS-04/SC#3 genuinely closed via Romane's own hands-on Studio pass (create/edit/publish/drag-reorder a second édition, "Silos"), independently cross-checked against the live Sanity dataset. Code review caught and fixed a Critical bug (CR-01: hardcoded root-relative Éditions links that would 404 under the GitHub Pages base path). Remaining before this milestone is actually live: merge branch to `main` (deploy is main-only); v1.2 (Homepage Polish) fully delivered aside from the still-deferred Phase 5 domain cutover*
