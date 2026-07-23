@@ -417,7 +417,11 @@ Plans:
   4. The nav's "Éditions" label is editable by Romane via Sanity (`siteSettings.navLabels`), not hardcoded, consistent with how the other nav labels already work.
   5. The header nav — now carrying a 4th link — still fits and functions correctly on mobile viewports (<768px), in both the `solid` and `transparent` header variants.
 
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+
+- [ ] 13-01-PLAN.md — Éditions nav link end-to-end: bilingual `navLabels.editions` Sanity field + `resolveSiteCopy` `editionsLabel` + both `<SiteHeader>` call sites (Éditions first, D-01) + re-measured 4-link mobile fit (D-02/D-03) (Wave 1)
+
 **UI hint**: yes
 
 ### Phase 14: Verification & UAT
@@ -456,7 +460,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 10. Unified Header & Simplified Language Switcher | 4/4 | Complete    | 2026-07-17 |
 | 11. Schema & Content Model | 2/2 | Complete    | 2026-07-22 |
 | 12. Data-Fetch Layer & Routes | 3/3 | Complete    | 2026-07-22 |
-| 13. Nav Integration | 0/TBD | Not started | - |
+| 13. Nav Integration | 0/1 | Not started | - |
 | 14. Verification & UAT | 0/TBD | Not started | - |
 
 ## Milestone Scope Note
