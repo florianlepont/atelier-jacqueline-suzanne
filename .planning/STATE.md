@@ -5,8 +5,8 @@ milestone_name: Éditions
 current_phase: 13
 current_phase_name: Nav Integration
 status: executing
-stopped_at: Phase 13 context gathered
-last_updated: "2026-07-23T05:52:56.482Z"
+stopped_at: Phase 13 UI-SPEC approved
+last_updated: "2026-07-23T06:22:22.401Z"
 last_activity: 2026-07-22
 last_activity_desc: Phase 12 complete, transitioned to Phase 13
 progress:
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-07-22)
 
 Phase: 13 — Nav Integration
 Plan: Not started
-Status: Executing Phase 12
+Status: Ready to execute
 Last activity: 2026-07-22 — Phase 12 complete, transitioned to Phase 13
 
 Progress: [███████░░░░░░░] 10/14 phases complete (71%)
@@ -181,8 +181,8 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-23T05:52:56.473Z
-Stopped at: Phase 13 context gathered
-Resume file: .planning/phases/13-nav-integration/13-CONTEXT.md
+Last session: 2026-07-23T06:01:01.705Z
+Stopped at: Phase 13 UI-SPEC approved
+Resume file: .planning/phases/13-nav-integration/13-UI-SPEC.md
 
 **Next up:** `/gsd-plan-phase 11` — Schema & Content Model (CMS-04, EDN-05).
