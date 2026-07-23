@@ -6,10 +6,19 @@ import { getRelativeLocaleUrl } from 'astro:i18n';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import EmptyState from '../../../components/EmptyState.astro';
 import { getEditions } from '../../../lib/sanity';
+import type { Edition } from '../../../lib/sanity';
 import { thumbnailUrl, responsiveThumbnailSrcSet } from '../../../lib/image';
 
 const locale = 'en' as const;
 const editions = await getEditions();
+
+// Chunk éditions into groups of 3 IN EXISTING orderRank ORDER — never
+// re-sort/re-rank/re-fetch. Hero = first item of each group; the rest are
+// smalls. Side alternates left/right by group index (group 0 = left).
+const editionGroups: Edition[][] = [];
+for (let i = 0; i < editions.length; i += 3) {
+  editionGroups.push(editions.slice(i, i + 3));
+}
 
 const seoTitle = 'Editions — Atelier Jacqueline Suzanne';
 const seoDescription =
@@ -28,34 +37,39 @@ const seoDescription =
         <EmptyState
           heading="Editions coming soon"
           body="New editions will appear here shortly. Check back soon."
+          variant="bold"
         />
       ) : (
-        editions.map((edition, i) => {
-          const alt = edition.leadPhoto.alt?.[locale] ?? '';
-          return (
-            <a
-              class="editions-list__row"
-              class:list={{ 'editions-list__row--reverse': i % 2 === 1 }}
-              href={getRelativeLocaleUrl(locale, `editions/${edition.slug}`)}
-            >
-              <div class="editions-list__photo">
-                <img
-                  src={thumbnailUrl(edition.leadPhoto, 600)}
-                  srcset={responsiveThumbnailSrcSet(edition.leadPhoto)}
-                  sizes="(max-width: 767px) 320px, 320px"
-                  alt={alt}
-                  loading="lazy"
-                  decoding="async"
-                />
-              </div>
-              <div class="editions-list__text">
-                <span class="editions-list__title">{edition.title}</span>
-                <p class="editions-list__statement">{edition.statement?.[locale] ?? ''}</p>
-              </div>
-              <span class="sr-only"> — View edition</span>
-            </a>
-          );
-        })
+        <div class="editions-grid">
+          {editionGroups.map((group, g) => (
+            <div class="editions-grid__group" data-size={group.length} data-side={g % 2 === 0 ? 'left' : 'right'}>
+              {group.map((edition, idx) => {
+                const alt = edition.leadPhoto.alt?.[locale] ?? '';
+                return (
+                  <a
+                    class:list={['tile', idx === 0 ? 'tile--hero' : 'tile--small']}
+                    href={getRelativeLocaleUrl(locale, `editions/${edition.slug}`)}
+                  >
+                    <img
+                      src={thumbnailUrl(edition.leadPhoto, 600)}
+                      srcset={responsiveThumbnailSrcSet(edition.leadPhoto)}
+                      sizes={idx === 0 ? '(max-width: 800px) 100vw, 58vw' : '(max-width: 800px) 100vw, 40vw'}
+                      alt={alt}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <div class="tile__scrim" aria-hidden="true" />
+                    <div class="tile__body">
+                      <span class="tile__title">{edition.title}</span>
+                      <p class="tile__statement">{edition.statement?.[locale] ?? ''}</p>
+                    </div>
+                    <span class="sr-only"> — View edition</span>
+                  </a>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       )
     }
   </article>
@@ -92,101 +106,174 @@ const seoDescription =
     letter-spacing: -0.04em;
   }
 
-  .editions-list__row {
+  .editions-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .editions-grid__group {
     display: grid;
-    grid-template-columns: minmax(200px, 320px) minmax(0, 1fr);
-    column-gap: var(--space-xl);
-    align-items: start;
-    border-top: var(--border-hairline) solid var(--color-ink);
-    padding-top: var(--space-lg);
-    margin-top: var(--space-2xl);
+    grid-template-columns: repeat(12, 1fr);
+    grid-auto-rows: 16vw;
+    gap: var(--space-md);
+  }
+
+  .tile {
+    position: relative;
+    overflow: hidden;
+    display: block;
+    color: var(--gray-0);
     text-decoration: none;
-    color: var(--color-ink);
+    border: var(--border-hairline) solid var(--color-ink);
+    background: var(--color-ink);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
   }
 
-  .editions-list__row:first-of-type {
-    margin-top: 0;
+  .tile:hover {
+    transform: translate(-4px, -4px);
+    box-shadow: 6px 6px 0 var(--color-ink);
   }
 
-  .editions-list__row:hover,
-  .editions-list__row:focus-visible {
+  .tile:focus-visible {
+    transform: translate(-4px, -4px);
+    box-shadow: 6px 6px 0 var(--color-ink);
     outline: 2px solid var(--color-accent);
     outline-offset: var(--focus-ring-offset);
   }
 
-  .editions-list__row:hover .editions-list__photo img,
-  .editions-list__row:focus-visible .editions-list__photo img {
-    transform: scale(1.01);
-  }
-
-  .editions-list__photo {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .editions-list__text {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
-  .editions-list__row--reverse .editions-list__photo {
-    grid-column: 2;
-  }
-
-  .editions-list__row--reverse .editions-list__text {
-    grid-column: 1;
-  }
-
-  .editions-list__row--reverse {
-    grid-template-columns: minmax(0, 1fr) minmax(200px, 320px);
-  }
-
-  .editions-list__photo img {
-    display: block;
+  .tile img {
+    position: absolute;
+    inset: 0;
     width: 100%;
-    aspect-ratio: 3 / 4;
+    height: 100%;
     object-fit: cover;
-    transition: transform 0.2s ease;
+    transition: transform 0.4s ease;
   }
 
-  .editions-list__title {
+  .tile:hover img {
+    transform: scale(1.04);
+  }
+
+  .tile__scrim {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 60%;
+    background: linear-gradient(to top, rgba(26, 26, 26, 0.9), rgba(26, 26, 26, 0));
+  }
+
+  .tile__body {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: var(--space-lg);
+  }
+
+  .tile__title {
     display: block;
-    font-size: var(--editorial-page-section-title-size);
-    font-weight: var(--weight-semibold);
     font-family: var(--font-display);
-    line-height: var(--editorial-page-section-title-leading);
-    margin: 0 0 var(--space-md);
+    font-weight: var(--weight-semibold);
+    line-height: 0.95;
+    margin-bottom: var(--space-xs);
   }
 
-  .editions-list__statement {
-    max-width: 640px;
+  .tile--hero .tile__title {
+    font-size: clamp(28px, 4.5vw, 48px);
+  }
+
+  .tile--small .tile__title {
+    font-size: clamp(20px, 2.6vw, 28px);
+  }
+
+  .tile__statement {
     font-size: var(--text-body-size);
-    font-weight: var(--weight-regular);
-    line-height: 1.5;
+    line-height: 1.4;
+    max-width: 40ch;
+    opacity: 0.9;
     margin: 0;
   }
 
-  @media (max-width: 767px) {
-    .editions-list__row,
-    .editions-list__row--reverse {
+  .tile--small .tile__statement {
+    display: none;
+  }
+
+  .editions-grid__group[data-size='3'][data-side='left'] .tile:nth-child(1) {
+    grid-column: 1 / 8;
+    grid-row: 1 / 3;
+  }
+
+  .editions-grid__group[data-size='3'][data-side='left'] .tile:nth-child(2) {
+    grid-column: 8 / 13;
+    grid-row: 1 / 2;
+  }
+
+  .editions-grid__group[data-size='3'][data-side='left'] .tile:nth-child(3) {
+    grid-column: 8 / 13;
+    grid-row: 2 / 3;
+  }
+
+  .editions-grid__group[data-size='3'][data-side='right'] .tile:nth-child(1) {
+    grid-column: 6 / 13;
+    grid-row: 1 / 3;
+  }
+
+  .editions-grid__group[data-size='3'][data-side='right'] .tile:nth-child(2) {
+    grid-column: 1 / 6;
+    grid-row: 1 / 2;
+  }
+
+  .editions-grid__group[data-size='3'][data-side='right'] .tile:nth-child(3) {
+    grid-column: 1 / 6;
+    grid-row: 2 / 3;
+  }
+
+  .editions-grid__group[data-size='2'][data-side='left'] .tile:nth-child(1) {
+    grid-column: 1 / 8;
+    grid-row: 1 / 3;
+  }
+
+  .editions-grid__group[data-size='2'][data-side='left'] .tile:nth-child(2) {
+    grid-column: 8 / 13;
+    grid-row: 1 / 2;
+  }
+
+  .editions-grid__group[data-size='2'][data-side='right'] .tile:nth-child(1) {
+    grid-column: 6 / 13;
+    grid-row: 1 / 3;
+  }
+
+  .editions-grid__group[data-size='2'][data-side='right'] .tile:nth-child(2) {
+    grid-column: 1 / 6;
+    grid-row: 1 / 2;
+  }
+
+  .editions-grid__group[data-size='1'] {
+    grid-auto-rows: 11vw;
+  }
+
+  .editions-grid__group[data-size='1'] .tile:nth-child(1) {
+    grid-column: 1 / 13;
+    grid-row: 1 / 2;
+  }
+
+  @media (max-width: 800px) {
+    .editions-grid__group,
+    .editions-grid__group[data-size='1'] {
       grid-template-columns: 1fr;
-      gap: var(--space-md);
+      grid-auto-rows: auto;
     }
 
-    .editions-list__row .editions-list__photo,
-    .editions-list__row--reverse .editions-list__photo {
-      grid-column: 1;
-      grid-row: auto;
+    .editions-grid__group .tile {
+      grid-column: 1 !important;
+      grid-row: auto !important;
+      aspect-ratio: 3 / 4;
     }
 
-    .editions-list__row .editions-list__text,
-    .editions-list__row--reverse .editions-list__text {
-      grid-column: 1;
-      grid-row: auto;
-    }
-
-    .editions-list__photo img {
-      max-width: 320px;
+    .tile--hero .tile__title {
+      font-size: clamp(28px, 9vw, 40px);
     }
   }
 </style>
