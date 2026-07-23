@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-07-22)
 Phase: Milestone v1.3 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-07-23 — Milestone v1.3 completed and archived
+Last activity: 2026-07-23 — Completed quick task 260723-qiz: improve ui of the editions page, notamment la coherence du header avec le reste
 
 ## Performance Metrics
 
@@ -168,6 +168,7 @@ None currently open. Both prior research-carryover items were resolved during Ph
 | 260720-rebuild-dashboard-optical-grid | Rebuild the regressed dashboard header, priority rows, activity rows and KPI rhythm around shared optical text/icon axes, with two buttons and a separate compact site status | 2026-07-20 | 69b6f7d | | [260720-rebuild-dashboard-optical-grid](./quick/260720-rebuild-dashboard-optical-grid/) |
 | 260722-afi | Corriger le contraste visuel entre l'en-tête et les items du tableau de bord éditorial (section Informations manquantes) — recessed header band, hairline divider, uppercase section-label title, human-verified via mockup replicating the exact CSS in light + dark mode | 2026-07-22 | 9762000 | Verified | [260722-afi-corriger-le-contraste-visuel-entre-l-en-](./quick/260722-afi-corriger-le-contraste-visuel-entre-l-en-/) |
 | 260722-tcv | Close the complete test-coverage audit: blocking thresholds, Sanity pure-logic coverage/build gate, contact failure states, iPhone/WebKit smoke, deterministic CMS/static-route cases, 404/base-path artifact verification, axe accessibility checks, and portable visual baselines | 2026-07-22 | — | Verified | [260722-tcv-close-test-coverage-audit-gaps](./quick/260722-tcv-close-test-coverage-audit-gaps/) |
+| 260723-qiz | Fix Éditions overview page header coherence: dropped the mismatched `headerVariant="transparent"` override (built for full-bleed hero pages) so `/editions/` and `/en/editions/` fall back to the shared `solid` header, matching About/Contact; added a Playwright regression guard | 2026-07-23 | 1ff46a2, d2c7d6f | | [260723-qiz-improve-ui-of-the-editions-page-notammen](./quick/260723-qiz-improve-ui-of-the-editions-page-notammen/) |
 
 ## Deferred Items
 
