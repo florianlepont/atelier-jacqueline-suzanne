@@ -5,8 +5,8 @@ milestone_name: Éditions
 current_phase: 14
 current_phase_name: Verification & UAT
 status: executing
-stopped_at: Phase 13 verification found gaps (4/5) — mobile header wrap regression at 360-374px
-last_updated: "2026-07-23T11:10:15.724Z"
+stopped_at: Phase 14 context gathered
+last_updated: "2026-07-23T11:21:55.529Z"
 last_activity: 2026-07-23
 last_activity_desc: Phase 13 complete, transitioned to Phase 14
 progress:
@@ -182,8 +182,8 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-23T09:05:00.000Z
-Stopped at: Phase 13 verification found gaps (4/5) — mobile header wrap regression at 360-374px
-Resume file: .planning/phases/13-nav-integration/13-VERIFICATION.md
+Last session: 2026-07-23T11:21:55.523Z
+Stopped at: Phase 14 context gathered
+Resume file: .planning/phases/14-verification-uat/14-CONTEXT.md
 
 **Next up:** `/gsd-plan-phase 13 --gaps` — plan the mobile-wrap fix, then re-run `/gsd-execute-phase 13 --gaps-only`.
