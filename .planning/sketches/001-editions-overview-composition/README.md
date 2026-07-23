@@ -2,7 +2,7 @@
 sketch: 001
 name: editions-overview-composition
 question: "What page composition feels bold & graphic for the Éditions overview, while staying within the existing AJS brand (Unbounded 900, monochrome + single pink accent, sharp corners)?"
-winner: null
+winner: "B"
 tags: [layout, editions, typography, motion]
 ---
 
@@ -27,6 +27,10 @@ Requires network access (Google Fonts CDN for Unbounded preview + live Sanity CD
 - **A: Zigzag Amplified** — Keeps the current row-list structure (closest to today, lowest implementation risk) but pushes édition titles to huge, bleeding-off-the-edge Unbounded display type that overlaps the photo, plus a hover state that inverts the title to the pink accent and nudges the photo scale. Alternates left/right like the current page.
 - **B: Poster Grid** — Abandons the single-column list for an asymmetric bento-style grid of full-bleed photo tiles with title/statement overlaid at the bottom (echoes the homepage's gallery grid-tile treatment). Hover lifts the tile with a hard offset border (brutalist, no soft shadow) rather than a normal drop shadow, matching the site's sharp-corner aesthetic. Scales to more éditions by giving each tile a size class (large/medium/small) rather than a uniform grid.
 - **C: Full-bleed Story Scroll** — Each édition gets its own full-viewport section (scroll-snap), giant title, statement, and a full-bleed photo split-screen — echoes the homepage carousel's progress-dot pattern (now reused here as scroll-position dots, clickable to jump between éditions).
+
+## Winner: B — Poster Grid
+
+Chosen with one refinement: **keep the page-title header block (eyebrow + "Éditions" h1) exactly as it is on the live site today** — same size (`clamp(40px, 4vw, 56px)`), same weight (semibold, not the black/900 used in the poster tiles below it), same spacing. Only the list of éditions below the header is redesigned into the asymmetric poster grid. The final sketch (variant B, now the default tab) reflects this — the amplified header size from the first pass was reverted.
 
 ## What to Look For
 

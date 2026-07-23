@@ -12,4 +12,4 @@ None named — user is open to original direction within the brand constraints a
 
 | # | Name | Design Question | Winner | Tags |
 |---|------|------------------|--------|------|
-| 001 | editions-overview-composition | What page composition feels "bold & graphic" for the Éditions overview? | — | [layout, editions, typography] |
+| 001 | editions-overview-composition | What page composition feels "bold & graphic" for the Éditions overview? | B — Poster Grid (page-title header kept unchanged from production) | [layout, editions, typography] |
