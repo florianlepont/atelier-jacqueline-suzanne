@@ -58,6 +58,28 @@ test.describe('Shared SiteHeader — mobile fit at 393px (HOME-10, Pitfall 1)', 
   }
 });
 
+// Phase 13 (EDN-01, D-02/D-05) — re-measured with the 4th (Éditions) nav
+// link present: the narrowest supported phone width (320px), for one
+// solid-variant page (/about/) and two transparent-variant pages
+// (homepage carousel and gallery-detail). The existing @media
+// (max-width: 359px) trims (padding/gap/font-size) already applied to the
+// other three nav links proved sufficient at 320px — no D-03 abbreviation
+// was needed (see 13-01-SUMMARY.md).
+test.describe('Shared SiteHeader — mobile fit at 320px with 4 nav links (EDN-01, D-02)', () => {
+  for (const path of ['/about/', '/', '/galleries/silos/']) {
+    test(`${path}: no horizontal page overflow at the narrowest supported (320px) viewport`, async ({ page }) => {
+      await page.setViewportSize({ width: 320, height: 700 });
+      await page.goto(path);
+
+      const overflow = await page.evaluate(() => ({
+        scrollWidth: document.documentElement.scrollWidth,
+        innerWidth: window.innerWidth,
+      }));
+      expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.innerWidth);
+    });
+  }
+});
+
 test.describe('Shared SiteHeader — mode-toggle scoping (HOME-10, D-04)', () => {
   test('the mode-toggle does not render on /about/ or /contact/', async ({ page }) => {
     for (const path of ['/about/', '/contact/']) {
