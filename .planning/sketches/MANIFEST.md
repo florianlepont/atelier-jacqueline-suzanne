@@ -13,5 +13,5 @@ None named — user is open to original direction within the brand constraints a
 | # | Name | Design Question | Winner | Tags |
 |---|------|------------------|--------|------|
 | 001 | editions-overview-composition | What page composition feels "bold & graphic" for the Éditions overview? | B — Poster Grid (page-title header kept unchanged from production) | [layout, editions, typography] |
-| 002 | poster-grid-scaling | Does the asymmetric bento pattern from 001's winner still read as intentional at 3-5 items, and what does the empty state look like in this visual language? | — | [layout, editions, consistency, states] |
+| 002 | poster-grid-scaling | Does the asymmetric bento pattern from 001's winner still read as intentional at 3-5 items, and what does the empty state look like in this visual language? | Approved as-is — repeating hero+2-small group pattern, alternating sides, empty state | [layout, editions, consistency, states] |
 | 003 | edition-detail-coherence | Does the édition detail page need a bold-graphic treatment to match the new overview, so list→detail doesn't feel like a style downgrade? | Synthesis — A (unchanged) + B's pink-underlined format-details line only | [layout, editions, detail-page, frontier] |

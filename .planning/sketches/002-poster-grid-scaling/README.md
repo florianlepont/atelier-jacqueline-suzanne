@@ -2,7 +2,7 @@
 sketch: 002
 name: poster-grid-scaling
 question: "Does the asymmetric bento pattern from sketch 001's winner (Poster Grid) still read as intentional at 3-5 items, and what does the empty state look like in this visual language?"
-winner: null
+winner: "Approved as-is — repeating hero+2-small group pattern, alternating sides, empty state"
 tags: [layout, editions, consistency, states]
 ---
 
@@ -29,6 +29,10 @@ Items are grouped in 3s: 1 hero tile (spans 2 grid rows) + up to 2 stacked "smal
 - **2 items (trailing remainder):** hero + 1 small on top only, deliberately leaving quiet space below it — this is exactly what sketch 001 showed with today's 2 real éditions, preserved here as a valid state, not a bug.
 - **1 item (trailing remainder):** a single full-width banner tile, no forced asymmetry.
 - **0 items:** a dashed-border empty state in the same bold typographic voice as the tiles ("Éditions à venir"), reusing the real production copy.
+
+## Winner: Approved as-is
+
+The repeating group pattern (1 hero + up to 2 stacked smalls, alternating hero side per group of 3, graceful 1-2-item trailing groups, bold-typographic empty state) holds up across 0-5 items with no changes requested.
 
 ## What to Look For
 
