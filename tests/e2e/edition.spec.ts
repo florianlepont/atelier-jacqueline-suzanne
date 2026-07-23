@@ -14,8 +14,46 @@ import { test, expect } from '@playwright/test';
 // never hardcode a slug, never use the main nav (nav wiring is Phase 13).
 
 // <!-- planner-discipline-allow: prix price acheter buy panier cart stock disponib availab épuisé -->
-const FORBIDDEN_COMMERCE_TOKENS =
-  /(€|\$|prix|price|acheter|\bbuy\b|panier|cart|stock|disponib|availab|sold out|épuisé)/i;
+// Mirrors tests/scripts/verify-static-artifact.mjs's whole-word token matching:
+// a naive substring/regex match on "cart"/"stock" false-positives on real
+// French words that contain them (e.g. "cartographique", "stockage", "écart")
+// — exactly the kind of thing only real editorial content (not the seeded
+// fixture) surfaces. disponib/availab are deliberate prefix stems (also
+// catch "disponibilité"/"availability"); every other token is whole-word only.
+const wholeWordCommerceTokens = [
+  'prix',
+  'price',
+  'acheter',
+  'buy',
+  'panier',
+  'cart',
+  'stock',
+  'sold out',
+  'épuisé',
+];
+const prefixCommerceTokens = ['disponib', 'availab'];
+const symbolCommerceTokens = ['€', '$'];
+const LETTER = /[a-zà-öø-ÿ]/i;
+
+function containsWholeWord(haystack: string, needle: string): boolean {
+  let index = haystack.indexOf(needle);
+  while (index !== -1) {
+    const before = haystack[index - 1];
+    const after = haystack[index + needle.length];
+    const beforeIsLetter = before !== undefined && LETTER.test(before);
+    const afterIsLetter = after !== undefined && LETTER.test(after);
+    if (!beforeIsLetter && !afterIsLetter) return true;
+    index = haystack.indexOf(needle, index + 1);
+  }
+  return false;
+}
+
+function containsForbiddenCommerceToken(text: string): boolean {
+  const lower = text.toLowerCase();
+  if (symbolCommerceTokens.some((token) => lower.includes(token))) return true;
+  if (prefixCommerceTokens.some((token) => lower.includes(token))) return true;
+  return wholeWordCommerceTokens.some((token) => containsWholeWord(lower, token));
+}
 
 test.describe('editions overview', () => {
   test('lists each published édition as a linked row with title, lead photo, and full statement (fr)', async ({
@@ -70,11 +108,11 @@ test.describe('editions overview', () => {
   test('shows no price, availability, or purchase affordance (EDN-06)', async ({ page }) => {
     await page.goto('/editions/');
     const frMainText = await page.locator('main').innerText();
-    expect(frMainText).not.toMatch(FORBIDDEN_COMMERCE_TOKENS);
+    expect(containsForbiddenCommerceToken(frMainText)).toBe(false);
 
     await page.goto('/en/editions/');
     const enMainText = await page.locator('main').innerText();
-    expect(enMainText).not.toMatch(FORBIDDEN_COMMERCE_TOKENS);
+    expect(containsForbiddenCommerceToken(enMainText)).toBe(false);
   });
 });
 
@@ -180,10 +218,10 @@ test.describe('no commerce affordances (detail)', () => {
 
     await page.goto(rowHref!);
     const frMainText = await page.locator('main').innerText();
-    expect(frMainText).not.toMatch(FORBIDDEN_COMMERCE_TOKENS);
+    expect(containsForbiddenCommerceToken(frMainText)).toBe(false);
 
     await page.goto(`/en/editions/${slug}/`);
     const enMainText = await page.locator('main').innerText();
-    expect(enMainText).not.toMatch(FORBIDDEN_COMMERCE_TOKENS);
+    expect(containsForbiddenCommerceToken(enMainText)).toBe(false);
   });
 });
