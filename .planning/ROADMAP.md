@@ -438,7 +438,7 @@ Plans:
   3. Romane has completed a real end-to-end content-editing pass in Sanity Studio (create/edit/publish/drag-reorder an édition) and confirmed it works the same way galleries already do.
   4. Every "Looks Done But Isn't" risk flagged in research (missing locale route, missing sitemap entry, missing nav call site) has been explicitly checked off, not just assumed from a single happy-path pass.
 
-**Plans**: 2/4 plans executed
+**Plans**: 3/4 plans executed
 Plans:
 **Wave 1**
 
@@ -447,7 +447,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 14-03-PLAN.md — Closure audit (D-01): re-run direct checks and map PITFALLS.md's 7 "Looks Done But Isn't" items to evidence (SC #1/#2/#4) + re-verify REQUIREMENTS.md already Complete (Wave 2)
+- [x] 14-03-PLAN.md — Closure audit (D-01): re-run direct checks and map PITFALLS.md's 7 "Looks Done But Isn't" items to evidence (SC #1/#2/#4) + re-verify REQUIREMENTS.md already Complete (Wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -475,7 +475,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 11. Schema & Content Model | 2/2 | Complete    | 2026-07-22 |
 | 12. Data-Fetch Layer & Routes | 3/3 | Complete    | 2026-07-22 |
 | 13. Nav Integration | 2/2 | Complete    | 2026-07-23 |
-| 14. Verification & UAT | 2/4 | In Progress|  |
+| 14. Verification & UAT | 3/4 | In Progress|  |
 
 ## Milestone Scope Note
 
