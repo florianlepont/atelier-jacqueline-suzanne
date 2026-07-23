@@ -417,10 +417,11 @@ Plans:
   4. The nav's "Éditions" label is editable by Romane via Sanity (`siteSettings.navLabels`), not hardcoded, consistent with how the other nav labels already work.
   5. The header nav — now carrying a 4th link — still fits and functions correctly on mobile viewports (<768px), in both the `solid` and `transparent` header variants.
 
-**Plans**: 1/1 plans complete
+**Plans**: 1/2 plans complete
 Plans:
 
 - [x] 13-01-PLAN.md — Éditions nav link end-to-end: bilingual `navLabels.editions` Sanity field + `resolveSiteCopy` `editionsLabel` + both `<SiteHeader>` call sites (Éditions first, D-01) + re-measured 4-link mobile fit (D-02/D-03) (Wave 1)
+- [ ] 13-02-PLAN.md — gap closure (SC #5 / Truth #5): fix the mobile header two-row wrap at 360-375px — `flex-wrap: nowrap` across `@media(max-width:767px)` + compensating trims raised to `@media(max-width:400px)`, a same-row regression e2e sampling inside the band, and a live re-check in both variants (Wave 1)
 
 **UI hint**: yes
 
