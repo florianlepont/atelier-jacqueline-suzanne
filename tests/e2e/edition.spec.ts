@@ -206,6 +206,35 @@ test.describe('editions lightbox', () => {
   });
 });
 
+test.describe('editions overview layout', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test('non-reversed and reversed rows share one grid row (photo/text top-aligned)', async ({
+    page,
+  }) => {
+    for (const url of ['/editions/', '/en/editions/']) {
+      await page.goto(url);
+
+      const rows = page.locator('.editions-list__row');
+      const rowCount = await rows.count();
+      expect(rowCount).toBeGreaterThanOrEqual(2);
+
+      const reversedRow = rows.nth(1);
+      await expect(reversedRow).toHaveClass(/editions-list__row--reverse/);
+
+      for (const index of [0, 1]) {
+        const row = rows.nth(index);
+        const photoBox = await row.locator('.editions-list__photo').boundingBox();
+        const textBox = await row.locator('.editions-list__text').boundingBox();
+
+        expect(photoBox).not.toBeNull();
+        expect(textBox).not.toBeNull();
+        expect(Math.abs(photoBox!.y - textBox!.y)).toBeLessThan(4);
+      }
+    }
+  });
+});
+
 test.describe('no commerce affordances (detail)', () => {
   test('shows no price, availability, or purchase affordance (EDN-06)', async ({ page }) => {
     await page.goto('/editions/');
