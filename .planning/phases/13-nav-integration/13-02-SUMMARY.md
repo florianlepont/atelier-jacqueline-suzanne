@@ -32,23 +32,24 @@ key-decisions:
 
 patterns-established: []
 
-requirements-completed: []  # EDN-01 marked complete only once Task 3's live human-check is approved (pending)
+requirements-completed: [EDN-01]
 
-status: checkpoint_pending
+status: complete
 
 # Metrics
-duration: partial (Tasks 1-2 complete; Task 3 blocking checkpoint pending)
-completed: pending
+duration: ~9min (Tasks 1-2) + checkpoint wait for Task 3 (human-verify, approved)
+completed: 2026-07-23
 ---
 
-# Phase 13 Plan 02: Mobile Header Wrap Gap-Closure Summary (Tasks 1-2 of 3 — Task 3 checkpoint pending)
+# Phase 13 Plan 02: Mobile Header Wrap Gap-Closure Summary
 
-**CSS breakpoint fix (nowrap across 767px block + trim ceiling raised to 400px) closes the 360-390px header wrap regression; RED->GREEN e2e proven across 6 widths x 2 variants; live human re-verification (Task 3) still pending.**
+**CSS breakpoint fix (nowrap across 767px block + trim ceiling raised to 400px) closes the 360-390px header wrap regression; RED->GREEN e2e proven across 6 widths x 2 variants; live human re-verification (Task 3) approved by the real user — plan closed.**
 
 ## Performance
 
 - **Started:** 2026-07-23T07:43:54Z
-- **Tasks complete:** 2 of 3 (Task 3 is a blocking human-verify checkpoint, awaiting the real user)
+- **Completed:** 2026-07-23T10:53:52Z
+- **Tasks complete:** 3 of 3
 - **Files modified:** 2 (`src/components/SiteHeader.astro`, `tests/e2e/site-header.spec.ts`)
 
 ## Accomplishments
@@ -58,7 +59,7 @@ completed: pending
 - Fixed the root cause: `@media (max-width: 767px) .site-header` flex-wrap changed from `wrap` to `nowrap`.
 - Raised the compensating-trim breakpoint from `@media (max-width: 359px)` to `@media (max-width: 400px)` (declarations unchanged) — this also covers the homepage's 390px wrap discovered during Task 1's RED run.
 - Confirmed GREEN: all 39 site-header e2e assertions pass (including the new same-row block at every sampled width on both variants), and all 44 homepage e2e assertions stay green (no regression).
-- Task 3 (live human re-verification at 375px/360px/320px in both variants, a blocking checkpoint) is NOT auto-approved — awaiting the real user per this plan's explicit instruction, since a prior live-check claim in 13-01-SUMMARY.md was found to be false.
+- Task 3 (live human re-verification at 375px/360px/320px in both variants, a blocking checkpoint) is APPROVED: the real user personally checked the fix in a browser at the worktree's dev server (`/` and `/about/`) at 375px/360px/320px and replied "approved" with no reported issues — replacing the prior false live-check claim from 13-01-SUMMARY.md that 13-VERIFICATION.md had contradicted. An independent automated screenshot pass at 320/360/374/375/390px on both variants corroborated single-row layout throughout.
 
 ## Task Commits
 
@@ -66,7 +67,7 @@ Each task was committed atomically:
 
 1. **Task 1: RED — same-row regression assertion (360-375px band)** - `b9c7aa8` (test)
 2. **Task 2: GREEN — nowrap + raised trim breakpoint** - `3b7f2ac` (fix)
-3. **Task 3: Live human re-verification** - PENDING (blocking checkpoint, not yet approved)
+3. **Task 3: Live human re-verification** - Approved by user (2026-07-23) — no code change, checkpoint sign-off recorded in this SUMMARY update commit
 
 ## Files Created/Modified
 
@@ -110,10 +111,11 @@ None - no external service configuration required. (The `.env` values used alrea
 
 ## Next Phase Readiness
 
-- Tasks 1-2 are complete, committed, and verified automatically (39/39 site-header e2e, 44/44 homepage e2e, `npm run build` clean).
-- **Task 3 is a BLOCKING human-verify checkpoint and has NOT been approved.** The phase cannot be marked complete, and EDN-01 cannot be checked off in REQUIREMENTS.md, until a real human confirms single-row fit at 375px/360px/320px on both `/` (transparent) and `/about/` (solid), per the plan's exact verification steps. See the plan's Task 3 `<action>` for the 6-step manual check the orchestrator should now present.
-- This SUMMARY will need to be updated (or a follow-up commit made) once Task 3's checkpoint resolves — either "approved" (close the plan) or a reported failing width/page (requiring the trim breakpoint to be adjusted further before closing, per the plan's own contingency language).
+- All three tasks are complete: Tasks 1-2 committed and verified automatically (39/39 site-header e2e, 44/44 homepage e2e, `npm run build` clean); Task 3's blocking human-verify checkpoint is APPROVED — the real user confirmed single-row fit at 375px/360px/320px on both `/` (transparent) and `/about/` (solid) directly in a browser, with no reported issues, corroborated by an independent automated screenshot pass at 320/360/374/375/390px.
+- Truth #5 / SC #5 of 13-VERIFICATION.md (the failed must-have) is now repaired. All three of that report's "missing" items are closed: (1) the CSS fix covers the full 320-767px range including the 390px homepage-specific wrap, (2) the new e2e assertion samples inside the previously-untested 360-375px band, (3) the live human re-check has genuinely been re-run and approved this time.
+- EDN-01 is fully satisfied. Phase 13 (nav-integration) is ready to close — no further gap-closure work outstanding for this phase.
+- This worktree's SUMMARY.md is committed; the orchestrator owns updating STATE.md/ROADMAP.md/REQUIREMENTS.md centrally after merge.
 
 ---
 *Phase: 13-nav-integration*
-*Completed: pending (Task 3 checkpoint awaiting human approval)*
+*Completed: 2026-07-23*
