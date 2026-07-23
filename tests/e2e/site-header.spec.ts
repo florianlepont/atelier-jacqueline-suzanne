@@ -80,6 +80,56 @@ test.describe('Shared SiteHeader — mobile fit at 320px with 4 nav links (EDN-0
   }
 });
 
+// Phase 13 Plan 02 (EDN-01, D-02, SC #5, gap-closure) — regression coverage
+// for the 360px-375px two-row wrap 13-VERIFICATION.md reproduced: the two
+// "mobile fit" blocks above only assert horizontal
+// scrollWidth <= innerWidth, which structurally cannot detect a VERTICAL
+// wrap (the language switcher dropping below the nav onto a second row).
+// This block samples INSIDE the previously-untested 360-375px band and
+// asserts the first nav-link and the language switcher share the same row
+// (vertical centers within 5px tolerance), on both the solid (/about/) and
+// transparent (/) header variants. Expected RED against the unmodified CSS
+// at 360/374/375px (switcher center drops ~68px below the nav center per
+// 13-VERIFICATION.md's own measurement); expected to stay GREEN at
+// 320/390/767px.
+test.describe('Shared SiteHeader — single-row fit across the mobile range (EDN-01, D-02, SC #5, gap-closure)', () => {
+  const widths = [320, 360, 374, 375, 390, 767];
+  const pages: Array<{ path: string; label: string }> = [
+    { path: '/about/', label: 'solid' },
+    { path: '/', label: 'transparent' },
+  ];
+
+  for (const { path, label } of pages) {
+    for (const width of widths) {
+      test(`${path} (${label}) at ${width}px: nav and language switcher share one row, no horizontal overflow`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width, height: 800 });
+        await page.goto(path);
+
+        const measurements = await page.evaluate(() => {
+          const headerEl = document.querySelector('[data-role="site-header"]');
+          const nav = headerEl?.querySelector('.site-nav a.nav-link');
+          const switcher = headerEl?.querySelector('.language-switcher');
+          const navRect = nav?.getBoundingClientRect();
+          const switcherRect = switcher?.getBoundingClientRect();
+          return {
+            navCenterY: navRect ? navRect.top + navRect.height / 2 : null,
+            switcherCenterY: switcherRect ? switcherRect.top + switcherRect.height / 2 : null,
+            scrollWidth: document.documentElement.scrollWidth,
+            innerWidth: window.innerWidth,
+          };
+        });
+
+        expect(measurements.navCenterY).not.toBeNull();
+        expect(measurements.switcherCenterY).not.toBeNull();
+        expect(Math.abs(measurements.navCenterY! - measurements.switcherCenterY!)).toBeLessThanOrEqual(5);
+        expect(measurements.scrollWidth).toBeLessThanOrEqual(measurements.innerWidth);
+      });
+    }
+  }
+});
+
 test.describe('Shared SiteHeader — mode-toggle scoping (HOME-10, D-04)', () => {
   test('the mode-toggle does not render on /about/ or /contact/', async ({ page }) => {
     for (const path of ['/about/', '/contact/']) {
