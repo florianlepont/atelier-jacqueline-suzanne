@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Éditions
-current_phase: 14
-status: executing
+current_phase: 3
+status: Awaiting next milestone
 stopped_at: Phase 14 context gathered
-last_updated: "2026-07-23T16:19:10.740Z"
+last_updated: "2026-07-23T16:48:27.281Z"
 last_activity: 2026-07-23
-last_activity_desc: Phase 14 complete
+last_activity_desc: Milestone v1.3 completed and archived
 progress:
-  total_phases: 17
-  completed_phases: 15
-  total_plans: 45
-  completed_plans: 46
-  percent: 88
+  total_phases: 4
+  completed_phases: 4
+  total_plans: 11
+  completed_plans: 11
+  percent: 100
 current_phase_name: verification-uat
 ---
 
@@ -28,12 +28,10 @@ See: .planning/PROJECT.md (updated 2026-07-22)
 
 ## Current Position
 
-Phase: 14
-Plan: Not started
-Status: Executing Phase 14
-Last activity: 2026-07-23 — Phase 14 complete
-
-Progress: [███████░░░░░░░] 10/14 phases complete (71%)
+Phase: Milestone v1.3 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-07-23 — Milestone v1.3 completed and archived
 
 ## Performance Metrics
 
@@ -181,6 +179,22 @@ Items acknowledged and carried forward from previous milestone close:
 |----------|------|--------|-------------|
 | v1.x scope | Exhibitions, shop, checkout, shipping, commerce-specific legal (EXHB-*, SHOP-*, CHK-*, SHIP-*, LEGAL-02, LEGAL-04, CMS-02/03, I18N-02b/03), plus the Éditions cross-link differentiator (EDN-08) | Tracked in REQUIREMENTS.md v2 section, not yet roadmapped | Roadmap creation 2026-07-05 (v2 baseline); EDN-08 added 2026-07-22 |
 
+Items acknowledged and deferred at v1.3 milestone close on 2026-07-23 (`/gsd-complete-milestone` pre-close audit, 11 open items, user chose "Acknowledge all, proceed"):
+
+| Category | Item | Status |
+|----------|------|--------|
+| debug | knowledge-base | unknown (in substance resolved — this is the persistent resolved-sessions index file itself, not a live investigation; all 10 entries in it are mirrored as resolved in `.planning/debug/resolved/`) |
+| uat_gap | Phase 03: 03-HUMAN-UAT.md | partial (0 pending scenarios; Phase 03 shipped and marked complete in ROADMAP.md long before this audit tooling existed) |
+| uat_gap | Phase 14: 14-ROMANE-UAT.md | unknown (0 pending scenarios; Romane's pass was completed and explicitly approved — see 14-04-SUMMARY.md — this file is a checklist doc with no completion frontmatter field for the auditor to read) |
+| verification_gap | Phase 03: 03-VERIFICATION.md | human_needed (stale flag; Phase 03 shipped long ago) |
+| verification_gap | Phase 04.1: 04.1-VERIFICATION.md | human_needed (stale flag; Phase 04.1 shipped long ago) |
+| quick_task | 260722-compact-sanity-document-layout | missing (PLAN.md exists, no SUMMARY.md — planned, never executed; out of v1.3 Éditions scope) |
+| quick_task | 260722-improve-contact-page | missing (same as above) |
+| quick_task | 260722-normalize-sanity-form-spacing | missing (same as above) |
+| quick_task | 260722-rebalance-contact-typography | missing (same as above) |
+| quick_task | 260722-refine-contact-details | missing (same as above) |
+| quick_task | 260722-remove-redundant-sanity-fieldsets | missing (same as above) |
+
 ## Session Continuity
 
 Last session: 2026-07-23T11:21:55.523Z
@@ -188,3 +202,7 @@ Stopped at: Phase 14 context gathered
 Resume file: .planning/phases/14-verification-uat/14-CONTEXT.md
 
 **Next up:** `/gsd-plan-phase 13 --gaps` — plan the mobile-wrap fix, then re-run `/gsd-execute-phase 13 --gaps-only`.
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone

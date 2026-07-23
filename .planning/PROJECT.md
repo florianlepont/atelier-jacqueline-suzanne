@@ -8,7 +8,18 @@ A bilingual (French/English) website for Romane Lepont's photography and artisti
 
 Visitors can browse Romane's photographic work and buy a piece (print, original, book, or merch) through a real, working checkout — everything else supports that. **Delivered in two milestones**: v1 replaces the current site fast with portfolio/about/contact so the old Myportfolio site can be retired sooner; v1.x adds exhibitions, the shop, and checkout on top of that foundation.
 
-## Current Milestone: v1.3 Éditions
+## Current State
+
+**Shipped: v1.3 Éditions** (2026-07-23) — archived at `.planning/milestones/v1.3-ROADMAP.md` / `v1.3-REQUIREMENTS.md`; full accomplishments in `.planning/MILESTONES.md`.
+
+A dedicated, non-transactional Éditions showcase (bilingual overview + detail pages, Sanity-editable by Romane without touching code, zero commerce affordance) now sits alongside the existing Portfolio, discoverable from the main nav on every page. All 8 v1.3 requirements (EDN-01..07, CMS-04) shipped and were independently verified (`.planning/phases/14-verification-uat/14-VERIFICATION.md`).
+
+**Not yet live:** this milestone was built entirely on branch `claude/gsd-new-milestone-editions-ubjvt0` (108 commits) and has never been merged into `main` — GitHub Actions only deploys from `main`, so the public GitHub Pages staging URL does not yet serve Éditions. Merging to `main` is the outstanding cutover step.
+
+**Still open, separately tracked (not part of v1.3):** Phase 5 (Launch & Domain Cutover to atelierjacquelinesuzanne.fr) — part of the original v1.0 milestone, deliberately deferred behind v1.1/v1.2/v1.3 by explicit user choice, and not yet started.
+
+<details>
+<summary>Archived: v1.3 Éditions milestone brief (shipped 2026-07-23)</summary>
 
 **Goal:** Give Romane's paper éditions (zines/books) their own dedicated, self-serve showcase on the site — separate from the photography portfolio — laying groundwork for selling them later.
 
@@ -22,7 +33,11 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 
 **Note:** Prior milestones — v1.0 (Phases 1–4.3), v1.1 Homepage Refinements (Phase 6, shipped 2026-07-13), and v1.2 Homepage Polish (Phases 7–10, shipped 2026-07-20) — are functionally complete. Phase 5 (DNS cutover to atelierjacquelinesuzanne.fr) remains open and deliberately deferred, by explicit user choice; it is not part of this milestone.
 
-**Status (2026-07-23): all 4 planned phases (11-14) are complete** — this milestone's code/content work is done and verified. **Not yet live**, however: the entire milestone (112 commits) has been built on branch `claude/gsd-new-milestone-editions-ubjvt0` and has never been merged into `main`, so the public GitHub Pages staging URL does not yet serve the Éditions feature. Merging to `main` (which triggers the GitHub Actions deploy) is the remaining cutover step before this milestone is actually visible to a real visitor.
+</details>
+
+## Next Milestone Goals
+
+Not yet scoped — run `/gsd-new-milestone` to define it. Candidates already tracked in REQUIREMENTS.md's v2 section: Exhibitions/agenda (EXHB-01/02, CMS-02), Shop (SHOP-01..04), Checkout (CHK-01..05), Shipping (SHIP-01/02), commerce-specific Legal (LEGAL-02/04), and the Éditions↔Portfolio cross-link (EDN-08). Phase 5 (Launch & Domain Cutover) also remains open, separately tracked from these v1.x candidates.
 
 ## Requirements
 
@@ -51,7 +66,7 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 
 **v1.3 (Data-Fetch Layer & Routes — Phase 12, shipped 2026-07-22):**
 - [x] Visitor can browse an overview list of Romane's paper éditions (title + lead photo per édition) (EDN-02) — Phase 12
-- [x] Visitor can open a per-édition detail page showing its full photo shoot, a short description/statement, and format details (page count, print run, dimensions) (EDN-03, EDN-04) — Phase 12
+- [x] Visitor can open a per-édition detail page showing its full photo shoot, a short description/statement, and format details (page count, print run, dimensions) (EDN-03, EDN-04, EDN-05) — Phase 12 (format-detail schema fields added in Phase 11)
 - [x] Éditions overview/detail pages carry no pricing, availability, or purchase CTA (EDN-06, build-blocking guard) — Phase 12
 - [x] Éditions content is available in French and English (EDN-07) — Phase 12
 
@@ -147,4 +162,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-23 — Phase 14 (Verification & UAT) complete: all 4 v1.3 Éditions phases (11-14) now shipped on branch. CMS-04/SC#3 genuinely closed via Romane's own hands-on Studio pass (create/edit/publish/drag-reorder a second édition, "Silos"), independently cross-checked against the live Sanity dataset. Code review caught and fixed a Critical bug (CR-01: hardcoded root-relative Éditions links that would 404 under the GitHub Pages base path). Remaining before this milestone is actually live: merge branch to `main` (deploy is main-only); v1.2 (Homepage Polish) fully delivered aside from the still-deferred Phase 5 domain cutover*
+*Last updated: 2026-07-23 after v1.3 milestone completion (`/gsd-complete-milestone`) — v1.3 Éditions archived (`.planning/milestones/v1.3-ROADMAP.md`/`v1.3-REQUIREMENTS.md`, tag `v1.3`); "Current Milestone" replaced with "Current State"/"Next Milestone Goals"; fixed a Validated-section gap (EDN-05 wasn't explicitly tagged). Still outstanding, unaffected by this close: merging the milestone branch to `main` (deploy is main-only) and the still-deferred Phase 5 domain cutover.*
