@@ -438,12 +438,12 @@ Plans:
   3. Romane has completed a real end-to-end content-editing pass in Sanity Studio (create/edit/publish/drag-reorder an édition) and confirmed it works the same way galleries already do.
   4. Every "Looks Done But Isn't" risk flagged in research (missing locale route, missing sitemap entry, missing nav call site) has been explicitly checked off, not just assumed from a single happy-path pass.
 
-**Plans**: 4 plans
+**Plans**: 2/4 plans executed
 Plans:
 **Wave 1**
 
-- [ ] 14-01-PLAN.md — Null-safety hardening (D-02): WR-03-style `?.`/`?? ''` guards on both Éditions detail + overview pages (FR/EN) so a malformed édition can't crash the static build (Wave 1)
-- [ ] 14-02-PLAN.md — Commerce-language guard extension (D-05): extend `verify-static-artifact.mjs` to also scan `sanity/schemas/edition.ts` Studio copy, reusing the existing token set/helper (Wave 1)
+- [x] 14-01-PLAN.md — Null-safety hardening (D-02): WR-03-style `?.`/`?? ''` guards on both Éditions detail + overview pages (FR/EN) so a malformed édition can't crash the static build (Wave 1)
+- [x] 14-02-PLAN.md — Commerce-language guard extension (D-05): extend `verify-static-artifact.mjs` to also scan `sanity/schemas/edition.ts` Studio copy, reusing the existing token set/helper (Wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -475,7 +475,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 11. Schema & Content Model | 2/2 | Complete    | 2026-07-22 |
 | 12. Data-Fetch Layer & Routes | 3/3 | Complete    | 2026-07-22 |
 | 13. Nav Integration | 2/2 | Complete    | 2026-07-23 |
-| 14. Verification & UAT | 0/4 | Not started | - |
+| 14. Verification & UAT | 2/4 | In Progress|  |
 
 ## Milestone Scope Note
 

@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Éditions
 current_phase: 14
-current_phase_name: Verification & UAT
+current_phase_name: verification-uat
 status: executing
 stopped_at: Phase 14 context gathered
-last_updated: "2026-07-23T11:53:05.800Z"
+last_updated: "2026-07-23T11:57:03.513Z"
 last_activity: 2026-07-23
-last_activity_desc: Phase 13 complete, transitioned to Phase 14
+last_activity_desc: Phase 14 execution started
 progress:
   total_phases: 17
   completed_phases: 14
-  total_plans: 41
+  total_plans: 45
   completed_plans: 42
   percent: 82
 ---
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-22)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; v1.3 adds a non-transactional Éditions showcase; checkout still follows in the future v1.x shop milestone.)
-**Current focus:** Phase 13 — nav-integration
+**Current focus:** Phase 14 — verification-uat
 
 ## Current Position
 
-Phase: 14 — Verification & UAT
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-07-23 — Phase 13 complete, transitioned to Phase 14
+Phase: 14 (verification-uat) — EXECUTING
+Plan: 1 of 4
+Status: Executing Phase 14
+Last activity: 2026-07-23 — Phase 14 execution started
 
 Progress: [███████░░░░░░░] 10/14 phases complete (71%)
 
