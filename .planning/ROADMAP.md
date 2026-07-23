@@ -35,7 +35,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 11: Schema & Content Model** - A dedicated `edition` Sanity content type exists, seeded with real éditions content, ready for the site to fetch and render (completed 2026-07-22)
 - [x] **Phase 12: Data-Fetch Layer & Routes** - Visitors can browse an Éditions overview page and open per-édition detail pages, bilingually, with zero commerce affordances (completed 2026-07-22)
 - [x] **Phase 13: Nav Integration** - Visitors can discover Éditions from the main site nav on every page, without it appearing on the homepage's photography carousel/grid (gaps found 2026-07-23 — see 13-VERIFICATION.md) (completed 2026-07-23)
-- [ ] **Phase 14: Verification & UAT** - The Éditions feature closes with no omission-class gaps (locale, sitemap, nav call sites) and the "no commerce" boundary confirmed to hold
+- [x] **Phase 14: Verification & UAT** - The Éditions feature closes with no omission-class gaps (locale, sitemap, nav call sites) and the "no commerce" boundary confirmed to hold (completed 2026-07-23)
 
 ## Phase Details
 
@@ -438,7 +438,7 @@ Plans:
   3. Romane has completed a real end-to-end content-editing pass in Sanity Studio (create/edit/publish/drag-reorder an édition) and confirmed it works the same way galleries already do.
   4. Every "Looks Done But Isn't" risk flagged in research (missing locale route, missing sitemap entry, missing nav call site) has been explicitly checked off, not just assumed from a single happy-path pass.
 
-**Plans**: 3/4 plans executed
+**Plans**: 4/4 plans complete
 Plans:
 **Wave 1**
 
@@ -451,7 +451,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 14-04-PLAN.md — Romane Studio UAT (D-03/D-04): French create/edit/publish/drag-reorder checklist + blocking human-verify checkpoint closing SC #3 (Wave 3, non-autonomous)
+- [x] 14-04-PLAN.md — Romane Studio UAT (D-03/D-04): French create/edit/publish/drag-reorder checklist + blocking human-verify checkpoint closing SC #3 (Wave 3, non-autonomous)
 
 ## Progress
 
@@ -475,7 +475,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 11. Schema & Content Model | 2/2 | Complete    | 2026-07-22 |
 | 12. Data-Fetch Layer & Routes | 3/3 | Complete    | 2026-07-22 |
 | 13. Nav Integration | 2/2 | Complete    | 2026-07-23 |
-| 14. Verification & UAT | 3/4 | In Progress|  |
+| 14. Verification & UAT | 4/4 | Complete   | 2026-07-23 |
 
 ## Milestone Scope Note
 
