@@ -6,6 +6,7 @@
 // pattern — there is no gallery-page equivalent to mirror (12-PATTERNS.md).
 // Mirrors src/pages/en/editions/index.astro — only import depth and locale
 // differ.
+import { getRelativeLocaleUrl } from 'astro:i18n';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import EmptyState from '../../components/EmptyState.astro';
 import { getEditions } from '../../lib/sanity';
@@ -39,7 +40,7 @@ const seoDescription =
             <a
               class="editions-list__row"
               class:list={{ 'editions-list__row--reverse': i % 2 === 1 }}
-              href={`/editions/${edition.slug}/`}
+              href={getRelativeLocaleUrl(locale, `editions/${edition.slug}`)}
             >
               <div class="editions-list__photo">
                 <img

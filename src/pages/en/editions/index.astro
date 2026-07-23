@@ -2,6 +2,7 @@
 // English Éditions overview — EN twin of src/pages/editions/index.astro.
 // Only import depth (one level deeper, per the fr-root/en-prefix
 // convention) and locale differ; see the FR file for structural comments.
+import { getRelativeLocaleUrl } from 'astro:i18n';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import EmptyState from '../../../components/EmptyState.astro';
 import { getEditions } from '../../../lib/sanity';
@@ -35,7 +36,7 @@ const seoDescription =
             <a
               class="editions-list__row"
               class:list={{ 'editions-list__row--reverse': i % 2 === 1 }}
-              href={`/en/editions/${edition.slug}/`}
+              href={getRelativeLocaleUrl(locale, `editions/${edition.slug}`)}
             >
               <div class="editions-list__photo">
                 <img

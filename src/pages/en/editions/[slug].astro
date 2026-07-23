@@ -4,6 +4,7 @@
 // import depth and locale key differ. See that file's header comment for
 // the full rationale (D-05/D-06/D-07/D-08, no edition.seo field).
 import type { GetStaticPaths } from 'astro';
+import { getRelativeLocaleUrl } from 'astro:i18n';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import GalleryGrid from '../../../components/GalleryGrid.astro';
 import Lightbox from '../../../components/Lightbox.astro';
@@ -25,6 +26,8 @@ interface Props {
 
 const { edition } = Astro.props;
 const locale = 'en' as const;
+
+const overviewHref = getRelativeLocaleUrl(locale, 'editions');
 
 const statement = edition.statement?.[locale] ?? '';
 const leadPhotoSrc = fullSizeUrl(edition.leadPhoto, 2000);
@@ -89,7 +92,7 @@ const formatText = `Pages: ${edition.pageCount ?? ''} · Print run: ${edition.pr
       </svg>
     </div>
     <div class="edition-detail__content">
-      <a class="edition-detail__back-link" href="/en/editions/">
+      <a class="edition-detail__back-link" href={overviewHref}>
         <span aria-hidden="true">←</span> Back to Editions
       </a>
       <p class="edition-detail__statement">{statement}</p>
