@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-07-22)
 Phase: Milestone v1.3 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-07-23 — Completed quick task 260723-qiz: improve ui of the editions page, notamment la coherence du header avec le reste
+Last activity: 2026-07-23 — Completed quick task 260723-r1e: fix Éditions overview reversed-row grid layout
 
 ## Performance Metrics
 
@@ -169,6 +169,7 @@ None currently open. Both prior research-carryover items were resolved during Ph
 | 260722-afi | Corriger le contraste visuel entre l'en-tête et les items du tableau de bord éditorial (section Informations manquantes) — recessed header band, hairline divider, uppercase section-label title, human-verified via mockup replicating the exact CSS in light + dark mode | 2026-07-22 | 9762000 | Verified | [260722-afi-corriger-le-contraste-visuel-entre-l-en-](./quick/260722-afi-corriger-le-contraste-visuel-entre-l-en-/) |
 | 260722-tcv | Close the complete test-coverage audit: blocking thresholds, Sanity pure-logic coverage/build gate, contact failure states, iPhone/WebKit smoke, deterministic CMS/static-route cases, 404/base-path artifact verification, axe accessibility checks, and portable visual baselines | 2026-07-22 | — | Verified | [260722-tcv-close-test-coverage-audit-gaps](./quick/260722-tcv-close-test-coverage-audit-gaps/) |
 | 260723-qiz | Fix Éditions overview page header coherence: dropped the mismatched `headerVariant="transparent"` override (built for full-bleed hero pages) so `/editions/` and `/en/editions/` fall back to the shared `solid` header, matching About/Contact; added a Playwright regression guard | 2026-07-23 | 1ff46a2, d2c7d6f | | [260723-qiz-improve-ui-of-the-editions-page-notammen](./quick/260723-qiz-improve-ui-of-the-editions-page-notammen/) |
+| 260723-r1e | Fix Éditions overview reversed-row layout: added `grid-row: 1` (+ mobile `grid-row: auto` reset) so CSS Grid auto-placement stops splitting alternating rows' photo/text into two stacked implicit rows; added a Playwright regression guard; fix independently re-verified via direct DOM inspection after a port-collision false test failure | 2026-07-23 | fb13388, 0d3cf8c | | [260723-r1e-fix-editions-overview-reversed-row-layou](./quick/260723-r1e-fix-editions-overview-reversed-row-layou/) |
 
 ## Deferred Items
 
