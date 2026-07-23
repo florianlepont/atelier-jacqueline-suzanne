@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Éditions
-current_phase: 13
-current_phase_name: nav-integration
+current_phase: 14
+current_phase_name: Verification & UAT
 status: executing
 stopped_at: Phase 13 verification found gaps (4/5) — mobile header wrap regression at 360-374px
-last_updated: "2026-07-23T07:41:49.540Z"
+last_updated: "2026-07-23T11:10:15.724Z"
 last_activity: 2026-07-23
-last_activity_desc: Phase 13 execution started
+last_activity_desc: Phase 13 complete, transitioned to Phase 14
 progress:
   total_phases: 17
-  completed_phases: 13
+  completed_phases: 14
   total_plans: 41
-  completed_plans: 41
-  percent: 76
+  completed_plans: 42
+  percent: 82
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-07-22)
 
 ## Current Position
 
-Phase: 13 (nav-integration) — EXECUTING
-Plan: 1 of 2
+Phase: 14 — Verification & UAT
+Plan: Not started
 Status: Executing Phase 13
-Last activity: 2026-07-23 — Phase 13 execution started
+Last activity: 2026-07-23 — Phase 13 complete, transitioned to Phase 14
 
 Progress: [███████░░░░░░░] 10/14 phases complete (71%)
 
@@ -39,7 +39,7 @@ Progress: [███████░░░░░░░] 10/14 phases complete (71
 
 **Velocity:**
 
-- Total plans completed: 26
+- Total plans completed: 28
 - Average duration: - min
 - Total execution time: 0 hours
 
@@ -56,6 +56,7 @@ Progress: [███████░░░░░░░] 10/14 phases complete (71
 | 10 | 4 | - | - |
 | 11 | 2 | - | - |
 | 12 | 3 | - | - |
+| 13 | 2 | - | - |
 
 **Recent Trend:**
 

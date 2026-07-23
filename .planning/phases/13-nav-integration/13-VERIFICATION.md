@@ -1,126 +1,111 @@
 ---
 phase: 13-nav-integration
-verified: 2026-07-23T07:02:14Z
-status: gaps_found
-score: 4/5 must-haves verified
+verified: 2026-07-23T13:15:00Z
+status: passed
+score: 5/5 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
-gaps:
-  - truth: "The header carrying its now-4th nav link produces no horizontal page overflow from the widest viewport down to <359px, in both the solid (About/Contact) and transparent (homepage/gallery-detail) variants (D-02, SC #5)"
-    status: failed
-    reason: "Direct, reproducible browser measurement shows the header wraps to a SECOND row (the language switcher drops below the nav) in the ~360px-374px viewport width range, in BOTH the solid (/about/) and transparent (/, homepage) header variants. This range includes common real device widths — iPhone SE (375px) and iPhone 12 mini / many Android phones (360px) — and is exactly the width the plan's own Task 3 human-check named as a target verification width ('iPhone SE ~375px'). Screenshots confirm the switcher visibly renders on its own line below Éditions/À propos/Contact/Instagram (solid variant) and overlapping the hero photo below the nav row (transparent variant) — not the single row D-02 and the plan's acceptance criteria require. This is a genuine regression introduced by adding the 4th (Éditions) nav link: at the same 375px width, a worktree checkout of the pre-Phase-13 commit (ca92615^, 3-link header) keeps the nav and language switcher on one shared row (switcher top=44, nav top=44); post-Phase-13, at the identical width, the switcher top drops to 112 (nav top stays 44) — a new wrap that did not exist before this phase's markup/CSS change."
-    artifacts:
-      - path: "src/components/SiteHeader.astro"
-        issue: "The existing @media (max-width: 767px) block (flex-wrap: wrap on .site-header) and the @media (max-width: 359px) last-resort block (flex-wrap: nowrap) leave an unhandled gap in between: at 360px-374px, neither trim applies, the 4-link .site-nav plus the language switcher no longer fit their shared row, and the header wraps to two rows. The Task 3 mobile-fit re-measurement only tested 320px and 393px (both e2e assertions PASS at those two points), which straddle but never land inside this broken range, so the regression shipped undetected by the phase's own new tests."
-    missing:
-      - "Extend/adjust the mobile-fit CSS (or lower the @media (max-width: 359px) breakpoint / add an intermediate breakpoint) so the header stays single-row with no wrap across the full 320px-767px range, not just at the two specific widths (320px, 393px) the added e2e assertions happen to sample."
-      - "Add an e2e assertion at a width inside 360px-374px (e.g. 375px, matching the plan's own named target 'iPhone SE ~375px') that fails on wrap — the existing scrollWidth<=innerWidth check does not catch this bug because the overflow is vertical (an extra row), not horizontal; a same-row assertion (e.g. comparing the language switcher's and a nav-link's bounding-rect top) is needed."
-      - "Re-run the live human-check at 375px (as literally specified in the plan) — the SUMMARY's claim that this was confirmed via 'a live screenshot in both header variants' at 320px/375px is contradicted by this verification's own screenshots, which show the wrap occurring at 375px on both variants."
+re_verification:
+  previous_status: gaps_found
+  previous_score: 4/5
+  gaps_closed:
+    - "The header carrying its now-4th nav link produces no horizontal page overflow from the widest viewport down to <359px, in both the solid (About/Contact) and transparent (homepage/gallery-detail) variants (D-02, SC #5)"
+  gaps_remaining: []
+  regressions: []
 ---
 
 # Phase 13: Nav Integration Verification Report
 
 **Phase Goal:** Visitors can discover Éditions from the main site navigation on every page, while the homepage's photography carousel/grid content itself stays pure photography.
-**Verified:** 2026-07-23T07:02:14Z
-**Status:** gaps_found
-**Re-verification:** No — initial verification
-
-## MVP Mode Note
-
-ROADMAP.md marks Phase 13 `**Mode:** mvp`, but its `**Goal:**` line ("Visitors can discover Éditions from the main site navigation on every page, while the homepage's photography carousel/grid content itself stays pure photography.") is outcome-shaped, not in `As a [role], I want to [capability], so that [outcome]` form (confirmed via `user-story.validate` → `valid: false`). Per the MVP-mode verification contract this is a discrepancy that would normally block the MVP User-Flow-Coverage framing and ask for `/gsd mvp-phase 13` to reformat the goal. The phase's own PLAN.md already derived a compliant user story internally ("As a site visitor, I want to find an 'Éditions' link in the main navigation on every page... so that I can reach the Éditions overview...") and this is consistent with every other phase's ROADMAP goal in this project (none use strict user-story phrasing at the ROADMAP level despite `Mode: mvp`), so this looks like a project-wide convention rather than a Phase-13-specific defect. Standard goal-backward verification (not the MVP User-Flow-Coverage table) was used below, since forcing that framing against a non-user-story ROADMAP goal would be low-quality per the reference guidance. Flagging for the developer's awareness; not treated as a phase blocker on its own.
+**Verified:** 2026-07-23T13:15:00Z
+**Status:** passed
+**Re-verification:** Yes — after gap closure (13-02 fixed the previously FAILED SC #5)
 
 ## Goal Achievement
+
+This is a from-scratch re-verification of all 5 success criteria against the current codebase state (post 13-02 gap-closure), not an incremental check of only the previously-failed item. The prior 13-VERIFICATION.md's findings on Truths #1-#4 were cross-checked against current code (all still hold; no regression from the 13-02 CSS-only diff), and Truth #5 was independently re-measured rather than trusted from 13-02-SUMMARY.md.
 
 ### Observable Truths
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | "Éditions" nav link renders as the FIRST link in `.site-nav` on every page in both locales | ✓ VERIFIED | Built static HTML (`npm run build`) inspected directly: `dist/index.html`, `dist/en/index.html`, `dist/about/index.html`, `dist/contact/index.html`, `dist/galleries/silos/index.html`, `dist/editions/index.html`, `dist/mentions-legales/index.html` all show `<a href="/editions/" class="nav-link">Éditions</a>` (or `/en/editions/` on EN pages) as the first `.nav-link`, ahead of À propos/About and Contact. `npx playwright test tests/e2e/site-header.spec.ts` (27/27 passed) independently confirms this via the "nav structure" and "cross-page structural identity" specs. |
-| 2 | The Éditions nav link points to `/editions/` (fr) and `/en/editions/` (en), resolving to the Phase 12 overview route | ✓ VERIFIED | Same build-output inspection + e2e "Éditions nav link (EDN-01, D-01, SC #1/#2)" describe block (6/6 path cases pass): `/`, `/en/`, `/about/`, `/en/about/`, `/contact/`, `/en/contact/` all resolve the first nav-link href to the correct-locale `/editions/` route, which `npm run build` confirms exists (`dist/editions/index.html`, `dist/en/editions/index.html`). |
-| 3 | The label falls back to "Éditions" in both locales when Sanity is empty, and is overridden by `siteSettings.navLabels.editions.{fr,en}` when populated | ✓ VERIFIED | `src/lib/site-config.ts:23` — `editionsLabel: settings?.navLabels?.editions?.[locale] \|\| 'Éditions'`. `sanity/schemas/siteSettings.ts` — `navLabels.editions` object field (fr/en strings, no `.required()`, mirrors `about`/`contact`) plus `initialValue.navLabels.editions = {fr: 'Éditions', en: 'Éditions'}`. `src/lib/sanity.ts` — `navLabels.editions?: Partial<LocaleString>` type member present. `npm run test:unit -- site-config` → 8/8 passed, including the two new fallback/override assertions for `editionsLabel`, executed directly by this verification (not taken from the SUMMARY). |
-| 4 | The homepage's carousel rotation and grid tiles contain no Éditions entry — the only `/editions` link on the homepage is inside the header nav | ✓ VERIFIED | Built `dist/index.html` inspected: the `[data-role="home-carousel"]` … `[data-role="home-carousel-data"]` region contains zero occurrences of "editions"; `HomeCarousel.astro`'s `galleries` prop/type and carousel/grid markup are untouched by this phase's diff (only the `SiteCopy` interface + two new consts + `<SiteHeader>` prop pass were added). `tests/e2e/site-header.spec.ts`'s "homepage carousel/grid stay Éditions-free" describe block (2/2, `/` and `/en/`) independently confirms zero editions anchors in the carousel/grid regions and exactly one in the header. |
-| 5 | The header carrying its now-4th nav link produces no horizontal page overflow from the widest viewport down to <359px, in both the solid and transparent variants (D-02, SC #5) | ✗ FAILED | Reproducible measurement (this verification's own Playwright script, not the SUMMARY's claim): at viewport widths 360px-374px inclusive, the language switcher wraps to a SECOND row below the 4-link nav, on both `/about/` (solid) and `/` (transparent/homepage) — confirmed visually via screenshot at 375px on both pages. A worktree checkout of the pre-Phase-13 commit shows NO wrap at the same 375px width with the old 3-link header (switcher stays on the nav's row). The phase's own added e2e assertions test only 320px and 393px, which straddle this broken range without ever sampling inside it, so the regression passed CI/e2e undetected. See `gaps` in frontmatter for full detail. |
+| 1 | "Éditions" nav link renders as the FIRST link in `.site-nav` on every page in both locales (SC #1) | VERIFIED | Built static HTML inspected directly (`npm run build`, 25 pages): `dist/index.html`, `dist/en/index.html`, `dist/about/index.html`, `dist/en/about/index.html`, `dist/contact/index.html`, `dist/en/contact/index.html`, `dist/galleries/silos/index.html`, `dist/en/galleries/silos/index.html`, `dist/mentions-legales/index.html`, `dist/editions/index.html` all show `<a href="/editions/" class="nav-link">Éditions</a>` (or `/en/editions/` on EN pages) as the FIRST `.nav-link`, ahead of About/Contact/Instagram. Independently re-ran `npx playwright test tests/e2e/site-header.spec.ts` myself: 39/39 pass, including the "nav structure" and "cross-page structural identity" (home vs. about hrefs equal, index 0 = editions) specs. |
+| 2 | The Éditions nav link points to `/editions/` (fr) / `/en/editions/` (en), resolving to the Phase 12 overview route (SC #2) | VERIFIED | Same build-output inspection above + the e2e "Éditions nav link (EDN-01, D-01, SC #1/#2)" describe block (6/6 path cases: `/`, `/en/`, `/about/`, `/en/about/`, `/contact/`, `/en/contact/`) all pass, re-run directly by this verification, not taken from any SUMMARY. `dist/editions/index.html` and `dist/en/editions/index.html` exist (Phase 12 routes). |
+| 3 | The label falls back to "Éditions" in both locales when Sanity is empty, and is overridden by `siteSettings.navLabels.editions.{fr,en}` when populated (SC #4) | VERIFIED | `src/lib/site-config.ts:23` — `editionsLabel: settings?.navLabels?.editions?.[locale] \|\| 'Éditions'`. `sanity/schemas/siteSettings.ts:159-166` — `navLabels.editions` object field (fr/en strings, mirrors about/contact) + `initialValue.navLabels.editions = {fr: 'Éditions', en: 'Éditions'}` (line 72). `src/lib/sanity.ts` — `navLabels.editions?: Partial<LocaleString>` type member present. `npm run test:unit -- site-config` re-run directly by this verification: 8/8 passed, including the two editionsLabel fallback/override assertions. |
+| 4 | The homepage's carousel rotation and grid tiles contain no Éditions entry — only the header links to Éditions (SC #3) | VERIFIED | Built `dist/index.html` inspected: the `[data-role="home-carousel"]`/`[data-role="home-grid"]`/`[data-role="home-carousel-data"]` regions contain zero "editions" occurrences. `HomeCarousel.astro`'s `galleries` prop/type and carousel/grid markup are unmodified by either 13-01 or 13-02 (git diff confined to `SiteCopy` interface + two consts + `<SiteHeader>` prop pass in 13-01; 13-02 touched only `SiteHeader.astro` CSS and the e2e spec). e2e "homepage carousel/grid stay Éditions-free" (2/2, `/` and `/en/`) re-run directly: passes. |
+| 5 | The header carrying its now-4th nav link produces no horizontal overflow AND no two-row wrap, from the widest viewport down to the narrowest supported phone, in both the solid and transparent variants (D-02, SC #5) — **previously FAILED, now re-verified from scratch** | VERIFIED | Root cause confirmed fixed in `src/components/SiteHeader.astro`: the `@media (max-width: 767px)` `.site-header` rule now reads `flex-wrap: nowrap` (line 287, was `wrap`), and the compensating-trim breakpoint is raised to `@media (max-width: 400px)` (line 306, was `359px`) — both changes visible directly in the current file, matching 13-02-SUMMARY.md's claims. Re-ran `npx playwright test tests/e2e/site-header.spec.ts` myself: the "single-row fit across the mobile range" describe block (12 tests: widths 320/360/374/375/390/767 × `/about/` solid + `/` transparent) all PASS — same-row (nav vs. language-switcher vertical-center within 5px) AND no horizontal overflow at every sampled width, including the previously-broken 360-375px band. Went further than the shipped suite: wrote and ran an independent ad-hoc probe (same same-row + no-overflow assertions) against `/galleries/silos/`, `/en/galleries/silos/`, and `/mentions-legales/` — pages the shipped regression block does not sample — across the same 6 widths: 18/18 pass, confirming the fix generalizes beyond the two pages the phase's own tests cover. Also confirmed the human-verify checkpoint (Task 3 of 13-02) is recorded as APPROVED in 13-02-SUMMARY.md with a specific real-user confirmation at 375px/360px/320px on both variants — this checkpoint type is a blocking gate the user could only pass by explicitly typing approval, not something an executor can self-report. |
 
-**Score:** 4/5 truths verified (0 present, behavior-unverified)
+**Score:** 5/5 truths verified (0 present, behavior-unverified)
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `sanity/schemas/siteSettings.ts` | `navLabels.editions` object field + `editions` default in `initialValue.navLabels` | ✓ VERIFIED | Lines 69-73 (initialValue), 158-166 (field def) — mirrors `about`/`contact` exactly, no `.required()`. |
-| `src/lib/sanity.ts` | `SiteSettings.navLabels.editions?: Partial<LocaleString>` | ✓ VERIFIED | Line 61. |
-| `src/lib/site-config.ts` | `editionsLabel` key in `resolveSiteCopy()` return | ✓ VERIFIED | Line 23, single-fallback-string form matching `contactLabel`. |
-| `src/components/SiteHeader.astro` | `editionsLabel`/`editionsHref` props + Éditions `<a>` rendered first; mobile CSS re-measured | ⚠️ PARTIAL | Props/markup present and correctly ordered (lines 22-23, 39-40, 63). Mobile CSS was NOT actually re-measured sufficiently — see Truth #5 gap; the 360px-374px range was never tested and wraps. |
-| `src/layouts/BaseLayout.astro` | `editionsLabel`/`editionsHref` consts + prop pass to `<SiteHeader>` | ✓ VERIFIED | Lines 110-111, 194-195. |
-| `src/components/HomeCarousel.astro` | `SiteCopy.editionsLabel` + consts + prop pass; `galleries` untouched | ✓ VERIFIED | Lines 40, 72-73, 124-125; carousel/grid markup and data unchanged. |
-| `tests/e2e/site-header.spec.ts` | 4-link Éditions-first contract + homepage-editions-free guard + narrow-viewport no-overflow | ⚠️ PARTIAL | 27/27 assertions pass as written, but the narrow-viewport coverage has a blind spot (320px and 393px only) that misses the real 360px-374px wrap regression — the artifact under-delivers on its own stated purpose ("no horizontal page overflow... in both variants") because the actual defect is a vertical wrap, not horizontal overflow, and no width inside the broken range is tested. |
-| `tests/unit/site-config.test.ts` | `editionsLabel` fallback + override assertions | ✓ VERIFIED | 8/8 unit tests pass, executed directly by this verification. |
+| `sanity/schemas/siteSettings.ts` | `navLabels.editions` object field + default | VERIFIED | Lines 72 (initialValue), 158-166 (field def), no `.required()`, matches about/contact. |
+| `src/lib/sanity.ts` | `SiteSettings.navLabels.editions?: Partial<LocaleString>` | VERIFIED | Type member present. |
+| `src/lib/site-config.ts` | `editionsLabel` key in `resolveSiteCopy()` | VERIFIED | Line 23, single-fallback-string form. |
+| `src/components/SiteHeader.astro` | `editionsLabel`/`editionsHref` props + Éditions `<a>` first; corrected mobile CSS | VERIFIED | Props/markup lines 22-23, 39-40, 63; `.site-header` nowrap (line 287) + trim breakpoint raised to 400px (line 306) — the Truth #5 gap is closed at the artifact level, not just claimed. |
+| `src/layouts/BaseLayout.astro` | `editionsLabel`/`editionsHref` consts + prop pass | VERIFIED | Unchanged since prior verification (not touched by 13-02); still correct. |
+| `src/components/HomeCarousel.astro` | `SiteCopy.editionsLabel` + consts + prop pass; `galleries` untouched | VERIFIED | Unchanged since prior verification; still correct. |
+| `tests/e2e/site-header.spec.ts` | 4-link contract + homepage-editions-free guard + narrow-viewport no-overflow/no-wrap coverage inside the broken band | VERIFIED | 39/39 pass, re-run directly. The new "single-row fit across the mobile range" describe block (added by 13-02) closes the previous blind spot by sampling 360/374/375px with a same-row assertion, not just scrollWidth. |
+| `tests/unit/site-config.test.ts` | `editionsLabel` fallback + override assertions | VERIFIED | 8/8 pass, re-run directly. |
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 |------|----|----|--------|---------|
-| `resolveSiteCopy()` return | Each call site's `siteCopy`/consts | `siteCopy.editionsLabel` | ✓ WIRED | Both `BaseLayout.astro` and `HomeCarousel.astro` read `siteCopy.editionsLabel`. |
-| Call-site consts | `<SiteHeader>` props | `editionsLabel={editionsLabel} editionsHref={editionsHref}` | ✓ WIRED | Confirmed at both call sites; build output renders the link on every page type (home, about, contact, gallery-detail, legal, editions). |
-| `getRelativeLocaleUrl(locale, 'editions')` | Phase 12's `/editions/` (fr) / `/en/editions/` (en) routes | Direct href | ✓ WIRED | `dist/editions/index.html` and `dist/en/editions/index.html` exist and are the href targets. |
-| `@media` breakpoints | Single-row fit at all widths <768px | CSS cascade (767px block → 359px block) | ✗ NOT WIRED (gap) | A real gap exists between the two `@media` blocks: 360px-374px falls under the 767px block's `flex-wrap: wrap` with no override, and the header visibly wraps there. |
+| `resolveSiteCopy()` return | Each call site's `siteCopy`/consts | `siteCopy.editionsLabel` | WIRED | Confirmed at both `BaseLayout.astro` and `HomeCarousel.astro`. |
+| Call-site consts | `<SiteHeader>` props | `editionsLabel={editionsLabel} editionsHref={editionsHref}` | WIRED | Confirmed at both call sites; build output renders the link on every page type (home, about, contact, gallery-detail, legal, editions itself). |
+| `getRelativeLocaleUrl(locale, 'editions')` | Phase 12's `/editions/` (fr) / `/en/editions/` (en) routes | Direct href | WIRED | `dist/editions/index.html` and `dist/en/editions/index.html` exist and are the href targets. |
+| `@media` breakpoints (767px block + 400px block) | Single-row fit at all widths 320-767px | CSS cascade | WIRED (previously NOT WIRED — this is the repaired link) | `flex-wrap: nowrap` now applies across the entire sub-768px range; the 400px-ceiling compensating trims cover the band that previously fell through the gap (360-400px). Re-measured directly by this verification via e2e re-run + an independent probe on 3 additional pages; no gap remains. |
 
-### Data-Flow Trace (Level 4)
-
-`editionsLabel` traces from `getSiteSettings()` (build-time GROQ fetch, `src/lib/sanity.ts`) → `resolveSiteCopy(siteSettings, locale)` → page frontmatter spread (`src/pages/index.astro`, `src/pages/en/index.astro` both do `...resolveSiteCopy(siteSettings, locale)`) / `BaseLayout.astro`'s own `resolveSiteCopy` call → `<SiteHeader>` prop → rendered `<a>` text. No hardcoded empty/static fallback masking real data — the fallback (`'Éditions'`) is an intentional, documented default per SC #4, not a stub. ✓ FLOWING.
-
-### Behavioral Spot-Checks
+### Behavioral Spot-Checks (re-run directly by this verification, not taken from SUMMARY)
 
 | Behavior | Command | Result | Status |
 |----------|---------|--------|--------|
-| Unit: `editionsLabel` fallback/override | `npm run test:unit -- site-config` | 8/8 passed | ✓ PASS |
-| Build succeeds with new types/props | `npm run build` | 25 pages built, no errors | ✓ PASS |
-| e2e: full `site-header.spec.ts` suite | `npx playwright test tests/e2e/site-header.spec.ts` | 27/27 passed | ✓ PASS |
-| e2e: homepage regression guard | `npx playwright test tests/e2e/homepage.spec.ts` | 44/44 passed | ✓ PASS |
-| Header wrap at 360px-374px (this verification's own probe, not in the phase's test suite) | Playwright `getBoundingClientRect()` comparison of `.site-nav` vs `.language-switcher` top position across a width sweep | Switcher wraps to a new row at 360-374px on both `/about/` and `/`; screenshot confirms visually | ✗ FAIL — this is the Truth #5 gap |
+| Build succeeds with current code | `npm run build` | 25 pages built, no errors | PASS |
+| Unit: `editionsLabel` fallback/override | `npm run test:unit -- site-config` | 8/8 passed | PASS |
+| e2e: full `site-header.spec.ts` suite (all 6 describe blocks incl. the gap-closure block) | `npx playwright test tests/e2e/site-header.spec.ts` | 39/39 passed | PASS |
+| e2e: homepage regression guard | `npx playwright test tests/e2e/homepage.spec.ts` | 44/44 passed | PASS |
+| Independent probe: same-row + no-overflow at 320/360/374/375/390/767px on `/galleries/silos/`, `/en/galleries/silos/`, `/mentions-legales/` (pages NOT in the shipped test suite) | Ad-hoc Playwright script written, run, and removed by this verification | 18/18 passed | PASS |
+| Debt-marker / stub scan across all 8 phase-modified files | `grep -nE "TBD\|FIXME\|XXX\|TODO\|HACK\|PLACEHOLDER"` + placeholder/coming-soon text scan | Zero matches | PASS |
 
 ### Requirements Coverage
 
 | Requirement | Source Plan | Description | Status | Evidence |
 |-------------|-------------|-------------|--------|----------|
-| EDN-01 | 13-01-PLAN.md | Visitor can discover an "Éditions" section via a new top-level main-nav entry (not surfaced on the homepage carousel/grid) | ⚠️ PARTIALLY SATISFIED | Discoverability itself (link present, first, correct href, editable label, homepage carousel/grid untouched) is fully verified. The nav-entry's cross-device robustness — an implicit part of "discover... on every page" for a visitor on a common ~360-375px phone — is not met: the header visibly breaks (2-row wrap) at those widths. |
+| EDN-01 | 13-01-PLAN.md, 13-02-PLAN.md (gap closure) | Visitor can discover an "Éditions" section via a new top-level main-nav entry (not surfaced on the homepage carousel/grid) | SATISFIED | All 5 ROADMAP success criteria independently re-verified true against current code: discoverability, correct-locale routing, homepage-carousel purity, Sanity-editability, and now (post gap-closure) cross-device mobile robustness at 320-767px including the previously-broken 360-400px band. |
 
-No orphaned requirements: REQUIREMENTS.md maps only EDN-01 to Phase 13, and the plan's frontmatter `requirements: [EDN-01]` matches exactly.
+No orphaned requirements: REQUIREMENTS.md maps only EDN-01 to Phase 13, and both plans' frontmatter `requirements: [EDN-01]` matches exactly.
 
-**Documentation note (non-blocking):** REQUIREMENTS.md still lists EDN-01 with an unchecked `- [ ]` box and the Traceability table still says "Pending" (line 205), even though ROADMAP.md and the SUMMARY both mark Phase 13 complete and EDN-02..EDN-07/CMS-04 (Phases 11-12) already have their checkboxes flipped to `[x]`. This is a bookkeeping gap in REQUIREMENTS.md, not a functional one — flagged for hygiene, not counted against the phase score.
+**Documentation hygiene note (non-blocking, carried forward from prior verification, still present):** `REQUIREMENTS.md` line 79 still shows EDN-01 with an unchecked `- [ ]` box, and the Traceability table (line 205) still says "Pending," even though ROADMAP.md and both SUMMARYs mark Phase 13 complete. This is a bookkeeping gap in REQUIREMENTS.md, not a functional one, and does not affect the score — flagged for hygiene only. Recommend flipping the checkbox and "Pending" → "Complete" as a trivial follow-up.
 
 ### Anti-Patterns Found
 
-None. Grepped all 8 phase-modified files for `TBD|FIXME|XXX|TODO|HACK|PLACEHOLDER` and "coming soon"/"not yet implemented"/"not available" — zero matches. No stub returns, no hardcoded-empty props flowing to render, no debt markers.
+None. Grepped all 8 phase-modified files (`SiteHeader.astro`, `BaseLayout.astro`, `HomeCarousel.astro`, `site-config.ts`, `sanity.ts`, `siteSettings.ts`, `site-header.spec.ts`, `site-config.test.ts`) for `TBD|FIXME|XXX|TODO|HACK|PLACEHOLDER` and "coming soon"/"not yet implemented"/"not available" — zero matches. No stub returns, no hardcoded-empty props flowing to render, no debt markers. `git status` is clean (no stray files left from this verification's own probe script).
 
 ### Code Review Cross-Reference
 
-`13-REVIEW.md` (already run) found 2 warnings + 1 info, none of which is a BLOCKER and none of which is the mobile-wrap gap found here (the review did not test intermediate viewport widths):
-- WR-01: pre-existing (not introduced by this phase) validation trap on hidden legacy `navLabels.home`/`galleries` fields.
-- WR-02: `sanity/editorial/checks.ts`'s content-completeness checklist wasn't updated to include the new `navLabels.editions` field (a real omission, but a CMS-editorial-dashboard gap, not a visitor-facing one).
-- IN-01: e2e coverage for the Éditions link stops at home/about/contact — gallery-detail/legal pages untested by the *phase's own* e2e suite. This verification independently confirmed via built HTML that the link is present and correct on `/galleries/silos/`, `/mentions-legales/`, and `/editions/` themselves, so the underlying behavior is fine — only the phase's own test suite has this coverage gap.
+`13-REVIEW.md` (dated 2026-07-23T11:04:07Z, post-gap-closure, superseding the pre-gap-closure review) found 0 critical, 3 warnings, 2 info — none rated as blocking the phase goal, and none contradicts this verification's findings:
+- WR-01: `sanity/editorial/checks.ts`'s content-completeness dashboard doesn't check `navLabels.editions` — a Studio-editorial-hygiene gap, not a visitor-facing defect (SC #4's fallback already covers the case Romane leaves it blank).
+- WR-02: no CMS-side required-validation on `navLabels.editions.{fr,en}` — matches the pre-existing about/contact pattern exactly; rescued by the `||` fallback.
+- WR-03: pre-existing, unrelated to Phase 13 (hidden legacy `navLabels.home`/`galleries` fields).
+- IN-01/IN-02: minor schema duplication and e2e coverage-breadth notes (gallery-detail/legal pages aren't in the shipped test suite's parametrized lists, though the underlying behavior was confirmed correct by direct dist inspection in both the review and this verification).
+
+This verification independently corroborates IN-02's finding and closes the residual doubt it raised: my own ad-hoc probe against `/galleries/silos/`, `/en/galleries/silos/`, and `/mentions-legales/` (not in the shipped suite) confirms single-row fit generalizes to those pages too (18/18 pass) — the gap-closure fix is not narrowly scoped to only the two sampled pages.
 
 ## Gaps Summary
 
-Four of five must-have truths are solidly verified with direct evidence (build output, passing unit tests I re-ran myself, passing e2e tests I re-ran myself) — the Éditions link is genuinely wired, correctly ordered, correctly localized, Sanity-editable, and the homepage carousel/grid genuinely stay photography-only. The phase's core deliverable works.
+None. All 5 ROADMAP success criteria for Phase 13 are verified true against the current codebase, re-checked from scratch rather than trusted from SUMMARY.md claims:
 
-The one failing truth is real, not a nitpick: at the very common ~360px-375px mobile width band (this includes the iPhone SE, which the plan's own Task 3 human-check explicitly named as a target device), the shared header wraps to a second row — the language switcher separates from the nav row — on both header variants. This is a genuine regression introduced by adding the 4th nav link, confirmed by directly comparing rendered output against a worktree checkout of the pre-Phase-13 commit at the identical width. The phase's added automated tests (320px, 393px) happen to bracket this broken range without ever landing inside it, so CI is green while the visual bug ships. The SUMMARY's claim that a live screenshot at "320px and 375px" confirmed single-row fit in both variants is directly contradicted by this verification's own reproduction at 375px.
+- SC #1/#2 (discoverability + correct-locale routing): verified via direct build-output inspection across 10 distinct page/locale combinations plus a self-run e2e suite.
+- SC #3 (homepage carousel/grid purity): verified via region-scoped e2e assertions and an unmodified `galleries` data path.
+- SC #4 (Sanity-editable label): verified via schema, resolver, and unit tests re-run directly.
+- SC #5 (mobile fit, both variants) — the item the prior verification FAILED — is now independently re-verified fixed: the root-cause CSS (`flex-wrap: nowrap` across the whole sub-768px range + trim breakpoint raised to 400px) is present in the current file, the shipped regression e2e (sampling inside the previously-broken 360-375px band) passes, homepage regression suite stays green, and an independent probe on 3 pages outside the shipped test matrix (gallery-detail FR/EN, legal) also passes — closing the residual "does it generalize" doubt the code review raised. The blocking human-verify checkpoint from 13-02 (Task 3) is recorded as approved by the real user, not self-reported by an executor.
 
-This looks intentional to fix, not to accept as-is — recommend closing with a small follow-up plan that either lowers/extends the existing `@media (max-width: 359px)` breakpoint (e.g. to 380px or 400px) or adds an intermediate breakpoint covering 360px-379px, plus a regression e2e assertion at 375px checking that `.site-nav` and `.language-switcher` share the same row (not just that there's no horizontal scrollWidth overflow).
-
-If the team judges the visual regression acceptable to ship as-is (e.g., if it's decided that the switcher wrapping to its own line at 360-374px is tolerable / already how it looks on other pages), this can be closed via a VERIFICATION.md override rather than a new plan — see `<override_suggestion>` below.
-
-**This looks intentional to override, if the team decides the wrap is acceptable.** To accept this deviation instead of fixing it, add to VERIFICATION.md frontmatter:
-
-```yaml
-overrides:
-  - must_have: "The header carrying its now-4th nav link produces no horizontal page overflow from the widest viewport down to <359px, in both the solid and transparent variants (D-02, SC #5)"
-    reason: "Language switcher wrapping to its own row at 360px-374px is acceptable — no clipping/overlap occurs, only an extra line"
-    accepted_by: "{name}"
-    accepted_at: "{ISO timestamp}"
-```
+No regressions were introduced by the 13-02 gap-closure diff: the full `site-header.spec.ts` (39/39) and `homepage.spec.ts` (44/44) suites both pass, and `git diff`-scope for 13-02 (per its own SUMMARY and confirmed by this verification's file read) is confined to two files (`SiteHeader.astro` CSS-only, `site-header.spec.ts` new describe block).
 
 ---
 
-_Verified: 2026-07-23T07:02:14Z_
+_Verified: 2026-07-23T13:15:00Z_
 _Verifier: Claude (gsd-verifier)_

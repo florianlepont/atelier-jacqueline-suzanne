@@ -76,7 +76,7 @@ Adds a dedicated, non-transactional showcase for Romane's self-published paper �
 
 ### Éditions
 
-- [ ] **EDN-01**: Visitor can discover an "Éditions" section via a new top-level main-nav entry (not surfaced on the homepage carousel/grid, which stays pure photography)
+- [x] **EDN-01**: Visitor can discover an "Éditions" section via a new top-level main-nav entry (not surfaced on the homepage carousel/grid, which stays pure photography)
 - [x] **EDN-02**: Visitor can browse an Éditions overview page listing each édition by title and lead photo
 - [x] **EDN-03**: Visitor can open a per-édition detail page showing its full photo shoot (reusing the existing gallery lightbox)
 - [x] **EDN-04**: Each édition detail page shows a short description/statement
@@ -202,7 +202,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EDN-04 | Phase 12 | Complete |
 | EDN-06 | Phase 12 | Complete |
 | EDN-07 | Phase 12 | Complete |
-| EDN-01 | Phase 13 | Pending |
+| EDN-01 | Phase 13 | Complete |
 
 **Coverage:**
 
