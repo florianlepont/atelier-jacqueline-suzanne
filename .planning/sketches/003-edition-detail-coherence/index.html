@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sketch 003 — Édition Detail Coherence</title>
+<link rel="stylesheet" href="../themes/default.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;900&display=swap" rel="stylesheet">
+<style>
+  body { padding-top: 52px; }
+
+  #variant-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9998;
+    background: var(--gray-0); border-bottom: var(--border-hairline) solid var(--color-ink);
+    padding: 10px 20px; display: flex; gap: 8px; align-items: center;
+    font-family: var(--font-sans); font-size: 13px;
+  }
+  #variant-nav .label { font-weight: var(--weight-semibold); margin-right: 12px; letter-spacing: 0.04em; text-transform: uppercase; font-size: 11px; color: #6b6b6b; }
+  .variant-tab {
+    font-family: var(--font-sans); font-size: 13px; font-weight: var(--weight-semibold);
+    background: var(--gray-0); color: var(--color-ink); border: var(--border-hairline) solid var(--color-border);
+    padding: 7px 14px; cursor: pointer; transition: all 0.15s ease; border-radius: var(--radius-sm);
+  }
+  .variant-tab:hover { border-color: var(--color-ink); }
+  .variant-tab.active { background: var(--color-ink); color: var(--gray-0); border-color: var(--color-ink); }
+
+  .variant { display: none; }
+  .variant.active { display: block; }
+
+  #sketch-tools {
+    position: fixed; bottom: 12px; right: 12px; z-index: 9999;
+    font-family: system-ui, sans-serif; font-size: 12px;
+    background: rgba(0,0,0,0.78); color: #fff; padding: 8px 12px; border-radius: 8px;
+    opacity: 0.45; transition: opacity 0.2s ease; display: flex; gap: 10px; align-items: center;
+  }
+  #sketch-tools:hover { opacity: 1; }
+  #sketch-tools select { font-size: 11px; background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; padding: 3px 6px; }
+
+  #viewport-wrap { max-width: none; margin: 0 auto; transition: max-width 0.2s ease; border-left: 1px dashed transparent; border-right: 1px dashed transparent; }
+  #viewport-wrap.vp-phone { max-width: 375px; border-color: #ccc; }
+  #viewport-wrap.vp-tablet { max-width: 768px; border-color: #ccc; }
+  #viewport-wrap.vp-desktop { max-width: 1280px; border-color: #ccc; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--color-ink); color: var(--gray-0); font-family: var(--font-sans); font-size: 13px;
+    padding: 10px 18px; border-radius: var(--radius-sm); opacity: 0; pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease; z-index: 9997; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .site-header-replica {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px var(--editorial-page-padding-inline); border-bottom: var(--border-hairline) solid var(--color-ink);
+    font-family: var(--font-sans); font-size: 14px; position: relative; z-index: 5; background: var(--gray-0);
+  }
+  .site-header-replica .logo { font-family: var(--font-display); font-weight: var(--weight-black); font-size: 20px; letter-spacing: -0.02em; }
+  .site-header-replica nav { display: flex; gap: 28px; }
+  .site-header-replica nav a { color: var(--color-ink); font-weight: var(--weight-semibold); }
+  .site-header-replica .right { display: flex; gap: 20px; align-items: center; color: #6b6b6b; }
+
+  /* shared detail-page skeleton */
+  .detail { padding: 0 0 var(--space-2xl); }
+  .detail__hero { position: relative; width: 100%; aspect-ratio: 16/9; overflow: hidden; cursor: zoom-in; }
+  .detail__hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .detail__hero-scrim { position: absolute; inset: 0; background: linear-gradient(to top, rgba(26,26,26,0.75), rgba(26,26,26,0) 55%); }
+  .detail__content { max-width: var(--editorial-page-max); margin: 0 auto; padding: var(--space-xl) var(--editorial-page-padding-inline) 0; }
+  .detail__back { display: inline-block; font-size: 14px; font-weight: var(--weight-semibold); margin-bottom: var(--space-xl); color: var(--color-ink); }
+  .detail__back:hover { color: var(--color-accent); text-decoration: underline; }
+  .detail__format { font-size: 14px; color: #6b6b6b; margin: 0 0 var(--space-xl); }
+  .detail__thumbs { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-md); margin-top: var(--space-2xl); }
+  .detail__thumbs button { border: none; padding: 0; cursor: zoom-in; background: none; }
+  .detail__thumbs img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; transition: transform 0.2s ease; }
+  .detail__thumbs button:hover img { transform: scale(1.03); }
+
+  /* ===================== VARIANT A: Current (baseline) ===================== */
+  #variant-a .detail__hero-title {
+    position: absolute; left: var(--space-xl); bottom: var(--space-xl); right: var(--space-xl); z-index: 3; margin: 0;
+    font-size: var(--text-display-size); font-weight: var(--weight-semibold); font-family: var(--font-display);
+    color: var(--gray-0); letter-spacing: -0.02em;
+  }
+  #variant-a .detail__statement { max-width: 640px; font-size: var(--text-body-size); line-height: 1.5; margin: 0 0 var(--space-md); }
+
+  /* ===================== VARIANT B: Amplified ===================== */
+  #variant-b .detail__hero { aspect-ratio: 4/3; }
+  #variant-b .detail__hero-title {
+    position: absolute; left: var(--space-xl); bottom: var(--space-xl); right: var(--space-xl); z-index: 3; margin: 0;
+    font-size: clamp(56px, 10vw, 128px); font-weight: var(--weight-black); font-family: var(--font-display);
+    color: var(--gray-0); letter-spacing: -0.03em; line-height: 0.85;
+  }
+  #variant-b .detail__tag {
+    display: inline-block; background: var(--color-accent); color: var(--color-on-accent); font-size: 12px;
+    font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: 0.06em; padding: 4px 10px;
+    position: absolute; left: var(--space-xl); top: var(--space-xl); z-index: 3;
+  }
+  #variant-b .detail__statement { max-width: 640px; font-size: 18px; line-height: 1.55; margin: 0 0 var(--space-lg); }
+  #variant-b .detail__format {
+    display: inline-block; font-size: 13px; font-weight: var(--weight-semibold); text-transform: uppercase;
+    letter-spacing: 0.04em; color: var(--color-ink); border-bottom: 2px solid var(--color-accent);
+    padding-bottom: var(--space-sm); margin: 0 0 var(--space-2xl);
+  }
+  #variant-b .detail__thumbs-label {
+    font-size: 12px; font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: 0.08em;
+    color: #6b6b6b; margin: 0 0 var(--space-md);
+  }
+  #variant-b .detail__hero img { transition: transform 8s ease; }
+  #variant-b .detail__hero:hover img { transform: scale(1.06); }
+
+  @media (max-width: 800px) {
+    #variant-b .detail__hero-title { font-size: clamp(40px, 14vw, 64px); }
+  }
+</style>
+</head>
+<body>
+
+<div id="variant-nav">
+  <span class="label">Sketch 003 · Édition detail coherence</span>
+  <button class="variant-tab active" data-variant="a" onclick="showVariant('a')">A: Current (baseline)</button>
+  <button class="variant-tab" data-variant="b" onclick="showVariant('b')">B: Amplified</button>
+</div>
+
+<div id="viewport-wrap">
+
+  <!-- VARIANT A: Current -->
+  <div id="variant-a" class="variant active">
+    <div class="site-header-replica">
+      <span class="logo">AJS</span>
+      <nav><a href="#">Éditions</a><a href="#">À propos</a><a href="#">Contact</a></nav>
+      <div class="right"><span>◎</span><span>EN</span></div>
+    </div>
+    <div class="detail">
+      <div class="detail__hero" onclick="fakeLightbox(event)">
+        <img src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?w=2000&auto=format" alt="">
+        <div class="detail__hero-scrim"></div>
+        <h1 class="detail__hero-title">Rebut</h1>
+      </div>
+      <div class="detail__content">
+        <a class="detail__back" href="#" onclick="return fakeNav(event,'l\'aperçu Éditions')">← Retour aux éditions</a>
+        <p class="detail__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder — un objet façonné à la main, pensé pour circuler d'abord entre proches avant de trouver sa place ailleurs.</p>
+        <p class="detail__format">Pages : 50 · Tirage : 2 exemplaires · Dimensions : 21 × 29.7 cm</p>
+        <div class="detail__thumbs">
+          <button onclick="fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/5ce383b9109bb57310e009b85ca4008995cb4831-5735x3783.jpg?w=600&h=600&fit=crop&auto=format" alt=""></button>
+          <button onclick="fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/a74307df39a8fc5507cc2cf5d5cafb700af09ca9-6414x4786.jpg?w=600&h=600&fit=crop&auto=format" alt=""></button>
+          <button onclick="fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/d65fc2c54e1623b688acc45d3ede61ccae61a0d3-6520x4865.jpg?w=600&h=600&fit=crop&auto=format" alt=""></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VARIANT B: Amplified -->
+  <div id="variant-b" class="variant">
+    <div class="site-header-replica">
+      <span class="logo">AJS</span>
+      <nav><a href="#">Éditions</a><a href="#">À propos</a><a href="#">Contact</a></nav>
+      <div class="right"><span>◎</span><span>EN</span></div>
+    </div>
+    <div class="detail">
+      <div class="detail__hero" onclick="fakeLightbox(event)">
+        <img src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?w=2000&auto=format" alt="">
+        <div class="detail__hero-scrim"></div>
+        <span class="detail__tag">Nouveau</span>
+        <h1 class="detail__hero-title">Rebut</h1>
+      </div>
+      <div class="detail__content">
+        <a class="detail__back" href="#" onclick="return fakeNav(event,'l\'aperçu Éditions')">← Retour aux éditions</a>
+        <p class="detail__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder — un objet façonné à la main, pensé pour circuler d'abord entre proches avant de trouver sa place ailleurs.</p>
+        <p class="detail__format">Pages : 50 · Tirage : 2 exemplaires · Dimensions : 21 × 29.7 cm</p>
+        <p class="detail__thumbs-label">Planches</p>
+        <div class="detail__thumbs">
+          <button onclick="fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/5ce383b9109bb57310e009b85ca4008995cb4831-5735x3783.jpg?w=600&h=600&fit=crop&auto=format" alt=""></button>
+          <button onclick="fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/a74307df39a8fc5507cc2cf5d5cafb700af09ca9-6414x4786.jpg?w=600&h=600&fit=crop&auto=format" alt=""></button>
+          <button onclick="fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/d65fc2c54e1623b688acc45d3ede61ccae61a0d3-6520x4865.jpg?w=600&h=600&fit=crop&auto=format" alt=""></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="sketch-tools">
+  <select onchange="setViewport(this.value)">
+    <option value="">Full width</option>
+    <option value="vp-desktop">Desktop 1280</option>
+    <option value="vp-tablet">Tablet 768</option>
+    <option value="vp-phone">Phone 375</option>
+  </select>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  function showVariant(id) {
+    document.querySelectorAll('.variant').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.variant-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('variant-' + id).classList.add('active');
+    document.querySelector('.variant-tab[data-variant="' + id + '"]').classList.add('active');
+  }
+
+  function setViewport(cls) { document.getElementById('viewport-wrap').className = cls; }
+
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  function fakeNav(e, dest) { e.preventDefault(); showToast('→ navigue vers ' + dest); return false; }
+  function fakeLightbox(e) { e.preventDefault(); showToast('→ ouvre la visionneuse (Lightbox) en taille réelle'); }
+</script>
+
+</body>
+</html>

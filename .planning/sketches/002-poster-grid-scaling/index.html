@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sketch 002 — Poster Grid Scaling</title>
+<link rel="stylesheet" href="../themes/default.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;900&display=swap" rel="stylesheet">
+<style>
+  body { padding-top: 52px; }
+
+  #variant-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9998;
+    background: var(--gray-0); border-bottom: var(--border-hairline) solid var(--color-ink);
+    padding: 10px 20px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    font-family: var(--font-sans); font-size: 13px;
+  }
+  #variant-nav .label { font-weight: var(--weight-semibold); margin-right: 8px; letter-spacing: 0.04em; text-transform: uppercase; font-size: 11px; color: #6b6b6b; }
+  #variant-nav .count-label { font-weight: var(--weight-semibold); margin-left: 16px; margin-right: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #6b6b6b; }
+  .count-btn {
+    font-family: var(--font-sans); font-size: 13px; font-weight: var(--weight-semibold);
+    background: var(--gray-0); color: var(--color-ink); border: var(--border-hairline) solid var(--color-border);
+    padding: 6px 12px; cursor: pointer; transition: all 0.15s ease; border-radius: var(--radius-sm); min-width: 32px;
+  }
+  .count-btn:hover { border-color: var(--color-ink); }
+  .count-btn.active { background: var(--color-ink); color: var(--gray-0); border-color: var(--color-ink); }
+
+  #sketch-tools {
+    position: fixed; bottom: 12px; right: 12px; z-index: 9999;
+    font-family: system-ui, sans-serif; font-size: 12px;
+    background: rgba(0,0,0,0.78); color: #fff; padding: 8px 12px; border-radius: 8px;
+    opacity: 0.45; transition: opacity 0.2s ease; display: flex; gap: 10px; align-items: center;
+  }
+  #sketch-tools:hover { opacity: 1; }
+  #sketch-tools select { font-size: 11px; background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; padding: 3px 6px; }
+
+  #viewport-wrap { max-width: none; margin: 0 auto; transition: max-width 0.2s ease; border-left: 1px dashed transparent; border-right: 1px dashed transparent; }
+  #viewport-wrap.vp-phone { max-width: 375px; border-color: #ccc; }
+  #viewport-wrap.vp-tablet { max-width: 768px; border-color: #ccc; }
+  #viewport-wrap.vp-desktop { max-width: 1280px; border-color: #ccc; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--color-ink); color: var(--gray-0); font-family: var(--font-sans); font-size: 13px;
+    padding: 10px 18px; border-radius: var(--radius-sm); opacity: 0; pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease; z-index: 9997; white-space: nowrap; max-width: 90vw; text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .site-header-replica {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px var(--editorial-page-padding-inline); border-bottom: var(--border-hairline) solid var(--color-ink);
+    font-family: var(--font-sans); font-size: 14px;
+  }
+  .site-header-replica .logo { font-family: var(--font-display); font-weight: var(--weight-black); font-size: 20px; letter-spacing: -0.02em; }
+  .site-header-replica nav { display: flex; gap: 28px; }
+  .site-header-replica nav a { color: var(--color-ink); font-weight: var(--weight-semibold); }
+  .site-header-replica .right { display: flex; gap: 20px; align-items: center; color: #6b6b6b; }
+
+  .page { max-width: var(--editorial-page-max); margin: 0 auto; padding: var(--editorial-page-padding-block) var(--editorial-page-padding-inline); }
+
+  /* Header — unchanged from production, per sketch 001's finalized decision */
+  .page-header { border-top: var(--border-hairline) solid var(--color-ink); padding-top: var(--space-md); margin-bottom: var(--space-2xl); }
+  .page-eyebrow { margin: 0; font-size: var(--text-label-size); font-weight: var(--weight-semibold); letter-spacing: 0.08em; text-transform: uppercase; }
+  .page-h1 { font-family: var(--font-display); font-weight: var(--weight-semibold); font-size: var(--editorial-page-title-size); line-height: 0.95; letter-spacing: -0.04em; margin: var(--space-md) 0 0; }
+
+  .placeholder-note {
+    font-size: 13px; color: #6b6b6b; margin: 0 0 var(--space-lg); padding: var(--space-sm) var(--space-md);
+    border-left: 3px solid var(--color-accent); background: #fafafa;
+  }
+
+  /* Groups of up to 3 tiles: 1 hero (2-row) + up to 2 stacked smalls */
+  .grid-groups { display: flex; flex-direction: column; gap: var(--space-md); }
+  .grid-group { display: grid; grid-template-columns: repeat(12, 1fr); grid-auto-rows: 16vw; gap: var(--space-md); }
+
+  .tile {
+    position: relative; overflow: hidden; display: block; color: var(--gray-0); text-decoration: none;
+    border: var(--border-hairline) solid var(--color-ink); background: var(--color-ink);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .tile:hover, .tile:focus-visible { transform: translate(-4px, -4px); box-shadow: 6px 6px 0 var(--color-ink); outline: none; }
+  .tile img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
+  .tile:hover img { transform: scale(1.04); }
+  .tile-scrim { position: absolute; left: 0; right: 0; bottom: 0; height: 60%; background: linear-gradient(to top, rgba(26,26,26,0.9), rgba(26,26,26,0)); }
+  .tile-body { position: absolute; left: 0; right: 0; bottom: 0; padding: var(--space-lg); }
+  .tile-title { display: block; font-family: var(--font-display); font-weight: var(--weight-black); line-height: 0.95; margin-bottom: var(--space-xs); }
+  .tile--hero .tile-title { font-size: clamp(28px, 4.5vw, 48px); }
+  .tile--small .tile-title { font-size: clamp(20px, 2.6vw, 28px); }
+  .tile-tag {
+    display: inline-block; background: var(--color-accent); color: var(--color-on-accent); font-size: 11px;
+    font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 8px;
+    margin-bottom: var(--space-sm);
+  }
+  .tile-statement { font-size: 14px; line-height: 1.4; max-width: 40ch; opacity: 0.9; margin: 0; }
+  .tile--small .tile-statement { display: none; } /* small tiles: title only, statement lives on the detail page */
+
+  /* group templates */
+  .grid-group[data-size="3"][data-side="left"] .tile:nth-child(1) { grid-column: 1 / 8; grid-row: 1 / 3; }
+  .grid-group[data-size="3"][data-side="left"] .tile:nth-child(2) { grid-column: 8 / 13; grid-row: 1 / 2; }
+  .grid-group[data-size="3"][data-side="left"] .tile:nth-child(3) { grid-column: 8 / 13; grid-row: 2 / 3; }
+
+  .grid-group[data-size="3"][data-side="right"] .tile:nth-child(1) { grid-column: 6 / 13; grid-row: 1 / 3; }
+  .grid-group[data-size="3"][data-side="right"] .tile:nth-child(2) { grid-column: 1 / 6; grid-row: 1 / 2; }
+  .grid-group[data-size="3"][data-side="right"] .tile:nth-child(3) { grid-column: 1 / 6; grid-row: 2 / 3; }
+
+  .grid-group[data-size="2"][data-side="left"] .tile:nth-child(1) { grid-column: 1 / 8; grid-row: 1 / 3; }
+  .grid-group[data-size="2"][data-side="left"] .tile:nth-child(2) { grid-column: 8 / 13; grid-row: 1 / 2; }
+
+  .grid-group[data-size="2"][data-side="right"] .tile:nth-child(1) { grid-column: 6 / 13; grid-row: 1 / 3; }
+  .grid-group[data-size="2"][data-side="right"] .tile:nth-child(2) { grid-column: 1 / 6; grid-row: 1 / 2; }
+
+  .grid-group[data-size="1"] { grid-auto-rows: 11vw; }
+  .grid-group[data-size="1"] .tile:nth-child(1) { grid-column: 1 / 13; grid-row: 1 / 2; }
+
+  /* Empty state */
+  .empty-state {
+    border: var(--border-hairline) dashed var(--color-border); padding: var(--space-3xl) var(--space-xl);
+    text-align: center;
+  }
+  .empty-state h2 {
+    font-family: var(--font-display); font-weight: var(--weight-black); font-size: clamp(32px, 5vw, 56px);
+    margin: 0 0 var(--space-md); letter-spacing: -0.02em;
+  }
+  .empty-state p { font-size: var(--text-body-size); color: #6b6b6b; margin: 0; }
+
+  @media (max-width: 800px) {
+    .grid-group, .grid-group[data-size="1"] { grid-template-columns: 1fr; grid-auto-rows: auto; }
+    .grid-group .tile { grid-column: 1 !important; grid-row: auto !important; aspect-ratio: 3/4; }
+    .tile--hero .tile-title { font-size: clamp(28px, 9vw, 40px); }
+  }
+</style>
+</head>
+<body>
+
+<div id="variant-nav">
+  <span class="label">Sketch 002 · Poster grid at different item counts</span>
+  <span class="count-label">Items:</span>
+  <button class="count-btn" data-count="0" onclick="setCount(0)">0</button>
+  <button class="count-btn" data-count="1" onclick="setCount(1)">1</button>
+  <button class="count-btn active" data-count="2" onclick="setCount(2)">2 (today)</button>
+  <button class="count-btn" data-count="3" onclick="setCount(3)">3</button>
+  <button class="count-btn" data-count="4" onclick="setCount(4)">4</button>
+  <button class="count-btn" data-count="5" onclick="setCount(5)">5</button>
+</div>
+
+<div id="viewport-wrap">
+  <div class="site-header-replica">
+    <span class="logo">AJS</span>
+    <nav><a href="#">Éditions</a><a href="#">À propos</a><a href="#">Contact</a></nav>
+    <div class="right"><span>◎</span><span>EN</span></div>
+  </div>
+  <div class="page">
+    <header class="page-header">
+      <p class="page-eyebrow">Atelier Jacqueline Suzanne</p>
+      <h1 class="page-h1">Éditions</h1>
+    </header>
+
+    <p class="placeholder-note" id="placeholder-note" style="display:none">
+      Éditions 3-5 ci-dessous sont du <strong>contenu d'exemple</strong> pour tester la mise en page — pas de vraies éditions.
+    </p>
+
+    <div id="grid-mount"></div>
+  </div>
+</div>
+
+<div id="sketch-tools">
+  <select onchange="setViewport(this.value)">
+    <option value="">Full width</option>
+    <option value="vp-desktop">Desktop 1280</option>
+    <option value="vp-tablet">Tablet 768</option>
+    <option value="vp-phone">Phone 375</option>
+  </select>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const ITEMS = [
+    {
+      title: 'Rebut', real: true, tag: 'Nouveau',
+      statement: "Rebut est l'édition imprimée qui prolonge la série photographique du même nom.",
+      photo: 'https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg',
+    },
+    {
+      title: 'Silos', real: true, tag: null,
+      statement: "Objet imprimé à la croisée du fanzine et de l'édition cartographique.",
+      photo: 'https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg',
+    },
+    {
+      title: 'Marée (exemple)', real: false, tag: null,
+      statement: "Contenu d'exemple pour ce test de mise en page.",
+      photo: 'https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?w=900&h=1200&fit=crop&crop=focalpoint&fp-x=0.2&fp-y=0.8',
+    },
+    {
+      title: 'Contretype (exemple)', real: false, tag: null,
+      statement: "Contenu d'exemple pour ce test de mise en page.",
+      photo: 'https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?w=900&h=1200&fit=crop&crop=focalpoint&fp-x=0.8&fp-y=0.3',
+    },
+    {
+      title: 'Vestiges (exemple)', real: false, tag: null,
+      statement: "Contenu d'exemple pour ce test de mise en page.",
+      photo: 'https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?w=900&h=1200&fit=crop&crop=focalpoint&fp-x=0.7&fp-y=0.2',
+    },
+  ];
+
+  function tileHtml(item, kind) {
+    const cls = kind === 'hero' ? 'tile tile--hero' : 'tile tile--small';
+    const tag = item.tag ? `<span class="tile-tag">${item.tag}</span>` : '';
+    return `
+      <a class="${cls}" href="#" onclick="return fakeNav(event,'${item.title}')">
+        <img src="${item.photo}" alt="">
+        <div class="tile-scrim"></div>
+        <div class="tile-body">
+          ${tag}
+          <span class="tile-title">${item.title}</span>
+          <p class="tile-statement">${item.statement}</p>
+        </div>
+      </a>`;
+  }
+
+  function groupHtml(groupItems, side) {
+    const size = groupItems.length;
+    let inner = tileHtml(groupItems[0], 'hero');
+    if (size >= 2) inner += tileHtml(groupItems[1], 'small');
+    if (size >= 3) inner += tileHtml(groupItems[2], 'small');
+    return `<div class="grid-group" data-size="${size}" data-side="${side}">${inner}</div>`;
+  }
+
+  function emptyStateHtml() {
+    return `
+      <div class="empty-state">
+        <h2>Éditions à venir</h2>
+        <p>De nouvelles éditions seront bientôt visibles ici. Revenez prochainement.</p>
+      </div>`;
+  }
+
+  function render(count) {
+    const mount = document.getElementById('grid-mount');
+    const note = document.getElementById('placeholder-note');
+    note.style.display = count > 2 ? 'block' : 'none';
+
+    if (count === 0) {
+      mount.innerHTML = emptyStateHtml();
+      return;
+    }
+
+    const items = ITEMS.slice(0, count);
+    let html = '';
+    let i = 0, g = 0;
+    while (i < items.length) {
+      const group = items.slice(i, i + 3);
+      const side = g % 2 === 0 ? 'left' : 'right';
+      html += groupHtml(group, side);
+      i += group.length;
+      g += 1;
+    }
+    mount.innerHTML = `<div class="grid-groups">${html}</div>`;
+  }
+
+  function setCount(n) {
+    document.querySelectorAll('.count-btn').forEach(b => b.classList.toggle('active', Number(b.dataset.count) === n));
+    render(n);
+  }
+
+  function setViewport(cls) {
+    document.getElementById('viewport-wrap').className = cls;
+  }
+
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  function fakeNav(e, title) {
+    e.preventDefault();
+    showToast('→ navigue vers /editions/' + title.toLowerCase().replace(/\s*\(exemple\)/, '').replace(/\s+/g, '-') + '/');
+    return false;
+  }
+
+  render(2);
+</script>
+
+</body>
+</html>
