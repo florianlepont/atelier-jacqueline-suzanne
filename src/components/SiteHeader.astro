@@ -284,7 +284,7 @@ const {
      homepage already relies on. */
   @media (max-width: 767px) {
     .site-header {
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       gap: var(--space-xs);
     }
 
@@ -303,7 +303,7 @@ const {
      second header row or horizontal scrolling. Every control retains its
      44px vertical tap target; only horizontal padding and icon/logo width
      are tightened. */
-  @media (max-width: 359px) {
+  @media (max-width: 400px) {
     .chrome-band {
       padding: var(--space-sm);
     }
