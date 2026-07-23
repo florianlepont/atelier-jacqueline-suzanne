@@ -24,7 +24,7 @@ current_phase_name: verification-uat
 See: .planning/PROJECT.md (updated 2026-07-22)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; v1.3 adds a non-transactional Éditions showcase; checkout still follows in the future v1.x shop milestone.)
-**Current focus:** Phase 14 — verification-uat
+**Current focus:** Planning next milestone
 
 ## Current Position
 
@@ -139,9 +139,7 @@ None currently open. Both prior research-carryover items were resolved during Ph
 - Domain email service: confirmed active (MX Plan + Zimbra mailbox) via the OVH panel — Phase 5's DNS cutover must preserve these records, not wipe the zone.
 - OVH deployment method: confirmed via the OVH panel — "Free hosting" tier, SFTP enabled on port 22, host `ftp.cluster129.hosting.ovh.net`, user `atelihu`, home dir `/home/atelihu` (see 01-02-SUMMARY.md). Note: this same Free tier cannot attach any subdomain (multisite requires a paid tier) — Phase 1 staging used GitHub Pages instead; Phase 5's production cutover plan should account for the single-domain limitation.
 
-Carried forward for v1.3 (from PROJECT.md's Context section, not yet resolved):
-
-- Naming overlap: the shipped Portfolio already has a gallery titled "Rebut" (migrated in Phase 2), and the new "Éditions" milestone adds a paper édition also named "Rebut" (or "Sillo") documented via its own photo shoot. Unconfirmed whether these are the same subject or two unrelated things sharing a name — needs a direct check with Romane during Phase 11 content work, tracked as a Phase 11 success criterion, not resolved autonomously here.
+(The v1.3 Rebut/Éditions naming-overlap question carried here previously was resolved during Phase 11 — see PROJECT.md Key Decisions; removed as a blocker.)
 
 ### Quick Tasks Completed
 
@@ -201,7 +199,7 @@ Last session: 2026-07-23T11:21:55.523Z
 Stopped at: Phase 14 context gathered
 Resume file: .planning/phases/14-verification-uat/14-CONTEXT.md
 
-**Next up:** `/gsd-plan-phase 13 --gaps` — plan the mobile-wrap fix, then re-run `/gsd-execute-phase 13 --gaps-only`.
+**Next up:** `/gsd-new-milestone` — scope the next milestone (v1.3 shipped and archived 2026-07-23).
 
 ## Operator Next Steps
 
