@@ -1,0 +1,188 @@
+---
+// English Éditions overview — EN twin of src/pages/editions/index.astro.
+// Only import depth (one level deeper, per the fr-root/en-prefix
+// convention) and locale differ; see the FR file for structural comments.
+import { getRelativeLocaleUrl } from 'astro:i18n';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import EmptyState from '../../../components/EmptyState.astro';
+import { getEditions } from '../../../lib/sanity';
+import { thumbnailUrl, responsiveThumbnailSrcSet } from '../../../lib/image';
+
+const locale = 'en' as const;
+const editions = await getEditions();
+
+const seoTitle = 'Editions — Atelier Jacqueline Suzanne';
+const seoDescription =
+  "Discover Romane Lepont's paper editions — zines and books published by Atelier Jacqueline Suzanne.";
+---
+
+<BaseLayout title={seoTitle} description={seoDescription} headerVariant="transparent">
+  <article class="editions-list">
+    <header class="editions-list__header">
+      <p class="editions-list__eyebrow">Atelier Jacqueline Suzanne</p>
+      <h1>Editions</h1>
+    </header>
+
+    {
+      editions.length === 0 ? (
+        <EmptyState
+          heading="Editions coming soon"
+          body="New editions will appear here shortly. Check back soon."
+        />
+      ) : (
+        editions.map((edition, i) => {
+          const alt = edition.leadPhoto.alt?.[locale] ?? '';
+          return (
+            <a
+              class="editions-list__row"
+              class:list={{ 'editions-list__row--reverse': i % 2 === 1 }}
+              href={getRelativeLocaleUrl(locale, `editions/${edition.slug}`)}
+            >
+              <div class="editions-list__photo">
+                <img
+                  src={thumbnailUrl(edition.leadPhoto, 600)}
+                  srcset={responsiveThumbnailSrcSet(edition.leadPhoto)}
+                  sizes="(max-width: 767px) 320px, 320px"
+                  alt={alt}
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+              <div class="editions-list__text">
+                <span class="editions-list__title">{edition.title}</span>
+                <p class="editions-list__statement">{edition.statement?.[locale] ?? ''}</p>
+              </div>
+              <span class="sr-only"> — View edition</span>
+            </a>
+          );
+        })
+      )
+    }
+  </article>
+</BaseLayout>
+
+<style>
+  .editions-list {
+    width: min(100%, var(--editorial-page-max));
+    margin: 0 auto;
+    padding: var(--editorial-page-padding-block) var(--editorial-page-padding-inline);
+  }
+
+  .editions-list__header {
+    padding-top: var(--space-md);
+    border-top: var(--border-hairline) solid var(--color-ink);
+    margin-bottom: var(--space-2xl);
+  }
+
+  .editions-list__eyebrow {
+    margin: 0;
+    font-size: var(--text-label-size);
+    font-weight: var(--weight-semibold);
+    line-height: var(--text-label-leading);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .editions-list h1 {
+    margin: var(--space-md) 0 0;
+    font-size: var(--editorial-page-title-size);
+    font-weight: var(--weight-semibold);
+    font-family: var(--font-display);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+  }
+
+  .editions-list__row {
+    display: grid;
+    grid-template-columns: minmax(200px, 320px) minmax(0, 1fr);
+    column-gap: var(--space-xl);
+    align-items: start;
+    border-top: var(--border-hairline) solid var(--color-ink);
+    padding-top: var(--space-lg);
+    margin-top: var(--space-2xl);
+    text-decoration: none;
+    color: var(--color-ink);
+  }
+
+  .editions-list__row:first-of-type {
+    margin-top: 0;
+  }
+
+  .editions-list__row:hover,
+  .editions-list__row:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  .editions-list__row:hover .editions-list__photo img,
+  .editions-list__row:focus-visible .editions-list__photo img {
+    transform: scale(1.01);
+  }
+
+  .editions-list__photo {
+    grid-column: 1;
+  }
+
+  .editions-list__text {
+    grid-column: 2;
+  }
+
+  .editions-list__row--reverse .editions-list__photo {
+    grid-column: 2;
+  }
+
+  .editions-list__row--reverse .editions-list__text {
+    grid-column: 1;
+  }
+
+  .editions-list__row--reverse {
+    grid-template-columns: minmax(0, 1fr) minmax(200px, 320px);
+  }
+
+  .editions-list__photo img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    transition: transform 0.2s ease;
+  }
+
+  .editions-list__title {
+    display: block;
+    font-size: var(--editorial-page-section-title-size);
+    font-weight: var(--weight-semibold);
+    font-family: var(--font-display);
+    line-height: var(--editorial-page-section-title-leading);
+    margin: 0 0 var(--space-md);
+  }
+
+  .editions-list__statement {
+    max-width: 640px;
+    font-size: var(--text-body-size);
+    font-weight: var(--weight-regular);
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  @media (max-width: 767px) {
+    .editions-list__row,
+    .editions-list__row--reverse {
+      grid-template-columns: 1fr;
+      gap: var(--space-md);
+    }
+
+    .editions-list__row .editions-list__photo,
+    .editions-list__row--reverse .editions-list__photo {
+      grid-column: 1;
+    }
+
+    .editions-list__row .editions-list__text,
+    .editions-list__row--reverse .editions-list__text {
+      grid-column: 1;
+    }
+
+    .editions-list__photo img {
+      max-width: 320px;
+    }
+  }
+</style>

@@ -1,6 +1,7 @@
 import {siteSettings} from './siteSettings'
 import {homePage} from './homePage'
 import {gallery} from './gallery'
+import {edition} from './edition'
 import {aboutPage} from './aboutPage'
 import {exhibition} from './exhibition'
 import {seo} from './seo'
@@ -13,6 +14,7 @@ export const schemaTypes = [
   aboutPage,
   contactPage,
   gallery,
+  edition,
   exhibition,
   seo,
   imageRights,

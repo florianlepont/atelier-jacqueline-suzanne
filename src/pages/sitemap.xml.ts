@@ -1,11 +1,12 @@
 import type {APIRoute} from 'astro'
-import {getAboutPage, getContactPage, getGalleries, getHomePage} from '../lib/sanity'
+import {getAboutPage, getContactPage, getEditions, getGalleries, getHomePage} from '../lib/sanity'
 import {buildSitemapXml, localizedSitemapPaths} from '../lib/static-routes'
 
 export const GET: APIRoute = async ({site}) => {
   const origin = site ?? new URL('https://florianlepont.github.io')
-  const [galleries, homePage, aboutPage, contactPage] = await Promise.all([
+  const [galleries, editions, homePage, aboutPage, contactPage] = await Promise.all([
     getGalleries(),
+    getEditions(),
     getHomePage(),
     getAboutPage(),
     getContactPage(),
@@ -20,6 +21,11 @@ export const GET: APIRoute = async ({site}) => {
       path: `galleries/${gallery.slug}/`,
       noIndex: gallery.seo?.noIndex,
     })),
+    {path: 'editions/'},
+    // No noIndex key here: edition has no `seo` field, so there is no
+    // per-édition noindex source — every published édition unconditionally
+    // appears in the sitemap (RESEARCH.md Pattern 4).
+    ...editions.map((edition) => ({path: `editions/${edition.slug}/`})),
   ])
 
   const body = buildSitemapXml(origin, import.meta.env.BASE_URL, localizedPaths)

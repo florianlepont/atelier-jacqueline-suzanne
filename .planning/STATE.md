@@ -1,43 +1,43 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: Homepage Polish (Pre-Launch)
-current_phase: 10
-status: executing
-stopped_at: Phase 10 UI-SPEC approved
-last_updated: "2026-07-20T14:47:36.339Z"
-last_activity: 2026-07-20
-last_activity_desc: Phase 10 complete
+milestone: v1.3
+milestone_name: Éditions
+current_phase: 3
+status: Awaiting next milestone
+stopped_at: Phase 14 context gathered
+last_updated: "2026-07-23T16:48:27.281Z"
+last_activity: 2026-07-23
+last_activity_desc: Milestone v1.3 completed and archived
 progress:
-  total_phases: 13
-  completed_phases: 11
-  total_plans: 34
-  completed_plans: 35
-  percent: 85
-current_phase_name: unified-header-simplified-language-switcher
+  total_phases: 4
+  completed_phases: 4
+  total_plans: 11
+  completed_plans: 11
+  percent: 100
+current_phase_name: verification-uat
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-07-14)
+See: .planning/PROJECT.md (updated 2026-07-22)
 
-**Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; checkout follows in v1.x.)
-**Current focus:** Phase 10 — unified-header-simplified-language-switcher
+**Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; v1.3 adds a non-transactional Éditions showcase; checkout still follows in the future v1.x shop milestone.)
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Phase: 10
-Phase: 10 (Unified Header & Simplified Language Switcher) — complete, 3/3 plans executed
-Status: Executing Phase 10
-Last activity: 2026-07-22 - Completed quick task 260722-afi: Sanity dashboard attention-section header contrast fix
+Phase: Milestone v1.3 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-07-23 — Milestone v1.3 completed and archived
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 21
+- Total plans completed: 32
 - Average duration: - min
 - Total execution time: 0 hours
 
@@ -52,6 +52,10 @@ Last activity: 2026-07-22 - Completed quick task 260722-afi: Sanity dashboard at
 | 07 | 2 | - | - |
 | 09 | 2 | - | - |
 | 10 | 4 | - | - |
+| 11 | 2 | - | - |
+| 12 | 3 | - | - |
+| 13 | 2 | - | - |
+| 14 | 4 | - | - |
 
 **Recent Trend:**
 
@@ -84,6 +88,7 @@ Last activity: 2026-07-22 - Completed quick task 260722-afi: Sanity dashboard at
 - v1.1 milestone (Homepage Refinements) roadmapped 2026-07-12: single new Phase 6 (integer, continuing numbering from v1.0's last phase, Phase 5) covers all three v1.1 requirements (HOME-01, HOME-02, HOME-03) — tightly-scoped, single-component (HomeCarousel.astro) refinement, so kept as one phase rather than split. Per PROJECT.md, Phase 6 is intended to execute before Phase 5's domain cutover despite the higher phase number (numbering reflects milestone-arrival order, not execution sequence).
 - Phase 6 completed 2026-07-13: HOME-01/02/03 delivered per plan (commits `ad27437`..`dbebd6f`), plus a substantial live post-checkpoint follow-on (commit `44cc10d`) reworking the mobile hero (full-bleed `100svh`, panel overlaid on the photo) and replacing the arrow-button navigation with a clickable dashed progress indicator plus keyboard/swipe support — none of this follow-on was in the original plan; it was discovered through direct use after Task 3's checkpoint was already approved, and reconciled into tracked history via `06-01-SUMMARY.md` per explicit user request. v1.1 milestone is now complete; Phase 5 (Launch & Domain Cutover) is the only remaining v1 phase.
 - v1.2 milestone (Homepage Polish, Pre-Launch) roadmapped 2026-07-13: four new integer phases (7–10, continuing numbering from Phase 6) cover all eight v1.2 requirements (HOME-04..HOME-10, I18N-04), sequenced by blast radius rather than dumped into one phase — Phase 7 (HOME-04, HOME-05, HOME-06): small, contained, homepage-only header/CSS tweaks and a mobile bug fix, done first with no shared-component or content-model risk. Phase 8 (HOME-07, HOME-08): grouped together because both surface the same new per-gallery description content (Sanity schema addition), just in two display forms (carousel byline, grid hover) — building the schema once and wiring both displays in the same phase avoids doing the content-model work twice. Phase 9 (HOME-09): kept standalone — progressive image loading has its own distinct testing surface (loading states/priority/transition timing) and potentially touches more than just the homepage's own images, so it wasn't folded into Phase 7's contained fixes. Phase 10 (HOME-10, I18N-04): the highest-risk item (structural header-consolidation refactor spanning homepage + About/Contact) done last, in its own phase, depending on Phase 7 — so the header nav/toggle groundwork already fixed in Phase 7 gets carried into the unified component once, rather than rebuilt twice; I18N-04 (language switcher globe-icon change) is bundled in because its presentation lives inside the same header being unified.
+- v1.3 milestone "Éditions" roadmapped 2026-07-22: four new integer phases (11–14, continuing numbering from Phase 10; Phase 5 stays untouched/separately tracked and out of this milestone) cover all eight v1.3 requirements (EDN-01..EDN-07, CMS-04), following research/SUMMARY.md's proposed 4-phase structure near-verbatim (schema before data-fetch, routes before nav since nav touches every-page shared chrome, verification as an explicit final pass for omission-class risks). Phase 11 (Schema & Content Model — CMS-04, EDN-05): new `edition` Sanity document type mirroring `gallery.ts`'s richer editorial workflow, seeded with real content; format-detail fields grouped and typed now so a future shop `commerce` field group is additive, not a restructuring; also the phase where the "Rebut" gallery/édition naming-overlap question gets raised with Romane. Phase 12 (Data-Fetch Layer & Routes — EDN-02, EDN-03, EDN-04, EDN-06, EDN-07): build-time GROQ layer + bilingual overview/detail routes, verifiable in isolation before anything shared is touched; detail page mirrors `galleries/[slug].astro` directly, overview page is genuinely new (no gallery equivalent). Phase 13 (Nav Integration — EDN-01): touches the one piece of shared, every-page chrome in this feature (`SiteHeader`, threaded through two independent call sites — `BaseLayout.astro` and `HomeCarousel.astro`); sequenced last of the build phases so nav never points at an unready route. Phase 14 (Verification & UAT — no primary requirement, cross-cutting): a dedicated pass because this milestone's dominant risk class is omission bugs (missed locale, missed sitemap entry, missed nav call site) that don't fail loudly on a single happy-path check.
 
 ### Decisions
 
@@ -95,6 +100,7 @@ Recent decisions affecting current work:
 - [Roadmap]: Legal & Compliance (Phase 4) depends on Phase 3 (Contact) since the privacy notice must describe contact-form data handling.
 - [Roadmap]: v1.1 milestone (Homepage Refinements) mapped to a single new Phase 6, continuing integer numbering from v1.0's Phase 5 — all three requirements (HOME-01/02/03) touch the same component (HomeCarousel.astro) and are cosmetic/interaction refinements with no new backend/data model, so a single phase was judged more coherent than splitting.
 - [Roadmap]: v1.2 milestone (Homepage Polish, Pre-Launch) mapped to four new phases (7–10), continuing integer numbering from Phase 6 — split by blast radius/risk (contained visual fixes → shared content-model addition → self-contained perf change → shared-component structural refactor done last) rather than one large phase, since HOME-10/I18N-04 carry materially higher risk (multi-page shared component) than the other six requirements.
+- [Roadmap]: v1.3 milestone "Éditions" mapped to four new phases (11–14), continuing integer numbering from Phase 10 — Phase 5 (Launch & Domain Cutover) is untouched and remains separately tracked, not part of this milestone. Phase order follows dependency + blast-radius reasoning from research/SUMMARY.md: schema/content model must exist and be seeded before the data-fetch layer can be verified against anything real; routes come before nav wiring since nav is the only part touching shared chrome used by every existing page; verification is its own explicit final phase because this milestone's pitfalls are dominated by omission-class bugs.
 - [Phase 01]: No SSR adapter installed for Astro (output: 'static' framework default) per OVH static-hosting constraint — OVH Web Hosting is a zero-compute Apache file server; @astrojs/cloudflare/wrangler are explicitly excluded
 - [Phase 01]: Phase 1 staging deploys to GitHub Pages (repo now public) instead of an OVH subdomain; OVH SFTP facts recorded for Phase 5 — OVH Free hosting tier cannot attach any subdomain (multisite requires paid tier); GitHub Pages reuses existing repo with zero new signup and automatic HTTPS
 - [Phase 01]: Sanity read-only + one-time write tokens created and revoked entirely via CLI (sanity tokens add/delete), no dashboard visit needed — sanity tokens add/list/delete supports full non-interactive token lifecycle management
@@ -133,6 +139,8 @@ None currently open. Both prior research-carryover items were resolved during Ph
 - Domain email service: confirmed active (MX Plan + Zimbra mailbox) via the OVH panel — Phase 5's DNS cutover must preserve these records, not wipe the zone.
 - OVH deployment method: confirmed via the OVH panel — "Free hosting" tier, SFTP enabled on port 22, host `ftp.cluster129.hosting.ovh.net`, user `atelihu`, home dir `/home/atelihu` (see 01-02-SUMMARY.md). Note: this same Free tier cannot attach any subdomain (multisite requires a paid tier) — Phase 1 staging used GitHub Pages instead; Phase 5's production cutover plan should account for the single-domain limitation.
 
+(The v1.3 Rebut/Éditions naming-overlap question carried here previously was resolved during Phase 11 — see PROJECT.md Key Decisions; removed as a blocker.)
+
 ### Quick Tasks Completed
 
 | # | Description | Date | Commit | Status | Directory |
@@ -153,11 +161,11 @@ None currently open. Both prior research-carryover items were resolved during Ph
 | 260720-sanity-dashboard-activity-authors | Turn the Sanity dashboard's recent activity into a real editorial log using transaction history: identify the author, classify the action, summarize changed fields, and retain a safe fallback for purged history | 2026-07-20 | 3bff5d7 | [260720-sanity-dashboard-activity-authors](./quick/260720-sanity-dashboard-activity-authors/) |
 | 260720-sanity-dashboard-compact-layout | Recompose the Sanity dashboard as a compact responsive editorial cockpit: header toolbar, horizontal metrics, single-line task rows, and a desktop 2/3 + 1/3 tasks/activity layout | 2026-07-20 | e64b856 | [260720-sanity-dashboard-compact-layout](./quick/260720-sanity-dashboard-compact-layout/) |
 | 260720-sanity-dashboard-three-pass-polish | Complete three consecutive UI audit/fix loops on the compact Sanity dashboard: fix hierarchy and repetition, consolidate responsive metrics, strengthen affordances, and remove a duplicate styled-components runtime caught during the final audit | 2026-07-20 | 46d57fe | [260720-sanity-dashboard-three-pass-polish](./quick/260720-sanity-dashboard-three-pass-polish/) |
-| 260720-remove-dashboard-home-action | Remove the redundant « Modifier l’accueil » action from the Sanity dashboard header, leaving only collection creation and site preview | 2026-07-20 | a12a615 | [260720-remove-dashboard-home-action](./quick/260720-remove-dashboard-home-action/) |
-| 260720-apply-personal-dashboard-ui-audit | Apply the personal dashboard UI audit: primary collection action, semantic iconography, vertical KPI structure, separate deployment status, stable task metadata, comfortable targets, fixed activity dates, and native Sanity card depth | 2026-07-20 | ce8bbb6 | [260720-apply-personal-dashboard-ui-audit](./quick/260720-apply-personal-dashboard-ui-audit/) |
-| 260720-polish-dashboard-pixel-perfect | Complete the dashboard pixel-polish pass: tinted canvas and white surfaces, explicit low-emphasis site status, per-task icons, compact targets, resilient activity dates, responsive header/KPI behavior, and hover/focus/accessibility states | 2026-07-20 | cfa3d84 | [260720-polish-dashboard-pixel-perfect](./quick/260720-polish-dashboard-pixel-perfect/) |
-| 260720-fix-dashboard-spacing-and-task-details | Standardize dashboard control heights and icon spacing, rebuild priority rows on a stable grid, and explicitly display the remaining work for each content item | 2026-07-20 | ae2591c | [260720-fix-dashboard-spacing-and-task-details](./quick/260720-fix-dashboard-spacing-and-task-details/) |
-| 260720-rebuild-dashboard-optical-grid | Rebuild the regressed dashboard header, priority rows, activity rows and KPI rhythm around shared optical text/icon axes, with two buttons and a separate compact site status | 2026-07-20 | 69b6f7d | [260720-rebuild-dashboard-optical-grid](./quick/260720-rebuild-dashboard-optical-grid/) |
+| 260720-remove-dashboard-home-action | Remove the redundant « Modifier l'accueil » action from the Sanity dashboard header, leaving only collection creation and site preview | 2026-07-20 | a12a615 | | [260720-remove-dashboard-home-action](./quick/260720-remove-dashboard-home-action/) |
+| 260720-apply-personal-dashboard-ui-audit | Apply the personal dashboard UI audit: primary collection action, semantic iconography, vertical KPI structure, separate deployment status, stable task metadata, comfortable targets, fixed activity dates, and native Sanity card depth | 2026-07-20 | ce8bbb6 | | [260720-apply-personal-dashboard-ui-audit](./quick/260720-apply-personal-dashboard-ui-audit/) |
+| 260720-polish-dashboard-pixel-perfect | Complete the dashboard pixel-polish pass: tinted canvas and white surfaces, explicit low-emphasis site status, per-task icons, compact targets, resilient activity dates, responsive header/KPI behavior, and hover/focus/accessibility states | 2026-07-20 | cfa3d84 | | [260720-polish-dashboard-pixel-perfect](./quick/260720-polish-dashboard-pixel-perfect/) |
+| 260720-fix-dashboard-spacing-and-task-details | Standardize dashboard control heights and icon spacing, rebuild priority rows on a stable grid, and explicitly display the remaining work for each content item | 2026-07-20 | ae2591c | | [260720-fix-dashboard-spacing-and-task-details](./quick/260720-fix-dashboard-spacing-and-task-details/) |
+| 260720-rebuild-dashboard-optical-grid | Rebuild the regressed dashboard header, priority rows, activity rows and KPI rhythm around shared optical text/icon axes, with two buttons and a separate compact site status | 2026-07-20 | 69b6f7d | | [260720-rebuild-dashboard-optical-grid](./quick/260720-rebuild-dashboard-optical-grid/) |
 | 260722-afi | Corriger le contraste visuel entre l'en-tête et les items du tableau de bord éditorial (section Informations manquantes) — recessed header band, hairline divider, uppercase section-label title, human-verified via mockup replicating the exact CSS in light + dark mode | 2026-07-22 | 9762000 | Verified | [260722-afi-corriger-le-contraste-visuel-entre-l-en-](./quick/260722-afi-corriger-le-contraste-visuel-entre-l-en-/) |
 | 260722-tcv | Close the complete test-coverage audit: blocking thresholds, Sanity pure-logic coverage/build gate, contact failure states, iPhone/WebKit smoke, deterministic CMS/static-route cases, 404/base-path artifact verification, axe accessibility checks, and portable visual baselines | 2026-07-22 | — | Verified | [260722-tcv-close-test-coverage-audit-gaps](./quick/260722-tcv-close-test-coverage-audit-gaps/) |
 
@@ -167,13 +175,32 @@ Items acknowledged and carried forward from previous milestone close:
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
-| v1.x scope | Exhibitions, shop, checkout, shipping, commerce-specific legal (EXHB-*, SHOP-*, CHK-*, SHIP-*, LEGAL-02, LEGAL-04, CMS-02/03, I18N-02b/03) | Tracked in REQUIREMENTS.md v2 section, not yet roadmapped | Roadmap creation 2026-07-05 |
+| v1.x scope | Exhibitions, shop, checkout, shipping, commerce-specific legal (EXHB-*, SHOP-*, CHK-*, SHIP-*, LEGAL-02, LEGAL-04, CMS-02/03, I18N-02b/03), plus the Éditions cross-link differentiator (EDN-08) | Tracked in REQUIREMENTS.md v2 section, not yet roadmapped | Roadmap creation 2026-07-05 (v2 baseline); EDN-08 added 2026-07-22 |
+
+Items acknowledged and deferred at v1.3 milestone close on 2026-07-23 (`/gsd-complete-milestone` pre-close audit, 11 open items, user chose "Acknowledge all, proceed"):
+
+| Category | Item | Status |
+|----------|------|--------|
+| debug | knowledge-base | unknown (in substance resolved — this is the persistent resolved-sessions index file itself, not a live investigation; all 10 entries in it are mirrored as resolved in `.planning/debug/resolved/`) |
+| uat_gap | Phase 03: 03-HUMAN-UAT.md | partial (0 pending scenarios; Phase 03 shipped and marked complete in ROADMAP.md long before this audit tooling existed) |
+| uat_gap | Phase 14: 14-ROMANE-UAT.md | unknown (0 pending scenarios; Romane's pass was completed and explicitly approved — see 14-04-SUMMARY.md — this file is a checklist doc with no completion frontmatter field for the auditor to read) |
+| verification_gap | Phase 03: 03-VERIFICATION.md | human_needed (stale flag; Phase 03 shipped long ago) |
+| verification_gap | Phase 04.1: 04.1-VERIFICATION.md | human_needed (stale flag; Phase 04.1 shipped long ago) |
+| quick_task | 260722-compact-sanity-document-layout | missing (PLAN.md exists, no SUMMARY.md — planned, never executed; out of v1.3 Éditions scope) |
+| quick_task | 260722-improve-contact-page | missing (same as above) |
+| quick_task | 260722-normalize-sanity-form-spacing | missing (same as above) |
+| quick_task | 260722-rebalance-contact-typography | missing (same as above) |
+| quick_task | 260722-refine-contact-details | missing (same as above) |
+| quick_task | 260722-remove-redundant-sanity-fieldsets | missing (same as above) |
 
 ## Session Continuity
 
-Last session: 2026-07-15T07:20:11.767Z
-Stopped at: Phase 10 UI-SPEC approved
-Resume file: .planning/phases/10-unified-header-simplified-language-switcher/10-UI-SPEC.md
+Last session: 2026-07-23T11:21:55.523Z
+Stopped at: Phase 14 context gathered
+Resume file: .planning/phases/14-verification-uat/14-CONTEXT.md
 
-**Next up:** `/gsd-execute-phase 9` — Progressive Homepage Image Loading (HOME-09).
-</content>
+**Next up:** `/gsd-new-milestone` — scope the next milestone (v1.3 shipped and archived 2026-07-23).
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone

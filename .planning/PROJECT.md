@@ -8,21 +8,36 @@ A bilingual (French/English) website for Romane Lepont's photography and artisti
 
 Visitors can browse Romane's photographic work and buy a piece (print, original, book, or merch) through a real, working checkout — everything else supports that. **Delivered in two milestones**: v1 replaces the current site fast with portfolio/about/contact so the old Myportfolio site can be retired sooner; v1.x adds exhibitions, the shop, and checkout on top of that foundation.
 
-## Current Milestone: v1.2 Homepage Polish (Pre-Launch)
+## Current State
 
-**Goal:** Resolve the remaining homepage UX rough edges before the Phase 5 domain cutover — social presence, visual consistency, mobile correctness, and richer per-gallery content.
+**Shipped: v1.3 Éditions** (2026-07-23) — archived at `.planning/milestones/v1.3-ROADMAP.md` / `v1.3-REQUIREMENTS.md`; full accomplishments in `.planning/MILESTONES.md`.
+
+A dedicated, non-transactional Éditions showcase (bilingual overview + detail pages, Sanity-editable by Romane without touching code, zero commerce affordance) now sits alongside the existing Portfolio, discoverable from the main nav on every page. All 8 v1.3 requirements (EDN-01..07, CMS-04) shipped and were independently verified (`.planning/phases/14-verification-uat/14-VERIFICATION.md`).
+
+**Not yet live:** this milestone was built entirely on branch `claude/gsd-new-milestone-editions-ubjvt0` (108 commits) and has never been merged into `main` — GitHub Actions only deploys from `main`, so the public GitHub Pages staging URL does not yet serve Éditions. Merging to `main` is the outstanding cutover step.
+
+**Still open, separately tracked (not part of v1.3):** Phase 5 (Launch & Domain Cutover to atelierjacquelinesuzanne.fr) — part of the original v1.0 milestone, deliberately deferred behind v1.1/v1.2/v1.3 by explicit user choice, and not yet started.
+
+<details>
+<summary>Archived: v1.3 Éditions milestone brief (shipped 2026-07-23)</summary>
+
+**Goal:** Give Romane's paper éditions (zines/books) their own dedicated, self-serve showcase on the site — separate from the photography portfolio — laying groundwork for selling them later.
 
 **Target features:**
-- Instagram icon link in the header nav (icon, not text — Instagram already exists in the footer/About/Contact, not yet in the main nav)
-- Square (not rectangular) border on the carousel/grid toggle button
-- Fix the mobile full-bleed hero bug: a white gap appears above the header and the footer is still slightly visible on first load (reported on iPhone 17 Pro) — a regression/gap in the existing 100svh full-bleed work from v1.1
-- Show each gallery's own description text under its title on the homepage, replacing the generic "Un projet de Romane Lepont" byline
-- Language switcher shows only the OTHER language (not both FR/EN) plus a small globe icon indicating it's a language control; clicking switches directly to the translated version of the current page (same behavior as today, just one link shown instead of two)
-- Progressive/optimized image loading: page renders immediately, hero/gallery photos load with priority and a smooth blur-to-sharp transition — no blocking full-screen loader
-- Unify the homepage's header with the shared header component used by About/Contact, so item positioning stays aligned by construction instead of drifting
-- Grid-mode tile hover effect revealing the collection's description
+- New "Éditions" top-level nav item (main nav only, not surfaced on the homepage carousel/grid, which stays pure photography)
+- Éditions overview page listing each édition (title + lead photo)
+- Per-édition detail page: full photo shoot, short description/statement, format details (page count, print run, dimensions)
+- No pricing/availability/buy button yet — pure showcase; selling is deferred to the existing v1.x shop/checkout milestone (this pulls the "books/zines" category from REQUIREMENTS.md's v2 Shop section forward as a non-transactional teaser)
+- Romane can self-serve add new éditions via Sanity, same content-editing pattern as galleries (overview + detail page, mirroring Portfolio's gallery/gallery-detail structure)
+- Bilingual FR/EN like the rest of the site
 
-**Note:** v1.0 is functionally complete (Phases 1–4.3) and v1.1 (Homepage Refinements, Phase 6) shipped 2026-07-13 — Phase 5 (DNS cutover to atelierjacquelinesuzanne.fr) remains deliberately deferred until after this milestone too, by explicit user choice.
+**Note:** Prior milestones — v1.0 (Phases 1–4.3), v1.1 Homepage Refinements (Phase 6, shipped 2026-07-13), and v1.2 Homepage Polish (Phases 7–10, shipped 2026-07-20) — are functionally complete. Phase 5 (DNS cutover to atelierjacquelinesuzanne.fr) remains open and deliberately deferred, by explicit user choice; it is not part of this milestone.
+
+</details>
+
+## Next Milestone Goals
+
+Not yet scoped — run `/gsd-new-milestone` to define it. Candidates already tracked in REQUIREMENTS.md's v2 section: Exhibitions/agenda (EXHB-01/02, CMS-02), Shop (SHOP-01..04), Checkout (CHK-01..05), Shipping (SHIP-01/02), commerce-specific Legal (LEGAL-02/04), and the Éditions↔Portfolio cross-link (EDN-08). Phase 5 (Launch & Domain Cutover) also remains open, separately tracked from these v1.x candidates.
 
 ## Requirements
 
@@ -49,6 +64,18 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 - [x] Homepage header is visually identical to the About/Contact header by construction (shared `<SiteHeader>` component) (HOME-10) — Phase 10
 - [x] Language switcher shows only the other language (plus a globe icon), not both FR/EN (I18N-04) — Phase 10
 
+**v1.3 (Data-Fetch Layer & Routes — Phase 12, shipped 2026-07-22):**
+- [x] Visitor can browse an overview list of Romane's paper éditions (title + lead photo per édition) (EDN-02) — Phase 12
+- [x] Visitor can open a per-édition detail page showing its full photo shoot, a short description/statement, and format details (page count, print run, dimensions) (EDN-03, EDN-04, EDN-05) — Phase 12 (format-detail schema fields added in Phase 11)
+- [x] Éditions overview/detail pages carry no pricing, availability, or purchase CTA (EDN-06, build-blocking guard) — Phase 12
+- [x] Éditions content is available in French and English (EDN-07) — Phase 12
+
+**v1.3 (Nav Integration — Phase 13, shipped 2026-07-23):**
+- [x] Visitor can discover a dedicated "Éditions" section from the main site navigation, on every page, in both languages, with the nav label editable by Romane via Sanity (EDN-01) — Phase 13
+
+**v1.3 (Verification & UAT — Phase 14, shipped 2026-07-23):**
+- [x] Romane (non-technical) can independently add/edit éditions via Sanity without touching code (CMS-04) — genuinely confirmed by Romane's own hands-on create/edit/publish/drag-reorder pass in the hosted Studio (closing the drag-reorder gap `11-UAT.md` waived), not just Phase 11's automated implementation — Phase 14
+
 ### Active
 
 **v1 (replace current site):**
@@ -58,10 +85,6 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 - [ ] Site is available in French and English with a language switcher
 - [ ] Romane (non-technical) can independently update galleries/photos without touching code
 - [ ] Site is reachable at the existing domain, atelierjacquelinesuzanne.fr
-
-**v1.2 (homepage polish, this milestone):**
-- [ ] Language switcher shows only the other language (plus a globe icon), not both FR/EN
-- [ ] Homepage header is visually identical to the About/Contact header by construction (shared component)
 
 **v1.x (add shop, deferred until v1 is live — see REQUIREMENTS.md v2 section):**
 - [ ] Visitor can view a list of upcoming and past exhibitions (dates, location, description)
@@ -81,6 +104,7 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 ## Context
 
 - Replaces an existing live site (atelierjacquelinesuzanne.fr), currently built on Myportfolio/Format, French-only, with galleries (Rebut - Édition, Silo - Édition, Silos, Brume, Adults, The Victorian Tea Room, Paysages, Accumulation, MADO), a Contact page, and an Instagram link (@ajs_romanelepont). No shop or exhibitions section exists today.
+- **Open item (v1.3) — RESOLVED:** the shipped Portfolio already has a gallery titled "Rebut" (migrated in Phase 2, alongside Silos/Brume/etc.), and the new "Éditions" milestone adds a paper édition also named "Rebut" documented via its own photo shoot. Confirmed during Phase 11 (see Key Decisions below): these are the SAME underlying subject, presented as two distinct objects — the gallery shows the photographic work itself, the édition is a printed book/zine OF that photo collection. They stay as two separate documents/pages; the gallery is not moved, renamed, or merged into Éditions.
 - This is a full replacement, not an addition — the old site's content (galleries) migrates in; the platform itself is being replaced.
 - Builder (Florian) is Romane's brother, building this as a custom-coded project rather than configuring an existing SaaS builder.
 - Budget is near-zero: free-tier hosting and free/open-source tooling preferred, accepting only unavoidable per-transaction payment processing fees (e.g. Stripe).
@@ -118,6 +142,7 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 | Rebrand: adopt the imported design system's monochrome + pop-pink identity (`#FFFFFF` dominant, `#1A1A1A` ink, `#FF3B94` accent, Archivo Black display font), superseding Phase 2's Dawn Pink / Woodsmoke / Wild Strawberry / Delight identity | Florian imported a design system + homepage prototype generated via Claude Design (see `.planning/design-import/`). The generated system was built from a stale, pre-Phase-2 repo snapshot and flagged the conflict itself; Florian explicitly chose to switch to its palette as the real rebrand direction rather than keep Phase 2's shipped identity. Two new phases inserted before Phase 5 to execute this: design-system/homepage refresh, and social media links. | Confirmed — Florian's explicit choice 2026-07-08, see `.planning/design-import/README.md` |
 | Phase 8 (HOME-07/HOME-08) implemented directly on `main` outside the `/gsd-plan-phase`→`/gsd-execute-phase` cycle, then retroactively verified and closed via `/gsd-discuss-phase 8` | Florian shipped the gallery-description byline/hover-reveal work himself (commits `38457dd`..`602d24b`, 2026-07-13/14), reusing the existing `gallery.statement` field from Phase 2 rather than adding a new schema field. `/gsd-discuss-phase 8` found it already complete with dedicated e2e coverage; Florian confirmed it as the intended deliverable rather than re-planning from scratch. | Confirmed — verified 2026-07-14 (13/13 unit tests, 23/23 e2e tests passing), see `.planning/phases/08-gallery-descriptions/08-SUMMARY.md` |
 | Progressive image loading (HOME-09): blur-up placeholders sourced from Sanity's CDN `.blur()` param (no new dependency), applied to the hero on every swap and to grid tiles, with next-photo prefetch and a quick/subtle (~260ms) crossfade | User chose the more thorough option at every gray area during `/gsd-discuss-phase 9` — every-swap hero blur-up (not just first load), grid tiles included, and background prefetch — prioritizing a uniformly polished feel over minimizing implementation surface. Code review (09-REVIEW.md) found 4 warnings (missing image error handlers, listener accumulation, a test that would flake once more galleries are migrated) — all fixed in commit `39144b9`. The verifier also flagged the D-05 prefetch claim as code-present-but-unverified; rather than route to manual DevTools verification, an automated Playwright test asserting the actual network request was added (commit `65bfabc`) since it's a mechanical behavior, not a subjective judgment. | Confirmed — verified 2026-07-14 (7/7 must-haves, 76/76 e2e, 40/40 unit tests passing), see `.planning/phases/09-progressive-homepage-image-loading/09-VERIFICATION.md` |
+| The Portfolio gallery "Rebut" and the new Éditions "Rebut" are the SAME underlying subject presented as two distinct objects — the gallery shows the photographs, the édition is the printed book/zine of that photo collection | Raised with and confirmed by Romane during Phase 11 (D-01/D-02), resolving the "Open item (v1.3)" ambiguity carried in this document's Context section since the v1.3 roadmap was created. They stay as two separate documents/pages — the gallery is not moved, renamed, or merged into Éditions (D-01). An optional future gallery↔édition cross-link (so a visitor can navigate from one to the other) is tracked separately as EDN-08 in REQUIREMENTS.md's v2 section, deferred to a future milestone — Phase 11 does not add a reference field or any cross-link UI now (D-03). | Confirmed — raised with and confirmed by Romane during Phase 11 (D-01/D-02) |
 
 ## Evolution
 
@@ -137,4 +162,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-20 — Phase 10 (Unified Header & Simplified Language Switcher) shipped within milestone v1.2 (Homepage Polish, Pre-Launch) — all v1.2 target features now delivered; Phase 5 (domain cutover) remains the only open phase*
+*Last updated: 2026-07-23 after v1.3 milestone completion (`/gsd-complete-milestone`) — v1.3 Éditions archived (`.planning/milestones/v1.3-ROADMAP.md`/`v1.3-REQUIREMENTS.md`, tag `v1.3`); "Current Milestone" replaced with "Current State"/"Next Milestone Goals"; fixed a Validated-section gap (EDN-05 wasn't explicitly tagged). Still outstanding, unaffected by this close: merging the milestone branch to `main` (deploy is main-only) and the still-deferred Phase 5 domain cutover.*

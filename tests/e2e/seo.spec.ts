@@ -29,6 +29,7 @@ test.describe('SEO metadata', () => {
     expect(sitemap).toContain('<urlset');
     expect(sitemap).toContain('/en/');
     expect(sitemap).toContain('/galleries/');
+    expect(sitemap).toContain('/editions/');
   });
 
   test('About page uses its CMS biography as the default description', async ({page}) => {

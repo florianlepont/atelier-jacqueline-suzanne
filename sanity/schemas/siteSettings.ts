@@ -69,6 +69,7 @@ export const siteSettings = defineType({
     navLabels: {
       about: {fr: 'À propos', en: 'About'},
       contact: {fr: 'Contact', en: 'Contact'},
+      editions: {fr: 'Éditions', en: 'Éditions'},
     },
   },
   // Singleton: only one instance should ever exist. Enforced via the Studio
@@ -148,6 +149,15 @@ export const siteSettings = defineType({
         defineField({
           name: 'contact',
           title: 'Lien Contact',
+          type: 'object',
+          fields: [
+            defineField({name: 'fr', title: 'Français', type: 'string'}),
+            defineField({name: 'en', title: 'Anglais', type: 'string'}),
+          ],
+        }),
+        defineField({
+          name: 'editions',
+          title: 'Lien Éditions',
           type: 'object',
           fields: [
             defineField({name: 'fr', title: 'Français', type: 'string'}),

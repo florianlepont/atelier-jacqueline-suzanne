@@ -58,6 +58,7 @@ export interface SiteSettings {
   navLabels: {
     about?: Partial<LocaleString>
     contact?: Partial<LocaleString>
+    editions?: Partial<LocaleString>
   }
   footerText: LocaleString
   defaultSeo?: SeoSettings
@@ -119,6 +120,44 @@ const GALLERIES_QUERY = /* groq */ `*[_type == "gallery" && ${PUBLISHED_GALLERY_
 
 const GALLERY_BY_SLUG_QUERY = /* groq */ `*[_type == "gallery" && slug.current == $slug && ${PUBLISHED_GALLERY_FILTER}][0]{
   title, "slug": slug.current, statement, heroColor, publicationStatus, "showOnHomePage": coalesce(showOnHomePage, true), "isVisible": coalesce(isVisible, true), seo, images
+}`
+
+/**
+ * A single édition photo (`leadPhoto` or an `images[]` member). Structurally
+ * identical to `GalleryImage` — `sanity/schemas/edition.ts`'s `leadPhoto`
+ * and `images[]` array members declare the exact same `alt`/`rights`
+ * sub-fields as `gallery.ts` does, so a type alias is sufficient.
+ */
+export type EditionImage = GalleryImage
+
+/** An `edition` document, typed for both locales. */
+export interface Edition {
+  title: string // shared proper noun across fr/en, mirrors Gallery['title']
+  slug: string
+  statement: LocaleString
+  leadPhoto: EditionImage // D-04: dedicated cover photo, not images[0]
+  images: EditionImage[] // photo shoot of the printed object itself
+  pageCount: number
+  printRun: number
+  dimensions: {width: number; height: number; unit: 'cm' | 'in'}
+  publicationStatus?: 'preparation' | 'published' | 'archived'
+  // NOTE: edition has NO `seo` field/group (confirmed absent from Phase 11's
+  // sanity/schemas/edition.ts) — do not add a `seo` field here. Any code
+  // reading page metadata for an edition must construct it from
+  // `title`/`statement`/`leadPhoto` directly instead.
+}
+
+// edition has no `isVisible` field, so the gallery filter's
+// coalesce/select(isVisible…) fallback logic does not apply here — the
+// simpler, correct filter is just the publicationStatus check.
+const PUBLISHED_EDITION_FILTER = /* groq */ `publicationStatus == "published"`
+
+const EDITIONS_QUERY = /* groq */ `*[_type == "edition" && ${PUBLISHED_EDITION_FILTER}] | order(orderRank) {
+  title, "slug": slug.current, statement, leadPhoto, images, pageCount, printRun, dimensions, publicationStatus
+}`
+
+const EDITION_BY_SLUG_QUERY = /* groq */ `*[_type == "edition" && slug.current == $slug && ${PUBLISHED_EDITION_FILTER}][0]{
+  title, "slug": slug.current, statement, leadPhoto, images, pageCount, printRun, dimensions, publicationStatus
 }`
 
 export interface AboutPage {
@@ -187,6 +226,25 @@ export async function getGalleries(): Promise<Gallery[]> {
  */
 export async function getGallery(slug: string): Promise<Gallery | null> {
   const result = await sanityClient.fetch<Gallery | null>(GALLERY_BY_SLUG_QUERY, {slug})
+  return result ?? null
+}
+
+/**
+ * Fetches all published `edition` documents at build time, in Romane's
+ * manually-set drag-reorder order (`orderRank`, mirrors `getGalleries`).
+ */
+export async function getEditions(): Promise<Edition[]> {
+  return (await sanityClient.fetch<Edition[] | null>(EDITIONS_QUERY)) ?? []
+}
+
+/**
+ * Fetches a single published `edition` document by its slug at build time.
+ * Returns `null` if no edition with that slug has been published yet.
+ * `slug` is always bound as a GROQ parameter, never string-interpolated
+ * (ASVS V5 — mirrors `getGallery`).
+ */
+export async function getEdition(slug: string): Promise<Edition | null> {
+  const result = await sanityClient.fetch<Edition | null>(EDITION_BY_SLUG_QUERY, {slug})
   return result ?? null
 }
 

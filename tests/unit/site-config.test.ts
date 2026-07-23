@@ -38,6 +38,28 @@ describe('resolveSiteCopy', () => {
   it('uses the dedicated homepage document when populated', () => {
     expect(resolveHomepageIntro({ intro: { fr: 'Texte éditable' } }, 'fr')).toBe('Texte éditable');
   });
+
+  // Phase 13 (EDN-01, SC #4) — the "Éditions" nav label follows the exact
+  // fallback/override shape as aboutLabel/contactLabel: a hardcoded default
+  // when Sanity has nothing, overridden once Romane populates
+  // navLabels.editions in the siteSettings singleton.
+  it('falls back to the same "Éditions" literal in both locales when Sanity is empty (EDN-01, SC #4)', () => {
+    expect(resolveSiteCopy(null, 'fr').editionsLabel).toBe('Éditions');
+    expect(resolveSiteCopy(null, 'en').editionsLabel).toBe('Éditions');
+  });
+
+  it('uses the editable navLabels.editions value when populated (EDN-01, SC #4)', () => {
+    const copy = resolveSiteCopy(
+      {
+        siteTitle: { fr: 'AJS', en: 'AJS' },
+        navLabels: { editions: { fr: 'Nos éditions' } },
+        footerText: { fr: '', en: '' },
+      },
+      'fr',
+    );
+
+    expect(copy.editionsLabel).toBe('Nos éditions');
+  });
 });
 
 describe('homepage hero colors', () => {
