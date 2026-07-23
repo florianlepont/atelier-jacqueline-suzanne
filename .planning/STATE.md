@@ -5,10 +5,10 @@ milestone_name: Éditions
 current_phase: 13
 current_phase_name: nav-integration
 status: executing
-stopped_at: Phase 13 UI-SPEC approved
-last_updated: "2026-07-23T06:29:38.344Z"
+stopped_at: Phase 13 verification found gaps (4/5) — mobile header wrap regression at 360-374px
+last_updated: "2026-07-23T09:05:00.000Z"
 last_activity: 2026-07-23
-last_activity_desc: Phase 13 execution started
+last_activity_desc: Phase 13 executed (13-01 complete) and verified; 1 gap found, pending gap-closure plan
 progress:
   total_phases: 17
   completed_phases: 13
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-07-22)
 
 ## Current Position
 
-Phase: 13 (nav-integration) — EXECUTING
-Plan: 1 of 1
-Status: Executing Phase 13
-Last activity: 2026-07-23 — Phase 13 execution started
+Phase: 13 (nav-integration) — GAPS FOUND (4/5 must-haves verified)
+Plan: 1 of 1 (executed)
+Status: Verification found 1 gap — mobile header wraps to 2 rows at 360-374px viewport width (both header variants); see 13-VERIFICATION.md
+Last activity: 2026-07-23 — Phase 13 executed and verified; pending gap-closure plan
 
 Progress: [███████░░░░░░░] 10/14 phases complete (71%)
 
@@ -181,8 +181,8 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-23T06:01:01.705Z
-Stopped at: Phase 13 UI-SPEC approved
-Resume file: .planning/phases/13-nav-integration/13-UI-SPEC.md
+Last session: 2026-07-23T09:05:00.000Z
+Stopped at: Phase 13 verification found gaps (4/5) — mobile header wrap regression at 360-374px
+Resume file: .planning/phases/13-nav-integration/13-VERIFICATION.md
 
-**Next up:** `/gsd-plan-phase 11` — Schema & Content Model (CMS-04, EDN-05).
+**Next up:** `/gsd-plan-phase 13 --gaps` — plan the mobile-wrap fix, then re-run `/gsd-execute-phase 13 --gaps-only`.
