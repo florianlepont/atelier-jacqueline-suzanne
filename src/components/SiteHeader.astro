@@ -19,6 +19,8 @@ interface Props {
   variant: 'solid' | 'transparent';
   siteTitle: string;
   homeHref: string;
+  editionsLabel: string;
+  editionsHref: string;
   aboutLabel: string;
   aboutHref: string;
   contactLabel: string;
@@ -34,6 +36,8 @@ const {
   variant,
   siteTitle,
   homeHref,
+  editionsLabel,
+  editionsHref,
   aboutLabel,
   aboutHref,
   contactLabel,
@@ -53,6 +57,10 @@ const {
     <img src={logoWhiteSrc} alt="" class="logo-mark__img logo-mark__img--hover" />
   </a>
   <nav class="site-nav" aria-label="Primary">
+    {/* EDN-01/D-01: Éditions renders FIRST, highest visual nav priority —
+        before the existing About/Contact links. Reuses .nav-link verbatim,
+        no new class/active-state treatment (13-UI-SPEC.md). */}
+    <a href={editionsHref} class="nav-link">{editionsLabel}</a>
     <a href={aboutHref} class="nav-link">{aboutLabel}</a>
     <a href={contactHref} class="nav-link">{contactLabel}</a>
     {/* Instagram link — moved in verbatim from HomeCarousel.astro (D-03), so
