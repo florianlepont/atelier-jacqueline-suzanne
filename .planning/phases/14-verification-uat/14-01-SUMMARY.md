@@ -127,3 +127,14 @@ None - no external service configuration required. (Note: if this worktree is di
 ---
 *Phase: 14-verification-uat*
 *Completed: 2026-07-23*
+
+## Self-Check: PASSED
+
+- FOUND: src/pages/editions/[slug].astro
+- FOUND: src/pages/en/editions/[slug].astro
+- FOUND: src/pages/editions/index.astro
+- FOUND: src/pages/en/editions/index.astro
+- FOUND: .planning/phases/14-verification-uat/14-01-SUMMARY.md
+- FOUND commit: cb6f009 (Task 1)
+- FOUND commit: f198c00 (Task 2)
+- FOUND commit: 61d9444 (SUMMARY.md)
