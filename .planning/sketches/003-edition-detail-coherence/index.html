@@ -83,6 +83,19 @@
   }
   #variant-a .detail__statement { max-width: 640px; font-size: var(--text-body-size); line-height: 1.5; margin: 0 0 var(--space-md); }
 
+  /* ===================== SYNTHESIS: A's structure + B's format-details highlight ===================== */
+  #variant-synth1 .detail__hero-title {
+    position: absolute; left: var(--space-xl); bottom: var(--space-xl); right: var(--space-xl); z-index: 3; margin: 0;
+    font-size: var(--text-display-size); font-weight: var(--weight-semibold); font-family: var(--font-display);
+    color: var(--gray-0); letter-spacing: -0.02em;
+  }
+  #variant-synth1 .detail__statement { max-width: 640px; font-size: var(--text-body-size); line-height: 1.5; margin: 0 0 var(--space-md); }
+  #variant-synth1 .detail__format {
+    display: inline-block; font-size: 13px; font-weight: var(--weight-semibold); text-transform: uppercase;
+    letter-spacing: 0.04em; color: var(--color-ink); border-bottom: 2px solid var(--color-accent);
+    padding-bottom: var(--space-sm); margin: 0 0 var(--space-2xl);
+  }
+
   /* ===================== VARIANT B: Amplified ===================== */
   #variant-b .detail__hero { aspect-ratio: 4/3; }
   #variant-b .detail__hero-title {
@@ -117,14 +130,15 @@
 
 <div id="variant-nav">
   <span class="label">Sketch 003 · Édition detail coherence</span>
-  <button class="variant-tab active" data-variant="a" onclick="showVariant('a')">A: Current (baseline)</button>
+  <button class="variant-tab" data-variant="a" onclick="showVariant('a')">A: Current (baseline)</button>
   <button class="variant-tab" data-variant="b" onclick="showVariant('b')">B: Amplified</button>
+  <button class="variant-tab active" data-variant="synth1" onclick="showVariant('synth1')">Synthesis: A + pink format highlight ★ Selected</button>
 </div>
 
 <div id="viewport-wrap">
 
   <!-- VARIANT A: Current -->
-  <div id="variant-a" class="variant active">
+  <div id="variant-a" class="variant">
     <div class="site-header-replica">
       <span class="logo">AJS</span>
       <nav><a href="#">Éditions</a><a href="#">À propos</a><a href="#">Contact</a></nav>
@@ -168,6 +182,32 @@
         <p class="detail__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder — un objet façonné à la main, pensé pour circuler d'abord entre proches avant de trouver sa place ailleurs.</p>
         <p class="detail__format">Pages : 50 · Tirage : 2 exemplaires · Dimensions : 21 × 29.7 cm</p>
         <p class="detail__thumbs-label">Planches</p>
+        <div class="detail__thumbs">
+          <button onclick="fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/5ce383b9109bb57310e009b85ca4008995cb4831-5735x3783.jpg?w=600&h=600&fit=crop&auto=format" alt=""></button>
+          <button onclick="fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/a74307df39a8fc5507cc2cf5d5cafb700af09ca9-6414x4786.jpg?w=600&h=600&fit=crop&auto=format" alt=""></button>
+          <button onclick="fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/d65fc2c54e1623b688acc45d3ede61ccae61a0d3-6520x4865.jpg?w=600&h=600&fit=crop&auto=format" alt=""></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SYNTHESIS: A's structure, kept as-is, + B's format-details highlight only -->
+  <div id="variant-synth1" class="variant active">
+    <div class="site-header-replica">
+      <span class="logo">AJS</span>
+      <nav><a href="#">Éditions</a><a href="#">À propos</a><a href="#">Contact</a></nav>
+      <div class="right"><span>◎</span><span>EN</span></div>
+    </div>
+    <div class="detail">
+      <div class="detail__hero" onclick="fakeLightbox(event)">
+        <img src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?w=2000&auto=format" alt="">
+        <div class="detail__hero-scrim"></div>
+        <h1 class="detail__hero-title">Rebut</h1>
+      </div>
+      <div class="detail__content">
+        <a class="detail__back" href="#" onclick="return fakeNav(event,'l\'aperçu Éditions')">← Retour aux éditions</a>
+        <p class="detail__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder — un objet façonné à la main, pensé pour circuler d'abord entre proches avant de trouver sa place ailleurs.</p>
+        <p class="detail__format">Pages : 50 · Tirage : 2 exemplaires · Dimensions : 21 × 29.7 cm</p>
         <div class="detail__thumbs">
           <button onclick="fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/5ce383b9109bb57310e009b85ca4008995cb4831-5735x3783.jpg?w=600&h=600&fit=crop&auto=format" alt=""></button>
           <button onclick="fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/a74307df39a8fc5507cc2cf5d5cafb700af09ca9-6414x4786.jpg?w=600&h=600&fit=crop&auto=format" alt=""></button>

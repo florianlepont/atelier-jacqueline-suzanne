@@ -2,7 +2,7 @@
 sketch: 003
 name: edition-detail-coherence
 question: "Does the édition detail page need a bold-graphic treatment to match the new Poster Grid overview, so list→detail doesn't feel like a style downgrade?"
-winner: null
+winner: "Synthesis: A + B's format-details highlight"
 tags: [layout, editions, detail-page, frontier]
 ---
 
@@ -26,6 +26,10 @@ open .planning/sketches/003-edition-detail-coherence/index.html
 - **B: Amplified** — same structure and information, but: title jumps to Unbounded 900 at up to 128px; a small pink "Nouveau" tag echoes the overview's tile tag; the format-details line gets a bold pink underline instead of plain gray text; a "Planches" label introduces the thumbnail grid; the hero photo has a very slow (8s) zoom on hover for a touch of motion.
 
 Both variants preserve the real interaction model: clicking the hero or a thumbnail is meant to open the Lightbox (shown as a toast in this sketch, not a real lightbox — that's already-shipped, tested functionality, out of scope here).
+
+## Winner: Synthesis — A's structure, kept as-is, + B's format-details highlight only
+
+The detail page doesn't need the amplified treatment — variant A (today's actual page: small title, plain thumbnails, no "Nouveau" tag) stays as-is. The one element carried over from B: the format-details line (`Pages : 50 · Tirage : 2 exemplaires · Dimensions : 21 × 29.7 cm`) becomes bold uppercase with a pink underline instead of plain muted gray text — a small, contained accent rather than a full page redesign.
 
 ## What to Look For
 
