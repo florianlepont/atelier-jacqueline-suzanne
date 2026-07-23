@@ -53,6 +53,9 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 - [x] Éditions overview/detail pages carry no pricing, availability, or purchase CTA (EDN-06, build-blocking guard) — Phase 12
 - [x] Éditions content is available in French and English (EDN-07) — Phase 12
 
+**v1.3 (Nav Integration — Phase 13, shipped 2026-07-23):**
+- [x] Visitor can discover a dedicated "Éditions" section from the main site navigation, on every page, in both languages, with the nav label editable by Romane via Sanity (EDN-01) — Phase 13
+
 ### Active
 
 **v1 (replace current site):**
@@ -64,7 +67,6 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 - [ ] Site is reachable at the existing domain, atelierjacquelinesuzanne.fr
 
 **v1.3 (Éditions, this milestone):**
-- [ ] Visitor can discover a dedicated "Éditions" section from the main site navigation
 - [ ] Romane (non-technical) can independently add/edit éditions via Sanity without touching code
 
 **v1.x (add shop, deferred until v1 is live — see REQUIREMENTS.md v2 section):**
@@ -143,4 +145,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-22 — Phase 12 (Data-Fetch Layer & Routes) complete: Éditions overview + detail pages live, bilingual, zero commerce affordances; v1.2 (Homepage Polish) fully delivered aside from the still-deferred Phase 5 domain cutover*
+*Last updated: 2026-07-23 — Phase 13 (Nav Integration) complete: EDN-01 fully satisfied — "Éditions" nav entry live on every page in both languages, Sanity-editable, and fits without wrapping across the full 320-767px mobile range (gap-closure plan 13-02 fixed a 360-390px header-wrap regression found during Phase 13 verification); v1.2 (Homepage Polish) fully delivered aside from the still-deferred Phase 5 domain cutover*
