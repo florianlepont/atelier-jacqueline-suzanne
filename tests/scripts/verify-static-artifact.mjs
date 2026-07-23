@@ -127,6 +127,42 @@ for (const file of editionsHtmlFiles) {
   }
 }
 
+// D-05: extend the same commerce-language guard to the developer-authored
+// Studio copy in sanity/schemas/edition.ts (field titles, descriptions,
+// group titles), not just the rendered dist HTML above. This is source, not
+// a build artifact, so no dist/HTML path filter applies -- the whole file is
+// scanned as plain text. Reuses the same token arrays and containsWholeWord
+// helper verbatim (no forked list).
+const editionSchemaUrl = new URL('../../sanity/schemas/edition.ts', import.meta.url)
+const editionSchemaSource = await readFile(editionSchemaUrl, 'utf8')
+// Unlike the dist-HTML scan (which strips <script>/<style> blocks), this is
+// a TypeScript source file, so its own template-literal interpolation
+// syntax ("${...}") is expected code, not Studio copy -- e.g. this schema's
+// validation messages build strings like `${missingAlt.join(', ')}`. Strip
+// just the "${" interpolation marker (not the whole expression, so any
+// literal "$" typed inside real copy -- e.g. an actual string containing
+// "$50" -- would still be caught) so the symbolCommerceTokens "$" check
+// only fires on genuine dollar-sign copy, mirroring the HTML scan's own
+// precedent of stripping non-copy code before scanning.
+const lowerSchema = editionSchemaSource.toLowerCase().replaceAll('${', '')
+const editionSchemaRelPath = 'sanity/schemas/edition.ts'
+
+for (const token of symbolCommerceTokens) {
+  if (lowerSchema.includes(token)) {
+    failures.push(`${editionSchemaRelPath} contains forbidden commerce string "${token}" (EDN-06)`)
+  }
+}
+for (const token of prefixCommerceTokens) {
+  if (lowerSchema.includes(token)) {
+    failures.push(`${editionSchemaRelPath} contains forbidden commerce string "${token}" (EDN-06)`)
+  }
+}
+for (const token of wholeWordCommerceTokens) {
+  if (containsWholeWord(lowerSchema, token.toLowerCase())) {
+    failures.push(`${editionSchemaRelPath} contains forbidden commerce string "${token}" (EDN-06)`)
+  }
+}
+
 if (failures.length) {
   throw new Error(`Static artifact verification failed:\n- ${failures.join('\n- ')}`)
 }
