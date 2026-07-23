@@ -1,10 +1,11 @@
 ---
 phase: 13
 slug: nav-integration
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2026-07-23
+reviewed_at: 2026-07-23
 ---
 
 # Phase 13 — UI Design Contract
@@ -170,11 +171,11 @@ Not applicable — no shadcn registry, no third-party component blocks. This pha
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS — "Éditions" label bilingual-identical, no CTA/empty/error copy needed for a nav link, Studio field label mirrors existing pattern
-- [ ] Dimension 2 Visuals: PASS — reuses `.nav-link` unchanged, no new component/class, nav order D-01 (Éditions first) verified at both call sites
-- [ ] Dimension 3 Color: PASS — no new color; nav link stays `color: inherit`, never accent pink; priority expressed via position not color
-- [ ] Dimension 4 Typography: PASS — reuses Label role (14px/400/1.5, 12px at <359px) unchanged; abbreviation (if triggered) changes only character count
-- [ ] Dimension 5 Spacing: PASS — reuses existing spacing tokens and both mobile breakpoints unchanged; live re-measurement required per D-02 but no new spacing values introduced
-- [ ] Dimension 6 Registry Safety: PASS — no registry involved
+- [x] Dimension 1 Copywriting: PASS — "Éditions" label bilingual-identical, no CTA/empty/error copy needed for a nav link, Studio field label mirrors existing pattern
+- [x] Dimension 2 Visuals: PASS — reuses `.nav-link` unchanged, no new component/class, nav order D-01 (Éditions first) verified at both call sites
+- [x] Dimension 3 Color: PASS — no new color; nav link stays `color: inherit`, never accent pink; priority expressed via position not color
+- [x] Dimension 4 Typography: PASS — reuses Label role (14px/400/1.5, 12px at <359px) unchanged; abbreviation (if triggered) changes only character count
+- [x] Dimension 5 Spacing: PASS — reuses existing spacing tokens and both mobile breakpoints unchanged; live re-measurement required per D-02 but no new spacing values introduced
+- [x] Dimension 6 Registry Safety: PASS — no registry involved
 
-**Approval:** pending
+**Approval:** approved (gsd-ui-checker, 2026-07-23) — 6/6 dimensions PASS, no BLOCKs, no FLAGs
