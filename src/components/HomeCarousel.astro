@@ -37,6 +37,7 @@ interface GalleryEntry {
 }
 
 interface SiteCopy {
+  editionsLabel: string;
   aboutLabel: string;
   contactLabel: string;
   homepageIntro: string;
@@ -60,11 +61,16 @@ const isEn = locale === 'en';
 // "Accueil"/"Home" nav link anymore (direct user feedback: redundant,
 // since clicking the logo already goes home).
 const homeHref = getRelativeLocaleUrl(locale, '');
-// Matches BaseLayout.astro's aboutLabel/contactLabel/aboutHref/contactHref
-// exactly — the homepage's own header renders its own nav (headerVariant
-//="none" suppresses BaseLayout's), but must still surface every primary
-// site section, not just Home/Galleries (real user feedback: About/Contact
-// were reported missing from the homepage nav).
+// Matches BaseLayout.astro's editionsLabel/aboutLabel/contactLabel/
+// editionsHref/aboutHref/contactHref exactly — the homepage's own header
+// renders its own nav (headerVariant="none" suppresses BaseLayout's), but
+// must still surface every primary site section, not just Home/Galleries
+// (real user feedback: About/Contact were reported missing from the
+// homepage nav). EDN-01/D-13/SC #3: this const only feeds the shared
+// <SiteHeader> nav below — it never touches the `galleries` carousel/grid
+// data, which stays pure photography.
+const editionsLabel = siteCopy.editionsLabel;
+const editionsHref = getRelativeLocaleUrl(locale, 'editions');
 const aboutLabel = siteCopy.aboutLabel;
 const aboutHref = getRelativeLocaleUrl(locale, 'about');
 const contactLabel = siteCopy.contactLabel;
@@ -115,6 +121,8 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       variant="transparent"
       siteTitle={wordmark}
       homeHref={homeHref}
+      editionsLabel={editionsLabel}
+      editionsHref={editionsHref}
       aboutLabel={aboutLabel}
       aboutHref={aboutHref}
       contactLabel={contactLabel}

@@ -58,6 +58,7 @@ export interface SiteSettings {
   navLabels: {
     about?: Partial<LocaleString>
     contact?: Partial<LocaleString>
+    editions?: Partial<LocaleString>
   }
   footerText: LocaleString
   defaultSeo?: SeoSettings

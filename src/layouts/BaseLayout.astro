@@ -105,6 +105,10 @@ const serializedStructuredData = JSON.stringify(structuredData).replace(/</g, '\
 // since clicking the logo already goes home).
 const homeHref = getRelativeLocaleUrl(locale, '');
 // Current navigation labels are editable in the siteSettings singleton.
+// EDN-01/D-01: Éditions is the first nav link (see 13-CONTEXT.md); its
+// href resolves to the already-shipped Phase 12 Éditions overview route.
+const editionsLabel = siteCopy.editionsLabel;
+const editionsHref = getRelativeLocaleUrl(locale, 'editions');
 const aboutLabel = siteCopy.aboutLabel;
 const aboutHref = getRelativeLocaleUrl(locale, 'about');
 const contactLabel = siteCopy.contactLabel;
@@ -187,6 +191,8 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
         variant={headerVariant}
         siteTitle={siteTitle}
         homeHref={homeHref}
+        editionsLabel={editionsLabel}
+        editionsHref={editionsHref}
         aboutLabel={aboutLabel}
         aboutHref={aboutHref}
         contactLabel={contactLabel}

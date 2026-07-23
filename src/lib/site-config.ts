@@ -20,6 +20,7 @@ const DEFAULT_HOMEPAGE_INTRO: Record<Locale, string> = {
 
 export function resolveSiteCopy(settings: SiteSettings | null, locale: Locale) {
   return {
+    editionsLabel: settings?.navLabels?.editions?.[locale] || 'Éditions',
     aboutLabel: settings?.navLabels?.about?.[locale] || (locale === 'en' ? 'About' : 'À propos'),
     contactLabel: settings?.navLabels?.contact?.[locale] || 'Contact',
     instagramUrl: DEFAULT_INSTAGRAM_URL,
