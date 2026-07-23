@@ -317,3 +317,24 @@ test.describe('Shared chrome — contextual neutral link colors', () => {
     expect(widths.document).toBeLessThanOrEqual(widths.viewport);
   });
 });
+
+// Quick task 260723-qiz — regression guard: the Editions OVERVIEW pages must
+// use the solid editorial header (in normal document flow), not the
+// hero-scrim transparent variant meant only for pages with a full-bleed dark
+// hero (gallery/edition DETAIL pages).
+test.describe('Shared SiteHeader — Editions overview uses the solid variant (quick task 260723-qiz)', () => {
+  for (const path of ['/editions/', '/en/editions/']) {
+    test(`${path}: header carries site-header--solid, not site-header--transparent, and is not absolutely positioned`, async ({
+      page,
+    }) => {
+      await page.goto(path);
+
+      const header = page.locator('[data-role="site-header"]');
+      await expect(header).toHaveClass(/site-header--solid/);
+      await expect(header).not.toHaveClass(/site-header--transparent/);
+
+      const position = await header.evaluate((el) => getComputedStyle(el).position);
+      expect(position).not.toBe('absolute');
+    });
+  }
+});
