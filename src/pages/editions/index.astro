@@ -53,7 +53,7 @@ const seoDescription =
               </div>
               <div class="editions-list__text">
                 <span class="editions-list__title">{edition.title}</span>
-                <p class="editions-list__statement">{edition.statement[locale]}</p>
+                <p class="editions-list__statement">{edition.statement?.[locale] ?? ''}</p>
               </div>
               <span class="sr-only"> — Voir l'édition</span>
             </a>
