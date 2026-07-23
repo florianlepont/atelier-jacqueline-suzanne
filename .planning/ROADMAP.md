@@ -440,10 +440,17 @@ Plans:
 
 **Plans**: 4 plans
 Plans:
+**Wave 1**
 
 - [ ] 14-01-PLAN.md — Null-safety hardening (D-02): WR-03-style `?.`/`?? ''` guards on both Éditions detail + overview pages (FR/EN) so a malformed édition can't crash the static build (Wave 1)
 - [ ] 14-02-PLAN.md — Commerce-language guard extension (D-05): extend `verify-static-artifact.mjs` to also scan `sanity/schemas/edition.ts` Studio copy, reusing the existing token set/helper (Wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 14-03-PLAN.md — Closure audit (D-01): re-run direct checks and map PITFALLS.md's 7 "Looks Done But Isn't" items to evidence (SC #1/#2/#4) + re-verify REQUIREMENTS.md already Complete (Wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 14-04-PLAN.md — Romane Studio UAT (D-03/D-04): French create/edit/publish/drag-reorder checklist + blocking human-verify checkpoint closing SC #3 (Wave 3, non-autonomous)
 
 ## Progress
