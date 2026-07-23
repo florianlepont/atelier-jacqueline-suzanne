@@ -68,21 +68,82 @@ test.describe('Shared SiteHeader — mode-toggle scoping (HOME-10, D-04)', () =>
 });
 
 test.describe('Shared SiteHeader — nav structure (HOME-10, D-01)', () => {
-  test('/about/: .site-nav exposes About, Contact, and Instagram links in that DOM order', async ({ page }) => {
+  // Phase 13 (EDN-01, D-01): "Éditions" is now the FIRST nav link, ahead of
+  // About — nav order becomes Éditions -> About -> Contact -> Instagram.
+  test('/about/: .site-nav exposes Éditions, About, Contact, and Instagram links in that DOM order', async ({ page }) => {
     await page.goto('/about/');
 
     const navLinks = page.locator('.site-nav > a.nav-link');
-    await expect(navLinks).toHaveCount(3);
+    await expect(navLinks).toHaveCount(4);
 
     const hrefs = await navLinks.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
+    const editionsIndex = hrefs.findIndex((href) => href?.includes('editions'));
     const aboutIndex = hrefs.findIndex((href) => href?.includes('about'));
     const contactIndex = hrefs.findIndex((href) => href?.includes('contact'));
     const instagramIndex = hrefs.findIndex((href) => href === INSTAGRAM_HREF);
 
-    expect(aboutIndex).toBeGreaterThanOrEqual(0);
+    expect(editionsIndex).toBe(0);
+    expect(aboutIndex).toBeGreaterThan(editionsIndex);
     expect(contactIndex).toBeGreaterThan(aboutIndex);
     expect(instagramIndex).toBeGreaterThan(contactIndex);
   });
+});
+
+// Phase 13 (EDN-01) — the Éditions nav link contract: renders first, on
+// every page, in both locales, pointing at the correct-locale Éditions
+// overview route. Expected RED until Task 2 wires editionsLabel/editionsHref
+// through resolveSiteCopy, both call sites, and SiteHeader.astro.
+test.describe('Shared SiteHeader — Éditions nav link (EDN-01, D-01, SC #1/#2)', () => {
+  const cases: Array<{ path: string; editionsSegment: string }> = [
+    { path: '/', editionsSegment: '/editions/' },
+    { path: '/en/', editionsSegment: '/en/editions/' },
+    { path: '/about/', editionsSegment: '/editions/' },
+    { path: '/en/about/', editionsSegment: '/en/editions/' },
+    { path: '/contact/', editionsSegment: '/editions/' },
+    { path: '/en/contact/', editionsSegment: '/en/editions/' },
+  ];
+
+  for (const { path, editionsSegment } of cases) {
+    test(`${path}: the header's first .nav-link is "Éditions" and resolves to ${editionsSegment}`, async ({ page }) => {
+      await page.goto(path);
+
+      const header = page.locator('[data-role="site-header"]');
+      const navLinks = header.locator('.site-nav > a.nav-link');
+      await expect(navLinks).toHaveCount(4);
+
+      const firstLink = navLinks.first();
+      const href = await firstLink.getAttribute('href');
+      expect(href).toContain(editionsSegment);
+
+      // Exactly one editions link in the header, and it is the first one.
+      const editionsLinks = header.locator(`a[href*="${editionsSegment}"]`);
+      await expect(editionsLinks).toHaveCount(1);
+    });
+  }
+});
+
+// Phase 13 (EDN-01, D-13, SC #3) — the homepage's photography carousel/grid
+// must stay Éditions-free; the only homepage Éditions link lives in the
+// header. Scoped explicitly to the carousel/grid data regions (not the whole
+// page) so a future in-prose Éditions mention elsewhere never creates a
+// false pass/fail here.
+test.describe('Shared SiteHeader — homepage carousel/grid stay Éditions-free (EDN-01, D-13, SC #3)', () => {
+  for (const path of ['/', '/en/']) {
+    test(`${path}: carousel/grid regions contain zero Éditions links; only the header links to Éditions`, async ({ page }) => {
+      await page.goto(path);
+
+      const carousel = page.locator('[data-role="home-carousel"]');
+      const grid = page.locator('[data-role="home-grid"]');
+      const carouselData = page.locator('[data-role="home-carousel-data"]');
+
+      await expect(carousel.locator('a[href*="editions"]')).toHaveCount(0);
+      await expect(grid.locator('a[href*="editions"]')).toHaveCount(0);
+      await expect(carouselData.locator('[data-href*="editions"]')).toHaveCount(0);
+
+      const header = page.locator('[data-role="site-header"]');
+      await expect(header.locator('a[href*="editions"]')).toHaveCount(1);
+    });
+  }
 });
 
 // Phase 10 Plan 02 (HOME-10, success criterion #1/#2) — the gap RESEARCH.md
@@ -93,23 +154,24 @@ test.describe('Shared SiteHeader — nav structure (HOME-10, D-01)', () => {
 // <SiteHeader> — the homepage still renders its own .home-nav today, so
 // `.site-nav > a.nav-link` resolves to zero elements on '/'.
 test.describe('Shared SiteHeader — cross-page structural identity (HOME-10, D-01, D-05)', () => {
-  test('/ and /about/ render the same .site-nav .nav-link count and order (About, Contact, Instagram)', async ({ page }) => {
+  test('/ and /about/ render the same .site-nav .nav-link count and order (Éditions, About, Contact, Instagram)', async ({ page }) => {
     await page.goto('/');
     const homeNavLinks = page.locator('.site-nav > a.nav-link');
-    await expect(homeNavLinks).toHaveCount(3);
+    await expect(homeNavLinks).toHaveCount(4);
     const homeHrefs = await homeNavLinks.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
 
     await page.goto('/about/');
     const aboutNavLinks = page.locator('.site-nav > a.nav-link');
-    await expect(aboutNavLinks).toHaveCount(3);
+    await expect(aboutNavLinks).toHaveCount(4);
     const aboutHrefs = await aboutNavLinks.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
 
     // Same count, same order, same hrefs — proves one shared component, not
     // two divergent implementations that happen to agree by coincidence.
     expect(homeHrefs).toEqual(aboutHrefs);
-    expect(homeHrefs[0]).toContain('about');
-    expect(homeHrefs[1]).toContain('contact');
-    expect(homeHrefs[2]).toBe(INSTAGRAM_HREF);
+    expect(homeHrefs[0]).toContain('editions');
+    expect(homeHrefs[1]).toContain('about');
+    expect(homeHrefs[2]).toContain('contact');
+    expect(homeHrefs[3]).toBe(INSTAGRAM_HREF);
   });
 });
 
