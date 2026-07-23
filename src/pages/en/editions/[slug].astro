@@ -37,13 +37,17 @@ const socialImage = fullSizeUrl(edition.leadPhoto, 1200);
 
 // D-06: the Lightbox receives leadPhoto + images as one combined array so
 // the counter total is images.length + 1.
-const lightboxImages = [edition.leadPhoto, ...edition.images];
+// D-02: nullish-guarded so a partially-populated édition (images missing)
+// cannot throw during getStaticPaths SSG (mirrors WR-03 in
+// src/pages/galleries/[slug].astro).
+const lightboxImages = [edition.leadPhoto, ...(edition.images ?? [])];
 const total = lightboxImages.length;
 
 // D-09: compact single-line format-details string (informational, not a
 // product-spec table — EDN-06 boundary).
-const dimensionsText = `${edition.dimensions.width} × ${edition.dimensions.height} ${edition.dimensions.unit}`;
-const formatText = `Pages: ${edition.pageCount} · Print run: ${edition.printRun} copies · Dimensions: ${dimensionsText}`;
+// D-02: dimensions/pageCount/printRun guarded — see FR file's note.
+const dimensionsText = `${edition.dimensions?.width ?? ''} × ${edition.dimensions?.height ?? ''} ${edition.dimensions?.unit ?? ''}`;
+const formatText = `Pages: ${edition.pageCount ?? ''} · Print run: ${edition.printRun ?? ''} copies · Dimensions: ${dimensionsText}`;
 ---
 
 <BaseLayout title={seoTitle} description={seoDescription} socialImage={socialImage} headerVariant="transparent">
@@ -91,10 +95,10 @@ const formatText = `Pages: ${edition.pageCount} · Print run: ${edition.printRun
       <p class="edition-detail__statement">{statement}</p>
       <p class="edition-detail__format">{formatText}</p>
       {
-        edition.images.length > 0 && (
+        (edition.images?.length ?? 0) > 0 && (
           <GalleryGrid>
             {
-              edition.images.map((img, i) => {
+              (edition.images ?? []).map((img, i) => {
                 const index = i + 1;
                 const alt = img.alt?.[locale] ?? '';
                 return (
