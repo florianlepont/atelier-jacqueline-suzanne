@@ -15,6 +15,15 @@
 // objectFit="contain" so the photographer's actual framing is never
 // cropped).
 //
+// quick-260724-rhq: the reveal panel also accepts an optional real (i.e.
+// non-decorative, non-aria-hidden) `statement` paragraph, rendered after the
+// title and before the format line — the single accessible instance of the
+// description once callers stop rendering it below the hero. Because the
+// panel itself defaults to opacity:0 pending the scroll-reveal script, a
+// <noscript> fallback forces `.detail-hero__reveal` to opacity:1/
+// transform:none so the statement (and the rest of the panel) is reachable
+// without JS, mirroring the exact pattern in GalleryGrid.astro.
+//
 // This component receives only pre-computed, already-localized primitives
 // as props — all locale/image logic stays in the calling page's
 // frontmatter. It never imports src/lib/sanity or src/lib/image, so no read
@@ -34,6 +43,7 @@ interface Props {
   heroAriaLabel: string;
   formatText?: string;
   caption?: string;
+  statement?: string;
   total?: number;
   objectFit?: 'cover' | 'contain';
   // quick-260724-oep: which Lightbox slide this hero trigger opens. Editions
@@ -51,6 +61,7 @@ const {
   formatText,
   heroAriaLabel,
   caption,
+  statement,
   objectFit = 'cover',
   heroIndex = 0,
 } = Astro.props;
@@ -97,10 +108,20 @@ const {
     <div class="detail-hero__reveal">
       {caption && <p class="detail-hero__caption" aria-hidden="true">{caption}</p>}
       <h1 class="detail-hero__reveal-title">{title}</h1>
+      {statement && <p class="detail-hero__statement">{statement}</p>}
       {formatText && <span class="detail-hero__format" aria-hidden="true">{formatText}</span>}
     </div>
   </div>
 </div>
+
+<noscript>
+  <style is:inline>
+    .detail-hero__reveal {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  </style>
+</noscript>
 
 <script>
   // Proven Synthesis mechanism ported verbatim from
@@ -327,6 +348,18 @@ const {
     line-height: 1.02;
     font-weight: var(--weight-semibold);
     color: #FFFFFF;
+  }
+
+  .detail-hero__statement {
+    margin-top: var(--space-md);
+    font-size: var(--text-body-size);
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.85);
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   .detail-hero__format {

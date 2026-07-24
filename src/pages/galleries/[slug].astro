@@ -113,9 +113,9 @@ const structuredData = {
       heroAriaLabel={heroAriaLabel}
       objectFit="contain"
       heroIndex={heroIndex}
+      statement={statement}
     />
     <div class="gallery-detail__content">
-      <p class="gallery-detail__statement">{statement}</p>
       {gallery.images.length > 1 && <GalleryGrid items={gridItems} layout="masonry" />}
     </div>
   </div>
@@ -129,13 +129,5 @@ const structuredData = {
 
   .gallery-detail__content {
     padding: var(--space-2xl) var(--space-md) 0;
-  }
-
-  .gallery-detail__statement {
-    max-width: 640px;
-    font-size: 16px; /* Body role */
-    font-weight: var(--weight-regular);
-    line-height: 1.5;
-    margin: 0 0 var(--space-2xl);
   }
 </style>

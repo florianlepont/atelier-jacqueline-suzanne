@@ -93,12 +93,12 @@ const gridItems: GalleryGridItem[] = (edition.images ?? []).map((img, i) => {
       total={total}
       heroAriaLabel={heroAriaLabel}
       caption={heroCaption}
+      statement={statement}
     />
     <div class="edition-detail__content">
       <a class="edition-detail__back-link" href={overviewHref}>
         <span aria-hidden="true">←</span> Back to Editions
       </a>
-      <p class="edition-detail__statement">{statement}</p>
       <p class="edition-detail__format">{formatText}</p>
       {relatedLink && (
         <a class="edition-detail__related" href={relatedLink.href}>
@@ -144,14 +144,6 @@ const gridItems: GalleryGridItem[] = (edition.images ?? []).map((img, i) => {
   .edition-detail__back-link:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: var(--focus-ring-offset);
-  }
-
-  .edition-detail__statement {
-    max-width: 640px;
-    font-size: var(--text-body-size);
-    font-weight: var(--weight-regular);
-    line-height: 1.5;
-    margin: 0 0 var(--space-2xl);
   }
 
   /* D-09/D-10/sketch-003 synthesis: bold uppercase + pink accent underline
