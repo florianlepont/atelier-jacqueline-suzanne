@@ -11,6 +11,7 @@ import type { GalleryGridItem } from '../../../components/GalleryGrid.astro';
 import Lightbox from '../../../components/Lightbox.astro';
 import { getEditions } from '../../../lib/sanity';
 import { thumbnailUrl, fullSizeUrl, responsiveImageSrcSet, responsiveThumbnailSrcSet } from '../../../lib/image';
+import { getRelatedGalleryLink } from '../../../lib/related-gallery';
 import type { Edition } from '../../../lib/sanity';
 
 export const getStaticPaths = (async () => {
@@ -52,6 +53,11 @@ const total = lightboxImages.length;
 // D-02: dimensions/pageCount/printRun guarded — see FR file's note.
 const dimensionsText = `${edition.dimensions?.width ?? ''} × ${edition.dimensions?.height ?? ''} ${edition.dimensions?.unit ?? ''}`;
 const formatText = `Pages: ${edition.pageCount ?? ''} · Print run: ${edition.printRun ?? ''} copies · Dimensions: ${dimensionsText}`;
+
+// EDN-08: optional, unidirectional cross-link to a related Portfolio
+// gallery. Null on every currently-published édition today -- renders
+// nothing (no placeholder) in that case.
+const relatedLink = getRelatedGalleryLink(edition.relatedGallery, locale);
 
 // D-06/D-07: NO .slice(1) here — leadPhoto is a separate field (rendered as
 // the clickable hero above, data-index 0), so nothing to skip; index = i+1
@@ -112,6 +118,11 @@ const gridItems: GalleryGridItem[] = (edition.images ?? []).map((img, i) => {
       </a>
       <p class="edition-detail__statement">{statement}</p>
       <p class="edition-detail__format">{formatText}</p>
+      {relatedLink && (
+        <a class="edition-detail__related" href={relatedLink.href}>
+          {relatedLink.text}
+        </a>
+      )}
       {(edition.images?.length ?? 0) > 0 && <GalleryGrid items={gridItems} />}
     </div>
   </div>
@@ -245,5 +256,28 @@ const gridItems: GalleryGridItem[] = (edition.images ?? []).map((img, i) => {
     border-bottom: 2px solid var(--color-accent);
     padding-bottom: var(--space-sm);
     margin: 0 0 var(--space-2xl);
+  }
+
+  /* EDN-08: quiet "see also" cross-link, visually distinct from the bold
+     .edition-detail__format line above it -- label-size text, own vertical
+     rhythm, accent treatment on hover/focus consistent with the page's
+     existing --color-accent focus ring. */
+  .edition-detail__related {
+    display: inline-block;
+    font-size: var(--text-label-size);
+    font-weight: var(--weight-regular);
+    line-height: var(--text-label-leading);
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-decoration-color: var(--color-accent);
+    text-underline-offset: 3px;
+    margin: 0 0 var(--space-2xl);
+  }
+
+  .edition-detail__related:hover,
+  .edition-detail__related:focus-visible {
+    color: var(--color-accent);
+    outline: 2px solid var(--color-accent);
+    outline-offset: var(--focus-ring-offset);
   }
 </style>

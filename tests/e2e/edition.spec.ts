@@ -157,6 +157,27 @@ test.describe('editions detail', () => {
   });
 });
 
+test.describe('editions related-gallery cross-link (EDN-08)', () => {
+  test('no cross-link renders on current content (no édition has relatedGallery set yet)', async ({
+    page,
+  }) => {
+    await page.goto('/editions/');
+    const frHref = await page.locator('.tile').first().getAttribute('href');
+    expect(frHref).toBeTruthy();
+
+    const slugMatch = frHref!.match(/\/editions\/([^/]+)\/?$/);
+    const slug = slugMatch?.[1];
+    expect(slug).toBeTruthy();
+    const enHref = `/en/editions/${slug}/`;
+
+    await page.goto(frHref!);
+    await expect(page.locator('.edition-detail__related')).toHaveCount(0);
+
+    await page.goto(enHref);
+    await expect(page.locator('.edition-detail__related')).toHaveCount(0);
+  });
+});
+
 test.describe('editions lightbox', () => {
   test('the hero opens the lightbox at 1/N; the first grid thumbnail opens it at 2/N (combined leadPhoto+images array, EDN-03)', async ({
     page,
