@@ -115,6 +115,18 @@ const {
       {statement && <p class="detail-hero__statement">{statement}</p>}
       {formatText && <span class="detail-hero__format" aria-hidden="true">{formatText}</span>}
     </div>
+    <div class="detail-hero__scroll-hint" aria-hidden="true">
+      <svg
+        viewBox="0 0 24 24"
+        width="28"
+        height="28"
+        fill="none"
+        stroke="white"
+        stroke-width="2"
+      >
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </div>
   </div>
 </div>
 
@@ -147,6 +159,22 @@ const {
   const overlayTitle = document.querySelector<HTMLElement>('.detail-hero__overlay-title');
   const reveal = document.querySelector<HTMLElement>('.detail-hero__reveal');
   const revealFormat = document.querySelector<HTMLElement>('.detail-hero__format');
+  const scrollHint = document.querySelector<HTMLElement>('.detail-hero__scroll-hint');
+
+  // Scroll-down hint fade (quick-260724-uf5): a self-contained block, kept
+  // OUTSIDE the reveal-driver guard below so it never depends on the
+  // reveal's own element set being complete. Writing opacity on a
+  // `display: none` element (mobile / reduced-motion desktop, per the CSS
+  // above) is a harmless no-op, so no extra branching is needed here.
+  if (scrollHint) {
+    window.addEventListener(
+      'scroll',
+      () => {
+        scrollHint.style.opacity = String(Math.max(0, 1 - window.scrollY / 150) * 0.85);
+      },
+      { passive: true },
+    );
+  }
 
   if (track && photo && scrim && overlayTitle && reveal) {
     const REVEAL_DISTANCE = 900;
@@ -375,6 +403,43 @@ const {
     opacity: 0;
   }
 
+  /* Scroll-down affordance (quick-260724-uf5, sketch 006 variant D):
+     bottom-center bouncing chevron inviting first-time visitors to scroll
+     and discover the reveal. This is the desktop-with-motion BASE state —
+     mirrors how this component's other base rules are the desktop-active
+     state, with mobile/reduced-motion overrides layered in below. Fades out
+     over the first ~150px of scroll via the plain scroll listener in the
+     <script> block above (a self-contained block, not wired into
+     onProgress/clearInlineStyles, so it cannot perturb the proven reveal
+     math). */
+  .detail-hero__scroll-hint {
+    position: absolute;
+    left: 50%;
+    bottom: var(--space-lg);
+    transform: translateX(-50%);
+    z-index: 5;
+    opacity: 0.85;
+    pointer-events: none;
+    animation: sketch-bounce 1.8s ease-in-out infinite;
+  }
+
+  @keyframes sketch-bounce {
+    0%,
+    100% {
+      transform: translate(-50%, 0);
+    }
+
+    50% {
+      transform: translate(-50%, 8px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .detail-hero__scroll-hint {
+      animation: none;
+    }
+  }
+
   /* Reduced-motion settled end-state (desktop only): mirrors onProgress(1)
      purely in CSS, so the composition shows immediately with zero
      scroll-linked motion and no dependence on the driver ever running. */
@@ -407,6 +472,12 @@ const {
 
     .detail-hero__format {
       opacity: 1;
+    }
+
+    /* Under reduced-motion desktop the reveal is already shown fully
+       settled — there is nothing left to hint at. */
+    .detail-hero__scroll-hint {
+      display: none;
     }
   }
 
@@ -456,6 +527,12 @@ const {
     }
 
     .detail-hero__format {
+      display: none;
+    }
+
+    /* Mobile shows the reveal panel already settled (no scroll-jacking/pin)
+       — the hint has no purpose here. */
+    .detail-hero__scroll-hint {
       display: none;
     }
   }

@@ -443,6 +443,34 @@ test.describe('gallery hero reduced-motion (sketch 005)', () => {
     const objectFit = await heroImg.evaluate((el) => getComputedStyle(el).objectFit);
     expect(objectFit).toBe('cover');
   });
+
+  // quick-260724-uf5: bouncing scroll-down chevron hint (sketch 006 variant
+  // D), shared via DetailHero so it appears on both édition and gallery
+  // detail heroes. Desktop-with-motion is the only state where it bounces
+  // and is visible at rest; reduced-motion either disables the bounce or
+  // hides the hint entirely (both are acceptable per the CSS contract).
+  test('the scroll-down hint is visible at rest on desktop, and its bounce is disabled/hidden under reduced motion', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    expect(firstTileHref).toBeTruthy();
+
+    await page.goto(firstTileHref!);
+
+    const hint = page.locator('.detail-hero__scroll-hint');
+    await expect(hint).toBeVisible();
+
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.reload();
+
+    const reducedMotionState = await page.locator('.detail-hero__scroll-hint').evaluate((el) => {
+      const style = getComputedStyle(el);
+      return { animationName: style.animationName, display: style.display };
+    });
+    expect(reducedMotionState.animationName === 'none' || reducedMotionState.display === 'none').toBe(true);
+  });
 });
 
 // quick-260724-oep: the definitive correctness proof for FIX 1 — every
