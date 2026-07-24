@@ -128,6 +128,60 @@ describe('getEditions', () => {
     await getEditions();
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('dimensions'));
   });
+
+  // EDN-08: relatedGallery must be dereferenced in EDITIONS_QUERY because the
+  // détail page receives its `edition` prop from getEditions() via
+  // getStaticPaths, NOT from getEdition() — this is the load-bearing
+  // projection for the cross-link UI.
+  it('projects relatedGallery', async () => {
+    fetchMock.mockResolvedValueOnce([]);
+    const { getEditions } = await import('../../src/lib/sanity');
+    await getEditions();
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('relatedGallery'));
+  });
+
+  it('returns a populated relatedGallery intact (EDN-08 fixture passthrough, no live dataset write)', async () => {
+    const editions = [
+      {
+        title: 'Rebut',
+        slug: 'rebut',
+        statement: { fr: 'a', en: 'b' },
+        leadPhoto: { asset: { _ref: 'image-abc' }, alt: { fr: 'x', en: 'y' } },
+        images: [],
+        pageCount: 50,
+        printRun: 2,
+        dimensions: { width: 21, height: 29.7, unit: 'cm' },
+        relatedGallery: { title: 'Rebut', slug: 'rebut' },
+      },
+    ];
+    fetchMock.mockResolvedValueOnce(editions);
+
+    const { getEditions } = await import('../../src/lib/sanity');
+    const result = await getEditions();
+
+    expect(result).toEqual(editions);
+    expect(result[0].relatedGallery).toEqual({ title: 'Rebut', slug: 'rebut' });
+  });
+
+  it('resolves without error when relatedGallery is absent/null (the common empty case)', async () => {
+    const editions = [
+      {
+        title: 'Silos',
+        slug: 'silos',
+        statement: { fr: 'a', en: 'b' },
+        leadPhoto: { asset: { _ref: 'image-abc' }, alt: { fr: 'x', en: 'y' } },
+        images: [],
+        pageCount: 40,
+        printRun: 1,
+        dimensions: { width: 21, height: 29.7, unit: 'cm' },
+        relatedGallery: null,
+      },
+    ];
+    fetchMock.mockResolvedValueOnce(editions);
+
+    const { getEditions } = await import('../../src/lib/sanity');
+    await expect(getEditions()).resolves.toEqual(editions);
+  });
 });
 
 describe('getEdition', () => {
@@ -164,6 +218,17 @@ describe('getEdition', () => {
     await getEdition('rebut');
 
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('slug.current == $slug'), {
+      slug: 'rebut',
+    });
+  });
+
+  it('projects relatedGallery (EDN-08 parity with EDITIONS_QUERY)', async () => {
+    fetchMock.mockResolvedValueOnce(null);
+
+    const { getEdition } = await import('../../src/lib/sanity');
+    await getEdition('rebut');
+
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('relatedGallery'), {
       slug: 'rebut',
     });
   });
