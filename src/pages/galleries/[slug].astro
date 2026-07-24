@@ -8,6 +8,7 @@
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import GalleryGrid from '../../components/GalleryGrid.astro';
+import type { GalleryGridItem } from '../../components/GalleryGrid.astro';
 import Lightbox from '../../components/Lightbox.astro';
 import { getGalleries } from '../../lib/sanity';
 import { thumbnailUrl, fullSizeUrl, responsiveImageSrcSet, responsiveThumbnailSrcSet } from '../../lib/image';
@@ -39,6 +40,23 @@ const heroAlt = heroImage.alt?.[locale] ?? '';
 const seoTitle = gallery.seo?.title?.[locale] ?? `${gallery.title} — Atelier Jacqueline Suzanne`;
 const seoDescription = gallery.seo?.description?.[locale] ?? statement;
 const socialImage = fullSizeUrl(gallery.seo?.image ?? heroImage, 1200);
+
+// Bug fix (gallery-thumb-grid-confusion): images[0] is already shown
+// full-bleed as the hero above — rendering it again as the grid's first
+// thumbnail duplicated it back-to-back. Skip index 0 here; it's still
+// reachable in the Lightbox via prev/next wraparound since Lightbox below
+// still receives the FULL gallery.images array.
+const gridItems: GalleryGridItem[] = gallery.images.slice(1).map((img, i) => {
+  const index = i + 1;
+  return {
+    index,
+    src: thumbnailUrl(img, 600),
+    srcset: responsiveThumbnailSrcSet(img),
+    alt: '',
+    ariaLabel: `Voir en taille réelle, image ${index + 1} sur ${gallery.images.length}`,
+  };
+});
+
 const structuredData = {
   '@context': 'https://schema.org',
   '@type': 'ImageGallery',
@@ -81,43 +99,7 @@ const structuredData = {
     </div>
     <div class="gallery-detail__content">
       <p class="gallery-detail__statement">{statement}</p>
-      {
-        // Bug fix (gallery-thumb-grid-confusion): images[0] is already shown
-        // full-bleed as the hero above — rendering it again as the grid's
-        // first thumbnail duplicated it back-to-back. Skip index 0 here;
-        // it's still reachable in the Lightbox via prev/next wraparound
-        // since Lightbox below still receives the FULL gallery.images array.
-        gallery.images.length > 1 && (
-          <GalleryGrid>
-            {
-              gallery.images.slice(1).map((img, i) => {
-                const index = i + 1;
-                return (
-                  <button
-                    type="button"
-                    class="gallery-detail__thumb-button"
-                    data-gallery-thumb
-                    data-index={index}
-                    aria-label={`Voir en taille réelle, image ${index + 1} sur ${gallery.images.length}`}
-                  >
-                    <img
-                      src={thumbnailUrl(img, 600)}
-                      srcset={responsiveThumbnailSrcSet(img)}
-                      sizes="(max-width: 767px) calc(100vw - 32px), 33vw"
-                      width="600"
-                      height="600"
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
-                      class="gallery-detail__thumb"
-                    />
-                  </button>
-                );
-              })
-            }
-          </GalleryGrid>
-        )
-      }
+      {gallery.images.length > 1 && <GalleryGrid items={gridItems} />}
     </div>
   </div>
   <Lightbox images={gallery.images} locale={locale} />
@@ -177,27 +159,5 @@ const structuredData = {
     font-weight: var(--weight-regular);
     line-height: 1.5;
     margin: 0 0 var(--space-2xl);
-  }
-
-  .gallery-detail__thumb-button {
-    display: block;
-    width: 100%;
-    padding: 0;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-  }
-
-  .gallery-detail__thumb-button:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
-  }
-
-  .gallery-detail__thumb {
-    display: block;
-    width: 100%;
-    height: auto;
-    aspect-ratio: 1 / 1;
-    object-fit: cover;
   }
 </style>
