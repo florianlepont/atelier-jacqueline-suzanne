@@ -56,4 +56,14 @@ open http://localhost:8735/
 Click any gallery title (carousel) or toggle "Grille" and click a tile — this is the real site, so every other interaction (language switch, nav, lightbox) also still works.
 
 ### Technical Verification
-Same live-browser method as A/B/C: confirmed via `page.addInitScript` that clicking the real carousel title AND a real grid tile both fire `pagereveal` with `event.viewTransition` non-null on the real destination gallery pages (tested on `/galleries/paysage/` and `/galleries/brume/`), the morphed image's computed `view-transition-name` resolves to `hero-photo` as expected, the header's resolves to `site-header`, and zero console errors on either path.
+Same live-browser method as A/B/C: confirmed via `page.addInitScript` that clicking the real carousel title AND a real grid tile both fire `pagereveal` with `event.viewTransition` non-null on the real destination gallery pages (tested on `/galleries/paysage/` and `/galleries/brume/`), the morphed image's computed `view-transition-name` resolves to `hero-photo` as expected, the header's resolves to `site-header`, and zero new console errors on either path. (One pre-existing "Invalid regular expression flags" console error was found — confirmed present on the unmodified production `dist/` build too, unrelated to this sketch; worth a separate quick-task fix, flagged for the user, not investigated further here.)
+
+### Round 2 — Resolving the crop-vs-full-bleed tension
+
+First look revealed a real tension: the gallery hero uses `object-fit: contain` (never crops — an explicit, deliberate earlier requirement), while the homepage carousel/grid use `cover` (always fills edge-to-edge). Landing on a `contain` hero after a `cover` source made the morph barely readable — the photo visibly "shrinks inward" to avoid being cropped, so only the title seemed to move.
+
+Fix applied directly on top of variant D (still the real site, no source changes): a blurred, scaled-up copy of the SAME photo fills the space around the sharp, still-never-cropped photo (`.detail-hero__pin::before`, `blur(40px) brightness(0.55) scale(1.15)`, sourced from the hero `<img>`'s own `currentSrc` via a few lines of JS — no new image request). Reads as genuinely full-bleed with no visible letterboxing, while the primary photo shown to the visitor is still never cropped — resolves the tension without walking back either earlier "no crop" decision (hero or grid).
+
+Also added: a bouncing scroll-down chevron (`.sketch-scroll-hint`, bottom-center, respects `prefers-reduced-motion`) that fades out over the first 150px of scroll — a first-time visitor now has an explicit invitation to keep scrolling and discover the reveal, rather than the hero looking like the whole page.
+
+Both additions verified live: `--backdrop-img` custom property resolves to the real photo URL, the arrow is visible at rest and fades to 0 opacity by 150px of scroll, and the cross-page transition (confirmed via the same `pagereveal`/`event.viewTransition` method) still fires correctly with these on top.
