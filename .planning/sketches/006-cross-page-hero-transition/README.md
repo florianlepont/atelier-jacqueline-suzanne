@@ -37,3 +37,23 @@ No JS feature-detection branch is needed for the CSS-only opt-in (`@view-transit
 
 ## Scope Note
 This sketch only covers grid-mode homepage tiles → gallery detail. Carousel-mode (single full-screen slide) would use the same technique on its current slide's image; not sketched separately since the CSS mechanism is identical, only which element gets the imperative `view-transition-name` on click differs.
+
+## Variant D: Real Site Preview (high fidelity)
+
+Variants A/B/C use a minimal abstract mockup to isolate the mechanism — useful for comparing the technique in isolation, but too far from the real brand/layout to judge the actual feel. Variant D is the SAME mechanism as C (photo morph + persistent header), applied directly on top of a real `npm run build` output — the actual production homepage and all 5 real gallery detail pages, copied as-is into this sketch folder with only a small `<style>`/`<script>` snippet appended (no edits to the real markup/CSS/JS). This is what the transition will actually look like on the live site.
+
+Covers BOTH real click paths:
+- **Carousel mode** (default): click the gallery title (`.home-hero__title`, a real `<a>`) — its sibling `.home-hero__img--sharp` morphs into the destination's `.detail-hero__img`.
+- **Grid mode** (toggle "Grille"): click any tile (`.home-grid__tile`) — that tile's `.home-grid__tile-img--sharp` morphs the same way.
+
+In both cases the site header persists (shared `view-transition-name: site-header` on both pages' real `<header data-role="site-header">`).
+
+### How to View
+```
+python3 -m http.server 8735 --directory .planning/sketches/006-cross-page-hero-transition/variant-d-real-site
+open http://localhost:8735/
+```
+Click any gallery title (carousel) or toggle "Grille" and click a tile — this is the real site, so every other interaction (language switch, nav, lightbox) also still works.
+
+### Technical Verification
+Same live-browser method as A/B/C: confirmed via `page.addInitScript` that clicking the real carousel title AND a real grid tile both fire `pagereveal` with `event.viewTransition` non-null on the real destination gallery pages (tested on `/galleries/paysage/` and `/galleries/brume/`), the morphed image's computed `view-transition-name` resolves to `hero-photo` as expected, the header's resolves to `site-header`, and zero console errors on either path.

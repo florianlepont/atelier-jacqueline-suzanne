@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://florianlepont.github.io/sitemap.xml
