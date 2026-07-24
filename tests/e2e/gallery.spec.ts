@@ -164,3 +164,136 @@ test.describe('lightbox', () => {
     expect(await dialog.evaluate((el) => getComputedStyle(el).display)).toBe('none');
   });
 });
+
+// Sketch 004 variant A2 regression coverage: the asymmetric bento grouping
+// must generalize across every real gallery's actual thumbnail count, not
+// just one hardcoded slug/count — this is the invariant that proves the
+// build-time chunk-by-3 algorithm is correct at arbitrary N, not overfit.
+test.describe('gallery grid bento layout', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test('bento grouping generalizes across every real gallery (G === ceil(N/3), hero larger + side-alternating)', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const hrefs = await page.locator('a.home-grid__tile').evaluateAll((els) =>
+      els.map((el) => el.getAttribute('href')).filter((href): href is string => Boolean(href)),
+    );
+    expect(hrefs.length).toBeGreaterThan(0);
+
+    let multiGroupGalleryFound = false;
+
+    for (const href of hrefs) {
+      await page.goto(href);
+
+      const thumbCount = await page.locator('.gallery-grid [data-gallery-thumb]').count();
+      const groupCount = await page.locator('.gallery-grid__group').count();
+      expect(groupCount).toBe(Math.ceil(thumbCount / 3));
+
+      if (groupCount > 1) multiGroupGalleryFound = true;
+
+      const groups = page.locator('.gallery-grid__group');
+      for (let g = 0; g < groupCount; g += 1) {
+        const group = groups.nth(g);
+        const size = await group.getAttribute('data-size');
+        if (size !== '2' && size !== '3') continue;
+
+        const hero = group.locator('.tile--hero');
+        const small = group.locator('.tile--small').first();
+        const heroBox = await hero.boundingBox();
+        const smallBox = await small.boundingBox();
+        expect(heroBox).not.toBeNull();
+        expect(smallBox).not.toBeNull();
+
+        expect(heroBox!.width).toBeGreaterThan(smallBox!.width);
+        expect(heroBox!.height).toBeGreaterThan(smallBox!.height);
+
+        if (g % 2 === 0) {
+          expect(heroBox!.x).toBeLessThan(smallBox!.x);
+        } else {
+          expect(heroBox!.x).toBeGreaterThan(smallBox!.x);
+        }
+      }
+    }
+
+    // Proves chunking actually happens on real content (not just a single
+    // trailing group of 1 or 2 across every discovered gallery).
+    expect(multiGroupGalleryFound).toBe(true);
+  });
+});
+
+// Sketch 004 variant A2's click-to-expand morph: proves startViewTransition
+// is invoked on open + close but NEVER on prev/next, and that every existing
+// dialog behavior (open/Arrow-nav/Escape-close+focus-return/backdrop-close)
+// is unchanged on every browser, including WebKit where
+// startViewTransition is undefined (the morph is purely additive).
+test.describe('gallery lightbox morph', () => {
+  test('morphs on open/close, never on prev/next, and every dialog interaction still works', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      (window as unknown as { __vtCalls: number }).__vtCalls = 0;
+      if (typeof document.startViewTransition === 'function') {
+        const original = document.startViewTransition.bind(document);
+        document.startViewTransition = (callback: () => void) => {
+          (window as unknown as { __vtCalls: number }).__vtCalls += 1;
+          return original(callback);
+        };
+      }
+    });
+
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    expect(firstTileHref).toBeTruthy();
+    await page.goto(firstTileHref!);
+
+    const supported = await page.evaluate(() => typeof document.startViewTransition === 'function');
+
+    const firstThumbnail = page.locator('[data-gallery-thumb]').first();
+    await firstThumbnail.click();
+
+    const dialog = page.locator('dialog[open]');
+    await expect(dialog).toBeVisible();
+
+    if (supported) {
+      const vtCallsAfterOpen = await page.evaluate(() => (window as unknown as { __vtCalls: number }).__vtCalls);
+      expect(vtCallsAfterOpen).toBeGreaterThanOrEqual(1);
+
+      const counter = dialog.locator('[data-role="counter"]');
+      const initialCounter = await counter.innerText();
+      await page.keyboard.press('ArrowRight');
+      await expect(counter).not.toHaveText(initialCounter);
+
+      const vtCallsAfterNav = await page.evaluate(() => (window as unknown as { __vtCalls: number }).__vtCalls);
+      expect(vtCallsAfterNav).toBe(vtCallsAfterOpen);
+
+      await page.keyboard.press('Escape');
+      await expect(dialog).not.toBeVisible();
+      await expect(firstThumbnail).toBeFocused();
+
+      const vtCallsAfterClose = await page.evaluate(() => (window as unknown as { __vtCalls: number }).__vtCalls);
+      expect(vtCallsAfterClose).toBeGreaterThan(vtCallsAfterNav);
+    } else {
+      // Universal fallback assertions (also exercised above when supported):
+      // proves zero functional regression when View Transitions is absent
+      // (e.g. WebKit).
+      const counter = dialog.locator('[data-role="counter"]');
+      const initialCounter = await counter.innerText();
+      await page.keyboard.press('ArrowRight');
+      await expect(counter).not.toHaveText(initialCounter);
+
+      await page.keyboard.press('Escape');
+      await expect(dialog).not.toBeVisible();
+      await expect(firstThumbnail).toBeFocused();
+    }
+
+    // Backdrop-close: re-open, then click the dialog itself at a point
+    // outside the image/control buttons.
+    await firstThumbnail.click();
+    await expect(dialog).toBeVisible();
+    await dialog.click({ position: { x: 5, y: 5 } });
+    await expect(dialog).not.toBeVisible();
+  });
+});
