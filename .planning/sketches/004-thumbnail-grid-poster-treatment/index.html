@@ -96,6 +96,50 @@
     #variant-b .grid { column-count: 2; }
   }
 
+  /* ===================== VARIANT A2: Bento + dynamique ===================== */
+  /* Same asymmetric bento as A, plus: (1) a staggered scroll-reveal as tiles
+     enter the viewport, and (2) a click-to-expand MORPH into a full-size
+     view using the native View Transitions API — the photo grows smoothly
+     from its grid position/size into the enlarged view instead of an
+     abrupt swap. Falls back to an instant open with no animation in
+     browsers without View Transitions support (progressive enhancement,
+     same posture as the homepage carousel's existing use of this API). */
+  #variant-a2 .grid { display: grid; grid-template-columns: repeat(12, 1fr); grid-auto-rows: 14vw; gap: var(--space-md); }
+  #variant-a2 .thumb:nth-child(1) { grid-column: 1 / 8; grid-row: 1 / 3; }
+  #variant-a2 .thumb:nth-child(2) { grid-column: 8 / 13; grid-row: 1 / 2; }
+  #variant-a2 .thumb:nth-child(3) { grid-column: 8 / 13; grid-row: 2 / 3; }
+  #variant-a2 .thumb:nth-child(4) { grid-column: 1 / 5; grid-row: 3 / 4; }
+  #variant-a2 .thumb:nth-child(5) { grid-column: 5 / 13; grid-row: 3 / 5; }
+  #variant-a2 .thumb:nth-child(6) { grid-column: 1 / 5; grid-row: 4 / 5; }
+  @media (max-width: 800px) {
+    #variant-a2 .grid { grid-template-columns: 1fr; grid-auto-rows: auto; }
+    #variant-a2 .thumb { grid-column: 1 !important; grid-row: auto !important; aspect-ratio: 4/3; }
+  }
+  #variant-a2 .thumb {
+    opacity: 0; transform: translateY(24px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  #variant-a2 .thumb.revealed { opacity: 1; transform: translateY(0); }
+  #variant-a2 .replay-note { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); }
+  #variant-a2 .replay-btn {
+    font-family: var(--font-sans); font-size: 12px; font-weight: var(--weight-semibold);
+    background: var(--gray-0); border: var(--border-hairline) solid var(--color-ink); border-radius: var(--radius-sm);
+    padding: 5px 10px; cursor: pointer;
+  }
+  #variant-a2 .replay-btn:hover { background: var(--color-ink); color: var(--gray-0); }
+
+  #morph-modal {
+    position: fixed; inset: 0; z-index: 200; background: rgba(26, 26, 26, 0.92);
+    display: none; align-items: center; justify-content: center; padding: 5vh 5vw;
+  }
+  #morph-modal.open { display: flex; }
+  #morph-modal img { max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 0 0 0 var(--border-hairline) var(--color-ink); }
+  #morph-modal .morph-close {
+    position: absolute; top: var(--space-lg); right: var(--space-lg); z-index: 3;
+    color: #fff; background: transparent; border: none; cursor: pointer; padding: var(--space-sm);
+  }
+  ::view-transition-group(*) { animation-duration: 0.4s; }
+
   /* ===================== VARIANT C: Minimal (today's grid + hover only) ===================== */
   #variant-c .grid { display: grid; grid-template-columns: 1fr; gap: var(--space-xl); }
   @media (min-width: 768px) {
@@ -109,6 +153,7 @@
 <div id="variant-nav">
   <span class="label">Sketch 004 · Thumbnail grid poster treatment</span>
   <button class="variant-tab active" data-variant="a" onclick="showVariant('a')">A: Asymmetric bento</button>
+  <button class="variant-tab" data-variant="a2" onclick="showVariant('a2')">A2: Bento + dynamique ★</button>
   <button class="variant-tab" data-variant="b" onclick="showVariant('b')">B: Organic masonry</button>
   <button class="variant-tab" data-variant="c" onclick="showVariant('c')">C: Minimal (today + hover)</button>
 </div>
@@ -125,6 +170,24 @@
         <a class="thumb" href="#" onclick="return fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=700&auto=format" alt=""><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
         <a class="thumb" href="#" onclick="return fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/29f1ee169995411d3a671a9a07ab901862333fd3-6520x4865.jpg?w=1200&auto=format" alt=""><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
         <a class="thumb" href="#" onclick="return fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/2e30e0b7d6a815f8e126abeb86991c326c700dff-6520x4865.jpg?w=700&auto=format" alt=""><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
+      </div>
+    </div>
+  </div>
+
+  <div id="variant-a2" class="variant">
+    <div class="page">
+      <p class="page-context">Même bento que A, avec deux ajouts : (1) un <strong>reveal au scroll</strong> échelonné (chaque tuile apparaît en fondu/glissement en entrant dans l'écran) — descendez pour le voir, ou rechargez le variant ; (2) au clic, la photo <strong>s'agrandit en morphing</strong> depuis sa position dans la grille (View Transitions API, natif, dégrade proprement si non supporté).</p>
+      <div class="replay-note">
+        <button class="replay-btn" onclick="replayReveal()">↻ Rejouer le reveal</button>
+        <span style="font-size:12px;color:#6b6b6b">Cliquez une photo pour voir le morph d'agrandissement</span>
+      </div>
+      <div class="grid" id="a2-grid">
+        <a class="thumb" href="#" data-full="https://cdn.sanity.io/images/gwz8iug4/production/5ce383b9109bb57310e009b85ca4008995cb4831-5735x3783.jpg?w=2000&auto=format" onclick="return openMorph(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/5ce383b9109bb57310e009b85ca4008995cb4831-5735x3783.jpg?w=1200&auto=format" alt=""><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
+        <a class="thumb" href="#" data-full="https://cdn.sanity.io/images/gwz8iug4/production/a74307df39a8fc5507cc2cf5d5cafb700af09ca9-6414x4786.jpg?w=2000&auto=format" onclick="return openMorph(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/a74307df39a8fc5507cc2cf5d5cafb700af09ca9-6414x4786.jpg?w=700&auto=format" alt=""><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
+        <a class="thumb" href="#" data-full="https://cdn.sanity.io/images/gwz8iug4/production/d65fc2c54e1623b688acc45d3ede61ccae61a0d3-6520x4865.jpg?w=2000&auto=format" onclick="return openMorph(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/d65fc2c54e1623b688acc45d3ede61ccae61a0d3-6520x4865.jpg?w=700&auto=format" alt=""><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
+        <a class="thumb" href="#" data-full="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=2000&auto=format" onclick="return openMorph(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=700&auto=format" alt=""><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
+        <a class="thumb" href="#" data-full="https://cdn.sanity.io/images/gwz8iug4/production/29f1ee169995411d3a671a9a07ab901862333fd3-6520x4865.jpg?w=2000&auto=format" onclick="return openMorph(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/29f1ee169995411d3a671a9a07ab901862333fd3-6520x4865.jpg?w=1200&auto=format" alt=""><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
+        <a class="thumb" href="#" data-full="https://cdn.sanity.io/images/gwz8iug4/production/2e30e0b7d6a815f8e126abeb86991c326c700dff-6520x4865.jpg?w=2000&auto=format" onclick="return openMorph(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/2e30e0b7d6a815f8e126abeb86991c326c700dff-6520x4865.jpg?w=700&auto=format" alt=""><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
       </div>
     </div>
   </div>
@@ -170,6 +233,13 @@
 
 <div class="toast" id="toast"></div>
 
+<div id="morph-modal" onclick="if(event.target===this) closeMorph()">
+  <button class="morph-close" onclick="closeMorph()" aria-label="Fermer">
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+  </button>
+  <img id="morph-modal-img" src="" alt="">
+</div>
+
 <script>
   function showVariant(id) {
     document.querySelectorAll('.variant').forEach(v => v.classList.remove('active'));
@@ -190,6 +260,69 @@
   }
 
   function fakeLightbox(e) { e.preventDefault(); showToast('→ ouvre la visionneuse (Lightbox) en taille réelle'); }
+
+  // ---- Variant A2: staggered scroll-reveal ----
+  let a2Observer;
+  function setupReveal() {
+    const tiles = document.querySelectorAll('#a2-grid .thumb');
+    tiles.forEach(t => t.classList.remove('revealed'));
+    if (a2Observer) a2Observer.disconnect();
+    a2Observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const tile = entry.target;
+          const index = [...tiles].indexOf(tile);
+          setTimeout(() => tile.classList.add('revealed'), index * 90);
+          a2Observer.unobserve(tile);
+        }
+      });
+    }, { threshold: 0.15 });
+    tiles.forEach(t => a2Observer.observe(t));
+  }
+  function replayReveal() { setupReveal(); showToast('Reveal relancé — faites défiler pour le voir'); }
+  setupReveal();
+
+  // ---- Variant A2: click-to-expand morph (View Transitions API) ----
+  let morphSourceImg = null;
+  function openMorph(e) {
+    e.preventDefault();
+    const link = e.currentTarget;
+    const img = link.querySelector('img');
+    const fullSrc = link.dataset.full;
+    morphSourceImg = img;
+    const doOpen = () => {
+      img.style.viewTransitionName = '';
+      const modalImg = document.getElementById('morph-modal-img');
+      modalImg.src = fullSrc;
+      modalImg.style.viewTransitionName = 'morph-photo';
+      document.getElementById('morph-modal').classList.add('open');
+    };
+    img.style.viewTransitionName = 'morph-photo';
+    if (document.startViewTransition) {
+      document.startViewTransition(doOpen);
+    } else {
+      doOpen();
+    }
+    return false;
+  }
+  function closeMorph() {
+    const modalImg = document.getElementById('morph-modal-img');
+    const doClose = () => {
+      modalImg.style.viewTransitionName = '';
+      if (morphSourceImg) morphSourceImg.style.viewTransitionName = '';
+      document.getElementById('morph-modal').classList.remove('open');
+    };
+    if (morphSourceImg) morphSourceImg.style.viewTransitionName = 'morph-photo';
+    modalImg.style.viewTransitionName = '';
+    if (document.startViewTransition) {
+      document.startViewTransition(doClose);
+    } else {
+      doClose();
+    }
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.getElementById('morph-modal').classList.contains('open')) closeMorph();
+  });
 </script>
 
 </body>
