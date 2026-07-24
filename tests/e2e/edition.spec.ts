@@ -1,17 +1,11 @@
 import { test, expect } from '@playwright/test';
 
-// Phase 12 Plan 01: the Éditions overview route trees do not exist yet
-// (getEditions/getEdition + editions/index.astro + en/editions/index.astro
-// are built in Tasks 2-3 of this plan) — this file is RED until then. Do not
-// hardcode a slug and do not use the main nav (nav wiring is Phase 13).
-//
-// Phase 12 Plan 02 (this extension): the per-édition détail routes
-// (`/editions/{slug}/`, `/en/editions/{slug}/`) do not exist yet either —
-// the `editions detail`, `editions lightbox`, and
-// `no commerce affordances (detail)` blocks below are RED until Task 2
-// builds src/pages/editions/[slug].astro + the en/ twin. Discover the détail
-// URL dynamically from the overview's first `.editions-list__row` href —
-// never hardcode a slug, never use the main nav (nav wiring is Phase 13).
+// These routes are live: `/editions/`, `/en/editions/` render the
+// sketch-approved asymmetric "Poster Grid" (grouped-by-3 hero+small tiles,
+// side alternating by group index); `/editions/{slug}/`,
+// `/en/editions/{slug}/` render the per-édition détail page. Discover the
+// détail URL dynamically from the overview's first `.tile` href — never
+// hardcode a slug, never use the main nav (nav wiring is Phase 13).
 
 // <!-- planner-discipline-allow: prix price acheter buy panier cart stock disponib availab épuisé -->
 // Mirrors tests/scripts/verify-static-artifact.mjs's whole-word token matching:
@@ -56,27 +50,24 @@ function containsForbiddenCommerceToken(text: string): boolean {
 }
 
 test.describe('editions overview', () => {
-  test('lists each published édition as a linked row with title, lead photo, and full statement (fr)', async ({
+  test('lists each published édition as a linked tile with title, lead photo, and full statement (fr)', async ({
     page,
   }) => {
     await page.goto('/editions/');
 
-    const row = page.locator('.editions-list__row').first();
-    await expect(row).toBeVisible();
-    await expect(row.locator('img').first()).toBeVisible();
+    const tile = page.locator('.tile').first();
+    await expect(tile).toBeVisible();
+    await expect(tile.locator('img').first()).toBeVisible();
 
-    const title = row.locator('.editions-list__title');
+    const title = tile.locator('.tile__title');
     const titleText = (await title.innerText()).trim();
     expect(titleText.length).toBeGreaterThan(0);
 
-    const statement = row.locator('.editions-list__statement');
+    const statement = tile.locator('.tile__statement');
     const frStatementText = (await statement.innerText()).trim();
     expect(frStatementText.length).toBeGreaterThan(0);
 
-    let href = await row.getAttribute('href');
-    if (href === null) {
-      href = await row.locator('xpath=ancestor::a[1]').getAttribute('href');
-    }
+    const href = await tile.getAttribute('href');
     expect(href).toMatch(/\/editions\/[^/]+\/?$/);
   });
 
@@ -85,23 +76,20 @@ test.describe('editions overview', () => {
   }) => {
     await page.goto('/editions/');
     const frStatement = (
-      await page.locator('.editions-list__row').first().locator('.editions-list__statement').innerText()
+      await page.locator('.tile').first().locator('.tile__statement').innerText()
     ).trim();
 
     await page.goto('/en/editions/');
 
-    const row = page.locator('.editions-list__row').first();
-    await expect(row).toBeVisible();
+    const tile = page.locator('.tile').first();
+    await expect(tile).toBeVisible();
 
-    const statement = row.locator('.editions-list__statement');
+    const statement = tile.locator('.tile__statement');
     const enStatementText = (await statement.innerText()).trim();
     expect(enStatementText.length).toBeGreaterThan(0);
     expect(enStatementText).not.toBe(frStatement);
 
-    let href = await row.getAttribute('href');
-    if (href === null) {
-      href = await row.locator('xpath=ancestor::a[1]').getAttribute('href');
-    }
+    const href = await tile.getAttribute('href');
     expect(href).toMatch(/\/en\/editions\/[^/]+\/?$/);
   });
 
@@ -116,16 +104,16 @@ test.describe('editions overview', () => {
   });
 });
 
-// Phase 12 Plan 02: détail routes. Discover the détail URL dynamically from
-// the overview's first `.editions-list__row` href (never hardcode a slug,
-// never use the main nav — nav wiring is Phase 13).
+// Détail routes. Discover the détail URL dynamically from the overview's
+// first `.tile` href (never hardcode a slug, never use the main nav — nav
+// wiring is Phase 13).
 
 test.describe('editions detail', () => {
   test('shows a bilingual statement, a format-details line, and a back-link to the overview', async ({
     page,
   }) => {
     await page.goto('/editions/');
-    const frHref = await page.locator('.editions-list__row').first().getAttribute('href');
+    const frHref = await page.locator('.tile').first().getAttribute('href');
     expect(frHref).toBeTruthy();
 
     const slugMatch = frHref!.match(/\/editions\/([^/]+)\/?$/);
@@ -141,8 +129,11 @@ test.describe('editions detail', () => {
     await expect(frFormat).toBeVisible();
     const frFormatText = await frFormat.innerText();
     expect(frFormatText).toMatch(/\d/);
-    expect(frFormatText).toMatch(/Tirage/);
-    expect(frFormatText).toMatch(/cm|in/);
+    // Case-insensitive: .edition-detail__format now renders
+    // text-transform: uppercase, and Playwright's innerText() reflects the
+    // rendered (CSS-transformed) text, not the underlying DOM string case.
+    expect(frFormatText).toMatch(/Tirage/i);
+    expect(frFormatText).toMatch(/cm|in/i);
 
     const frBackLink = page.locator('.edition-detail__back-link');
     await expect(frBackLink).toBeVisible();
@@ -157,8 +148,8 @@ test.describe('editions detail', () => {
     await expect(enFormat).toBeVisible();
     const enFormatText = await enFormat.innerText();
     expect(enFormatText).toMatch(/\d/);
-    expect(enFormatText).toMatch(/Print run/);
-    expect(enFormatText).toMatch(/cm|in/);
+    expect(enFormatText).toMatch(/Print run/i);
+    expect(enFormatText).toMatch(/cm|in/i);
 
     const enBackLink = page.locator('.edition-detail__back-link');
     await expect(enBackLink).toBeVisible();
@@ -171,7 +162,7 @@ test.describe('editions lightbox', () => {
     page,
   }) => {
     await page.goto('/editions/');
-    const rowHref = await page.locator('.editions-list__row').first().getAttribute('href');
+    const rowHref = await page.locator('.tile').first().getAttribute('href');
     expect(rowHref).toBeTruthy();
 
     await page.goto(rowHref!);
@@ -206,10 +197,44 @@ test.describe('editions lightbox', () => {
   });
 });
 
+test.describe('editions overview layout', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test('hero tile is larger than and left of its sibling small tile', async ({ page }) => {
+    for (const url of ['/editions/', '/en/editions/']) {
+      await page.goto(url);
+
+      // Today's real content is exactly 2 published éditions → one trailing
+      // group of size 2, side=left (group index 0).
+      const group = page.locator('.editions-grid__group').first();
+      await expect(group).toHaveAttribute('data-size', '2');
+      await expect(group).toHaveAttribute('data-side', 'left');
+
+      const hero = group.locator('.tile--hero');
+      const small = group.locator('.tile--small').first();
+
+      const heroBox = await hero.boundingBox();
+      const smallBox = await small.boundingBox();
+
+      expect(heroBox).not.toBeNull();
+      expect(smallBox).not.toBeNull();
+
+      // Hero spans 7 of 12 columns vs the small's 5 → wider.
+      expect(heroBox!.width).toBeGreaterThan(smallBox!.width);
+      // Hero spans 2 grid rows vs the small's 1 → taller.
+      expect(heroBox!.height).toBeGreaterThan(smallBox!.height);
+      // side=left → hero sits to the left of the small tile.
+      expect(heroBox!.x).toBeLessThan(smallBox!.x);
+      // Both top-aligned to the group's first row.
+      expect(Math.abs(heroBox!.y - smallBox!.y)).toBeLessThan(4);
+    }
+  });
+});
+
 test.describe('no commerce affordances (detail)', () => {
   test('shows no price, availability, or purchase affordance (EDN-06)', async ({ page }) => {
     await page.goto('/editions/');
-    const rowHref = await page.locator('.editions-list__row').first().getAttribute('href');
+    const rowHref = await page.locator('.tile').first().getAttribute('href');
     expect(rowHref).toBeTruthy();
 
     const slugMatch = rowHref!.match(/\/editions\/([^/]+)\/?$/);

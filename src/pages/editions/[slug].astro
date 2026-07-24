@@ -265,14 +265,20 @@ const formatText = `Pages : ${edition.pageCount ?? ''} · Tirage : ${edition.pri
     margin: 0 0 var(--space-2xl);
   }
 
-  /* D-09/D-10: compact Label-role line, deliberately the quietest role —
-     reinforces the "informational, not product-spec" EDN-06 boundary. */
+  /* D-09/D-10/sketch-003 synthesis: bold uppercase + pink accent underline
+     — a small graphic accent while staying inside the "informational, not
+     product-spec / not a commerce affordance" EDN-06 boundary. */
   .edition-detail__format {
+    display: inline-block;
     font-size: var(--text-label-size);
-    font-weight: var(--weight-regular);
+    font-weight: var(--weight-semibold);
     line-height: var(--text-label-leading);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
     color: var(--color-ink);
-    margin: var(--space-2xl) 0;
+    border-bottom: 2px solid var(--color-accent);
+    padding-bottom: var(--space-sm);
+    margin: 0 0 var(--space-2xl);
   }
 
   .edition-detail__thumb-button {

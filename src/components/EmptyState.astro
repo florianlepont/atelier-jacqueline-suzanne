@@ -8,12 +8,13 @@
 interface Props {
   heading: string;
   body: string;
+  variant?: 'plain' | 'bold';
 }
 
-const { heading, body } = Astro.props;
+const { heading, body, variant = 'plain' } = Astro.props;
 ---
 
-<div class="empty-state">
+<div class:list={['empty-state', variant === 'bold' && 'empty-state--bold']}>
   <p class="empty-state__heading">{heading}</p>
   <p class="empty-state__body">{body}</p>
 </div>
@@ -39,5 +40,18 @@ const { heading, body } = Astro.props;
     font-weight: var(--text-body-weight);
     line-height: var(--text-body-leading);
     margin: 0;
+  }
+
+  .empty-state--bold {
+    border: var(--border-hairline) dashed var(--color-border);
+    padding: var(--space-3xl) var(--space-xl);
+  }
+
+  .empty-state--bold .empty-state__heading {
+    font-family: var(--font-display);
+    font-weight: var(--weight-semibold);
+    font-size: clamp(32px, 5vw, 56px);
+    line-height: 1;
+    letter-spacing: -0.02em;
   }
 </style>
