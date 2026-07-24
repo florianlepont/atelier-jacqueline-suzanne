@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Sketch 005 — Édition hero scroll reveal</title>
+<link rel="stylesheet" href="../themes/default.css" />
+<style>
+  body { padding-top: 52px; }
+
+  #variant-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9998;
+    background: var(--gray-0); border-bottom: var(--border-hairline) solid var(--color-border);
+    padding: 10px 16px; display: flex; gap: 8px; align-items: center;
+    font-family: var(--font-sans); flex-wrap: wrap;
+  }
+  .variant-tab {
+    font-family: var(--font-sans); font-size: 13px; font-weight: var(--weight-semibold);
+    padding: 8px 14px; border: var(--border-hairline) solid var(--color-border); background: var(--gray-0);
+    color: var(--color-ink); cursor: pointer; border-radius: var(--radius-none);
+  }
+  .variant-tab.active { background: var(--color-ink); color: var(--gray-0); border-color: var(--color-ink); }
+  .variant-tab .star { color: var(--pink-600); }
+  .variant-tab.active .star { color: var(--palette-lime); }
+
+  .rm-toggle { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--color-ink); }
+
+  .variant { display: none; padding: var(--space-2xl) var(--space-md); }
+  .variant.active { display: block; }
+
+  .stage { max-width: 960px; margin: 0 auto var(--space-3xl); }
+  .stage h2 { font-family: var(--font-display); font-weight: var(--weight-semibold); font-size: 22px; margin: 0 0 4px; }
+  .stage .question { color: #6b6b6b; font-size: 14px; margin: 0 0 var(--space-md); max-width: 640px; }
+
+  .frame-hint { font-size: 12px; color: #8a8a8a; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  .viewport {
+    position: relative; width: 100%; height: 640px;
+    border: var(--border-hairline) solid var(--color-border);
+    overflow-y: auto; overflow-x: hidden; background: var(--gray-0);
+    scrollbar-width: thin;
+  }
+
+  .scroll-track { position: relative; }
+
+  .pin {
+    position: sticky; top: 0; height: 640px; overflow: hidden;
+    background: var(--gray-900); z-index: 1;
+  }
+  .stage.reduced-motion .pin { position: static; }
+
+  .pin-image-wrap {
+    position: absolute; inset: 0; overflow: hidden;
+    transition: none;
+  }
+  .pin-image-wrap img {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  .pin-scrim {
+    position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.15) 45%, rgba(0,0,0,0) 70%);
+  }
+  .pin-overlay-title {
+    position: absolute; left: var(--space-xl); bottom: var(--space-xl); right: var(--space-xl); z-index: 3;
+    margin: 0; font-family: var(--font-display); font-weight: var(--weight-semibold);
+    font-size: var(--text-display-size); color: #fff; pointer-events: none;
+  }
+
+  .reveal-panel { position: absolute; z-index: 4; pointer-events: none; }
+  .reveal-panel .r-title {
+    font-family: var(--font-display); font-weight: var(--weight-semibold); margin: 0;
+    color: var(--gray-0);
+  }
+  .reveal-panel .r-caption { font-size: var(--text-label-size); color: rgba(255,255,255,0.7); margin: 0 0 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .reveal-panel .r-format {
+    display: inline-block; font-size: var(--text-label-size); font-weight: var(--weight-semibold);
+    text-transform: uppercase; color: var(--gray-0); border-bottom: 2px solid var(--pink-600);
+    padding-bottom: 4px; margin-top: var(--space-md);
+  }
+
+  .content-after { background: var(--gray-0); padding: var(--space-xl) var(--space-lg) var(--space-2xl); }
+  .content-after .back-link { display: inline-block; font-size: 14px; color: var(--color-ink); margin-bottom: var(--space-md); opacity: 0.7; }
+  .content-after .statement { font-size: 16px; line-height: 1.55; max-width: 560px; margin: 0 0 var(--space-md); }
+  .content-after .format { display: inline-block; font-size: var(--text-label-size); font-weight: var(--weight-semibold); text-transform: uppercase; border-bottom: 2px solid var(--pink-600); padding-bottom: 4px; margin: 0 0 var(--space-lg); }
+  .content-after .grid-preview { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .content-after .grid-preview div { aspect-ratio: 1; background: var(--color-border); }
+
+  /* Variant A — Subtle Settle specifics */
+  #stageA .pin-overlay-title { transition: none; }
+  #stageA .reveal-panel {
+    left: 0; right: 0; bottom: var(--space-xl); text-align: center;
+  }
+  #stageA .reveal-panel .r-title { font-size: 34px; }
+
+  /* Variant B — Bold Reveal specifics */
+  #stageB .reveal-panel {
+    top: 50%; right: var(--space-2xl); transform: translateY(-50%); max-width: 380px; text-align: left;
+  }
+  #stageB .reveal-panel .r-title { font-size: clamp(40px, 6vw, 72px); line-height: 1.02; }
+
+  /* Variant C — Settle + Facts specifics */
+  #stageC .reveal-panel { left: var(--space-xl); right: var(--space-xl); bottom: var(--space-xl); text-align: left; }
+  #stageC .reveal-panel .r-title { font-size: 30px; }
+
+  #sketch-tools select { font-size: 11px; }
+</style>
+</head>
+<body>
+
+<div id="variant-nav">
+  <button class="variant-tab active" data-variant="A" onclick="showVariant('A', event)">A: Subtle Settle</button>
+  <button class="variant-tab" data-variant="B" onclick="showVariant('B', event)">B: Bold Reveal</button>
+  <button class="variant-tab" data-variant="C" onclick="showVariant('C', event)">C: Settle + Facts</button>
+  <label class="rm-toggle">
+    <input type="checkbox" id="force-rm" onchange="onForceReducedMotionChange()" />
+    Simuler prefers-reduced-motion
+  </label>
+</div>
+
+<!-- ============ VARIANT A ============ -->
+<div id="variant-A" class="variant active">
+  <div class="stage" id="stageA">
+    <h2>A — Subtle Settle</h2>
+    <p class="question">La photo se réduit légèrement (~88%) en un cadre discret ; le titre en overlay s'efface puis réapparaît, posé, sous la photo installée. Peu de spectacle — un "rangement" plutôt qu'une révélation.</p>
+    <p class="frame-hint">↕ scroller dans le cadre</p>
+    <div class="viewport" id="viewportA">
+      <div class="scroll-track" style="height: 1260px;">
+        <div class="pin" id="pinA">
+          <div class="pin-image-wrap" id="imgWrapA">
+            <img src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?w=1600&auto=format" alt="" />
+            <div class="pin-scrim" id="scrimA"></div>
+          </div>
+          <h1 class="pin-overlay-title" id="overlayTitleA">Rebut</h1>
+          <div class="reveal-panel" id="revealA">
+            <h2 class="r-title">Rebut</h2>
+          </div>
+        </div>
+        <div class="content-after">
+          <a class="back-link" href="#">← Retour aux éditions</a>
+          <p class="statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder.</p>
+          <p class="format">Pages : 50 · Tirage : 2 exemplaires · Dimensions : 21 × 29.7 cm</p>
+          <div class="grid-preview"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ VARIANT B ============ -->
+<div id="variant-B" class="variant">
+  <div class="stage" id="stageB">
+    <h2>B — Bold Reveal</h2>
+    <p class="question">La photo se réduit fortement (~55%), se cale à gauche façon portrait encadré ; l'espace libéré à droite laisse entrer le titre en très grand Unbounded — l'énergie du Poster Grid appliquée à l'entrée de la page détail.</p>
+    <p class="frame-hint">↕ scroller dans le cadre</p>
+    <div class="viewport" id="viewportB">
+      <div class="scroll-track" style="height: 1540px;">
+        <div class="pin" id="pinB">
+          <div class="pin-image-wrap" id="imgWrapB">
+            <img src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?w=1600&auto=format" alt="" />
+            <div class="pin-scrim" id="scrimB"></div>
+          </div>
+          <h1 class="pin-overlay-title" id="overlayTitleB">Rebut</h1>
+          <div class="reveal-panel" id="revealB">
+            <p class="r-caption">Édition imprimée</p>
+            <h2 class="r-title">Rebut</h2>
+          </div>
+        </div>
+        <div class="content-after">
+          <a class="back-link" href="#">← Retour aux éditions</a>
+          <p class="statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder.</p>
+          <p class="format">Pages : 50 · Tirage : 2 exemplaires · Dimensions : 21 × 29.7 cm</p>
+          <div class="grid-preview"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ VARIANT C ============ -->
+<div id="variant-C" class="variant">
+  <div class="stage" id="stageC">
+    <h2>C — Settle + Facts</h2>
+    <p class="question">Comme A (installation discrète), mais la séquence continue : le titre apparaît, puis la ligne de format soulignée de rose (le motif déjà en place sur la page détail) se révèle juste après — une courte narration "photo → titre → repères" avant que le contenu habituel ne prenne le relais.</p>
+    <p class="frame-hint">↕ scroller dans le cadre</p>
+    <div class="viewport" id="viewportC">
+      <div class="scroll-track" style="height: 1540px;">
+        <div class="pin" id="pinC">
+          <div class="pin-image-wrap" id="imgWrapC">
+            <img src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?w=1600&auto=format" alt="" />
+            <div class="pin-scrim" id="scrimC"></div>
+          </div>
+          <h1 class="pin-overlay-title" id="overlayTitleC">Rebut</h1>
+          <div class="reveal-panel" id="revealC">
+            <h2 class="r-title">Rebut</h2>
+            <span class="r-format" id="revealFormatC">Pages : 50 · Tirage : 2 exemplaires · Dimensions : 21 × 29.7 cm</span>
+          </div>
+        </div>
+        <div class="content-after">
+          <a class="back-link" href="#">← Retour aux éditions</a>
+          <p class="statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder.</p>
+          <div class="grid-preview"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="sketch-tools" style="position:fixed;bottom:12px;right:12px;z-index:9999;font-family:system-ui;font-size:12px;background:rgba(0,0,0,0.7);color:white;padding:8px 12px;border-radius:8px;opacity:0.4;transition:opacity 0.2s;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.4'">
+  sketch 005 · edition hero scroll reveal
+</div>
+
+<script>
+function showVariant(id, evt) {
+  document.querySelectorAll('.variant').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.variant-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('variant-' + id).classList.add('active');
+  (evt ? evt.target : document.querySelector('[data-variant="' + id + '"]')).classList.add('active');
+}
+
+function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function prefersReducedMotion() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+    document.getElementById('force-rm').checked;
+}
+
+const stages = [];
+
+function registerStage(cfg) {
+  stages.push(cfg);
+  setupStage(cfg);
+}
+
+function setupStage(cfg) {
+  const stageEl = document.getElementById(cfg.stageId);
+  const viewport = document.getElementById(cfg.viewportId);
+  const pinHeight = 640;
+
+  if (prefersReducedMotion()) {
+    stageEl.classList.add('reduced-motion');
+    viewport.onscroll = null;
+    viewport.scrollTop = 0;
+    cfg.onProgress(cfg, 1); // render the fully-settled end state, no pin/scroll-link at all
+    return;
+  }
+
+  stageEl.classList.remove('reduced-motion');
+  cfg.onProgress(cfg, 0);
+  viewport.onscroll = () => {
+    const trackHeight = viewport.scrollHeight - pinHeight; // scroll-track minus content-after isn't separated here,
+    // so we drive progress off the pin's own reveal distance instead:
+    const progress = clamp01(viewport.scrollTop / cfg.revealDistance);
+    cfg.onProgress(cfg, progress);
+  };
+}
+
+function onForceReducedMotionChange() {
+  stages.forEach(setupStage);
+}
+
+// ---- Variant A ----
+registerStage({
+  stageId: 'stageA', viewportId: 'viewportA', revealDistance: 620,
+  refs: {
+    imgWrap: document.getElementById('imgWrapA'),
+    scrim: document.getElementById('scrimA'),
+    overlayTitle: document.getElementById('overlayTitleA'),
+    reveal: document.getElementById('revealA'),
+  },
+  onProgress(cfg, t) {
+    const r = cfg.refs;
+    const width = lerp(100, 88, t);
+    const inset = (100 - width) / 2;
+    r.imgWrap.style.left = inset + '%';
+    r.imgWrap.style.right = inset + '%';
+    r.imgWrap.style.top = (inset * 0.6) + '%';
+    r.imgWrap.style.bottom = (inset * 0.6) + '%';
+    r.scrim.style.opacity = 1 - t;
+    r.overlayTitle.style.opacity = clamp01(1 - t * 2.2);
+    r.overlayTitle.style.transform = 'translateY(' + lerp(0, 10, Math.min(1, t * 2.2)) + 'px)';
+    const revealT = clamp01((t - 0.5) / 0.5);
+    r.reveal.style.opacity = revealT;
+    r.reveal.style.transform = 'translateY(' + lerp(14, 0, revealT) + 'px)';
+  }
+});
+
+// ---- Variant B ----
+registerStage({
+  stageId: 'stageB', viewportId: 'viewportB', revealDistance: 900,
+  refs: {
+    imgWrap: document.getElementById('imgWrapB'),
+    scrim: document.getElementById('scrimB'),
+    overlayTitle: document.getElementById('overlayTitleB'),
+    reveal: document.getElementById('revealB'),
+  },
+  onProgress(cfg, t) {
+    const r = cfg.refs;
+    const width = lerp(100, 55, t);
+    r.imgWrap.style.left = '0%';
+    r.imgWrap.style.right = (100 - width) + '%';
+    r.imgWrap.style.top = '0%';
+    r.imgWrap.style.bottom = '0%';
+    r.scrim.style.opacity = clamp01(1 - t * 3.3);
+    r.overlayTitle.style.opacity = clamp01(1 - t * 4);
+    const revealT = clamp01((t - 0.3) / 0.7);
+    r.reveal.style.opacity = revealT;
+    r.reveal.style.transform = 'translateY(-50%) translateX(' + lerp(24, 0, revealT) + 'px)';
+  }
+});
+
+// ---- Variant C ----
+registerStage({
+  stageId: 'stageC', viewportId: 'viewportC', revealDistance: 900,
+  refs: {
+    imgWrap: document.getElementById('imgWrapC'),
+    scrim: document.getElementById('scrimC'),
+    overlayTitle: document.getElementById('overlayTitleC'),
+    reveal: document.getElementById('revealC'),
+    revealFormat: document.getElementById('revealFormatC'),
+  },
+  onProgress(cfg, t) {
+    const r = cfg.refs;
+    const width = lerp(100, 82, t);
+    const inset = (100 - width) / 2;
+    r.imgWrap.style.left = inset + '%';
+    r.imgWrap.style.right = inset + '%';
+    r.imgWrap.style.top = (inset * 0.5) + '%';
+    r.imgWrap.style.bottom = (inset * 0.5) + '%';
+    r.scrim.style.opacity = clamp01(1 - t * 3.3);
+    r.overlayTitle.style.opacity = clamp01(1 - t * 4);
+    const titleT = clamp01((t - 0.3) / 0.3);
+    const formatT = clamp01((t - 0.6) / 0.4);
+    r.reveal.style.opacity = Math.max(titleT, formatT);
+    r.reveal.style.transform = 'translateY(' + lerp(14, 0, titleT) + 'px)';
+    r.revealFormat.style.opacity = formatT;
+    r.revealFormat.style.transform = 'translateY(' + lerp(8, 0, formatT) + 'px)';
+  }
+});
+
+window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', () => stages.forEach(setupStage));
+</script>
+
+</body>
+</html>

@@ -6,7 +6,7 @@
 
 ## Reference Points
 
-None named — user is open to original direction within the brand constraints above.
+- [a-chen.webflow.io](https://a-chen.webflow.io) (sketch 005) — its "WORKS" section pins a full-bleed photo (`position: sticky`) while scrolling, shrinking it to reveal the section title in the freed space. Referenced for the *mechanism* only — the reference's neon palette, grain texture, and 3D mascot don't apply; sketch 005 adapts the scroll-scrubbed pin+shrink pattern to AJS's monochrome+pink language.
 
 ## Sketches
 
@@ -16,3 +16,4 @@ None named — user is open to original direction within the brand constraints a
 | 002 | poster-grid-scaling | Does the asymmetric bento pattern from 001's winner still read as intentional at 3-5 items, and what does the empty state look like in this visual language? | Approved as-is — repeating hero+2-small group pattern, alternating sides, empty state | [layout, editions, consistency, states] |
 | 003 | edition-detail-coherence | Does the édition detail page need a bold-graphic treatment to match the new overview, so list→detail doesn't feel like a style downgrade? | Synthesis — A (unchanged) + B's pink-underlined format-details line only | [layout, editions, detail-page, frontier] |
 | 004 | thumbnail-grid-poster-treatment | How should the Poster Grid energy extend to the shared GalleryGrid.astro thumbnail grid (Portfolio + Éditions detail pages)? | A2 — Asymmetric bento + staggered scroll-reveal + click-to-expand View Transitions morph | [layout, gallery, editions, thumbnail-grid, consistency, motion] |
+| 005 | edition-hero-scroll-reveal | Should the édition detail hero become a pinned, scroll-scrubbed reveal (ref: a-chen.webflow.io's WORKS section), and how dramatic should it be? | Pending | [layout, editions, detail-page, motion, frontier] |
