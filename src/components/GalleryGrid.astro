@@ -27,68 +27,123 @@ export interface GalleryGridItem {
   alt: string;
   // Fully-formed, localized label built by the caller.
   ariaLabel: string;
+  // quick-260724-oep: the image's real width/height ratio, required in
+  // practice for `layout="masonry"` (drives each tile's `--ar` custom
+  // property) and unused in `layout="bento"` (bento cells have their own
+  // fixed grid-template shape, not derived from image ratio).
+  aspectRatio?: number;
 }
 
 interface Props {
   items: GalleryGridItem[];
+  // quick-260724-oep: opt-in masonry mode (sketch 004 Variant B), added
+  // alongside the existing bento layout without changing its default
+  // output — mirrors DetailHero.astro's `objectFit` per-caller-behavior
+  // pattern (quick-260724-mjp). Editions pass no `layout` prop and keep
+  // rendering bento, byte-identical to before this plan.
+  layout?: 'bento' | 'masonry';
 }
 
 // Defensive default (Rule 1): `items` is required in practice (every real
 // caller always passes it — see Task 2's four call sites), but a default
 // avoids a hard crash if a future caller ever forgets it, degrading to an
 // empty grid rather than throwing during the static build.
-const { items = [] } = Astro.props;
+const { items = [], layout = 'bento' } = Astro.props;
 
 // Chunk items into groups of 3 IN ORDER (never re-sort) — ported verbatim
 // from editions/index.astro's editionGroups loop. Hero = first item of each
 // group; the rest are smalls. Side alternates left/right by group index.
+// Only meaningful for bento — masonry renders a flat list with no groups.
 const groups: GalleryGridItem[][] = [];
-for (let i = 0; i < items.length; i += 3) {
-  groups.push(items.slice(i, i + 3));
+if (layout === 'bento') {
+  for (let i = 0; i < items.length; i += 3) {
+    groups.push(items.slice(i, i + 3));
+  }
 }
 ---
 
-<div class="gallery-grid">
-  {
-    groups.map((group, g) => (
-      <div class="gallery-grid__group" data-size={group.length} data-side={g % 2 === 0 ? 'left' : 'right'}>
-        {group.map((item, idx) => (
-          <button
-            type="button"
-            class:list={['tile', idx === 0 ? 'tile--hero' : 'tile--small']}
-            data-gallery-thumb
-            data-index={item.index}
-            aria-label={item.ariaLabel}
-          >
-            <img
-              src={item.src}
-              srcset={item.srcset}
-              sizes={idx === 0 ? '(max-width: 800px) 100vw, 58vw' : '(max-width: 800px) 100vw, 40vw'}
-              alt={item.alt}
-              loading="lazy"
-              decoding="async"
-            />
-            <svg
-              class="tile__expand-icon"
-              viewBox="0 0 24 24"
-              width="24"
-              height="24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              aria-hidden="true"
+{layout === 'bento' ? (
+  <div class="gallery-grid">
+    {
+      groups.map((group, g) => (
+        <div class="gallery-grid__group" data-size={group.length} data-side={g % 2 === 0 ? 'left' : 'right'}>
+          {group.map((item, idx) => (
+            <button
+              type="button"
+              class:list={['tile', idx === 0 ? 'tile--hero' : 'tile--small']}
+              data-gallery-thumb
+              data-index={item.index}
+              aria-label={item.ariaLabel}
             >
-              <polyline points="9 3 3 3 3 9" />
-              <polyline points="15 3 21 3 21 9" />
-              <polyline points="21 15 21 21 15 21" />
-              <polyline points="9 21 3 21 3 15" />
-            </svg>
-          </button>
-        ))}
-      </div>
-    ))
-  }
-</div>
+              <img
+                src={item.src}
+                srcset={item.srcset}
+                sizes={idx === 0 ? '(max-width: 800px) 100vw, 58vw' : '(max-width: 800px) 100vw, 40vw'}
+                alt={item.alt}
+                loading="lazy"
+                decoding="async"
+              />
+              <svg
+                class="tile__expand-icon"
+                viewBox="0 0 24 24"
+                width="24"
+                height="24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                aria-hidden="true"
+              >
+                <polyline points="9 3 3 3 3 9" />
+                <polyline points="15 3 21 3 21 9" />
+                <polyline points="21 15 21 21 15 21" />
+                <polyline points="9 21 3 21 3 15" />
+              </svg>
+            </button>
+          ))}
+        </div>
+      ))
+    }
+  </div>
+) : (
+  <div class="gallery-grid gallery-grid--masonry">
+    {
+      items.map((item) => (
+        <button
+          type="button"
+          class="tile"
+          data-gallery-thumb
+          data-index={item.index}
+          aria-label={item.ariaLabel}
+          style={`--ar: ${item.aspectRatio ?? 1}`}
+        >
+          <img
+            src={item.src}
+            srcset={item.srcset}
+            sizes="(max-width: 800px) 50vw, 33vw"
+            alt={item.alt}
+            loading="lazy"
+            decoding="async"
+          />
+          <svg
+            class="tile__expand-icon"
+            viewBox="0 0 24 24"
+            width="24"
+            height="24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            aria-hidden="true"
+          >
+            <polyline points="9 3 3 3 3 9" />
+            <polyline points="15 3 21 3 21 9" />
+            <polyline points="21 15 21 21 15 21" />
+            <polyline points="9 21 3 21 3 15" />
+          </svg>
+        </button>
+      ))
+    }
+  </div>
+)}
 
 <noscript>
   <style is:inline>
@@ -272,6 +327,44 @@ for (let i = 0; i < items.length; i += 3) {
       grid-column: 1 !important;
       grid-row: auto !important;
       aspect-ratio: 3 / 4;
+    }
+  }
+
+  /* quick-260724-oep: opt-in masonry layout (sketch 004 Variant B, ported
+     from .planning/sketches/004-thumbnail-grid-poster-treatment/index.html
+     #variant-b) — CSS multi-column, not CSS Grid, for genuine masonry flow
+     with no leftover gaps in every current browser. Every bento rule above
+     is untouched; these rules only ever apply under
+     .gallery-grid--masonry. */
+  .gallery-grid--masonry {
+    column-count: 3;
+    column-gap: var(--space-md);
+  }
+
+  .gallery-grid--masonry .tile {
+    display: inline-block;
+    width: 100%;
+    margin: 0 0 var(--space-md);
+    break-inside: avoid;
+  }
+
+  /* Overrides the shared `.tile img` absolute-fill/cover rule above: the
+     masonry tile's img must flow at its own intrinsic height (not
+     position: absolute inset: 0) so `column-count` can measure real tile
+     heights, and `object-fit: contain` here is the never-crop guarantee —
+     the caller supplies an uncropped src whose intrinsic ratio equals
+     `--ar`, so contain fits exactly and can never crop. */
+  .gallery-grid--masonry .tile img {
+    position: static;
+    width: 100%;
+    height: auto;
+    aspect-ratio: var(--ar, 1);
+    object-fit: contain;
+  }
+
+  @media (max-width: 800px) {
+    .gallery-grid--masonry {
+      column-count: 2;
     }
   }
 </style>
