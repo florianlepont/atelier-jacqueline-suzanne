@@ -12,10 +12,8 @@ tags: [layout, editions, detail-page, motion, frontier]
 The current édition detail hero (`.edition-detail__hero`) is a static 70vh full-bleed photo with an overlay title. Reference: [a-chen.webflow.io](https://a-chen.webflow.io)'s "WORKS" section pins a full-bleed photo (`position: sticky`) while scrolling, then shrinks its width as scroll progresses, revealing the section title in the negative space — built with Webflow's native scroll-linked interactions (no GSAP/library). We're asking: does the same *mechanism*, adapted to AJS's sober brand (no grain, no neon, no outline type), make a better entrance to an édition than the static hero — and if so, how much drama fits?
 
 ## How to View
-Sketches need a real HTTP origin (not `file://`) for the scroll math to behave identically to production. From `.planning/sketches/`:
 ```
-python3 -m http.server 8734
-open http://localhost:8734/005-edition-hero-scroll-reveal/index.html
+open .planning/sketches/005-edition-hero-scroll-reveal/index.html
 ```
 Scroll *inside* each bordered frame (it's a fixed-height simulated viewport, not the page itself).
 
