@@ -6,7 +6,7 @@
 import type { GetStaticPaths } from 'astro';
 import { getRelativeLocaleUrl } from 'astro:i18n';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
-import EditionHero from '../../../components/EditionHero.astro';
+import DetailHero from '../../../components/DetailHero.astro';
 import GalleryGrid from '../../../components/GalleryGrid.astro';
 import type { GalleryGridItem } from '../../../components/GalleryGrid.astro';
 import Lightbox from '../../../components/Lightbox.astro';
@@ -57,7 +57,7 @@ const formatText = `Pages: ${edition.pageCount ?? ''} · Print run: ${edition.pr
 
 // quick-260724-l5i: sketch-005 Synthesis scroll-reveal hero primitives,
 // computed here (locale-aware) and passed as already-localized props to
-// the shared EditionHero component — see that file's header comment for
+// the shared DetailHero component — see that file's header comment for
 // why it never imports src/lib/image or src/lib/sanity itself.
 const heroAriaLabel = `View full size, image 1 of ${total}`;
 const heroCaption = 'Printed edition';
@@ -84,7 +84,7 @@ const gridItems: GalleryGridItem[] = (edition.images ?? []).map((img, i) => {
 
 <BaseLayout title={seoTitle} description={seoDescription} socialImage={socialImage} headerVariant="transparent">
   <div class="edition-detail">
-    <EditionHero
+    <DetailHero
       leadPhotoSrc={leadPhotoSrc}
       leadPhotoSrcSet={responsiveImageSrcSet(edition.leadPhoto)}
       leadPhotoAlt={leadPhotoAlt}

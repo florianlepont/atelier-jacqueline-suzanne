@@ -4,6 +4,7 @@
 // and locale key differ.
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import DetailHero from '../../../components/DetailHero.astro';
 import GalleryGrid from '../../../components/GalleryGrid.astro';
 import type { GalleryGridItem } from '../../../components/GalleryGrid.astro';
 import Lightbox from '../../../components/Lightbox.astro';
@@ -34,6 +35,10 @@ const statement = gallery.statement?.[locale] ?? '';
 const heroImage = gallery.images[0];
 const heroSrc = fullSizeUrl(heroImage, 2000);
 const heroAlt = heroImage.alt?.[locale] ?? '';
+// quick-260724-mjp: hero cover photo is now the shared DetailHero's
+// clickable data-index="0" trigger, mirroring the édition hero's
+// aria-label wording (and the gallery grid's own EN aria-label wording).
+const heroAriaLabel = `View full size, image 1 of ${gallery.images.length}`;
 const seoTitle = gallery.seo?.title?.[locale] ?? `${gallery.title} — Atelier Jacqueline Suzanne`;
 const seoDescription = gallery.seo?.description?.[locale] ?? statement;
 const socialImage = fullSizeUrl(gallery.seo?.image ?? heroImage, 1200);
@@ -81,19 +86,15 @@ const structuredData = {
   headerVariant="transparent"
 >
   <div class="gallery-detail">
-    <div class="gallery-detail__hero">
-      <img
-        src={heroSrc}
-        srcset={responsiveImageSrcSet(heroImage)}
-        sizes="100vw"
-        alt={heroAlt}
-        class="gallery-detail__hero-img"
-        loading="eager"
-        decoding="async"
-      />
-      <div class="gallery-detail__hero-scrim" aria-hidden="true"></div>
-      <h1 class="gallery-detail__hero-title">{gallery.title}</h1>
-    </div>
+    <DetailHero
+      leadPhotoSrc={heroSrc}
+      leadPhotoSrcSet={responsiveImageSrcSet(heroImage)}
+      leadPhotoAlt={heroAlt}
+      title={gallery.title}
+      total={gallery.images.length}
+      heroAriaLabel={heroAriaLabel}
+      objectFit="contain"
+    />
     <div class="gallery-detail__content">
       <p class="gallery-detail__statement">{statement}</p>
       {gallery.images.length > 1 && <GalleryGrid items={gridItems} />}
@@ -105,45 +106,6 @@ const structuredData = {
 <style>
   .gallery-detail {
     padding: 0 0 var(--space-2xl);
-  }
-
-  /* D-07: full-bleed hero photo + dark gradient scrim (matches the homepage
-     carousel's technique) with a white bottom-left Display title, under
-     the transparent header variant. */
-  .gallery-detail__hero {
-    position: relative;
-    height: 70vh;
-    min-height: 420px;
-    overflow: hidden;
-  }
-
-  .gallery-detail__hero-img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .gallery-detail__hero-scrim {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.15) 45%, rgba(0, 0, 0, 0) 70%);
-    pointer-events: none;
-  }
-
-  .gallery-detail__hero-title {
-    position: absolute;
-    left: var(--space-xl);
-    bottom: var(--space-xl);
-    right: var(--space-xl);
-    z-index: 3;
-    margin: 0;
-    font-size: var(--text-display-size); /* Display role: fixed 32px */
-    font-weight: var(--weight-semibold);
-    font-family: var(--font-display);
-    line-height: 1.2;
-    color: #FFFFFF;
   }
 
   .gallery-detail__content {

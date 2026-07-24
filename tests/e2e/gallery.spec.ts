@@ -63,14 +63,17 @@ test.describe('gallery detail', () => {
     expect(firstTileHref).toBeTruthy();
 
     await page.goto(firstTileHref!);
-    const hero = page.locator('.gallery-detail__hero-img');
+    const hero = page.locator('.detail-hero__img');
     await expect(hero).toHaveAttribute('srcset', /480w.*2000w/);
     await expect(hero).toHaveAttribute('sizes', '100vw');
 
-    const thumbnail = page.locator('[data-gallery-thumb] img').first();
+    // The hero itself is now a [data-gallery-thumb] trigger (data-index="0"),
+    // so grid-thumbnail assertions must be scoped to .gallery-grid or they'd
+    // resolve the hero instead of the first real grid thumbnail.
+    const thumbnail = page.locator('.gallery-grid [data-gallery-thumb] img').first();
     await expect(thumbnail).toHaveAttribute('srcset', /320w.*900w/);
 
-    await page.locator('[data-gallery-thumb]').first().click();
+    await page.locator('.gallery-grid [data-gallery-thumb]').first().click();
     const lightboxImage = page.locator('[data-role="lightbox-image"]');
     await expect(lightboxImage).toHaveAttribute('srcset', /640w.*2000w/);
     await expect(lightboxImage).toHaveAttribute('sizes', '100vw');
@@ -295,5 +298,116 @@ test.describe('gallery lightbox morph', () => {
     await expect(dialog).toBeVisible();
     await dialog.click({ position: { x: 5, y: 5 } });
     await expect(dialog).not.toBeVisible();
+  });
+});
+
+// quick-260724-mjp: the gallery hero is now the shared DetailHero's
+// clickable data-index="0" trigger (mirrors the édition hero's D-05
+// behavior), which did not exist on galleries before this change.
+test.describe('gallery hero is clickable (sketch 005)', () => {
+  test('the hero trigger opens the lightbox at 1/N with focus return (fr)', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    expect(firstTileHref).toBeTruthy();
+
+    await page.goto(firstTileHref!);
+
+    const heroTrigger = page.locator('[data-gallery-thumb][data-index="0"]');
+    await expect(heroTrigger).toBeVisible();
+    const ariaLabel = await heroTrigger.getAttribute('aria-label');
+    expect(ariaLabel?.trim().length ?? 0).toBeGreaterThan(0);
+
+    await heroTrigger.click();
+    const dialog = page.locator('dialog[open]');
+    await expect(dialog).toBeVisible();
+    const counter = dialog.locator('[data-role="counter"]');
+    await expect(counter).toHaveText(/^1 \/ \d+$/);
+
+    await page.keyboard.press('Escape');
+    await expect(dialog).not.toBeVisible();
+    await expect(heroTrigger).toBeFocused();
+  });
+
+  test('the hero trigger opens the lightbox at 1/N (en)', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    expect(firstTileHref).toBeTruthy();
+
+    const slugMatch = firstTileHref!.match(/\/galleries\/([^/]+)\/?$/);
+    const slug = slugMatch?.[1];
+    expect(slug).toBeTruthy();
+
+    await page.goto(`/en/galleries/${slug}/`);
+
+    const heroTrigger = page.locator('[data-gallery-thumb][data-index="0"]');
+    await expect(heroTrigger).toBeVisible();
+
+    await heroTrigger.click();
+    const dialog = page.locator('dialog[open]');
+    await expect(dialog).toBeVisible();
+    const counter = dialog.locator('[data-role="counter"]');
+    await expect(counter).toHaveText(/^1 \/ \d+$/);
+  });
+});
+
+// quick-260724-mjp: mirrors edition.spec.ts's "editions hero reduced-motion
+// (sketch 005)" block, adapted to gallery routes/classes. Desktop viewport
+// is required for both assertions — the `min-width: 768px` branch of
+// DetailHero.astro's CSS is what makes the pin genuinely sticky (default)
+// vs relative (reduced-motion settled end-state).
+test.describe('gallery hero reduced-motion (sketch 005)', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test('prefers-reduced-motion: reduce shows the settled end-state immediately, no sticky pin, lightbox still opens', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    expect(firstTileHref).toBeTruthy();
+
+    await page.goto(firstTileHref!);
+
+    const pin = page.locator('.detail-hero__pin');
+    await expect(pin).toBeVisible();
+    const pinPosition = await pin.evaluate((el) => getComputedStyle(el).position);
+    expect(pinPosition).not.toBe('sticky');
+
+    const revealTitle = page.locator('h1.detail-hero__reveal-title');
+    await expect(revealTitle).toBeVisible();
+
+    const overlayTitle = page.locator('.detail-hero__overlay-title');
+    const overlayState = await overlayTitle.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return { opacity: style.opacity, display: style.display };
+    });
+    expect(overlayState.display === 'none' || overlayState.opacity === '0').toBe(true);
+
+    // Reduced motion must not break the click-to-open lightbox behavior.
+    const heroTrigger = page.locator('[data-gallery-thumb][data-index="0"]');
+    await expect(heroTrigger).toBeVisible();
+    await heroTrigger.click();
+    const dialog = page.locator('dialog[open]');
+    await expect(dialog).toBeVisible();
+    const counter = dialog.locator('[data-role="counter"]');
+    await expect(counter).toHaveText(/^1 \/ \d+$/);
+  });
+
+  test('without reduced motion, the desktop hero pin is sticky by default', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    expect(firstTileHref).toBeTruthy();
+
+    await page.goto(firstTileHref!);
+
+    const pin = page.locator('.detail-hero__pin');
+    await expect(pin).toBeVisible();
+    const pinPosition = await pin.evaluate((el) => getComputedStyle(el).position);
+    expect(pinPosition).toBe('sticky');
   });
 });

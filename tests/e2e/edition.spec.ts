@@ -274,7 +274,7 @@ test.describe('no commerce affordances (detail)', () => {
 
 // quick-260724-l5i: sketch-005 Synthesis scroll-reveal hero. Desktop
 // viewport is required for both assertions below — the `min-width: 768px`
-// branch of EditionHero.astro's CSS is what makes the pin genuinely
+// branch of DetailHero.astro's CSS is what makes the pin genuinely
 // sticky (default) vs relative (reduced-motion settled end-state); the
 // `max-width: 767px` mobile branch overrides position to `relative`
 // regardless of motion preference, which would make the "sticky by
@@ -293,15 +293,15 @@ test.describe('editions hero reduced-motion (sketch 005)', () => {
 
     await page.goto(rowHref!);
 
-    const pin = page.locator('.edition-detail__hero-pin');
+    const pin = page.locator('.detail-hero__pin');
     await expect(pin).toBeVisible();
     const pinPosition = await pin.evaluate((el) => getComputedStyle(el).position);
     expect(pinPosition).not.toBe('sticky');
 
-    const revealTitle = page.locator('h1.edition-detail__hero-reveal-title');
+    const revealTitle = page.locator('h1.detail-hero__reveal-title');
     await expect(revealTitle).toBeVisible();
 
-    const overlayTitle = page.locator('.edition-detail__hero-overlay-title');
+    const overlayTitle = page.locator('.detail-hero__overlay-title');
     const overlayState = await overlayTitle.evaluate((el) => {
       const style = getComputedStyle(el);
       return { opacity: style.opacity, display: style.display };
@@ -325,7 +325,7 @@ test.describe('editions hero reduced-motion (sketch 005)', () => {
 
     await page.goto(rowHref!);
 
-    const pin = page.locator('.edition-detail__hero-pin');
+    const pin = page.locator('.detail-hero__pin');
     await expect(pin).toBeVisible();
     const pinPosition = await pin.evaluate((el) => getComputedStyle(el).position);
     expect(pinPosition).toBe('sticky');
