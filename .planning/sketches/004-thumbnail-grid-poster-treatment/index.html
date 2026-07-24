@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sketch 004 — Thumbnail Grid Poster Treatment</title>
+<link rel="stylesheet" href="../themes/default.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;900&display=swap" rel="stylesheet">
+<style>
+  body { padding-top: 52px; }
+
+  #variant-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9998;
+    background: var(--gray-0); border-bottom: var(--border-hairline) solid var(--color-ink);
+    padding: 10px 20px; display: flex; gap: 8px; align-items: center;
+    font-family: var(--font-sans); font-size: 13px;
+  }
+  #variant-nav .label { font-weight: var(--weight-semibold); margin-right: 12px; letter-spacing: 0.04em; text-transform: uppercase; font-size: 11px; color: #6b6b6b; }
+  .variant-tab {
+    font-family: var(--font-sans); font-size: 13px; font-weight: var(--weight-semibold);
+    background: var(--gray-0); color: var(--color-ink); border: var(--border-hairline) solid var(--color-border);
+    padding: 7px 14px; cursor: pointer; transition: all 0.15s ease; border-radius: var(--radius-sm);
+  }
+  .variant-tab:hover { border-color: var(--color-ink); }
+  .variant-tab.active { background: var(--color-ink); color: var(--gray-0); border-color: var(--color-ink); }
+
+  .variant { display: none; }
+  .variant.active { display: block; }
+
+  #sketch-tools {
+    position: fixed; bottom: 12px; right: 12px; z-index: 9999;
+    font-family: system-ui, sans-serif; font-size: 12px;
+    background: rgba(0,0,0,0.78); color: #fff; padding: 8px 12px; border-radius: 8px;
+    opacity: 0.45; transition: opacity 0.2s ease; display: flex; gap: 10px; align-items: center;
+  }
+  #sketch-tools:hover { opacity: 1; }
+  #sketch-tools select { font-size: 11px; background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; padding: 3px 6px; }
+
+  #viewport-wrap { max-width: none; margin: 0 auto; transition: max-width 0.2s ease; border-left: 1px dashed transparent; border-right: 1px dashed transparent; }
+  #viewport-wrap.vp-phone { max-width: 375px; border-color: #ccc; }
+  #viewport-wrap.vp-tablet { max-width: 768px; border-color: #ccc; }
+  #viewport-wrap.vp-desktop { max-width: 1280px; border-color: #ccc; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--color-ink); color: var(--gray-0); font-family: var(--font-sans); font-size: 13px;
+    padding: 10px 18px; border-radius: var(--radius-sm); opacity: 0; pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease; z-index: 9997; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .page { max-width: var(--editorial-page-max); margin: 0 auto; padding: var(--editorial-page-padding-block) var(--editorial-page-padding-inline); }
+  .page-context { font-size: 13px; color: #6b6b6b; margin: 0 0 var(--space-xl); }
+  .page-context strong { color: var(--color-ink); }
+
+  /* Reused verbatim from the real .edition-detail__hero-expand-icon /
+     .gallery-detail__hero-expand-icon pattern already shipped on the site,
+     so "click to enlarge" reads consistently across hero AND thumbnails. */
+  .expand-icon {
+    position: absolute; bottom: var(--space-sm); right: var(--space-sm); z-index: 3;
+    color: #fff; opacity: 0; transition: opacity 0.15s ease; pointer-events: none;
+  }
+  .thumb:hover .expand-icon, .thumb:focus-visible .expand-icon { opacity: 0.9; }
+
+  .thumb {
+    position: relative; display: block; overflow: hidden; cursor: zoom-in;
+    border: var(--border-hairline) solid var(--color-ink); background: var(--color-ink);
+  }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s ease; }
+  .thumb:hover img, .thumb:focus-visible img { transform: scale(1.03); }
+  .thumb:focus-visible { outline: 2px solid var(--color-accent); outline-offset: var(--focus-ring-offset); }
+
+  /* ===================== VARIANT A: Asymmetric bento (no text) ===================== */
+  #variant-a .grid { display: grid; grid-template-columns: repeat(12, 1fr); grid-auto-rows: 14vw; gap: var(--space-md); }
+  #variant-a .thumb:nth-child(1) { grid-column: 1 / 8; grid-row: 1 / 3; }
+  #variant-a .thumb:nth-child(2) { grid-column: 8 / 13; grid-row: 1 / 2; }
+  #variant-a .thumb:nth-child(3) { grid-column: 8 / 13; grid-row: 2 / 3; }
+  #variant-a .thumb:nth-child(4) { grid-column: 1 / 5; grid-row: 3 / 4; }
+  #variant-a .thumb:nth-child(5) { grid-column: 5 / 13; grid-row: 3 / 5; }
+  #variant-a .thumb:nth-child(6) { grid-column: 1 / 5; grid-row: 4 / 5; }
+  @media (max-width: 800px) {
+    #variant-a .grid { grid-template-columns: 1fr; grid-auto-rows: auto; }
+    #variant-a .thumb { grid-column: 1 !important; grid-row: auto !important; aspect-ratio: 4/3; }
+  }
+
+  /* ===================== VARIANT B: Organic masonry ===================== */
+  /* CSS multi-column (not CSS Grid) — true masonry-style flow with no
+     leftover gaps, works in every current browser today (unlike
+     grid-template-rows:masonry, which is Firefox-only). */
+  #variant-b .grid { column-count: 3; column-gap: var(--space-md); }
+  #variant-b .thumb { display: inline-block; width: 100%; margin: 0 0 var(--space-md); break-inside: avoid; }
+  #variant-b .thumb img { height: auto; aspect-ratio: var(--ar, 1); }
+  @media (max-width: 800px) {
+    #variant-b .grid { column-count: 2; }
+  }
+
+  /* ===================== VARIANT C: Minimal (today's grid + hover only) ===================== */
+  #variant-c .grid { display: grid; grid-template-columns: 1fr; gap: var(--space-xl); }
+  @media (min-width: 768px) {
+    #variant-c .grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  #variant-c .thumb img { aspect-ratio: 1; }
+</style>
+</head>
+<body>
+
+<div id="variant-nav">
+  <span class="label">Sketch 004 · Thumbnail grid poster treatment</span>
+  <button class="variant-tab active" data-variant="a" onclick="showVariant('a')">A: Asymmetric bento</button>
+  <button class="variant-tab" data-variant="b" onclick="showVariant('b')">B: Organic masonry</button>
+  <button class="variant-tab" data-variant="c" onclick="showVariant('c')">C: Minimal (today + hover)</button>
+</div>
+
+<div id="viewport-wrap">
+
+  <div id="variant-a" class="variant active">
+    <div class="page">
+      <p class="page-context">Contexte : remplace le grid uniforme de <strong>GalleryGrid.astro</strong> (utilisé par les pages détail Portfolio ET Éditions) — ici avec les 6 vraies planches intérieures de "Rebut". Pas de titre superposé : ce sont des photos secondaires d'une page déjà titrée.</p>
+      <div class="grid">
+        <a class="thumb" href="#" onclick="return fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/5ce383b9109bb57310e009b85ca4008995cb4831-5735x3783.jpg?w=1200&auto=format" alt=""><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
+        <a class="thumb" href="#" onclick="return fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/a74307df39a8fc5507cc2cf5d5cafb700af09ca9-6414x4786.jpg?w=700&auto=format" alt=""><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
+        <a class="thumb" href="#" onclick="return fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/d65fc2c54e1623b688acc45d3ede61ccae61a0d3-6520x4865.jpg?w=700&auto=format" alt=""><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
+        <a class="thumb" href="#" onclick="return fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=700&auto=format" alt=""><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
+        <a class="thumb" href="#" onclick="return fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/29f1ee169995411d3a671a9a07ab901862333fd3-6520x4865.jpg?w=1200&auto=format" alt=""><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
+        <a class="thumb" href="#" onclick="return fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/2e30e0b7d6a815f8e126abeb86991c326c700dff-6520x4865.jpg?w=700&auto=format" alt=""><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
+      </div>
+    </div>
+  </div>
+
+  <div id="variant-b" class="variant">
+    <div class="page">
+      <p class="page-context">Variante organique : tailles dérivées du ratio réel de chaque photo plutôt qu'un motif algorithmique fixe — plus "planches contact" qu'affiche construite.</p>
+      <div class="grid">
+        <a class="thumb" href="#" onclick="return fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/5ce383b9109bb57310e009b85ca4008995cb4831-5735x3783.jpg?w=900&auto=format" alt="" style="--ar:0.75"><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
+        <a class="thumb" href="#" onclick="return fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/a74307df39a8fc5507cc2cf5d5cafb700af09ca9-6414x4786.jpg?w=600&auto=format" alt="" style="--ar:1.34"><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
+        <a class="thumb" href="#" onclick="return fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/d65fc2c54e1623b688acc45d3ede61ccae61a0d3-6520x4865.jpg?w=600&auto=format" alt="" style="--ar:1.34"><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
+        <a class="thumb" href="#" onclick="return fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=900&auto=format" alt="" style="--ar:0.75"><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
+        <a class="thumb" href="#" onclick="return fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/29f1ee169995411d3a671a9a07ab901862333fd3-6520x4865.jpg?w=600&auto=format" alt="" style="--ar:1.34"><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
+        <a class="thumb" href="#" onclick="return fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/2e30e0b7d6a815f8e126abeb86991c326c700dff-6520x4865.jpg?w=600&auto=format" alt="" style="--ar:1.34"><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
+      </div>
+    </div>
+  </div>
+
+  <div id="variant-c" class="variant">
+    <div class="page">
+      <p class="page-context">Baseline "risque minimal" : le grid 3 colonnes uniforme d'aujourd'hui, inchangé, avec juste le hover zoom + l'icône d'agrandissement ajoutés.</p>
+      <div class="grid">
+        <a class="thumb" href="#" onclick="return fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/5ce383b9109bb57310e009b85ca4008995cb4831-5735x3783.jpg?w=600&h=600&fit=crop&auto=format" alt=""><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
+        <a class="thumb" href="#" onclick="return fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/a74307df39a8fc5507cc2cf5d5cafb700af09ca9-6414x4786.jpg?w=600&h=600&fit=crop&auto=format" alt=""><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
+        <a class="thumb" href="#" onclick="return fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/d65fc2c54e1623b688acc45d3ede61ccae61a0d3-6520x4865.jpg?w=600&h=600&fit=crop&auto=format" alt=""><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
+        <a class="thumb" href="#" onclick="return fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=600&h=600&fit=crop&auto=format" alt=""><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
+        <a class="thumb" href="#" onclick="return fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/29f1ee169995411d3a671a9a07ab901862333fd3-6520x4865.jpg?w=600&h=600&fit=crop&auto=format" alt=""><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
+        <a class="thumb" href="#" onclick="return fakeLightbox(event)"><img src="https://cdn.sanity.io/images/gwz8iug4/production/2e30e0b7d6a815f8e126abeb86991c326c700dff-6520x4865.jpg?w=600&h=600&fit=crop&auto=format" alt=""><svg class="expand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><polyline points="9 3 3 3 3 9"></polyline><polyline points="15 3 21 3 21 9"></polyline><polyline points="21 15 21 21 15 21"></polyline><polyline points="9 21 3 21 3 15"></polyline></svg></a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="sketch-tools">
+  <select onchange="setViewport(this.value)">
+    <option value="">Full width</option>
+    <option value="vp-desktop">Desktop 1280</option>
+    <option value="vp-tablet">Tablet 768</option>
+    <option value="vp-phone">Phone 375</option>
+  </select>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  function showVariant(id) {
+    document.querySelectorAll('.variant').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.variant-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('variant-' + id).classList.add('active');
+    document.querySelector('.variant-tab[data-variant="' + id + '"]').classList.add('active');
+  }
+
+  function setViewport(cls) { document.getElementById('viewport-wrap').className = cls; }
+
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  function fakeLightbox(e) { e.preventDefault(); showToast('→ ouvre la visionneuse (Lightbox) en taille réelle'); }
+</script>
+
+</body>
+</html>
