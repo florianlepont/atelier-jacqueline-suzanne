@@ -34,10 +34,10 @@ const locale = 'fr' as const;
 // but a document written outside the Studio's publish-time validation could
 // still be partially populated mid-edit.
 const statement = gallery.statement?.[locale] ?? '';
-// quick-260724-oep: prefer the first LANDSCAPE image as the hero (the hero
-// renders object-fit: contain — a portrait images[0] looks small/heavily
-// letterboxed in the wide hero box), falling back to images[0] when no
-// image is landscape. heroIndex is the hero's REAL array position, used
+// quick-260724-oep: prefer the first LANDSCAPE image as the hero (a
+// landscape source photo crops less aggressively than a portrait one in a
+// wide object-fit: cover hero box), falling back to images[0] when no image
+// is landscape. heroIndex is the hero's REAL array position, used
 // below for the aria-label, the DetailHero trigger, and to exclude the
 // hero (by its real index, not position 0) from the grid.
 const heroIndex = pickHeroIndex(gallery.images);
@@ -111,7 +111,6 @@ const structuredData = {
       title={gallery.title}
       total={gallery.images.length}
       heroAriaLabel={heroAriaLabel}
-      objectFit="contain"
       heroIndex={heroIndex}
       statement={statement}
     />

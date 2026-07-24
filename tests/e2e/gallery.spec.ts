@@ -423,6 +423,26 @@ test.describe('gallery hero reduced-motion (sketch 005)', () => {
     const pinPosition = await pin.evaluate((el) => getComputedStyle(el).position);
     expect(pinPosition).toBe('sticky');
   });
+
+  // quick-260724-uf5: reverts quick-260724-mjp's gallery-only
+  // objectFit="contain" no-crop escape hatch — the gallery hero now always
+  // renders object-fit: cover, matching the homepage carousel/grid crop
+  // exactly (explicit user reversal after seeing objectFit="contain" live).
+  // The masonry grid below stays uncropped and is proven separately by the
+  // 'gallery grid masonry layout' describe block further down this file.
+  test('the gallery hero renders object-fit: cover (crop reverted, no letterboxing)', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    expect(firstTileHref).toBeTruthy();
+
+    await page.goto(firstTileHref!);
+
+    const heroImg = page.locator('.detail-hero__img').first();
+    await expect(heroImg).toBeVisible();
+    const objectFit = await heroImg.evaluate((el) => getComputedStyle(el).objectFit);
+    expect(objectFit).toBe('cover');
+  });
 });
 
 // quick-260724-oep: the definitive correctness proof for FIX 1 — every
