@@ -36,6 +36,11 @@ interface Props {
   caption?: string;
   total?: number;
   objectFit?: 'cover' | 'contain';
+  // quick-260724-oep: which Lightbox slide this hero trigger opens. Editions
+  // (and any caller that omits this prop) keep the historical index-0
+  // trigger via this default — byte-identical output. Gallery detail pages
+  // pass the real index of their landscape-preferred hero image.
+  heroIndex?: number;
 }
 
 const {
@@ -47,6 +52,7 @@ const {
   heroAriaLabel,
   caption,
   objectFit = 'cover',
+  heroIndex = 0,
 } = Astro.props;
 ---
 
@@ -57,7 +63,7 @@ const {
         type="button"
         class="detail-hero__trigger"
         data-gallery-thumb
-        data-index="0"
+        data-index={heroIndex}
         aria-label={heroAriaLabel}
       >
         <img
