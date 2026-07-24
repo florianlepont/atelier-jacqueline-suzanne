@@ -46,7 +46,7 @@
     position: sticky; top: 0; height: 640px; overflow: hidden;
     background: var(--gray-900); z-index: 1;
   }
-  .stage.reduced-motion .pin { position: static; }
+  .stage.reduced-motion .pin { position: relative; }
 
   .pin-image-wrap {
     position: absolute; inset: 0; overflow: hidden;
@@ -101,6 +101,12 @@
   #stageC .reveal-panel { left: var(--space-xl); right: var(--space-xl); bottom: var(--space-xl); text-align: left; }
   #stageC .reveal-panel .r-title { font-size: 30px; }
 
+  /* Synthesis — Bold + Facts: B's layout/scale, C's two-stage reveal */
+  #stageSynth .reveal-panel {
+    top: 50%; right: var(--space-2xl); transform: translateY(-50%); max-width: 380px; text-align: left;
+  }
+  #stageSynth .reveal-panel .r-title { font-size: clamp(40px, 6vw, 72px); line-height: 1.02; }
+
   #sketch-tools select { font-size: 11px; }
 </style>
 </head>
@@ -110,6 +116,7 @@
   <button class="variant-tab active" data-variant="A" onclick="showVariant('A', event)">A: Subtle Settle</button>
   <button class="variant-tab" data-variant="B" onclick="showVariant('B', event)">B: Bold Reveal</button>
   <button class="variant-tab" data-variant="C" onclick="showVariant('C', event)">C: Settle + Facts</button>
+  <button class="variant-tab" data-variant="Synth" onclick="showVariant('Synth', event)">Synthesis: Bold + Facts</button>
   <label class="rm-toggle">
     <input type="checkbox" id="force-rm" onchange="onForceReducedMotionChange()" />
     Simuler prefers-reduced-motion
@@ -192,6 +199,36 @@
           <div class="reveal-panel" id="revealC">
             <h2 class="r-title">Rebut</h2>
             <span class="r-format" id="revealFormatC">Pages : 50 · Tirage : 2 exemplaires · Dimensions : 21 × 29.7 cm</span>
+          </div>
+        </div>
+        <div class="content-after">
+          <a class="back-link" href="#">← Retour aux éditions</a>
+          <p class="statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder.</p>
+          <div class="grid-preview"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SYNTHESIS: BOLD + FACTS ============ -->
+<div id="variant-Synth" class="variant">
+  <div class="stage" id="stageSynth">
+    <h2>Synthesis — Bold + Facts</h2>
+    <p class="question">B's échelle et cadrage (photo à 55%, portrait à gauche, grand titre à droite) + la séquence en deux temps de C : le titre entre d'abord, puis la ligne de format soulignée de rose se révèle juste après, dans le même panneau — le geste le plus spectaculaire, mais qui termine sur un repère concret plutôt que sur le seul effet.</p>
+    <p class="frame-hint">↕ scroller dans le cadre</p>
+    <div class="viewport" id="viewportSynth">
+      <div class="scroll-track" style="height: 1540px;">
+        <div class="pin" id="pinSynth">
+          <div class="pin-image-wrap" id="imgWrapSynth">
+            <img src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?w=1600&auto=format" alt="" />
+            <div class="pin-scrim" id="scrimSynth"></div>
+          </div>
+          <h1 class="pin-overlay-title" id="overlayTitleSynth">Rebut</h1>
+          <div class="reveal-panel" id="revealSynth">
+            <p class="r-caption">Édition imprimée</p>
+            <h2 class="r-title">Rebut</h2>
+            <span class="r-format" id="revealFormatSynth">Pages : 50 · Tirage : 2 exemplaires · Dimensions : 21 × 29.7 cm</span>
           </div>
         </div>
         <div class="content-after">
@@ -332,6 +369,34 @@ registerStage({
     const formatT = clamp01((t - 0.6) / 0.4);
     r.reveal.style.opacity = Math.max(titleT, formatT);
     r.reveal.style.transform = 'translateY(' + lerp(14, 0, titleT) + 'px)';
+    r.revealFormat.style.opacity = formatT;
+    r.revealFormat.style.transform = 'translateY(' + lerp(8, 0, formatT) + 'px)';
+  }
+});
+
+// ---- Synthesis: Bold + Facts ----
+registerStage({
+  stageId: 'stageSynth', viewportId: 'viewportSynth', revealDistance: 900,
+  refs: {
+    imgWrap: document.getElementById('imgWrapSynth'),
+    scrim: document.getElementById('scrimSynth'),
+    overlayTitle: document.getElementById('overlayTitleSynth'),
+    reveal: document.getElementById('revealSynth'),
+    revealFormat: document.getElementById('revealFormatSynth'),
+  },
+  onProgress(cfg, t) {
+    const r = cfg.refs;
+    const width = lerp(100, 55, t);
+    r.imgWrap.style.left = '0%';
+    r.imgWrap.style.right = (100 - width) + '%';
+    r.imgWrap.style.top = '0%';
+    r.imgWrap.style.bottom = '0%';
+    r.scrim.style.opacity = clamp01(1 - t * 3.3);
+    r.overlayTitle.style.opacity = clamp01(1 - t * 4);
+    const titleT = clamp01((t - 0.3) / 0.3);
+    const formatT = clamp01((t - 0.6) / 0.4);
+    r.reveal.style.opacity = Math.max(titleT, formatT);
+    r.reveal.style.transform = 'translateY(-50%) translateX(' + lerp(24, 0, titleT) + 'px)';
     r.revealFormat.style.opacity = formatT;
     r.revealFormat.style.transform = 'translateY(' + lerp(8, 0, formatT) + 'px)';
   }

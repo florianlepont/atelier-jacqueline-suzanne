@@ -21,6 +21,7 @@ Scroll *inside* each bordered frame (it's a fixed-height simulated viewport, not
 - **A: Subtle Settle** — photo shrinks ~12% into a slightly inset frame; overlay title fades out, then reappears centered beneath the settled photo. Minimal drama — a "settle," not a reveal.
 - **B: Bold Reveal** — photo shrinks to ~55% width, settles left as a framed portrait; the space that opens on the right fills with the édition title in large Unbounded display type. Closest to the reference's energy, in monochrome + pink only.
 - **C: Settle + Facts** — like A, but the reveal continues: title fades in, then the pink-underlined format line (sketch 003's winner) crystallizes right after it, inside the same settled frame — a short "photo → title → facts" sequence before normal content takes over.
+- **Synthesis: Bold + Facts** — B's scale and framing (photo to 55%, portrait left, huge title right) combined with C's two-stage reveal (title first, then the pink-underlined format line right after, in the same panel). The most dramatic option, but it resolves on a concrete detail rather than ending on spectacle alone.
 
 ## What to Look For
 - Does the shrink read as intentional/elegant, or does it feel like the photo is "getting smaller" for no reason?
