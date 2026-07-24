@@ -88,6 +88,20 @@ const slides = images.map((img) => ({
   const dialog = document.getElementById('lightbox') as HTMLDialogElement | null;
   const dataEl = document.querySelector<HTMLUListElement>('ul[data-role="lightbox-data"]');
 
+  // Narrow local typing for the View Transitions DOM API (mirrors
+  // HomeCarousel.astro's VTDocument convention) — avoids depending on
+  // lib.dom's (not-yet-universal) ViewTransition types just to
+  // feature-detect and call it.
+  type VTDocument = Document & {
+    startViewTransition?: (cb: () => void) => {
+      finished: Promise<void>;
+      ready: Promise<void>;
+      updateCallbackDone: Promise<void>;
+    };
+  };
+  const vtDoc = document as VTDocument;
+  const MORPH_NAME = 'lightbox-morph';
+
   if (dialog && dataEl) {
     const slides: Slide[] = Array.from(dataEl.querySelectorAll<HTMLLIElement>('li')).map((li) => ({
       src: li.dataset.src ?? '',
@@ -144,15 +158,81 @@ const slides = images.map((img) => ({
     function open(index: number, triggerEl: HTMLElement) {
       current = index;
       trigger = triggerEl;
-      render();
-      // showModal() is what gives native focus containment + Escape-to-close
-      // for free — do not hand-roll either (02-RESEARCH.md Pitfall 1).
-      dialog!.showModal();
+
+      // Click-to-expand View Transitions morph (sketch 004 variant A2): the
+      // clicked thumbnail grows smoothly into the Lightbox image instead of
+      // an abrupt swap. Purely additive — if startViewTransition isn't
+      // supported, doOpen() runs directly and every existing behavior is
+      // byte-for-byte unchanged.
+      const thumbImg = triggerEl.querySelector<HTMLImageElement>('img');
+
+      const doOpen = () => {
+        if (thumbImg) thumbImg.style.viewTransitionName = '';
+        render();
+        // showModal() is what gives native focus containment + Escape-to-close
+        // for free — do not hand-roll either (02-RESEARCH.md Pitfall 1).
+        dialog!.showModal();
+        if (imageEl) imageEl.style.viewTransitionName = MORPH_NAME;
+      };
+
+      if (thumbImg && typeof vtDoc.startViewTransition === 'function') {
+        // Name the OLD element (clicked thumbnail) FIRST so the old snapshot
+        // captures it; doOpen() then hands the name to the Lightbox image so
+        // the new snapshot captures the enlarged view.
+        thumbImg.style.viewTransitionName = MORPH_NAME;
+        vtDoc.startViewTransition(doOpen);
+      } else {
+        doOpen();
+      }
     }
 
-    closeBtn?.addEventListener('click', () => dialog!.close());
+    // All close paths (button, Escape, backdrop) funnel through this helper
+    // so the closing morph is consistent everywhere.
+    function closeWithMorph() {
+      const thumbImg = trigger?.querySelector<HTMLImageElement>('img');
+
+      const doClose = () => {
+        if (imageEl) imageEl.style.viewTransitionName = '';
+        if (thumbImg) thumbImg.style.viewTransitionName = MORPH_NAME;
+        dialog!.close();
+      };
+
+      if (thumbImg && typeof vtDoc.startViewTransition === 'function') {
+        // Ensure the OLD snapshot (open Lightbox image) still carries the
+        // name — open() already set it, but this is a defensive guarantee.
+        if (imageEl) imageEl.style.viewTransitionName = MORPH_NAME;
+        const transition = vtDoc.startViewTransition(doClose);
+        transition.finished.then(
+          () => {
+            if (thumbImg) thumbImg.style.viewTransitionName = '';
+          },
+          () => {
+            if (thumbImg) thumbImg.style.viewTransitionName = '';
+          },
+        );
+      } else {
+        doClose();
+      }
+    }
+
+    closeBtn?.addEventListener('click', () => closeWithMorph());
     prevBtn?.addEventListener('click', showPrev);
     nextBtn?.addEventListener('click', showNext);
+
+    // The native `cancel` event fires on Escape and is cancelable —
+    // preventing it stops <dialog>'s native close so the morph can run
+    // dialog.close() itself inside closeWithMorph().
+    dialog.addEventListener('cancel', (e) => {
+      e.preventDefault();
+      closeWithMorph();
+    });
+
+    // Backdrop click: only a click on the dialog's own backdrop area (not
+    // the image or control buttons, whose clicks target descendants) closes
+    // it — matches the sketch modal's backdrop-close.
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) closeWithMorph();
+    });
 
     // Arrow-key image navigation is domain-specific to the lightbox feature
     // — <dialog> only gives Escape for free, not this.
@@ -322,6 +402,30 @@ const slides = images.map((img) => ({
       left: var(--space-sm, 8px);
       max-width: none;
       text-align: center;
+    }
+  }
+</style>
+
+<style is:global>
+  /* View Transitions pseudo-elements for the click-to-expand morph (sketch
+     004 variant A2) live on the document root, outside this component's
+     subtree — Astro's scoped <style> above cannot target
+     ::view-transition-*, so this must be a global block (mirrors
+     HomeCarousel.astro's precedent for the same reason). */
+  ::view-transition-group(lightbox-morph),
+  ::view-transition-old(lightbox-morph),
+  ::view-transition-new(lightbox-morph) {
+    animation-duration: 400ms;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* The View Transitions API does not honor prefers-reduced-motion on its
+     own — this override is a hard requirement, not optional polish. */
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+      animation: none !important;
     }
   }
 </style>

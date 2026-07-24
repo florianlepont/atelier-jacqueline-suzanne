@@ -184,7 +184,7 @@ test.describe('editions lightbox', () => {
     await expect(dialog).not.toBeVisible();
     await expect(heroTrigger).toBeFocused();
 
-    const firstGridThumb = page.locator('.edition-detail__thumb-button').first();
+    const firstGridThumb = page.locator('.gallery-grid [data-gallery-thumb]').first();
     await expect(firstGridThumb).toHaveAttribute('data-index', '1');
     await firstGridThumb.click();
     await expect(dialog).toBeVisible();

@@ -24,6 +24,7 @@ import type { GetStaticPaths } from 'astro';
 import { getRelativeLocaleUrl } from 'astro:i18n';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import GalleryGrid from '../../components/GalleryGrid.astro';
+import type { GalleryGridItem } from '../../components/GalleryGrid.astro';
 import Lightbox from '../../components/Lightbox.astro';
 import { getEditions } from '../../lib/sanity';
 import { thumbnailUrl, fullSizeUrl, responsiveImageSrcSet, responsiveThumbnailSrcSet } from '../../lib/image';
@@ -68,6 +69,20 @@ const total = lightboxImages.length;
 // D-02: dimensions/pageCount/printRun guarded — see file-level note above.
 const dimensionsText = `${edition.dimensions?.width ?? ''} × ${edition.dimensions?.height ?? ''} ${edition.dimensions?.unit ?? ''}`;
 const formatText = `Pages : ${edition.pageCount ?? ''} · Tirage : ${edition.printRun ?? ''} exemplaires · Dimensions : ${dimensionsText}`;
+
+// D-06/D-07: NO .slice(1) here — leadPhoto is a separate field (rendered as
+// the clickable hero above, data-index 0), so nothing to skip; index = i+1
+// is the combined-array offset matching lightboxImages.
+const gridItems: GalleryGridItem[] = (edition.images ?? []).map((img, i) => {
+  const index = i + 1;
+  return {
+    index,
+    src: thumbnailUrl(img, 600),
+    srcset: responsiveThumbnailSrcSet(img),
+    alt: img.alt?.[locale] ?? '',
+    ariaLabel: `Voir en taille réelle, image ${i + 2} sur ${total}`,
+  };
+});
 ---
 
 <BaseLayout title={seoTitle} description={seoDescription} socialImage={socialImage} headerVariant="transparent">
@@ -114,39 +129,7 @@ const formatText = `Pages : ${edition.pageCount ?? ''} · Tirage : ${edition.pri
       </a>
       <p class="edition-detail__statement">{statement}</p>
       <p class="edition-detail__format">{formatText}</p>
-      {
-        (edition.images?.length ?? 0) > 0 && (
-          <GalleryGrid>
-            {
-              (edition.images ?? []).map((img, i) => {
-                const index = i + 1;
-                const alt = img.alt?.[locale] ?? '';
-                return (
-                  <button
-                    type="button"
-                    class="edition-detail__thumb-button"
-                    data-gallery-thumb
-                    data-index={index}
-                    aria-label={`Voir en taille réelle, image ${i + 2} sur ${total}`}
-                  >
-                    <img
-                      src={thumbnailUrl(img, 600)}
-                      srcset={responsiveThumbnailSrcSet(img)}
-                      sizes="(max-width: 767px) calc(100vw - 32px), 33vw"
-                      width="600"
-                      height="600"
-                      alt={alt}
-                      loading="lazy"
-                      decoding="async"
-                      class="edition-detail__thumb"
-                    />
-                  </button>
-                );
-              })
-            }
-          </GalleryGrid>
-        )
-      }
+      {(edition.images?.length ?? 0) > 0 && <GalleryGrid items={gridItems} />}
     </div>
   </div>
   <Lightbox images={lightboxImages} locale={locale} />
@@ -279,27 +262,5 @@ const formatText = `Pages : ${edition.pageCount ?? ''} · Tirage : ${edition.pri
     border-bottom: 2px solid var(--color-accent);
     padding-bottom: var(--space-sm);
     margin: 0 0 var(--space-2xl);
-  }
-
-  .edition-detail__thumb-button {
-    display: block;
-    width: 100%;
-    padding: 0;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-  }
-
-  .edition-detail__thumb-button:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
-  }
-
-  .edition-detail__thumb {
-    display: block;
-    width: 100%;
-    height: auto;
-    aspect-ratio: 1 / 1;
-    object-fit: cover;
   }
 </style>

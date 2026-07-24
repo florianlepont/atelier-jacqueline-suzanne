@@ -1,25 +1,277 @@
 ---
-// Presentational, content-agnostic grid wrapper (UI-SPEC Layout Notes):
-// reused by the gallery listing page (GalleryCard children) and the gallery
-// detail page (plain thumbnail <img> children) — it only lays out whatever
-// is passed into its default slot, it never knows what a "gallery" is.
+// Shared thumbnail grid used by BOTH Portfolio gallery detail pages and
+// Éditions detail pages (in both locales) — sketch 004 variant A2 (approved
+// winner, quick task 260724-dlc): an asymmetric bento layout with a
+// staggered scroll-reveal, ported from the Éditions overview's shipped
+// `editionGroups` chunk-by-3/alternate-side pattern (src/pages/editions/
+// index.astro).
+//
+// Design-philosophy change (deliberate): this component moved from a
+// content-agnostic `<slot/>` wrapper to a **props-based** component. The
+// bento composition must be correct at every real count (2 through 11+),
+// and porting the shipped, count-generalized `data-size`/`data-side` build-
+// time grouping is the lowest-risk way to guarantee that — far more robust
+// than hand-verifying a set of CSS `:nth-child`/`:nth-last-child` "quantity
+// query" rules per possible count. The component still imports NOTHING from
+// src/lib/* and never knows about Sanity types — the caller does all data
+// work (building src/srcset/alt/ariaLabel) and passes fully-resolved items.
+export interface GalleryGridItem {
+  // The value for `data-index` — preserves the Lightbox hook contract
+  // (`data-gallery-thumb` + numeric `data-index`, 0-based against the
+  // gallery/édition's own images array order).
+  index: number;
+  src: string;
+  srcset: string;
+  // Empty for galleries (decorative — the real alt lives on the separate
+  // hero), localized for éditions (these thumbs are not decorative there).
+  alt: string;
+  // Fully-formed, localized label built by the caller.
+  ariaLabel: string;
+}
+
+interface Props {
+  items: GalleryGridItem[];
+}
+
+// Defensive default (Rule 1): `items` is required in practice (every real
+// caller always passes it — see Task 2's four call sites), but a default
+// avoids a hard crash if a future caller ever forgets it, degrading to an
+// empty grid rather than throwing during the static build.
+const { items = [] } = Astro.props;
+
+// Chunk items into groups of 3 IN ORDER (never re-sort) — ported verbatim
+// from editions/index.astro's editionGroups loop. Hero = first item of each
+// group; the rest are smalls. Side alternates left/right by group index.
+const groups: GalleryGridItem[][] = [];
+for (let i = 0; i < items.length; i += 3) {
+  groups.push(items.slice(i, i + 3));
+}
 ---
 
 <div class="gallery-grid">
-  <slot />
+  {
+    groups.map((group, g) => (
+      <div class="gallery-grid__group" data-size={group.length} data-side={g % 2 === 0 ? 'left' : 'right'}>
+        {group.map((item, idx) => (
+          <button
+            type="button"
+            class:list={['tile', idx === 0 ? 'tile--hero' : 'tile--small']}
+            data-gallery-thumb
+            data-index={item.index}
+            aria-label={item.ariaLabel}
+          >
+            <img
+              src={item.src}
+              srcset={item.srcset}
+              sizes={idx === 0 ? '(max-width: 800px) 100vw, 58vw' : '(max-width: 800px) 100vw, 40vw'}
+              alt={item.alt}
+              loading="lazy"
+              decoding="async"
+            />
+            <svg
+              class="tile__expand-icon"
+              viewBox="0 0 24 24"
+              width="24"
+              height="24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              aria-hidden="true"
+            >
+              <polyline points="9 3 3 3 3 9" />
+              <polyline points="15 3 21 3 21 9" />
+              <polyline points="21 15 21 21 15 21" />
+              <polyline points="9 21 3 21 3 15" />
+            </svg>
+          </button>
+        ))}
+      </div>
+    ))
+  }
 </div>
+
+<noscript>
+  <style is:inline>
+    .gallery-grid .tile {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  </style>
+</noscript>
+
+<script>
+  // Staggered scroll-reveal (sketch 004 variant A2's setupReveal pattern):
+  // one-shot IntersectionObserver, 0.15 threshold, ~90ms stagger per tile.
+  // Two mandatory progressive-enhancement fallbacks keep tiles from ever
+  // being permanently invisible: the <noscript> rule above handles no-JS,
+  // and the feature-detect branch below handles JS-without-IntersectionObserver.
+  const tiles = document.querySelectorAll<HTMLElement>('.gallery-grid .tile');
+
+  if (!('IntersectionObserver' in window)) {
+    tiles.forEach((tile) => tile.classList.add('revealed'));
+  } else {
+    const tileList = Array.from(tiles);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const tile = entry.target as HTMLElement;
+            const index = tileList.indexOf(tile);
+            setTimeout(() => tile.classList.add('revealed'), index * 90);
+            observer.unobserve(tile);
+          }
+        });
+      },
+      { threshold: 0.15 },
+    );
+    tileList.forEach((tile) => observer.observe(tile));
+  }
+</script>
 
 <style>
   .gallery-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-xl);
-    background: var(--color-dominant);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
   }
 
-  @media (min-width: 768px) {
-    .gallery-grid {
-      grid-template-columns: repeat(3, 1fr);
+  .gallery-grid__group {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-auto-rows: 16vw;
+    gap: var(--space-md);
+  }
+
+  .tile {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    cursor: zoom-in;
+    width: 100%;
+    padding: 0;
+    border: var(--border-hairline) solid var(--color-ink);
+    background: var(--color-ink);
+    /* Staggered scroll-reveal base state (sketch A2). Note: this transform
+       is on `.tile` while the hover scale below is on `.tile img` — two
+       different elements, no conflict/override. */
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  .tile.revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .tile img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+
+  .tile:hover img,
+  .tile:focus-visible img {
+    transform: scale(1.03);
+  }
+
+  .tile:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  .tile__expand-icon {
+    position: absolute;
+    bottom: var(--space-sm);
+    right: var(--space-sm);
+    z-index: 3;
+    color: #fff;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    pointer-events: none;
+  }
+
+  .tile:hover .tile__expand-icon,
+  .tile:focus-visible .tile__expand-icon {
+    opacity: 0.9;
+  }
+
+  /* Bento geometry, ported verbatim from editions/index.astro's
+     .editions-grid__group rules (same size-1/2/3 + side-left/right pattern,
+     just renamed to gallery-grid__group). */
+  .gallery-grid__group[data-size='3'][data-side='left'] .tile:nth-child(1) {
+    grid-column: 1 / 8;
+    grid-row: 1 / 3;
+  }
+
+  .gallery-grid__group[data-size='3'][data-side='left'] .tile:nth-child(2) {
+    grid-column: 8 / 13;
+    grid-row: 1 / 2;
+  }
+
+  .gallery-grid__group[data-size='3'][data-side='left'] .tile:nth-child(3) {
+    grid-column: 8 / 13;
+    grid-row: 2 / 3;
+  }
+
+  .gallery-grid__group[data-size='3'][data-side='right'] .tile:nth-child(1) {
+    grid-column: 6 / 13;
+    grid-row: 1 / 3;
+  }
+
+  .gallery-grid__group[data-size='3'][data-side='right'] .tile:nth-child(2) {
+    grid-column: 1 / 6;
+    grid-row: 1 / 2;
+  }
+
+  .gallery-grid__group[data-size='3'][data-side='right'] .tile:nth-child(3) {
+    grid-column: 1 / 6;
+    grid-row: 2 / 3;
+  }
+
+  .gallery-grid__group[data-size='2'][data-side='left'] .tile:nth-child(1) {
+    grid-column: 1 / 8;
+    grid-row: 1 / 3;
+  }
+
+  .gallery-grid__group[data-size='2'][data-side='left'] .tile:nth-child(2) {
+    grid-column: 8 / 13;
+    grid-row: 1 / 2;
+  }
+
+  .gallery-grid__group[data-size='2'][data-side='right'] .tile:nth-child(1) {
+    grid-column: 6 / 13;
+    grid-row: 1 / 3;
+  }
+
+  .gallery-grid__group[data-size='2'][data-side='right'] .tile:nth-child(2) {
+    grid-column: 1 / 6;
+    grid-row: 1 / 2;
+  }
+
+  .gallery-grid__group[data-size='1'] {
+    grid-auto-rows: 11vw;
+  }
+
+  .gallery-grid__group[data-size='1'] .tile:nth-child(1) {
+    grid-column: 1 / 13;
+    grid-row: 1 / 2;
+  }
+
+  @media (max-width: 800px) {
+    .gallery-grid__group,
+    .gallery-grid__group[data-size='1'] {
+      grid-template-columns: 1fr;
+      grid-auto-rows: auto;
+    }
+
+    .gallery-grid__group .tile {
+      grid-column: 1 !important;
+      grid-row: auto !important;
+      aspect-ratio: 3 / 4;
     }
   }
 </style>
