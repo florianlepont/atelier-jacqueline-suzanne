@@ -122,7 +122,7 @@ test.describe('editions detail', () => {
     const enHref = `/en/editions/${slug}/`;
 
     await page.goto(frHref!);
-    const frStatement = (await page.locator('.edition-detail__statement').innerText()).trim();
+    const frStatement = (await page.locator('.detail-hero__statement').innerText()).trim();
     expect(frStatement.length).toBeGreaterThan(0);
 
     const frFormat = page.locator('.edition-detail__format');
@@ -140,7 +140,7 @@ test.describe('editions detail', () => {
     await expect(frBackLink).toHaveAttribute('href', /\/editions\/$/);
 
     await page.goto(enHref);
-    const enStatement = (await page.locator('.edition-detail__statement').innerText()).trim();
+    const enStatement = (await page.locator('.detail-hero__statement').innerText()).trim();
     expect(enStatement.length).toBeGreaterThan(0);
     expect(enStatement).not.toBe(frStatement);
 
@@ -154,6 +154,32 @@ test.describe('editions detail', () => {
     const enBackLink = page.locator('.edition-detail__back-link');
     await expect(enBackLink).toBeVisible();
     await expect(enBackLink).toHaveAttribute('href', /\/en\/editions\/$/);
+  });
+
+  // quick-260724-rhq: proves the full, untruncated statement is present in
+  // the DOM regardless of the reveal panel's opacity:0-pending-scroll state
+  // and the visual 4-line clamp. Éditions set seoDescription = statement
+  // verbatim, and BaseLayout emits <meta name="description" content={...}>
+  // verbatim -- so comparing .detail-hero__statement's textContent() (which
+  // reads the DOM independent of CSS opacity/clamping) against the meta
+  // description proves the complete statement is reachable without JS.
+  test('the full statement text is present in the DOM (no-JS reachability), matching the page meta description', async ({
+    page,
+  }) => {
+    await page.goto('/editions/');
+    const frHref = await page.locator('.tile').first().getAttribute('href');
+    expect(frHref).toBeTruthy();
+
+    await page.goto(frHref!);
+
+    const statementText = (await page.locator('.detail-hero__statement').textContent())?.trim();
+    const metaDescription = (
+      await page.locator('meta[name="description"]').getAttribute('content')
+    )?.trim();
+
+    expect(statementText).toBeTruthy();
+    expect(metaDescription).toBeTruthy();
+    expect(statementText).toBe(metaDescription);
   });
 });
 
