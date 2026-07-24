@@ -6,6 +6,7 @@
 import type { GetStaticPaths } from 'astro';
 import { getRelativeLocaleUrl } from 'astro:i18n';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import EditionHero from '../../../components/EditionHero.astro';
 import GalleryGrid from '../../../components/GalleryGrid.astro';
 import type { GalleryGridItem } from '../../../components/GalleryGrid.astro';
 import Lightbox from '../../../components/Lightbox.astro';
@@ -54,6 +55,13 @@ const total = lightboxImages.length;
 const dimensionsText = `${edition.dimensions?.width ?? ''} × ${edition.dimensions?.height ?? ''} ${edition.dimensions?.unit ?? ''}`;
 const formatText = `Pages: ${edition.pageCount ?? ''} · Print run: ${edition.printRun ?? ''} copies · Dimensions: ${dimensionsText}`;
 
+// quick-260724-l5i: sketch-005 Synthesis scroll-reveal hero primitives,
+// computed here (locale-aware) and passed as already-localized props to
+// the shared EditionHero component — see that file's header comment for
+// why it never imports src/lib/image or src/lib/sanity itself.
+const heroAriaLabel = `View full size, image 1 of ${total}`;
+const heroCaption = 'Printed edition';
+
 // EDN-08: optional, unidirectional cross-link to a related Portfolio
 // gallery. Null on every currently-published édition today -- renders
 // nothing (no placeholder) in that case.
@@ -76,42 +84,16 @@ const gridItems: GalleryGridItem[] = (edition.images ?? []).map((img, i) => {
 
 <BaseLayout title={seoTitle} description={seoDescription} socialImage={socialImage} headerVariant="transparent">
   <div class="edition-detail">
-    <div class="edition-detail__hero">
-      <button
-        type="button"
-        class="edition-detail__hero-trigger"
-        data-gallery-thumb
-        data-index="0"
-        aria-label={`View full size, image 1 of ${total}`}
-      >
-        <img
-          src={leadPhotoSrc}
-          srcset={responsiveImageSrcSet(edition.leadPhoto)}
-          sizes="100vw"
-          alt={leadPhotoAlt}
-          class="edition-detail__hero-img"
-          loading="eager"
-          decoding="async"
-        />
-      </button>
-      <div class="edition-detail__hero-scrim" aria-hidden="true"></div>
-      <h1 class="edition-detail__hero-title">{edition.title}</h1>
-      <svg
-        class="edition-detail__hero-expand-icon"
-        viewBox="0 0 24 24"
-        width="24"
-        height="24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.8"
-        aria-hidden="true"
-      >
-        <polyline points="9 3 3 3 3 9"></polyline>
-        <polyline points="15 3 21 3 21 9"></polyline>
-        <polyline points="21 15 21 21 15 21"></polyline>
-        <polyline points="9 21 3 21 3 15"></polyline>
-      </svg>
-    </div>
+    <EditionHero
+      leadPhotoSrc={leadPhotoSrc}
+      leadPhotoSrcSet={responsiveImageSrcSet(edition.leadPhoto)}
+      leadPhotoAlt={leadPhotoAlt}
+      title={edition.title}
+      formatText={formatText}
+      total={total}
+      heroAriaLabel={heroAriaLabel}
+      caption={heroCaption}
+    />
     <div class="edition-detail__content">
       <a class="edition-detail__back-link" href={overviewHref}>
         <span aria-hidden="true">←</span> Back to Editions
@@ -132,76 +114,6 @@ const gridItems: GalleryGridItem[] = (edition.images ?? []).map((img, i) => {
 <style>
   .edition-detail {
     padding: 0 0 var(--space-2xl);
-  }
-
-  /* D-05/D-06/D-07: mirrors .gallery-detail__hero's visual treatment
-     exactly — only the interactivity (button + expand icon) is new. */
-  .edition-detail__hero {
-    position: relative;
-    height: 70vh;
-    min-height: 420px;
-    overflow: hidden;
-  }
-
-  .edition-detail__hero-trigger {
-    display: block;
-    width: 100%;
-    height: 100%;
-    padding: 0;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-  }
-
-  .edition-detail__hero-trigger:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: var(--focus-ring-offset);
-  }
-
-  .edition-detail__hero-img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.2s ease;
-  }
-
-  .edition-detail__hero-trigger:hover .edition-detail__hero-img,
-  .edition-detail__hero-trigger:focus-visible .edition-detail__hero-img {
-    transform: scale(1.02);
-  }
-
-  .edition-detail__hero-scrim {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.15) 45%, rgba(0, 0, 0, 0) 70%);
-    pointer-events: none;
-  }
-
-  .edition-detail__hero-title {
-    position: absolute;
-    left: var(--space-xl);
-    bottom: var(--space-xl);
-    right: var(--space-xl);
-    z-index: 3;
-    margin: 0;
-    font-size: var(--text-display-size);
-    font-weight: var(--weight-semibold);
-    font-family: var(--font-display);
-    line-height: 1.2;
-    color: #FFFFFF;
-    pointer-events: none;
-  }
-
-  .edition-detail__hero-expand-icon {
-    position: absolute;
-    bottom: var(--space-lg);
-    right: var(--space-lg);
-    z-index: 3;
-    color: #FFFFFF;
-    opacity: 0.9;
-    pointer-events: none;
   }
 
   .edition-detail__content {

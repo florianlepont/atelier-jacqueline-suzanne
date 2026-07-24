@@ -1,0 +1,394 @@
+---
+// Édition détail scroll-reveal hero (quick-260724-l5i, sketch
+// 005/Synthesis "Bold + Facts"): on desktop page scroll the lead photo pins
+// (position: sticky) and shrinks from full-bleed to ~55% width settling
+// left as a framed portrait; the space that opens on the right fills with
+// the title in large Unbounded display type, then the pink-underlined
+// format-details line crystallizes right after. A dependency-free
+// vanilla-JS island (no client:* directive), mirroring Lightbox.astro's
+// and HomeCarousel.astro's typed-Props / scoped-CSS / plain-module-<script>
+// conventions.
+//
+// This component receives already-localized, already-computed primitives
+// as props — all locale/image logic stays in the calling page's
+// frontmatter. It never imports src/lib/sanity or src/lib/image, so no read
+// token reaches the browser (mirrors Lightbox/HomeCarousel's threat-model
+// boundary).
+//
+// `total` is accepted for interface symmetry with the calling pages (both
+// already bake it into `heroAriaLabel` before passing it down) but is not
+// otherwise consumed here — the aria-label is the single source of truth
+// for the "1 of N" text.
+interface Props {
+  leadPhotoSrc: string;
+  leadPhotoSrcSet: string;
+  leadPhotoAlt: string;
+  title: string;
+  formatText: string;
+  total: number;
+  heroAriaLabel: string;
+  caption: string;
+}
+
+const { leadPhotoSrc, leadPhotoSrcSet, leadPhotoAlt, title, formatText, heroAriaLabel, caption } = Astro.props;
+---
+
+<div class="edition-detail__hero">
+  <div class="edition-detail__hero-pin">
+    <div class="edition-detail__hero-photo">
+      <button
+        type="button"
+        class="edition-detail__hero-trigger"
+        data-gallery-thumb
+        data-index="0"
+        aria-label={heroAriaLabel}
+      >
+        <img
+          src={leadPhotoSrc}
+          srcset={leadPhotoSrcSet}
+          sizes="100vw"
+          alt={leadPhotoAlt}
+          class="edition-detail__hero-img"
+          loading="eager"
+          decoding="async"
+        />
+      </button>
+      <div class="edition-detail__hero-scrim" aria-hidden="true"></div>
+      <p class="edition-detail__hero-overlay-title" aria-hidden="true">{title}</p>
+      <svg
+        class="edition-detail__hero-expand-icon"
+        viewBox="0 0 24 24"
+        width="24"
+        height="24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        aria-hidden="true"
+      >
+        <polyline points="9 3 3 3 3 9"></polyline>
+        <polyline points="15 3 21 3 21 9"></polyline>
+        <polyline points="21 15 21 21 15 21"></polyline>
+        <polyline points="9 21 3 21 3 15"></polyline>
+      </svg>
+    </div>
+    <div class="edition-detail__hero-reveal">
+      <p class="edition-detail__hero-caption" aria-hidden="true">{caption}</p>
+      <h1 class="edition-detail__hero-reveal-title">{title}</h1>
+      <span class="edition-detail__hero-format" aria-hidden="true">{formatText}</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Proven Synthesis mechanism ported verbatim from
+  // .planning/sketches/005-edition-hero-scroll-reveal/index.html
+  // (onProgress ~lines 387-403), adapted from the sketch's bounded-div
+  // scroll to real page scroll (progress derived from the track's own
+  // getBoundingClientRect instead of a scoped viewport's scrollTop).
+  function clamp01(v: number): number {
+    return Math.max(0, Math.min(1, v));
+  }
+
+  function lerp(a: number, b: number, t: number): number {
+    return a + (b - a) * t;
+  }
+
+  const track = document.querySelector<HTMLElement>('.edition-detail__hero');
+  const photo = document.querySelector<HTMLElement>('.edition-detail__hero-photo');
+  const scrim = document.querySelector<HTMLElement>('.edition-detail__hero-scrim');
+  const overlayTitle = document.querySelector<HTMLElement>('.edition-detail__hero-overlay-title');
+  const reveal = document.querySelector<HTMLElement>('.edition-detail__hero-reveal');
+  const revealFormat = document.querySelector<HTMLElement>('.edition-detail__hero-format');
+
+  if (track && photo && scrim && overlayTitle && reveal && revealFormat) {
+    const REVEAL_DISTANCE = 900;
+
+    function onProgress(t: number) {
+      const width = lerp(100, 55, t);
+      photo!.style.left = '0%';
+      photo!.style.right = 100 - width + '%';
+      photo!.style.top = '0%';
+      photo!.style.bottom = '0%';
+      scrim!.style.opacity = String(clamp01(1 - t * 3.3));
+      overlayTitle!.style.opacity = String(clamp01(1 - t * 4));
+      const titleT = clamp01((t - 0.3) / 0.3);
+      const formatT = clamp01((t - 0.6) / 0.4);
+      reveal!.style.opacity = String(Math.max(titleT, formatT));
+      reveal!.style.transform = `translateY(-50%) translateX(${lerp(24, 0, titleT)}px)`;
+      revealFormat!.style.opacity = String(formatT);
+      revealFormat!.style.transform = `translateY(${lerp(8, 0, formatT)}px)`;
+    }
+
+    function clearInlineStyles() {
+      // CSS end-state (reduced-motion / mobile media queries) must fully
+      // control layout when the driver is inactive — inline styles set by
+      // a previous run of onProgress() would otherwise beat those
+      // media-query rules.
+      photo!.style.removeProperty('left');
+      photo!.style.removeProperty('right');
+      photo!.style.removeProperty('top');
+      photo!.style.removeProperty('bottom');
+      scrim!.style.removeProperty('opacity');
+      overlayTitle!.style.removeProperty('opacity');
+      reveal!.style.removeProperty('opacity');
+      reveal!.style.removeProperty('transform');
+      revealFormat!.style.removeProperty('opacity');
+      revealFormat!.style.removeProperty('transform');
+    }
+
+    const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+    const desktop = matchMedia('(min-width: 768px)');
+
+    let rafId: number | null = null;
+    let scrollAttached = false;
+
+    function computeProgress(): number {
+      return clamp01(-track!.getBoundingClientRect().top / REVEAL_DISTANCE);
+    }
+
+    function onScroll() {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        onProgress(computeProgress());
+      });
+    }
+
+    function setup() {
+      if (reduceMotion.matches || !desktop.matches) {
+        if (scrollAttached) {
+          window.removeEventListener('scroll', onScroll);
+          scrollAttached = false;
+        }
+        clearInlineStyles();
+      } else {
+        if (!scrollAttached) {
+          window.addEventListener('scroll', onScroll, { passive: true });
+          scrollAttached = true;
+        }
+        onProgress(computeProgress());
+      }
+    }
+
+    setup();
+    reduceMotion.addEventListener('change', setup);
+    desktop.addEventListener('change', setup);
+
+    let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+    window.addEventListener('resize', () => {
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(setup, 100);
+    });
+  }
+</script>
+
+<style>
+  .edition-detail__hero {
+    position: relative;
+    height: calc(100svh + 900px);
+    background: var(--color-ink);
+  }
+
+  .edition-detail__hero-pin {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    overflow: hidden;
+    background: var(--color-ink);
+  }
+
+  .edition-detail__hero-photo {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  .edition-detail__hero-trigger {
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .edition-detail__hero-trigger:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  .edition-detail__hero-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.2s ease;
+  }
+
+  .edition-detail__hero-trigger:hover .edition-detail__hero-img,
+  .edition-detail__hero-trigger:focus-visible .edition-detail__hero-img {
+    transform: scale(1.02);
+  }
+
+  .edition-detail__hero-scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.15) 45%, rgba(0, 0, 0, 0) 70%);
+    pointer-events: none;
+    opacity: 1;
+  }
+
+  .edition-detail__hero-overlay-title {
+    position: absolute;
+    left: var(--space-xl);
+    bottom: var(--space-xl);
+    right: var(--space-xl);
+    z-index: 3;
+    margin: 0;
+    font-size: var(--text-display-size);
+    font-weight: var(--weight-semibold);
+    font-family: var(--font-display);
+    line-height: 1.2;
+    color: #FFFFFF;
+    opacity: 1;
+    pointer-events: none;
+  }
+
+  .edition-detail__hero-expand-icon {
+    position: absolute;
+    bottom: var(--space-lg);
+    right: var(--space-lg);
+    z-index: 3;
+    color: #FFFFFF;
+    opacity: 0.9;
+    pointer-events: none;
+  }
+
+  .edition-detail__hero-reveal {
+    position: absolute;
+    top: 50%;
+    right: var(--space-2xl);
+    transform: translateY(-50%);
+    max-width: 420px;
+    text-align: left;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .edition-detail__hero-caption {
+    margin: 0 0 6px;
+    font-size: var(--text-label-size);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .edition-detail__hero-reveal-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(40px, 6vw, 72px);
+    line-height: 1.02;
+    font-weight: var(--weight-semibold);
+    color: #FFFFFF;
+  }
+
+  .edition-detail__hero-format {
+    display: inline-block;
+    margin-top: var(--space-md);
+    font-size: var(--text-label-size);
+    font-weight: var(--weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #FFFFFF;
+    border-bottom: 2px solid var(--color-accent);
+    padding-bottom: var(--space-sm);
+    opacity: 0;
+  }
+
+  /* Reduced-motion settled end-state (desktop only): mirrors onProgress(1)
+     purely in CSS, so the composition shows immediately with zero
+     scroll-linked motion and no dependence on the driver ever running. */
+  @media (prefers-reduced-motion: reduce) and (min-width: 768px) {
+    .edition-detail__hero {
+      height: 100svh;
+    }
+
+    .edition-detail__hero-pin {
+      position: relative;
+      height: 100svh;
+    }
+
+    .edition-detail__hero-photo {
+      right: 45%;
+    }
+
+    .edition-detail__hero-scrim {
+      opacity: 0;
+    }
+
+    .edition-detail__hero-overlay-title {
+      opacity: 0;
+    }
+
+    .edition-detail__hero-reveal {
+      opacity: 1;
+      transform: translateY(-50%);
+    }
+
+    .edition-detail__hero-format {
+      opacity: 1;
+    }
+  }
+
+  /* Mobile: no scroll-jacking on phones, and a 55%-width photo is too
+     small there. Net effect matches today's shipped hero (full-bleed photo
+     + big title bottom-left), but the visible title is now the real
+     <h1>. Applies regardless of motion preference. */
+  @media (max-width: 767px) {
+    .edition-detail__hero {
+      height: auto;
+    }
+
+    .edition-detail__hero-pin {
+      position: relative;
+      height: 70svh;
+      min-height: 420px;
+    }
+
+    .edition-detail__hero-photo {
+      inset: 0;
+      right: 0;
+    }
+
+    .edition-detail__hero-scrim {
+      opacity: 1;
+    }
+
+    .edition-detail__hero-overlay-title {
+      display: none;
+    }
+
+    .edition-detail__hero-reveal {
+      top: auto;
+      bottom: var(--space-xl);
+      left: var(--space-xl);
+      right: var(--space-xl);
+      transform: none;
+      opacity: 1;
+    }
+
+    .edition-detail__hero-caption {
+      display: none;
+    }
+
+    .edition-detail__hero-reveal-title {
+      font-size: var(--text-display-size);
+    }
+
+    .edition-detail__hero-format {
+      display: none;
+    }
+  }
+</style>

@@ -271,3 +271,63 @@ test.describe('no commerce affordances (detail)', () => {
     expect(containsForbiddenCommerceToken(enMainText)).toBe(false);
   });
 });
+
+// quick-260724-l5i: sketch-005 Synthesis scroll-reveal hero. Desktop
+// viewport is required for both assertions below — the `min-width: 768px`
+// branch of EditionHero.astro's CSS is what makes the pin genuinely
+// sticky (default) vs relative (reduced-motion settled end-state); the
+// `max-width: 767px` mobile branch overrides position to `relative`
+// regardless of motion preference, which would make the "sticky by
+// default" assertion meaningless on a narrow viewport.
+test.describe('editions hero reduced-motion (sketch 005)', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test('prefers-reduced-motion: reduce shows the settled end-state immediately, no sticky pin, lightbox still opens', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+
+    await page.goto('/editions/');
+    const rowHref = await page.locator('.tile').first().getAttribute('href');
+    expect(rowHref).toBeTruthy();
+
+    await page.goto(rowHref!);
+
+    const pin = page.locator('.edition-detail__hero-pin');
+    await expect(pin).toBeVisible();
+    const pinPosition = await pin.evaluate((el) => getComputedStyle(el).position);
+    expect(pinPosition).not.toBe('sticky');
+
+    const revealTitle = page.locator('h1.edition-detail__hero-reveal-title');
+    await expect(revealTitle).toBeVisible();
+
+    const overlayTitle = page.locator('.edition-detail__hero-overlay-title');
+    const overlayState = await overlayTitle.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return { opacity: style.opacity, display: style.display };
+    });
+    expect(overlayState.display === 'none' || overlayState.opacity === '0').toBe(true);
+
+    // Reduced motion must not break the click-to-open lightbox behavior.
+    const heroTrigger = page.locator('[data-gallery-thumb][data-index="0"]');
+    await expect(heroTrigger).toBeVisible();
+    await heroTrigger.click();
+    const dialog = page.locator('dialog[open]');
+    await expect(dialog).toBeVisible();
+    const counter = dialog.locator('[data-role="counter"]');
+    await expect(counter).toHaveText(/^1 \/ \d+$/);
+  });
+
+  test('without reduced motion, the desktop hero pin is sticky by default', async ({ page }) => {
+    await page.goto('/editions/');
+    const rowHref = await page.locator('.tile').first().getAttribute('href');
+    expect(rowHref).toBeTruthy();
+
+    await page.goto(rowHref!);
+
+    const pin = page.locator('.edition-detail__hero-pin');
+    await expect(pin).toBeVisible();
+    const pinPosition = await pin.evaluate((el) => getComputedStyle(el).position);
+    expect(pinPosition).toBe('sticky');
+  });
+});
