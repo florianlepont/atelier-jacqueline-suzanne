@@ -337,6 +337,11 @@ if (layout === 'bento') {
      is untouched; these rules only ever apply under
      .gallery-grid--masonry. */
   .gallery-grid--masonry {
+    /* Multi-column layout does not apply to flex containers — override the
+       shared `.gallery-grid` rule's `display: flex` (designed for bento's
+       vertically-stacked groups) or `column-count` below would silently be
+       ignored by the browser. */
+    display: block;
     column-count: 3;
     column-gap: var(--space-md);
   }
