@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-07-22)
 Phase: Milestone v1.3 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-07-24 — Completed quick task 260724-dlc: GalleryGrid bento + scroll-reveal + View Transitions morph
+Last activity: 2026-07-24 — Completed quick task 260724-dw6: EDN-08 optional Éditions↔Portfolio cross-link
 
 ## Performance Metrics
 
@@ -172,6 +172,7 @@ None currently open. Both prior research-carryover items were resolved during Ph
 | 260723-r1e | Fix Éditions overview reversed-row layout: added `grid-row: 1` (+ mobile `grid-row: auto` reset) so CSS Grid auto-placement stops splitting alternating rows' photo/text into two stacked implicit rows; added a Playwright regression guard; fix independently re-verified via direct DOM inspection after a port-collision false test failure | 2026-07-23 | fb13388, 0d3cf8c | | [260723-r1e-fix-editions-overview-reversed-row-layou](./quick/260723-r1e-fix-editions-overview-reversed-row-layou/) |
 | 260723-txi | Rebuild Éditions overview as the sketch-approved asymmetric Poster Grid (grouped-by-3 hero+small tiles, alternating side, opt-in bold EmptyState variant) and restyle the détail page's format-details line (bold/uppercase/pink underline); repaired the full edition e2e suite (166/166 passing, independently re-verified) | 2026-07-23 | d6a7cf8, 62bab00, fbb90c0 | | [260723-txi-rebuild-the-editions-overview-page-as-th](./quick/260723-txi-rebuild-the-editions-overview-page-as-th/) |
 | 260724-dlc | Apply sketch 004 winner (A2) to the shared GalleryGrid.astro thumbnail grid: props-based asymmetric bento (generalizes across real counts 2-11), staggered scroll-reveal, and a click-to-expand View Transitions morph wired into Lightbox's open/close/Escape/backdrop lifecycle across all 4 gallery/édition detail pages (FR/EN); 168/168 e2e passing, independently re-verified | 2026-07-24 | 3032126, 23cdcd9, d299593, f6b3d97 | | [260724-dlc-apply-the-a2-asymmetric-bento-scroll-rev](./quick/260724-dlc-apply-the-a2-asymmetric-bento-scroll-rev/) |
+| 260724-dw6 | Add EDN-08, an optional unidirectional Éditions↔Portfolio cross-link: new `relatedGallery` Sanity reference field on `edition`, dereferenced in both édition GROQ queries, rendered via a pure locale-aware `getRelatedGalleryLink` helper as a quiet "see also" link on both détail-page twins (renders nothing until a Studio editor populates the field); 169/169 e2e passing, independently re-verified | 2026-07-24 | 51d4816, d961ae5, 81c2af0, 32e0798 | Verified | [260724-dw6-add-edn-08-an-optional-cross-link-on-the](./quick/260724-dw6-add-edn-08-an-optional-cross-link-on-the/) |
 
 ## Deferred Items
 
