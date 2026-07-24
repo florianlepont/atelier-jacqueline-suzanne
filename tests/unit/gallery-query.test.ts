@@ -86,6 +86,19 @@ describe('getGalleries', () => {
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('isVisible == false'));
   });
 
+  // quick-260724-oep: both gallery queries must project per-image asset
+  // dimensions (dereferenced from the Sanity asset's own metadata.dimensions)
+  // so pickHeroIndex and the masonry grid's aspectRatio have real geometry
+  // to work with.
+  it('projects per-image asset dimensions dereferenced from metadata', async () => {
+    fetchMock.mockResolvedValueOnce([]);
+
+    const { getGalleries } = await import('../../src/lib/sanity');
+    await getGalleries();
+
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('"dimensions": asset->metadata.dimensions'));
+  });
+
 });
 
 describe('getGallery', () => {
