@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Sketch 006 — Cross-page hero transition</title>
+<link rel="stylesheet" href="../themes/default.css" />
+<style>
+  body { max-width: 720px; margin: 0 auto; padding: var(--space-2xl) var(--space-lg); }
+  h1 { font-family: var(--font-display); font-size: 28px; }
+  .variant { border: var(--border-hairline) solid var(--color-border); padding: var(--space-lg); margin-bottom: var(--space-lg); }
+  .variant h2 { font-size: 18px; margin: 0 0 8px; }
+  .variant a { display: inline-block; margin-top: 8px; font-weight: 600; }
+  code { background: #f2f2f2; padding: 2px 6px; }
+</style>
+</head>
+<body>
+  <h1>Sketch 006 — Cross-page hero transition</h1>
+  <p>
+    Ce sketch ne peut pas être 3 onglets dans un seul fichier — l'API testée
+    (<code>@view-transition { navigation: auto; }</code>, cross-document)
+    n'existe qu'entre deux vraies pages navigables. Chaque variante ci-dessous
+    est une vraie paire <code>grid.html</code> → <code>detail.html</code>.
+    Clique une vignette pour ressentir l'effet ; utilise "← Retour" pour
+    revenir et comparer.
+  </p>
+  <p><strong>Nécessite Chrome/Edge 126+</strong> (cross-document View Transitions). Sur un navigateur non supporté, chaque variante se dégrade en simple navigation — c'est le comportement attendu, pas un bug.</p>
+
+  <div class="variant">
+    <h2>A — Baseline (sans morph dédié)</h2>
+    <p>Les deux pages activent <code>navigation: auto</code> mais aucune n'attribue de <code>view-transition-name</code> à la photo. Résultat : le fondu par défaut du navigateur sur toute la page, uniforme, sans continuité de la photo elle-même.</p>
+    <a href="variant-a-baseline/grid.html">Ouvrir →</a>
+  </div>
+
+  <div class="variant">
+    <h2>B — Morph de la photo (élément partagé nommé)</h2>
+    <p>Au clic, la vignette cliquée reçoit <code>view-transition-name: hero-photo</code> (même technique que le morph existant du Lightbox) ; le hero de la page détail porte le même nom. Seule la photo morphe en continu ; le reste de la page fait toujours le fondu par défaut.</p>
+    <a href="variant-b-photo-morph/grid.html">Ouvrir →</a>
+  </div>
+
+  <div class="variant">
+    <h2>C — Morph de la photo + le bandeau reste en place</h2>
+    <p>Comme B, plus le header/logo porte aussi un nom partagé (<code>site-header</code>) sur les deux pages — il ne clignote plus pendant la transition, il semble rester fixe pendant que la photo (et le reste du contenu) change.</p>
+    <a href="variant-c-chrome-persist/grid.html">Ouvrir →</a>
+  </div>
+
+  <p style="color:#888; font-size:13px;">
+    Note technique : aucune détection JS de capacité n'est nécessaire ici (contrairement aux morphs internes à une page comme le Lightbox/HomeCarousel) — <code>@view-transition</code> est du CSS pur, ignoré silencieusement si le navigateur ne le supporte pas.
+  </p>
+</body>
+</html>
