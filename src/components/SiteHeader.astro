@@ -120,6 +120,21 @@ const {
     gap: var(--space-md);
   }
 
+  /* quick-260724-uf5 (sketch 006): deliberately REUSES the exact same
+     `ajs-header` name HomeCarousel.astro's own `.home :global(.site-header)`
+     rule already assigns to this same element (that more-specific homepage
+     rule wins on the homepage, but sets the IDENTICAL value, so there is no
+     conflict). Everywhere else (gallery/edition/about/contact) this newly
+     lets the header participate as a persistent, named element in
+     cross-document View Transitions, so it stays put across a navigation
+     instead of crossfading. A second/different name must NOT be invented
+     here — a mismatch between the source and destination documents' names
+     would make the header crossfade instead of persist. Do not modify
+     HomeCarousel.astro's own rule or its `ajs-header` value. */
+  .site-header {
+    view-transition-name: ajs-header;
+  }
+
   .site-header--solid {
     background-color: var(--color-dominant);
     color: var(--color-ink);

@@ -316,6 +316,29 @@ const {
     transform: scale(1.02);
   }
 
+  /* Cross-document View Transition destination name (quick-260724-uf5,
+     sketch 006) — DESKTOP ONLY, NEVER unconditional / NEVER on mobile. This
+     is a direct precaution against the HOME-06/D-10/D-12 bug class: a
+     permanent, always-on view-transition-name on a 100svh-sized element was
+     the suspected mobile regression there, and `.detail-hero__img`/
+     `.detail-hero__pin` are likewise 100svh-sized. Unlike the homepage's own
+     dynamically-named in-page morph (named right before the transition
+     starts, on click), a cross-document DESTINATION element must carry its
+     name statically at load time — the incoming document's transition is
+     captured as the page loads, so there is no "assign it right before"
+     option here. Confining the name to desktop is the safe equivalent,
+     which also makes the photo morph desktop-only by design, consistent
+     with the scroll-reveal above already being desktop-only. This
+     breakpoint MUST match the script's own `matchMedia('(min-width: 768px)')`
+     desktop gate exactly. Do NOT add this name to the base `.detail-hero__img`
+     rule above, and do NOT add it inside the `@media (max-width: 767px)`
+     block below. */
+  @media (min-width: 768px) {
+    .detail-hero__img {
+      view-transition-name: hero-photo;
+    }
+  }
+
   .detail-hero__scrim {
     position: absolute;
     inset: 0;
