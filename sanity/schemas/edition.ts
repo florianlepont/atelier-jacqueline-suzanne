@@ -93,6 +93,19 @@ export const edition = defineType({
     }),
     // D-10: bilingual statement, both fr/en required (satisfies CMS-04).
     localeTextField('statement', 'Texte de présentation', 'content'),
+    // EDN-08: optional, unidirectional cross-link to a related Portfolio
+    // gallery (e.g. the "Rebut" édition/book and the "Rebut" gallery are the
+    // same underlying subject). No validation rule -- most éditions will
+    // never set this field.
+    defineField({
+      name: 'relatedGallery',
+      title: 'Collection photo liée (optionnel)',
+      type: 'reference',
+      group: 'content',
+      to: [{type: 'gallery'}],
+      description:
+        'Lien optionnel vers la collection Portfolio qui présente les mêmes photographies, lorsqu\'elle existe. Exemple : l\'édition « Rebut » (le livre imprimé) et la collection photo « Rebut » sont le même sujet — renseigner ce champ affiche un lien vers la collection sur la page de l\'édition. Laisser vide s\'il n\'existe pas de collection correspondante.',
+    }),
     // D-04: dedicated lead photo, separate from the `images` photo-shoot
     // array -- NOT derived from images[0] (gallery's "first array item is
     // the cover" convention is explicitly rejected here).

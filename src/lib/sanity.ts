@@ -141,6 +141,11 @@ export interface Edition {
   printRun: number
   dimensions: {width: number; height: number; unit: 'cm' | 'in'}
   publicationStatus?: 'preparation' | 'published' | 'archived'
+  // EDN-08: optional, unidirectional cross-link target — dereferenced from
+  // the `relatedGallery` reference field (sanity/schemas/edition.ts). Null
+  // or absent for editions with no related gallery set (the common case
+  // today: every currently-published édition).
+  relatedGallery?: { title: string; slug: string } | null
   // NOTE: edition has NO `seo` field/group (confirmed absent from Phase 11's
   // sanity/schemas/edition.ts) — do not add a `seo` field here. Any code
   // reading page metadata for an edition must construct it from
@@ -153,11 +158,11 @@ export interface Edition {
 const PUBLISHED_EDITION_FILTER = /* groq */ `publicationStatus == "published"`
 
 const EDITIONS_QUERY = /* groq */ `*[_type == "edition" && ${PUBLISHED_EDITION_FILTER}] | order(orderRank) {
-  title, "slug": slug.current, statement, leadPhoto, images, pageCount, printRun, dimensions, publicationStatus
+  title, "slug": slug.current, statement, leadPhoto, images, pageCount, printRun, dimensions, publicationStatus, relatedGallery->{title, "slug": slug.current}
 }`
 
 const EDITION_BY_SLUG_QUERY = /* groq */ `*[_type == "edition" && slug.current == $slug && ${PUBLISHED_EDITION_FILTER}][0]{
-  title, "slug": slug.current, statement, leadPhoto, images, pageCount, printRun, dimensions, publicationStatus
+  title, "slug": slug.current, statement, leadPhoto, images, pageCount, printRun, dimensions, publicationStatus, relatedGallery->{title, "slug": slug.current}
 }`
 
 export interface AboutPage {
