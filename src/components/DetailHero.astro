@@ -10,10 +10,16 @@
 // mirroring Lightbox.astro's and HomeCarousel.astro's typed-Props /
 // scoped-CSS / plain-module-<script> conventions.
 //
-// Used by both édition détail pages (formatText + caption + total, default
-// objectFit="cover") and gallery détail pages (no formatText/caption,
-// objectFit="contain" so the photographer's actual framing is never
-// cropped).
+// Used by both édition détail pages (formatText + caption + total) and
+// gallery détail pages (no formatText/caption). quick-260724-uf5: the
+// gallery hero previously accepted a no-crop opt-in prop (quick-260724-mjp)
+// so the photographer's framing was never cropped, but per an explicit user
+// reversal after seeing it live ("je veux pas de flou, je veux que la photo
+// aie le meme format que sur la homepage") the hero now ALWAYS renders
+// object-fit: cover on both éditions and galleries, matching the homepage
+// carousel/grid crop exactly. Galleries were the only consumer of that prop,
+// so it has been removed entirely rather than kept as speculative
+// flexibility.
 //
 // quick-260724-rhq: the reveal panel also accepts an optional real (i.e.
 // non-decorative, non-aria-hidden) `statement` paragraph, rendered after the
@@ -45,7 +51,6 @@ interface Props {
   caption?: string;
   statement?: string;
   total?: number;
-  objectFit?: 'cover' | 'contain';
   // quick-260724-oep: which Lightbox slide this hero trigger opens. Editions
   // (and any caller that omits this prop) keep the historical index-0
   // trigger via this default — byte-identical output. Gallery detail pages
@@ -62,7 +67,6 @@ const {
   heroAriaLabel,
   caption,
   statement,
-  objectFit = 'cover',
   heroIndex = 0,
 } = Astro.props;
 ---
@@ -82,7 +86,7 @@ const {
           srcset={leadPhotoSrcSet}
           sizes="100vw"
           alt={leadPhotoAlt}
-          class={`detail-hero__img${objectFit === 'contain' ? ' detail-hero__img--contain' : ''}`}
+          class="detail-hero__img"
           loading="eager"
           decoding="async"
         />
@@ -110,6 +114,18 @@ const {
       <h1 class="detail-hero__reveal-title">{title}</h1>
       {statement && <p class="detail-hero__statement">{statement}</p>}
       {formatText && <span class="detail-hero__format" aria-hidden="true">{formatText}</span>}
+    </div>
+    <div class="detail-hero__scroll-hint" aria-hidden="true">
+      <svg
+        viewBox="0 0 24 24"
+        width="28"
+        height="28"
+        fill="none"
+        stroke="white"
+        stroke-width="2"
+      >
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
     </div>
   </div>
 </div>
@@ -143,6 +159,22 @@ const {
   const overlayTitle = document.querySelector<HTMLElement>('.detail-hero__overlay-title');
   const reveal = document.querySelector<HTMLElement>('.detail-hero__reveal');
   const revealFormat = document.querySelector<HTMLElement>('.detail-hero__format');
+  const scrollHint = document.querySelector<HTMLElement>('.detail-hero__scroll-hint');
+
+  // Scroll-down hint fade (quick-260724-uf5): a self-contained block, kept
+  // OUTSIDE the reveal-driver guard below so it never depends on the
+  // reveal's own element set being complete. Writing opacity on a
+  // `display: none` element (mobile / reduced-motion desktop, per the CSS
+  // above) is a harmless no-op, so no extra branching is needed here.
+  if (scrollHint) {
+    window.addEventListener(
+      'scroll',
+      () => {
+        scrollHint.style.opacity = String(Math.max(0, 1 - window.scrollY / 150) * 0.85);
+      },
+      { passive: true },
+    );
+  }
 
   if (track && photo && scrim && overlayTitle && reveal) {
     const REVEAL_DISTANCE = 900;
@@ -279,13 +311,32 @@ const {
     transition: transform 0.2s ease;
   }
 
-  .detail-hero__img--contain {
-    object-fit: contain;
-  }
-
   .detail-hero__trigger:hover .detail-hero__img,
   .detail-hero__trigger:focus-visible .detail-hero__img {
     transform: scale(1.02);
+  }
+
+  /* Cross-document View Transition destination name (quick-260724-uf5,
+     sketch 006) — DESKTOP ONLY, NEVER unconditional / NEVER on mobile. This
+     is a direct precaution against the HOME-06/D-10/D-12 bug class: a
+     permanent, always-on view-transition-name on a 100svh-sized element was
+     the suspected mobile regression there, and `.detail-hero__img`/
+     `.detail-hero__pin` are likewise 100svh-sized. Unlike the homepage's own
+     dynamically-named in-page morph (named right before the transition
+     starts, on click), a cross-document DESTINATION element must carry its
+     name statically at load time — the incoming document's transition is
+     captured as the page loads, so there is no "assign it right before"
+     option here. Confining the name to desktop is the safe equivalent,
+     which also makes the photo morph desktop-only by design, consistent
+     with the scroll-reveal above already being desktop-only. This
+     breakpoint MUST match the script's own `matchMedia('(min-width: 768px)')`
+     desktop gate exactly. Do NOT add this name to the base `.detail-hero__img`
+     rule above, and do NOT add it inside the `@media (max-width: 767px)`
+     block below. */
+  @media (min-width: 768px) {
+    .detail-hero__img {
+      view-transition-name: hero-photo;
+    }
   }
 
   .detail-hero__scrim {
@@ -375,6 +426,43 @@ const {
     opacity: 0;
   }
 
+  /* Scroll-down affordance (quick-260724-uf5, sketch 006 variant D):
+     bottom-center bouncing chevron inviting first-time visitors to scroll
+     and discover the reveal. This is the desktop-with-motion BASE state —
+     mirrors how this component's other base rules are the desktop-active
+     state, with mobile/reduced-motion overrides layered in below. Fades out
+     over the first ~150px of scroll via the plain scroll listener in the
+     <script> block above (a self-contained block, not wired into
+     onProgress/clearInlineStyles, so it cannot perturb the proven reveal
+     math). */
+  .detail-hero__scroll-hint {
+    position: absolute;
+    left: 50%;
+    bottom: var(--space-lg);
+    transform: translateX(-50%);
+    z-index: 5;
+    opacity: 0.85;
+    pointer-events: none;
+    animation: sketch-bounce 1.8s ease-in-out infinite;
+  }
+
+  @keyframes sketch-bounce {
+    0%,
+    100% {
+      transform: translate(-50%, 0);
+    }
+
+    50% {
+      transform: translate(-50%, 8px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .detail-hero__scroll-hint {
+      animation: none;
+    }
+  }
+
   /* Reduced-motion settled end-state (desktop only): mirrors onProgress(1)
      purely in CSS, so the composition shows immediately with zero
      scroll-linked motion and no dependence on the driver ever running. */
@@ -407,6 +495,12 @@ const {
 
     .detail-hero__format {
       opacity: 1;
+    }
+
+    /* Under reduced-motion desktop the reveal is already shown fully
+       settled — there is nothing left to hint at. */
+    .detail-hero__scroll-hint {
+      display: none;
     }
   }
 
@@ -456,6 +550,12 @@ const {
     }
 
     .detail-hero__format {
+      display: none;
+    }
+
+    /* Mobile shows the reveal panel already settled (no scroll-jacking/pin)
+       — the hint has no purpose here. */
+    .detail-hero__scroll-hint {
       display: none;
     }
   }

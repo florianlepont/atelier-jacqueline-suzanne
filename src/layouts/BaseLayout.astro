@@ -218,6 +218,16 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
 </html>
 
 <style is:global>
+  /* quick-260724-uf5 (sketch 006): the single site-wide cross-document View
+     Transitions opt-in below. Every page — including the homepage —
+     renders through this layout, so this is the one and only place this
+     rule needs to exist; do not duplicate it elsewhere. Progressive
+     enhancement: browsers without support for this at-rule simply ignore
+     it and navigate normally, no feature-detection required. */
+  @view-transition {
+    navigation: auto;
+  }
+
   :root {
     /* White / Ink / Pop-Pink — Phase 04.1 rebrand, supersedes Phase 2's
        prior palette and dormant fallback-only display typeface

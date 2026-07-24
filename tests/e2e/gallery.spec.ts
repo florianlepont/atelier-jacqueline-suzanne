@@ -423,6 +423,54 @@ test.describe('gallery hero reduced-motion (sketch 005)', () => {
     const pinPosition = await pin.evaluate((el) => getComputedStyle(el).position);
     expect(pinPosition).toBe('sticky');
   });
+
+  // quick-260724-uf5: reverts quick-260724-mjp's gallery-only
+  // objectFit="contain" no-crop escape hatch — the gallery hero now always
+  // renders object-fit: cover, matching the homepage carousel/grid crop
+  // exactly (explicit user reversal after seeing objectFit="contain" live).
+  // The masonry grid below stays uncropped and is proven separately by the
+  // 'gallery grid masonry layout' describe block further down this file.
+  test('the gallery hero renders object-fit: cover (crop reverted, no letterboxing)', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    expect(firstTileHref).toBeTruthy();
+
+    await page.goto(firstTileHref!);
+
+    const heroImg = page.locator('.detail-hero__img').first();
+    await expect(heroImg).toBeVisible();
+    const objectFit = await heroImg.evaluate((el) => getComputedStyle(el).objectFit);
+    expect(objectFit).toBe('cover');
+  });
+
+  // quick-260724-uf5: bouncing scroll-down chevron hint (sketch 006 variant
+  // D), shared via DetailHero so it appears on both édition and gallery
+  // detail heroes. Desktop-with-motion is the only state where it bounces
+  // and is visible at rest; reduced-motion either disables the bounce or
+  // hides the hint entirely (both are acceptable per the CSS contract).
+  test('the scroll-down hint is visible at rest on desktop, and its bounce is disabled/hidden under reduced motion', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    expect(firstTileHref).toBeTruthy();
+
+    await page.goto(firstTileHref!);
+
+    const hint = page.locator('.detail-hero__scroll-hint');
+    await expect(hint).toBeVisible();
+
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.reload();
+
+    const reducedMotionState = await page.locator('.detail-hero__scroll-hint').evaluate((el) => {
+      const style = getComputedStyle(el);
+      return { animationName: style.animationName, display: style.display };
+    });
+    expect(reducedMotionState.animationName === 'none' || reducedMotionState.display === 'none').toBe(true);
+  });
 });
 
 // quick-260724-oep: the definitive correctness proof for FIX 1 — every
@@ -472,5 +520,55 @@ test.describe('gallery hero landscape-preference + lightbox index remapping', ()
     await firstGridTile.click();
     await expect(dialog).toBeVisible();
     await expect(counter).toHaveText(`${firstGridIndex + 1} / ${n}`);
+  });
+});
+
+// quick-260724-uf5 (sketch 006): critical mobile-safety verification for the
+// cross-document View Transition destination name. `.detail-hero__img` must
+// carry `view-transition-name: hero-photo` ONLY at desktop widths — the
+// name must resolve to `none` on mobile, as a direct precaution against the
+// HOME-06/D-10/D-12 100svh always-on-name mobile-regression bug class.
+test.describe('cross-document view-transition name gating — desktop (sketch 006)', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test('the hero photo carries hero-photo and the header carries ajs-header at desktop widths', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    expect(firstTileHref).toBeTruthy();
+
+    await page.goto(firstTileHref!);
+
+    const heroImg = page.locator('.detail-hero__img').first();
+    await expect(heroImg).toBeVisible();
+    const heroName = await heroImg.evaluate((el) => getComputedStyle(el).viewTransitionName);
+    expect(heroName).toBe('hero-photo');
+
+    const header = page.locator('header[data-role="site-header"]');
+    await expect(header).toBeVisible();
+    const headerName = await header.evaluate((el) => getComputedStyle(el).viewTransitionName);
+    expect(headerName).toBe('ajs-header');
+  });
+});
+
+test.describe('cross-document view-transition name gating — mobile (sketch 006)', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test('the hero photo carries NO view-transition-name at mobile widths (HOME-06 mobile-safety precaution)', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    expect(firstTileHref).toBeTruthy();
+
+    await page.goto(firstTileHref!);
+
+    const heroImg = page.locator('.detail-hero__img').first();
+    await expect(heroImg).toBeVisible();
+    const heroName = await heroImg.evaluate((el) => getComputedStyle(el).viewTransitionName);
+    expect(heroName).toBe('none');
   });
 });

@@ -1036,3 +1036,50 @@ test.describe('homepage semantic heading (quick-260720-nm3)', () => {
     await expect(heading).toContainText(/Atelier/i);
   });
 });
+
+// quick-260724-uf5 (sketch 006): the SOURCE side of the homepage ->
+// gallery-detail cross-document photo morph. Proves the click-time name
+// assignment WITHOUT navigating away — a capture-phase preventDefault
+// listener cancels only the real <a> navigation, not this component's own
+// bubble-phase click listener, so the name assignment still runs and can be
+// read from the element's inline style before the page unloads.
+test.describe('cross-document morph — click-time source name assignment (sketch 006)', () => {
+  test('clicking the carousel title assigns hero-photo to the current slide\'s sharp photo', async ({ page }) => {
+    await page.goto('/');
+
+    await page.evaluate(() => {
+      document.querySelector('.home-hero__title')?.addEventListener(
+        'click',
+        (e) => e.preventDefault(),
+        { capture: true },
+      );
+    });
+
+    await page.locator('.home-hero__title').click();
+
+    const heroPhoto = page.locator('.home-hero__photo .home-hero__img--sharp');
+    const name = await heroPhoto.evaluate((el) => (el as HTMLElement).style.viewTransitionName);
+    expect(name).toBe('hero-photo');
+  });
+
+  test('clicking a grid tile assigns hero-photo to that tile\'s sharp photo', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+
+    const firstTile = page.locator('a.home-grid__tile:not(.home-grid__tile--hero)').first();
+
+    await page.evaluate(() => {
+      document.querySelector('a.home-grid__tile:not(.home-grid__tile--hero)')?.addEventListener(
+        'click',
+        (e) => e.preventDefault(),
+        { capture: true },
+      );
+    });
+
+    await firstTile.click();
+
+    const tileImg = firstTile.locator('.home-grid__tile-img--sharp');
+    const name = await tileImg.evaluate((el) => (el as HTMLElement).style.viewTransitionName);
+    expect(name).toBe('hero-photo');
+  });
+});
