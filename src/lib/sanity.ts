@@ -81,6 +81,20 @@ export async function getSiteSettings(): Promise<SiteSettings | null> {
 }
 
 /**
+ * Real per-image geometry, dereferenced from the Sanity asset's own
+ * metadata.dimensions (quick-260724-oep). Used to pick a landscape hero
+ * (src/lib/image-orientation.ts) and to size masonry grid tiles
+ * (GalleryGrid.astro's aspectRatio item field). Only projected for gallery
+ * queries — the asset reference shape itself is unchanged, so
+ * builder.image(img) in src/lib/image.ts keeps working unmodified.
+ */
+export interface ImageDimensions {
+  width: number
+  height: number
+  aspectRatio?: number
+}
+
+/**
  * A single gallery image: the Sanity image asset ref + bilingual alt text
  * (D-01/D-02). `asset`/`hotspot` sit at the top level (not nested under an
  * `image` key) because the Studio schema attaches `alt` directly onto an
@@ -97,6 +111,10 @@ export interface GalleryImage extends SanityImage {
     licenseDetails?: string
     displayCredit?: boolean
   }
+  // quick-260724-oep: optional so EditionImage (a type alias of GalleryImage)
+  // stays correct — edition queries are unchanged by this plan and never
+  // project this field.
+  dimensions?: ImageDimensions
 }
 
 /** A `gallery` document, typed for both locales. */
@@ -114,12 +132,23 @@ export interface Gallery {
 
 const PUBLISHED_GALLERY_FILTER = /* groq */ `coalesce(publicationStatus, select(isVisible == false => "preparation", "published")) == "published"`
 
+// quick-260724-oep: each image is projected as a spread of all its existing
+// fields (asset/hotspot/alt/rights preserved exactly, asset reference shape
+// untouched) plus a sibling `dimensions` object dereferenced from the
+// asset's own metadata.dimensions — real width/height/aspectRatio, used by
+// pickHeroIndex (src/lib/image-orientation.ts) and the masonry grid's
+// per-tile aspectRatio.
+const GALLERY_IMAGES_WITH_DIMENSIONS_PROJECTION = /* groq */ `images[]{
+    ...,
+    "dimensions": asset->metadata.dimensions
+  }`
+
 const GALLERIES_QUERY = /* groq */ `*[_type == "gallery" && ${PUBLISHED_GALLERY_FILTER}] | order(orderRank) {
-  title, "slug": slug.current, statement, heroColor, publicationStatus, "showOnHomePage": coalesce(showOnHomePage, true), "isVisible": coalesce(isVisible, true), seo, images
+  title, "slug": slug.current, statement, heroColor, publicationStatus, "showOnHomePage": coalesce(showOnHomePage, true), "isVisible": coalesce(isVisible, true), seo, ${GALLERY_IMAGES_WITH_DIMENSIONS_PROJECTION}
 }`
 
 const GALLERY_BY_SLUG_QUERY = /* groq */ `*[_type == "gallery" && slug.current == $slug && ${PUBLISHED_GALLERY_FILTER}][0]{
-  title, "slug": slug.current, statement, heroColor, publicationStatus, "showOnHomePage": coalesce(showOnHomePage, true), "isVisible": coalesce(isVisible, true), seo, images
+  title, "slug": slug.current, statement, heroColor, publicationStatus, "showOnHomePage": coalesce(showOnHomePage, true), "isVisible": coalesce(isVisible, true), seo, ${GALLERY_IMAGES_WITH_DIMENSIONS_PROJECTION}
 }`
 
 /**

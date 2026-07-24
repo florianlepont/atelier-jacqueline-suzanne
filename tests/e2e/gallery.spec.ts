@@ -168,61 +168,55 @@ test.describe('lightbox', () => {
   });
 });
 
-// Sketch 004 variant A2 regression coverage: the asymmetric bento grouping
-// must generalize across every real gallery's actual thumbnail count, not
-// just one hardcoded slug/count — this is the invariant that proves the
-// build-time chunk-by-3 algorithm is correct at arbitrary N, not overfit.
-test.describe('gallery grid bento layout', () => {
+// quick-260724-oep: galleries no longer use the bento layout — the grid now
+// renders as an uncropped native-aspect-ratio masonry (CSS multi-column),
+// driven by real per-image dimensions. This is the masonry-appropriate
+// replacement for the old bento geometry assertion (editions still use
+// bento and are unaffected — see edition.spec.ts).
+test.describe('gallery grid masonry layout', () => {
   test.use({ viewport: { width: 1280, height: 900 } });
 
-  test('bento grouping generalizes across every real gallery (G === ceil(N/3), hero larger + side-alternating)', async ({
+  test('gallery grid renders as a multi-column masonry with uncropped, real-aspect-ratio tiles', async ({
     page,
   }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
+
     const hrefs = await page.locator('a.home-grid__tile').evaluateAll((els) =>
       els.map((el) => el.getAttribute('href')).filter((href): href is string => Boolean(href)),
     );
     expect(hrefs.length).toBeGreaterThan(0);
 
-    let multiGroupGalleryFound = false;
+    let multiImageGalleryFound = false;
 
     for (const href of hrefs) {
       await page.goto(href);
 
       const thumbCount = await page.locator('.gallery-grid [data-gallery-thumb]').count();
-      const groupCount = await page.locator('.gallery-grid__group').count();
-      expect(groupCount).toBe(Math.ceil(thumbCount / 3));
+      if (thumbCount === 0) continue;
+      multiImageGalleryFound = true;
 
-      if (groupCount > 1) multiGroupGalleryFound = true;
+      const grid = page.locator('.gallery-grid');
+      await expect(grid).toHaveClass(/gallery-grid--masonry/);
+      expect(await page.locator('.gallery-grid__group').count()).toBe(0);
 
-      const groups = page.locator('.gallery-grid__group');
-      for (let g = 0; g < groupCount; g += 1) {
-        const group = groups.nth(g);
-        const size = await group.getAttribute('data-size');
-        if (size !== '2' && size !== '3') continue;
+      const columnCount = await grid.evaluate((el) => getComputedStyle(el).columnCount);
+      expect(Number(columnCount)).toBeGreaterThan(1);
 
-        const hero = group.locator('.tile--hero');
-        const small = group.locator('.tile--small').first();
-        const heroBox = await hero.boundingBox();
-        const smallBox = await small.boundingBox();
-        expect(heroBox).not.toBeNull();
-        expect(smallBox).not.toBeNull();
-
-        expect(heroBox!.width).toBeGreaterThan(smallBox!.width);
-        expect(heroBox!.height).toBeGreaterThan(smallBox!.height);
-
-        if (g % 2 === 0) {
-          expect(heroBox!.x).toBeLessThan(smallBox!.x);
-        } else {
-          expect(heroBox!.x).toBeGreaterThan(smallBox!.x);
-        }
+      const gridImages = page.locator('.gallery-grid [data-gallery-thumb] img');
+      const imageCount = await gridImages.count();
+      for (let i = 0; i < imageCount; i += 1) {
+        const image = gridImages.nth(i);
+        const objectFit = await image.evaluate((el) => getComputedStyle(el).objectFit);
+        expect(objectFit).not.toBe('cover');
+        const aspectRatio = await image.evaluate((el) => getComputedStyle(el).aspectRatio);
+        expect(aspectRatio).not.toBe('auto');
       }
     }
 
-    // Proves chunking actually happens on real content (not just a single
-    // trailing group of 1 or 2 across every discovered gallery).
-    expect(multiGroupGalleryFound).toBe(true);
+    // Proves the assertions above actually exercised at least one real
+    // gallery's grid, not a no-op loop over zero-image galleries.
+    expect(multiImageGalleryFound).toBe(true);
   });
 });
 
@@ -301,11 +295,15 @@ test.describe('gallery lightbox morph', () => {
   });
 });
 
-// quick-260724-mjp: the gallery hero is now the shared DetailHero's
-// clickable data-index="0" trigger (mirrors the édition hero's D-05
-// behavior), which did not exist on galleries before this change.
+// quick-260724-mjp: the gallery hero is the shared DetailHero's clickable
+// trigger (mirrors the édition hero's D-05 behavior). quick-260724-oep:
+// the hero may now be any real index (landscape-preferred, not always 0),
+// and a grid tile may itself carry data-index="0" — so the hero must be
+// located structurally (.detail-hero [data-gallery-thumb]), never by an
+// index-0 attribute selector, and the expected counter/aria-label position
+// is read from the hero's own data-index rather than assumed to be 1.
 test.describe('gallery hero is clickable (sketch 005)', () => {
-  test('the hero trigger opens the lightbox at 1/N with focus return (fr)', async ({ page }) => {
+  test('the hero trigger opens the lightbox at its real position with focus return (fr)', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
     const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
@@ -313,23 +311,30 @@ test.describe('gallery hero is clickable (sketch 005)', () => {
 
     await page.goto(firstTileHref!);
 
-    const heroTrigger = page.locator('[data-gallery-thumb][data-index="0"]');
+    const heroTrigger = page.locator('.detail-hero [data-gallery-thumb]');
     await expect(heroTrigger).toBeVisible();
+    const heroIndexAttr = await heroTrigger.getAttribute('data-index');
+    expect(heroIndexAttr).toBeTruthy();
+    const heroIndex = Number(heroIndexAttr);
     const ariaLabel = await heroTrigger.getAttribute('aria-label');
     expect(ariaLabel?.trim().length ?? 0).toBeGreaterThan(0);
+    expect(ariaLabel).toContain(String(heroIndex + 1));
 
     await heroTrigger.click();
     const dialog = page.locator('dialog[open]');
     await expect(dialog).toBeVisible();
     const counter = dialog.locator('[data-role="counter"]');
-    await expect(counter).toHaveText(/^1 \/ \d+$/);
+    const counterText = await counter.innerText();
+    const total = counterText.split('/')[1]?.trim();
+    expect(total).toBeTruthy();
+    await expect(counter).toHaveText(`${heroIndex + 1} / ${total}`);
 
     await page.keyboard.press('Escape');
     await expect(dialog).not.toBeVisible();
     await expect(heroTrigger).toBeFocused();
   });
 
-  test('the hero trigger opens the lightbox at 1/N (en)', async ({ page }) => {
+  test('the hero trigger opens the lightbox at its real position (en)', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
     const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
@@ -341,14 +346,20 @@ test.describe('gallery hero is clickable (sketch 005)', () => {
 
     await page.goto(`/en/galleries/${slug}/`);
 
-    const heroTrigger = page.locator('[data-gallery-thumb][data-index="0"]');
+    const heroTrigger = page.locator('.detail-hero [data-gallery-thumb]');
     await expect(heroTrigger).toBeVisible();
+    const heroIndexAttr = await heroTrigger.getAttribute('data-index');
+    expect(heroIndexAttr).toBeTruthy();
+    const heroIndex = Number(heroIndexAttr);
 
     await heroTrigger.click();
     const dialog = page.locator('dialog[open]');
     await expect(dialog).toBeVisible();
     const counter = dialog.locator('[data-role="counter"]');
-    await expect(counter).toHaveText(/^1 \/ \d+$/);
+    const counterText = await counter.innerText();
+    const total = counterText.split('/')[1]?.trim();
+    expect(total).toBeTruthy();
+    await expect(counter).toHaveText(`${heroIndex + 1} / ${total}`);
   });
 });
 
@@ -388,13 +399,15 @@ test.describe('gallery hero reduced-motion (sketch 005)', () => {
     expect(overlayState.display === 'none' || overlayState.opacity === '0').toBe(true);
 
     // Reduced motion must not break the click-to-open lightbox behavior.
-    const heroTrigger = page.locator('[data-gallery-thumb][data-index="0"]');
+    // quick-260724-oep: the hero may be any real index now, so this asserts
+    // a generic "{digits} / {digits}" counter shape rather than assuming 1/N.
+    const heroTrigger = page.locator('.detail-hero [data-gallery-thumb]');
     await expect(heroTrigger).toBeVisible();
     await heroTrigger.click();
     const dialog = page.locator('dialog[open]');
     await expect(dialog).toBeVisible();
     const counter = dialog.locator('[data-role="counter"]');
-    await expect(counter).toHaveText(/^1 \/ \d+$/);
+    await expect(counter).toHaveText(/^\d+ \/ \d+$/);
   });
 
   test('without reduced motion, the desktop hero pin is sticky by default', async ({ page }) => {
@@ -409,5 +422,55 @@ test.describe('gallery hero reduced-motion (sketch 005)', () => {
     await expect(pin).toBeVisible();
     const pinPosition = await pin.evaluate((el) => getComputedStyle(el).position);
     expect(pinPosition).toBe('sticky');
+  });
+});
+
+// quick-260724-oep: the definitive correctness proof for FIX 1 — every
+// image (hero + grid) is reachable exactly once at its own real,
+// unreshuffled array index, and clicking either the hero or a grid tile
+// opens the Lightbox at that same real index.
+test.describe('gallery hero landscape-preference + lightbox index remapping', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test('hero + grid indices form the complete contiguous set 0..N-1 with no duplicates/gaps, and clicking either opens the Lightbox at the right position', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    expect(firstTileHref).toBeTruthy();
+
+    await page.goto(firstTileHref!);
+
+    const heroIndexAttr = await page.locator('.detail-hero [data-gallery-thumb]').getAttribute('data-index');
+    expect(heroIndexAttr).toBeTruthy();
+    const heroIndex = Number(heroIndexAttr);
+
+    const gridIndexAttrs = await page
+      .locator('.gallery-grid [data-gallery-thumb]')
+      .evaluateAll((els) => els.map((el) => el.getAttribute('data-index')));
+    const gridIndices = gridIndexAttrs.map((attr) => Number(attr));
+
+    const allIndices = [heroIndex, ...gridIndices].sort((a, b) => a - b);
+    const n = allIndices.length;
+    expect(allIndices).toEqual(Array.from({ length: n }, (_, i) => i));
+
+    // Clicking the hero opens the Lightbox counter at heroIndex + 1 over N.
+    const heroTrigger = page.locator('.detail-hero [data-gallery-thumb]');
+    await heroTrigger.click();
+    const dialog = page.locator('dialog[open]');
+    await expect(dialog).toBeVisible();
+    const counter = dialog.locator('[data-role="counter"]');
+    await expect(counter).toHaveText(`${heroIndex + 1} / ${n}`);
+    await page.keyboard.press('Escape');
+    await expect(dialog).not.toBeVisible();
+
+    // Clicking the first grid tile opens the counter at that tile's own
+    // data-index + 1 over N.
+    const firstGridTile = page.locator('.gallery-grid [data-gallery-thumb]').first();
+    const firstGridIndex = Number(await firstGridTile.getAttribute('data-index'));
+    await firstGridTile.click();
+    await expect(dialog).toBeVisible();
+    await expect(counter).toHaveText(`${firstGridIndex + 1} / ${n}`);
   });
 });
