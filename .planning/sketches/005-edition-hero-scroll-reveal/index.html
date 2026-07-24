@@ -113,10 +113,10 @@
 <body>
 
 <div id="variant-nav">
-  <button class="variant-tab active" data-variant="A" onclick="showVariant('A', event)">A: Subtle Settle</button>
+  <button class="variant-tab" data-variant="A" onclick="showVariant('A', event)">A: Subtle Settle</button>
   <button class="variant-tab" data-variant="B" onclick="showVariant('B', event)">B: Bold Reveal</button>
   <button class="variant-tab" data-variant="C" onclick="showVariant('C', event)">C: Settle + Facts</button>
-  <button class="variant-tab" data-variant="Synth" onclick="showVariant('Synth', event)">Synthesis: Bold + Facts</button>
+  <button class="variant-tab active" data-variant="Synth" onclick="showVariant('Synth', event)">Synthesis: Bold + Facts <span class="star">★</span></button>
   <label class="rm-toggle">
     <input type="checkbox" id="force-rm" onchange="onForceReducedMotionChange()" />
     Simuler prefers-reduced-motion
@@ -124,7 +124,7 @@
 </div>
 
 <!-- ============ VARIANT A ============ -->
-<div id="variant-A" class="variant active">
+<div id="variant-A" class="variant">
   <div class="stage" id="stageA">
     <h2>A — Subtle Settle</h2>
     <p class="question">La photo se réduit légèrement (~88%) en un cadre discret ; le titre en overlay s'efface puis réapparaît, posé, sous la photo installée. Peu de spectacle — un "rangement" plutôt qu'une révélation.</p>
@@ -212,7 +212,7 @@
 </div>
 
 <!-- ============ SYNTHESIS: BOLD + FACTS ============ -->
-<div id="variant-Synth" class="variant">
+<div id="variant-Synth" class="variant active">
   <div class="stage" id="stageSynth">
     <h2>Synthesis — Bold + Facts</h2>
     <p class="question">B's échelle et cadrage (photo à 55%, portrait à gauche, grand titre à droite) + la séquence en deux temps de C : le titre entre d'abord, puis la ligne de format soulignée de rose se révèle juste après, dans le même panneau — le geste le plus spectaculaire, mais qui termine sur un repère concret plutôt que sur le seul effet.</p>

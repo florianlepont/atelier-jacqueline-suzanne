@@ -2,7 +2,7 @@
 sketch: 005
 name: edition-hero-scroll-reveal
 question: "Should the édition detail page's static full-bleed hero become a pinned, scroll-scrubbed reveal (inspired by a-chen.webflow.io's WORKS section), and how dramatic should the effect be?"
-winner: null
+winner: "Synthesis"
 tags: [layout, editions, detail-page, motion, frontier]
 ---
 
