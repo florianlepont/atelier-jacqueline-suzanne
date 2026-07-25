@@ -1149,86 +1149,29 @@ test.describe('cross-document morph — click-time source name assignment (sketc
   });
 });
 
-// quick-260725-cfm: carousel-mode "keep scrolling to open" hint + overscroll-
-// past-the-bottom navigation. All five required proofs per the plan: hint
-// appearance/hide + FR label, EN label, threshold navigation reusing the
-// title link's href, grid mode being completely unaffected, and
-// prefers-reduced-motion disabling only the bounce (navigation still works).
-test.describe('carousel scroll-to-open (quick-260725-cfm)', () => {
-  test('FR: the hint is visible at rest at the top in carousel mode and hidden in grid mode', async ({ page }) => {
+// quick-260725-cfm, simplified quick-260725-pit: carousel-mode overscroll-
+// past-the-bottom navigation, now silent/implicit (no visible hint) and
+// light (OPEN_OVERSCROLL_THRESHOLD 150, down from 600). Required proofs per
+// the pit plan: no hint element renders (FR + EN), a light scroll at the
+// bottom navigates reusing the title link's href, a small scroll near the
+// top (not at the bottom) does NOT navigate, grid mode is unaffected, and
+// prefers-reduced-motion still navigates.
+test.describe('carousel scroll-to-open (quick-260725-cfm, simplified quick-260725-pit)', () => {
+  test('no scroll-to-open hint element renders, on FR or EN, in carousel or grid mode', async ({ page }) => {
     await page.goto('/');
-
-    const hint = page.locator('[data-role="scroll-open-hint"]');
-    await expect(hint.locator('.home-scroll-open-hint__label')).toHaveText('Continuer à scroller pour ouvrir');
-    // quick-260725-dcg (Fix 2): visible at rest at the top — the regression
-    // witness for the reported "hint not displayed directly on the page"
-    // bug (previously started at opacity 0, the inverse of the intended
-    // DetailHero-mirroring behavior).
-    await expect
-      .poll(() => hint.evaluate((el) => parseFloat(getComputedStyle(el).opacity)))
-      .toBeGreaterThan(0.5);
+    await expect(page.locator('[data-role="scroll-open-hint"]')).toHaveCount(0);
+    await expect(page.locator('.home-scroll-open-hint')).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Grille' }).click();
-    await expect(hint).toBeHidden();
-  });
+    await expect(page.locator('[data-role="scroll-open-hint"]')).toHaveCount(0);
+    await expect(page.locator('.home-scroll-open-hint')).toHaveCount(0);
 
-  // quick-260725-dcg follow-up: making the hint visible at rest (above)
-  // surfaced a real layout collision — at desktop widths it overlapped
-  // .home-hero__accent (the wordmark/intro panel), and at mobile widths it
-  // overlapped .home-hero__caption (title/byline), both live-measured via
-  // getBoundingClientRect() before the fix (repositioning the hint near the
-  // top, clear of both). Regression guard for both breakpoints.
-  test('the hint never overlaps .home-hero__accent or .home-hero__caption, at mobile or desktop widths', async ({ page }) => {
-    const overlaps = (a: { x: number; y: number; width: number; height: number }, b: { x: number; y: number; width: number; height: number }) =>
-      !(a.x + a.width < b.x || a.x > b.x + b.width || a.y + a.height < b.y || a.y > b.y + b.height);
-
-    for (const viewport of [
-      { width: 390, height: 844 },
-      { width: 1280, height: 900 },
-    ]) {
-      await page.setViewportSize(viewport);
-      await page.goto('/');
-
-      const hintBox = await page.locator('[data-role="scroll-open-hint"]').boundingBox();
-      const accentBox = await page.locator('.home-hero__accent').boundingBox();
-      const captionBox = await page.locator('.home-hero__caption').boundingBox();
-      expect(hintBox).not.toBeNull();
-      expect(accentBox).not.toBeNull();
-      expect(captionBox).not.toBeNull();
-
-      expect(overlaps(hintBox!, accentBox!), `hint overlaps accent panel at ${viewport.width}px`).toBe(false);
-      expect(overlaps(hintBox!, captionBox!), `hint overlaps caption at ${viewport.width}px`).toBe(false);
-    }
-  });
-
-  test('FR: the hint fades toward 0 as scrollY increases, mirroring DetailHero', async ({ page }) => {
-    await page.goto('/');
-
-    // Documented test harness: once quick-260725-dcg's footer-hide fix
-    // ships, the homepage's own content no longer scrolls, so a tall
-    // spacer is injected here purely to create scroll room to exercise the
-    // fade formula.
-    await page.evaluate(() => {
-      const spacer = document.createElement('div');
-      spacer.style.height = '2000px';
-      document.body.appendChild(spacer);
-    });
-
-    const hint = page.locator('[data-role="scroll-open-hint"]');
-    await page.evaluate(() => window.scrollTo(0, 200));
-    await expect
-      .poll(() => hint.evaluate((el) => parseFloat(getComputedStyle(el).opacity)))
-      .toBeLessThan(0.1);
-  });
-
-  test('EN: the hint label reads "Keep scrolling to open"', async ({ page }) => {
     await page.goto('/en/');
-
-    const hint = page.locator('[data-role="scroll-open-hint"]');
-    await expect(hint.locator('.home-scroll-open-hint__label')).toHaveText('Keep scrolling to open');
+    await expect(page.locator('[data-role="scroll-open-hint"]')).toHaveCount(0);
+    await expect(page.locator('.home-scroll-open-hint')).toHaveCount(0);
   });
 
-  test('overscrolling past the threshold navigates to the currently-shown collection, reusing the title link\'s href', async ({ page }) => {
+  test('a light scroll past the bottom opens the currently-shown collection, reusing the title link\'s href', async ({ page }) => {
     await page.goto('/');
 
     // Pin the current slide so it can't change mid-test.
@@ -1238,20 +1181,38 @@ test.describe('carousel scroll-to-open (quick-260725-cfm)', () => {
 
     // Reach the bottom deterministically regardless of a short/long footer.
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    // A single wheel dispatch past OPEN_OVERSCROLL_THRESHOLD (600) triggers
-    // navigation — this also proves the reused title-link href.
-    await page.mouse.wheel(0, 700);
+    // A single light wheel dispatch (200) past the new OPEN_OVERSCROLL_THRESHOLD
+    // (150) but far below the old 600 triggers navigation — this also proves
+    // the reused title-link href.
+    await page.mouse.wheel(0, 200);
 
     await page.waitForURL(`**${href}`);
     expect(page.url()).toContain(href!);
   });
 
-  test('grid mode: the hint stays hidden and overscrolling never navigates', async ({ page }) => {
+  test('a small scroll near the top (not at the bottom) does not navigate', async ({ page }) => {
+    await page.goto('/');
+
+    // Inject a tall spacer so the page has real scroll room and is NOT at
+    // the bottom (established pattern in this file).
+    await page.evaluate(() => {
+      const spacer = document.createElement('div');
+      spacer.style.height = '2000px';
+      document.body.appendChild(spacer);
+    });
+
+    // Leave scroll at the top, dispatch a wheel input past the 150
+    // threshold — proving navigation is gated on being at the bottom, not
+    // just on accumulated delta size.
+    await page.mouse.wheel(0, 300);
+    await page.waitForTimeout(300);
+
+    expect(page.url()).toMatch(/\/$/);
+  });
+
+  test('grid mode: overscrolling never navigates', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
-
-    const hint = page.locator('[data-role="scroll-open-hint"]');
-    await expect(hint).toBeHidden();
 
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await page.mouse.wheel(0, 1200);
@@ -1260,17 +1221,11 @@ test.describe('carousel scroll-to-open (quick-260725-cfm)', () => {
     await page.waitForTimeout(300);
 
     expect(page.url()).toMatch(/\/$/);
-    await expect(hint).toBeHidden();
   });
 
-  test('reduced motion disables the hint bounce but scroll-to-open navigation still works', async ({ page }) => {
+  test('reduced motion: scroll-to-open navigation still works', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
-
-    const hint = page.locator('[data-role="scroll-open-hint"]');
-    await expect
-      .poll(() => hint.evaluate((el) => getComputedStyle(el).animationName))
-      .toBe('none');
 
     // Reduced-motion visitors start with auto-advance already paused
     // (existing D-09 contract) — no explicit pause click needed here.
@@ -1278,7 +1233,7 @@ test.describe('carousel scroll-to-open (quick-260725-cfm)', () => {
     expect(href).toBeTruthy();
 
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.mouse.wheel(0, 700);
+    await page.mouse.wheel(0, 200);
 
     await page.waitForURL(`**${href}`);
     expect(page.url()).toContain(href!);
