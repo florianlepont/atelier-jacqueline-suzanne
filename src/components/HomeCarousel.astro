@@ -84,6 +84,11 @@ const toggleCarouselLabel = isEn ? 'Carousel' : 'Carrousel';
 const toggleGridLabel = isEn ? 'Grid' : 'Grille';
 const pauseCarouselLabel = isEn ? 'Pause automatic carousel' : 'Mettre le carrousel en pause';
 const playCarouselLabel = isEn ? 'Play automatic carousel' : 'Relancer le carrousel';
+// quick-260725-cfm: locale-aware "keep scrolling to open" hint label,
+// mirroring DetailHero.astro's scrollHintLabel pattern — but derived here
+// (not passed as a prop) since HomeCarousel already knows its own locale via
+// `isEn`, unlike DetailHero which is locale-agnostic.
+const scrollOpenHintLabel = isEn ? 'Keep scrolling to open' : 'Continuer à scroller pour ouvrir';
 const wordmark = 'Atelier Jacqueline Suzanne';
 const introBody = siteCopy.homepageIntro;
 const fallbackByline = isEn ? 'A project by Romane Lepont' : 'Un projet de Romane Lepont';
@@ -281,6 +286,28 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           </a>
         ))}
       </div>
+    </div>
+
+    {/* quick-260725-cfm: "keep scrolling to open" hint, mirroring
+        DetailHero.astro's .detail-hero__scroll-hint label+chevron exactly
+        (D4/D8) — a direct sibling of .home-grid so the
+        .home[data-display-mode='grid'] CSS gate below can hide it (D6).
+        Visibility (opacity) is script-driven, matching DetailHero's own
+        script-set-opacity pattern — see the <script> block's
+        updateHintVisibility(). */}
+    <div class="home-scroll-open-hint" data-role="scroll-open-hint" aria-hidden="true">
+      <span class="home-scroll-open-hint__label">{scrollOpenHintLabel}</span>
+      <svg
+        class="home-scroll-open-hint__icon"
+        viewBox="0 0 24 24"
+        width="34"
+        height="34"
+        fill="none"
+        stroke="white"
+        stroke-width="2.25"
+      >
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
     </div>
 
     {/* Build-time data for the runtime script to read (Lightbox.astro
@@ -610,6 +637,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           hero!.hidden = false;
           grid!.hidden = true;
           startAutoAdvance();
+          updateHintVisibility();
         }
 
         function showGrid() {
@@ -617,6 +645,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           hero!.hidden = true;
           grid!.hidden = false;
           stopAutoAdvance();
+          // D6: switching to grid clears any in-flight overscroll
+          // accumulation and hides the hint — scrolling never navigates in
+          // grid mode.
+          overscrollAccum = 0;
+          updateHintVisibility();
         }
 
         hero.addEventListener('mouseenter', stopAutoAdvance);
@@ -694,6 +727,136 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           } else if (direction === 'prev') {
             goToPrev();
           }
+        }, { passive: true });
+
+        // quick-260725-cfm (D1/D2/D3/D6/D7): overscroll-past-the-bottom
+        // navigation into the currently-shown collection, plus the "keep
+        // scrolling to open" hint's visibility. Never preventDefault()s —
+        // all listeners below are passive, so normal scrolling (incl.
+        // reaching the footer) is never blocked. Deliberately separate from
+        // the horizontal-swipe touchstart/touchend handlers above (those
+        // stay on .home-hero__photo, gallery navigation only); this is a
+        // window-level vertical accumulator gated on already being at the
+        // bottom of the page.
+        const OPEN_OVERSCROLL_THRESHOLD = 600;
+        const BOTTOM_EPSILON = 4;
+        const RESET_IDLE_MS = 800;
+        let overscrollAccum = 0;
+        let lastOverscrollTs = 0;
+        let navigating = false;
+        const scrollHintEl = root.querySelector<HTMLElement>('[data-role="scroll-open-hint"]');
+
+        function atBottom(): boolean {
+          return window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - BOTTOM_EPSILON;
+        }
+
+        // Mirrors DetailHero.astro's script-set-opacity pattern — no-op-safe
+        // if the hint element is missing.
+        function updateHintVisibility() {
+          if (!scrollHintEl) return;
+          const visible =
+            !navigating &&
+            root!.dataset.displayMode === 'carousel' &&
+            (window.scrollY > 4 || overscrollAccum > 0);
+          scrollHintEl.style.opacity = visible ? '0.85' : '0';
+        }
+
+        // D3: reuses the current slide's title link — its href AND its
+        // existing click listener (which already calls setCrossDocPhoto())
+        // — rather than duplicating routing or morph-naming.
+        function navigateToCurrent() {
+          if (navigating) return;
+          navigating = true;
+          updateHintVisibility();
+          if (titleEl) {
+            titleEl.click();
+          } else {
+            const fallbackHref = galleries[carouselIndex]?.href;
+            if (fallbackHref) window.location.href = fallbackHref;
+          }
+        }
+
+        // D1: accumulates downward scroll intent only once the page is
+        // already at the bottom, so the footer is always reachable by
+        // normal scrolling first. D6: only active in carousel mode.
+        function registerDownwardIntent(delta: number) {
+          if (navigating || root!.dataset.displayMode !== 'carousel') return;
+          if (delta <= 0) {
+            // Upward intent resets the accumulator — only a sustained
+            // downward push should count.
+            overscrollAccum = 0;
+            updateHintVisibility();
+            return;
+          }
+          if (!atBottom()) {
+            // Still real content to scroll through — never accumulate here,
+            // but keep the hint's appear-on-scroll behavior in sync.
+            updateHintVisibility();
+            return;
+          }
+          const now = Date.now();
+          if (now - lastOverscrollTs > RESET_IDLE_MS) {
+            // Idle reset applied BEFORE adding the new delta: a genuinely
+            // continuous push accumulates, but a stale reading pause (e.g.
+            // the visitor stopped to read the footer) does not silently
+            // carry over into a later, unrelated scroll.
+            overscrollAccum = 0;
+          }
+          overscrollAccum += delta;
+          lastOverscrollTs = now;
+          updateHintVisibility();
+          if (overscrollAccum >= OPEN_OVERSCROLL_THRESHOLD) {
+            navigateToCurrent();
+          }
+        }
+
+        // Makes the hint appear once the visitor starts scrolling at all
+        // (not just once overscroll begins), and hide again back at the top.
+        // Also resets any accumulated overscroll once the visitor is no
+        // longer at the bottom, for ANY reason — not just the wheel/touch
+        // upward-intent branch in registerDownwardIntent(). Without this,
+        // leaving the bottom via a path that never fires 'wheel'/'touchmove'
+        // (keyboard Home/PageUp, scrollbar drag, window.scrollTo) leaves
+        // overscrollAccum stuck at a stale positive value: the hint stays
+        // visible after returning to the top, and a later, unrelated
+        // overscroll starts from a non-zero baseline instead of 0 —
+        // undermining the "long, deliberate threshold" safety goal.
+        window.addEventListener('scroll', () => {
+          if (!atBottom()) {
+            overscrollAccum = 0;
+          }
+          updateHintVisibility();
+        }, { passive: true });
+
+        // Desktop input: wheel deltaY (positive = down). Never preventDefault.
+        window.addEventListener('wheel', (event) => {
+          registerDownwardIntent(event.deltaY);
+        }, { passive: true });
+
+        // Mobile input: a window-level touchmove accumulator, independent
+        // of the hero's own horizontal-swipe handlers above. Only counts
+        // upward finger movement (i.e. downward scroll intent) when the
+        // drag is vertically dominant, so a horizontal gallery swipe never
+        // feeds it.
+        let lastMoveY = 0;
+        let overscrollTouchStartX = 0;
+        let overscrollTouchStartY = 0;
+        window.addEventListener('touchstart', (event) => {
+          const touch = event.touches[0];
+          if (!touch) return;
+          lastMoveY = touch.clientY;
+          overscrollTouchStartX = touch.clientX;
+          overscrollTouchStartY = touch.clientY;
+        }, { passive: true });
+        window.addEventListener('touchmove', (event) => {
+          const touch = event.touches[0];
+          if (!touch) return;
+          const dy = lastMoveY - touch.clientY;
+          const totalDx = Math.abs(touch.clientX - overscrollTouchStartX);
+          if (Math.abs(touch.clientY - overscrollTouchStartY) > totalDx) {
+            registerDownwardIntent(dy);
+          }
+          lastMoveY = touch.clientY;
         }, { passive: true });
 
         // D-01/D-02/D-03: a single stateful button — its aria-label always
@@ -1851,6 +2014,71 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     .home-grid__wordmark {
       font-size: 9.8vw;
     }
+  }
+
+  /* quick-260725-cfm: "keep scrolling to open" hint (D4/D5/D6/D8) — mirrors
+     DetailHero.astro's .detail-hero__scroll-hint label+chevron treatment
+     exactly, renamed to home-scroll-open-hint. Base opacity: 0 keeps it
+     hidden until the <script> block's updateHintVisibility() raises it once
+     the visitor starts scrolling in carousel mode — visibility is
+     script-driven, not CSS-scroll-state-driven, matching DetailHero's own
+     pattern. */
+  .home-scroll-open-hint {
+    position: fixed;
+    left: 50%;
+    bottom: var(--space-lg);
+    transform: translateX(-50%);
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 220ms ease;
+    animation: home-scroll-hint-bounce 1.8s ease-in-out infinite;
+  }
+
+  .home-scroll-open-hint__label {
+    font-size: var(--text-label-size);
+    font-weight: var(--weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #FFFFFF;
+    padding-bottom: var(--space-xs);
+    border-bottom: 2px solid var(--color-accent);
+  }
+
+  .home-scroll-open-hint__icon {
+    display: block;
+  }
+
+  /* translateX(-50%) is baked into every keyframe step (not just the base
+     rule) so horizontal centering survives the vertical bounce — mirrors
+     DetailHero's sketch-bounce keyframe exactly. */
+  @keyframes home-scroll-hint-bounce {
+    0%,
+    100% {
+      transform: translate(-50%, 0);
+    }
+
+    50% {
+      transform: translate(-50%, 8px);
+    }
+  }
+
+  /* D5: disables the bounce only — the scroll-to-open navigation itself
+     (script-driven) is a functional affordance, not decorative motion, and
+     still works under reduced motion. */
+  @media (prefers-reduced-motion: reduce) {
+    .home-scroll-open-hint {
+      animation: none;
+    }
+  }
+
+  /* D6: grid mode never shows the hint — scrolling never navigates there. */
+  .home[data-display-mode='grid'] .home-scroll-open-hint {
+    display: none;
   }
 </style>
 

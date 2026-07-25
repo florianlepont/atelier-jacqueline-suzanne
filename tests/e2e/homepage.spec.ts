@@ -1131,3 +1131,93 @@ test.describe('cross-document morph — click-time source name assignment (sketc
     expect(name).toBe('hero-photo');
   });
 });
+
+// quick-260725-cfm: carousel-mode "keep scrolling to open" hint + overscroll-
+// past-the-bottom navigation. All five required proofs per the plan: hint
+// appearance/hide + FR label, EN label, threshold navigation reusing the
+// title link's href, grid mode being completely unaffected, and
+// prefers-reduced-motion disabling only the bounce (navigation still works).
+test.describe('carousel scroll-to-open (quick-260725-cfm)', () => {
+  test('FR: the hint is hidden at the top, appears once scrolling starts, and hides again back at the top', async ({ page }) => {
+    await page.goto('/');
+
+    const hint = page.locator('[data-role="scroll-open-hint"]');
+    await expect(hint.locator('.home-scroll-open-hint__label')).toHaveText('Continuer à scroller pour ouvrir');
+    await expect
+      .poll(() => hint.evaluate((el) => parseFloat(getComputedStyle(el).opacity)))
+      .toBe(0);
+
+    await page.mouse.wheel(0, 200);
+    await expect
+      .poll(() => hint.evaluate((el) => parseFloat(getComputedStyle(el).opacity)))
+      .toBeGreaterThan(0);
+
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect
+      .poll(() => hint.evaluate((el) => parseFloat(getComputedStyle(el).opacity)))
+      .toBe(0);
+  });
+
+  test('EN: the hint label reads "Keep scrolling to open"', async ({ page }) => {
+    await page.goto('/en/');
+
+    const hint = page.locator('[data-role="scroll-open-hint"]');
+    await expect(hint.locator('.home-scroll-open-hint__label')).toHaveText('Keep scrolling to open');
+  });
+
+  test('overscrolling past the threshold navigates to the currently-shown collection, reusing the title link\'s href', async ({ page }) => {
+    await page.goto('/');
+
+    // Pin the current slide so it can't change mid-test.
+    await page.locator('[data-role="autoplay-toggle"]').click();
+    const href = await page.locator('[data-role="gallery-title"]').getAttribute('href');
+    expect(href).toBeTruthy();
+
+    // Reach the bottom deterministically regardless of a short/long footer.
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    // A single wheel dispatch past OPEN_OVERSCROLL_THRESHOLD (600) triggers
+    // navigation — this also proves the reused title-link href.
+    await page.mouse.wheel(0, 700);
+
+    await page.waitForURL(`**${href}`);
+    expect(page.url()).toContain(href!);
+  });
+
+  test('grid mode: the hint stays hidden and overscrolling never navigates', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+
+    const hint = page.locator('[data-role="scroll-open-hint"]');
+    await expect(hint).toBeHidden();
+
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.mouse.wheel(0, 1200);
+    // Negative assertion (no navigation should occur) — a short settle
+    // window before asserting the URL is unchanged.
+    await page.waitForTimeout(300);
+
+    expect(page.url()).toMatch(/\/$/);
+    await expect(hint).toBeHidden();
+  });
+
+  test('reduced motion disables the hint bounce but scroll-to-open navigation still works', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/');
+
+    const hint = page.locator('[data-role="scroll-open-hint"]');
+    await expect
+      .poll(() => hint.evaluate((el) => getComputedStyle(el).animationName))
+      .toBe('none');
+
+    // Reduced-motion visitors start with auto-advance already paused
+    // (existing D-09 contract) — no explicit pause click needed here.
+    const href = await page.locator('[data-role="gallery-title"]').getAttribute('href');
+    expect(href).toBeTruthy();
+
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.mouse.wheel(0, 700);
+
+    await page.waitForURL(`**${href}`);
+    expect(page.url()).toContain(href!);
+  });
+});
