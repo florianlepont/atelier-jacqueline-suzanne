@@ -571,6 +571,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           progressDashes.forEach((dash, i) => {
             dash.setAttribute('aria-current', i === carouselIndex ? 'true' : 'false');
           });
+          restartFill();
 
           // D-05: warm the browser's HTTP cache for the next gallery's hero
           // photo so the crossfade above resolves near-instantly by the time
@@ -585,9 +586,32 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           }
         }
 
+        // quick-260725-dcg (Fix 3): toggles the class that freezes/resumes
+        // the current dash's fill (see .home.is-autoplay-paused in the
+        // <style> block above) in lockstep with the 6000ms timer's own
+        // running/stopped state.
+        function setFillPaused(paused: boolean) {
+          root!.classList.toggle('is-autoplay-paused', paused);
+        }
+
+        // Restarts the ::after fill animation from 0% on the freshly-current
+        // dash: remove .is-filling from every dash, force a reflow, then add
+        // it back only to the current one. The remove -> reflow -> add
+        // sequence is required for the CSS animation to restart
+        // deterministically (including on a fast double-navigation),
+        // without relying on aria-current re-matching to retrigger it.
+        function restartFill() {
+          progressDashes.forEach((d) => d.classList.remove('is-filling'));
+          const current = progressDashes[carouselIndex];
+          if (!current) return;
+          void current.offsetWidth;
+          current.classList.add('is-filling');
+        }
+
         function stopAutoAdvance() {
           if (timer) clearInterval(timer);
           timer = null;
+          setFillPaused(true);
         }
 
         // D-09: auto-advance every 6000ms, paused on hover/focus, resumed on
@@ -599,6 +623,8 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             carouselIndex = (carouselIndex + 1) % galleries.length;
             render();
           }, 6000);
+          setFillPaused(false);
+          restartFill();
         }
 
         function syncAutoplayControl() {
@@ -657,20 +683,31 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         hero.addEventListener('focusin', stopAutoAdvance);
         hero.addEventListener('focusout', startAutoAdvance);
 
+        // quick-260725-dcg (Fix 3): resets the 6000ms countdown (and, via
+        // startAutoAdvance()'s own setFillPaused/restartFill calls, re-syncs
+        // the fill) on manual navigation — but only when auto-advance is
+        // currently running (timer !== null). This preserves hover/focus
+        // pause (the timer is null during hover, so manual nav won't
+        // secretly restart auto-advance) and the explicit-pause state; when
+        // paused, render()'s own restartFill() call still relocates the fill
+        // to the new dash, but is-autoplay-paused keeps it frozen.
         function goToPrev() {
           carouselIndex = (carouselIndex - 1 + galleries.length) % galleries.length;
           render();
+          if (timer !== null) startAutoAdvance();
         }
 
         function goToNext() {
           carouselIndex = (carouselIndex + 1) % galleries.length;
           render();
+          if (timer !== null) startAutoAdvance();
         }
 
         function goToIndex(i: number) {
           if (i < 0 || i >= galleries.length || i === carouselIndex) return;
           carouselIndex = i;
           render();
+          if (timer !== null) startAutoAdvance();
         }
 
         progressDashes.forEach((dash) => {
@@ -750,15 +787,19 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           return window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - BOTTOM_EPSILON;
         }
 
-        // Mirrors DetailHero.astro's script-set-opacity pattern — no-op-safe
-        // if the hint element is missing.
+        // quick-260725-dcg (Fix 2): mirrors DetailHero.astro's
+        // script-set-opacity fade formula exactly (DetailHero.astro line
+        // 183) — visible at rest (0.85) at the top, fading toward 0 over the
+        // first ~150px of scroll. Replaces the earlier, inverted
+        // "hidden until scrolling starts" gate. No-op-safe if the hint
+        // element is missing.
         function updateHintVisibility() {
           if (!scrollHintEl) return;
-          const visible =
-            !navigating &&
-            root!.dataset.displayMode === 'carousel' &&
-            (window.scrollY > 4 || overscrollAccum > 0);
-          scrollHintEl.style.opacity = visible ? '0.85' : '0';
+          if (navigating || root!.dataset.displayMode !== 'carousel') {
+            scrollHintEl.style.opacity = '0';
+            return;
+          }
+          scrollHintEl.style.opacity = String(Math.max(0, 1 - window.scrollY / 150) * 0.85);
         }
 
         // D3: reuses the current slide's title link — its href AND its
@@ -980,6 +1021,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         render();
         syncAutoplayControl();
         startAutoAdvance();
+        // quick-260725-dcg (Fix 2): makes the inline opacity authoritative
+        // on load — at scrollY 0 this yields 0.85 (matching the base CSS),
+        // and correctly fades it on a bfcache scroll-restore.
+        updateHintVisibility();
 
         // Re-align the wordmark cutout on resize — both the hero photo's
         // rendered size and the wordmark's own position within it change
@@ -1447,8 +1492,48 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     inset: calc(-1 * var(--space-md)) 0;
   }
 
+  /* quick-260725-dcg (Fix 3): dim track for the current dash — brighter
+     than the inactive dashes' rgba(255,255,255,0.35) so it stays
+     identifiable at 0% fill, but no longer the solid accent itself; the
+     opaque ::after fill (below) grows over it and covers it entirely by
+     100%, matching today's solid-accent look at completion. */
   .home-hero__progress-dash[aria-current='true'] {
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  /* Instagram-Stories-style accent fill on the current dash. Gated by a
+     JS-managed .is-filling class (NOT tied to aria-current) so the a11y
+     attribute stays untouched and restarts are deterministic (see
+     restartFill() in the <script> block). No overflow: hidden is added to
+     the dash itself — that would clip the negative-inset ::before
+     tap-target — but scaleX stays within [0,1] so ::after never overflows
+     the dash anyway. */
+  .home-hero__progress-dash.is-filling::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: scaleX(0);
+    transform-origin: left;
     background: var(--current-accent, var(--color-accent));
+    animation: home-progress-fill 6000ms linear;
+  }
+
+  @keyframes home-progress-fill {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  /* Freezes the fill mid-flight (preserving progress, not resetting)
+     whenever the root carries is-autoplay-paused — set by
+     stopAutoAdvance()/startAutoAdvance() so hover/focus pause, the
+     explicit pause toggle, and grid mode all pause the fill through the
+     same paths. */
+  .home.is-autoplay-paused .home-hero__progress-dash.is-filling::after {
+    animation-play-state: paused;
   }
 
   .home-hero__progress-dash:hover,
@@ -1464,6 +1549,18 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
   .home-hero__progress-dash:focus-visible {
     outline: 2px solid #FFFFFF;
     outline-offset: 3px;
+  }
+
+  /* quick-260725-dcg (Fix 3): no animated fill under reduced motion — the
+     current dash reverts to today's static solid accent. */
+  @media (prefers-reduced-motion: reduce) {
+    .home-hero__progress-dash[aria-current='true'] {
+      background: var(--current-accent, var(--color-accent));
+    }
+
+    .home-hero__progress-dash.is-filling::after {
+      display: none;
+    }
   }
 
   .home-hero__caption {
@@ -2018,22 +2115,38 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
   /* quick-260725-cfm: "keep scrolling to open" hint (D4/D5/D6/D8) — mirrors
      DetailHero.astro's .detail-hero__scroll-hint label+chevron treatment
-     exactly, renamed to home-scroll-open-hint. Base opacity: 0 keeps it
-     hidden until the <script> block's updateHintVisibility() raises it once
-     the visitor starts scrolling in carousel mode — visibility is
-     script-driven, not CSS-scroll-state-driven, matching DetailHero's own
-     pattern. */
+     exactly, renamed to home-scroll-open-hint. quick-260725-dcg (Fix 2):
+     base opacity is 0.85 (visible at rest, matching DetailHero's own base
+     opacity), so the hint reads correctly even before any JS runs (no-JS/
+     first-paint correct) and fades toward 0 over the first ~150px of scroll
+     — the <script> block's updateHintVisibility() drives that fade via
+     inline opacity, mirroring DetailHero's own script-set-opacity pattern.
+     Visibility is script-driven, not CSS-scroll-state-driven.
+
+     quick-260725-dcg follow-up: anchored near the TOP (not the bottom, like
+     DetailHero) — DetailHero's hero has no other always-visible content, but
+     HomeCarousel's hero always has .home-hero__accent (desktop: absolutely
+     positioned, right ~60%/800px, bottom-anchored) and .home-hero__caption
+     (title/byline, bottom-left on desktop, full-width on mobile) competing
+     for the same bottom real estate. Making the hint visible at rest (above)
+     surfaced a real collision, live-measured via getBoundingClientRect():
+     at 1280px it overlapped .home-hero__accent; at 390px it overlapped
+     .home-hero__caption. top: 190px clears both real headers (measured
+     148px on desktop, 76px on mobile) with comfortable margin, and sits
+     well above .home-hero__accent's top edge (measured 508px desktop,
+     407px mobile) on both breakpoints — verified live at both viewport
+     sizes with zero overlap, no separate mobile override needed. */
   .home-scroll-open-hint {
     position: fixed;
     left: 50%;
-    bottom: var(--space-lg);
+    top: 190px;
     transform: translateX(-50%);
     z-index: 5;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: var(--space-xs);
-    opacity: 0;
+    opacity: 0.85;
     pointer-events: none;
     transition: opacity 220ms ease;
     animation: home-scroll-hint-bounce 1.8s ease-in-out infinite;
@@ -2165,5 +2278,21 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     ::view-transition-new(*) {
       animation: none !important;
     }
+  }
+
+  /* quick-260725-dcg (Fix 1): hides the site footer entirely while the
+     homepage is in carousel mode. `.home` is scoped to this component and
+     `footer.chrome-band` is scoped to BaseLayout.astro — they are NOT
+     direct siblings (BaseLayout renders `<main><slot/></main>` then
+     `<footer>`, so a <main> wrapper sits between them), meaning a `~`
+     general-sibling selector cannot reach the footer from here. `body:has()`
+     targeting the live `data-display-mode` attribute is the cross-boundary,
+     dynamically-reevaluated selector that can. This rule only ships on the
+     homepage (HomeCarousel is homepage-only), and the `:has()` guard means
+     it never affects grid mode (`data-display-mode='grid'`) or any other
+     page (no `.home[data-display-mode]` element exists elsewhere). Do NOT
+     move this into BaseLayout.astro. */
+  body:has(.home[data-display-mode='carousel']) footer.chrome-band {
+    display: none;
   }
 </style>

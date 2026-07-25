@@ -714,15 +714,12 @@ test.describe('mobile full-bleed hero regression (HOME-06)', () => {
     // photo at least as tall as the visible (chrome-showing) viewport.
     expect(photoBox!.height).toBeGreaterThanOrEqual(viewportSize!.height - 2);
 
-    // Footer not visible in the initial viewport: BaseLayout.astro always
-    // renders <footer>, regardless of headerVariant, so it is provably
-    // present in the homepage DOM — it must sit at or below the fold on
-    // first load, not bleed through beneath the hero.
+    // Footer present in the DOM (BaseLayout.astro always renders <footer>,
+    // regardless of headerVariant) but hidden entirely in carousel mode
+    // (quick-260725-dcg).
     const footer = page.locator('footer');
     await expect(footer).toHaveCount(1);
-    const footerBox = await footer.boundingBox();
-    expect(footerBox).not.toBeNull();
-    expect(footerBox!.y).toBeGreaterThanOrEqual(viewportSize!.height - 1);
+    await expect(footer).toBeHidden();
 
     // D-12 guard: the carousel/grid morph must stay active on mobile — not
     // desktop/pointer:fine-gated.
@@ -750,9 +747,29 @@ test.describe('tall-desktop full-bleed hero regression', () => {
     expect(photoBox).not.toBeNull();
     expect(photoBox!.height).toBeGreaterThanOrEqual(viewportSize!.height - 2);
 
-    const footerBox = await page.locator('footer').boundingBox();
-    expect(footerBox).not.toBeNull();
-    expect(footerBox!.y).toBeGreaterThanOrEqual(viewportSize!.height - 1);
+    await expect(page.locator('footer')).toBeHidden();
+  });
+});
+
+test.describe('footer visibility by display mode (quick-260725-dcg)', () => {
+  test('FR: the footer is hidden in carousel mode and reappears in grid mode', async ({ page }) => {
+    await page.goto('/');
+
+    const footer = page.locator('footer');
+    await expect(footer).toBeHidden();
+
+    await page.getByRole('button', { name: 'Grille' }).click();
+    await expect(footer).toBeVisible();
+  });
+
+  test('EN: the footer is hidden in carousel mode and reappears in grid mode', async ({ page }) => {
+    await page.goto('/en/');
+
+    const footer = page.locator('footer');
+    await expect(footer).toBeHidden();
+
+    await page.getByRole('button', { name: 'Grid' }).click();
+    await expect(footer).toBeVisible();
   });
 });
 
@@ -1138,24 +1155,70 @@ test.describe('cross-document morph — click-time source name assignment (sketc
 // title link's href, grid mode being completely unaffected, and
 // prefers-reduced-motion disabling only the bounce (navigation still works).
 test.describe('carousel scroll-to-open (quick-260725-cfm)', () => {
-  test('FR: the hint is hidden at the top, appears once scrolling starts, and hides again back at the top', async ({ page }) => {
+  test('FR: the hint is visible at rest at the top in carousel mode and hidden in grid mode', async ({ page }) => {
     await page.goto('/');
 
     const hint = page.locator('[data-role="scroll-open-hint"]');
     await expect(hint.locator('.home-scroll-open-hint__label')).toHaveText('Continuer à scroller pour ouvrir');
+    // quick-260725-dcg (Fix 2): visible at rest at the top — the regression
+    // witness for the reported "hint not displayed directly on the page"
+    // bug (previously started at opacity 0, the inverse of the intended
+    // DetailHero-mirroring behavior).
     await expect
       .poll(() => hint.evaluate((el) => parseFloat(getComputedStyle(el).opacity)))
-      .toBe(0);
+      .toBeGreaterThan(0.5);
 
-    await page.mouse.wheel(0, 200);
-    await expect
-      .poll(() => hint.evaluate((el) => parseFloat(getComputedStyle(el).opacity)))
-      .toBeGreaterThan(0);
+    await page.getByRole('button', { name: 'Grille' }).click();
+    await expect(hint).toBeHidden();
+  });
 
-    await page.evaluate(() => window.scrollTo(0, 0));
+  // quick-260725-dcg follow-up: making the hint visible at rest (above)
+  // surfaced a real layout collision — at desktop widths it overlapped
+  // .home-hero__accent (the wordmark/intro panel), and at mobile widths it
+  // overlapped .home-hero__caption (title/byline), both live-measured via
+  // getBoundingClientRect() before the fix (repositioning the hint near the
+  // top, clear of both). Regression guard for both breakpoints.
+  test('the hint never overlaps .home-hero__accent or .home-hero__caption, at mobile or desktop widths', async ({ page }) => {
+    const overlaps = (a: { x: number; y: number; width: number; height: number }, b: { x: number; y: number; width: number; height: number }) =>
+      !(a.x + a.width < b.x || a.x > b.x + b.width || a.y + a.height < b.y || a.y > b.y + b.height);
+
+    for (const viewport of [
+      { width: 390, height: 844 },
+      { width: 1280, height: 900 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto('/');
+
+      const hintBox = await page.locator('[data-role="scroll-open-hint"]').boundingBox();
+      const accentBox = await page.locator('.home-hero__accent').boundingBox();
+      const captionBox = await page.locator('.home-hero__caption').boundingBox();
+      expect(hintBox).not.toBeNull();
+      expect(accentBox).not.toBeNull();
+      expect(captionBox).not.toBeNull();
+
+      expect(overlaps(hintBox!, accentBox!), `hint overlaps accent panel at ${viewport.width}px`).toBe(false);
+      expect(overlaps(hintBox!, captionBox!), `hint overlaps caption at ${viewport.width}px`).toBe(false);
+    }
+  });
+
+  test('FR: the hint fades toward 0 as scrollY increases, mirroring DetailHero', async ({ page }) => {
+    await page.goto('/');
+
+    // Documented test harness: once quick-260725-dcg's footer-hide fix
+    // ships, the homepage's own content no longer scrolls, so a tall
+    // spacer is injected here purely to create scroll room to exercise the
+    // fade formula.
+    await page.evaluate(() => {
+      const spacer = document.createElement('div');
+      spacer.style.height = '2000px';
+      document.body.appendChild(spacer);
+    });
+
+    const hint = page.locator('[data-role="scroll-open-hint"]');
+    await page.evaluate(() => window.scrollTo(0, 200));
     await expect
       .poll(() => hint.evaluate((el) => parseFloat(getComputedStyle(el).opacity)))
-      .toBe(0);
+      .toBeLessThan(0.1);
   });
 
   test('EN: the hint label reads "Keep scrolling to open"', async ({ page }) => {
@@ -1219,5 +1282,95 @@ test.describe('carousel scroll-to-open (quick-260725-cfm)', () => {
 
     await page.waitForURL(`**${href}`);
     expect(page.url()).toContain(href!);
+  });
+});
+
+// quick-260725-dcg (Fix 3): the existing per-gallery progress dash (already
+// covered above by the positional/navigation tests) gains an
+// Instagram-Stories-style accent fill on the CURRENT dash: it grows 0% to
+// 100% over the real 6000ms auto-advance cycle via a CSS animation the
+// script restarts in lockstep, freezes on pause (hover/focus/explicit
+// toggle), respects reduced motion, and relocates/restarts on every manual
+// or automatic gallery change.
+test.describe('carousel progress fill (quick-260725-dcg)', () => {
+  // matrix(a, b, c, d, e, f) — for a pure scaleX(t) transform this is
+  // matrix(t, 0, 0, 1, 0, 0), so the fill's progress is the matrix's first
+  // component. A dash with no active fill computes 'none', which counts
+  // as 0 progress.
+  function scaleXFromTransform(transform: string): number {
+    if (transform === 'none') return 0;
+    const match = transform.match(/^matrix\(([^,]+),/);
+    return match ? parseFloat(match[1]) : 0;
+  }
+
+  test('the current dash carries a 6s linear fill animation that progresses', async ({ page }) => {
+    await page.goto('/');
+
+    const filling = page.locator('.home-hero__progress-dash.is-filling');
+    await expect(filling).toHaveCount(1);
+
+    const config = await filling.evaluate((el) => {
+      const style = getComputedStyle(el, '::after');
+      return { animationName: style.animationName, animationDuration: style.animationDuration };
+    });
+    expect(config.animationName).toContain('home-progress-fill');
+    expect(config.animationDuration).toBe('6s');
+
+    await expect
+      .poll(async () => {
+        const transform = await filling.evaluate((el) => getComputedStyle(el, '::after').transform);
+        return scaleXFromTransform(transform);
+      })
+      .toBeGreaterThan(0);
+  });
+
+  test('the explicit pause toggle freezes the fill and resuming un-freezes it', async ({ page }) => {
+    await page.goto('/');
+
+    const filling = page.locator('.home-hero__progress-dash.is-filling');
+    const toggle = page.locator('[data-role="autoplay-toggle"]');
+
+    await toggle.click();
+    await expect
+      .poll(() => filling.evaluate((el) => getComputedStyle(el, '::after').animationPlayState))
+      .toBe('paused');
+
+    await toggle.click();
+    await expect
+      .poll(() => filling.evaluate((el) => getComputedStyle(el, '::after').animationPlayState))
+      .toBe('running');
+  });
+
+  test('manual navigation relocates and restarts the fill on the newly-current dash', async ({ page }) => {
+    await page.goto('/');
+
+    const dashes = page.locator('.home-hero__progress-dash');
+    await dashes.nth(2).click();
+
+    await expect(dashes.nth(2)).toHaveClass(/is-filling/);
+    const nameOnCurrent = await dashes.nth(2).evaluate((el) => getComputedStyle(el, '::after').animationName);
+    expect(nameOnCurrent).toContain('home-progress-fill');
+
+    const nameOnFirst = await dashes.nth(0).evaluate((el) => getComputedStyle(el, '::after').animationName);
+    expect(nameOnFirst).toBe('none');
+  });
+
+  test('reduced motion shows no animated fill on the current dash', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/');
+
+    const current = page.locator('.home-hero__progress-dash[aria-current="true"]');
+    await expect
+      .poll(() => current.evaluate((el) => getComputedStyle(el, '::after').display))
+      .toBe('none');
+  });
+
+  test('EN: the filling dash also carries the fill animation', async ({ page }) => {
+    await page.goto('/en/');
+
+    const filling = page.locator('.home-hero__progress-dash.is-filling');
+    await expect(filling).toHaveCount(1);
+    const name = await filling.evaluate((el) => getComputedStyle(el, '::after').animationName);
+    expect(name).toContain('home-progress-fill');
   });
 });
