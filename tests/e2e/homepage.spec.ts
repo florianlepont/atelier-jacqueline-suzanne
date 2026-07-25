@@ -1154,6 +1154,101 @@ test.describe('carousel scroll-to-open (quick-260725-cfm, simplified quick-26072
     await expect(page.locator('.home-scroll-open-hint')).toHaveCount(0);
   });
 
+  // quick-260725-sj4: regression coverage for the accidental-navigation bug.
+  // quick-260725-dcg (Fix 1) hid the footer entirely in carousel mode, which
+  // removed all real scroll distance below the hero — atBottom() was
+  // vacuously TRUE from first paint at scrollY 0, so a couple of ordinary
+  // scroll deltas silently navigated a visitor away from a fresh load. The
+  // fix (removing that footer-hide rule) restores genuine scroll distance,
+  // so atBottom() only becomes true once the visitor has actually scrolled
+  // down past the hero and the footer. The tests below use SYNTHETIC
+  // WheelEvent/TouchEvent dispatch rather than page.mouse.wheel/native
+  // scrolling — synthetic events do not move the page, so scrollY stays 0
+  // throughout, which isolates the exact atBottom()-at-scrollY-0 property
+  // the bug violated, independent of the real footer's pixel height. With
+  // the dcg footer-hide still in place, these same inputs would have
+  // navigated.
+  test('fresh load: atBottom() is false at scrollY 0 (footer restores real scroll distance below the hero)', async ({ page }) => {
+    await page.goto('/');
+
+    // Mirrors the exact atBottom() gate in HomeCarousel.astro's overscroll
+    // script (innerHeight + scrollY >= scrollHeight - BOTTOM_EPSILON). This
+    // must be false on a fresh load at scrollY 0 — the footer-height-
+    // independent guard against the regression returning.
+    const isAtBottom = await page.evaluate(
+      () => window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4
+    );
+    expect(isAtBottom).toBe(false);
+  });
+
+  test('fresh load: two small wheel ticks do NOT navigate (accidental-navigation regression)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/');
+
+    // Pin the current slide so a stray autoplay swap can't be mistaken for
+    // navigation.
+    await page.locator('[data-role="autoplay-toggle"]').click();
+
+    await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: 80, bubbles: true })));
+    await page.waitForTimeout(80);
+    await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: 80, bubbles: true })));
+    await page.waitForTimeout(300);
+
+    expect(page.url()).toMatch(/\/$/);
+  });
+
+  test('fresh load (EN): two small wheel ticks do NOT navigate (accidental-navigation regression)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/en/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+
+    await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: 80, bubbles: true })));
+    await page.waitForTimeout(80);
+    await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: 80, bubbles: true })));
+    await page.waitForTimeout(300);
+
+    expect(page.url()).toMatch(/\/en\/$/);
+  });
+
+  test.describe('touch input', () => {
+    test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+    test('fresh load: one modest touch swipe does NOT navigate (accidental-navigation regression)', async ({ page }) => {
+      await page.goto('/');
+      await page.locator('[data-role="autoplay-toggle"]').click();
+
+      // A ~180px upward finger drag (downward scroll intent), clientX held
+      // roughly constant so it reads as a vertical scroll, not a horizontal
+      // gallery swipe.
+      await page.evaluate(() => {
+        const target = document.body;
+        const startY = 500;
+        const totalDelta = 180;
+        const steps = 4;
+        const clientX = 195;
+
+        const makeTouchEvent = (type: string, clientY: number) => {
+          const touch = new Touch({ identifier: 1, target, clientX, clientY });
+          return new TouchEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            touches: type === 'touchend' ? [] : [touch],
+            changedTouches: [touch],
+          });
+        };
+
+        window.dispatchEvent(makeTouchEvent('touchstart', startY));
+        for (let i = 1; i <= steps; i++) {
+          window.dispatchEvent(makeTouchEvent('touchmove', startY - (totalDelta / steps) * i));
+        }
+        window.dispatchEvent(makeTouchEvent('touchend', startY - totalDelta));
+      });
+      await page.waitForTimeout(300);
+
+      expect(page.url()).toMatch(/\/$/);
+    });
+  });
+
   test('a light scroll past the bottom opens the currently-shown collection, reusing the title link\'s href', async ({ page }) => {
     await page.goto('/');
 
