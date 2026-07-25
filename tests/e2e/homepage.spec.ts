@@ -1043,6 +1043,54 @@ test.describe('homepage semantic heading (quick-260720-nm3)', () => {
 // listener cancels only the real <a> navigation, not this component's own
 // bubble-phase click listener, so the name assignment still runs and can be
 // read from the element's inline style before the page unloads.
+// quick-260724-wdr FIX 1: the homepage cover now selects the same
+// pickHeroIndex-preferred image as the gallery detail hero, so a
+// portrait-first gallery (Paysage) no longer shows a different photo on the
+// homepage than on its own detail page — the cross-document morph (sketch
+// 006) now genuinely morphs a crop/size change of the SAME asset instead of
+// swapping photos. Proven generically over every homepage gallery via the
+// grid-discovery pattern already established above.
+test.describe('homepage hero photo matches the gallery detail hero (landscape-preference consistency)', () => {
+  test('every home-grid tile photo pathname equals its gallery detail-hero photo pathname', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+
+    const tiles = page.locator('a.home-grid__tile');
+    const tileCount = await tiles.count();
+    expect(tileCount).toBeGreaterThan(0);
+
+    let assertedCount = 0;
+    for (let index = 0; index < tileCount; index += 1) {
+      const tile = tiles.nth(index);
+      const href = await tile.getAttribute('href');
+      expect(href).toBeTruthy();
+      const tileSrc = await tile.locator('.home-grid__tile-img--sharp').getAttribute('src');
+      expect(tileSrc).toBeTruthy();
+
+      await page.goto(href!);
+      const heroSrc = await page.locator('.detail-hero__img').getAttribute('src');
+      expect(heroSrc).toBeTruthy();
+
+      // The homepage tile uses a square-crop thumbnail transform while the
+      // detail hero uses a max-fit full-size transform, so their query
+      // strings legitimately differ — the CDN pathname alone
+      // (`/images/{project}/{dataset}/{assetId}-{w}x{h}.{ext}`) is derived
+      // from the underlying asset ref and proves byte-identical asset
+      // identity. Because the carousel hero (heroSrc) and this grid tile
+      // (gridSrc) both derive from the SAME `cover` in the homepage's
+      // `.map()`, this grid-tile <-> detail-hero proof transitively covers
+      // carousel <-> detail identity too.
+      expect(new URL(tileSrc!).pathname).toBe(new URL(heroSrc!).pathname);
+      assertedCount += 1;
+
+      await page.goto('/');
+      await page.getByRole('button', { name: 'Grille' }).click();
+    }
+
+    expect(assertedCount).toBeGreaterThan(0);
+  });
+});
+
 test.describe('cross-document morph — click-time source name assignment (sketch 006)', () => {
   test('clicking the carousel title assigns hero-photo to the current slide\'s sharp photo', async ({ page }) => {
     await page.goto('/');
