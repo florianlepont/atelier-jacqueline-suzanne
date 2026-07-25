@@ -78,6 +78,9 @@ const formatText = `Pages : ${edition.pageCount ?? ''} · Tirage : ${edition.pri
 // why it never imports src/lib/image or src/lib/sanity itself.
 const heroAriaLabel = `Voir en taille réelle, image 1 sur ${total}`;
 const heroCaption = 'Édition imprimée';
+// quick-260724-wdr: locale-aware scroll-hint label passed to DetailHero (see
+// that component's Props doc for why it can't localize this itself).
+const scrollHintLabel = 'Faire défiler';
 
 // EDN-08: optional, unidirectional cross-link to a related Portfolio
 // gallery. Null on every currently-published édition today -- renders
@@ -111,6 +114,7 @@ const gridItems: GalleryGridItem[] = (edition.images ?? []).map((img, i) => {
       heroAriaLabel={heroAriaLabel}
       caption={heroCaption}
       statement={statement}
+      scrollHintLabel={scrollHintLabel}
     />
     <div class="edition-detail__content">
       <a class="edition-detail__back-link" href={overviewHref}>
