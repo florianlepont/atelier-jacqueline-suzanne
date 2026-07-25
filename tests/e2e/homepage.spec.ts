@@ -1172,6 +1172,35 @@ test.describe('carousel scroll-to-open (quick-260725-cfm)', () => {
     await expect(hint).toBeHidden();
   });
 
+  // quick-260725-dcg follow-up: making the hint visible at rest (above)
+  // surfaced a real layout collision — at desktop widths it overlapped
+  // .home-hero__accent (the wordmark/intro panel), and at mobile widths it
+  // overlapped .home-hero__caption (title/byline), both live-measured via
+  // getBoundingClientRect() before the fix (repositioning the hint near the
+  // top, clear of both). Regression guard for both breakpoints.
+  test('the hint never overlaps .home-hero__accent or .home-hero__caption, at mobile or desktop widths', async ({ page }) => {
+    const overlaps = (a: { x: number; y: number; width: number; height: number }, b: { x: number; y: number; width: number; height: number }) =>
+      !(a.x + a.width < b.x || a.x > b.x + b.width || a.y + a.height < b.y || a.y > b.y + b.height);
+
+    for (const viewport of [
+      { width: 390, height: 844 },
+      { width: 1280, height: 900 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto('/');
+
+      const hintBox = await page.locator('[data-role="scroll-open-hint"]').boundingBox();
+      const accentBox = await page.locator('.home-hero__accent').boundingBox();
+      const captionBox = await page.locator('.home-hero__caption').boundingBox();
+      expect(hintBox).not.toBeNull();
+      expect(accentBox).not.toBeNull();
+      expect(captionBox).not.toBeNull();
+
+      expect(overlaps(hintBox!, accentBox!), `hint overlaps accent panel at ${viewport.width}px`).toBe(false);
+      expect(overlaps(hintBox!, captionBox!), `hint overlaps caption at ${viewport.width}px`).toBe(false);
+    }
+  });
+
   test('FR: the hint fades toward 0 as scrollY increases, mirroring DetailHero', async ({ page }) => {
     await page.goto('/');
 

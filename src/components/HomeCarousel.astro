@@ -2121,11 +2121,25 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
      first-paint correct) and fades toward 0 over the first ~150px of scroll
      — the <script> block's updateHintVisibility() drives that fade via
      inline opacity, mirroring DetailHero's own script-set-opacity pattern.
-     Visibility is script-driven, not CSS-scroll-state-driven. */
+     Visibility is script-driven, not CSS-scroll-state-driven.
+
+     quick-260725-dcg follow-up: anchored near the TOP (not the bottom, like
+     DetailHero) — DetailHero's hero has no other always-visible content, but
+     HomeCarousel's hero always has .home-hero__accent (desktop: absolutely
+     positioned, right ~60%/800px, bottom-anchored) and .home-hero__caption
+     (title/byline, bottom-left on desktop, full-width on mobile) competing
+     for the same bottom real estate. Making the hint visible at rest (above)
+     surfaced a real collision, live-measured via getBoundingClientRect():
+     at 1280px it overlapped .home-hero__accent; at 390px it overlapped
+     .home-hero__caption. top: 190px clears both real headers (measured
+     148px on desktop, 76px on mobile) with comfortable margin, and sits
+     well above .home-hero__accent's top edge (measured 508px desktop,
+     407px mobile) on both breakpoints — verified live at both viewport
+     sizes with zero overlap, no separate mobile override needed. */
   .home-scroll-open-hint {
     position: fixed;
     left: 50%;
-    bottom: var(--space-lg);
+    top: 190px;
     transform: translateX(-50%);
     z-index: 5;
     display: flex;
