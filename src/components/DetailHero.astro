@@ -56,6 +56,13 @@ interface Props {
   // trigger via this default — byte-identical output. Gallery detail pages
   // pass the real index of their landscape-preferred hero image.
   heroIndex?: number;
+  // quick-260724-wdr: locale-aware text label rendered above the scroll-down
+  // chevron ("Faire défiler" / "Scroll"), strengthening the affordance that
+  // live user testing found unclear. Required (not optional/defaulted) so
+  // `astro check` fails the build if any of the four detail-page twins is
+  // missed — this component never imports src/lib/sanity, so it cannot
+  // localize the label itself; the calling page must supply it.
+  scrollHintLabel: string;
 }
 
 const {
@@ -68,6 +75,7 @@ const {
   caption,
   statement,
   heroIndex = 0,
+  scrollHintLabel,
 } = Astro.props;
 ---
 
@@ -116,13 +124,15 @@ const {
       {formatText && <span class="detail-hero__format" aria-hidden="true">{formatText}</span>}
     </div>
     <div class="detail-hero__scroll-hint" aria-hidden="true">
+      <span class="detail-hero__scroll-hint-label">{scrollHintLabel}</span>
       <svg
+        class="detail-hero__scroll-hint-icon"
         viewBox="0 0 24 24"
-        width="28"
-        height="28"
+        width="34"
+        height="34"
         fill="none"
         stroke="white"
-        stroke-width="2"
+        stroke-width="2.25"
       >
         <polyline points="6 9 12 15 18 9"></polyline>
       </svg>
@@ -441,9 +451,27 @@ const {
     bottom: var(--space-lg);
     transform: translateX(-50%);
     z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
     opacity: 0.85;
     pointer-events: none;
     animation: sketch-bounce 1.8s ease-in-out infinite;
+  }
+
+  .detail-hero__scroll-hint-label {
+    font-size: var(--text-label-size);
+    font-weight: var(--weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #FFFFFF;
+    padding-bottom: var(--space-xs);
+    border-bottom: 2px solid var(--color-accent);
+  }
+
+  .detail-hero__scroll-hint-icon {
+    display: block;
   }
 
   @keyframes sketch-bounce {
