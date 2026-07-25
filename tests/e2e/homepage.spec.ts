@@ -1255,3 +1255,93 @@ test.describe('carousel scroll-to-open (quick-260725-cfm)', () => {
     expect(page.url()).toContain(href!);
   });
 });
+
+// quick-260725-dcg (Fix 3): the existing per-gallery progress dash (already
+// covered above by the positional/navigation tests) gains an
+// Instagram-Stories-style accent fill on the CURRENT dash: it grows 0% to
+// 100% over the real 6000ms auto-advance cycle via a CSS animation the
+// script restarts in lockstep, freezes on pause (hover/focus/explicit
+// toggle), respects reduced motion, and relocates/restarts on every manual
+// or automatic gallery change.
+test.describe('carousel progress fill (quick-260725-dcg)', () => {
+  // matrix(a, b, c, d, e, f) — for a pure scaleX(t) transform this is
+  // matrix(t, 0, 0, 1, 0, 0), so the fill's progress is the matrix's first
+  // component. A dash with no active fill computes 'none', which counts
+  // as 0 progress.
+  function scaleXFromTransform(transform: string): number {
+    if (transform === 'none') return 0;
+    const match = transform.match(/^matrix\(([^,]+),/);
+    return match ? parseFloat(match[1]) : 0;
+  }
+
+  test('the current dash carries a 6s linear fill animation that progresses', async ({ page }) => {
+    await page.goto('/');
+
+    const filling = page.locator('.home-hero__progress-dash.is-filling');
+    await expect(filling).toHaveCount(1);
+
+    const config = await filling.evaluate((el) => {
+      const style = getComputedStyle(el, '::after');
+      return { animationName: style.animationName, animationDuration: style.animationDuration };
+    });
+    expect(config.animationName).toContain('home-progress-fill');
+    expect(config.animationDuration).toBe('6s');
+
+    await expect
+      .poll(async () => {
+        const transform = await filling.evaluate((el) => getComputedStyle(el, '::after').transform);
+        return scaleXFromTransform(transform);
+      })
+      .toBeGreaterThan(0);
+  });
+
+  test('the explicit pause toggle freezes the fill and resuming un-freezes it', async ({ page }) => {
+    await page.goto('/');
+
+    const filling = page.locator('.home-hero__progress-dash.is-filling');
+    const toggle = page.locator('[data-role="autoplay-toggle"]');
+
+    await toggle.click();
+    await expect
+      .poll(() => filling.evaluate((el) => getComputedStyle(el, '::after').animationPlayState))
+      .toBe('paused');
+
+    await toggle.click();
+    await expect
+      .poll(() => filling.evaluate((el) => getComputedStyle(el, '::after').animationPlayState))
+      .toBe('running');
+  });
+
+  test('manual navigation relocates and restarts the fill on the newly-current dash', async ({ page }) => {
+    await page.goto('/');
+
+    const dashes = page.locator('.home-hero__progress-dash');
+    await dashes.nth(2).click();
+
+    await expect(dashes.nth(2)).toHaveClass(/is-filling/);
+    const nameOnCurrent = await dashes.nth(2).evaluate((el) => getComputedStyle(el, '::after').animationName);
+    expect(nameOnCurrent).toContain('home-progress-fill');
+
+    const nameOnFirst = await dashes.nth(0).evaluate((el) => getComputedStyle(el, '::after').animationName);
+    expect(nameOnFirst).toBe('none');
+  });
+
+  test('reduced motion shows no animated fill on the current dash', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/');
+
+    const current = page.locator('.home-hero__progress-dash[aria-current="true"]');
+    await expect
+      .poll(() => current.evaluate((el) => getComputedStyle(el, '::after').display))
+      .toBe('none');
+  });
+
+  test('EN: the filling dash also carries the fill animation', async ({ page }) => {
+    await page.goto('/en/');
+
+    const filling = page.locator('.home-hero__progress-dash.is-filling');
+    await expect(filling).toHaveCount(1);
+    const name = await filling.evaluate((el) => getComputedStyle(el, '::after').animationName);
+    expect(name).toContain('home-progress-fill');
+  });
+});

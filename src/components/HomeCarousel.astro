@@ -571,6 +571,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           progressDashes.forEach((dash, i) => {
             dash.setAttribute('aria-current', i === carouselIndex ? 'true' : 'false');
           });
+          restartFill();
 
           // D-05: warm the browser's HTTP cache for the next gallery's hero
           // photo so the crossfade above resolves near-instantly by the time
@@ -585,9 +586,32 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           }
         }
 
+        // quick-260725-dcg (Fix 3): toggles the class that freezes/resumes
+        // the current dash's fill (see .home.is-autoplay-paused in the
+        // <style> block above) in lockstep with the 6000ms timer's own
+        // running/stopped state.
+        function setFillPaused(paused: boolean) {
+          root!.classList.toggle('is-autoplay-paused', paused);
+        }
+
+        // Restarts the ::after fill animation from 0% on the freshly-current
+        // dash: remove .is-filling from every dash, force a reflow, then add
+        // it back only to the current one. The remove -> reflow -> add
+        // sequence is required for the CSS animation to restart
+        // deterministically (including on a fast double-navigation),
+        // without relying on aria-current re-matching to retrigger it.
+        function restartFill() {
+          progressDashes.forEach((d) => d.classList.remove('is-filling'));
+          const current = progressDashes[carouselIndex];
+          if (!current) return;
+          void current.offsetWidth;
+          current.classList.add('is-filling');
+        }
+
         function stopAutoAdvance() {
           if (timer) clearInterval(timer);
           timer = null;
+          setFillPaused(true);
         }
 
         // D-09: auto-advance every 6000ms, paused on hover/focus, resumed on
@@ -599,6 +623,8 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             carouselIndex = (carouselIndex + 1) % galleries.length;
             render();
           }, 6000);
+          setFillPaused(false);
+          restartFill();
         }
 
         function syncAutoplayControl() {
@@ -657,20 +683,31 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         hero.addEventListener('focusin', stopAutoAdvance);
         hero.addEventListener('focusout', startAutoAdvance);
 
+        // quick-260725-dcg (Fix 3): resets the 6000ms countdown (and, via
+        // startAutoAdvance()'s own setFillPaused/restartFill calls, re-syncs
+        // the fill) on manual navigation — but only when auto-advance is
+        // currently running (timer !== null). This preserves hover/focus
+        // pause (the timer is null during hover, so manual nav won't
+        // secretly restart auto-advance) and the explicit-pause state; when
+        // paused, render()'s own restartFill() call still relocates the fill
+        // to the new dash, but is-autoplay-paused keeps it frozen.
         function goToPrev() {
           carouselIndex = (carouselIndex - 1 + galleries.length) % galleries.length;
           render();
+          if (timer !== null) startAutoAdvance();
         }
 
         function goToNext() {
           carouselIndex = (carouselIndex + 1) % galleries.length;
           render();
+          if (timer !== null) startAutoAdvance();
         }
 
         function goToIndex(i: number) {
           if (i < 0 || i >= galleries.length || i === carouselIndex) return;
           carouselIndex = i;
           render();
+          if (timer !== null) startAutoAdvance();
         }
 
         progressDashes.forEach((dash) => {
@@ -1455,8 +1492,48 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     inset: calc(-1 * var(--space-md)) 0;
   }
 
+  /* quick-260725-dcg (Fix 3): dim track for the current dash — brighter
+     than the inactive dashes' rgba(255,255,255,0.35) so it stays
+     identifiable at 0% fill, but no longer the solid accent itself; the
+     opaque ::after fill (below) grows over it and covers it entirely by
+     100%, matching today's solid-accent look at completion. */
   .home-hero__progress-dash[aria-current='true'] {
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  /* Instagram-Stories-style accent fill on the current dash. Gated by a
+     JS-managed .is-filling class (NOT tied to aria-current) so the a11y
+     attribute stays untouched and restarts are deterministic (see
+     restartFill() in the <script> block). No overflow: hidden is added to
+     the dash itself — that would clip the negative-inset ::before
+     tap-target — but scaleX stays within [0,1] so ::after never overflows
+     the dash anyway. */
+  .home-hero__progress-dash.is-filling::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: scaleX(0);
+    transform-origin: left;
     background: var(--current-accent, var(--color-accent));
+    animation: home-progress-fill 6000ms linear;
+  }
+
+  @keyframes home-progress-fill {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  /* Freezes the fill mid-flight (preserving progress, not resetting)
+     whenever the root carries is-autoplay-paused — set by
+     stopAutoAdvance()/startAutoAdvance() so hover/focus pause, the
+     explicit pause toggle, and grid mode all pause the fill through the
+     same paths. */
+  .home.is-autoplay-paused .home-hero__progress-dash.is-filling::after {
+    animation-play-state: paused;
   }
 
   .home-hero__progress-dash:hover,
@@ -1472,6 +1549,18 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
   .home-hero__progress-dash:focus-visible {
     outline: 2px solid #FFFFFF;
     outline-offset: 3px;
+  }
+
+  /* quick-260725-dcg (Fix 3): no animated fill under reduced motion — the
+     current dash reverts to today's static solid accent. */
+  @media (prefers-reduced-motion: reduce) {
+    .home-hero__progress-dash[aria-current='true'] {
+      background: var(--current-accent, var(--color-accent));
+    }
+
+    .home-hero__progress-dash.is-filling::after {
+      display: none;
+    }
   }
 
   .home-hero__caption {
