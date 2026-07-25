@@ -812,7 +812,21 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
         // Makes the hint appear once the visitor starts scrolling at all
         // (not just once overscroll begins), and hide again back at the top.
-        window.addEventListener('scroll', updateHintVisibility, { passive: true });
+        // Also resets any accumulated overscroll once the visitor is no
+        // longer at the bottom, for ANY reason — not just the wheel/touch
+        // upward-intent branch in registerDownwardIntent(). Without this,
+        // leaving the bottom via a path that never fires 'wheel'/'touchmove'
+        // (keyboard Home/PageUp, scrollbar drag, window.scrollTo) leaves
+        // overscrollAccum stuck at a stale positive value: the hint stays
+        // visible after returning to the top, and a later, unrelated
+        // overscroll starts from a non-zero baseline instead of 0 —
+        // undermining the "long, deliberate threshold" safety goal.
+        window.addEventListener('scroll', () => {
+          if (!atBottom()) {
+            overscrollAccum = 0;
+          }
+          updateHintVisibility();
+        }, { passive: true });
 
         // Desktop input: wheel deltaY (positive = down). Never preventDefault.
         window.addEventListener('wheel', (event) => {
