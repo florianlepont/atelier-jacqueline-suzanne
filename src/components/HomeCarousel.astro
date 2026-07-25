@@ -2166,4 +2166,20 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       animation: none !important;
     }
   }
+
+  /* quick-260725-dcg (Fix 1): hides the site footer entirely while the
+     homepage is in carousel mode. `.home` is scoped to this component and
+     `footer.chrome-band` is scoped to BaseLayout.astro — they are NOT
+     direct siblings (BaseLayout renders `<main><slot/></main>` then
+     `<footer>`, so a <main> wrapper sits between them), meaning a `~`
+     general-sibling selector cannot reach the footer from here. `body:has()`
+     targeting the live `data-display-mode` attribute is the cross-boundary,
+     dynamically-reevaluated selector that can. This rule only ships on the
+     homepage (HomeCarousel is homepage-only), and the `:has()` guard means
+     it never affects grid mode (`data-display-mode='grid'`) or any other
+     page (no `.home[data-display-mode]` element exists elsewhere). Do NOT
+     move this into BaseLayout.astro. */
+  body:has(.home[data-display-mode='carousel']) footer.chrome-band {
+    display: none;
+  }
 </style>
