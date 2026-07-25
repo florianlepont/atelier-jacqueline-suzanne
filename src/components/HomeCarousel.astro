@@ -84,6 +84,11 @@ const toggleCarouselLabel = isEn ? 'Carousel' : 'Carrousel';
 const toggleGridLabel = isEn ? 'Grid' : 'Grille';
 const pauseCarouselLabel = isEn ? 'Pause automatic carousel' : 'Mettre le carrousel en pause';
 const playCarouselLabel = isEn ? 'Play automatic carousel' : 'Relancer le carrousel';
+// quick-260725-cfm: locale-aware "keep scrolling to open" hint label,
+// mirroring DetailHero.astro's scrollHintLabel pattern — but derived here
+// (not passed as a prop) since HomeCarousel already knows its own locale via
+// `isEn`, unlike DetailHero which is locale-agnostic.
+const scrollOpenHintLabel = isEn ? 'Keep scrolling to open' : 'Continuer à scroller pour ouvrir';
 const wordmark = 'Atelier Jacqueline Suzanne';
 const introBody = siteCopy.homepageIntro;
 const fallbackByline = isEn ? 'A project by Romane Lepont' : 'Un projet de Romane Lepont';
@@ -281,6 +286,28 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           </a>
         ))}
       </div>
+    </div>
+
+    {/* quick-260725-cfm: "keep scrolling to open" hint, mirroring
+        DetailHero.astro's .detail-hero__scroll-hint label+chevron exactly
+        (D4/D8) — a direct sibling of .home-grid so the
+        .home[data-display-mode='grid'] CSS gate below can hide it (D6).
+        Visibility (opacity) is script-driven, matching DetailHero's own
+        script-set-opacity pattern — see the <script> block's
+        updateHintVisibility(). */}
+    <div class="home-scroll-open-hint" data-role="scroll-open-hint" aria-hidden="true">
+      <span class="home-scroll-open-hint__label">{scrollOpenHintLabel}</span>
+      <svg
+        class="home-scroll-open-hint__icon"
+        viewBox="0 0 24 24"
+        width="34"
+        height="34"
+        fill="none"
+        stroke="white"
+        stroke-width="2.25"
+      >
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
     </div>
 
     {/* Build-time data for the runtime script to read (Lightbox.astro
@@ -1851,6 +1878,71 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     .home-grid__wordmark {
       font-size: 9.8vw;
     }
+  }
+
+  /* quick-260725-cfm: "keep scrolling to open" hint (D4/D5/D6/D8) — mirrors
+     DetailHero.astro's .detail-hero__scroll-hint label+chevron treatment
+     exactly, renamed to home-scroll-open-hint. Base opacity: 0 keeps it
+     hidden until the <script> block's updateHintVisibility() raises it once
+     the visitor starts scrolling in carousel mode — visibility is
+     script-driven, not CSS-scroll-state-driven, matching DetailHero's own
+     pattern. */
+  .home-scroll-open-hint {
+    position: fixed;
+    left: 50%;
+    bottom: var(--space-lg);
+    transform: translateX(-50%);
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 220ms ease;
+    animation: home-scroll-hint-bounce 1.8s ease-in-out infinite;
+  }
+
+  .home-scroll-open-hint__label {
+    font-size: var(--text-label-size);
+    font-weight: var(--weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #FFFFFF;
+    padding-bottom: var(--space-xs);
+    border-bottom: 2px solid var(--color-accent);
+  }
+
+  .home-scroll-open-hint__icon {
+    display: block;
+  }
+
+  /* translateX(-50%) is baked into every keyframe step (not just the base
+     rule) so horizontal centering survives the vertical bounce — mirrors
+     DetailHero's sketch-bounce keyframe exactly. */
+  @keyframes home-scroll-hint-bounce {
+    0%,
+    100% {
+      transform: translate(-50%, 0);
+    }
+
+    50% {
+      transform: translate(-50%, 8px);
+    }
+  }
+
+  /* D5: disables the bounce only — the scroll-to-open navigation itself
+     (script-driven) is a functional affordance, not decorative motion, and
+     still works under reduced motion. */
+  @media (prefers-reduced-motion: reduce) {
+    .home-scroll-open-hint {
+      animation: none;
+    }
+  }
+
+  /* D6: grid mode never shows the hint — scrolling never navigates there. */
+  .home[data-display-mode='grid'] .home-scroll-open-hint {
+    display: none;
   }
 </style>
 
