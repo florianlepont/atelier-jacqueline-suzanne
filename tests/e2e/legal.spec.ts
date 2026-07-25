@@ -158,10 +158,6 @@ test.describe('switcher', () => {
 test.describe('footer legal nav reachability', () => {
   test('the footer links to the mentions légales page from "/"', async ({ page }) => {
     await page.goto('/');
-    // quick-260725-dcg: the footer is hidden while the homepage is in
-    // carousel mode (the default) — switch to grid mode, where the footer
-    // remains reachable, to exercise the real, current path to this link.
-    await page.getByRole('button', { name: 'Grille' }).click();
 
     await page.locator('footer').getByRole('link', { name: 'Mentions légales' }).click();
 
@@ -170,7 +166,6 @@ test.describe('footer legal nav reachability', () => {
 
   test('the footer links to the privacy page from "/"', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Grille' }).click();
 
     await page.locator('footer').getByRole('link', { name: 'Confidentialité' }).click();
 
