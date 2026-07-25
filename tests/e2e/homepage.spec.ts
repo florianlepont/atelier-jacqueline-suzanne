@@ -714,12 +714,15 @@ test.describe('mobile full-bleed hero regression (HOME-06)', () => {
     // photo at least as tall as the visible (chrome-showing) viewport.
     expect(photoBox!.height).toBeGreaterThanOrEqual(viewportSize!.height - 2);
 
-    // Footer present in the DOM (BaseLayout.astro always renders <footer>,
-    // regardless of headerVariant) but hidden entirely in carousel mode
-    // (quick-260725-dcg).
+    // Footer not visible in the initial viewport: BaseLayout.astro always
+    // renders <footer>, regardless of headerVariant, so it is provably
+    // present in the homepage DOM — it must sit at or below the fold on
+    // first load, not bleed through beneath the hero.
     const footer = page.locator('footer');
     await expect(footer).toHaveCount(1);
-    await expect(footer).toBeHidden();
+    const footerBox = await footer.boundingBox();
+    expect(footerBox).not.toBeNull();
+    expect(footerBox!.y).toBeGreaterThanOrEqual(viewportSize!.height - 1);
 
     // D-12 guard: the carousel/grid morph must stay active on mobile — not
     // desktop/pointer:fine-gated.
@@ -747,29 +750,9 @@ test.describe('tall-desktop full-bleed hero regression', () => {
     expect(photoBox).not.toBeNull();
     expect(photoBox!.height).toBeGreaterThanOrEqual(viewportSize!.height - 2);
 
-    await expect(page.locator('footer')).toBeHidden();
-  });
-});
-
-test.describe('footer visibility by display mode (quick-260725-dcg)', () => {
-  test('FR: the footer is hidden in carousel mode and reappears in grid mode', async ({ page }) => {
-    await page.goto('/');
-
-    const footer = page.locator('footer');
-    await expect(footer).toBeHidden();
-
-    await page.getByRole('button', { name: 'Grille' }).click();
-    await expect(footer).toBeVisible();
-  });
-
-  test('EN: the footer is hidden in carousel mode and reappears in grid mode', async ({ page }) => {
-    await page.goto('/en/');
-
-    const footer = page.locator('footer');
-    await expect(footer).toBeHidden();
-
-    await page.getByRole('button', { name: 'Grid' }).click();
-    await expect(footer).toBeVisible();
+    const footerBox = await page.locator('footer').boundingBox();
+    expect(footerBox).not.toBeNull();
+    expect(footerBox!.y).toBeGreaterThanOrEqual(viewportSize!.height - 1);
   });
 });
 
