@@ -750,15 +750,19 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           return window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - BOTTOM_EPSILON;
         }
 
-        // Mirrors DetailHero.astro's script-set-opacity pattern — no-op-safe
-        // if the hint element is missing.
+        // quick-260725-dcg (Fix 2): mirrors DetailHero.astro's
+        // script-set-opacity fade formula exactly (DetailHero.astro line
+        // 183) — visible at rest (0.85) at the top, fading toward 0 over the
+        // first ~150px of scroll. Replaces the earlier, inverted
+        // "hidden until scrolling starts" gate. No-op-safe if the hint
+        // element is missing.
         function updateHintVisibility() {
           if (!scrollHintEl) return;
-          const visible =
-            !navigating &&
-            root!.dataset.displayMode === 'carousel' &&
-            (window.scrollY > 4 || overscrollAccum > 0);
-          scrollHintEl.style.opacity = visible ? '0.85' : '0';
+          if (navigating || root!.dataset.displayMode !== 'carousel') {
+            scrollHintEl.style.opacity = '0';
+            return;
+          }
+          scrollHintEl.style.opacity = String(Math.max(0, 1 - window.scrollY / 150) * 0.85);
         }
 
         // D3: reuses the current slide's title link — its href AND its
@@ -980,6 +984,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         render();
         syncAutoplayControl();
         startAutoAdvance();
+        // quick-260725-dcg (Fix 2): makes the inline opacity authoritative
+        // on load — at scrollY 0 this yields 0.85 (matching the base CSS),
+        // and correctly fades it on a bfcache scroll-restore.
+        updateHintVisibility();
 
         // Re-align the wordmark cutout on resize — both the hero photo's
         // rendered size and the wordmark's own position within it change
@@ -2018,11 +2026,13 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
   /* quick-260725-cfm: "keep scrolling to open" hint (D4/D5/D6/D8) — mirrors
      DetailHero.astro's .detail-hero__scroll-hint label+chevron treatment
-     exactly, renamed to home-scroll-open-hint. Base opacity: 0 keeps it
-     hidden until the <script> block's updateHintVisibility() raises it once
-     the visitor starts scrolling in carousel mode — visibility is
-     script-driven, not CSS-scroll-state-driven, matching DetailHero's own
-     pattern. */
+     exactly, renamed to home-scroll-open-hint. quick-260725-dcg (Fix 2):
+     base opacity is 0.85 (visible at rest, matching DetailHero's own base
+     opacity), so the hint reads correctly even before any JS runs (no-JS/
+     first-paint correct) and fades toward 0 over the first ~150px of scroll
+     — the <script> block's updateHintVisibility() drives that fade via
+     inline opacity, mirroring DetailHero's own script-set-opacity pattern.
+     Visibility is script-driven, not CSS-scroll-state-driven. */
   .home-scroll-open-hint {
     position: fixed;
     left: 50%;
@@ -2033,7 +2043,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     flex-direction: column;
     align-items: center;
     gap: var(--space-xs);
-    opacity: 0;
+    opacity: 0.85;
     pointer-events: none;
     transition: opacity 220ms ease;
     animation: home-scroll-hint-bounce 1.8s ease-in-out infinite;

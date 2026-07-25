@@ -1155,24 +1155,41 @@ test.describe('cross-document morph — click-time source name assignment (sketc
 // title link's href, grid mode being completely unaffected, and
 // prefers-reduced-motion disabling only the bounce (navigation still works).
 test.describe('carousel scroll-to-open (quick-260725-cfm)', () => {
-  test('FR: the hint is hidden at the top, appears once scrolling starts, and hides again back at the top', async ({ page }) => {
+  test('FR: the hint is visible at rest at the top in carousel mode and hidden in grid mode', async ({ page }) => {
     await page.goto('/');
 
     const hint = page.locator('[data-role="scroll-open-hint"]');
     await expect(hint.locator('.home-scroll-open-hint__label')).toHaveText('Continuer à scroller pour ouvrir');
+    // quick-260725-dcg (Fix 2): visible at rest at the top — the regression
+    // witness for the reported "hint not displayed directly on the page"
+    // bug (previously started at opacity 0, the inverse of the intended
+    // DetailHero-mirroring behavior).
     await expect
       .poll(() => hint.evaluate((el) => parseFloat(getComputedStyle(el).opacity)))
-      .toBe(0);
+      .toBeGreaterThan(0.5);
 
-    await page.mouse.wheel(0, 200);
-    await expect
-      .poll(() => hint.evaluate((el) => parseFloat(getComputedStyle(el).opacity)))
-      .toBeGreaterThan(0);
+    await page.getByRole('button', { name: 'Grille' }).click();
+    await expect(hint).toBeHidden();
+  });
 
-    await page.evaluate(() => window.scrollTo(0, 0));
+  test('FR: the hint fades toward 0 as scrollY increases, mirroring DetailHero', async ({ page }) => {
+    await page.goto('/');
+
+    // Documented test harness: once quick-260725-dcg's footer-hide fix
+    // ships, the homepage's own content no longer scrolls, so a tall
+    // spacer is injected here purely to create scroll room to exercise the
+    // fade formula.
+    await page.evaluate(() => {
+      const spacer = document.createElement('div');
+      spacer.style.height = '2000px';
+      document.body.appendChild(spacer);
+    });
+
+    const hint = page.locator('[data-role="scroll-open-hint"]');
+    await page.evaluate(() => window.scrollTo(0, 200));
     await expect
       .poll(() => hint.evaluate((el) => parseFloat(getComputedStyle(el).opacity)))
-      .toBe(0);
+      .toBeLessThan(0.1);
   });
 
   test('EN: the hint label reads "Keep scrolling to open"', async ({ page }) => {
