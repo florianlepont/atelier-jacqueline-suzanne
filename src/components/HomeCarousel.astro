@@ -637,6 +637,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           hero!.hidden = false;
           grid!.hidden = true;
           startAutoAdvance();
+          updateHintVisibility();
         }
 
         function showGrid() {
@@ -644,6 +645,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           hero!.hidden = true;
           grid!.hidden = false;
           stopAutoAdvance();
+          // D6: switching to grid clears any in-flight overscroll
+          // accumulation and hides the hint — scrolling never navigates in
+          // grid mode.
+          overscrollAccum = 0;
+          updateHintVisibility();
         }
 
         hero.addEventListener('mouseenter', stopAutoAdvance);
@@ -721,6 +727,122 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           } else if (direction === 'prev') {
             goToPrev();
           }
+        }, { passive: true });
+
+        // quick-260725-cfm (D1/D2/D3/D6/D7): overscroll-past-the-bottom
+        // navigation into the currently-shown collection, plus the "keep
+        // scrolling to open" hint's visibility. Never preventDefault()s —
+        // all listeners below are passive, so normal scrolling (incl.
+        // reaching the footer) is never blocked. Deliberately separate from
+        // the horizontal-swipe touchstart/touchend handlers above (those
+        // stay on .home-hero__photo, gallery navigation only); this is a
+        // window-level vertical accumulator gated on already being at the
+        // bottom of the page.
+        const OPEN_OVERSCROLL_THRESHOLD = 600;
+        const BOTTOM_EPSILON = 4;
+        const RESET_IDLE_MS = 800;
+        let overscrollAccum = 0;
+        let lastOverscrollTs = 0;
+        let navigating = false;
+        const scrollHintEl = root.querySelector<HTMLElement>('[data-role="scroll-open-hint"]');
+
+        function atBottom(): boolean {
+          return window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - BOTTOM_EPSILON;
+        }
+
+        // Mirrors DetailHero.astro's script-set-opacity pattern — no-op-safe
+        // if the hint element is missing.
+        function updateHintVisibility() {
+          if (!scrollHintEl) return;
+          const visible =
+            !navigating &&
+            root!.dataset.displayMode === 'carousel' &&
+            (window.scrollY > 4 || overscrollAccum > 0);
+          scrollHintEl.style.opacity = visible ? '0.85' : '0';
+        }
+
+        // D3: reuses the current slide's title link — its href AND its
+        // existing click listener (which already calls setCrossDocPhoto())
+        // — rather than duplicating routing or morph-naming.
+        function navigateToCurrent() {
+          if (navigating) return;
+          navigating = true;
+          updateHintVisibility();
+          if (titleEl) {
+            titleEl.click();
+          } else {
+            const fallbackHref = galleries[carouselIndex]?.href;
+            if (fallbackHref) window.location.href = fallbackHref;
+          }
+        }
+
+        // D1: accumulates downward scroll intent only once the page is
+        // already at the bottom, so the footer is always reachable by
+        // normal scrolling first. D6: only active in carousel mode.
+        function registerDownwardIntent(delta: number) {
+          if (navigating || root!.dataset.displayMode !== 'carousel') return;
+          if (delta <= 0) {
+            // Upward intent resets the accumulator — only a sustained
+            // downward push should count.
+            overscrollAccum = 0;
+            updateHintVisibility();
+            return;
+          }
+          if (!atBottom()) {
+            // Still real content to scroll through — never accumulate here,
+            // but keep the hint's appear-on-scroll behavior in sync.
+            updateHintVisibility();
+            return;
+          }
+          const now = Date.now();
+          if (now - lastOverscrollTs > RESET_IDLE_MS) {
+            // Idle reset applied BEFORE adding the new delta: a genuinely
+            // continuous push accumulates, but a stale reading pause (e.g.
+            // the visitor stopped to read the footer) does not silently
+            // carry over into a later, unrelated scroll.
+            overscrollAccum = 0;
+          }
+          overscrollAccum += delta;
+          lastOverscrollTs = now;
+          updateHintVisibility();
+          if (overscrollAccum >= OPEN_OVERSCROLL_THRESHOLD) {
+            navigateToCurrent();
+          }
+        }
+
+        // Makes the hint appear once the visitor starts scrolling at all
+        // (not just once overscroll begins), and hide again back at the top.
+        window.addEventListener('scroll', updateHintVisibility, { passive: true });
+
+        // Desktop input: wheel deltaY (positive = down). Never preventDefault.
+        window.addEventListener('wheel', (event) => {
+          registerDownwardIntent(event.deltaY);
+        }, { passive: true });
+
+        // Mobile input: a window-level touchmove accumulator, independent
+        // of the hero's own horizontal-swipe handlers above. Only counts
+        // upward finger movement (i.e. downward scroll intent) when the
+        // drag is vertically dominant, so a horizontal gallery swipe never
+        // feeds it.
+        let lastMoveY = 0;
+        let overscrollTouchStartX = 0;
+        let overscrollTouchStartY = 0;
+        window.addEventListener('touchstart', (event) => {
+          const touch = event.touches[0];
+          if (!touch) return;
+          lastMoveY = touch.clientY;
+          overscrollTouchStartX = touch.clientX;
+          overscrollTouchStartY = touch.clientY;
+        }, { passive: true });
+        window.addEventListener('touchmove', (event) => {
+          const touch = event.touches[0];
+          if (!touch) return;
+          const dy = lastMoveY - touch.clientY;
+          const totalDx = Math.abs(touch.clientX - overscrollTouchStartX);
+          if (Math.abs(touch.clientY - overscrollTouchStartY) > totalDx) {
+            registerDownwardIntent(dy);
+          }
+          lastMoveY = touch.clientY;
         }, { passive: true });
 
         // D-01/D-02/D-03: a single stateful button — its aria-label always
