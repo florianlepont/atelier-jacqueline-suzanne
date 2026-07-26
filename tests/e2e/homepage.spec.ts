@@ -1405,6 +1405,148 @@ test.describe('carousel scroll-to-open (quick-260725-cfm, simplified quick-26072
   });
 });
 
+// quick-260726-obg (sketch 007 Variant C, winner): the real overscroll
+// visual feedback that replaces the site footer's old (accidental) role as
+// a safety buffer — the hero photo itself scales down (to ~0.94 at the
+// threshold) and darkens (via the new .home-hero__pull-overlay, up to
+// ~0.85 opacity) proportionally as overscroll accumulates toward the 150px
+// threshold, giving a real, early, visible warning well before any
+// navigation fires. Every assertion reads the live --pull-scale/
+// --pull-darken CSS custom properties setPullFeedback() writes onto
+// .home-hero__photo, mirroring the sketch's own readout mechanism.
+test.describe('carousel overscroll pull feedback (quick-260726-obg, sketch 007 Variant C)', () => {
+  async function readPullVars(page: import('@playwright/test').Page) {
+    return page.locator('.home-hero__photo').evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        scale: parseFloat(style.getPropertyValue('--pull-scale')),
+        darken: parseFloat(style.getPropertyValue('--pull-darken')),
+      };
+    });
+  }
+
+  test('one 80px wheel tick (well below the 150px threshold) already shows clear scale/darken feedback', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/');
+    // Pin the current slide so a stray autoplay swap (which resets the
+    // feedback via render()) can't be mistaken for this test's own signal.
+    await page.locator('[data-role="autoplay-toggle"]').click();
+    // Reach the bottom deterministically regardless of a short/long footer.
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+    await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: 80, bubbles: true })));
+
+    const { scale, darken } = await readPullVars(page);
+    expect(scale).toBeLessThan(0.99);
+    expect(darken).toBeGreaterThan(0.3);
+    // Still well below the 150px threshold — no navigation yet.
+    expect(page.url()).toMatch(/\/$/);
+  });
+
+  test('releasing before the threshold visibly decays back to neutral on its own and does not navigate', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+    await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: 80, bubbles: true })));
+    const during = await readPullVars(page);
+    expect(during.scale).toBeLessThan(0.99);
+
+    // Past the 800ms idle window plus the 300ms decay animation, with a
+    // margin for real-timer/CI jitter (no mocked clock — the idle watchdog
+    // and the rAF decay both run on real timers).
+    await page.waitForTimeout(1500);
+
+    const after = await readPullVars(page);
+    expect(after.scale).toBeGreaterThan(0.999);
+    expect(after.darken).toBeLessThan(0.01);
+    expect(page.url()).toMatch(/\/$/);
+  });
+
+  test('crossing the threshold resets the photo to neutral before the real navigation click fires', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+
+    // Suppress the real navigation (capture-phase preventDefault) so the
+    // page stays put — this proves navigateToCurrent()'s neutral reset runs
+    // BEFORE titleEl.click() proceeds, not merely "eventually" or after.
+    await page.evaluate(() => {
+      document.querySelector('[data-role="gallery-title"]')?.addEventListener(
+        'click',
+        (e) => e.preventDefault(),
+        { capture: true },
+      );
+    });
+
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: 200, bubbles: true })));
+
+    const { scale, darken } = await readPullVars(page);
+    expect(scale).toBe(1);
+    expect(darken).toBe(0);
+    expect(page.url()).toMatch(/\/$/);
+  });
+
+  test('reduced motion: the feedback still appears — the sole safety signal is not disabled for reduced-motion visitors', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/');
+    // Reduced-motion visitors already start with auto-advance paused (D-09)
+    // — no explicit pause click needed here.
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+    await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: 80, bubbles: true })));
+
+    const { scale, darken } = await readPullVars(page);
+    expect(scale).toBeLessThan(0.99);
+    expect(darken).toBeGreaterThan(0.3);
+  });
+
+  test.describe('mobile', () => {
+    test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+    test('a ~100px downward touch drag at the bottom shows the same scale/darken feedback and does not navigate', async ({ page }) => {
+      await page.goto('/');
+      await page.locator('[data-role="autoplay-toggle"]').click();
+      // Scroll to the real bottom, past the in-flow mobile accent panel.
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+      // A ~100px upward finger drag (downward scroll intent), clientX held
+      // roughly constant so it reads as a vertical scroll, not a horizontal
+      // gallery swipe — mirrors the existing sj4 touch-repro pattern above.
+      await page.evaluate(() => {
+        const target = document.body;
+        const startY = 500;
+        const totalDelta = 100;
+        const steps = 4;
+        const clientX = 195;
+
+        const makeTouchEvent = (type: string, clientY: number) => {
+          const touch = new Touch({ identifier: 1, target, clientX, clientY });
+          return new TouchEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            touches: type === 'touchend' ? [] : [touch],
+            changedTouches: [touch],
+          });
+        };
+
+        window.dispatchEvent(makeTouchEvent('touchstart', startY));
+        for (let i = 1; i <= steps; i++) {
+          window.dispatchEvent(makeTouchEvent('touchmove', startY - (totalDelta / steps) * i));
+        }
+      });
+
+      const { scale, darken } = await readPullVars(page);
+      expect(scale).toBeLessThan(0.99);
+      expect(darken).toBeGreaterThan(0.3);
+      expect(page.url()).toMatch(/\/$/);
+    });
+  });
+});
+
 // quick-260725-dcg (Fix 3): the existing per-gallery progress dash (already
 // covered above by the positional/navigation tests) gains an
 // Instagram-Stories-style accent fill on the CURRENT dash: it grows 0% to
