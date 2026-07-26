@@ -1597,6 +1597,151 @@ test.describe('carousel overscroll pull feedback (quick-260726-obg, sketch 007 V
       expect(page.url()).toMatch(/\/$/);
     });
   });
+
+  // quick-260726-qem: the tests above only ever read the --pull-scale /
+  // --pull-darken custom properties, never actual rendered pixels — exactly
+  // the verification gap that let a solid black edge band ship at the 0.94
+  // floor (see .home-hero__img's inset overhang comment in HomeCarousel.astro).
+  // These tests inspect the real composited frame instead.
+  test.describe('rendered-pixel edge regression (quick-260726-qem)', () => {
+    type Band = { x: number; y: number; width: number; height: number };
+
+    const EDGE_BAND_PX = 4;
+    const NON_BLACK_CHANNEL_THRESHOLD = 30;
+    const MIN_NON_BLACK_FRACTION = 0.1;
+
+    async function gotoAndPinHero(page: import('@playwright/test').Page) {
+      await page.goto('/');
+      // Pin the slide so autoplay can't swap mid-test and call render(),
+      // which would reset the forced --pull-scale/--pull-darken below.
+      await page.locator('[data-role="autoplay-toggle"]').click();
+      // Wait for the SHARP hero photo (real content, not just the blur
+      // placeholder) so the edge bands sample actual photo pixels.
+      await expect(page.locator('[data-role="hero-image"]')).toHaveClass(/is-loaded/);
+    }
+
+    async function forceMinPullScale(page: import('@playwright/test').Page) {
+      // Force the exact shipped floor (1 - 1*0.06) directly, bypassing wheel/
+      // touch simulation, and zero the darken overlay so it can't be mistaken
+      // for the black-band bug near the corners (the radial darken alone gets
+      // close to black there even over correct photo bleed).
+      await page.locator('.home-hero__photo').evaluate((el) => {
+        el.style.setProperty('--pull-scale', '0.94');
+        el.style.setProperty('--pull-darken', '0');
+      });
+      // Let the 90ms transform transition settle before capturing.
+      await page.waitForTimeout(150);
+    }
+
+    function edgeBands(photoBox: Band, viewport: { width: number; height: number }): Record<string, Band> {
+      const clampRect = (b: Band): Band => {
+        const x = Math.max(0, Math.round(b.x));
+        const y = Math.max(0, Math.round(b.y));
+        const width = Math.max(1, Math.min(Math.round(b.width), viewport.width - x));
+        const height = Math.max(1, Math.min(Math.round(b.height), viewport.height - y));
+        return { x, y, width, height };
+      };
+
+      return {
+        top: clampRect({ x: photoBox.x, y: photoBox.y, width: photoBox.width, height: EDGE_BAND_PX }),
+        bottom: clampRect({
+          x: photoBox.x,
+          y: photoBox.y + photoBox.height - EDGE_BAND_PX,
+          width: photoBox.width,
+          height: EDGE_BAND_PX,
+        }),
+        left: clampRect({ x: photoBox.x, y: photoBox.y, width: EDGE_BAND_PX, height: photoBox.height }),
+        right: clampRect({
+          x: photoBox.x + photoBox.width - EDGE_BAND_PX,
+          y: photoBox.y,
+          width: EDGE_BAND_PX,
+          height: photoBox.height,
+        }),
+      };
+    }
+
+    // Screenshots the given clip (our own untainted PNG bytes — not the
+    // cross-origin Sanity <img>, so no canvas taint) and decodes it INSIDE
+    // the page via createImageBitmap/OffscreenCanvas — no new npm dependency.
+    async function nonBlackFraction(page: import('@playwright/test').Page, band: Band): Promise<number> {
+      const buf = await page.screenshot({ clip: band });
+      const base64 = buf.toString('base64');
+      return page.evaluate(
+        async ({ b64, threshold }: { b64: string; threshold: number }) => {
+          const res = await fetch('data:image/png;base64,' + b64);
+          const blob = await res.blob();
+          const bitmap = await createImageBitmap(blob);
+          const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+          const ctx = canvas.getContext('2d')!;
+          ctx.drawImage(bitmap, 0, 0);
+          const { data } = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+          let nonBlack = 0;
+          const totalPixels = data.length / 4;
+          for (let i = 0; i < data.length; i += 4) {
+            const maxChannel = Math.max(data[i], data[i + 1], data[i + 2]);
+            if (maxChannel > threshold) nonBlack += 1;
+          }
+          return totalPixels > 0 ? nonBlack / totalPixels : 0;
+        },
+        { b64: base64, threshold: NON_BLACK_CHANNEL_THRESHOLD },
+      );
+    }
+
+    async function assertNoBlackEdgeBands(page: import('@playwright/test').Page, viewport: { width: number; height: number }) {
+      const photoBox = await page.locator('.home-hero__photo').boundingBox();
+      if (!photoBox) throw new Error('.home-hero__photo has no bounding box');
+
+      const bands = edgeBands(photoBox, viewport);
+      for (const [edge, band] of Object.entries(bands)) {
+        const fraction = await nonBlackFraction(page, band);
+        expect(
+          fraction,
+          `${edge} edge band should show real photo bleed (non-black fraction), not a solid black border`,
+        ).toBeGreaterThan(MIN_NON_BLACK_FRACTION);
+      }
+    }
+
+    test('desktop 1400x900: at the 0.94 minimum pull scale, all four hero-photo edges show photo bleed, not solid black', async ({
+      page,
+    }) => {
+      const viewport = { width: 1400, height: 900 };
+      await page.setViewportSize(viewport);
+      await gotoAndPinHero(page);
+      await forceMinPullScale(page);
+      await assertNoBlackEdgeBands(page, viewport);
+    });
+
+    test('desktop 1400x900: at the 0.94 minimum pull scale, the hero image box fully covers .home-hero__photo (geometric complement to the pixel proof above)', async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1400, height: 900 });
+      await gotoAndPinHero(page);
+      await forceMinPullScale(page);
+
+      const photoBox = await page.locator('.home-hero__photo').boundingBox();
+      const imgBox = await page.locator('[data-role="hero-image"]').boundingBox();
+      if (!photoBox || !imgBox) throw new Error('missing bounding box');
+
+      const TOLERANCE_PX = 0.5;
+      expect(imgBox.x).toBeLessThanOrEqual(photoBox.x + TOLERANCE_PX);
+      expect(imgBox.y).toBeLessThanOrEqual(photoBox.y + TOLERANCE_PX);
+      expect(imgBox.x + imgBox.width).toBeGreaterThanOrEqual(photoBox.x + photoBox.width - TOLERANCE_PX);
+      expect(imgBox.y + imgBox.height).toBeGreaterThanOrEqual(photoBox.y + photoBox.height - TOLERANCE_PX);
+    });
+
+    test.describe('mobile', () => {
+      test.use({ viewport: { width: 393, height: 852 }, hasTouch: true });
+
+      test('393px viewport: at the 0.94 minimum pull scale, all four hero-photo edges show photo bleed on the narrow horizontal axis (binding no-black constraint)', async ({
+        page,
+      }) => {
+        const viewport = { width: 393, height: 852 };
+        await gotoAndPinHero(page);
+        await forceMinPullScale(page);
+        await assertNoBlackEdgeBands(page, viewport);
+      });
+    });
+  });
 });
 
 // quick-260725-dcg (Fix 3): the existing per-gallery progress dash (already
