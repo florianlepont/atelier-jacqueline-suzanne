@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Sketch 007 — Carousel overscroll feedback</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../themes/default.css" />
+<style>
+  body { padding-top: 52px; }
+
+  /* ---------- variant tab bar ---------- */
+  #variant-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9998;
+    background: #fff; border-bottom: var(--border-hairline) solid var(--color-border);
+    padding: 8px 16px; display: flex; gap: 8px; align-items: center;
+    font-family: var(--font-sans); font-size: 13px;
+  }
+  #variant-nav .nav-label { font-weight: var(--weight-semibold); margin-right: 8px; color: #777; }
+  .variant-tab {
+    font-family: var(--font-sans); font-size: 13px; padding: 6px 12px;
+    border: var(--border-hairline) solid var(--color-border); background: #fff; color: var(--color-ink);
+    cursor: pointer; border-radius: var(--radius-none); transition: all .15s ease;
+  }
+  .variant-tab:hover { border-color: var(--color-accent); }
+  .variant-tab.active { background: var(--color-ink); color: #fff; border-color: var(--color-ink); }
+
+  .variant { display: none; }
+  .variant.active { display: block; }
+
+  /* ---------- page chrome around each demo ---------- */
+  .demo-shell { max-width: 1180px; margin: 0 auto; padding: var(--space-lg) var(--space-lg) var(--space-2xl); }
+  .demo-heading { font-family: var(--font-display); font-weight: 900; font-size: 22px; margin: 0 0 4px; }
+  .demo-question { font-size: 14px; color: #555; max-width: 680px; margin: 0 0 var(--space-md); line-height: 1.5; }
+  .demo-instructions {
+    font-size: 13px; color: #fff; background: var(--color-ink); display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 12px; margin: 0 0 var(--space-md); font-family: var(--font-sans);
+  }
+  .demo-instructions strong { color: var(--palette-lime); font-weight: var(--weight-semibold); }
+
+  /* ---------- the simulated viewport ---------- */
+  .demo-frame {
+    position: relative; width: 100%; height: min(76vh, 700px); min-height: 460px;
+    overflow: hidden; background: #111; touch-action: none; user-select: none;
+    border: var(--border-hairline) solid var(--color-border);
+  }
+  body.mobile-preview .demo-frame { max-width: 390px; height: min(70vh, 680px); margin: 0 auto; }
+
+  .demo-photo {
+    position: absolute; inset: -3%; background-size: cover; background-position: center;
+    transition: transform 90ms ease-out, filter 90ms ease-out;
+    transform: scale(1); filter: brightness(1);
+  }
+  .demo-scrim {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,.65) 0%, rgba(0,0,0,.15) 45%, rgba(0,0,0,0) 70%);
+  }
+  .demo-scrim-boost {
+    position: absolute; inset: 0; opacity: 0; transition: opacity 90ms ease-out;
+    background: radial-gradient(ellipse at 50% 60%, transparent 25%, rgba(0,0,0,.75) 100%);
+  }
+
+  /* sketch-only annotation (not part of the real design) */
+  .demo-annotation {
+    position: absolute; top: var(--space-md); left: var(--space-md); z-index: 6;
+    background: rgba(0,0,0,.6); color: #fff; font-family: 'SF Mono', Menlo, monospace;
+    font-size: 11px; padding: 6px 10px; line-height: 1.6; pointer-events: none;
+  }
+  .demo-annotation .mech { color: var(--palette-lime); display: block; }
+  .demo-annotation .readout { color: rgba(255,255,255,.75); display: block; }
+
+  /* caption block — mirrors .home-hero__caption */
+  .demo-caption {
+    position: absolute; left: var(--space-md); right: calc(min(700px, 52%) + var(--space-3xl) + var(--space-md));
+    bottom: var(--space-xl); z-index: 3; color: #fff;
+  }
+  .demo-controls { display: flex; align-items: center; gap: var(--space-xs); width: min(calc(25vw + 48px), 268px); margin-bottom: var(--space-xs); }
+  .demo-progress { display: flex; flex: 1 1 auto; gap: var(--space-xs); position: relative; }
+  .demo-dash { position: relative; flex: 1 1 0; height: 3px; background: rgba(255,255,255,.35); transition: height 120ms ease; }
+  .demo-dash[data-active="true"] { background: rgba(255,255,255,.5); height: var(--dash-h, 3px); }
+  .demo-dash[data-active="true"] .demo-dash__fill {
+    content: ''; position: absolute; inset: 0; background: var(--color-accent);
+    transform: scaleX(.4); transform-origin: left;
+  }
+  .demo-dash__cue {
+    position: absolute; left: 0; bottom: calc(100% + 6px); width: 12px; height: 8px;
+    opacity: 0; transform: translateY(6px); transition: opacity 120ms ease, transform 120ms ease;
+    color: var(--color-accent);
+  }
+  .demo-index { font-size: 14px; color: rgba(255,255,255,.75); margin: 0 0 4px; font-family: var(--font-sans); transition: opacity 260ms ease; }
+  .demo-title {
+    font-family: var(--font-display); font-weight: var(--weight-semibold); font-size: 18px;
+    color: #fff; text-decoration: underline; text-underline-offset: 3px; margin: 0; display: block;
+  }
+  /* Deliberately NOT part of the carousel-chrome fade below — this is the
+     one element that must persist unchanged through the transition
+     (quick-260725-tqs Item 1 already made DetailHero's overlay-title
+     visually identical to this one: same 18px/uppercase/left position —
+     that continuity is the whole reason it reads as "the same page", not
+     a navigation). */
+  .demo-format-line {
+    font-size: 13px; color: rgba(255,255,255,.7); margin: 6px 0 0; font-family: var(--font-sans);
+    opacity: 0; transform: translateY(4px); transition: opacity 260ms ease 120ms, transform 260ms ease 120ms;
+  }
+  .demo-frame.is-open .demo-format-line { opacity: 1; transform: translateY(0); }
+
+  /* bottom edge fill — variant A only */
+  .demo-edge-fill {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 4px; z-index: 4;
+    opacity: 0; transition: opacity 120ms ease; background: rgba(255,255,255,.18);
+  }
+  .demo-edge-fill__bar { display: block; height: 100%; width: 100%; background: var(--color-accent); transform: scaleX(0); transform-origin: left; }
+
+  /* accent panel — mirrors .home-hero__accent, simplified (no photo-cutout wordmark, irrelevant to this question) */
+  .demo-accent {
+    position: absolute; right: var(--space-md); bottom: var(--space-md); width: min(700px, 52%);
+    padding: var(--space-xl); z-index: 3; background: var(--color-accent); color: var(--color-on-accent);
+  }
+  body.mobile-preview .demo-accent { position: static; width: auto; margin-top: -4px; }
+  body.mobile-preview .demo-caption { right: var(--space-md); position: absolute; }
+  .demo-wordmark { font-family: var(--font-display); font-weight: 900; font-size: clamp(30px, 5vw, 52px); line-height: 1.02; margin: 0 0 var(--space-sm); text-transform: none; }
+  .demo-intro { font-size: 15px; line-height: 1.5; max-width: 66.67%; margin: 0; }
+
+  /* On commit: the photo/scrim/title are DELIBERATELY untouched — the same
+     background photo carries straight through into "the gallery page" (the
+     real site cross-document-morphs this exact photo via
+     view-transition-name: hero-photo, sketch 006 / quick-260724-uf5). Only
+     the carousel-ONLY chrome — the accent wordmark panel, the progress
+     dashes/autoplay control, the index counter — fades away, because that
+     chrome has no equivalent on the gallery detail page. This is what
+     makes it read as "the same page, settling" rather than a navigation
+     to somewhere else. */
+  .demo-accent, .demo-controls { transition: opacity 260ms ease; }
+  .demo-frame.is-open .demo-accent,
+  .demo-frame.is-open .demo-controls,
+  .demo-frame.is-open .demo-index { opacity: 0; }
+
+  /* variant C already animates the photo itself as its feedback mechanism.
+     On commit it releases the pulled-back tension back to a settled,
+     full-strength frame (arrival), rather than continuing to shrink/
+     darken — it must NOT read as "falling into a different scene". */
+  .demo-frame[data-variant="c"].is-committing .demo-photo { transform: scale(1); filter: brightness(1.04); transition: transform 420ms cubic-bezier(.2,.8,.2,1), filter 420ms ease; }
+  .demo-frame[data-variant="a"].is-committing .demo-edge-fill__bar,
+  .demo-frame[data-variant="b"].is-committing .demo-dash[data-active="true"] { background: var(--palette-lime); }
+
+  /* ---------- toolbar ---------- */
+  #sketch-tools {
+    position: fixed; bottom: 12px; right: 12px; z-index: 9999; font-family: system-ui, sans-serif; font-size: 12px;
+    background: rgba(0,0,0,.75); color: #fff; padding: 10px 12px; border-radius: 8px; opacity: .45; transition: opacity .2s;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  #sketch-tools:hover { opacity: 1; }
+  #sketch-tools .row { display: flex; gap: 6px; align-items: center; }
+  #sketch-tools button {
+    font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,.3);
+    background: rgba(255,255,255,.08); color: #fff; cursor: pointer;
+  }
+  #sketch-tools button:hover { background: rgba(255,255,255,.2); }
+  #sketch-tools button.active { background: var(--color-accent); border-color: var(--color-accent); }
+
+  .findings { max-width: 680px; margin: var(--space-2xl) auto 0; padding: 0 var(--space-lg); font-size: 14px; line-height: 1.6; color: #444; }
+  .findings h3 { font-size: 15px; margin: var(--space-lg) 0 4px; font-family: var(--font-sans); }
+</style>
+</head>
+<body>
+
+  <div id="variant-nav">
+    <span class="nav-label">Sketch 007</span>
+    <button class="variant-tab active" data-variant="a">A: Edge fill bar</button>
+    <button class="variant-tab" data-variant="b">B: Progress-dash grows</button>
+    <button class="variant-tab" data-variant="c">C: Photo pulls back (no chrome) ★ Selected</button>
+  </div>
+
+  <!-- ============================= VARIANT A ============================= -->
+  <div class="variant active" id="variant-a">
+    <div class="demo-shell">
+      <h2 class="demo-heading">A — Bottom-edge fill bar</h2>
+      <p class="demo-question">A dedicated thin bar at the very bottom edge of the screen, invisible at rest, that fills left-to-right in the current accent color as you push past the bottom — reusing the exact fill mechanic already shipped on the carousel's own per-gallery progress dashes (quick-260725-dcg).</p>
+      <p class="demo-instructions">Scroll or swipe <strong>down</strong> inside the frame below (mouse wheel / trackpad / touch). Stop before it fills to see it recede.</p>
+      <div class="demo-frame" data-variant="a" style="--photo-url:url('https://cdn.sanity.io/images/gwz8iug4/production/0aaa6feb8807302a8b0a7a893014ac99033d7c75-3872x2592.jpg?w=1800&fit=max&auto=format')">
+        <div class="demo-annotation"><span class="mech">mechanism: dedicated fill bar, bottom edge</span><span class="readout" data-role="readout">0 / 150px · idle</span></div>
+        <div class="demo-main">
+          <div class="demo-photo"></div>
+          <div class="demo-scrim"></div>
+          <div class="demo-scrim-boost"></div>
+          <div class="demo-caption">
+            <div class="demo-controls">
+              <div class="demo-progress">
+                <span class="demo-dash" data-active="true"><span class="demo-dash__fill"></span></span>
+                <span class="demo-dash"></span>
+                <span class="demo-dash"></span>
+                <span class="demo-dash"></span>
+                <span class="demo-dash"></span>
+              </div>
+            </div>
+            <p class="demo-index">03 / 05</p>
+            <a class="demo-title" href="#" onclick="return false">SILOS</a>
+            <p class="demo-format-line">Tirage giclée · édition limitée</p>
+          </div>
+          <div class="demo-accent">
+            <h1 class="demo-wordmark">Atelier<br />Jacqueline<br />Suzanne</h1>
+            <p class="demo-intro">Découvrez un univers photographique sensible et singulier, façonné par l'attention portée aux détails, aux matières et aux instants suspendus.</p>
+          </div>
+        </div>
+        <div class="demo-edge-fill" data-role="edge-fill"><span class="demo-edge-fill__bar" data-role="edge-fill-bar"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================= VARIANT B ============================= -->
+  <div class="variant" id="variant-b">
+    <div class="demo-shell">
+      <h2 class="demo-heading">B — The current progress-dash transforms</h2>
+      <p class="demo-question">No new element at all. The already-visible, already-filling progress dash for the current gallery grows taller and picks up a small upward cue as you push, so the SAME control that shows "which gallery" also shows "you're about to open it" — nothing new is added to the screen.</p>
+      <p class="demo-instructions">Scroll or swipe <strong>down</strong> inside the frame below. Watch the active dash (bottom-left, over the title).</p>
+      <div class="demo-frame" data-variant="b" style="--photo-url:url('https://cdn.sanity.io/images/gwz8iug4/production/0aaa6feb8807302a8b0a7a893014ac99033d7c75-3872x2592.jpg?w=1800&fit=max&auto=format')">
+        <div class="demo-annotation"><span class="mech">mechanism: active progress-dash grows + cue</span><span class="readout" data-role="readout">0 / 150px · idle</span></div>
+        <div class="demo-main">
+          <div class="demo-photo"></div>
+          <div class="demo-scrim"></div>
+          <div class="demo-scrim-boost"></div>
+          <div class="demo-caption">
+            <div class="demo-controls">
+              <div class="demo-progress">
+                <span class="demo-dash" data-active="true">
+                  <span class="demo-dash__fill"></span>
+                  <svg class="demo-dash__cue" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M1 7L6 2L11 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/>
+                  </svg>
+                </span>
+                <span class="demo-dash"></span>
+                <span class="demo-dash"></span>
+                <span class="demo-dash"></span>
+                <span class="demo-dash"></span>
+              </div>
+            </div>
+            <p class="demo-index">03 / 05</p>
+            <a class="demo-title" href="#" onclick="return false">SILOS</a>
+            <p class="demo-format-line">Tirage giclée · édition limitée</p>
+          </div>
+          <div class="demo-accent">
+            <h1 class="demo-wordmark">Atelier<br />Jacqueline<br />Suzanne</h1>
+            <p class="demo-intro">Découvrez un univers photographique sensible et singulier, façonné par l'attention portée aux détails, aux matières et aux instants suspendus.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================= VARIANT C ============================= -->
+  <div class="variant" id="variant-c">
+    <div class="demo-shell">
+      <h2 class="demo-heading">C — The photo itself pulls back (no chrome at all)</h2>
+      <p class="demo-question">No UI element, new or transformed. The photo scales down slightly and darkens proportionally to how far you push — a direct physical response, like the scene is being pulled toward the next screen. Nothing else on screen changes until the commit itself.</p>
+      <p class="demo-instructions">Scroll or swipe <strong>down</strong> inside the frame below. Watch the photo itself, not the UI.</p>
+      <div class="demo-frame" data-variant="c" style="--photo-url:url('https://cdn.sanity.io/images/gwz8iug4/production/0aaa6feb8807302a8b0a7a893014ac99033d7c75-3872x2592.jpg?w=1800&fit=max&auto=format')">
+        <div class="demo-annotation"><span class="mech">mechanism: photo scale + darken, no chrome</span><span class="readout" data-role="readout">0 / 150px · idle</span></div>
+        <div class="demo-main">
+          <div class="demo-photo"></div>
+          <div class="demo-scrim"></div>
+          <div class="demo-scrim-boost"></div>
+          <div class="demo-caption">
+            <div class="demo-controls">
+              <div class="demo-progress">
+                <span class="demo-dash" data-active="true"><span class="demo-dash__fill"></span></span>
+                <span class="demo-dash"></span>
+                <span class="demo-dash"></span>
+                <span class="demo-dash"></span>
+                <span class="demo-dash"></span>
+              </div>
+            </div>
+            <p class="demo-index">03 / 05</p>
+            <a class="demo-title" href="#" onclick="return false">SILOS</a>
+            <p class="demo-format-line">Tirage giclée · édition limitée</p>
+          </div>
+          <div class="demo-accent">
+            <h1 class="demo-wordmark">Atelier<br />Jacqueline<br />Suzanne</h1>
+            <p class="demo-intro">Découvrez un univers photographique sensible et singulier, façonné par l'attention portée aux détails, aux matières et aux instants suspendus.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="findings">
+    <h3>Why these three</h3>
+    <p>Research into "commit gesture" patterns (pull-to-refresh, the closest real-world analog) found that credible implementations always pair a deliberate threshold with <em>progressive visual feedback</em> as you push past it, and let you back out before the threshold with no trace left behind. Variant A adds a small dedicated element; B reuses existing chrome instead of adding anything new; C uses no chrome at all, just a physical response on the content itself. All three share the identical accumulator/threshold logic (150px, matching the shipped <code>OPEN_OVERSCROLL_THRESHOLD</code>) — only the visual response differs.</p>
+    <p><strong>Note on the demo itself:</strong> this sketch calls <code>preventDefault()</code> on wheel and sets <code>touch-action:none</code> so the gesture stays contained inside the little frame instead of scrolling this sketch page. That is a sketch-only necessity — the real implementation must keep its listeners passive and never call <code>preventDefault()</code>, exactly as today (quick-260725-sj4/cfm), regardless of which variant is chosen.</p>
+    <p><strong>Learned by building this:</strong> the shipped accumulator only resets lazily, on the next scroll event after the 800ms idle window. That's invisible today because there's no feedback to leave stale. Once there IS visible feedback, it needs a proactive decay — if you stop pushing, the indicator should visibly recede back to rest on its own (not just sit there until you scroll again) so "letting go" reads as cancellation, matching the pull-to-refresh research directly. This sketch's idle watchdog (decays after 800ms of no forward input) demonstrates that; the real implementation should adopt the same proactive decay, whichever variant is chosen.</p>
+  </div>
+
+  <div id="sketch-tools">
+    <div class="row">
+      <button data-action="viewport" data-value="desktop" class="active">Desktop</button>
+      <button data-action="viewport" data-value="mobile">Mobile</button>
+    </div>
+    <div class="row">
+      <button data-action="simulate">Simulate 2 ticks</button>
+      <button data-action="reset">Reset</button>
+    </div>
+  </div>
+
+  <script>
+    // ---- tab switching ----
+    document.querySelectorAll('.variant-tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const v = tab.dataset.variant;
+        document.querySelectorAll('.variant-tab').forEach((t) => t.classList.toggle('active', t === tab));
+        document.querySelectorAll('.variant').forEach((panel) => panel.classList.toggle('active', panel.id === 'variant-' + v));
+      });
+    });
+
+    // ---- viewport toggle ----
+    document.querySelectorAll('[data-action="viewport"]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-action="viewport"]').forEach((b) => b.classList.toggle('active', b === btn));
+        document.body.classList.toggle('mobile-preview', btn.dataset.value === 'mobile');
+      });
+    });
+
+    // ---- overscroll demo controller, shared logic across all 3 variants ----
+    const THRESHOLD = 150;
+    const IDLE_MS = 800;
+    const DECAY_MS = 300;
+    const controllers = {};
+
+    function initDemo(frame) {
+      const variant = frame.dataset.variant;
+      const photoUrl = frame.style.getPropertyValue('--photo-url');
+      frame.querySelector('.demo-photo').style.backgroundImage = photoUrl;
+
+      const readout = frame.querySelector('[data-role="readout"]');
+      const photo = frame.querySelector('.demo-photo');
+      const scrimBoost = frame.querySelector('.demo-scrim-boost');
+      const edgeFillBar = frame.querySelector('[data-role="edge-fill-bar"]');
+      const edgeFill = frame.querySelector('[data-role="edge-fill"]');
+      const activeDash = frame.querySelector('.demo-dash[data-active="true"]');
+      const dashCue = frame.querySelector('.demo-dash__cue');
+
+      let accum = 0;
+      let lastTs = 0;
+      let committing = false;
+      let decayRaf = null;
+
+      function setProgress(p) {
+        p = Math.max(0, Math.min(1, p));
+        if (variant === 'a') {
+          edgeFill.style.opacity = p > 0.01 ? 1 : 0;
+          edgeFillBar.style.transform = 'scaleX(' + p + ')';
+        } else if (variant === 'b') {
+          activeDash.style.setProperty('--dash-h', (3 + p * 12) + 'px');
+          if (dashCue) {
+            dashCue.style.opacity = p;
+            dashCue.style.transform = 'translateY(' + ((1 - p) * 6) + 'px)';
+          }
+        } else if (variant === 'c') {
+          photo.style.transform = 'scale(' + (1 - p * 0.06) + ')';
+          scrimBoost.style.opacity = p * 0.85;
+        }
+        readout.textContent = Math.round(p * THRESHOLD) + ' / ' + THRESHOLD + 'px · ' + (p <= 0.001 ? 'idle' : p >= 1 ? 'committing' : 'building');
+      }
+
+      function decayToZero() {
+        cancelAnimationFrame(decayRaf);
+        const start = accum;
+        const startTs = performance.now();
+        function step(ts) {
+          const t = Math.min(1, (ts - startTs) / DECAY_MS);
+          accum = start * (1 - t);
+          setProgress(accum / THRESHOLD);
+          if (t < 1) decayRaf = requestAnimationFrame(step);
+        }
+        decayRaf = requestAnimationFrame(step);
+      }
+
+      function reset() {
+        cancelAnimationFrame(decayRaf);
+        accum = 0;
+        committing = false;
+        frame.classList.remove('is-open', 'is-committing');
+        setProgress(0);
+      }
+
+      function commit() {
+        committing = true;
+        setProgress(1);
+        frame.classList.add('is-committing');
+        // The photo/scrim/title stay exactly as they are — only the
+        // carousel-only chrome fades (see .demo-frame.is-open CSS above).
+        // A short beat first, so the feedback element's "full" state is
+        // actually visible before the chrome starts leaving.
+        setTimeout(() => frame.classList.add('is-open'), 140);
+        setTimeout(reset, 2000);
+      }
+
+      function registerDelta(delta) {
+        if (committing) return;
+        cancelAnimationFrame(decayRaf);
+        if (delta <= 0) {
+          decayToZero();
+          accum = 0;
+          return;
+        }
+        const now = performance.now();
+        if (now - lastTs > IDLE_MS) accum = 0;
+        accum += delta;
+        lastTs = now;
+        setProgress(accum / THRESHOLD);
+        if (accum >= THRESHOLD) commit();
+      }
+
+      // proactive idle decay — see "Learned by building this" note below the demos
+      setInterval(() => {
+        if (!committing && accum > 0 && performance.now() - lastTs > IDLE_MS) {
+          decayToZero();
+          accum = 0;
+        }
+      }, 150);
+
+      frame.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        registerDelta(e.deltaY);
+      }, { passive: false });
+
+      let touchY = 0;
+      frame.addEventListener('touchstart', (e) => { touchY = e.touches[0].clientY; }, { passive: true });
+      frame.addEventListener('touchmove', (e) => {
+        const y = e.touches[0].clientY;
+        registerDelta(touchY - y);
+        touchY = y;
+      }, { passive: true });
+
+      controllers[variant] = { registerDelta, reset };
+    }
+
+    document.querySelectorAll('.demo-frame').forEach(initDemo);
+
+    // ---- toolbar: simulate + reset act on the currently active tab ----
+    function activeVariant() {
+      return document.querySelector('.variant-tab.active').dataset.variant;
+    }
+    document.querySelector('[data-action="simulate"]').addEventListener('click', () => {
+      const c = controllers[activeVariant()];
+      c.registerDelta(85);
+      setTimeout(() => c.registerDelta(85), 120);
+    });
+    document.querySelector('[data-action="reset"]').addEventListener('click', () => {
+      controllers[activeVariant()].reset();
+    });
+  </script>
+</body>
+</html>

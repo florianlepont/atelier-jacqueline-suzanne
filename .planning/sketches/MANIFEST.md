@@ -7,6 +7,7 @@
 ## Reference Points
 
 - [a-chen.webflow.io](https://a-chen.webflow.io) (sketch 005) — its "WORKS" section pins a full-bleed photo (`position: sticky`) while scrolling, shrinking it to reveal the section title in the freed space. Referenced for the *mechanism* only — the reference's neon palette, grain texture, and 3D mascot don't apply; sketch 005 adapts the scroll-scrubbed pin+shrink pattern to AJS's monochrome+pink language.
+- Pull-to-refresh UX research (sketch 007) — established "commit gesture" patterns (threshold + progressive visual feedback + release-to-cancel) grounding the homepage carousel's overscroll-to-open redesign. See sketch 007's README Sources section.
 
 ## Sketches
 
@@ -18,3 +19,4 @@
 | 004 | thumbnail-grid-poster-treatment | How should the Poster Grid energy extend to the shared GalleryGrid.astro thumbnail grid (Portfolio + Éditions detail pages)? | A2 — Asymmetric bento + staggered scroll-reveal + click-to-expand View Transitions morph | [layout, gallery, editions, thumbnail-grid, consistency, motion] |
 | 005 | edition-hero-scroll-reveal | Should the édition detail hero become a pinned, scroll-scrubbed reveal (ref: a-chen.webflow.io's WORKS section), and how dramatic should it be? | Synthesis — B's scale (55% shrink, huge title) + C's two-stage reveal (title, then pink-underlined format line) | [layout, editions, detail-page, motion, frontier] |
 | 006 | cross-page-hero-transition | Can a native cross-document View Transition morph a homepage grid tile's photo into the gallery detail hero, and how much chrome should participate? | Pending | [motion, homepage, gallery-detail, view-transitions, cross-document, frontier] |
+| 007 | carousel-overscroll-feedback | What progressive visual feedback should the homepage carousel's overscroll-to-open gesture use, so the footer can be hidden again without reintroducing the quick-260725-sj4 accidental-navigation bug? | C — Photo pulls back, no chrome (scale + darken proportional to overscroll; carousel-only chrome fades on arrival, photo/title persist unchanged) | [motion, homepage, carousel, interaction, safety, frontier] |
