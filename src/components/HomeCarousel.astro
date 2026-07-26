@@ -84,6 +84,10 @@ const toggleCarouselLabel = isEn ? 'Carousel' : 'Carrousel';
 const toggleGridLabel = isEn ? 'Grid' : 'Grille';
 const pauseCarouselLabel = isEn ? 'Pause automatic carousel' : 'Mettre le carrousel en pause';
 const playCarouselLabel = isEn ? 'Play automatic carousel' : 'Relancer le carrousel';
+// quick-260726-u97 (sketch 008 Variant C): the permanent center-zone cursor
+// label — always visible, not a hover-discovery hint (direct feedback on
+// the sketch confirmed there is no unlabeled ring state).
+const openLabel = isEn ? 'OPEN' : 'OUVRIR';
 const wordmark = 'Atelier Jacqueline Suzanne';
 const introBody = siteCopy.homepageIntro;
 
@@ -173,6 +177,16 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           16:9 band regardless of how tall the accent panel makes
           .home-hero grow. */}
       <div class="home-hero__photo">
+        {/* quick-260726-u97 (sketch 008 Variant C): parallax-push peek
+            layers, sitting UNDERNEATH the current photo (z-index below the
+            .home-hero__img layers) — as the pointer nears an edge, the
+            current photo peels away (Task 3's cursor script) and one of
+            these real adjacent-gallery photos is revealed underneath. Rest
+            position is fully off-screen (translateX ±100%), populated with
+            real data in render() below, desktop-gated (hoverCapable) since
+            touch has no hover to approach an edge with. */}
+        <img data-role="peek-prev" alt="" aria-hidden="true" class="home-hero__peek home-hero__peek--prev" />
+        <img data-role="peek-next" alt="" aria-hidden="true" class="home-hero__peek home-hero__peek--next" />
         <img data-role="hero-image-placeholder" src={firstGallery.blurSrc} alt="" aria-hidden="true" class="home-hero__img home-hero__img-placeholder" />
         <img
           data-role="hero-image"
@@ -184,13 +198,6 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           class="home-hero__img home-hero__img--sharp"
         />
         <div class="home-hero__scrim" aria-hidden="true"></div>
-        {/* quick-260726-obg (sketch 007 Variant C): sibling of the scrim,
-            layered above it and below the caption — the new radial-darken
-            overlay driven by --pull-darken (script below), replacing the
-            footer's old accidental role as an overscroll safety buffer with
-            a real, early, visible warning. Never repurposes .home-hero__scrim
-            itself, which serves a permanent, unrelated legibility purpose. */}
-        <div class="home-hero__pull-overlay" aria-hidden="true"></div>
 
         <div class="home-hero__caption">
           {/* Direct request: replaces the prev/next arrow buttons with a
@@ -234,6 +241,17 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           </div>
           <p class="home-hero__index" data-role="index-label">01 / {totalLabel}</p>
           <a class="home-hero__title" data-role="gallery-title" href={getRelativeLocaleUrl(locale, `galleries/${firstGallery.slug}`)}>{firstGallery.title.toUpperCase()}</a>
+        </div>
+
+        {/* quick-260726-u97 (sketch 008 Variant C): the custom hover cursor
+            replacing the removed scroll-to-open gesture — permanent OUVRIR/
+            OPEN center ring, accent-tinted directional arrow pill at the 22%
+            edge zones. Gated entirely behind (hover: hover) and
+            (pointer: fine) in both CSS and JS below, so it never activates
+            on touch (the mobile fallback is a plain tap, wired in Task 5). */}
+        <div class="home-hero__cursor" data-role="hero-cursor" data-zone="center" aria-hidden="true">
+          <span class="home-hero__cursor-label">{openLabel}</span>
+          <span class="home-hero__cursor-arrow" aria-hidden="true">&#8594;</span>
         </div>
       </div>
 
@@ -309,7 +327,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     </ul>
 
     <script>
-      import { computeWordmarkBackgroundPosition, detectSwipeDirection } from '../lib/home-carousel';
+      import { computeHoverZone, computeWordmarkBackgroundPosition, detectSwipeDirection } from '../lib/home-carousel';
 
       interface GalleryEntry {
         slug: string;
@@ -468,14 +486,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         // relative to a DIFFERENT (larger) box than the element's own".
         function syncWordmarkAlignment() {
           if (!heroImg || !wordmarkEl) return;
-          // Deliberately heroImg's own rect, not .home-hero's — heroImg now
-          // carries `top: -4%; left: -4%; width: 108%; height: 108%`
-          // (quick-260726-qem, the overscroll-pull overhang reserve — not a
-          // dedicated "zoom fix"), so its actual rendered box is already
-          // bigger than the visible hero container. Reading it directly here
-          // means the crop math below automatically reflects that expanded
-          // box with no separate inset term needed — it's already baked
-          // into this rect.
+          // heroImg carries a plain full-cover box (inset: 0; width/height:
+          // 100%) — its own rect is read directly here (not .home-hero's)
+          // since object-fit:cover's crop math is relative to the img's own
+          // rendered box.
           const result = computeWordmarkBackgroundPosition(
             heroImg.naturalWidth,
             heroImg.naturalHeight,
@@ -492,21 +506,6 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         function render() {
           const gallery = galleries[carouselIndex];
           if (!gallery) return;
-          // quick-260726-obg: a pulled-back/darkened photo must never carry
-          // across an auto-advance or a manual slide change — a deliberate
-          // change mid-gesture signals the visitor is NOT trying to open the
-          // CURRENT gallery. render() runs on every swap (auto-advance, dash
-          // click, arrow keys, swipe), so resetting here uniformly covers
-          // every path, complementing showGrid()'s own reset below. Forward
-          // references to decayRaf/overscrollAccum/setPullFeedback are safe:
-          // render() is first invoked at the very end of this script, after
-          // those declarations have already executed.
-          if (decayRaf !== null) {
-            cancelAnimationFrame(decayRaf);
-            decayRaf = null;
-          }
-          overscrollAccum = 0;
-          setPullFeedback(0);
           // The clipped wordmark has no visible glyph fill until its photo
           // exists. Return to the solid inherited text fallback for every
           // swap, then opt into the cutout only after the active sharp hero
@@ -575,6 +574,29 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             preload.srcset = galleries[nextIndex]?.heroSrcSet ?? '';
             preload.sizes = '100vw';
             preload.src = nextSrc;
+          }
+
+          // quick-260726-u97 (sketch 008 Variant C): keeps the peek layers'
+          // sources tracking the CURRENT slide's real neighbours on every
+          // swap (auto-advance, dash click, arrow keys, swipe) — forward
+          // references to hoverCapable/peekPrev/peekNext/resetPeek are safe:
+          // render() is first invoked at the very end of this script, after
+          // those declarations have already executed. Guarded on
+          // hoverCapable so touch skips the extra image loads entirely.
+          if (hoverCapable) {
+            const prevGallery = galleries[(carouselIndex - 1 + galleries.length) % galleries.length];
+            const nextGallery = galleries[nextIndex];
+            if (peekPrev && prevGallery) {
+              peekPrev.src = prevGallery.heroSrc;
+              peekPrev.srcset = prevGallery.heroSrcSet;
+              peekPrev.sizes = '100vw';
+            }
+            if (peekNext && nextGallery) {
+              peekNext.src = nextGallery.heroSrc;
+              peekNext.srcset = nextGallery.heroSrcSet;
+              peekNext.sizes = '100vw';
+            }
+            resetPeek();
           }
         }
 
@@ -662,13 +684,9 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           hero!.hidden = true;
           grid!.hidden = false;
           stopAutoAdvance();
-          // D6: switching to grid clears any in-flight overscroll
-          // accumulation — scrolling never navigates in grid mode.
-          overscrollAccum = 0;
-          // quick-260726-obg: symmetry with render()'s own reset above —
-          // clears any lingering visible pull feedback when leaving carousel
-          // mode entirely.
-          setPullFeedback(0);
+          // quick-260726-u97: a lingering peek can't survive a mode switch
+          // (forward reference, safe — see render()'s own call above).
+          if (hoverCapable) resetPeek();
         }
 
         hero.addEventListener('mouseenter', stopAutoAdvance);
@@ -746,6 +764,14 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           touchStartX = touch.clientX;
           touchStartY = touch.clientY;
         }, { passive: true });
+        // quick-260726-u97: mobile tap-to-open — extends this SAME handler
+        // (not a second touch listener) so it composes cleanly with the
+        // swipe it already detects. A genuine tap (negligible movement on
+        // both axes) opens the current gallery; a real horizontal swipe
+        // navigates (unchanged, above); a vertical scroll-drag (large
+        // deltaY) is neither, so it correctly does nothing — a tap never
+        // fires mid-swipe and never hijacks a vertical scroll.
+        const TAP_MAX_MOVEMENT = 10;
         heroPhoto?.addEventListener('touchend', (event) => {
           const touch = event.changedTouches[0];
           if (!touch) return;
@@ -754,135 +780,38 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           const direction = detectSwipeDirection(deltaX, deltaY, SWIPE_MIN_DISTANCE, SWIPE_DIRECTION_RATIO);
           if (direction === 'next') {
             goToNext();
-          } else if (direction === 'prev') {
+            return;
+          }
+          if (direction === 'prev') {
             goToPrev();
+            return;
+          }
+          if (Math.abs(deltaX) <= TAP_MAX_MOVEMENT && Math.abs(deltaY) <= TAP_MAX_MOVEMENT) {
+            openCurrent();
           }
         }, { passive: true });
 
-        // quick-260725-cfm (D1/D3/D6/D7), simplified quick-260725-pit:
-        // overscroll-past-the-bottom navigation into the currently-shown
-        // collection. Never preventDefault()s — all listeners below are
-        // passive, so normal scrolling (incl. reaching the footer) is never
-        // blocked. Deliberately separate from the horizontal-swipe
-        // touchstart/touchend handlers above (those stay on
-        // .home-hero__photo, gallery navigation only); this is a
-        // window-level vertical accumulator gated on already being at the
-        // bottom of the page. quick-260725-pit: the gesture is now silent/
-        // implicit (no visible hint) and light — OPEN_OVERSCROLL_THRESHOLD
-        // is 150 (down from 600), a deliberate-but-quick TUNABLE value
-        // (~1.5 mouse-wheel notches, each ~100-120px in Chrome) chosen so a
-        // single stray tick can't misfire, but a second notch or a
-        // continuous trackpad swipe fires near-instantly. The accumulator
-        // is kept (not switched to "fire on first single delta") because
-        // trackpad scrolling emits many tiny per-event deltas that would
-        // never cross a single-delta floor. If it ever misfires live, raise
-        // toward ~200; if it feels sluggish, lower toward ~100.
-        const OPEN_OVERSCROLL_THRESHOLD = 150;
-        const BOTTOM_EPSILON = 4;
-        const RESET_IDLE_MS = 800;
-        // quick-260726-obg (sketch 007 Variant C): the decay animation's
-        // duration and its in-flight requestAnimationFrame handle. Kept
-        // alongside the accumulator state above rather than co-located with
-        // setPullFeedback()/decayOverscroll() below, since every function in
-        // this block reads/writes these same few variables together.
-        const OVERSCROLL_DECAY_MS = 300;
-        let decayRaf: number | null = null;
-        let overscrollAccum = 0;
-        let lastOverscrollTs = 0;
-        let navigating = false;
-
-        function atBottom(): boolean {
-          return window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - BOTTOM_EPSILON;
-        }
-
-        // quick-260726-obg (sketch 007 Variant C, exact sketch coefficients):
-        // 0 -> no pull, 1 -> at/past the threshold. Scales the photo down to
-        // ~0.94 and darkens the new .home-hero__pull-overlay up to ~0.85
-        // opacity — the early, visible warning that replaces the footer's
-        // old (accidental) role as a safety buffer (safety_investigation
-        // items 1-2). Guarded on heroPhoto since it's declared above for the
-        // horizontal-swipe handlers and may be null if the markup is ever
-        // missing.
-        function setPullFeedback(p: number) {
-          if (!heroPhoto) return;
-          const clamped = Math.max(0, Math.min(1, p));
-          heroPhoto.style.setProperty('--pull-scale', String(1 - clamped * 0.06));
-          heroPhoto.style.setProperty('--pull-darken', String(clamped * 0.85));
-        }
-
-        // quick-260726-obg: proactive decay back to neutral — animates
-        // overscrollAccum from its current value to 0 over OVERSCROLL_DECAY_MS
-        // so "letting go" visibly reads as cancel (safety_investigation item
-        // 5 / sketch "Learned by building this"), rather than the old lazy
-        // reset that only ever fired invisibly on the next scroll event.
-        function decayOverscroll() {
-          if (decayRaf !== null) {
-            cancelAnimationFrame(decayRaf);
-            decayRaf = null;
-          }
-          if (overscrollAccum <= 0) {
-            setPullFeedback(0);
-            return;
-          }
-          if (reduceMotionQuery.matches) {
-            // Reduced motion: snap instantly rather than animate the decay —
-            // the feedback itself stays (safety_investigation item 4), only
-            // this particular easing is skipped.
-            overscrollAccum = 0;
-            setPullFeedback(0);
-            return;
-          }
-          const start = overscrollAccum;
-          const startTs = performance.now();
-          const step = (ts: number) => {
-            const t = Math.min(1, (ts - startTs) / OVERSCROLL_DECAY_MS);
-            overscrollAccum = start * (1 - t);
-            setPullFeedback(overscrollAccum / OPEN_OVERSCROLL_THRESHOLD);
-            if (t < 1) {
-              decayRaf = requestAnimationFrame(step);
-            } else {
-              decayRaf = null;
-              overscrollAccum = 0;
-            }
-          };
-          decayRaf = requestAnimationFrame(step);
-        }
-
-        // quick-260726-obg: proactive idle watchdog (T-obg-01, mitigate) —
-        // a stopped gesture decays back to neutral on its own after
-        // RESET_IDLE_MS, rather than waiting for the next scroll event to
-        // lazily notice. Self-bounded: only starts a rAF when there is
-        // something to decay and nothing already decaying; the rAF itself
-        // always terminates at t=1 and clears decayRaf.
-        setInterval(() => {
-          if (!navigating && decayRaf === null && overscrollAccum > 0 && Date.now() - lastOverscrollTs > RESET_IDLE_MS) {
-            decayOverscroll();
-          }
-        }, 150);
-
         // D3: reuses the current slide's title link — its href AND its
         // existing click listener (which already calls setCrossDocPhoto())
-        // — rather than duplicating routing or morph-naming.
-        function navigateToCurrent() {
-          if (navigating) return;
-          navigating = true;
-          // quick-260726-obg (safety_investigation item 5): reset to the
-          // resting appearance SYNCHRONOUSLY and WITHOUT the ease, before the
-          // real navigation click fires — the outgoing cross-document View
-          // Transition snapshot (view-transition-name: hero-photo, sketch
-          // 006 / quick-260724-uf5) must capture the photo at scale 1 / no
-          // darken, not mid-pull. The .is-opening class (CSS above) disables
-          // the transition for exactly this reset; the forced reflow flushes
-          // it before titleEl.click() proceeds.
-          if (decayRaf !== null) {
-            cancelAnimationFrame(decayRaf);
-            decayRaf = null;
-          }
-          overscrollAccum = 0;
+        // — rather than duplicating routing or morph-naming. Works
+        // identically on desktop (center-zone click) and touch (tap-to-open
+        // above). The `opening` guard is the only re-entrancy protection
+        // this feature needs: on a hybrid touchscreen-laptop a tap can fire
+        // BOTH touchend (tap-to-open) and a synthesized click (desktop
+        // center-open click handler below), and native navigation must not
+        // be triggered twice.
+        let opening = false;
+        function openCurrent() {
+          if (opening) return;
+          opening = true;
           if (heroPhoto) {
+            // Synchronous, un-eased reset (via .is-opening disabling the
+            // transition below, plus the forced reflow) so the outgoing
+            // cross-document `hero-photo` View Transition snapshot captures
+            // the photo at rest, never mid-push, even if an edge-peek
+            // parallax was still easing back when this fired.
             heroPhoto.classList.add('is-opening');
-            heroPhoto.style.setProperty('--pull-scale', '1');
-            heroPhoto.style.setProperty('--pull-darken', '0');
+            heroPhoto.style.setProperty('--peek-shift', '0');
             void heroPhoto.offsetWidth;
           }
           if (titleEl) {
@@ -893,94 +822,109 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           }
         }
 
-        // D1: accumulates downward scroll intent only once the page is
-        // already at the bottom, so the footer is always reachable by
-        // normal scrolling first. D6: only active in carousel mode.
-        function registerDownwardIntent(delta: number) {
-          if (navigating || root!.dataset.displayMode !== 'carousel') return;
-          if (delta <= 0) {
-            // Upward intent cancels the gesture — animate back to neutral
-            // (quick-260726-obg) rather than silently zeroing the state, so
-            // releasing partway through visibly reads as cancel.
-            decayOverscroll();
+        // quick-260726-u97 (sketch 008 Variant C): the custom hover cursor +
+        // edge-zone/peek interaction that replaces the removed scroll-to-open
+        // gesture. Entirely inert on touch/coarse-pointer — matchMedia here
+        // (not just the CSS media query) means none of this JS ever wires up
+        // on a touchscreen; the mobile fallback is a plain tap (Task 5).
+        const hoverCapable = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+        const EDGE_ZONE_FRACTION = 0.22;
+        const PEEK_MAX_PUSH_FRACTION = 0.16;
+        let currentZone: 'center' | 'left' | 'right' = 'center';
+        let currentProximity = 0;
+        // Declared at this outer scope (not nested inside the hoverCapable
+        // block below) so render()/showGrid() — defined earlier in this
+        // script but only ever invoked after every declaration here has
+        // run — can call them unconditionally; both no-op safely when the
+        // elements are null (touch, or markup ever missing).
+        let peekPrev: HTMLImageElement | null = null;
+        let peekNext: HTMLImageElement | null = null;
+
+        function resetPeek() {
+          if (!heroPhoto) return;
+          heroPhoto.style.setProperty('--peek-shift', '0');
+          if (peekPrev) peekPrev.style.transform = 'translateX(-100%)';
+          if (peekNext) peekNext.style.transform = 'translateX(100%)';
+        }
+
+        // quick-260726-u97 (sketch 008 Variant C, exact sketch coefficients):
+        // ports the sketch's parallax-push math directly — current photo
+        // pushes at most 16% of its own width, prev/next slide in at a
+        // full 100% rate, so the adjacent layer always covers the vacated
+        // gap (no background ever shows through).
+        function updatePeek() {
+          if (!heroPhoto) return;
+          if (reduceMotionQuery.matches) {
+            // Decorative only — reduced-motion visitors get no parallax
+            // (the cursor's own arrow still signals direction).
+            resetPeek();
             return;
           }
-          if (!atBottom()) {
-            // Still real content to scroll through — never accumulate here.
-            return;
-          }
-          // A fresh forward push supersedes any in-flight decay.
-          if (decayRaf !== null) {
-            cancelAnimationFrame(decayRaf);
-            decayRaf = null;
-          }
-          const now = Date.now();
-          if (now - lastOverscrollTs > RESET_IDLE_MS) {
-            // Idle reset applied BEFORE adding the new delta: a genuinely
-            // continuous push accumulates, but a stale reading pause (e.g.
-            // the visitor stopped to read the footer) does not silently
-            // carry over into a later, unrelated scroll.
-            overscrollAccum = 0;
-          }
-          overscrollAccum += delta;
-          lastOverscrollTs = now;
-          // quick-260726-obg: the visible warning itself — written BEFORE the
-          // threshold check below, so the photo is already clearly scaled/
-          // darkened by the time (if ever) navigateToCurrent() fires.
-          setPullFeedback(overscrollAccum / OPEN_OVERSCROLL_THRESHOLD);
-          if (overscrollAccum >= OPEN_OVERSCROLL_THRESHOLD) {
-            navigateToCurrent();
+          if (currentZone === 'left') {
+            heroPhoto.style.setProperty('--peek-shift', `${currentProximity * PEEK_MAX_PUSH_FRACTION * 100}%`);
+            if (peekPrev) peekPrev.style.transform = `translateX(${-100 + currentProximity * 100}%)`;
+            if (peekNext) peekNext.style.transform = 'translateX(100%)';
+          } else if (currentZone === 'right') {
+            heroPhoto.style.setProperty('--peek-shift', `${-currentProximity * PEEK_MAX_PUSH_FRACTION * 100}%`);
+            if (peekNext) peekNext.style.transform = `translateX(${100 - currentProximity * 100}%)`;
+            if (peekPrev) peekPrev.style.transform = 'translateX(-100%)';
+          } else {
+            resetPeek();
           }
         }
 
-        // Resets any accumulated overscroll once the visitor is no longer at
-        // the bottom, for ANY reason — not just the wheel/touch upward-
-        // intent branch in registerDownwardIntent(). Without this, leaving
-        // the bottom via a path that never fires 'wheel'/'touchmove'
-        // (keyboard Home/PageUp, scrollbar drag, window.scrollTo) leaves
-        // overscrollAccum stuck at a stale positive value: a later,
-        // unrelated overscroll would start from a non-zero baseline instead
-        // of 0 — undermining the "deliberate threshold" safety guarantee.
-        window.addEventListener('scroll', () => {
-          if (!atBottom()) {
-            overscrollAccum = 0;
-            // quick-260726-obg: also clear any lingering visible feedback —
-            // leaving the bottom by a non-gesture path (scrollbar drag,
-            // keyboard) shouldn't leave the photo visibly pulled back.
-            setPullFeedback(0);
-          }
-        }, { passive: true });
+        if (hoverCapable && heroPhoto) {
+          const cursorEl = heroPhoto.querySelector<HTMLElement>('[data-role="hero-cursor"]');
+          peekPrev = heroPhoto.querySelector<HTMLImageElement>('[data-role="peek-prev"]');
+          peekNext = heroPhoto.querySelector<HTMLImageElement>('[data-role="peek-next"]');
 
-        // Desktop input: wheel deltaY (positive = down). Never preventDefault.
-        window.addEventListener('wheel', (event) => {
-          registerDownwardIntent(event.deltaY);
-        }, { passive: true });
+          heroPhoto.addEventListener('mousemove', (event) => {
+            const rect = heroPhoto.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            if (cursorEl) {
+              cursorEl.style.transform = `translate(${x}px, ${y}px)`;
+            }
+            const { zone, proximity } = computeHoverZone(x / rect.width, EDGE_ZONE_FRACTION);
+            currentZone = zone;
+            currentProximity = proximity;
+            if (cursorEl) {
+              cursorEl.dataset.zone = zone;
+            }
+            updatePeek();
+          });
 
-        // Mobile input: a window-level touchmove accumulator, independent
-        // of the hero's own horizontal-swipe handlers above. Only counts
-        // upward finger movement (i.e. downward scroll intent) when the
-        // drag is vertically dominant, so a horizontal gallery swipe never
-        // feeds it.
-        let lastMoveY = 0;
-        let overscrollTouchStartX = 0;
-        let overscrollTouchStartY = 0;
-        window.addEventListener('touchstart', (event) => {
-          const touch = event.touches[0];
-          if (!touch) return;
-          lastMoveY = touch.clientY;
-          overscrollTouchStartX = touch.clientX;
-          overscrollTouchStartY = touch.clientY;
-        }, { passive: true });
-        window.addEventListener('touchmove', (event) => {
-          const touch = event.touches[0];
-          if (!touch) return;
-          const dy = lastMoveY - touch.clientY;
-          const totalDx = Math.abs(touch.clientX - overscrollTouchStartX);
-          if (Math.abs(touch.clientY - overscrollTouchStartY) > totalDx) {
-            registerDownwardIntent(dy);
-          }
-          lastMoveY = touch.clientY;
-        }, { passive: true });
+          heroPhoto.addEventListener('mouseenter', () => {
+            heroPhoto.classList.add('is-cursor-active');
+          });
+
+          heroPhoto.addEventListener('mouseleave', () => {
+            heroPhoto.classList.remove('is-cursor-active');
+            currentZone = 'center';
+            currentProximity = 0;
+            if (cursorEl) {
+              cursorEl.dataset.zone = 'center';
+            }
+            resetPeek();
+          });
+
+          // Desktop click: center zone opens the current gallery, edge
+          // zones navigate prev/next. Clicks inside .home-hero__caption are
+          // ignored so the title link, progress dashes, and autoplay toggle
+          // keep their own existing handlers — they must never be hijacked
+          // by zone navigation.
+          heroPhoto.addEventListener('click', (event) => {
+            const target = event.target as HTMLElement;
+            if (target.closest('.home-hero__caption')) return;
+            if (currentZone === 'left') {
+              goToPrev();
+            } else if (currentZone === 'right') {
+              goToNext();
+            } else {
+              openCurrent();
+            }
+          });
+        }
 
         // D-01/D-02/D-03: a single stateful button — its aria-label always
         // names the mode you'd switch TO, read off its own data-label-*
@@ -1463,63 +1407,45 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        `heroPhoto.style.viewTransitionName` in the <script> below) and
        eliminates the "always named, even at rest" state entirely, without
        gating document.startViewTransition() to desktop (D-12). */
-    /* Item 3 (silent/implicit affordance, no visible hint element — direct
-       user feedback rejected a visible hint in quick-260725-pit): a small
-       custom cursor over the hero photo hints "interactive / more content
-       below" for both carousel nav and the scroll-to-open gesture. A
-       down-chevron glyph, white stroke over a subtle dark halo so it stays
-       legible on both light and dark photos, 28x28 viewBox, hotspot at
-       14 14 (the glyph's own center). `pointer` is the fallback for engines
-       that reject the data-URI cursor. */
-    cursor:
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpath d='M8 11 L14 17 L20 11' fill='none' stroke='rgba(0,0,0,0.35)' stroke-width='4.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M8 11 L14 17 L20 11' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
-        14 14,
-      pointer;
-    /* quick-260726-obg: invisible at rest (the photo layers fully cover it)
-       — only visible as a dark edge while the photo scales back during an
-       overscroll pull, keeping that edge dark/consistent with the darken
-       feedback instead of flashing the page background through. */
-    background-color: #000;
+  }
+
+  /* quick-260726-u97 (sketch 008 Variant C): the adjacent-gallery preview
+     revealed as the current photo peels back. Rests fully off-screen
+     (translateX ±100%); z-index below .home-hero__img so it stays hidden
+     under the current photo except in the vacated gap the parallax push
+     creates. Sources are set from real data (galleries[i-1]/[i+1]) in
+     render() below, so this always tracks the current neighbours. */
+  .home-hero__peek {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    will-change: transform;
+  }
+
+  .home-hero__peek--prev {
+    transform: translateX(-100%);
+  }
+
+  .home-hero__peek--next {
+    transform: translateX(100%);
   }
 
   .home-hero__img {
     position: absolute;
-    /* quick-260726-qem: overscroll-pull bleed reserve, giving this box an
-       8% overhang (4% per side) beyond .home-hero__photo, centered.
-       Deliberately `top`/`left` + explicit `width`/`height` percentages —
-       NOT a shorthand `inset: -4%` with width/height removed. `<img>` is a
-       CSS replaced element: per the abs-pos-replaced-element sizing rules,
-       giving a replaced element `width: auto` (even with all four insets
-       specified) resolves the used width from the image's INTRINSIC size,
-       not from the inset offsets — confirmed by direct measurement, the
-       rendered box stayed at the container's own size instead of
-       inflating. (The sketch's `inset: -3%` precedent doesn't hit this:
-       `.demo-photo` there is a plain `<div>` with a CSS background-image,
-       not a replaced element, so auto-width DOES resolve from insets for
-       that box.) Specifying explicit width/height together with only
-       top+left (never right/bottom) sizes this box unambiguously — no
-       over-constraint, since right/bottom are left to be derived, not
-       fought over — and works identically for replaced and non-replaced
-       elements. `object-fit: cover` scales the raster to fill the inflated
-       box; .home-hero__photo's overflow: hidden clips the overhang
-       invisibly at rest (a slight, uniform ~8% center-zoom, not a visible
-       border); when the photo scales DOWN during a pull, that reserve is
-       consumed instead of exposing .home-hero__photo's
-       background-color: #000. No-black condition at the shipped 0.94
-       minimum pull scale: an X% per-side overhang inflates the box to
-       (100 + 2X)%, and (100 + 2*4) * 0.94 = 101.52 >= 100. */
-    top: -4%;
-    left: -4%;
-    width: 108%;
-    height: 108%;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
-    /* quick-260726-obg (sketch 007 Variant C): the overscroll pull feedback
-       scales the photo layers themselves (not the container), so the
-       caption/dashes/index/title stay unscaled. Driven by --pull-scale,
-       written by setPullFeedback() in the <script> below. */
-    transform: scale(var(--pull-scale, 1));
-    transform-origin: center;
-    transition: transform 90ms ease-out;
+    /* quick-260726-u97 (sketch 008 Variant C): the parallax-push peek
+       shifts the current photo itself, driven by --peek-shift (written by
+       updatePeek() in the <script> below; 0 at rest / in the center zone). */
+    transform: translateX(var(--peek-shift, 0));
+    transition: transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
   /* HOME-09 (D-01/D-02/D-06): blur-up placeholder crossfade — two stacked
@@ -1527,51 +1453,35 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
      animation (see 09-UI-SPEC.md's hard requirement). The placeholder
      renders first in DOM order (paints beneath); the sharp layer starts
      transparent and fades to opaque once loaded (render() below toggles
-     .is-loaded on every first paint and swap). quick-260726-obg: the
-     transition shorthand now also carries the base rule's transform
-     transition (90ms ease-out) — this element sets its own `transition`
-     property, which would otherwise clobber the base .home-hero__img rule's
-     transform transition entirely. */
+     .is-loaded on every first paint and swap). quick-260726-u97: this
+     element sets its own `transition`, which would otherwise clobber the
+     base .home-hero__img rule's transform transition entirely — both are
+     carried here so the crossfade AND the parallax push animate. */
   .home-hero__img--sharp {
     opacity: 0;
-    transition: opacity 260ms ease, transform 90ms ease-out;
+    transition: opacity 260ms ease, transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
   .home-hero__img--sharp.is-loaded {
     opacity: 1;
   }
 
-  /* quick-260726-obg: instantaneous commit-reset hook. navigateToCurrent()
-     (script below) adds .is-opening to .home-hero__photo synchronously,
-     right before setting --pull-scale/--pull-darken back to neutral and
-     forcing a reflow, so the reset itself never eases — the outgoing
-     cross-document View Transition snapshot must capture the photo already
-     at rest, not mid-recede. */
+  /* quick-260726-u97: instantaneous commit-reset hook — openCurrent()
+     (Task 5) adds .is-opening to .home-hero__photo synchronously, right
+     before resetting --peek-shift/the peek layers to their resting
+     transform and forcing a reflow, so the reset itself never eases: the
+     outgoing cross-document View Transition snapshot must capture the
+     photo already at rest, not mid-recede. */
   .home-hero__photo.is-opening .home-hero__img,
-  .home-hero__photo.is-opening .home-hero__pull-overlay {
+  .home-hero__photo.is-opening .home-hero__peek {
     transition: none;
   }
 
   .home-hero__scrim {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.15) 45%, rgba(0, 0, 0, 0) 70%);
-  }
-
-  /* quick-260726-obg (sketch 007 Variant C, winner): the new overscroll
-     safety signal — a radial darken layered above the permanent .home-hero__scrim
-     and below .home-hero__caption (z-index 3), driven by --pull-darken.
-     Mirrors the sketch's .demo-scrim-boost exactly (same gradient stops,
-     same coefficients in setPullFeedback() below). pointer-events: none so
-     it never intercepts clicks/hover meant for the photo/title beneath it. */
-  .home-hero__pull-overlay {
-    position: absolute;
-    inset: 0;
     z-index: 2;
-    pointer-events: none;
-    background: radial-gradient(ellipse at 50% 60%, transparent 25%, rgba(0, 0, 0, 0.75) 100%);
-    opacity: var(--pull-darken, 0);
-    transition: opacity 90ms ease-out;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.15) 45%, rgba(0, 0, 0, 0) 70%);
   }
 
   /* Replaces the old prev/next arrow buttons. Direct follow-up feedback:
@@ -1733,23 +1643,19 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       display: none;
     }
 
-    /* quick-260726-obg (safety_investigation item 4): the scale/darken pull
-       feedback is the ONLY remaining safety signal against the
-       vacuous-atBottom tradeoff (see Task 2) — it must NOT be silently
-       disabled for reduced-motion visitors the way the purely-decorative
-       progress-dash fill above is. Only the easing is dropped (both become
-       effectively instant via setPullFeedback()'s reduced-motion branch in
-       the <script> below); the scale/darken VALUES are unchanged. Keeps the
-       260ms opacity crossfade for the HOME-09 blur-up (untouched by this
-       task) by narrowing transition-property rather than removing the
-       transition outright. */
-    .home-hero__img,
-    .home-hero__img--sharp {
-      transition-property: opacity;
+    /* quick-260726-u97: the parallax-push peek is decorative — under
+       reduced motion the JS branch (updatePeek() below) skips it entirely
+       and calls resetPeek() instead; this CSS override is the belt-and-
+       braces guarantee that even a stray transform write can't animate.
+       .home-hero__img--sharp keeps its opacity-only crossfade (HOME-09,
+       untouched by this task). */
+    .home-hero__peek,
+    .home-hero__img {
+      transition: none;
     }
 
-    .home-hero__pull-overlay {
-      transition: none;
+    .home-hero__img--sharp {
+      transition-property: opacity;
     }
   }
 
@@ -1796,7 +1702,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        quick-260725-tqs (Item 3) per direct user feedback — matches
        DetailHero's non-underlined overlay title (a <p>, so it never had one
        in the first place). The accent-color hover/focus state below plus
-       the custom down-chevron cursor already on the ancestor
+       the custom hover cursor (quick-260726-u97) already on the ancestor
        .home-hero__photo remain the click affordances; no visible discovery
        hint replaces the underline. */
     text-decoration: none;
@@ -1804,10 +1710,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    /* Item 3: .home-hero__photo (an ancestor) now sets a custom cursor,
-       which is an inherited property — without this explicit override the
-       title link would inherit that photo cursor and lose its own pointer
-       affordance. */
+    /* On real-mouse desktop, .home-hero__photo (an ancestor) sets
+       cursor: none — an inherited property — so the custom hover-cursor
+       element can stand in for it. Without this explicit override the
+       title link would inherit that none and lose its own pointer
+       affordance while hovered directly. */
     cursor: pointer;
   }
 
@@ -1819,6 +1726,118 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        underline }` rule would re-underline it on hover/focus even though
        the base rule above now sets text-decoration: none at rest. */
     text-decoration: none;
+  }
+
+  /* quick-260726-u97 follow-up (live-verification fix): the base/resting
+     properties that keep .home-hero__cursor invisible and OUT OF DOCUMENT
+     FLOW must NOT be gated behind the (hover: hover) and (pointer: fine)
+     media query below — on a device where that query never matches (any
+     touchscreen), a gated-only rule means this element gets ZERO styling
+     at all and falls back to browser defaults: position:static,
+     display:block, opacity:1, full container width. Confirmed live on an
+     emulated mobile context (390x844, hasTouch/isMobile) via
+     getComputedStyle: a real laid-out block reading "OUVRIR→" in dark ink
+     at the top of the photo — invisible in one screenshot purely by
+     coincidence (the site header happened to paint over it in its own
+     higher stacking context), not because it was actually inert. This
+     ungated rule is the fix: position/opacity/pointer-events hold on EVERY
+     device by default, regardless of whether the media query below ever
+     matches. Everything else (sizing, colors, the zone-morph states, the
+     activation opacity:1, transitions, and cursor:none on
+     .home-hero__photo) correctly stays gated — those genuinely should only
+     exist on real-mouse desktop, and .is-cursor-active is only ever added
+     by the hoverCapable-gated script, so it can never fire on touch. */
+  .home-hero__cursor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* quick-260726-u97 (sketch 008 Variant C): the custom hover cursor,
+     gated entirely to real-mouse desktop — (hover: hover) and
+     (pointer: fine) never both match on a touchscreen, so none of this
+     activates there and the native default cursor + a plain tap (Task 5)
+     are all a touch visitor ever sees. */
+  @media (hover: hover) and (pointer: fine) {
+    .home-hero__photo {
+      cursor: none;
+    }
+
+    .home-hero__cursor {
+      z-index: 4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 68px;
+      height: 68px;
+      margin: -34px 0 0 -34px;
+      border: 1.5px solid rgba(255, 255, 255, 0.9);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14);
+      color: #FFFFFF;
+      font-family: var(--font-sans);
+      font-size: 11px;
+      font-weight: var(--weight-semibold);
+      letter-spacing: 0.04em;
+      transform: translate(0, 0) scale(0.6);
+      transition:
+        opacity 160ms ease,
+        transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+        width 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+        height 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+        margin 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+        border-radius 200ms ease,
+        background 200ms ease,
+        border-color 200ms ease;
+    }
+
+    .home-hero__photo.is-cursor-active .home-hero__cursor {
+      opacity: 1;
+      transform: translate(0, 0) scale(1);
+    }
+
+    /* Edge zones: the ring morphs into an accent-tinted directional pill —
+       .home-hero__cursor's own `transform: translate(x, y)` (JS, tracking
+       the pointer) is untouched by this; only geometry/color change. */
+    .home-hero__cursor[data-zone='left'],
+    .home-hero__cursor[data-zone='right'] {
+      width: 92px;
+      height: 52px;
+      margin: -26px 0 0 -46px;
+      background: var(--current-accent, var(--color-accent));
+      border-color: var(--current-accent, var(--color-accent));
+      color: var(--current-accent-text, var(--color-on-accent));
+    }
+
+    /* Center label is permanent (no unlabeled ring state — confirmed
+       feedback); hidden in the edge zones, where the arrow takes over. */
+    .home-hero__cursor[data-zone='left'] .home-hero__cursor-label,
+    .home-hero__cursor[data-zone='right'] .home-hero__cursor-label {
+      display: none;
+    }
+
+    .home-hero__cursor-arrow {
+      display: none;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .home-hero__cursor[data-zone='left'] .home-hero__cursor-arrow,
+    .home-hero__cursor[data-zone='right'] .home-hero__cursor-arrow {
+      display: inline;
+    }
+
+    .home-hero__cursor[data-zone='left'] .home-hero__cursor-arrow {
+      transform: scaleX(-1);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .home-hero__cursor {
+        transition: none;
+      }
+    }
   }
 
   .home-hero__accent {

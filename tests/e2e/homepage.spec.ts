@@ -264,24 +264,6 @@ test.describe('collection statements on the homepage', () => {
   });
 });
 
-// quick-260725-tqs (Item 3): custom photo cursor affordance — silent/
-// implicit, no visible hint UI (direct user feedback rejected a visible
-// hint in quick-260725-pit).
-test.describe('carousel custom cursor affordance (Item 3)', () => {
-  test('the hero photo has a custom cursor while the title link keeps its pointer cursor', async ({ page }) => {
-    await page.goto('/');
-
-    const photoCursor = await page.locator('.home-hero__photo').evaluate((el) => getComputedStyle(el).cursor);
-    expect(photoCursor.includes('url(') || photoCursor.includes('data:image/svg+xml')).toBe(true);
-
-    // .home-hero__title is a descendant of .home-hero__photo and does not
-    // set its own cursor from anywhere else — this proves the explicit
-    // cursor: pointer override survives cursor inheritance from the photo.
-    const titleCursor = await page.locator('[data-role="gallery-title"]').evaluate((el) => getComputedStyle(el).cursor);
-    expect(titleCursor).toBe('pointer');
-  });
-});
-
 // quick-260726-obg (Task 3): removes the persistent underline added by
 // quick-260725-tqs (Item 3), per direct user feedback — matches DetailHero's
 // non-underlined overlay title.
@@ -294,6 +276,398 @@ test.describe('carousel title has no underline (quick-260726-obg)', () => {
 
     await title.hover();
     await expect(title).toHaveCSS('text-decoration-line', 'none');
+  });
+});
+
+// quick-260726-u97 (sketch 008 Variant C): the custom hover cursor that
+// replaces the removed scroll-to-open gesture — a permanent OUVRIR/OPEN
+// center ring morphing into an accent-tinted directional pill at the 22%
+// edge zones. Runs in the default chromium project, which reports
+// hover:hover + pointer:fine (devices['Desktop Chrome']), so the cursor
+// system activates.
+test.describe('carousel hover cursor (sketch 008 Variant C)', () => {
+  async function photoBox(page: import('@playwright/test').Page) {
+    const box = await page.locator('.home-hero__photo').boundingBox();
+    if (!box) throw new Error('.home-hero__photo has no bounding box');
+    return box;
+  }
+
+  test('FR center zone: permanent OUVRIR label, cursor visible', async ({ page }) => {
+    await page.goto('/');
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.3, { steps: 10 });
+
+    const cursor = page.locator('[data-role="hero-cursor"]');
+    await expect(cursor).toHaveAttribute('data-zone', 'center');
+    await expect(cursor.locator('.home-hero__cursor-label')).toHaveText('OUVRIR');
+    await expect(cursor).toHaveCSS('opacity', '1');
+  });
+
+  test('EN center zone: permanent OPEN label', async ({ page }) => {
+    await page.goto('/en/');
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.3, { steps: 10 });
+
+    const cursor = page.locator('[data-role="hero-cursor"]');
+    await expect(cursor).toHaveAttribute('data-zone', 'center');
+    await expect(cursor.locator('.home-hero__cursor-label')).toHaveText('OPEN');
+  });
+
+  test('left edge zone: arrow shown, cursor tinted with the current accent', async ({ page }) => {
+    await page.goto('/');
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.05, box.y + box.height * 0.3, { steps: 10 });
+
+    const cursor = page.locator('[data-role="hero-cursor"]');
+    await expect(cursor).toHaveAttribute('data-zone', 'left');
+    await expect(cursor.locator('.home-hero__cursor-arrow')).toBeVisible();
+
+    // .home-hero__accent's background-color is the same --current-accent
+    // custom property the cursor's edge-zone background uses — comparing
+    // against its resolved computed color avoids depending on whether the
+    // accent is a hex value or a CSS var() fallback chain. toHaveCSS polls
+    // until it matches, riding out the 200ms background-color transition
+    // rather than sampling mid-transition.
+    const expectedBg = await page.locator('[data-role="accent-panel"]').evaluate((el) => getComputedStyle(el).backgroundColor);
+    await expect(cursor).toHaveCSS('background-color', expectedBg);
+  });
+
+  test('right edge zone: arrow shown', async ({ page }) => {
+    await page.goto('/');
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.95, box.y + box.height * 0.3, { steps: 10 });
+
+    const cursor = page.locator('[data-role="hero-cursor"]');
+    await expect(cursor).toHaveAttribute('data-zone', 'right');
+    await expect(cursor.locator('.home-hero__cursor-arrow')).toBeVisible();
+  });
+
+  test('the native cursor is hidden over the hero photo', async ({ page }) => {
+    await page.goto('/');
+    const photoCursor = await page.locator('.home-hero__photo').evaluate((el) => getComputedStyle(el).cursor);
+    expect(photoCursor).toBe('none');
+  });
+
+  test.describe('mobile', () => {
+    const { defaultBrowserType: _defaultBrowserType, ...iPhone14Pro } = devices['iPhone 14 Pro'];
+    test.use({ ...iPhone14Pro });
+
+    // Regression guard for a real bug caught during live-browser
+    // verification: the cursor's base/resting properties (position,
+    // opacity, pointer-events) were originally declared ONLY inside the
+    // `@media (hover: hover) and (pointer: fine)` block. On a touchscreen
+    // that query never matches, so the element got ZERO styling and fell
+    // back to browser defaults — a real, laid-out, visible block reading
+    // "OUVRIR→" at the top of the photo (position:static, display:block,
+    // opacity:1, full container width) — invisible in one screenshot only
+    // by the coincidence of the site header painting over it, not because
+    // it was actually inert. This asserts the fix directly against
+    // getComputedStyle, not against a screenshot that could mask the bug
+    // again by accident.
+    test('the cursor is invisible and out of document flow, independent of the hover/pointer media query', async ({ page }) => {
+      await page.goto('/');
+      const cursor = page.locator('[data-role="hero-cursor"]');
+      const style = await cursor.evaluate((el) => {
+        const computed = getComputedStyle(el);
+        return {
+          opacity: computed.opacity,
+          position: computed.position,
+          pointerEvents: computed.pointerEvents,
+        };
+      });
+      expect(style.opacity).toBe('0');
+      expect(style.position).toBe('absolute');
+      expect(style.pointerEvents).toBe('none');
+    });
+  });
+});
+
+// quick-260726-u97 (sketch 008 Variant C): as the pointer nears an edge, the
+// current photo peels back and the adjacent gallery's REAL photo is
+// revealed underneath — proportional to proximity, real cdn.sanity.io
+// sources (never a placeholder), no peek visible at rest/center.
+test.describe('carousel edge-peek preview (sketch 008 Variant C)', () => {
+  async function photoBox(page: import('@playwright/test').Page) {
+    const box = await page.locator('.home-hero__photo').boundingBox();
+    if (!box) throw new Error('.home-hero__photo has no bounding box');
+    return box;
+  }
+
+  function peekTranslateXPercent(transform: string): number | null {
+    // matrix(a, b, c, d, e, f) — for a pure translateX(t%) on a box of
+    // known width the matrix's `e` component is the pixel translation; the
+    // tests below only need sign/relative-magnitude, so this reads the raw
+    // pixel `e` component directly rather than re-deriving a percentage.
+    if (transform === 'none') return 0;
+    const match = transform.match(/^matrix\(([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),/);
+    return match ? parseFloat(match[5]) : null;
+  }
+
+  test('at rest / center: peek layers stay off-screen and --peek-shift is 0', async ({ page }) => {
+    await page.goto('/');
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.3, { steps: 10 });
+
+    const shift = await page.locator('.home-hero__photo').evaluate((el) => getComputedStyle(el).getPropertyValue('--peek-shift').trim());
+    expect(shift).toBe('0');
+
+    const prevTransform = await page.locator('[data-role="peek-prev"]').evaluate((el) => getComputedStyle(el).transform);
+    const nextTransform = await page.locator('[data-role="peek-next"]').evaluate((el) => getComputedStyle(el).transform);
+    // translateX(-100%)/translateX(100%) on the photo's own width — both
+    // resolve to a non-zero pixel `e` component with the expected sign.
+    const prevX = peekTranslateXPercent(prevTransform);
+    const nextX = peekTranslateXPercent(nextTransform);
+    expect(prevX).not.toBeNull();
+    expect(nextX).not.toBeNull();
+    expect(prevX!).toBeLessThan(0);
+    expect(nextX!).toBeGreaterThan(0);
+  });
+
+  test('approaching the LEFT edge reveals the real previous gallery photo, pushed proportionally to proximity', async ({ page }) => {
+    await page.goto('/');
+    // Pin the slide so auto-advance can't swap mid-test.
+    await page.locator('[data-role="autoplay-toggle"]').click();
+
+    const dataItems = page.locator('ul[data-role="home-carousel-data"] li');
+    const count = await dataItems.count();
+    test.skip(count < 2, 'need at least 2 galleries to verify the adjacent peek');
+    // The prev of index 0 wraps to the last entry.
+    const expectedPrevSrc = await dataItems.nth(count - 1).getAttribute('data-hero-src');
+    expect(expectedPrevSrc).toBeTruthy();
+    expect(expectedPrevSrc).toContain('cdn.sanity.io');
+
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.03, box.y + box.height * 0.3, { steps: 10 });
+
+    const peekPrevSrc = await page.locator('[data-role="peek-prev"]').getAttribute('src');
+    expect(peekPrevSrc).toBe(expectedPrevSrc);
+
+    const shiftAt3pct = await page
+      .locator('.home-hero__photo')
+      .evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--peek-shift')));
+    expect(shiftAt3pct).toBeGreaterThan(0);
+
+    // Move closer to the edge — the push magnitude must increase
+    // (proportional to proximity, per the sketch's exact coefficients).
+    await page.mouse.move(box.x + box.width * 0.01, box.y + box.height * 0.3, { steps: 10 });
+    const shiftAt1pct = await page
+      .locator('.home-hero__photo')
+      .evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--peek-shift')));
+    expect(shiftAt1pct).toBeGreaterThan(shiftAt3pct);
+  });
+
+  test('approaching the RIGHT edge reveals the real next gallery photo, pushed proportionally to proximity', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+
+    const dataItems = page.locator('ul[data-role="home-carousel-data"] li');
+    const count = await dataItems.count();
+    test.skip(count < 2, 'need at least 2 galleries to verify the adjacent peek');
+    const expectedNextSrc = await dataItems.nth(1).getAttribute('data-hero-src');
+    expect(expectedNextSrc).toBeTruthy();
+    expect(expectedNextSrc).toContain('cdn.sanity.io');
+
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.97, box.y + box.height * 0.3, { steps: 10 });
+
+    const peekNextSrc = await page.locator('[data-role="peek-next"]').getAttribute('src');
+    expect(peekNextSrc).toBe(expectedNextSrc);
+
+    const shiftAt97pct = await page
+      .locator('.home-hero__photo')
+      .evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--peek-shift')));
+    expect(shiftAt97pct).toBeLessThan(0);
+
+    await page.mouse.move(box.x + box.width * 0.99, box.y + box.height * 0.3, { steps: 10 });
+    const shiftAt99pct = await page
+      .locator('.home-hero__photo')
+      .evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--peek-shift')));
+    expect(shiftAt99pct).toBeLessThan(shiftAt97pct);
+  });
+});
+
+// quick-260726-u97 (sketch 008 Variant C): click behavior — center-click
+// opens the current gallery (same destination + morph as the title),
+// edge-clicks navigate prev/next, caption controls keep their own handlers,
+// and the untouched keyboard/dash/auto-advance paths still work. Plus the
+// mobile tap-to-open fallback and unchanged swipe.
+test.describe('carousel hover-click navigation (sketch 008 Variant C)', () => {
+  async function photoBox(page: import('@playwright/test').Page) {
+    const box = await page.locator('.home-hero__photo').boundingBox();
+    if (!box) throw new Error('.home-hero__photo has no bounding box');
+    return box;
+  }
+
+  test('FR center click opens the current gallery (same destination as the title)', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+    const href = await page.locator('[data-role="gallery-title"]').getAttribute('href');
+    expect(href).toBeTruthy();
+
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.3, { steps: 10 });
+    await page.mouse.down();
+    await page.mouse.up();
+
+    await page.waitForURL(`**${href}`);
+    expect(page.url()).toContain(href!);
+  });
+
+  test('EN center click opens the current gallery', async ({ page }) => {
+    await page.goto('/en/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+    const href = await page.locator('[data-role="gallery-title"]').getAttribute('href');
+    expect(href).toBeTruthy();
+
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.3, { steps: 10 });
+    await page.mouse.down();
+    await page.mouse.up();
+
+    await page.waitForURL(`**${href}`);
+    expect(page.url()).toContain(href!);
+  });
+
+  test('left edge click navigates to the previous gallery (in-page, no navigation)', async ({ page }) => {
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.goto('/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+
+    const titleEl = page.locator('[data-role="gallery-title"]');
+    const initialTitle = await titleEl.innerText();
+
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.03, box.y + box.height * 0.3, { steps: 10 });
+    await page.mouse.down();
+    await page.mouse.up();
+
+    await expect(titleEl).not.toHaveText(initialTitle);
+    // An in-page carousel move, not a real navigation.
+    expect(page.url()).toMatch(/\/$/);
+  });
+
+  test('right edge click navigates to the next gallery (in-page, no navigation)', async ({ page }) => {
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.goto('/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+
+    const titleEl = page.locator('[data-role="gallery-title"]');
+    const initialTitle = await titleEl.innerText();
+
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.97, box.y + box.height * 0.3, { steps: 10 });
+    await page.mouse.down();
+    await page.mouse.up();
+
+    await expect(titleEl).not.toHaveText(initialTitle);
+    expect(page.url()).toMatch(/\/$/);
+  });
+
+  test('the autoplay toggle inside the caption is not hijacked by center-zone navigation', async ({ page }) => {
+    await page.goto('/');
+
+    const toggle = page.locator('[data-role="autoplay-toggle"]');
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    // No navigation occurred — the caption's own click handler ran, not the
+    // photo's center-zone openCurrent().
+    expect(page.url()).toMatch(/\/$/);
+  });
+
+  test('keyboard, dash, and auto-advance navigation are untouched', async ({ page }) => {
+    await page.clock.install();
+    await page.goto('/');
+
+    const indexLabel = page.locator('[data-role="index-label"]');
+    const initialLabel = await indexLabel.innerText();
+
+    // ArrowRight advances the index.
+    await page.keyboard.press('ArrowRight');
+    await expect(indexLabel).not.toHaveText(initialLabel);
+    const afterArrow = await indexLabel.innerText();
+
+    // Clicking dash 0 selects gallery 0.
+    await page.locator('[data-role="progress"] .home-hero__progress-dash').first().click();
+    await expect(indexLabel).not.toHaveText(afterArrow);
+
+    // Auto-advance still ticks on a mocked clock — move the mouse off the
+    // carousel first (the click above leaves it hovering, which pauses
+    // auto-advance by existing design; established pattern, see the
+    // "explicit pause control" test above).
+    await page.mouse.move(0, 0);
+    const beforeTick = await indexLabel.innerText();
+    await page.clock.fastForward(6000);
+    await expect(indexLabel).not.toHaveText(beforeTick);
+  });
+
+  test.describe('mobile', () => {
+    const { defaultBrowserType: _defaultBrowserType, ...iPhone14Pro } = devices['iPhone 14 Pro'];
+    test.use({ ...iPhone14Pro });
+
+    test('a tap on the photo (negligible movement) opens the current gallery', async ({ page }) => {
+      await page.goto('/');
+      const href = await page.locator('[data-role="gallery-title"]').getAttribute('href');
+      expect(href).toBeTruthy();
+
+      await page.evaluate(() => {
+        const target = document.querySelector('.home-hero__photo')!;
+        const clientX = 195;
+        const clientY = 400;
+        const makeTouchEvent = (type: string) => {
+          const touch = new Touch({ identifier: 1, target, clientX, clientY });
+          return new TouchEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            touches: type === 'touchend' ? [] : [touch],
+            changedTouches: [touch],
+          });
+        };
+        target.dispatchEvent(makeTouchEvent('touchstart'));
+        target.dispatchEvent(makeTouchEvent('touchend'));
+      });
+
+      await page.waitForURL(`**${href}`);
+      expect(page.url()).toContain(href!);
+    });
+
+    test('a real horizontal swipe still navigates prev/next unchanged (not hijacked by tap-to-open)', async ({ page }) => {
+      await page.goto('/');
+      const titleEl = page.locator('[data-role="gallery-title"]');
+      const initialTitle = await titleEl.innerText();
+
+      await page.evaluate(() => {
+        const target = document.querySelector('.home-hero__photo')!;
+        const startX = 300;
+        const clientY = 400;
+        const makeTouchEvent = (type: string, clientX: number) => {
+          const touch = new Touch({ identifier: 1, target, clientX, clientY });
+          return new TouchEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            touches: type === 'touchend' ? [] : [touch],
+            changedTouches: [touch],
+          });
+        };
+        target.dispatchEvent(makeTouchEvent('touchstart', startX));
+        target.dispatchEvent(makeTouchEvent('touchend', startX - 100));
+      });
+
+      await expect(titleEl).not.toHaveText(initialTitle);
+      // In-page carousel move, not a real navigation.
+      expect(page.url()).toMatch(/\/$/);
+    });
+
+    test('the peek layers never leave their resting transform on touch (no hover system on touch)', async ({ page }) => {
+      await page.goto('/');
+
+      const prevTransform = await page.locator('[data-role="peek-prev"]').evaluate((el) => getComputedStyle(el).transform);
+      const nextTransform = await page.locator('[data-role="peek-next"]').evaluate((el) => getComputedStyle(el).transform);
+      // Rest CSS values: translateX(-100%)/translateX(100%) — never
+      // populated with real src/pushed on touch (hoverCapable is false).
+      expect(prevTransform).toMatch(/^matrix\(1, 0, 0, 1, -/);
+      expect(nextTransform).toMatch(/^matrix\(1, 0, 0, 1, \d/);
+    });
   });
 });
 
@@ -1233,208 +1607,12 @@ test.describe('cross-document morph — click-time source name assignment (sketc
   });
 });
 
-// quick-260725-cfm, simplified quick-260725-pit: carousel-mode overscroll-
-// past-the-bottom navigation, now silent/implicit (no visible hint) and
-// light (OPEN_OVERSCROLL_THRESHOLD 150, down from 600). Required proofs per
-// the pit plan: no hint element renders (FR + EN), a light scroll at the
-// bottom navigates reusing the title link's href, a small scroll near the
-// top (not at the bottom) does NOT navigate, grid mode is unaffected, and
-// prefers-reduced-motion still navigates.
-test.describe('carousel scroll-to-open (quick-260725-cfm, simplified quick-260725-pit)', () => {
-  test('no scroll-to-open hint element renders, on FR or EN, in carousel or grid mode', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.locator('[data-role="scroll-open-hint"]')).toHaveCount(0);
-    await expect(page.locator('.home-scroll-open-hint')).toHaveCount(0);
-
-    await page.getByRole('button', { name: 'Grille' }).click();
-    await expect(page.locator('[data-role="scroll-open-hint"]')).toHaveCount(0);
-    await expect(page.locator('.home-scroll-open-hint')).toHaveCount(0);
-
-    await page.goto('/en/');
-    await expect(page.locator('[data-role="scroll-open-hint"]')).toHaveCount(0);
-    await expect(page.locator('.home-scroll-open-hint')).toHaveCount(0);
-  });
-
-  // quick-260725-sj4 / quick-260726-obg: regression coverage for the
-  // accidental-navigation bug, reworked to the current, deliberate contract.
-  // quick-260725-dcg (Fix 1) hid the footer entirely in carousel mode, which
-  // removed all real scroll distance below the hero — atBottom() was
-  // vacuously TRUE from first paint at scrollY 0, so a couple of ordinary
-  // scroll deltas silently navigated a visitor away from a fresh load with
-  // ZERO warning. quick-260725-sj4 fixed that by reverting the footer-hide
-  // (restoring real scroll distance). quick-260726-obg (Task 2) reintroduces
-  // the footer-hide — safety_investigation item 1 explicitly ACCEPTS the
-  // vacuous-atBottom() tradeoff on desktop as deliberate — but mitigates it
-  // with Task 1's early, visible photo scale/darken feedback instead of the
-  // footer's old accidental scroll-distance buffer. The old "atBottom() is
-  // false at scrollY 0" and "two wheel ticks do NOT navigate" assertions are
-  // therefore now FALSE by design (2x80=160 > 150 WILL navigate, correctly)
-  // and are replaced below by the early-warning proof: a SINGLE 80px tick
-  // (well under the threshold) already shows the pull feedback clearly,
-  // before any navigation — the same accidental gesture now announces
-  // itself visibly instead of firing in silence. The tests use SYNTHETIC
-  // WheelEvent/TouchEvent dispatch (not page.mouse.wheel/native scrolling)
-  // so scrollY stays 0 throughout, isolating the exact atBottom()-at-
-  // scrollY-0 property the original bug exploited.
-  test('fresh load: one 80px wheel tick already shows visible pull feedback before any navigation (early-warning replacement for the old footer buffer)', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto('/');
-
-    // Pin the current slide so a stray autoplay swap can't be mistaken for
-    // navigation.
-    await page.locator('[data-role="autoplay-toggle"]').click();
-
-    await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: 80, bubbles: true })));
-
-    const { scale, darken } = await page.locator('.home-hero__photo').evaluate((el) => {
-      const style = getComputedStyle(el);
-      return {
-        scale: parseFloat(style.getPropertyValue('--pull-scale')),
-        darken: parseFloat(style.getPropertyValue('--pull-darken')),
-      };
-    });
-    expect(scale).toBeLessThan(0.99);
-    expect(darken).toBeGreaterThan(0.3);
-    // Well under the 150px threshold — no navigation has occurred.
-    expect(page.url()).toMatch(/\/$/);
-  });
-
-  test('fresh load (EN): one 80px wheel tick already shows visible pull feedback before any navigation', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto('/en/');
-    await page.locator('[data-role="autoplay-toggle"]').click();
-
-    await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: 80, bubbles: true })));
-
-    const { scale, darken } = await page.locator('.home-hero__photo').evaluate((el) => {
-      const style = getComputedStyle(el);
-      return {
-        scale: parseFloat(style.getPropertyValue('--pull-scale')),
-        darken: parseFloat(style.getPropertyValue('--pull-darken')),
-      };
-    });
-    expect(scale).toBeLessThan(0.99);
-    expect(darken).toBeGreaterThan(0.3);
-    expect(page.url()).toMatch(/\/en\/$/);
-  });
-
-  test.describe('touch input', () => {
-    test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
-
-    // quick-260726-obg: on mobile the in-flow accent panel still provides
-    // real scroll distance below the hero (unlike desktop, which has none
-    // once the footer is hidden — see the accepted tradeoff above), so
-    // atBottom() genuinely stays false at scrollY 0 here and a modest swipe
-    // correctly does not navigate. This is independent of the desktop pull-
-    // feedback safety net; both are exercised together above/below.
-    test('fresh load: one modest touch swipe does NOT navigate (mobile scroll distance comes from the accent panel, not the footer)', async ({ page }) => {
-      await page.goto('/');
-      await page.locator('[data-role="autoplay-toggle"]').click();
-
-      // A ~180px upward finger drag (downward scroll intent), clientX held
-      // roughly constant so it reads as a vertical scroll, not a horizontal
-      // gallery swipe.
-      await page.evaluate(() => {
-        const target = document.body;
-        const startY = 500;
-        const totalDelta = 180;
-        const steps = 4;
-        const clientX = 195;
-
-        const makeTouchEvent = (type: string, clientY: number) => {
-          const touch = new Touch({ identifier: 1, target, clientX, clientY });
-          return new TouchEvent(type, {
-            bubbles: true,
-            cancelable: true,
-            touches: type === 'touchend' ? [] : [touch],
-            changedTouches: [touch],
-          });
-        };
-
-        window.dispatchEvent(makeTouchEvent('touchstart', startY));
-        for (let i = 1; i <= steps; i++) {
-          window.dispatchEvent(makeTouchEvent('touchmove', startY - (totalDelta / steps) * i));
-        }
-        window.dispatchEvent(makeTouchEvent('touchend', startY - totalDelta));
-      });
-      await page.waitForTimeout(300);
-
-      expect(page.url()).toMatch(/\/$/);
-    });
-  });
-
-  test('a light scroll past the bottom opens the currently-shown collection, reusing the title link\'s href', async ({ page }) => {
-    await page.goto('/');
-
-    // Pin the current slide so it can't change mid-test.
-    await page.locator('[data-role="autoplay-toggle"]').click();
-    const href = await page.locator('[data-role="gallery-title"]').getAttribute('href');
-    expect(href).toBeTruthy();
-
-    // Reach the bottom deterministically regardless of a short/long footer.
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    // A single light wheel dispatch (200) past the new OPEN_OVERSCROLL_THRESHOLD
-    // (150) but far below the old 600 triggers navigation — this also proves
-    // the reused title-link href.
-    await page.mouse.wheel(0, 200);
-
-    await page.waitForURL(`**${href}`);
-    expect(page.url()).toContain(href!);
-  });
-
-  test('a small scroll near the top (not at the bottom) does not navigate', async ({ page }) => {
-    await page.goto('/');
-
-    // Inject a tall spacer so the page has real scroll room and is NOT at
-    // the bottom (established pattern in this file).
-    await page.evaluate(() => {
-      const spacer = document.createElement('div');
-      spacer.style.height = '2000px';
-      document.body.appendChild(spacer);
-    });
-
-    // Leave scroll at the top, dispatch a wheel input past the 150
-    // threshold — proving navigation is gated on being at the bottom, not
-    // just on accumulated delta size.
-    await page.mouse.wheel(0, 300);
-    await page.waitForTimeout(300);
-
-    expect(page.url()).toMatch(/\/$/);
-  });
-
-  test('grid mode: overscrolling never navigates', async ({ page }) => {
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Grille' }).click();
-
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.mouse.wheel(0, 1200);
-    // Negative assertion (no navigation should occur) — a short settle
-    // window before asserting the URL is unchanged.
-    await page.waitForTimeout(300);
-
-    expect(page.url()).toMatch(/\/$/);
-  });
-
-  test('reduced motion: scroll-to-open navigation still works', async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.goto('/');
-
-    // Reduced-motion visitors start with auto-advance already paused
-    // (existing D-09 contract) — no explicit pause click needed here.
-    const href = await page.locator('[data-role="gallery-title"]').getAttribute('href');
-    expect(href).toBeTruthy();
-
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.mouse.wheel(0, 200);
-
-    await page.waitForURL(`**${href}`);
-    expect(page.url()).toContain(href!);
-  });
-});
-
 // quick-260726-obg (Task 2): reintroduces quick-260725-dcg's footer-hide
-// contract, now made safe by Task 1's pull feedback (see the block above and
-// the reworked sj4 tests above it).
+// contract. quick-260726-u97 removed the scroll-to-open gesture entirely
+// (and its overscroll pull feedback), which was the ONLY thing that made
+// hiding the footer risky in the first place (the vacuous-atBottom()
+// concern) — nothing reads scroll position to navigate anymore, so this
+// stays a deliberate, risk-free simplification. See README/SUMMARY.
 test.describe('footer visibility by display mode (quick-260726-obg)', () => {
   test('FR: the footer is hidden in carousel mode and reappears in grid mode', async ({ page }) => {
     await page.goto('/');
@@ -1454,293 +1632,6 @@ test.describe('footer visibility by display mode (quick-260726-obg)', () => {
 
     await page.getByRole('button', { name: 'Grid' }).click();
     await expect(footer).toBeVisible();
-  });
-});
-
-// quick-260726-obg (sketch 007 Variant C, winner): the real overscroll
-// visual feedback that replaces the site footer's old (accidental) role as
-// a safety buffer — the hero photo itself scales down (to ~0.94 at the
-// threshold) and darkens (via the new .home-hero__pull-overlay, up to
-// ~0.85 opacity) proportionally as overscroll accumulates toward the 150px
-// threshold, giving a real, early, visible warning well before any
-// navigation fires. Every assertion reads the live --pull-scale/
-// --pull-darken CSS custom properties setPullFeedback() writes onto
-// .home-hero__photo, mirroring the sketch's own readout mechanism.
-test.describe('carousel overscroll pull feedback (quick-260726-obg, sketch 007 Variant C)', () => {
-  async function readPullVars(page: import('@playwright/test').Page) {
-    return page.locator('.home-hero__photo').evaluate((el) => {
-      const style = getComputedStyle(el);
-      return {
-        scale: parseFloat(style.getPropertyValue('--pull-scale')),
-        darken: parseFloat(style.getPropertyValue('--pull-darken')),
-      };
-    });
-  }
-
-  test('one 80px wheel tick (well below the 150px threshold) already shows clear scale/darken feedback', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto('/');
-    // Pin the current slide so a stray autoplay swap (which resets the
-    // feedback via render()) can't be mistaken for this test's own signal.
-    await page.locator('[data-role="autoplay-toggle"]').click();
-    // Reach the bottom deterministically regardless of a short/long footer.
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-
-    await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: 80, bubbles: true })));
-
-    const { scale, darken } = await readPullVars(page);
-    expect(scale).toBeLessThan(0.99);
-    expect(darken).toBeGreaterThan(0.3);
-    // Still well below the 150px threshold — no navigation yet.
-    expect(page.url()).toMatch(/\/$/);
-  });
-
-  test('releasing before the threshold visibly decays back to neutral on its own and does not navigate', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto('/');
-    await page.locator('[data-role="autoplay-toggle"]').click();
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-
-    await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: 80, bubbles: true })));
-    const during = await readPullVars(page);
-    expect(during.scale).toBeLessThan(0.99);
-
-    // Past the 800ms idle window plus the 300ms decay animation, with a
-    // margin for real-timer/CI jitter (no mocked clock — the idle watchdog
-    // and the rAF decay both run on real timers).
-    await page.waitForTimeout(1500);
-
-    const after = await readPullVars(page);
-    expect(after.scale).toBeGreaterThan(0.999);
-    expect(after.darken).toBeLessThan(0.01);
-    expect(page.url()).toMatch(/\/$/);
-  });
-
-  test('crossing the threshold resets the photo to neutral before the real navigation click fires', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto('/');
-    await page.locator('[data-role="autoplay-toggle"]').click();
-
-    // Suppress the real navigation (capture-phase preventDefault) so the
-    // page stays put — this proves navigateToCurrent()'s neutral reset runs
-    // BEFORE titleEl.click() proceeds, not merely "eventually" or after.
-    await page.evaluate(() => {
-      document.querySelector('[data-role="gallery-title"]')?.addEventListener(
-        'click',
-        (e) => e.preventDefault(),
-        { capture: true },
-      );
-    });
-
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: 200, bubbles: true })));
-
-    const { scale, darken } = await readPullVars(page);
-    expect(scale).toBe(1);
-    expect(darken).toBe(0);
-    expect(page.url()).toMatch(/\/$/);
-  });
-
-  test('reduced motion: the feedback still appears — the sole safety signal is not disabled for reduced-motion visitors', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.goto('/');
-    // Reduced-motion visitors already start with auto-advance paused (D-09)
-    // — no explicit pause click needed here.
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-
-    await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: 80, bubbles: true })));
-
-    const { scale, darken } = await readPullVars(page);
-    expect(scale).toBeLessThan(0.99);
-    expect(darken).toBeGreaterThan(0.3);
-  });
-
-  test.describe('mobile', () => {
-    test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
-
-    test('a ~100px downward touch drag at the bottom shows the same scale/darken feedback and does not navigate', async ({ page }) => {
-      await page.goto('/');
-      await page.locator('[data-role="autoplay-toggle"]').click();
-      // Scroll to the real bottom, past the in-flow mobile accent panel.
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-
-      // A ~100px upward finger drag (downward scroll intent), clientX held
-      // roughly constant so it reads as a vertical scroll, not a horizontal
-      // gallery swipe — mirrors the existing sj4 touch-repro pattern above.
-      await page.evaluate(() => {
-        const target = document.body;
-        const startY = 500;
-        const totalDelta = 100;
-        const steps = 4;
-        const clientX = 195;
-
-        const makeTouchEvent = (type: string, clientY: number) => {
-          const touch = new Touch({ identifier: 1, target, clientX, clientY });
-          return new TouchEvent(type, {
-            bubbles: true,
-            cancelable: true,
-            touches: type === 'touchend' ? [] : [touch],
-            changedTouches: [touch],
-          });
-        };
-
-        window.dispatchEvent(makeTouchEvent('touchstart', startY));
-        for (let i = 1; i <= steps; i++) {
-          window.dispatchEvent(makeTouchEvent('touchmove', startY - (totalDelta / steps) * i));
-        }
-      });
-
-      const { scale, darken } = await readPullVars(page);
-      expect(scale).toBeLessThan(0.99);
-      expect(darken).toBeGreaterThan(0.3);
-      expect(page.url()).toMatch(/\/$/);
-    });
-  });
-
-  // quick-260726-qem: the tests above only ever read the --pull-scale /
-  // --pull-darken custom properties, never actual rendered pixels — exactly
-  // the verification gap that let a solid black edge band ship at the 0.94
-  // floor (see .home-hero__img's inset overhang comment in HomeCarousel.astro).
-  // These tests inspect the real composited frame instead.
-  test.describe('rendered-pixel edge regression (quick-260726-qem)', () => {
-    type Band = { x: number; y: number; width: number; height: number };
-
-    const EDGE_BAND_PX = 4;
-    const NON_BLACK_CHANNEL_THRESHOLD = 30;
-    const MIN_NON_BLACK_FRACTION = 0.1;
-
-    async function gotoAndPinHero(page: import('@playwright/test').Page) {
-      await page.goto('/');
-      // Pin the slide so autoplay can't swap mid-test and call render(),
-      // which would reset the forced --pull-scale/--pull-darken below.
-      await page.locator('[data-role="autoplay-toggle"]').click();
-      // Wait for the SHARP hero photo (real content, not just the blur
-      // placeholder) so the edge bands sample actual photo pixels.
-      await expect(page.locator('[data-role="hero-image"]')).toHaveClass(/is-loaded/);
-    }
-
-    async function forceMinPullScale(page: import('@playwright/test').Page) {
-      // Force the exact shipped floor (1 - 1*0.06) directly, bypassing wheel/
-      // touch simulation, and zero the darken overlay so it can't be mistaken
-      // for the black-band bug near the corners (the radial darken alone gets
-      // close to black there even over correct photo bleed).
-      await page.locator('.home-hero__photo').evaluate((el) => {
-        el.style.setProperty('--pull-scale', '0.94');
-        el.style.setProperty('--pull-darken', '0');
-      });
-      // Let the 90ms transform transition settle before capturing.
-      await page.waitForTimeout(150);
-    }
-
-    function edgeBands(photoBox: Band, viewport: { width: number; height: number }): Record<string, Band> {
-      const clampRect = (b: Band): Band => {
-        const x = Math.max(0, Math.round(b.x));
-        const y = Math.max(0, Math.round(b.y));
-        const width = Math.max(1, Math.min(Math.round(b.width), viewport.width - x));
-        const height = Math.max(1, Math.min(Math.round(b.height), viewport.height - y));
-        return { x, y, width, height };
-      };
-
-      return {
-        top: clampRect({ x: photoBox.x, y: photoBox.y, width: photoBox.width, height: EDGE_BAND_PX }),
-        bottom: clampRect({
-          x: photoBox.x,
-          y: photoBox.y + photoBox.height - EDGE_BAND_PX,
-          width: photoBox.width,
-          height: EDGE_BAND_PX,
-        }),
-        left: clampRect({ x: photoBox.x, y: photoBox.y, width: EDGE_BAND_PX, height: photoBox.height }),
-        right: clampRect({
-          x: photoBox.x + photoBox.width - EDGE_BAND_PX,
-          y: photoBox.y,
-          width: EDGE_BAND_PX,
-          height: photoBox.height,
-        }),
-      };
-    }
-
-    // Screenshots the given clip (our own untainted PNG bytes — not the
-    // cross-origin Sanity <img>, so no canvas taint) and decodes it INSIDE
-    // the page via createImageBitmap/OffscreenCanvas — no new npm dependency.
-    async function nonBlackFraction(page: import('@playwright/test').Page, band: Band): Promise<number> {
-      const buf = await page.screenshot({ clip: band });
-      const base64 = buf.toString('base64');
-      return page.evaluate(
-        async ({ b64, threshold }: { b64: string; threshold: number }) => {
-          const res = await fetch('data:image/png;base64,' + b64);
-          const blob = await res.blob();
-          const bitmap = await createImageBitmap(blob);
-          const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
-          const ctx = canvas.getContext('2d')!;
-          ctx.drawImage(bitmap, 0, 0);
-          const { data } = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
-          let nonBlack = 0;
-          const totalPixels = data.length / 4;
-          for (let i = 0; i < data.length; i += 4) {
-            const maxChannel = Math.max(data[i], data[i + 1], data[i + 2]);
-            if (maxChannel > threshold) nonBlack += 1;
-          }
-          return totalPixels > 0 ? nonBlack / totalPixels : 0;
-        },
-        { b64: base64, threshold: NON_BLACK_CHANNEL_THRESHOLD },
-      );
-    }
-
-    async function assertNoBlackEdgeBands(page: import('@playwright/test').Page, viewport: { width: number; height: number }) {
-      const photoBox = await page.locator('.home-hero__photo').boundingBox();
-      if (!photoBox) throw new Error('.home-hero__photo has no bounding box');
-
-      const bands = edgeBands(photoBox, viewport);
-      for (const [edge, band] of Object.entries(bands)) {
-        const fraction = await nonBlackFraction(page, band);
-        expect(
-          fraction,
-          `${edge} edge band should show real photo bleed (non-black fraction), not a solid black border`,
-        ).toBeGreaterThan(MIN_NON_BLACK_FRACTION);
-      }
-    }
-
-    test('desktop 1400x900: at the 0.94 minimum pull scale, all four hero-photo edges show photo bleed, not solid black', async ({
-      page,
-    }) => {
-      const viewport = { width: 1400, height: 900 };
-      await page.setViewportSize(viewport);
-      await gotoAndPinHero(page);
-      await forceMinPullScale(page);
-      await assertNoBlackEdgeBands(page, viewport);
-    });
-
-    test('desktop 1400x900: at the 0.94 minimum pull scale, the hero image box fully covers .home-hero__photo (geometric complement to the pixel proof above)', async ({
-      page,
-    }) => {
-      await page.setViewportSize({ width: 1400, height: 900 });
-      await gotoAndPinHero(page);
-      await forceMinPullScale(page);
-
-      const photoBox = await page.locator('.home-hero__photo').boundingBox();
-      const imgBox = await page.locator('[data-role="hero-image"]').boundingBox();
-      if (!photoBox || !imgBox) throw new Error('missing bounding box');
-
-      const TOLERANCE_PX = 0.5;
-      expect(imgBox.x).toBeLessThanOrEqual(photoBox.x + TOLERANCE_PX);
-      expect(imgBox.y).toBeLessThanOrEqual(photoBox.y + TOLERANCE_PX);
-      expect(imgBox.x + imgBox.width).toBeGreaterThanOrEqual(photoBox.x + photoBox.width - TOLERANCE_PX);
-      expect(imgBox.y + imgBox.height).toBeGreaterThanOrEqual(photoBox.y + photoBox.height - TOLERANCE_PX);
-    });
-
-    test.describe('mobile', () => {
-      test.use({ viewport: { width: 393, height: 852 }, hasTouch: true });
-
-      test('393px viewport: at the 0.94 minimum pull scale, all four hero-photo edges show photo bleed on the narrow horizontal axis (binding no-black constraint)', async ({
-        page,
-      }) => {
-        const viewport = { width: 393, height: 852 };
-        await gotoAndPinHero(page);
-        await forceMinPullScale(page);
-        await assertNoBlackEdgeBands(page, viewport);
-      });
-    });
   });
 });
 
