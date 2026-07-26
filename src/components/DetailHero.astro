@@ -357,17 +357,37 @@ const {
     opacity: 1;
   }
 
+  /* Item 1 (quick-260725-tqs): sized/positioned/cased to read continuously
+     with the homepage carousel's own visible title (.home-hero__title:
+     18px, left var(--space-md), ALL CAPS via .toUpperCase()) — this is the
+     VISIBLE-on-arrival title (the reveal-title below stays the deliberate
+     72px scrolled-down state, untouched).
+
+     DESIGN DECISION: a shared cross-document view-transition-name on the
+     two title elements was considered and deliberately NOT added.
+     `@view-transition { navigation: auto }` is already enabled site-wide
+     (BaseLayout.astro), so a root crossfade already runs on every
+     homepage -> gallery-detail navigation; once this overlay title matches
+     the homepage title's end-state (size/position/casing), it crossfades
+     IN PLACE and reads as the same element — the "reads as continuous, not
+     a hard jump" outcome the feedback asked for. A dedicated shared name
+     would introduce a new cross-document view-transition group on an
+     element inside the 100svh-sized .detail-hero__pin — the same
+     always-on-name-on-a-100svh-element risk class (HOME-06/D-10/D-12) that
+     forced .detail-hero__img's own name to be desktop-gated — for only
+     marginal benefit over an already-continuous in-place crossfade. */
   .detail-hero__overlay-title {
     position: absolute;
-    left: var(--space-xl);
+    left: var(--space-md);
     bottom: var(--space-xl);
     right: var(--space-xl);
     z-index: 3;
     margin: 0;
-    font-size: var(--text-display-size);
+    font-size: 18px;
     font-weight: var(--weight-semibold);
     font-family: var(--font-display);
     line-height: 1.2;
+    text-transform: uppercase;
     color: #FFFFFF;
     opacity: 1;
     pointer-events: none;
