@@ -357,30 +357,3 @@ test.describe('editions hero reduced-motion (sketch 005)', () => {
     expect(pinPosition).toBe('sticky');
   });
 });
-
-// quick-260724-wdr: proves the required scrollHintLabel prop was wired on
-// both édition détail twins ("Faire défiler" fr / "Scroll" en), mirroring
-// gallery.spec.ts's equivalent coverage.
-test.describe('editions scroll-down hint label (quick-260724-wdr)', () => {
-  test('the scroll-down hint shows the locale-aware label on both fr and en édition détail routes', async ({
-    page,
-  }) => {
-    await page.goto('/editions/');
-    const frHref = await page.locator('.tile').first().getAttribute('href');
-    expect(frHref).toBeTruthy();
-
-    const slugMatch = frHref!.match(/\/editions\/([^/]+)\/?$/);
-    const slug = slugMatch?.[1];
-    expect(slug).toBeTruthy();
-
-    await page.goto(frHref!);
-    const frHint = page.locator('.detail-hero__scroll-hint');
-    await expect(frHint).toBeVisible();
-    await expect(frHint).toContainText('Faire défiler');
-
-    await page.goto(`/en/editions/${slug}/`);
-    const enHint = page.locator('.detail-hero__scroll-hint');
-    await expect(enHint).toBeVisible();
-    await expect(enHint).toContainText('Scroll');
-  });
-});

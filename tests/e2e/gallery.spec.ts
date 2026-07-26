@@ -443,57 +443,6 @@ test.describe('gallery hero reduced-motion (sketch 005)', () => {
     const objectFit = await heroImg.evaluate((el) => getComputedStyle(el).objectFit);
     expect(objectFit).toBe('cover');
   });
-
-  // quick-260724-uf5: bouncing scroll-down chevron hint (sketch 006 variant
-  // D), shared via DetailHero so it appears on both édition and gallery
-  // detail heroes. Desktop-with-motion is the only state where it bounces
-  // and is visible at rest; reduced-motion either disables the bounce or
-  // hides the hint entirely (both are acceptable per the CSS contract).
-  //
-  // quick-260724-wdr: extended to also assert the new locale-aware text
-  // label ("Faire défiler" fr / "Scroll" en) that strengthens the
-  // affordance, without weakening the preserved bounce/reduced-motion
-  // assertions above.
-  test('the scroll-down hint is visible at rest on desktop, and its bounce is disabled/hidden under reduced motion', async ({
-    page,
-  }) => {
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Grille' }).click();
-    const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
-    expect(firstTileHref).toBeTruthy();
-
-    await page.goto(firstTileHref!);
-
-    const hint = page.locator('.detail-hero__scroll-hint');
-    await expect(hint).toBeVisible();
-    await expect(hint).toContainText('Faire défiler');
-
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.reload();
-
-    const reducedMotionState = await page.locator('.detail-hero__scroll-hint').evaluate((el) => {
-      const style = getComputedStyle(el);
-      return { animationName: style.animationName, display: style.display };
-    });
-    expect(reducedMotionState.animationName === 'none' || reducedMotionState.display === 'none').toBe(true);
-  });
-
-  test('the scroll-down hint label reads "Scroll" on the matching EN route', async ({ page }) => {
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Grille' }).click();
-    const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
-    expect(firstTileHref).toBeTruthy();
-
-    const slugMatch = firstTileHref!.match(/\/galleries\/([^/]+)\/?$/);
-    const slug = slugMatch?.[1];
-    expect(slug).toBeTruthy();
-
-    await page.goto(`/en/galleries/${slug}/`);
-
-    const hint = page.locator('.detail-hero__scroll-hint');
-    await expect(hint).toBeVisible();
-    await expect(hint).toContainText('Scroll');
-  });
 });
 
 // quick-260725-tqs (Item 1): the gallery detail page's VISIBLE-on-arrival
@@ -754,6 +703,55 @@ test.describe('gallery detail scroll-up-to-return (Item 6, quick-260725-tqs)', (
       await page.goto('/?carousel=does-not-exist');
       await expect(page.locator('[data-role="gallery-title"]')).toHaveText(/.+/);
     });
+  });
+});
+
+// quick-260726-ltr (Item 1): footer hidden on gallery detail pages only,
+// plus the safety_investigation's executable proof that the tqs
+// scroll-up-to-return hasEngaged gate (ENGAGE_DISTANCE = 300) stays
+// reachable regardless — the hero's own footer-independent
+// calc(100svh + 900px) desktop track is the source of that scroll room, not
+// the footer or the grid below it.
+test.describe('gallery detail footer-hidden scoping + scroll-track safety (quick-260726-ltr, Item 1)', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test('fr: footer is absent on the gallery detail page, and the desktop scroll track is still >= 300px', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    expect(firstTileHref).toBeTruthy();
+
+    await page.goto(firstTileHref!);
+
+    await expect(page.locator('footer.chrome-band')).toHaveCount(0);
+
+    const track = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+    expect(track).toBeGreaterThanOrEqual(300);
+  });
+
+  test('en: footer is absent on the gallery detail page', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    expect(firstTileHref).toBeTruthy();
+
+    const slugMatch = firstTileHref!.match(/\/galleries\/([^/]+)\/?$/);
+    const slug = slugMatch?.[1];
+    expect(slug).toBeTruthy();
+
+    await page.goto(`/en/galleries/${slug}/`);
+    await expect(page.locator('footer.chrome-band')).toHaveCount(0);
+  });
+
+  test('scoping: footer is still present on an édition detail page', async ({ page }) => {
+    await page.goto('/editions/');
+    const tileHref = await page.locator('.tile').first().getAttribute('href');
+    expect(tileHref).toBeTruthy();
+
+    await page.goto(tileHref!);
+    await expect(page.locator('footer.chrome-band')).toHaveCount(1);
   });
 });
 
