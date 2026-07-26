@@ -84,3 +84,30 @@ export function detectSwipeDirection(
   if (Math.abs(deltaX) < Math.abs(deltaY) * directionRatio) return null;
   return deltaX < 0 ? 'next' : 'prev';
 }
+
+export interface HoverZone {
+  zone: 'center' | 'left' | 'right';
+  proximity: number;
+}
+
+/**
+ * quick-260726-u97 (sketch 008 Variant C): pure zone-detection math for the
+ * custom hover cursor + edge-peek interaction, extracted up front (the
+ * just-removed overscroll accumulator was never extracted/unit-tested — the
+ * cautionary counter-example this pattern exists to avoid repeating).
+ *
+ * The caller passes `xFraction = x / rect.width` (already in [0,1], x being
+ * the pointer's offset from the photo's left edge) and `edgeZoneFraction`
+ * (0.22 — the confirmed sketch tuning, 22% per side). Faithful transcription
+ * of the sketch's zone math — no clamping or "improvement" added, so live
+ * behavior matches the approved design exactly.
+ */
+export function computeHoverZone(xFraction: number, edgeZoneFraction: number): HoverZone {
+  if (xFraction < edgeZoneFraction) {
+    return { zone: 'left', proximity: 1 - xFraction / edgeZoneFraction };
+  }
+  if (xFraction > 1 - edgeZoneFraction) {
+    return { zone: 'right', proximity: (xFraction - (1 - edgeZoneFraction)) / edgeZoneFraction };
+  }
+  return { zone: 'center', proximity: 0 };
+}
