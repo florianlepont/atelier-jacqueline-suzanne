@@ -282,6 +282,21 @@ test.describe('carousel custom cursor affordance (Item 3)', () => {
   });
 });
 
+// quick-260726-obg (Task 3): removes the persistent underline added by
+// quick-260725-tqs (Item 3), per direct user feedback — matches DetailHero's
+// non-underlined overlay title.
+test.describe('carousel title has no underline (quick-260726-obg)', () => {
+  test('the title renders with no underline at rest or on hover, keeping its accent-color hover and pointer cursor', async ({ page }) => {
+    await page.goto('/');
+
+    const title = page.locator('[data-role="gallery-title"]');
+    await expect(title).toHaveCSS('text-decoration-line', 'none');
+
+    await title.hover();
+    await expect(title).toHaveCSS('text-decoration-line', 'none');
+  });
+});
+
 // quick-260725-tqs (Item 4): narrower accent panel with a retuned wordmark
 // that must not clip.
 test.describe('carousel accent panel narrowing, no wordmark clip (Item 4)', () => {
@@ -801,15 +816,14 @@ test.describe('mobile full-bleed hero regression (HOME-06)', () => {
     // photo at least as tall as the visible (chrome-showing) viewport.
     expect(photoBox!.height).toBeGreaterThanOrEqual(viewportSize!.height - 2);
 
-    // Footer not visible in the initial viewport: BaseLayout.astro always
-    // renders <footer>, regardless of headerVariant, so it is provably
-    // present in the homepage DOM — it must sit at or below the fold on
-    // first load, not bleed through beneath the hero.
+    // quick-260726-obg: the footer is now hidden entirely in carousel mode
+    // (Task 2's reintroduced footer-hide) rather than merely pushed below
+    // the fold — display:none satisfies toBeHidden() and fully rules out
+    // any bleed-through, present in the DOM (BaseLayout.astro always
+    // renders <footer> regardless of headerVariant) but not painted.
     const footer = page.locator('footer');
     await expect(footer).toHaveCount(1);
-    const footerBox = await footer.boundingBox();
-    expect(footerBox).not.toBeNull();
-    expect(footerBox!.y).toBeGreaterThanOrEqual(viewportSize!.height - 1);
+    await expect(footer).toBeHidden();
 
     // D-12 guard: the carousel/grid morph must stay active on mobile — not
     // desktop/pointer:fine-gated.
@@ -826,7 +840,7 @@ test.describe('mobile full-bleed hero regression (HOME-06)', () => {
 });
 
 test.describe('tall-desktop full-bleed hero regression', () => {
-  test('at 1280x1320 the photo fills the initial viewport and the footer stays below the fold', async ({ page }) => {
+  test('at 1280x1320 the photo fills the initial viewport and the footer is hidden (quick-260726-obg)', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 1320 });
     await page.goto('/');
 
@@ -837,9 +851,9 @@ test.describe('tall-desktop full-bleed hero regression', () => {
     expect(photoBox).not.toBeNull();
     expect(photoBox!.height).toBeGreaterThanOrEqual(viewportSize!.height - 2);
 
-    const footerBox = await page.locator('footer').boundingBox();
-    expect(footerBox).not.toBeNull();
-    expect(footerBox!.y).toBeGreaterThanOrEqual(viewportSize!.height - 1);
+    // quick-260726-obg: the footer is hidden in carousel mode (Task 2's
+    // reintroduced footer-hide), not merely below the fold.
+    await expect(page.locator('footer')).toBeHidden();
   });
 });
 
@@ -1241,34 +1255,28 @@ test.describe('carousel scroll-to-open (quick-260725-cfm, simplified quick-26072
     await expect(page.locator('.home-scroll-open-hint')).toHaveCount(0);
   });
 
-  // quick-260725-sj4: regression coverage for the accidental-navigation bug.
+  // quick-260725-sj4 / quick-260726-obg: regression coverage for the
+  // accidental-navigation bug, reworked to the current, deliberate contract.
   // quick-260725-dcg (Fix 1) hid the footer entirely in carousel mode, which
   // removed all real scroll distance below the hero — atBottom() was
   // vacuously TRUE from first paint at scrollY 0, so a couple of ordinary
-  // scroll deltas silently navigated a visitor away from a fresh load. The
-  // fix (removing that footer-hide rule) restores genuine scroll distance,
-  // so atBottom() only becomes true once the visitor has actually scrolled
-  // down past the hero and the footer. The tests below use SYNTHETIC
-  // WheelEvent/TouchEvent dispatch rather than page.mouse.wheel/native
-  // scrolling — synthetic events do not move the page, so scrollY stays 0
-  // throughout, which isolates the exact atBottom()-at-scrollY-0 property
-  // the bug violated, independent of the real footer's pixel height. With
-  // the dcg footer-hide still in place, these same inputs would have
-  // navigated.
-  test('fresh load: atBottom() is false at scrollY 0 (footer restores real scroll distance below the hero)', async ({ page }) => {
-    await page.goto('/');
-
-    // Mirrors the exact atBottom() gate in HomeCarousel.astro's overscroll
-    // script (innerHeight + scrollY >= scrollHeight - BOTTOM_EPSILON). This
-    // must be false on a fresh load at scrollY 0 — the footer-height-
-    // independent guard against the regression returning.
-    const isAtBottom = await page.evaluate(
-      () => window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4
-    );
-    expect(isAtBottom).toBe(false);
-  });
-
-  test('fresh load: two small wheel ticks do NOT navigate (accidental-navigation regression)', async ({ page }) => {
+  // scroll deltas silently navigated a visitor away from a fresh load with
+  // ZERO warning. quick-260725-sj4 fixed that by reverting the footer-hide
+  // (restoring real scroll distance). quick-260726-obg (Task 2) reintroduces
+  // the footer-hide — safety_investigation item 1 explicitly ACCEPTS the
+  // vacuous-atBottom() tradeoff on desktop as deliberate — but mitigates it
+  // with Task 1's early, visible photo scale/darken feedback instead of the
+  // footer's old accidental scroll-distance buffer. The old "atBottom() is
+  // false at scrollY 0" and "two wheel ticks do NOT navigate" assertions are
+  // therefore now FALSE by design (2x80=160 > 150 WILL navigate, correctly)
+  // and are replaced below by the early-warning proof: a SINGLE 80px tick
+  // (well under the threshold) already shows the pull feedback clearly,
+  // before any navigation — the same accidental gesture now announces
+  // itself visibly instead of firing in silence. The tests use SYNTHETIC
+  // WheelEvent/TouchEvent dispatch (not page.mouse.wheel/native scrolling)
+  // so scrollY stays 0 throughout, isolating the exact atBottom()-at-
+  // scrollY-0 property the original bug exploited.
+  test('fresh load: one 80px wheel tick already shows visible pull feedback before any navigation (early-warning replacement for the old footer buffer)', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('/');
 
@@ -1277,30 +1285,49 @@ test.describe('carousel scroll-to-open (quick-260725-cfm, simplified quick-26072
     await page.locator('[data-role="autoplay-toggle"]').click();
 
     await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: 80, bubbles: true })));
-    await page.waitForTimeout(80);
-    await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: 80, bubbles: true })));
-    await page.waitForTimeout(300);
 
+    const { scale, darken } = await page.locator('.home-hero__photo').evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        scale: parseFloat(style.getPropertyValue('--pull-scale')),
+        darken: parseFloat(style.getPropertyValue('--pull-darken')),
+      };
+    });
+    expect(scale).toBeLessThan(0.99);
+    expect(darken).toBeGreaterThan(0.3);
+    // Well under the 150px threshold — no navigation has occurred.
     expect(page.url()).toMatch(/\/$/);
   });
 
-  test('fresh load (EN): two small wheel ticks do NOT navigate (accidental-navigation regression)', async ({ page }) => {
+  test('fresh load (EN): one 80px wheel tick already shows visible pull feedback before any navigation', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('/en/');
     await page.locator('[data-role="autoplay-toggle"]').click();
 
     await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: 80, bubbles: true })));
-    await page.waitForTimeout(80);
-    await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: 80, bubbles: true })));
-    await page.waitForTimeout(300);
 
+    const { scale, darken } = await page.locator('.home-hero__photo').evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        scale: parseFloat(style.getPropertyValue('--pull-scale')),
+        darken: parseFloat(style.getPropertyValue('--pull-darken')),
+      };
+    });
+    expect(scale).toBeLessThan(0.99);
+    expect(darken).toBeGreaterThan(0.3);
     expect(page.url()).toMatch(/\/en\/$/);
   });
 
   test.describe('touch input', () => {
     test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 
-    test('fresh load: one modest touch swipe does NOT navigate (accidental-navigation regression)', async ({ page }) => {
+    // quick-260726-obg: on mobile the in-flow accent panel still provides
+    // real scroll distance below the hero (unlike desktop, which has none
+    // once the footer is hidden — see the accepted tradeoff above), so
+    // atBottom() genuinely stays false at scrollY 0 here and a modest swipe
+    // correctly does not navigate. This is independent of the desktop pull-
+    // feedback safety net; both are exercised together above/below.
+    test('fresh load: one modest touch swipe does NOT navigate (mobile scroll distance comes from the accent panel, not the footer)', async ({ page }) => {
       await page.goto('/');
       await page.locator('[data-role="autoplay-toggle"]').click();
 
@@ -1402,6 +1429,173 @@ test.describe('carousel scroll-to-open (quick-260725-cfm, simplified quick-26072
 
     await page.waitForURL(`**${href}`);
     expect(page.url()).toContain(href!);
+  });
+});
+
+// quick-260726-obg (Task 2): reintroduces quick-260725-dcg's footer-hide
+// contract, now made safe by Task 1's pull feedback (see the block above and
+// the reworked sj4 tests above it).
+test.describe('footer visibility by display mode (quick-260726-obg)', () => {
+  test('FR: the footer is hidden in carousel mode and reappears in grid mode', async ({ page }) => {
+    await page.goto('/');
+
+    const footer = page.locator('footer');
+    await expect(footer).toBeHidden();
+
+    await page.getByRole('button', { name: 'Grille' }).click();
+    await expect(footer).toBeVisible();
+  });
+
+  test('EN: the footer is hidden in carousel mode and reappears in grid mode', async ({ page }) => {
+    await page.goto('/en/');
+
+    const footer = page.locator('footer');
+    await expect(footer).toBeHidden();
+
+    await page.getByRole('button', { name: 'Grid' }).click();
+    await expect(footer).toBeVisible();
+  });
+});
+
+// quick-260726-obg (sketch 007 Variant C, winner): the real overscroll
+// visual feedback that replaces the site footer's old (accidental) role as
+// a safety buffer — the hero photo itself scales down (to ~0.94 at the
+// threshold) and darkens (via the new .home-hero__pull-overlay, up to
+// ~0.85 opacity) proportionally as overscroll accumulates toward the 150px
+// threshold, giving a real, early, visible warning well before any
+// navigation fires. Every assertion reads the live --pull-scale/
+// --pull-darken CSS custom properties setPullFeedback() writes onto
+// .home-hero__photo, mirroring the sketch's own readout mechanism.
+test.describe('carousel overscroll pull feedback (quick-260726-obg, sketch 007 Variant C)', () => {
+  async function readPullVars(page: import('@playwright/test').Page) {
+    return page.locator('.home-hero__photo').evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        scale: parseFloat(style.getPropertyValue('--pull-scale')),
+        darken: parseFloat(style.getPropertyValue('--pull-darken')),
+      };
+    });
+  }
+
+  test('one 80px wheel tick (well below the 150px threshold) already shows clear scale/darken feedback', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/');
+    // Pin the current slide so a stray autoplay swap (which resets the
+    // feedback via render()) can't be mistaken for this test's own signal.
+    await page.locator('[data-role="autoplay-toggle"]').click();
+    // Reach the bottom deterministically regardless of a short/long footer.
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+    await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: 80, bubbles: true })));
+
+    const { scale, darken } = await readPullVars(page);
+    expect(scale).toBeLessThan(0.99);
+    expect(darken).toBeGreaterThan(0.3);
+    // Still well below the 150px threshold — no navigation yet.
+    expect(page.url()).toMatch(/\/$/);
+  });
+
+  test('releasing before the threshold visibly decays back to neutral on its own and does not navigate', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+    await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: 80, bubbles: true })));
+    const during = await readPullVars(page);
+    expect(during.scale).toBeLessThan(0.99);
+
+    // Past the 800ms idle window plus the 300ms decay animation, with a
+    // margin for real-timer/CI jitter (no mocked clock — the idle watchdog
+    // and the rAF decay both run on real timers).
+    await page.waitForTimeout(1500);
+
+    const after = await readPullVars(page);
+    expect(after.scale).toBeGreaterThan(0.999);
+    expect(after.darken).toBeLessThan(0.01);
+    expect(page.url()).toMatch(/\/$/);
+  });
+
+  test('crossing the threshold resets the photo to neutral before the real navigation click fires', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+
+    // Suppress the real navigation (capture-phase preventDefault) so the
+    // page stays put — this proves navigateToCurrent()'s neutral reset runs
+    // BEFORE titleEl.click() proceeds, not merely "eventually" or after.
+    await page.evaluate(() => {
+      document.querySelector('[data-role="gallery-title"]')?.addEventListener(
+        'click',
+        (e) => e.preventDefault(),
+        { capture: true },
+      );
+    });
+
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: 200, bubbles: true })));
+
+    const { scale, darken } = await readPullVars(page);
+    expect(scale).toBe(1);
+    expect(darken).toBe(0);
+    expect(page.url()).toMatch(/\/$/);
+  });
+
+  test('reduced motion: the feedback still appears — the sole safety signal is not disabled for reduced-motion visitors', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/');
+    // Reduced-motion visitors already start with auto-advance paused (D-09)
+    // — no explicit pause click needed here.
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+    await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: 80, bubbles: true })));
+
+    const { scale, darken } = await readPullVars(page);
+    expect(scale).toBeLessThan(0.99);
+    expect(darken).toBeGreaterThan(0.3);
+  });
+
+  test.describe('mobile', () => {
+    test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+    test('a ~100px downward touch drag at the bottom shows the same scale/darken feedback and does not navigate', async ({ page }) => {
+      await page.goto('/');
+      await page.locator('[data-role="autoplay-toggle"]').click();
+      // Scroll to the real bottom, past the in-flow mobile accent panel.
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+      // A ~100px upward finger drag (downward scroll intent), clientX held
+      // roughly constant so it reads as a vertical scroll, not a horizontal
+      // gallery swipe — mirrors the existing sj4 touch-repro pattern above.
+      await page.evaluate(() => {
+        const target = document.body;
+        const startY = 500;
+        const totalDelta = 100;
+        const steps = 4;
+        const clientX = 195;
+
+        const makeTouchEvent = (type: string, clientY: number) => {
+          const touch = new Touch({ identifier: 1, target, clientX, clientY });
+          return new TouchEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            touches: type === 'touchend' ? [] : [touch],
+            changedTouches: [touch],
+          });
+        };
+
+        window.dispatchEvent(makeTouchEvent('touchstart', startY));
+        for (let i = 1; i <= steps; i++) {
+          window.dispatchEvent(makeTouchEvent('touchmove', startY - (totalDelta / steps) * i));
+        }
+      });
+
+      const { scale, darken } = await readPullVars(page);
+      expect(scale).toBeLessThan(0.99);
+      expect(darken).toBeGreaterThan(0.3);
+      expect(page.url()).toMatch(/\/$/);
+    });
   });
 });
 

@@ -14,7 +14,12 @@ test.describe('locale content', () => {
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
     const header = page.locator('[data-role="site-header"]');
     await expect(header).toBeVisible();
-    await expect(page.locator('body > footer')).toBeVisible();
+    // quick-260726-obg: the homepage footer is present in the DOM but
+    // hidden while in carousel mode (the default display mode) — reachable
+    // via grid mode. See "footer visibility by display mode
+    // (quick-260726-obg)" in homepage.spec.ts for the full contract.
+    await expect(page.locator('body > footer')).toHaveCount(1);
+    await expect(page.locator('body > footer')).toBeHidden();
 
     // I18N-04/D-07/D-08: exactly one switcher link (the other language),
     // no separator, accessible name contains "EN", and a leading globe svg.
@@ -32,7 +37,10 @@ test.describe('locale content', () => {
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     const header = page.locator('[data-role="site-header"]');
     await expect(header).toBeVisible();
-    await expect(page.locator('body > footer')).toBeVisible();
+    // quick-260726-obg: same carousel-mode footer contract as the French
+    // case above.
+    await expect(page.locator('body > footer')).toHaveCount(1);
+    await expect(page.locator('body > footer')).toBeHidden();
 
     // I18N-04/D-07/D-08: single switcher link, no separator, accessible
     // name contains "FR" on the English page.
@@ -47,10 +55,15 @@ test.describe('locale content', () => {
   test('site-title/nav/footer copy differs between the French and English pages', async ({ page }) => {
     await page.goto('/');
     const frHeader = await page.locator('[data-role="site-header"]').innerText();
+    // quick-260726-obg: the footer is hidden in carousel mode (the default)
+    // — innerText() of a display:none element is always '', so switch to
+    // grid mode first to read its real rendered text.
+    await page.getByRole('button', { name: 'Grille' }).click();
     const frFooter = await page.locator('body > footer').innerText();
 
     await page.goto('/en/');
     const enHeader = await page.locator('[data-role="site-header"]').innerText();
+    await page.getByRole('button', { name: 'Grid' }).click();
     const enFooter = await page.locator('body > footer').innerText();
 
     expect(enHeader).not.toBe(frHeader);
