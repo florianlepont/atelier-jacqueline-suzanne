@@ -84,6 +84,10 @@ const toggleCarouselLabel = isEn ? 'Carousel' : 'Carrousel';
 const toggleGridLabel = isEn ? 'Grid' : 'Grille';
 const pauseCarouselLabel = isEn ? 'Pause automatic carousel' : 'Mettre le carrousel en pause';
 const playCarouselLabel = isEn ? 'Play automatic carousel' : 'Relancer le carrousel';
+// quick-260726-u97 (sketch 008 Variant C): the permanent center-zone cursor
+// label — always visible, not a hover-discovery hint (direct feedback on
+// the sketch confirmed there is no unlabeled ring state).
+const openLabel = isEn ? 'OPEN' : 'OUVRIR';
 const wordmark = 'Atelier Jacqueline Suzanne';
 const introBody = siteCopy.homepageIntro;
 
@@ -228,6 +232,17 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           <p class="home-hero__index" data-role="index-label">01 / {totalLabel}</p>
           <a class="home-hero__title" data-role="gallery-title" href={getRelativeLocaleUrl(locale, `galleries/${firstGallery.slug}`)}>{firstGallery.title.toUpperCase()}</a>
         </div>
+
+        {/* quick-260726-u97 (sketch 008 Variant C): the custom hover cursor
+            replacing the removed scroll-to-open gesture — permanent OUVRIR/
+            OPEN center ring, accent-tinted directional arrow pill at the 22%
+            edge zones. Gated entirely behind (hover: hover) and
+            (pointer: fine) in both CSS and JS below, so it never activates
+            on touch (the mobile fallback is a plain tap, wired in Task 5). */}
+        <div class="home-hero__cursor" data-role="hero-cursor" data-zone="center" aria-hidden="true">
+          <span class="home-hero__cursor-label">{openLabel}</span>
+          <span class="home-hero__cursor-arrow" aria-hidden="true">&#8594;</span>
+        </div>
       </div>
 
       <div
@@ -302,7 +317,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     </ul>
 
     <script>
-      import { computeWordmarkBackgroundPosition, detectSwipeDirection } from '../lib/home-carousel';
+      import { computeHoverZone, computeWordmarkBackgroundPosition, detectSwipeDirection } from '../lib/home-carousel';
 
       interface GalleryEntry {
         slug: string;
@@ -725,6 +740,48 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             goToPrev();
           }
         }, { passive: true });
+
+        // quick-260726-u97 (sketch 008 Variant C): the custom hover cursor +
+        // edge-zone/peek interaction that replaces the removed scroll-to-open
+        // gesture. Entirely inert on touch/coarse-pointer — matchMedia here
+        // (not just the CSS media query) means none of this JS ever wires up
+        // on a touchscreen; the mobile fallback is a plain tap (Task 5).
+        const hoverCapable = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+        const EDGE_ZONE_FRACTION = 0.22;
+        let currentZone: 'center' | 'left' | 'right' = 'center';
+        let currentProximity = 0;
+
+        if (hoverCapable && heroPhoto) {
+          const cursorEl = heroPhoto.querySelector<HTMLElement>('[data-role="hero-cursor"]');
+
+          heroPhoto.addEventListener('mousemove', (event) => {
+            const rect = heroPhoto.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            if (cursorEl) {
+              cursorEl.style.transform = `translate(${x}px, ${y}px)`;
+            }
+            const { zone, proximity } = computeHoverZone(x / rect.width, EDGE_ZONE_FRACTION);
+            currentZone = zone;
+            currentProximity = proximity;
+            if (cursorEl) {
+              cursorEl.dataset.zone = zone;
+            }
+          });
+
+          heroPhoto.addEventListener('mouseenter', () => {
+            heroPhoto.classList.add('is-cursor-active');
+          });
+
+          heroPhoto.addEventListener('mouseleave', () => {
+            heroPhoto.classList.remove('is-cursor-active');
+            currentZone = 'center';
+            currentProximity = 0;
+            if (cursorEl) {
+              cursorEl.dataset.zone = 'center';
+            }
+          });
+        }
 
         // D-01/D-02/D-03: a single stateful button — its aria-label always
         // names the mode you'd switch TO, read off its own data-label-*
@@ -1441,7 +1498,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        quick-260725-tqs (Item 3) per direct user feedback — matches
        DetailHero's non-underlined overlay title (a <p>, so it never had one
        in the first place). The accent-color hover/focus state below plus
-       the custom down-chevron cursor already on the ancestor
+       the custom hover cursor (quick-260726-u97) already on the ancestor
        .home-hero__photo remain the click affordances; no visible discovery
        hint replaces the underline. */
     text-decoration: none;
@@ -1449,10 +1506,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    /* Item 3: .home-hero__photo (an ancestor) now sets a custom cursor,
-       which is an inherited property — without this explicit override the
-       title link would inherit that photo cursor and lose its own pointer
-       affordance. */
+    /* On real-mouse desktop, .home-hero__photo (an ancestor) sets
+       cursor: none — an inherited property — so the custom hover-cursor
+       element can stand in for it. Without this explicit override the
+       title link would inherit that none and lose its own pointer
+       affordance while hovered directly. */
     cursor: pointer;
   }
 
@@ -1464,6 +1522,96 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        underline }` rule would re-underline it on hover/focus even though
        the base rule above now sets text-decoration: none at rest. */
     text-decoration: none;
+  }
+
+  /* quick-260726-u97 (sketch 008 Variant C): the custom hover cursor,
+     gated entirely to real-mouse desktop — (hover: hover) and
+     (pointer: fine) never both match on a touchscreen, so none of this
+     activates there and the native default cursor + a plain tap (Task 5)
+     are all a touch visitor ever sees. */
+  @media (hover: hover) and (pointer: fine) {
+    .home-hero__photo {
+      cursor: none;
+    }
+
+    .home-hero__cursor {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 68px;
+      height: 68px;
+      margin: -34px 0 0 -34px;
+      border: 1.5px solid rgba(255, 255, 255, 0.9);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14);
+      color: #FFFFFF;
+      font-family: var(--font-sans);
+      font-size: 11px;
+      font-weight: var(--weight-semibold);
+      letter-spacing: 0.04em;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(0, 0) scale(0.6);
+      transition:
+        opacity 160ms ease,
+        transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+        width 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+        height 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+        margin 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+        border-radius 200ms ease,
+        background 200ms ease,
+        border-color 200ms ease;
+    }
+
+    .home-hero__photo.is-cursor-active .home-hero__cursor {
+      opacity: 1;
+      transform: translate(0, 0) scale(1);
+    }
+
+    /* Edge zones: the ring morphs into an accent-tinted directional pill —
+       .home-hero__cursor's own `transform: translate(x, y)` (JS, tracking
+       the pointer) is untouched by this; only geometry/color change. */
+    .home-hero__cursor[data-zone='left'],
+    .home-hero__cursor[data-zone='right'] {
+      width: 92px;
+      height: 52px;
+      margin: -26px 0 0 -46px;
+      background: var(--current-accent, var(--color-accent));
+      border-color: var(--current-accent, var(--color-accent));
+      color: var(--current-accent-text, var(--color-on-accent));
+    }
+
+    /* Center label is permanent (no unlabeled ring state — confirmed
+       feedback); hidden in the edge zones, where the arrow takes over. */
+    .home-hero__cursor[data-zone='left'] .home-hero__cursor-label,
+    .home-hero__cursor[data-zone='right'] .home-hero__cursor-label {
+      display: none;
+    }
+
+    .home-hero__cursor-arrow {
+      display: none;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .home-hero__cursor[data-zone='left'] .home-hero__cursor-arrow,
+    .home-hero__cursor[data-zone='right'] .home-hero__cursor-arrow {
+      display: inline;
+    }
+
+    .home-hero__cursor[data-zone='left'] .home-hero__cursor-arrow {
+      transform: scaleX(-1);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .home-hero__cursor {
+        transition: none;
+      }
+    }
   }
 
   .home-hero__accent {

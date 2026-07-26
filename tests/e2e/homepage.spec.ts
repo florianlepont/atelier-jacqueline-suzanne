@@ -279,6 +279,75 @@ test.describe('carousel title has no underline (quick-260726-obg)', () => {
   });
 });
 
+// quick-260726-u97 (sketch 008 Variant C): the custom hover cursor that
+// replaces the removed scroll-to-open gesture — a permanent OUVRIR/OPEN
+// center ring morphing into an accent-tinted directional pill at the 22%
+// edge zones. Runs in the default chromium project, which reports
+// hover:hover + pointer:fine (devices['Desktop Chrome']), so the cursor
+// system activates.
+test.describe('carousel hover cursor (sketch 008 Variant C)', () => {
+  async function photoBox(page: import('@playwright/test').Page) {
+    const box = await page.locator('.home-hero__photo').boundingBox();
+    if (!box) throw new Error('.home-hero__photo has no bounding box');
+    return box;
+  }
+
+  test('FR center zone: permanent OUVRIR label, cursor visible', async ({ page }) => {
+    await page.goto('/');
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+
+    const cursor = page.locator('[data-role="hero-cursor"]');
+    await expect(cursor).toHaveAttribute('data-zone', 'center');
+    await expect(cursor.locator('.home-hero__cursor-label')).toHaveText('OUVRIR');
+    await expect(cursor).toHaveCSS('opacity', '1');
+  });
+
+  test('EN center zone: permanent OPEN label', async ({ page }) => {
+    await page.goto('/en/');
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+
+    const cursor = page.locator('[data-role="hero-cursor"]');
+    await expect(cursor).toHaveAttribute('data-zone', 'center');
+    await expect(cursor.locator('.home-hero__cursor-label')).toHaveText('OPEN');
+  });
+
+  test('left edge zone: arrow shown, cursor tinted with the current accent', async ({ page }) => {
+    await page.goto('/');
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.05, box.y + box.height / 2);
+
+    const cursor = page.locator('[data-role="hero-cursor"]');
+    await expect(cursor).toHaveAttribute('data-zone', 'left');
+    await expect(cursor.locator('.home-hero__cursor-arrow')).toBeVisible();
+
+    // .home-hero__accent's background-color is the same --current-accent
+    // custom property the cursor's edge-zone background uses — comparing
+    // against its resolved computed color avoids depending on whether the
+    // accent is a hex value or a CSS var() fallback chain.
+    const expectedBg = await page.locator('[data-role="accent-panel"]').evaluate((el) => getComputedStyle(el).backgroundColor);
+    const cursorBg = await cursor.evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(cursorBg).toBe(expectedBg);
+  });
+
+  test('right edge zone: arrow shown', async ({ page }) => {
+    await page.goto('/');
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.95, box.y + box.height / 2);
+
+    const cursor = page.locator('[data-role="hero-cursor"]');
+    await expect(cursor).toHaveAttribute('data-zone', 'right');
+    await expect(cursor.locator('.home-hero__cursor-arrow')).toBeVisible();
+  });
+
+  test('the native cursor is hidden over the hero photo', async ({ page }) => {
+    await page.goto('/');
+    const photoCursor = await page.locator('.home-hero__photo').evaluate((el) => getComputedStyle(el).cursor);
+    expect(photoCursor).toBe('none');
+  });
+});
+
 // quick-260725-tqs (Item 4): narrower accent panel with a retuned wordmark
 // that must not clip.
 test.describe('carousel accent panel narrowing, no wordmark clip (Item 4)', () => {
