@@ -469,12 +469,13 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         function syncWordmarkAlignment() {
           if (!heroImg || !wordmarkEl) return;
           // Deliberately heroImg's own rect, not .home-hero's — heroImg now
-          // carries `inset: -4%` (quick-260726-qem, the overscroll-pull
-          // overhang reserve — not a dedicated "zoom fix"), so its actual
-          // rendered box is already bigger than the visible hero container.
-          // Reading it directly here means the crop math below automatically
-          // reflects that expanded box with no separate inset term needed —
-          // it's already baked into this rect.
+          // carries `top: -4%; left: -4%; width: 108%; height: 108%`
+          // (quick-260726-qem, the overscroll-pull overhang reserve — not a
+          // dedicated "zoom fix"), so its actual rendered box is already
+          // bigger than the visible hero container. Reading it directly here
+          // means the crop math below automatically reflects that expanded
+          // box with no separate inset term needed — it's already baked
+          // into this rect.
           const result = computeWordmarkBackgroundPosition(
             heroImg.naturalWidth,
             heroImg.naturalHeight,
@@ -1483,21 +1484,34 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
   .home-hero__img {
     position: absolute;
-    /* quick-260726-qem: -4% overhang on all four sides inflates this box to
-       108% of .home-hero__photo, centered — no width/height here (an
-       absolutely-positioned element with all four insets AND explicit
-       width/height is over-constrained: width/height would win and the
-       right/bottom insets would be dropped, offsetting the box up-left
-       instead of centering the overhang, exposing black on the opposite two
-       edges). The extra bleed is overscroll-pull reserve: object-fit: cover
-       scales the raster up to fill the inflated box, .home-hero__photo's
-       overflow: hidden clips that overhang invisibly at rest (a slight,
-       uniform ~8% center-zoom, not a visible border), and when the photo
-       scales DOWN during a pull the reserve is consumed instead of exposing
-       .home-hero__photo's background-color: #000. No-black condition at the
-       shipped 0.94 minimum pull scale: inset -X% inflates the box to
+    /* quick-260726-qem: overscroll-pull bleed reserve, giving this box an
+       8% overhang (4% per side) beyond .home-hero__photo, centered.
+       Deliberately `top`/`left` + explicit `width`/`height` percentages —
+       NOT a shorthand `inset: -4%` with width/height removed. `<img>` is a
+       CSS replaced element: per the abs-pos-replaced-element sizing rules,
+       giving a replaced element `width: auto` (even with all four insets
+       specified) resolves the used width from the image's INTRINSIC size,
+       not from the inset offsets — confirmed by direct measurement, the
+       rendered box stayed at the container's own size instead of
+       inflating. (The sketch's `inset: -3%` precedent doesn't hit this:
+       `.demo-photo` there is a plain `<div>` with a CSS background-image,
+       not a replaced element, so auto-width DOES resolve from insets for
+       that box.) Specifying explicit width/height together with only
+       top+left (never right/bottom) sizes this box unambiguously — no
+       over-constraint, since right/bottom are left to be derived, not
+       fought over — and works identically for replaced and non-replaced
+       elements. `object-fit: cover` scales the raster to fill the inflated
+       box; .home-hero__photo's overflow: hidden clips the overhang
+       invisibly at rest (a slight, uniform ~8% center-zoom, not a visible
+       border); when the photo scales DOWN during a pull, that reserve is
+       consumed instead of exposing .home-hero__photo's
+       background-color: #000. No-black condition at the shipped 0.94
+       minimum pull scale: an X% per-side overhang inflates the box to
        (100 + 2X)%, and (100 + 2*4) * 0.94 = 101.52 >= 100. */
-    inset: -4%;
+    top: -4%;
+    left: -4%;
+    width: 108%;
+    height: 108%;
     object-fit: cover;
     /* quick-260726-obg (sketch 007 Variant C): the overscroll pull feedback
        scales the photo layers themselves (not the container), so the
