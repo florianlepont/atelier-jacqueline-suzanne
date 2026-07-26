@@ -469,11 +469,12 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         function syncWordmarkAlignment() {
           if (!heroImg || !wordmarkEl) return;
           // Deliberately heroImg's own rect, not .home-hero's — heroImg now
-          // has `inset: -6%` (the zoom fix above), so its actual rendered
-          // box is already bigger than the visible hero container. Reading
-          // it directly here means the crop math below automatically
-          // reflects that expansion with no separate ZOOM_INSET_PCT term
-          // needed — it's already baked into this rect.
+          // carries `inset: -4%` (quick-260726-qem, the overscroll-pull
+          // overhang reserve — not a dedicated "zoom fix"), so its actual
+          // rendered box is already bigger than the visible hero container.
+          // Reading it directly here means the crop math below automatically
+          // reflects that expanded box with no separate inset term needed —
+          // it's already baked into this rect.
           const result = computeWordmarkBackgroundPosition(
             heroImg.naturalWidth,
             heroImg.naturalHeight,
@@ -1482,9 +1483,21 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
   .home-hero__img {
     position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
+    /* quick-260726-qem: -4% overhang on all four sides inflates this box to
+       108% of .home-hero__photo, centered — no width/height here (an
+       absolutely-positioned element with all four insets AND explicit
+       width/height is over-constrained: width/height would win and the
+       right/bottom insets would be dropped, offsetting the box up-left
+       instead of centering the overhang, exposing black on the opposite two
+       edges). The extra bleed is overscroll-pull reserve: object-fit: cover
+       scales the raster up to fill the inflated box, .home-hero__photo's
+       overflow: hidden clips that overhang invisibly at rest (a slight,
+       uniform ~8% center-zoom, not a visible border), and when the photo
+       scales DOWN during a pull the reserve is consumed instead of exposing
+       .home-hero__photo's background-color: #000. No-black condition at the
+       shipped 0.94 minimum pull scale: inset -X% inflates the box to
+       (100 + 2X)%, and (100 + 2*4) * 0.94 = 101.52 >= 100. */
+    inset: -4%;
     object-fit: cover;
     /* quick-260726-obg (sketch 007 Variant C): the overscroll pull feedback
        scales the photo layers themselves (not the container), so the
