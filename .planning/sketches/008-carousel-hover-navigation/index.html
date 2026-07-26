@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Sketch 008 — Carousel hover navigation</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../themes/default.css" />
+<style>
+  body { padding-top: 52px; }
+
+  #variant-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9998;
+    background: #fff; border-bottom: var(--border-hairline) solid var(--color-border);
+    padding: 8px 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    font-family: var(--font-sans); font-size: 13px;
+  }
+  #variant-nav .nav-label { font-weight: var(--weight-semibold); margin-right: 8px; color: #777; }
+  .variant-tab {
+    font-family: var(--font-sans); font-size: 13px; padding: 6px 12px;
+    border: var(--border-hairline) solid var(--color-border); background: #fff; color: var(--color-ink);
+    cursor: pointer; border-radius: var(--radius-none); transition: all .15s ease;
+  }
+  .variant-tab:hover { border-color: var(--color-accent); }
+  .variant-tab.active { background: var(--color-ink); color: #fff; border-color: var(--color-ink); }
+
+  .variant { display: none; }
+  .variant.active { display: block; }
+
+  .demo-shell { max-width: 1180px; margin: 0 auto; padding: var(--space-lg) var(--space-lg) var(--space-2xl); }
+  .demo-heading { font-family: var(--font-display); font-weight: 900; font-size: 22px; margin: 0 0 4px; }
+  .demo-question { font-size: 14px; color: #555; max-width: 720px; margin: 0 0 var(--space-md); line-height: 1.5; }
+  .demo-instructions {
+    font-size: 13px; color: #fff; background: var(--color-ink); display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 12px; margin: 0 0 var(--space-md); font-family: var(--font-sans);
+  }
+  .demo-instructions strong { color: var(--palette-lime); font-weight: var(--weight-semibold); }
+
+  .demo-frame {
+    position: relative; width: 100%; height: min(74vh, 680px); min-height: 440px;
+    overflow: hidden; background: #111; cursor: none; user-select: none;
+    border: var(--border-hairline) solid var(--color-border);
+  }
+
+  .slide {
+    position: absolute; inset: 0; background-size: cover; background-position: center;
+    transition: transform 420ms cubic-bezier(.2,.8,.2,1), opacity 420ms ease, clip-path 90ms linear, filter 420ms ease;
+  }
+  .slide--prev, .slide--next { z-index: 1; }
+  .slide--current { z-index: 2; }
+
+  .hero-scrim {
+    position: absolute; inset: 0; z-index: 3; pointer-events: none;
+    background: linear-gradient(to top, rgba(0,0,0,.6) 0%, rgba(0,0,0,.12) 45%, rgba(0,0,0,0) 70%);
+  }
+
+  .hero-caption {
+    position: absolute; left: var(--space-md); bottom: var(--space-xl); z-index: 4; color: #fff;
+  }
+  .hero-dashes { display: flex; gap: var(--space-xs); width: 180px; margin-bottom: var(--space-xs); }
+  .hero-dash { flex: 1 1 0; height: 3px; background: rgba(255,255,255,.35); }
+  .hero-dash[data-active="true"] { background: var(--current-accent, var(--color-accent)); }
+  .hero-index { font-size: 14px; color: rgba(255,255,255,.75); margin: 0 0 4px; font-family: var(--font-sans); }
+  .hero-title {
+    font-family: var(--font-display); font-weight: var(--weight-semibold); font-size: 18px;
+    color: #fff; text-decoration: none; margin: 0; display: block; cursor: none;
+  }
+  .hero-title:hover { color: var(--current-accent, var(--color-accent)); }
+
+  .hero-accent-corner {
+    position: absolute; right: var(--space-md); bottom: var(--space-md); z-index: 4;
+    background: var(--current-accent, var(--color-accent)); color: var(--color-on-accent);
+    padding: 10px 14px; font-family: var(--font-sans); font-size: 12px; max-width: 220px;
+  }
+
+  /* sketch-only annotation */
+  .demo-annotation {
+    position: absolute; top: var(--space-md); left: var(--space-md); z-index: 6;
+    background: rgba(0,0,0,.6); color: #fff; font-family: 'SF Mono', Menlo, monospace;
+    font-size: 11px; padding: 6px 10px; line-height: 1.6; pointer-events: none;
+  }
+  .demo-annotation .mech { color: var(--palette-lime); display: block; }
+  .demo-annotation .readout { color: rgba(255,255,255,.75); display: block; }
+
+  /* ---------- custom cursor system (shared across all variants) ---------- */
+  .cursor-dot {
+    position: absolute; top: 0; left: 0; z-index: 10; pointer-events: none;
+    display: flex; align-items: center; justify-content: center;
+    width: 68px; height: 68px; margin: -34px 0 0 -34px;
+    border: 1.5px solid rgba(255,255,255,.9);
+    background: rgba(255,255,255,.14);
+    color: #fff;
+    font-family: var(--font-sans); font-size: 11px; font-weight: 600; letter-spacing: .04em;
+    opacity: 0; transform: translate(0,0) scale(.6);
+    transition: opacity 160ms ease, transform 160ms cubic-bezier(.2,.8,.2,1),
+      width 200ms cubic-bezier(.2,.8,.2,1), height 200ms cubic-bezier(.2,.8,.2,1),
+      margin 200ms cubic-bezier(.2,.8,.2,1), border-radius 200ms ease, background 200ms ease, border-color 200ms ease;
+    border-radius: 999px;
+    backdrop-filter: blur(1px);
+  }
+  .demo-frame.cursor-active .cursor-dot { opacity: 1; transform: translate(0,0) scale(1); }
+  .cursor-dot[data-zone="center"] { border-radius: 999px; }
+  .cursor-dot[data-zone="left"],
+  .cursor-dot[data-zone="right"] {
+    width: 92px; height: 52px; margin: -26px 0 0 -46px;
+    border-radius: 999px;
+    background: var(--current-accent, var(--color-accent));
+    border-color: var(--current-accent, var(--color-accent));
+    color: var(--color-on-accent);
+  }
+  .cursor-dot__label { pointer-events: none; }
+  body.cursor-style-labeled .cursor-dot[data-zone="center"] .cursor-dot__label { display: inline; }
+  .cursor-dot__label { display: none; }
+  .cursor-dot__arrow { display: none; font-size: 20px; line-height: 1; }
+  .cursor-dot[data-zone="left"] .cursor-dot__arrow,
+  .cursor-dot[data-zone="right"] .cursor-dot__arrow { display: inline; }
+  .cursor-dot[data-zone="left"] .cursor-dot__arrow { transform: scaleX(-1); }
+
+  /* ---------- toolbar ---------- */
+  #sketch-tools {
+    position: fixed; bottom: 12px; right: 12px; z-index: 9999; font-family: system-ui, sans-serif; font-size: 12px;
+    background: rgba(0,0,0,.75); color: #fff; padding: 10px 12px; border-radius: 8px; opacity: .45; transition: opacity .2s;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  #sketch-tools:hover { opacity: 1; }
+  #sketch-tools .row { display: flex; gap: 6px; align-items: center; }
+  #sketch-tools button {
+    font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,.3);
+    background: rgba(255,255,255,.08); color: #fff; cursor: pointer;
+  }
+  #sketch-tools button:hover { background: rgba(255,255,255,.2); }
+  #sketch-tools button.active { background: var(--color-accent); border-color: var(--color-accent); }
+
+  .findings { max-width: 720px; margin: var(--space-2xl) auto 0; padding: 0 var(--space-lg); font-size: 14px; line-height: 1.6; color: #444; }
+  .findings h3 { font-size: 15px; margin: var(--space-lg) 0 4px; font-family: var(--font-sans); }
+</style>
+</head>
+<body class="cursor-style-labeled">
+
+  <div id="variant-nav">
+    <span class="nav-label">Sketch 008</span>
+    <button class="variant-tab" data-variant="a">A: Sliver reveal</button>
+    <button class="variant-tab" data-variant="b">B: Underlay wipe</button>
+    <button class="variant-tab active" data-variant="c">C: Parallax push ★ Selected</button>
+  </div>
+
+  <!-- ============================= VARIANT A ============================= -->
+  <div class="variant" id="variant-a">
+    <div class="demo-shell">
+      <h2 class="demo-heading">A — Sliver reveal</h2>
+      <p class="demo-question">A thin strip of the adjacent gallery's photo slides in from the edge you're approaching, width proportional to how close your cursor gets. The current photo stays put — only a growing sliver appears alongside it, separated by a hairline.</p>
+      <p class="demo-instructions">Move your mouse across the photo below. Center = <strong>ouvrir</strong>. Near an edge = <strong>galerie précédente/suivante</strong>, and it starts to peek in.</p>
+      <div class="demo-frame" data-variant="a">
+        <div class="demo-annotation"><span class="mech">mechanism: sliver slides in from edge, proportional width</span><span class="readout" data-role="readout">zone: center</span></div>
+        <div class="slide slide--prev" data-role="slide-prev"></div>
+        <div class="slide slide--current" data-role="slide-current"></div>
+        <div class="slide slide--next" data-role="slide-next"></div>
+        <div class="hero-scrim"></div>
+        <div class="hero-caption">
+          <div class="hero-dashes" data-role="dashes">
+            <span class="hero-dash" data-active="true"></span><span class="hero-dash"></span><span class="hero-dash"></span>
+          </div>
+          <p class="hero-index" data-role="index">01 / 03</p>
+          <a class="hero-title" href="#" data-role="title" onclick="return false">PAYSAGE</a>
+        </div>
+        <div class="hero-accent-corner" data-role="accent">Découvrez un univers photographique sensible et singulier.</div>
+        <div class="cursor-dot" data-role="cursor" data-zone="center">
+          <span class="cursor-dot__label">OUVRIR</span>
+          <span class="cursor-dot__arrow">→</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================= VARIANT B ============================= -->
+  <div class="variant" id="variant-b">
+    <div class="demo-shell">
+      <h2 class="demo-heading">B — Underlay wipe</h2>
+      <p class="demo-question">The adjacent photo sits full-size directly behind the current one at all times, revealed through a clip-path "window" that widens from the edge as you approach — like the current photo has a peekable seam, not a separate strip.</p>
+      <p class="demo-instructions">Move your mouse across the photo below. Center = <strong>ouvrir</strong>. Near an edge = <strong>galerie précédente/suivante</strong>, and the seam widens.</p>
+      <div class="demo-frame" data-variant="b">
+        <div class="demo-annotation"><span class="mech">mechanism: clip-path wipe reveals a full underlay photo</span><span class="readout" data-role="readout">zone: center</span></div>
+        <div class="slide slide--prev" data-role="slide-prev"></div>
+        <div class="slide slide--current" data-role="slide-current"></div>
+        <div class="slide slide--next" data-role="slide-next"></div>
+        <div class="hero-scrim"></div>
+        <div class="hero-caption">
+          <div class="hero-dashes" data-role="dashes">
+            <span class="hero-dash" data-active="true"></span><span class="hero-dash"></span><span class="hero-dash"></span>
+          </div>
+          <p class="hero-index" data-role="index">01 / 03</p>
+          <a class="hero-title" href="#" data-role="title" onclick="return false">PAYSAGE</a>
+        </div>
+        <div class="hero-accent-corner" data-role="accent">Découvrez un univers photographique sensible et singulier.</div>
+        <div class="cursor-dot" data-role="cursor" data-zone="center">
+          <span class="cursor-dot__label">OUVRIR</span>
+          <span class="cursor-dot__arrow">→</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================= VARIANT C ============================= -->
+  <div class="variant active" id="variant-c">
+    <div class="demo-shell">
+      <h2 class="demo-heading">C — Parallax push</h2>
+      <p class="demo-question">The current photo itself shifts slightly away from the edge you're nearing — as if being peeled back — revealing the adjacent photo underneath in the vacated space. Feels more physical, like riffling through a stack of prints.</p>
+      <p class="demo-instructions">Move your mouse across the photo below. Center = <strong>ouvrir</strong>. Near an edge = <strong>galerie précédente/suivante</strong>, and the current photo peels back.</p>
+      <div class="demo-frame" data-variant="c">
+        <div class="demo-annotation"><span class="mech">mechanism: current photo shifts away, revealing adjacent underneath</span><span class="readout" data-role="readout">zone: center</span></div>
+        <div class="slide slide--prev" data-role="slide-prev"></div>
+        <div class="slide slide--current" data-role="slide-current"></div>
+        <div class="slide slide--next" data-role="slide-next"></div>
+        <div class="hero-scrim"></div>
+        <div class="hero-caption">
+          <div class="hero-dashes" data-role="dashes">
+            <span class="hero-dash" data-active="true"></span><span class="hero-dash"></span><span class="hero-dash"></span>
+          </div>
+          <p class="hero-index" data-role="index">01 / 03</p>
+          <a class="hero-title" href="#" data-role="title" onclick="return false">PAYSAGE</a>
+        </div>
+        <div class="hero-accent-corner" data-role="accent">Découvrez un univers photographique sensible et singulier.</div>
+        <div class="cursor-dot" data-role="cursor" data-zone="center">
+          <span class="cursor-dot__label">OUVRIR</span>
+          <span class="cursor-dot__arrow">→</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="findings">
+    <h3>What replaces</h3>
+    <p>The scroll-to-open gesture and its overscroll pull-feedback (sketch 007, shipped as quick-260726-obg, then patched for a black-frame bug in quick-260726-qem) are being removed entirely. This hover system — plus the pre-existing clickable title — becomes the carousel's only "there's more here" affordance. No accumulator, no threshold, no decay timer, no footer-visibility tradeoff: navigation only ever happens on a deliberate click, in either the center zone (open) or an edge zone (prev/next).</p>
+    <h3>The cursor system (shared across all 3 variants)</h3>
+    <p>A translucent ring (1.5px hairline border, 14% white fill) at rest in the center zone — deliberately unlabeled by default, reading as a quiet "modern" abstract shape rather than a rounded SaaS affordance. Near an edge it morphs into a pill tinted in the CURRENT gallery's own accent color (reusing <code>--current-accent</code>, already cycling per-gallery on the real site) with a directional arrow — so the same one cursor system carries both meanings, just reshaped, and the arrow's color ties it back to the site's existing per-gallery palette. Toolbar toggle below lets you compare against a labeled variant ("OUVRIR" appears inside the center ring) if a pure abstract shape reads as too quiet.</p>
+    <h3>Edge zone width</h3>
+    <p>Currently 22% of the frame's width on each side — wide enough to reach deliberately without needing pixel precision, narrow enough that the center "open" zone still dominates the photo. Tune live via the zone-width buttons in the toolbar if 22% feels too eager or too stingy.</p>
+  </div>
+
+  <div id="sketch-tools">
+    <div class="row">
+      <span style="opacity:.7">Cursor:</span>
+      <button data-action="cursor-style" data-value="ring">Ring</button>
+      <button data-action="cursor-style" data-value="labeled" class="active">Labeled ★ chosen</button>
+    </div>
+    <div class="row">
+      <span style="opacity:.7">Edge zone:</span>
+      <button data-action="zone-width" data-value="0.1">10%</button>
+      <button data-action="zone-width" data-value="0.15">15%</button>
+      <button data-action="zone-width" data-value="0.22" class="active">22% ★ chosen</button>
+      <button data-action="zone-width" data-value="0.3">30%</button>
+    </div>
+  </div>
+
+  <script>
+    // ---- tab switching ----
+    document.querySelectorAll('.variant-tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const v = tab.dataset.variant;
+        document.querySelectorAll('.variant-tab').forEach((t) => t.classList.toggle('active', t === tab));
+        document.querySelectorAll('.variant').forEach((panel) => panel.classList.toggle('active', panel.id === 'variant-' + v));
+      });
+    });
+
+    // ---- cursor style + zone width toolbar toggles ----
+    document.querySelectorAll('[data-action="cursor-style"]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-action="cursor-style"]').forEach((b) => b.classList.toggle('active', b === btn));
+        document.body.classList.toggle('cursor-style-labeled', btn.dataset.value === 'labeled');
+      });
+    });
+    let EDGE_ZONE_FRACTION = 0.22; // direct feedback: 22% confirmed as the right feel, kept as-is
+    document.querySelectorAll('[data-action="zone-width"]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-action="zone-width"]').forEach((b) => b.classList.toggle('active', b === btn));
+        EDGE_ZONE_FRACTION = parseFloat(btn.dataset.value);
+      });
+    });
+
+    // ---- real Sanity CDN photos, standing in for 3 galleries in sequence ----
+    const GALLERIES = [
+      {
+        title: 'PAYSAGE',
+        accent: '#A6FD29',
+        onAccent: '#1A1A1A',
+        url: 'https://cdn.sanity.io/images/gwz8iug4/production/0aaa6feb8807302a8b0a7a893014ac99033d7c75-3872x2592.jpg?w=1800&fit=max&auto=format',
+      },
+      {
+        title: 'SILOS',
+        accent: '#D6327C',
+        onAccent: '#FFFFFF',
+        url: 'https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=1800&fit=max&auto=format',
+      },
+      {
+        title: 'BRUME',
+        accent: '#55FFE1',
+        onAccent: '#1A1A1A',
+        url: 'https://cdn.sanity.io/images/gwz8iug4/production/14300295cc4bd35d7c36206a348373074466c230-4000x3218.jpg?w=1800&fit=max&auto=format',
+      },
+    ];
+
+    function initDemo(frame) {
+      const variant = frame.dataset.variant;
+      const slidePrev = frame.querySelector('[data-role="slide-prev"]');
+      const slideCurrent = frame.querySelector('[data-role="slide-current"]');
+      const slideNext = frame.querySelector('[data-role="slide-next"]');
+      const cursor = frame.querySelector('[data-role="cursor"]');
+      const readout = frame.querySelector('[data-role="readout"]');
+      const title = frame.querySelector('[data-role="title"]');
+      const index = frame.querySelector('[data-role="index"]');
+      const dashes = Array.from(frame.querySelectorAll('.hero-dash'));
+      const accent = frame.querySelector('[data-role="accent"]');
+
+      let currentIndex = 0;
+      let zone = 'center';
+      let proximity = 0;
+      let transitioning = false;
+
+      function galleryAt(offset) {
+        const i = (currentIndex + offset + GALLERIES.length) % GALLERIES.length;
+        return GALLERIES[i];
+      }
+
+      function render() {
+        const cur = galleryAt(0);
+        slidePrev.style.backgroundImage = `url(${galleryAt(-1).url})`;
+        slideCurrent.style.backgroundImage = `url(${cur.url})`;
+        slideNext.style.backgroundImage = `url(${galleryAt(1).url})`;
+        title.textContent = cur.title;
+        index.textContent = `${String(currentIndex + 1).padStart(2, '0')} / ${String(GALLERIES.length).padStart(2, '0')}`;
+        dashes.forEach((d, i) => d.setAttribute('data-active', i === currentIndex ? 'true' : 'false'));
+        frame.style.setProperty('--current-accent', cur.accent);
+        frame.style.setProperty('--color-on-accent', cur.onAccent);
+        accent.style.color = cur.onAccent;
+        resetPeek();
+      }
+
+      // ---- variant-specific peek rendering ----
+      function resetPeek() {
+        slidePrev.style.transform = 'translateX(-100%)';
+        slideNext.style.transform = 'translateX(100%)';
+        slidePrev.style.opacity = '1';
+        slideNext.style.opacity = '1';
+        slideCurrent.style.transform = 'translateX(0)';
+        slideCurrent.style.filter = 'none';
+        slidePrev.style.clipPath = 'none';
+        slideNext.style.clipPath = 'none';
+        slideCurrent.style.clipPath = 'none';
+      }
+
+      function updatePeek() {
+        if (transitioning) return;
+        const p = proximity; // 0..1
+        if (variant === 'a') {
+          // Sliver: adjacent slide slides in from its own off-screen position,
+          // width proportional to p. Current stays fixed in POSITION, but must
+          // be clipped on the approached edge to actually yield that sliver of
+          // room — current sits at a higher z-index and fully covers the frame
+          // otherwise, so the peeking slide underneath would never be visible
+          // without this cut (caught live: the sliver was computed correctly
+          // but invisible until this clip was added).
+          const maxSliverFrac = 0.22;
+          const sliverPct = p * maxSliverFrac * 100;
+          if (zone === 'left') {
+            slidePrev.style.transform = `translateX(${-100 + sliverPct}%)`;
+            slideNext.style.transform = 'translateX(100%)';
+            slideCurrent.style.clipPath = `inset(0 0 0 ${sliverPct}%)`;
+          } else if (zone === 'right') {
+            slideNext.style.transform = `translateX(${100 - sliverPct}%)`;
+            slidePrev.style.transform = 'translateX(-100%)';
+            slideCurrent.style.clipPath = `inset(0 ${sliverPct}% 0 0)`;
+          } else {
+            slidePrev.style.transform = 'translateX(-100%)';
+            slideNext.style.transform = 'translateX(100%)';
+            slideCurrent.style.clipPath = 'inset(0 0 0 0)';
+          }
+        } else if (variant === 'b') {
+          // Underlay wipe: adjacent slide is full-size behind current, revealed
+          // via a growing clip-path window from the edge. Current must ALSO be
+          // clipped on that same edge — otherwise, at a higher z-index and full
+          // frame coverage, it hides the underlay entirely regardless of the
+          // underlay's own clip (caught live: identical bug to variant A).
+          slidePrev.style.transform = 'translateX(0)';
+          slideNext.style.transform = 'translateX(0)';
+          const maxWipeFrac = 0.4;
+          if (zone === 'left') {
+            const wipe = p * maxWipeFrac * 100;
+            slidePrev.style.clipPath = `inset(0 ${100 - wipe}% 0 0)`;
+            slideNext.style.clipPath = 'inset(0 0 0 100%)';
+            slideCurrent.style.clipPath = `inset(0 0 0 ${wipe}%)`;
+            slideCurrent.style.filter = `brightness(${1 - p * 0.15})`;
+          } else if (zone === 'right') {
+            const wipe = p * maxWipeFrac * 100;
+            slideNext.style.clipPath = `inset(0 0 0 ${100 - wipe}%)`;
+            slidePrev.style.clipPath = 'inset(0 100% 0 0)';
+            slideCurrent.style.clipPath = `inset(0 ${wipe}% 0 0)`;
+            slideCurrent.style.filter = `brightness(${1 - p * 0.15})`;
+          } else {
+            slidePrev.style.clipPath = 'inset(0 100% 0 0)';
+            slideNext.style.clipPath = 'inset(0 0 0 100%)';
+            slideCurrent.style.clipPath = 'inset(0 0 0 0)';
+            slideCurrent.style.filter = 'none';
+          }
+        } else if (variant === 'c') {
+          // Parallax push: current shifts away from the approached edge,
+          // adjacent sits underneath (z-index 1) and is revealed in the gap.
+          const maxPushFrac = 0.16;
+          slidePrev.style.transform = 'translateX(-100%)';
+          slideNext.style.transform = 'translateX(100%)';
+          if (zone === 'left') {
+            slideCurrent.style.transform = `translateX(${p * maxPushFrac * 100}%)`;
+            slidePrev.style.transform = `translateX(${-100 + p * 100}%)`;
+          } else if (zone === 'right') {
+            slideCurrent.style.transform = `translateX(${-p * maxPushFrac * 100}%)`;
+            slideNext.style.transform = `translateX(${100 - p * 100}%)`;
+          } else {
+            slideCurrent.style.transform = 'translateX(0)';
+          }
+        }
+      }
+
+      function updateCursor(clientX, clientY) {
+        const rect = frame.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        cursor.style.transform = `translate(${x}px, ${y}px)`;
+
+        const xFrac = x / rect.width;
+        if (xFrac < EDGE_ZONE_FRACTION) {
+          zone = 'left';
+          proximity = 1 - xFrac / EDGE_ZONE_FRACTION;
+        } else if (xFrac > 1 - EDGE_ZONE_FRACTION) {
+          zone = 'right';
+          proximity = (xFrac - (1 - EDGE_ZONE_FRACTION)) / EDGE_ZONE_FRACTION;
+        } else {
+          zone = 'center';
+          proximity = 0;
+        }
+        cursor.dataset.zone = zone;
+        readout.textContent = `zone: ${zone}${zone !== 'center' ? ' (proximity ' + proximity.toFixed(2) + ')' : ''}`;
+        updatePeek();
+      }
+
+      frame.addEventListener('mouseenter', () => frame.classList.add('cursor-active'));
+      frame.addEventListener('mouseleave', () => {
+        frame.classList.remove('cursor-active');
+        zone = 'center';
+        proximity = 0;
+        cursor.dataset.zone = 'center';
+        readout.textContent = 'zone: center';
+        updatePeek();
+      });
+      frame.addEventListener('mousemove', (e) => updateCursor(e.clientX, e.clientY));
+
+      function goTo(offset) {
+        if (transitioning) return;
+        transitioning = true;
+        const dir = offset > 0 ? 'right' : 'left';
+        // Snap the approached slide to full-cover as the completing transition.
+        slideCurrent.style.clipPath = 'none';
+        if (dir === 'left') {
+          slidePrev.style.transform = 'translateX(0)';
+          slidePrev.style.clipPath = 'none';
+          slideCurrent.style.transform = 'translateX(100%)';
+        } else {
+          slideNext.style.transform = 'translateX(0)';
+          slideNext.style.clipPath = 'none';
+          slideCurrent.style.transform = 'translateX(-100%)';
+        }
+        setTimeout(() => {
+          currentIndex = (currentIndex + offset + GALLERIES.length) % GALLERIES.length;
+          transitioning = false;
+          render();
+        }, 440);
+      }
+
+      function openCurrent() {
+        if (transitioning) return;
+        transitioning = true;
+        frame.classList.add('is-opening');
+        setTimeout(() => {
+          frame.classList.remove('is-opening');
+          transitioning = false;
+        }, 1600);
+      }
+
+      frame.addEventListener('click', () => {
+        if (zone === 'left') goTo(-1);
+        else if (zone === 'right') goTo(1);
+        else openCurrent();
+      });
+      title.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openCurrent();
+      });
+
+      render();
+    }
+
+    document.querySelectorAll('.demo-frame').forEach(initDemo);
+  </script>
+
+  <style>
+    /* "Opening" mock payoff — same lightweight approach as sketch 007, a
+       brief overlay standing in for the real cross-document navigation. */
+    .demo-frame.is-opening::after {
+      content: 'Ouverture de la galerie…';
+      position: absolute; inset: 0; z-index: 8; display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,.55); color: #fff; font-family: var(--font-sans); font-size: 14px; letter-spacing: .04em;
+      animation: sketch-open-flash 1.6s ease forwards;
+    }
+    @keyframes sketch-open-flash {
+      0% { opacity: 0; }
+      15% { opacity: 1; }
+      80% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+  </style>
+</body>
+</html>
