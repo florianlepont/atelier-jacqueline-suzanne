@@ -1734,10 +1734,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        (above) now covers the whole panel, wordmark included, so a separate
        backing here would just repaint the same color redundantly. */
     padding: var(--space-sm) var(--space-md);
-    /* Item 5: confine the intro to roughly the left half of the panel — the
-       panel (.home-hero__accent) is this element's containing block, so 50%
-       is ~half the panel's own width. */
-    max-width: 50%;
+    /* quick-260726-ltr (Item 2): confine the intro to roughly two-thirds of
+       the panel — the panel (.home-hero__accent) is this element's
+       containing block, so 66.67% is ~two-thirds of the panel's own width.
+       (Widened from the previous 50%.) */
+    max-width: 66.67%;
   }
 
   /* D-04/D-05/D-06: grid-mode hero is now the first *tile* of the grid
