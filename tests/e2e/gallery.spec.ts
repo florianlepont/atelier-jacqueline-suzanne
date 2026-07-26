@@ -496,6 +496,75 @@ test.describe('gallery hero reduced-motion (sketch 005)', () => {
   });
 });
 
+// quick-260725-tqs (Item 1): the gallery detail page's VISIBLE-on-arrival
+// title (.detail-hero__overlay-title) must match the homepage carousel
+// title's end-state (size/position/casing) so the two read as continuous
+// across the cross-document crossfade. .detail-hero__reveal-title (the
+// deliberate 72px scrolled-down title) must stay untouched.
+test.describe('gallery detail overlay-title matches the homepage carousel title (Item 1)', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test('overlay-title: 18px, uppercase, left ~16px; reveal-title unchanged (fr)', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    expect(firstTileHref).toBeTruthy();
+
+    await page.goto(firstTileHref!);
+
+    const overlayTitle = page.locator('.detail-hero__overlay-title');
+    const overlayStyle = await overlayTitle.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        fontSize: style.fontSize,
+        textTransform: style.textTransform,
+        left: parseFloat(style.left),
+      };
+    });
+    expect(overlayStyle.fontSize).toBe('18px');
+    expect(overlayStyle.textTransform).toBe('uppercase');
+    expect(overlayStyle.left).toBeCloseTo(16, 0);
+
+    // The deliberate 72px scrolled-down title was NOT altered — its
+    // computed font-size stays large (well above the overlay's 18px).
+    const revealFontSize = await page
+      .locator('.detail-hero__reveal-title')
+      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+    expect(revealFontSize).toBeGreaterThan(18);
+  });
+
+  test('overlay-title: 18px, uppercase, left ~16px on the matching EN route', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    expect(firstTileHref).toBeTruthy();
+
+    const slugMatch = firstTileHref!.match(/\/galleries\/([^/]+)\/?$/);
+    const slug = slugMatch?.[1];
+    expect(slug).toBeTruthy();
+
+    await page.goto(`/en/galleries/${slug}/`);
+
+    const overlayTitle = page.locator('.detail-hero__overlay-title');
+    const overlayStyle = await overlayTitle.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        fontSize: style.fontSize,
+        textTransform: style.textTransform,
+        left: parseFloat(style.left),
+      };
+    });
+    expect(overlayStyle.fontSize).toBe('18px');
+    expect(overlayStyle.textTransform).toBe('uppercase');
+    expect(overlayStyle.left).toBeCloseTo(16, 0);
+
+    const revealFontSize = await page
+      .locator('.detail-hero__reveal-title')
+      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+    expect(revealFontSize).toBeGreaterThan(18);
+  });
+});
+
 // quick-260724-oep: the definitive correctness proof for FIX 1 — every
 // image (hero + grid) is reachable exactly once at its own real,
 // unreshuffled array index, and clicking either the hero or a grid tile
