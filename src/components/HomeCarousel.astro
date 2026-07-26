@@ -764,6 +764,14 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           touchStartX = touch.clientX;
           touchStartY = touch.clientY;
         }, { passive: true });
+        // quick-260726-u97: mobile tap-to-open — extends this SAME handler
+        // (not a second touch listener) so it composes cleanly with the
+        // swipe it already detects. A genuine tap (negligible movement on
+        // both axes) opens the current gallery; a real horizontal swipe
+        // navigates (unchanged, above); a vertical scroll-drag (large
+        // deltaY) is neither, so it correctly does nothing — a tap never
+        // fires mid-swipe and never hijacks a vertical scroll.
+        const TAP_MAX_MOVEMENT = 10;
         heroPhoto?.addEventListener('touchend', (event) => {
           const touch = event.changedTouches[0];
           if (!touch) return;
@@ -772,10 +780,47 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           const direction = detectSwipeDirection(deltaX, deltaY, SWIPE_MIN_DISTANCE, SWIPE_DIRECTION_RATIO);
           if (direction === 'next') {
             goToNext();
-          } else if (direction === 'prev') {
+            return;
+          }
+          if (direction === 'prev') {
             goToPrev();
+            return;
+          }
+          if (Math.abs(deltaX) <= TAP_MAX_MOVEMENT && Math.abs(deltaY) <= TAP_MAX_MOVEMENT) {
+            openCurrent();
           }
         }, { passive: true });
+
+        // D3: reuses the current slide's title link — its href AND its
+        // existing click listener (which already calls setCrossDocPhoto())
+        // — rather than duplicating routing or morph-naming. Works
+        // identically on desktop (center-zone click) and touch (tap-to-open
+        // above). The `opening` guard is the only re-entrancy protection
+        // this feature needs: on a hybrid touchscreen-laptop a tap can fire
+        // BOTH touchend (tap-to-open) and a synthesized click (desktop
+        // center-open click handler below), and native navigation must not
+        // be triggered twice.
+        let opening = false;
+        function openCurrent() {
+          if (opening) return;
+          opening = true;
+          if (heroPhoto) {
+            // Synchronous, un-eased reset (via .is-opening disabling the
+            // transition below, plus the forced reflow) so the outgoing
+            // cross-document `hero-photo` View Transition snapshot captures
+            // the photo at rest, never mid-push, even if an edge-peek
+            // parallax was still easing back when this fired.
+            heroPhoto.classList.add('is-opening');
+            heroPhoto.style.setProperty('--peek-shift', '0');
+            void heroPhoto.offsetWidth;
+          }
+          if (titleEl) {
+            titleEl.click();
+          } else {
+            const fallbackHref = galleries[carouselIndex]?.href;
+            if (fallbackHref) window.location.href = fallbackHref;
+          }
+        }
 
         // quick-260726-u97 (sketch 008 Variant C): the custom hover cursor +
         // edge-zone/peek interaction that replaces the removed scroll-to-open
@@ -861,6 +906,23 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
               cursorEl.dataset.zone = 'center';
             }
             resetPeek();
+          });
+
+          // Desktop click: center zone opens the current gallery, edge
+          // zones navigate prev/next. Clicks inside .home-hero__caption are
+          // ignored so the title link, progress dashes, and autoplay toggle
+          // keep their own existing handlers — they must never be hijacked
+          // by zone navigation.
+          heroPhoto.addEventListener('click', (event) => {
+            const target = event.target as HTMLElement;
+            if (target.closest('.home-hero__caption')) return;
+            if (currentZone === 'left') {
+              goToPrev();
+            } else if (currentZone === 'right') {
+              goToNext();
+            } else {
+              openCurrent();
+            }
           });
         }
 

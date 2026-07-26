@@ -453,6 +453,191 @@ test.describe('carousel edge-peek preview (sketch 008 Variant C)', () => {
   });
 });
 
+// quick-260726-u97 (sketch 008 Variant C): click behavior — center-click
+// opens the current gallery (same destination + morph as the title),
+// edge-clicks navigate prev/next, caption controls keep their own handlers,
+// and the untouched keyboard/dash/auto-advance paths still work. Plus the
+// mobile tap-to-open fallback and unchanged swipe.
+test.describe('carousel hover-click navigation (sketch 008 Variant C)', () => {
+  async function photoBox(page: import('@playwright/test').Page) {
+    const box = await page.locator('.home-hero__photo').boundingBox();
+    if (!box) throw new Error('.home-hero__photo has no bounding box');
+    return box;
+  }
+
+  test('FR center click opens the current gallery (same destination as the title)', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+    const href = await page.locator('[data-role="gallery-title"]').getAttribute('href');
+    expect(href).toBeTruthy();
+
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.3, { steps: 10 });
+    await page.mouse.down();
+    await page.mouse.up();
+
+    await page.waitForURL(`**${href}`);
+    expect(page.url()).toContain(href!);
+  });
+
+  test('EN center click opens the current gallery', async ({ page }) => {
+    await page.goto('/en/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+    const href = await page.locator('[data-role="gallery-title"]').getAttribute('href');
+    expect(href).toBeTruthy();
+
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.3, { steps: 10 });
+    await page.mouse.down();
+    await page.mouse.up();
+
+    await page.waitForURL(`**${href}`);
+    expect(page.url()).toContain(href!);
+  });
+
+  test('left edge click navigates to the previous gallery (in-page, no navigation)', async ({ page }) => {
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.goto('/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+
+    const titleEl = page.locator('[data-role="gallery-title"]');
+    const initialTitle = await titleEl.innerText();
+
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.03, box.y + box.height * 0.3, { steps: 10 });
+    await page.mouse.down();
+    await page.mouse.up();
+
+    await expect(titleEl).not.toHaveText(initialTitle);
+    // An in-page carousel move, not a real navigation.
+    expect(page.url()).toMatch(/\/$/);
+  });
+
+  test('right edge click navigates to the next gallery (in-page, no navigation)', async ({ page }) => {
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.goto('/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+
+    const titleEl = page.locator('[data-role="gallery-title"]');
+    const initialTitle = await titleEl.innerText();
+
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.97, box.y + box.height * 0.3, { steps: 10 });
+    await page.mouse.down();
+    await page.mouse.up();
+
+    await expect(titleEl).not.toHaveText(initialTitle);
+    expect(page.url()).toMatch(/\/$/);
+  });
+
+  test('the autoplay toggle inside the caption is not hijacked by center-zone navigation', async ({ page }) => {
+    await page.goto('/');
+
+    const toggle = page.locator('[data-role="autoplay-toggle"]');
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    // No navigation occurred — the caption's own click handler ran, not the
+    // photo's center-zone openCurrent().
+    expect(page.url()).toMatch(/\/$/);
+  });
+
+  test('keyboard, dash, and auto-advance navigation are untouched', async ({ page }) => {
+    await page.clock.install();
+    await page.goto('/');
+
+    const indexLabel = page.locator('[data-role="index-label"]');
+    const initialLabel = await indexLabel.innerText();
+
+    // ArrowRight advances the index.
+    await page.keyboard.press('ArrowRight');
+    await expect(indexLabel).not.toHaveText(initialLabel);
+    const afterArrow = await indexLabel.innerText();
+
+    // Clicking dash 0 selects gallery 0.
+    await page.locator('[data-role="progress"] .home-hero__progress-dash').first().click();
+    await expect(indexLabel).not.toHaveText(afterArrow);
+
+    // Auto-advance still ticks on a mocked clock — move the mouse off the
+    // carousel first (the click above leaves it hovering, which pauses
+    // auto-advance by existing design; established pattern, see the
+    // "explicit pause control" test above).
+    await page.mouse.move(0, 0);
+    const beforeTick = await indexLabel.innerText();
+    await page.clock.fastForward(6000);
+    await expect(indexLabel).not.toHaveText(beforeTick);
+  });
+
+  test.describe('mobile', () => {
+    const { defaultBrowserType: _defaultBrowserType, ...iPhone14Pro } = devices['iPhone 14 Pro'];
+    test.use({ ...iPhone14Pro });
+
+    test('a tap on the photo (negligible movement) opens the current gallery', async ({ page }) => {
+      await page.goto('/');
+      const href = await page.locator('[data-role="gallery-title"]').getAttribute('href');
+      expect(href).toBeTruthy();
+
+      await page.evaluate(() => {
+        const target = document.querySelector('.home-hero__photo')!;
+        const clientX = 195;
+        const clientY = 400;
+        const makeTouchEvent = (type: string) => {
+          const touch = new Touch({ identifier: 1, target, clientX, clientY });
+          return new TouchEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            touches: type === 'touchend' ? [] : [touch],
+            changedTouches: [touch],
+          });
+        };
+        target.dispatchEvent(makeTouchEvent('touchstart'));
+        target.dispatchEvent(makeTouchEvent('touchend'));
+      });
+
+      await page.waitForURL(`**${href}`);
+      expect(page.url()).toContain(href!);
+    });
+
+    test('a real horizontal swipe still navigates prev/next unchanged (not hijacked by tap-to-open)', async ({ page }) => {
+      await page.goto('/');
+      const titleEl = page.locator('[data-role="gallery-title"]');
+      const initialTitle = await titleEl.innerText();
+
+      await page.evaluate(() => {
+        const target = document.querySelector('.home-hero__photo')!;
+        const startX = 300;
+        const clientY = 400;
+        const makeTouchEvent = (type: string, clientX: number) => {
+          const touch = new Touch({ identifier: 1, target, clientX, clientY });
+          return new TouchEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            touches: type === 'touchend' ? [] : [touch],
+            changedTouches: [touch],
+          });
+        };
+        target.dispatchEvent(makeTouchEvent('touchstart', startX));
+        target.dispatchEvent(makeTouchEvent('touchend', startX - 100));
+      });
+
+      await expect(titleEl).not.toHaveText(initialTitle);
+      // In-page carousel move, not a real navigation.
+      expect(page.url()).toMatch(/\/$/);
+    });
+
+    test('the peek layers never leave their resting transform on touch (no hover system on touch)', async ({ page }) => {
+      await page.goto('/');
+
+      const prevTransform = await page.locator('[data-role="peek-prev"]').evaluate((el) => getComputedStyle(el).transform);
+      const nextTransform = await page.locator('[data-role="peek-next"]').evaluate((el) => getComputedStyle(el).transform);
+      // Rest CSS values: translateX(-100%)/translateX(100%) — never
+      // populated with real src/pushed on touch (hoverCapable is false).
+      expect(prevTransform).toMatch(/^matrix\(1, 0, 0, 1, -/);
+      expect(nextTransform).toMatch(/^matrix\(1, 0, 0, 1, \d/);
+    });
+  });
+});
+
 // quick-260725-tqs (Item 4): narrower accent panel with a retuned wordmark
 // that must not clip.
 test.describe('carousel accent panel narrowing, no wordmark clip (Item 4)', () => {
