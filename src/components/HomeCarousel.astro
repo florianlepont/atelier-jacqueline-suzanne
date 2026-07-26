@@ -287,6 +287,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     <ul hidden data-role="home-carousel-data">
       {galleries.map((gallery) => (
         <li
+          data-slug={gallery.slug}
           data-title={gallery.title}
           data-hero-src={gallery.heroSrc}
           data-hero-srcset={gallery.heroSrcSet}
@@ -304,6 +305,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       import { computeWordmarkBackgroundPosition, detectSwipeDirection } from '../lib/home-carousel';
 
       interface GalleryEntry {
+        slug: string;
         title: string;
         heroSrc: string;
         heroSrcSet: string;
@@ -322,6 +324,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
       if (root && hero && grid && dataEl) {
         const galleries: GalleryEntry[] = Array.from(dataEl.querySelectorAll('li')).map((li) => ({
+          slug: li.dataset.slug ?? '',
           title: li.dataset.title ?? '',
           heroSrc: li.dataset.heroSrc ?? '',
           heroSrcSet: li.dataset.heroSrcset ?? '',
@@ -963,6 +966,19 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             mutate();
           }
         });
+
+        // quick-260725-tqs (Item 6, Part C): land on the gallery requested
+        // by DetailHero's scroll-up-to-return gesture (?carousel=<slug>).
+        // SECURITY (T-tqs-01, mitigate): matched via findIndex against the
+        // already-known, already-safe `galleries` array — never used to
+        // build a DOM/attribute selector string, so the untrusted URL param
+        // can never become a selector-injection sink. An unknown/absent
+        // slug harmlessly leaves carouselIndex at its default (0).
+        const requested = new URLSearchParams(window.location.search).get('carousel');
+        if (requested) {
+          const i = galleries.findIndex((g) => g.slug === requested);
+          if (i >= 0) carouselIndex = i;
+        }
 
         render();
         syncAutoplayControl();

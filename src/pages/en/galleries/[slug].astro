@@ -3,6 +3,7 @@
 // French detail page at src/pages/galleries/[slug].astro — only import depth
 // and locale key differ.
 import type { GetStaticPaths } from 'astro';
+import { getRelativeLocaleUrl } from 'astro:i18n';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import DetailHero from '../../../components/DetailHero.astro';
 import GalleryGrid from '../../../components/GalleryGrid.astro';
@@ -49,6 +50,11 @@ const heroAriaLabel = `View full size, image ${heroIndex + 1} of ${gallery.image
 // quick-260724-wdr: locale-aware scroll-hint label passed to DetailHero (see
 // that component's Props doc for why it can't localize this itself).
 const scrollHintLabel = 'Scroll';
+// quick-260725-tqs (Item 6): opt-in scoping for the scroll-up-to-return
+// gesture — only gallery detail pages pass this prop (edition pages do not),
+// which is what keeps the feature off edition heroes. Points back at the
+// homepage carousel showing THIS same gallery via the ?carousel= param.
+const carouselReturnHref = `${getRelativeLocaleUrl(locale, '')}?carousel=${gallery.slug}`;
 const seoTitle = gallery.seo?.title?.[locale] ?? `${gallery.title} — Atelier Jacqueline Suzanne`;
 const seoDescription = gallery.seo?.description?.[locale] ?? statement;
 const socialImage = fullSizeUrl(gallery.seo?.image ?? heroImage, 1200);
@@ -114,6 +120,7 @@ const structuredData = {
       heroIndex={heroIndex}
       statement={statement}
       scrollHintLabel={scrollHintLabel}
+      carouselReturnHref={carouselReturnHref}
     />
     <div class="gallery-detail__content">
       {gallery.images.length > 1 && <GalleryGrid items={gridItems} layout="masonry" />}
