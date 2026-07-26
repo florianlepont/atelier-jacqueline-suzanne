@@ -186,12 +186,18 @@ test.describe('grid hero-as-first-tile (HOME-02, D-04/D-06)', () => {
 });
 
 test.describe('collection statements on the homepage', () => {
-  test('carousel uses the current collection statement instead of the generic byline', async ({page}) => {
+  // quick-260725-tqs (Item 2): the carousel's own per-slide byline/
+  // description was removed (grid tiles keep their own hover description,
+  // asserted below, unchanged) — this replaces the old "uses the current
+  // statement" test, which targeted an element that no longer exists.
+  test('carousel byline/description is removed, on FR and EN', async ({ page }) => {
     await page.goto('/');
+    await expect(page.locator('[data-role="gallery-statement"]')).toHaveCount(0);
+    await expect(page.locator('.home-hero__byline')).toHaveCount(0);
 
-    const statement = page.locator('[data-role="gallery-statement"]');
-    await expect(statement).toBeVisible();
-    await expect(statement).not.toHaveText('Un projet de Romane Lepont');
+    await page.goto('/en/');
+    await expect(page.locator('[data-role="gallery-statement"]')).toHaveCount(0);
+    await expect(page.locator('.home-hero__byline')).toHaveCount(0);
   });
 
   test('grid tile reveals its collection statement on hover', async ({page}) => {
@@ -205,7 +211,7 @@ test.describe('collection statements on the homepage', () => {
     await expect(description).toHaveCSS('opacity', '1');
   });
 
-  test('carousel keeps its navigation fixed and clamps long collection statements', async ({ page }) => {
+  test('carousel keeps its navigation fixed and clamps the caption width', async ({ page }) => {
     await page.setViewportSize({ width: 2048, height: 1152 });
     await page.goto('/');
 
@@ -229,12 +235,10 @@ test.describe('collection statements on the homepage', () => {
       const caption = element.querySelector<HTMLElement>('.home-hero__caption')!;
       const indexLabel = element.querySelector<HTMLElement>('[data-role="index-label"]')!;
       const title = element.querySelector<HTMLElement>('[data-role="gallery-title"]')!;
-      const statement = element.querySelector<HTMLElement>('[data-role="gallery-statement"]')!;
       const accent = element.querySelector<HTMLElement>('[data-role="accent-panel"]')!;
       const captionRect = caption.getBoundingClientRect();
       const indexRect = indexLabel.getBoundingClientRect();
       const titleRect = title.getBoundingClientRect();
-      const statementRect = statement.getBoundingClientRect();
       const accentRect = accent.getBoundingClientRect();
 
       return {
@@ -243,23 +247,101 @@ test.describe('collection statements on the homepage', () => {
         indexTitleGap: titleRect.top - indexRect.bottom,
         titleFontSize: parseFloat(getComputedStyle(title).fontSize),
         accentLeft: accentRect.left,
-        statementRight: statementRect.right,
-        statementWidth: statementRect.width,
-        statementHeight: statementRect.height,
-        statementLineHeight: parseFloat(getComputedStyle(statement).lineHeight),
-        statementOverflow: getComputedStyle(statement).overflow,
       };
     });
 
+    // Item 4 narrowed the accent panel (min(800px,60%) -> min(700px,52%)),
+    // but the caption's own right-offset calc tracks the SAME panel width
+    // token, so the clearance between the caption's right edge and the
+    // panel's left edge is invariant at exactly var(--space-3xl) (64px)
+    // regardless of the panel's own width — these bounds still hold
+    // unchanged after the narrowing.
     expect(layout.captionRight).toBeLessThanOrEqual(layout.accentLeft);
     expect(layout.captionWidth).toBeLessThanOrEqual(721);
     expect(layout.indexTitleGap).toBeGreaterThanOrEqual(11);
     expect(layout.titleFontSize).toBe(18);
     expect(layout.accentLeft - layout.captionRight).toBeGreaterThanOrEqual(63);
-    expect(layout.statementWidth).toBeLessThanOrEqual(441);
-    expect(layout.accentLeft - layout.statementRight).toBeGreaterThanOrEqual(300);
-    expect(layout.statementHeight).toBeLessThanOrEqual(layout.statementLineHeight * 3 + 1);
-    expect(layout.statementOverflow).toBe('hidden');
+  });
+});
+
+// quick-260725-tqs (Item 3): custom photo cursor affordance — silent/
+// implicit, no visible hint UI (direct user feedback rejected a visible
+// hint in quick-260725-pit).
+test.describe('carousel custom cursor affordance (Item 3)', () => {
+  test('the hero photo has a custom cursor while the title link keeps its pointer cursor', async ({ page }) => {
+    await page.goto('/');
+
+    const photoCursor = await page.locator('.home-hero__photo').evaluate((el) => getComputedStyle(el).cursor);
+    expect(photoCursor.includes('url(') || photoCursor.includes('data:image/svg+xml')).toBe(true);
+
+    // .home-hero__title is a descendant of .home-hero__photo and does not
+    // set its own cursor from anywhere else — this proves the explicit
+    // cursor: pointer override survives cursor inheritance from the photo.
+    const titleCursor = await page.locator('[data-role="gallery-title"]').evaluate((el) => getComputedStyle(el).cursor);
+    expect(titleCursor).toBe('pointer');
+  });
+});
+
+// quick-260725-tqs (Item 4): narrower accent panel with a retuned wordmark
+// that must not clip.
+test.describe('carousel accent panel narrowing, no wordmark clip (Item 4)', () => {
+  test('the accent panel is narrower and the wordmark stays within it, and the caption never overlaps it', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.goto('/');
+
+    const layout = await page.evaluate(() => {
+      const accent = document.querySelector('.home-hero__accent')!.getBoundingClientRect();
+      const wordmark = document.querySelector('.home-hero__wordmark')!.getBoundingClientRect();
+      const caption = document.querySelector('.home-hero__caption')!.getBoundingClientRect();
+      return {
+        accentWidth: accent.width,
+        accentLeft: accent.left,
+        accentRight: accent.right,
+        wordmarkRight: wordmark.right,
+        captionRight: caption.right,
+      };
+    });
+
+    // min(700px, 52%) — at 1600px viewport, 52% = 832px, so the cap wins.
+    expect(layout.accentWidth).toBeLessThanOrEqual(701);
+    // Clearly narrower than the previous min(800px, 60%) panel.
+    expect(layout.accentWidth).toBeLessThan(800);
+    // No clip: the wordmark's rendered right edge must not exceed the
+    // panel's own right inner edge.
+    expect(layout.wordmarkRight).toBeLessThanOrEqual(layout.accentRight + 1);
+    // The caption still clears the (now further-right) panel edge.
+    expect(layout.captionRight).toBeLessThanOrEqual(layout.accentLeft);
+  });
+});
+
+// quick-260725-tqs (Item 5): resized + repositioned sitewide intro
+// paragraph.
+test.describe('carousel intro paragraph resize + reposition (Item 5)', () => {
+  test('desktop: 15px font-size, confined to roughly the left half of the panel', async ({ page }) => {
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.goto('/');
+
+    const intro = page.locator('.home-hero__intro');
+    const fontSize = await intro.evaluate((el) => getComputedStyle(el).fontSize);
+    expect(fontSize).toBe('15px');
+
+    const layout = await page.evaluate(() => {
+      const accent = document.querySelector('.home-hero__accent')!.getBoundingClientRect();
+      const intro = document.querySelector('.home-hero__intro')!.getBoundingClientRect();
+      return { accentInnerWidth: accent.width, introWidth: intro.width };
+    });
+    expect(layout.introWidth).toBeLessThanOrEqual(layout.accentInnerWidth * 0.6);
+  });
+
+  test('mobile: the intro is not squeezed to half-width (max-width: none)', async ({ page }) => {
+    await page.setViewportSize({ width: 393, height: 852 });
+    await page.goto('/');
+
+    const intro = page.locator('.home-hero__intro');
+    const maxWidth = await intro.evaluate((el) => getComputedStyle(el).maxWidth);
+    expect(maxWidth === 'none' || maxWidth === '').toBe(true);
   });
 });
 

@@ -63,6 +63,12 @@ interface Props {
   // missed — this component never imports src/lib/sanity, so it cannot
   // localize the label itself; the calling page must supply it.
   scrollHintLabel: string;
+  // quick-260725-tqs (Item 6): optional — its PRESENCE is the scroll-up-to-
+  // return gesture's on/off switch (opt-in scoping). Only gallery detail
+  // pages pass this; édition detail pages omit it entirely, keeping the
+  // gesture inert there. When set, it's the homepage carousel URL
+  // (`?carousel=<slug>`) that returns to THIS same gallery.
+  carouselReturnHref?: string;
 }
 
 const {
@@ -76,10 +82,11 @@ const {
   statement,
   heroIndex = 0,
   scrollHintLabel,
+  carouselReturnHref,
 } = Astro.props;
 ---
 
-<div class="detail-hero">
+<div class="detail-hero" data-carousel-return-href={carouselReturnHref}>
   <div class="detail-hero__pin">
     <div class="detail-hero__photo">
       <button
@@ -276,6 +283,136 @@ const {
   }
 </script>
 
+<script>
+  // quick-260725-tqs (Item 6): the mirror image of the homepage carousel's
+  // own scroll-to-open gesture (HomeCarousel.astro's registerDownwardIntent/
+  // atBottom() accumulator) — on a GALLERY detail page (never édition, see
+  // the Props doc above), a sustained upward push while genuinely at the
+  // TOP of the page returns to the homepage carousel showing the SAME
+  // gallery. A NEW, independent top-level script — deliberately NOT nested
+  // inside the reveal-driver `if (track && photo && scrim && overlayTitle &&
+  // reveal)` guard above, so the gesture also works on mobile, where the
+  // reveal driver is inactive.
+  const track = document.querySelector<HTMLElement>('.detail-hero');
+  const returnHref = track?.dataset.carouselReturnHref;
+
+  if (returnHref) {
+    // SAFETY DESIGN (documented per plan, mirrors the quick-260725-sj4
+    // post-mortem in reverse): "at the top" (scrollY ~= 0) is trivially
+    // true on EVERY fresh page load, so an accumulator armed from load
+    // would misfire on ordinary small upward scroll corrections — the
+    // mirror image of the quick-260725-sj4 bug (where "at the bottom" was
+    // vacuously true at scrollY 0 because the footer had been hidden). The
+    // `hasEngaged` gate is the fix: the gesture stays DISARMED until the
+    // visitor has genuinely scrolled DOWN past ENGAGE_DISTANCE (300px — far
+    // beyond a small re-read correction, well within the desktop reveal's
+    // own 900px track, and reachable on mobile whenever a grid exists below
+    // the hero) at least once; only then, AND only once back at the very
+    // top, does a sustained >= RETURN_OVERSCROLL_THRESHOLD upward push
+    // navigate. On a fresh load hasEngaged is false, so no upward wheel/
+    // touch does anything. A tiny scroll-down-then-correct-up (< 300px)
+    // never arms it. If a short page (e.g. a single-image gallery on
+    // mobile with no grid) can't scroll 300px, the gesture simply never
+    // arms — safe graceful degradation, no misfire. Listeners are passive
+    // and never preventDefault, so normal scrolling, the lightbox trigger,
+    // the scroll-reveal, and the scroll-hint above are all unaffected.
+    const RETURN_OVERSCROLL_THRESHOLD = 150;
+    const TOP_EPSILON = 4;
+    const RESET_IDLE_MS = 800;
+    const ENGAGE_DISTANCE = 300;
+
+    let hasEngaged = false;
+    let upAccum = 0;
+    let lastUpTs = 0;
+    let navigatingHome = false;
+
+    function atTop(): boolean {
+      return window.scrollY <= TOP_EPSILON;
+    }
+
+    // Engagement + reset scroll listener (passive): arms the gate once the
+    // visitor has genuinely scrolled down, and resets any in-flight
+    // accumulation the moment they leave the top — for ANY reason (mirrors
+    // quick-260725-cfm's own stale-accumulator-reset fix for keyboard/
+    // scrollbar/scrollTo paths, not just wheel/touch).
+    window.addEventListener(
+      'scroll',
+      () => {
+        if (window.scrollY >= ENGAGE_DISTANCE) hasEngaged = true;
+        if (!atTop()) upAccum = 0;
+      },
+      { passive: true },
+    );
+
+    function navigateHome() {
+      if (navigatingHome) return;
+      navigatingHome = true;
+      window.location.href = returnHref!;
+    }
+
+    // delta > 0 means upward scroll intent (i.e. the visitor is pushing the
+    // page content downward / scrolling toward the top).
+    function registerUpwardIntent(delta: number) {
+      if (navigatingHome || !hasEngaged || !atTop()) return;
+      if (delta <= 0) {
+        upAccum = 0;
+        return;
+      }
+      const now = Date.now();
+      if (now - lastUpTs > RESET_IDLE_MS) {
+        upAccum = 0;
+      }
+      upAccum += delta;
+      lastUpTs = now;
+      if (upAccum >= RETURN_OVERSCROLL_THRESHOLD) {
+        navigateHome();
+      }
+    }
+
+    // Desktop input: wheel deltaY < 0 = scrolling up = positive upward
+    // intent. Never preventDefault.
+    window.addEventListener(
+      'wheel',
+      (event) => {
+        registerUpwardIntent(-event.deltaY);
+      },
+      { passive: true },
+    );
+
+    // Mobile input: an independent window-level touch accumulator mirroring
+    // HomeCarousel's own downward-intent one, but for UPWARD intent — the
+    // finger moving DOWN the screen means the content (and therefore the
+    // scroll position) is moving UP.
+    let lastMoveY = 0;
+    let startX = 0;
+    let startY = 0;
+    window.addEventListener(
+      'touchstart',
+      (event) => {
+        const touch = event.touches[0];
+        if (!touch) return;
+        lastMoveY = touch.clientY;
+        startX = touch.clientX;
+        startY = touch.clientY;
+      },
+      { passive: true },
+    );
+    window.addEventListener(
+      'touchmove',
+      (event) => {
+        const touch = event.touches[0];
+        if (!touch) return;
+        const dy = touch.clientY - lastMoveY;
+        if (Math.abs(touch.clientY - startY) > Math.abs(touch.clientX - startX)) {
+          registerUpwardIntent(dy);
+        }
+        lastMoveY = touch.clientY;
+      },
+      { passive: true },
+    );
+  }
+</script>
+
 <style>
   .detail-hero {
     position: relative;
@@ -357,17 +494,37 @@ const {
     opacity: 1;
   }
 
+  /* Item 1 (quick-260725-tqs): sized/positioned/cased to read continuously
+     with the homepage carousel's own visible title (.home-hero__title:
+     18px, left var(--space-md), ALL CAPS via .toUpperCase()) — this is the
+     VISIBLE-on-arrival title (the reveal-title below stays the deliberate
+     72px scrolled-down state, untouched).
+
+     DESIGN DECISION: a shared cross-document view-transition-name on the
+     two title elements was considered and deliberately NOT added.
+     `@view-transition { navigation: auto }` is already enabled site-wide
+     (BaseLayout.astro), so a root crossfade already runs on every
+     homepage -> gallery-detail navigation; once this overlay title matches
+     the homepage title's end-state (size/position/casing), it crossfades
+     IN PLACE and reads as the same element — the "reads as continuous, not
+     a hard jump" outcome the feedback asked for. A dedicated shared name
+     would introduce a new cross-document view-transition group on an
+     element inside the 100svh-sized .detail-hero__pin — the same
+     always-on-name-on-a-100svh-element risk class (HOME-06/D-10/D-12) that
+     forced .detail-hero__img's own name to be desktop-gated — for only
+     marginal benefit over an already-continuous in-place crossfade. */
   .detail-hero__overlay-title {
     position: absolute;
-    left: var(--space-xl);
+    left: var(--space-md);
     bottom: var(--space-xl);
     right: var(--space-xl);
     z-index: 3;
     margin: 0;
-    font-size: var(--text-display-size);
+    font-size: 18px;
     font-weight: var(--weight-semibold);
     font-family: var(--font-display);
     line-height: 1.2;
+    text-transform: uppercase;
     color: #FFFFFF;
     opacity: 1;
     pointer-events: none;

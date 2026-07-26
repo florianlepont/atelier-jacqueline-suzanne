@@ -496,6 +496,267 @@ test.describe('gallery hero reduced-motion (sketch 005)', () => {
   });
 });
 
+// quick-260725-tqs (Item 1): the gallery detail page's VISIBLE-on-arrival
+// title (.detail-hero__overlay-title) must match the homepage carousel
+// title's end-state (size/position/casing) so the two read as continuous
+// across the cross-document crossfade. .detail-hero__reveal-title (the
+// deliberate 72px scrolled-down title) must stay untouched.
+test.describe('gallery detail overlay-title matches the homepage carousel title (Item 1)', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test('overlay-title: 18px, uppercase, left ~16px; reveal-title unchanged (fr)', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    expect(firstTileHref).toBeTruthy();
+
+    await page.goto(firstTileHref!);
+
+    const overlayTitle = page.locator('.detail-hero__overlay-title');
+    const overlayStyle = await overlayTitle.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        fontSize: style.fontSize,
+        textTransform: style.textTransform,
+        left: parseFloat(style.left),
+      };
+    });
+    expect(overlayStyle.fontSize).toBe('18px');
+    expect(overlayStyle.textTransform).toBe('uppercase');
+    expect(overlayStyle.left).toBeCloseTo(16, 0);
+
+    // The deliberate 72px scrolled-down title was NOT altered — its
+    // computed font-size stays large (well above the overlay's 18px).
+    const revealFontSize = await page
+      .locator('.detail-hero__reveal-title')
+      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+    expect(revealFontSize).toBeGreaterThan(18);
+  });
+
+  test('overlay-title: 18px, uppercase, left ~16px on the matching EN route', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    expect(firstTileHref).toBeTruthy();
+
+    const slugMatch = firstTileHref!.match(/\/galleries\/([^/]+)\/?$/);
+    const slug = slugMatch?.[1];
+    expect(slug).toBeTruthy();
+
+    await page.goto(`/en/galleries/${slug}/`);
+
+    const overlayTitle = page.locator('.detail-hero__overlay-title');
+    const overlayStyle = await overlayTitle.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        fontSize: style.fontSize,
+        textTransform: style.textTransform,
+        left: parseFloat(style.left),
+      };
+    });
+    expect(overlayStyle.fontSize).toBe('18px');
+    expect(overlayStyle.textTransform).toBe('uppercase');
+    expect(overlayStyle.left).toBeCloseTo(16, 0);
+
+    const revealFontSize = await page
+      .locator('.detail-hero__reveal-title')
+      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+    expect(revealFontSize).toBeGreaterThan(18);
+  });
+});
+
+// quick-260725-tqs (Item 6): scroll-up-at-top on a gallery detail page
+// returns to the homepage carousel showing the SAME gallery — the mirror
+// image of the homepage's own scroll-to-open gesture. This block proves
+// the positive path AND, critically, mirrors quick-260725-sj4's own
+// fresh-load synthetic-event regression pattern to prove the accidental-
+// navigation failure mode is NOT reintroduced in mirror form.
+test.describe('gallery detail scroll-up-to-return (Item 6, quick-260725-tqs)', () => {
+  async function discoverGallery(page: import('@playwright/test').Page) {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const tile = page.locator('a.home-grid__tile').first();
+    const href = await tile.getAttribute('href');
+    expect(href).toBeTruthy();
+    const title = (await tile.locator('.home-grid__tile-title').innerText()).trim();
+    const slugMatch = href!.match(/\/galleries\/([^/]+)\/?$/);
+    const slug = slugMatch?.[1];
+    expect(slug).toBeTruthy();
+    return { href: href!, slug: slug!, title };
+  }
+
+  test.describe('positive path (must navigate)', () => {
+    test.use({ viewport: { width: 1280, height: 900 } });
+
+    test('fr: genuine engagement + return-to-top + sustained upward push returns to the same gallery', async ({
+      page,
+    }) => {
+      const { href, slug, title } = await discoverGallery(page);
+      await page.goto(href);
+
+      // Arm engagement with a real scroll past ENGAGE_DISTANCE (300).
+      await page.evaluate(() => window.scrollTo(0, 500));
+      await page.waitForTimeout(150);
+      // Return to the very top.
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.waitForTimeout(150);
+
+      // A single sustained upward wheel push (deltaY -200 => +200 upward
+      // intent, >= the 150 threshold in one push).
+      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, bubbles: true })));
+
+      await page.waitForURL(`**/?carousel=${slug}`);
+      await expect(page.locator('[data-role="gallery-title"]')).toHaveText(title.toUpperCase());
+    });
+
+    test('en: genuine engagement + return-to-top + sustained upward push returns to the same gallery', async ({
+      page,
+    }) => {
+      const { slug, title } = await discoverGallery(page);
+      await page.goto(`/en/galleries/${slug}/`);
+
+      await page.evaluate(() => window.scrollTo(0, 500));
+      await page.waitForTimeout(150);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.waitForTimeout(150);
+
+      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, bubbles: true })));
+
+      await page.waitForURL(`**/en/?carousel=${slug}`);
+      await expect(page.locator('[data-role="gallery-title"]')).toHaveText(title.toUpperCase());
+    });
+  });
+
+  // Mirrors quick-260725-sj4's own synthetic-event fresh-load pattern: an
+  // accumulator armed from a fresh scrollY-0 load (hasEngaged still false)
+  // must never misfire on ordinary small upward scroll corrections.
+  test.describe('accidental-trigger regression guard (must NOT navigate)', () => {
+    test.use({ viewport: { width: 1280, height: 900 } });
+
+    test('fr: fresh load, two upward wheel ticks do NOT navigate', async ({ page }) => {
+      const { href } = await discoverGallery(page);
+      await page.goto(href);
+
+      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -80, bubbles: true })));
+      await page.waitForTimeout(80);
+      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -80, bubbles: true })));
+      await page.waitForTimeout(300);
+
+      expect(page.url()).toBe(new URL(href, page.url()).href);
+    });
+
+    test('en: fresh load, two upward wheel ticks do NOT navigate', async ({ page }) => {
+      const { slug } = await discoverGallery(page);
+      const enHref = `/en/galleries/${slug}/`;
+      await page.goto(enHref);
+
+      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -80, bubbles: true })));
+      await page.waitForTimeout(80);
+      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -80, bubbles: true })));
+      await page.waitForTimeout(300);
+
+      expect(page.url()).toMatch(new RegExp(`/en/galleries/${slug}/?$`));
+    });
+
+    test('fr: a small down-then-up correction (below ENGAGE_DISTANCE) does NOT navigate', async ({ page }) => {
+      const { href } = await discoverGallery(page);
+      await page.goto(href);
+
+      await page.evaluate(() => window.scrollTo(0, 60));
+      await page.waitForTimeout(80);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.waitForTimeout(80);
+      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, bubbles: true })));
+      await page.waitForTimeout(300);
+
+      expect(page.url()).toBe(new URL(href, page.url()).href);
+    });
+
+    test.describe('touch input', () => {
+      test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+      test('fresh load: a downward finger drag (upward scroll intent) does NOT navigate', async ({ page }) => {
+        const { href } = await discoverGallery(page);
+        await page.goto(href);
+
+        // Mirrors homepage.spec.ts's own synthetic Touch/TouchEvent
+        // construction for its "fresh load: one modest touch swipe" test,
+        // but with an INCREASING clientY (finger moving down the screen =
+        // upward scroll intent, the mirror direction).
+        await page.evaluate(() => {
+          const target = document.body;
+          const startY = 300;
+          const totalDelta = 180;
+          const steps = 4;
+          const clientX = 195;
+
+          const makeTouchEvent = (type: string, clientY: number) => {
+            const touch = new Touch({ identifier: 1, target, clientX, clientY });
+            return new TouchEvent(type, {
+              bubbles: true,
+              cancelable: true,
+              touches: type === 'touchend' ? [] : [touch],
+              changedTouches: [touch],
+            });
+          };
+
+          window.dispatchEvent(makeTouchEvent('touchstart', startY));
+          for (let i = 1; i <= steps; i++) {
+            window.dispatchEvent(makeTouchEvent('touchmove', startY + (totalDelta / steps) * i));
+          }
+          window.dispatchEvent(makeTouchEvent('touchend', startY + totalDelta));
+        });
+        await page.waitForTimeout(300);
+
+        expect(page.url()).toBe(new URL(href, page.url()).href);
+      });
+    });
+  });
+
+  test.describe('below-threshold guard (engaged, at top, tiny tick — must NOT navigate)', () => {
+    test.use({ viewport: { width: 1280, height: 900 } });
+
+    test('a single small upward wheel tick below the threshold does NOT navigate', async ({ page }) => {
+      const { href } = await discoverGallery(page);
+      await page.goto(href);
+
+      await page.evaluate(() => window.scrollTo(0, 500));
+      await page.waitForTimeout(150);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.waitForTimeout(150);
+      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -60, bubbles: true })));
+      await page.waitForTimeout(300);
+
+      expect(page.url()).toBe(new URL(href, page.url()).href);
+    });
+  });
+
+  test.describe('feature scoping — inert on edition heroes', () => {
+    test('the carousel-return attribute is absent on an edition detail page', async ({ page }) => {
+      await page.goto('/editions/');
+      const tileHref = await page.locator('.tile').first().getAttribute('href');
+      expect(tileHref).toBeTruthy();
+
+      await page.goto(tileHref!);
+      await expect(page.locator('.detail-hero[data-carousel-return-href]')).toHaveCount(0);
+    });
+  });
+
+  test.describe('homepage ?carousel= init read (independent of the gesture)', () => {
+    test('navigating directly to /?carousel=<slug> lands the carousel on that gallery', async ({ page }) => {
+      const { slug, title } = await discoverGallery(page);
+
+      await page.goto(`/?carousel=${slug}`);
+      await expect(page.locator('[data-role="gallery-title"]')).toHaveText(title.toUpperCase());
+    });
+
+    test('an unknown slug falls back to the first gallery, no error', async ({ page }) => {
+      await page.goto('/?carousel=does-not-exist');
+      await expect(page.locator('[data-role="gallery-title"]')).toHaveText(/.+/);
+    });
+  });
+});
+
 // quick-260724-oep: the definitive correctness proof for FIX 1 — every
 // image (hero + grid) is reachable exactly once at its own real,
 // unreshuffled array index, and clicking either the hero or a grid tile
