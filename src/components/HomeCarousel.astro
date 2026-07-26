@@ -1728,6 +1728,33 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     text-decoration: none;
   }
 
+  /* quick-260726-u97 follow-up (live-verification fix): the base/resting
+     properties that keep .home-hero__cursor invisible and OUT OF DOCUMENT
+     FLOW must NOT be gated behind the (hover: hover) and (pointer: fine)
+     media query below — on a device where that query never matches (any
+     touchscreen), a gated-only rule means this element gets ZERO styling
+     at all and falls back to browser defaults: position:static,
+     display:block, opacity:1, full container width. Confirmed live on an
+     emulated mobile context (390x844, hasTouch/isMobile) via
+     getComputedStyle: a real laid-out block reading "OUVRIR→" in dark ink
+     at the top of the photo — invisible in one screenshot purely by
+     coincidence (the site header happened to paint over it in its own
+     higher stacking context), not because it was actually inert. This
+     ungated rule is the fix: position/opacity/pointer-events hold on EVERY
+     device by default, regardless of whether the media query below ever
+     matches. Everything else (sizing, colors, the zone-morph states, the
+     activation opacity:1, transitions, and cursor:none on
+     .home-hero__photo) correctly stays gated — those genuinely should only
+     exist on real-mouse desktop, and .is-cursor-active is only ever added
+     by the hoverCapable-gated script, so it can never fire on touch. */
+  .home-hero__cursor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
   /* quick-260726-u97 (sketch 008 Variant C): the custom hover cursor,
      gated entirely to real-mouse desktop — (hover: hover) and
      (pointer: fine) never both match on a touchscreen, so none of this
@@ -1739,9 +1766,6 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     }
 
     .home-hero__cursor {
-      position: absolute;
-      top: 0;
-      left: 0;
       z-index: 4;
       display: flex;
       align-items: center;
@@ -1757,8 +1781,6 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       font-size: 11px;
       font-weight: var(--weight-semibold);
       letter-spacing: 0.04em;
-      pointer-events: none;
-      opacity: 0;
       transform: translate(0, 0) scale(0.6);
       transition:
         opacity 160ms ease,

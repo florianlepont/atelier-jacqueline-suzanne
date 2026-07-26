@@ -347,6 +347,39 @@ test.describe('carousel hover cursor (sketch 008 Variant C)', () => {
     const photoCursor = await page.locator('.home-hero__photo').evaluate((el) => getComputedStyle(el).cursor);
     expect(photoCursor).toBe('none');
   });
+
+  test.describe('mobile', () => {
+    const { defaultBrowserType: _defaultBrowserType, ...iPhone14Pro } = devices['iPhone 14 Pro'];
+    test.use({ ...iPhone14Pro });
+
+    // Regression guard for a real bug caught during live-browser
+    // verification: the cursor's base/resting properties (position,
+    // opacity, pointer-events) were originally declared ONLY inside the
+    // `@media (hover: hover) and (pointer: fine)` block. On a touchscreen
+    // that query never matches, so the element got ZERO styling and fell
+    // back to browser defaults — a real, laid-out, visible block reading
+    // "OUVRIR→" at the top of the photo (position:static, display:block,
+    // opacity:1, full container width) — invisible in one screenshot only
+    // by the coincidence of the site header painting over it, not because
+    // it was actually inert. This asserts the fix directly against
+    // getComputedStyle, not against a screenshot that could mask the bug
+    // again by accident.
+    test('the cursor is invisible and out of document flow, independent of the hover/pointer media query', async ({ page }) => {
+      await page.goto('/');
+      const cursor = page.locator('[data-role="hero-cursor"]');
+      const style = await cursor.evaluate((el) => {
+        const computed = getComputedStyle(el);
+        return {
+          opacity: computed.opacity,
+          position: computed.position,
+          pointerEvents: computed.pointerEvents,
+        };
+      });
+      expect(style.opacity).toBe('0');
+      expect(style.position).toBe('absolute');
+      expect(style.pointerEvents).toBe('none');
+    });
+  });
 });
 
 // quick-260726-u97 (sketch 008 Variant C): as the pointer nears an edge, the
