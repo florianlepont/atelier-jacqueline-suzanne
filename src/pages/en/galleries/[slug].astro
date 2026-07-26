@@ -108,7 +108,10 @@ const structuredData = {
   noIndex={gallery.seo?.noIndex}
   structuredData={structuredData}
   headerVariant="transparent"
+  hideFooter
 >
+  {/* quick-260726-ltr (Item 1): gallery-only footer hide — édition detail
+      pages deliberately keep the footer (see BaseLayout.astro Props doc). */}
   <div class="gallery-detail">
     <DetailHero
       leadPhotoSrc={heroSrc}
