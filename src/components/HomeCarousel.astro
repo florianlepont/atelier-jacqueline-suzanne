@@ -177,6 +177,16 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           16:9 band regardless of how tall the accent panel makes
           .home-hero grow. */}
       <div class="home-hero__photo">
+        {/* quick-260726-u97 (sketch 008 Variant C): parallax-push peek
+            layers, sitting UNDERNEATH the current photo (z-index below the
+            .home-hero__img layers) — as the pointer nears an edge, the
+            current photo peels away (Task 3's cursor script) and one of
+            these real adjacent-gallery photos is revealed underneath. Rest
+            position is fully off-screen (translateX ±100%), populated with
+            real data in render() below, desktop-gated (hoverCapable) since
+            touch has no hover to approach an edge with. */}
+        <img data-role="peek-prev" alt="" aria-hidden="true" class="home-hero__peek home-hero__peek--prev" />
+        <img data-role="peek-next" alt="" aria-hidden="true" class="home-hero__peek home-hero__peek--next" />
         <img data-role="hero-image-placeholder" src={firstGallery.blurSrc} alt="" aria-hidden="true" class="home-hero__img home-hero__img-placeholder" />
         <img
           data-role="hero-image"
@@ -565,6 +575,29 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             preload.sizes = '100vw';
             preload.src = nextSrc;
           }
+
+          // quick-260726-u97 (sketch 008 Variant C): keeps the peek layers'
+          // sources tracking the CURRENT slide's real neighbours on every
+          // swap (auto-advance, dash click, arrow keys, swipe) — forward
+          // references to hoverCapable/peekPrev/peekNext/resetPeek are safe:
+          // render() is first invoked at the very end of this script, after
+          // those declarations have already executed. Guarded on
+          // hoverCapable so touch skips the extra image loads entirely.
+          if (hoverCapable) {
+            const prevGallery = galleries[(carouselIndex - 1 + galleries.length) % galleries.length];
+            const nextGallery = galleries[nextIndex];
+            if (peekPrev && prevGallery) {
+              peekPrev.src = prevGallery.heroSrc;
+              peekPrev.srcset = prevGallery.heroSrcSet;
+              peekPrev.sizes = '100vw';
+            }
+            if (peekNext && nextGallery) {
+              peekNext.src = nextGallery.heroSrc;
+              peekNext.srcset = nextGallery.heroSrcSet;
+              peekNext.sizes = '100vw';
+            }
+            resetPeek();
+          }
         }
 
         // quick-260725-dcg (Fix 3): toggles the class that freezes/resumes
@@ -651,6 +684,9 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           hero!.hidden = true;
           grid!.hidden = false;
           stopAutoAdvance();
+          // quick-260726-u97: a lingering peek can't survive a mode switch
+          // (forward reference, safe — see render()'s own call above).
+          if (hoverCapable) resetPeek();
         }
 
         hero.addEventListener('mouseenter', stopAutoAdvance);
@@ -748,11 +784,54 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         // on a touchscreen; the mobile fallback is a plain tap (Task 5).
         const hoverCapable = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
         const EDGE_ZONE_FRACTION = 0.22;
+        const PEEK_MAX_PUSH_FRACTION = 0.16;
         let currentZone: 'center' | 'left' | 'right' = 'center';
         let currentProximity = 0;
+        // Declared at this outer scope (not nested inside the hoverCapable
+        // block below) so render()/showGrid() — defined earlier in this
+        // script but only ever invoked after every declaration here has
+        // run — can call them unconditionally; both no-op safely when the
+        // elements are null (touch, or markup ever missing).
+        let peekPrev: HTMLImageElement | null = null;
+        let peekNext: HTMLImageElement | null = null;
+
+        function resetPeek() {
+          if (!heroPhoto) return;
+          heroPhoto.style.setProperty('--peek-shift', '0');
+          if (peekPrev) peekPrev.style.transform = 'translateX(-100%)';
+          if (peekNext) peekNext.style.transform = 'translateX(100%)';
+        }
+
+        // quick-260726-u97 (sketch 008 Variant C, exact sketch coefficients):
+        // ports the sketch's parallax-push math directly — current photo
+        // pushes at most 16% of its own width, prev/next slide in at a
+        // full 100% rate, so the adjacent layer always covers the vacated
+        // gap (no background ever shows through).
+        function updatePeek() {
+          if (!heroPhoto) return;
+          if (reduceMotionQuery.matches) {
+            // Decorative only — reduced-motion visitors get no parallax
+            // (the cursor's own arrow still signals direction).
+            resetPeek();
+            return;
+          }
+          if (currentZone === 'left') {
+            heroPhoto.style.setProperty('--peek-shift', `${currentProximity * PEEK_MAX_PUSH_FRACTION * 100}%`);
+            if (peekPrev) peekPrev.style.transform = `translateX(${-100 + currentProximity * 100}%)`;
+            if (peekNext) peekNext.style.transform = 'translateX(100%)';
+          } else if (currentZone === 'right') {
+            heroPhoto.style.setProperty('--peek-shift', `${-currentProximity * PEEK_MAX_PUSH_FRACTION * 100}%`);
+            if (peekNext) peekNext.style.transform = `translateX(${100 - currentProximity * 100}%)`;
+            if (peekPrev) peekPrev.style.transform = 'translateX(-100%)';
+          } else {
+            resetPeek();
+          }
+        }
 
         if (hoverCapable && heroPhoto) {
           const cursorEl = heroPhoto.querySelector<HTMLElement>('[data-role="hero-cursor"]');
+          peekPrev = heroPhoto.querySelector<HTMLImageElement>('[data-role="peek-prev"]');
+          peekNext = heroPhoto.querySelector<HTMLImageElement>('[data-role="peek-next"]');
 
           heroPhoto.addEventListener('mousemove', (event) => {
             const rect = heroPhoto.getBoundingClientRect();
@@ -767,6 +846,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             if (cursorEl) {
               cursorEl.dataset.zone = zone;
             }
+            updatePeek();
           });
 
           heroPhoto.addEventListener('mouseenter', () => {
@@ -780,6 +860,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             if (cursorEl) {
               cursorEl.dataset.zone = 'center';
             }
+            resetPeek();
           });
         }
 
@@ -1266,12 +1347,43 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        gating document.startViewTransition() to desktop (D-12). */
   }
 
-  .home-hero__img {
+  /* quick-260726-u97 (sketch 008 Variant C): the adjacent-gallery preview
+     revealed as the current photo peels back. Rests fully off-screen
+     (translateX ±100%); z-index below .home-hero__img so it stays hidden
+     under the current photo except in the vacated gap the parallax push
+     creates. Sources are set from real data (galleries[i-1]/[i+1]) in
+     render() below, so this always tracks the current neighbours. */
+  .home-hero__peek {
     position: absolute;
     inset: 0;
+    z-index: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transition: transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    will-change: transform;
+  }
+
+  .home-hero__peek--prev {
+    transform: translateX(-100%);
+  }
+
+  .home-hero__peek--next {
+    transform: translateX(100%);
+  }
+
+  .home-hero__img {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* quick-260726-u97 (sketch 008 Variant C): the parallax-push peek
+       shifts the current photo itself, driven by --peek-shift (written by
+       updatePeek() in the <script> below; 0 at rest / in the center zone). */
+    transform: translateX(var(--peek-shift, 0));
+    transition: transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
   /* HOME-09 (D-01/D-02/D-06): blur-up placeholder crossfade — two stacked
@@ -1279,19 +1391,34 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
      animation (see 09-UI-SPEC.md's hard requirement). The placeholder
      renders first in DOM order (paints beneath); the sharp layer starts
      transparent and fades to opaque once loaded (render() below toggles
-     .is-loaded on every first paint and swap). */
+     .is-loaded on every first paint and swap). quick-260726-u97: this
+     element sets its own `transition`, which would otherwise clobber the
+     base .home-hero__img rule's transform transition entirely — both are
+     carried here so the crossfade AND the parallax push animate. */
   .home-hero__img--sharp {
     opacity: 0;
-    transition: opacity 260ms ease;
+    transition: opacity 260ms ease, transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
   .home-hero__img--sharp.is-loaded {
     opacity: 1;
   }
 
+  /* quick-260726-u97: instantaneous commit-reset hook — openCurrent()
+     (Task 5) adds .is-opening to .home-hero__photo synchronously, right
+     before resetting --peek-shift/the peek layers to their resting
+     transform and forcing a reflow, so the reset itself never eases: the
+     outgoing cross-document View Transition snapshot must capture the
+     photo already at rest, not mid-recede. */
+  .home-hero__photo.is-opening .home-hero__img,
+  .home-hero__photo.is-opening .home-hero__peek {
+    transition: none;
+  }
+
   .home-hero__scrim {
     position: absolute;
     inset: 0;
+    z-index: 2;
     background: linear-gradient(to top, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.15) 45%, rgba(0, 0, 0, 0) 70%);
   }
 
@@ -1452,6 +1579,21 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
     .home-hero__progress-dash.is-filling::after {
       display: none;
+    }
+
+    /* quick-260726-u97: the parallax-push peek is decorative — under
+       reduced motion the JS branch (updatePeek() below) skips it entirely
+       and calls resetPeek() instead; this CSS override is the belt-and-
+       braces guarantee that even a stray transform write can't animate.
+       .home-hero__img--sharp keeps its opacity-only crossfade (HOME-09,
+       untouched by this task). */
+    .home-hero__peek,
+    .home-hero__img {
+      transition: none;
+    }
+
+    .home-hero__img--sharp {
+      transition-property: opacity;
     }
   }
 

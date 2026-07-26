@@ -295,7 +295,7 @@ test.describe('carousel hover cursor (sketch 008 Variant C)', () => {
   test('FR center zone: permanent OUVRIR label, cursor visible', async ({ page }) => {
     await page.goto('/');
     const box = await photoBox(page);
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.3, { steps: 10 });
 
     const cursor = page.locator('[data-role="hero-cursor"]');
     await expect(cursor).toHaveAttribute('data-zone', 'center');
@@ -306,7 +306,7 @@ test.describe('carousel hover cursor (sketch 008 Variant C)', () => {
   test('EN center zone: permanent OPEN label', async ({ page }) => {
     await page.goto('/en/');
     const box = await photoBox(page);
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.3, { steps: 10 });
 
     const cursor = page.locator('[data-role="hero-cursor"]');
     await expect(cursor).toHaveAttribute('data-zone', 'center');
@@ -316,7 +316,7 @@ test.describe('carousel hover cursor (sketch 008 Variant C)', () => {
   test('left edge zone: arrow shown, cursor tinted with the current accent', async ({ page }) => {
     await page.goto('/');
     const box = await photoBox(page);
-    await page.mouse.move(box.x + box.width * 0.05, box.y + box.height / 2);
+    await page.mouse.move(box.x + box.width * 0.05, box.y + box.height * 0.3, { steps: 10 });
 
     const cursor = page.locator('[data-role="hero-cursor"]');
     await expect(cursor).toHaveAttribute('data-zone', 'left');
@@ -325,16 +325,17 @@ test.describe('carousel hover cursor (sketch 008 Variant C)', () => {
     // .home-hero__accent's background-color is the same --current-accent
     // custom property the cursor's edge-zone background uses — comparing
     // against its resolved computed color avoids depending on whether the
-    // accent is a hex value or a CSS var() fallback chain.
+    // accent is a hex value or a CSS var() fallback chain. toHaveCSS polls
+    // until it matches, riding out the 200ms background-color transition
+    // rather than sampling mid-transition.
     const expectedBg = await page.locator('[data-role="accent-panel"]').evaluate((el) => getComputedStyle(el).backgroundColor);
-    const cursorBg = await cursor.evaluate((el) => getComputedStyle(el).backgroundColor);
-    expect(cursorBg).toBe(expectedBg);
+    await expect(cursor).toHaveCSS('background-color', expectedBg);
   });
 
   test('right edge zone: arrow shown', async ({ page }) => {
     await page.goto('/');
     const box = await photoBox(page);
-    await page.mouse.move(box.x + box.width * 0.95, box.y + box.height / 2);
+    await page.mouse.move(box.x + box.width * 0.95, box.y + box.height * 0.3, { steps: 10 });
 
     const cursor = page.locator('[data-role="hero-cursor"]');
     await expect(cursor).toHaveAttribute('data-zone', 'right');
@@ -345,6 +346,110 @@ test.describe('carousel hover cursor (sketch 008 Variant C)', () => {
     await page.goto('/');
     const photoCursor = await page.locator('.home-hero__photo').evaluate((el) => getComputedStyle(el).cursor);
     expect(photoCursor).toBe('none');
+  });
+});
+
+// quick-260726-u97 (sketch 008 Variant C): as the pointer nears an edge, the
+// current photo peels back and the adjacent gallery's REAL photo is
+// revealed underneath — proportional to proximity, real cdn.sanity.io
+// sources (never a placeholder), no peek visible at rest/center.
+test.describe('carousel edge-peek preview (sketch 008 Variant C)', () => {
+  async function photoBox(page: import('@playwright/test').Page) {
+    const box = await page.locator('.home-hero__photo').boundingBox();
+    if (!box) throw new Error('.home-hero__photo has no bounding box');
+    return box;
+  }
+
+  function peekTranslateXPercent(transform: string): number | null {
+    // matrix(a, b, c, d, e, f) — for a pure translateX(t%) on a box of
+    // known width the matrix's `e` component is the pixel translation; the
+    // tests below only need sign/relative-magnitude, so this reads the raw
+    // pixel `e` component directly rather than re-deriving a percentage.
+    if (transform === 'none') return 0;
+    const match = transform.match(/^matrix\(([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),/);
+    return match ? parseFloat(match[5]) : null;
+  }
+
+  test('at rest / center: peek layers stay off-screen and --peek-shift is 0', async ({ page }) => {
+    await page.goto('/');
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.3, { steps: 10 });
+
+    const shift = await page.locator('.home-hero__photo').evaluate((el) => getComputedStyle(el).getPropertyValue('--peek-shift').trim());
+    expect(shift).toBe('0');
+
+    const prevTransform = await page.locator('[data-role="peek-prev"]').evaluate((el) => getComputedStyle(el).transform);
+    const nextTransform = await page.locator('[data-role="peek-next"]').evaluate((el) => getComputedStyle(el).transform);
+    // translateX(-100%)/translateX(100%) on the photo's own width — both
+    // resolve to a non-zero pixel `e` component with the expected sign.
+    const prevX = peekTranslateXPercent(prevTransform);
+    const nextX = peekTranslateXPercent(nextTransform);
+    expect(prevX).not.toBeNull();
+    expect(nextX).not.toBeNull();
+    expect(prevX!).toBeLessThan(0);
+    expect(nextX!).toBeGreaterThan(0);
+  });
+
+  test('approaching the LEFT edge reveals the real previous gallery photo, pushed proportionally to proximity', async ({ page }) => {
+    await page.goto('/');
+    // Pin the slide so auto-advance can't swap mid-test.
+    await page.locator('[data-role="autoplay-toggle"]').click();
+
+    const dataItems = page.locator('ul[data-role="home-carousel-data"] li');
+    const count = await dataItems.count();
+    test.skip(count < 2, 'need at least 2 galleries to verify the adjacent peek');
+    // The prev of index 0 wraps to the last entry.
+    const expectedPrevSrc = await dataItems.nth(count - 1).getAttribute('data-hero-src');
+    expect(expectedPrevSrc).toBeTruthy();
+    expect(expectedPrevSrc).toContain('cdn.sanity.io');
+
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.03, box.y + box.height * 0.3, { steps: 10 });
+
+    const peekPrevSrc = await page.locator('[data-role="peek-prev"]').getAttribute('src');
+    expect(peekPrevSrc).toBe(expectedPrevSrc);
+
+    const shiftAt3pct = await page
+      .locator('.home-hero__photo')
+      .evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--peek-shift')));
+    expect(shiftAt3pct).toBeGreaterThan(0);
+
+    // Move closer to the edge — the push magnitude must increase
+    // (proportional to proximity, per the sketch's exact coefficients).
+    await page.mouse.move(box.x + box.width * 0.01, box.y + box.height * 0.3, { steps: 10 });
+    const shiftAt1pct = await page
+      .locator('.home-hero__photo')
+      .evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--peek-shift')));
+    expect(shiftAt1pct).toBeGreaterThan(shiftAt3pct);
+  });
+
+  test('approaching the RIGHT edge reveals the real next gallery photo, pushed proportionally to proximity', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+
+    const dataItems = page.locator('ul[data-role="home-carousel-data"] li');
+    const count = await dataItems.count();
+    test.skip(count < 2, 'need at least 2 galleries to verify the adjacent peek');
+    const expectedNextSrc = await dataItems.nth(1).getAttribute('data-hero-src');
+    expect(expectedNextSrc).toBeTruthy();
+    expect(expectedNextSrc).toContain('cdn.sanity.io');
+
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.97, box.y + box.height * 0.3, { steps: 10 });
+
+    const peekNextSrc = await page.locator('[data-role="peek-next"]').getAttribute('src');
+    expect(peekNextSrc).toBe(expectedNextSrc);
+
+    const shiftAt97pct = await page
+      .locator('.home-hero__photo')
+      .evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--peek-shift')));
+    expect(shiftAt97pct).toBeLessThan(0);
+
+    await page.mouse.move(box.x + box.width * 0.99, box.y + box.height * 0.3, { steps: 10 });
+    const shiftAt99pct = await page
+      .locator('.home-hero__photo')
+      .evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--peek-shift')));
+    expect(shiftAt99pct).toBeLessThan(shiftAt97pct);
   });
 });
 
