@@ -317,9 +317,10 @@ test.describe('carousel accent panel narrowing, no wordmark clip (Item 4)', () =
 });
 
 // quick-260725-tqs (Item 5): resized + repositioned sitewide intro
-// paragraph.
+// paragraph. quick-260726-ltr (Item 2) widened it further to ~2/3 of the
+// panel.
 test.describe('carousel intro paragraph resize + reposition (Item 5)', () => {
-  test('desktop: 15px font-size, confined to roughly the left half of the panel', async ({ page }) => {
+  test('desktop: 15px font-size, confined to roughly two-thirds of the panel', async ({ page }) => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto('/');
 
@@ -332,7 +333,11 @@ test.describe('carousel intro paragraph resize + reposition (Item 5)', () => {
       const intro = document.querySelector('.home-hero__intro')!.getBoundingClientRect();
       return { accentInnerWidth: accent.width, introWidth: intro.width };
     });
-    expect(layout.introWidth).toBeLessThanOrEqual(layout.accentInnerWidth * 0.6);
+    // Measured ratio at this viewport is ~0.606 — comfortably inside
+    // (0.55, 0.70]; the old 50% rule produced ~0.454, which would fail the
+    // lower bound, so this asserts the widen rather than merely loosening it.
+    expect(layout.introWidth).toBeLessThanOrEqual(layout.accentInnerWidth * 0.7);
+    expect(layout.introWidth).toBeGreaterThan(layout.accentInnerWidth * 0.55);
   });
 
   test('mobile: the intro is not squeezed to half-width (max-width: none)', async ({ page }) => {

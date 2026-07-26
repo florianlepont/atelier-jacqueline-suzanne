@@ -40,8 +40,17 @@ interface Props {
   // is every existing page's white-on-white hairline header; 'transparent'
   // is the gallery-detail hero-scrim header (Plan 04.1-05, D-07); 'none'
   // suppresses the shared header entirely for the homepage's own overlaid
-  // top bar (Plan 04.1-04). The shared <footer> always renders regardless.
+  // top bar (Plan 04.1-04). The shared <footer> renders unless hideFooter
+  // opts it out (see below).
   headerVariant?: 'solid' | 'transparent' | 'none';
+  // quick-260726-ltr (Item 1): opt-in, per-page, defaults false. Only the
+  // gallery detail twins pass this — it suppresses the shared <footer> so
+  // the collection-transition UX isn't broken by scrolling into mentions-
+  // légales/copyright. Safe: the quick-260725-tqs scroll-up-to-return gate
+  // stays reachable regardless, since it rides on .detail-hero's own
+  // footer-independent calc(100svh + 900px) desktop scroll track (see that
+  // plan's safety_investigation).
+  hideFooter?: boolean;
 }
 
 const {
@@ -51,6 +60,7 @@ const {
   noIndex = false,
   structuredData: pageStructuredData,
   headerVariant = 'solid',
+  hideFooter = false,
 } = Astro.props;
 const locale = Astro.currentLocale === 'en' ? 'en' : 'fr';
 
@@ -207,13 +217,15 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
     <main>
       <slot />
     </main>
-    <footer class="chrome-band">
-      <p class="footer-text">{footerText}</p>
-      <nav class="footer-legal-nav" aria-label="Legal">
-        <a href={legalNoticeHref} class="nav-link">{legalNoticeLabel}</a>
-        <a href={privacyHref} class="nav-link">{privacyLabel}</a>
-      </nav>
-    </footer>
+    {!hideFooter && (
+      <footer class="chrome-band">
+        <p class="footer-text">{footerText}</p>
+        <nav class="footer-legal-nav" aria-label="Legal">
+          <a href={legalNoticeHref} class="nav-link">{legalNoticeLabel}</a>
+          <a href={privacyHref} class="nav-link">{privacyLabel}</a>
+        </nav>
+      </footer>
+    )}
   </body>
 </html>
 
