@@ -1765,13 +1765,14 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     line-height: 1.2;
     margin: var(--space-sm) 0 0;
     color: #FFFFFF;
-    /* Direct user feedback: nothing distinguished this from a plain
-       caption heading, so visitors weren't discovering it's a link to the
-       gallery. Persistent underline (not hover-only — hover affordances
-       don't help touch/mobile users decide whether to tap in the first
-       place) plus a visible hover/focus state for pointer users. */
-    text-decoration: underline;
-    text-underline-offset: 3px;
+    /* quick-260726-obg: removed the persistent underline added by
+       quick-260725-tqs (Item 3) per direct user feedback — matches
+       DetailHero's non-underlined overlay title (a <p>, so it never had one
+       in the first place). The accent-color hover/focus state below plus
+       the custom down-chevron cursor already on the ancestor
+       .home-hero__photo remain the click affordances; no visible discovery
+       hint replaces the underline. */
+    text-decoration: none;
     display: block;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1786,6 +1787,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
   .home-hero__title:hover,
   .home-hero__title:focus-visible {
     color: var(--current-accent, var(--color-accent));
+    /* quick-260726-obg: .home-hero__title is an <a> — without this,
+       BaseLayout's global `a:hover, a:focus-visible { text-decoration:
+       underline }` rule would re-underline it on hover/focus even though
+       the base rule above now sets text-decoration: none at rest. */
+    text-decoration: none;
   }
 
   .home-hero__accent {

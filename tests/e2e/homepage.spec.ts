@@ -282,6 +282,21 @@ test.describe('carousel custom cursor affordance (Item 3)', () => {
   });
 });
 
+// quick-260726-obg (Task 3): removes the persistent underline added by
+// quick-260725-tqs (Item 3), per direct user feedback — matches DetailHero's
+// non-underlined overlay title.
+test.describe('carousel title has no underline (quick-260726-obg)', () => {
+  test('the title renders with no underline at rest or on hover, keeping its accent-color hover and pointer cursor', async ({ page }) => {
+    await page.goto('/');
+
+    const title = page.locator('[data-role="gallery-title"]');
+    await expect(title).toHaveCSS('text-decoration-line', 'none');
+
+    await title.hover();
+    await expect(title).toHaveCSS('text-decoration-line', 'none');
+  });
+});
+
 // quick-260725-tqs (Item 4): narrower accent panel with a retuned wordmark
 // that must not clip.
 test.describe('carousel accent panel narrowing, no wordmark clip (Item 4)', () => {
