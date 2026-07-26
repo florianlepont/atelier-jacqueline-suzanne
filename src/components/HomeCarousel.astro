@@ -2282,6 +2282,24 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 </style>
 
 <style is:global>
+  /* quick-260726-obg (Task 2): reintroduces quick-260725-dcg's carousel-mode
+     footer-hide, now made safe by Task 1's early/visible pull feedback
+     (safety_investigation item 1 — the vacuous-atBottom() tradeoff on
+     desktop is an accepted, documented tradeoff, mitigated by the 150px
+     threshold + the visible warning + the proactive decay together, not by
+     restoring real scroll distance). `body:has()` (not a plain sibling
+     combinator) is required because a <main> wrapper sits between `.home`
+     and `footer.chrome-band` in BaseLayout.astro's markup — a component-
+     scope boundary a `~`/`+` selector cannot cross. Kept here (not in
+     BaseLayout.astro) so it only ever ships on the homepage and never
+     affects gallery/édition/about/contact/legal pages; BaseLayout's own
+     `hideFooter` prop is untouched (it's a build-time prop and cannot react
+     to this client-side carousel/grid toggle). Grid mode leaves the footer
+     visible, and the rule reverts cleanly on toggle either direction. */
+  body:has(.home[data-display-mode='carousel']) footer.chrome-band {
+    display: none;
+  }
+
   /* View Transitions pseudo-elements (quick-260713-jfz) live on the document
      root, outside this component's subtree — Astro's scoped <style> above
      cannot target ::view-transition-*, so this must be a global block.
