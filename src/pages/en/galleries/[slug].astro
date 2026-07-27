@@ -47,6 +47,9 @@ const heroAlt = heroImage.alt?.[locale] ?? '';
 // 1-based position (heroIndex + 1) so a screen-reader user is never told
 // "image 1" and then lands on a different Lightbox counter.
 const heroAriaLabel = `View full size, image ${heroIndex + 1} of ${gallery.images.length}`;
+// quick-260724-wdr: locale-aware scroll-hint label passed to DetailHero (see
+// that component's Props doc for why it can't localize this itself).
+const scrollHintLabel = 'Scroll';
 // quick-260725-tqs (Item 6): opt-in scoping for the scroll-up-to-return
 // gesture — only gallery detail pages pass this prop (edition pages do not),
 // which is what keeps the feature off edition heroes. Points back at the
@@ -119,6 +122,7 @@ const structuredData = {
       heroAriaLabel={heroAriaLabel}
       heroIndex={heroIndex}
       statement={statement}
+      scrollHintLabel={scrollHintLabel}
       carouselReturnHref={carouselReturnHref}
     />
     <div class="gallery-detail__content">

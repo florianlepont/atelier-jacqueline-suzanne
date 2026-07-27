@@ -56,6 +56,13 @@ interface Props {
   // trigger via this default — byte-identical output. Gallery detail pages
   // pass the real index of their landscape-preferred hero image.
   heroIndex?: number;
+  // quick-260724-wdr: locale-aware text label rendered above the scroll-down
+  // chevron ("Faire défiler" / "Scroll"), strengthening the affordance that
+  // live user testing found unclear. Required (not optional/defaulted) so
+  // `astro check` fails the build if any of the four detail-page twins is
+  // missed — this component never imports src/lib/sanity, so it cannot
+  // localize the label itself; the calling page must supply it.
+  scrollHintLabel: string;
   // quick-260725-tqs (Item 6): optional — its PRESENCE is the scroll-up-to-
   // return gesture's on/off switch (opt-in scoping). Only gallery detail
   // pages pass this; édition detail pages omit it entirely, keeping the
@@ -74,6 +81,7 @@ const {
   caption,
   statement,
   heroIndex = 0,
+  scrollHintLabel,
   carouselReturnHref,
 } = Astro.props;
 ---
@@ -122,6 +130,20 @@ const {
       {statement && <p class="detail-hero__statement">{statement}</p>}
       {formatText && <span class="detail-hero__format" aria-hidden="true">{formatText}</span>}
     </div>
+    <div class="detail-hero__scroll-hint" aria-hidden="true">
+      <span class="detail-hero__scroll-hint-label">{scrollHintLabel}</span>
+      <svg
+        class="detail-hero__scroll-hint-icon"
+        viewBox="0 0 24 24"
+        width="34"
+        height="34"
+        fill="none"
+        stroke="white"
+        stroke-width="2.25"
+      >
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </div>
   </div>
 </div>
 
@@ -154,6 +176,22 @@ const {
   const overlayTitle = document.querySelector<HTMLElement>('.detail-hero__overlay-title');
   const reveal = document.querySelector<HTMLElement>('.detail-hero__reveal');
   const revealFormat = document.querySelector<HTMLElement>('.detail-hero__format');
+  const scrollHint = document.querySelector<HTMLElement>('.detail-hero__scroll-hint');
+
+  // Scroll-down hint fade (quick-260724-uf5): a self-contained block, kept
+  // OUTSIDE the reveal-driver guard below so it never depends on the
+  // reveal's own element set being complete. Writing opacity on a
+  // `display: none` element (mobile / reduced-motion desktop, per the CSS
+  // below) is a harmless no-op, so no extra branching is needed here.
+  if (scrollHint) {
+    window.addEventListener(
+      'scroll',
+      () => {
+        scrollHint.style.opacity = String(Math.max(0, 1 - window.scrollY / 150) * 0.85);
+      },
+      { passive: true },
+    );
+  }
 
   if (track && photo && scrim && overlayTitle && reveal) {
     const REVEAL_DISTANCE = 900;
@@ -277,7 +315,7 @@ const {
     // mobile with no grid) can't scroll 300px, the gesture simply never
     // arms — safe graceful degradation, no misfire. Listeners are passive
     // and never preventDefault, so normal scrolling, the lightbox trigger,
-    // and the scroll-reveal are all unaffected.
+    // the scroll-reveal, and the scroll-hint above are all unaffected.
     const RETURN_OVERSCROLL_THRESHOLD = 150;
     const TOP_EPSILON = 4;
     const RESET_IDLE_MS = 800;
@@ -555,6 +593,61 @@ const {
     opacity: 0;
   }
 
+  /* Scroll-down affordance (quick-260724-uf5, sketch 006 variant D):
+     bottom-center bouncing chevron inviting first-time visitors to scroll
+     and discover the reveal. This is the desktop-with-motion BASE state —
+     mirrors how this component's other base rules are the desktop-active
+     state, with mobile/reduced-motion overrides layered in below. Fades out
+     over the first ~150px of scroll via the plain scroll listener in the
+     <script> block above (a self-contained block, not wired into
+     onProgress/clearInlineStyles, so it cannot perturb the proven reveal
+     math). */
+  .detail-hero__scroll-hint {
+    position: absolute;
+    left: 50%;
+    bottom: var(--space-lg);
+    transform: translateX(-50%);
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+    opacity: 0.85;
+    pointer-events: none;
+    animation: sketch-bounce 1.8s ease-in-out infinite;
+  }
+
+  .detail-hero__scroll-hint-label {
+    font-size: var(--text-label-size);
+    font-weight: var(--weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #FFFFFF;
+    padding-bottom: var(--space-xs);
+    border-bottom: 2px solid var(--color-accent);
+  }
+
+  .detail-hero__scroll-hint-icon {
+    display: block;
+  }
+
+  @keyframes sketch-bounce {
+    0%,
+    100% {
+      transform: translate(-50%, 0);
+    }
+
+    50% {
+      transform: translate(-50%, 8px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .detail-hero__scroll-hint {
+      animation: none;
+    }
+  }
+
   /* Reduced-motion settled end-state (desktop only): mirrors onProgress(1)
      purely in CSS, so the composition shows immediately with zero
      scroll-linked motion and no dependence on the driver ever running. */
@@ -587,6 +680,12 @@ const {
 
     .detail-hero__format {
       opacity: 1;
+    }
+
+    /* Under reduced-motion desktop the reveal is already shown fully
+       settled — there is nothing left to hint at. */
+    .detail-hero__scroll-hint {
+      display: none;
     }
   }
 
@@ -636,6 +735,12 @@ const {
     }
 
     .detail-hero__format {
+      display: none;
+    }
+
+    /* Mobile shows the reveal panel already settled (no scroll-jacking/pin)
+       — the hint has no purpose here. */
+    .detail-hero__scroll-hint {
       display: none;
     }
   }
