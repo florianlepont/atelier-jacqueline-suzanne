@@ -1,0 +1,76 @@
+---
+// Shared fr/en Gallery detail page body (quick-260727-the): holds the
+// entire `<div class="gallery-detail">` markup PLUS the sibling
+// `<Lightbox />` element, plus the byte-identical style block previously
+// duplicated across src/pages/galleries/[slug].astro and
+// src/pages/en/galleries/[slug].astro. All locale-resolved data arrives as
+// props; this body has NO hardcoded locale strings of its own — every
+// visible/aria string arrives pre-resolved from the calling route.
+import DetailHero from './DetailHero.astro';
+import GalleryGrid, { type GalleryGridItem } from './GalleryGrid.astro';
+import Lightbox from './Lightbox.astro';
+import type { GalleryImage } from '../lib/sanity';
+
+interface Props {
+  leadPhotoSrc: string;
+  leadPhotoSrcSet: string;
+  leadPhotoAlt: string;
+  title: string;
+  total: number;
+  heroAriaLabel: string;
+  heroIndex: number;
+  statement: string;
+  scrollHintLabel: string;
+  carouselReturnHref: string;
+  gridItems: GalleryGridItem[];
+  lightboxImages: GalleryImage[];
+  locale: 'fr' | 'en';
+}
+
+const {
+  leadPhotoSrc,
+  leadPhotoSrcSet,
+  leadPhotoAlt,
+  title,
+  total,
+  heroAriaLabel,
+  heroIndex,
+  statement,
+  scrollHintLabel,
+  carouselReturnHref,
+  gridItems,
+  lightboxImages,
+  locale,
+} = Astro.props;
+---
+
+{/* quick-260726-ltr (Item 1): gallery-only footer hide — édition detail
+    pages deliberately keep the footer (see BaseLayout.astro Props doc). */}
+<div class="gallery-detail">
+  <DetailHero
+    leadPhotoSrc={leadPhotoSrc}
+    leadPhotoSrcSet={leadPhotoSrcSet}
+    leadPhotoAlt={leadPhotoAlt}
+    title={title}
+    total={total}
+    heroAriaLabel={heroAriaLabel}
+    heroIndex={heroIndex}
+    statement={statement}
+    scrollHintLabel={scrollHintLabel}
+    carouselReturnHref={carouselReturnHref}
+  />
+  <div class="gallery-detail__content">
+    {gridItems.length > 0 && <GalleryGrid items={gridItems} layout="masonry" />}
+  </div>
+</div>
+<Lightbox images={lightboxImages} locale={locale} />
+
+<style>
+  .gallery-detail {
+    padding: 0 0 var(--space-2xl);
+  }
+
+  .gallery-detail__content {
+    padding: var(--space-2xl) var(--space-md) 0;
+  }
+</style>
