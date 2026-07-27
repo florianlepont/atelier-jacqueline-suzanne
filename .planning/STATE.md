@@ -227,11 +227,11 @@ Items acknowledged and deferred at v1.3 milestone close on 2026-07-23 (`/gsd-com
 
 ## Session Continuity
 
-Last session: 2026-07-23T11:21:55.523Z
-Stopped at: Phase 14 context gathered
-Resume file: .planning/phases/14-verification-uat/14-CONTEXT.md
+Last session: 2026-07-27
+Stopped at: v1.0/v1.1/v1.2 retroactive milestone closure complete (MILESTONES.md entries, phase archives, ROADMAP.md collapse, PROJECT.md Validated-section fix, tags v1.0/v1.1/v1.2 pushed) — not mid-task, fully wrapped up
+Resume file: none — Phase 14's archive now lives at `.planning/milestones/v1.3-phases/14-verification-uat/` (moved by `/gsd-cleanup` earlier in this session; this pointer was stale before today's edit)
 
-**Next up:** `/gsd-new-milestone` — scope the next milestone (v1.3 shipped and archived 2026-07-23).
+**Next up:** `/gsd-new-milestone` — scope the next milestone. All shipped work through v1.3 is now formally archived and tagged (v1.0, v1.1, v1.2, v1.3); Phase 5 (Launch & Domain Cutover) remains open and deliberately deferred whenever launch is next prioritized.
 
 ## Operator Next Steps
 
