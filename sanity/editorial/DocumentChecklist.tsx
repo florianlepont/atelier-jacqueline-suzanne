@@ -1,7 +1,7 @@
 import {useState} from 'react'
 import {useEditState} from 'sanity'
 import type {DocumentInspector, DocumentInspectorComponent} from 'sanity'
-import {TaskIcon} from '@sanity/icons'
+import {TaskIcon} from '@sanity/icons/Task'
 import {getDocumentChecks, summarizeChecks} from './checks'
 import {compactCheckLabel} from './dashboardLogic'
 

@@ -3,18 +3,16 @@ import type {ComponentType, SVGProps} from 'react'
 import {Badge, Box, Button, Card, Flex, Heading, Spinner, Stack, Text} from '@sanity/ui'
 import {IntentButton, useClient, useHistoryStore, useUserStore} from 'sanity'
 import {IntentLink} from 'sanity/router'
-import {
-  AddIcon,
-  CheckmarkCircleIcon,
-  ChevronRightIcon,
-  CogIcon,
-  DocumentIcon,
-  ErrorOutlineIcon,
-  FolderIcon,
-  ImagesIcon,
-  LaunchIcon,
-  WarningOutlineIcon,
-} from '@sanity/icons'
+import {AddIcon} from '@sanity/icons/Add'
+import {CheckmarkCircleIcon} from '@sanity/icons/CheckmarkCircle'
+import {ChevronRightIcon} from '@sanity/icons/ChevronRight'
+import {CogIcon} from '@sanity/icons/Cog'
+import {DocumentIcon} from '@sanity/icons/Document'
+import {ErrorOutlineIcon} from '@sanity/icons/ErrorOutline'
+import {FolderIcon} from '@sanity/icons/Folder'
+import {ImagesIcon} from '@sanity/icons/Images'
+import {LaunchIcon} from '@sanity/icons/Launch'
+import {WarningOutlineIcon} from '@sanity/icons/WarningOutline'
 import {deploymentLabel, getLatestDeployment, SITE_PREVIEW_URL} from './deployment'
 import type {DeploymentRun} from './deployment'
 import {getDocumentChecks, summarizeChecks} from './checks'

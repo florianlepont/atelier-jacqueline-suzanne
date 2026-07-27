@@ -1,7 +1,7 @@
 import {Box, Button, Stack, Text} from '@sanity/ui'
 import {useEditState} from 'sanity'
 import type {DocumentInspector, DocumentInspectorComponent} from 'sanity'
-import {LaunchIcon} from '@sanity/icons'
+import {LaunchIcon} from '@sanity/icons/Launch'
 import {SITE_PREVIEW_URL} from './deployment'
 
 type UnknownRecord = Record<string, unknown>
