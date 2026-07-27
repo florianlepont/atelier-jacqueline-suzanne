@@ -169,7 +169,7 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
     <meta name="twitter:title" content={title} />
     {description && <meta name="twitter:description" content={description} />}
     {socialImage && <meta name="twitter:image" content={socialImage} />}
-    <script type="application/ld+json" set:html={serializedStructuredData}></script>
+    <script is:inline type="application/ld+json" set:html={serializedStructuredData}></script>
     <script is:inline define:vars={{ base: import.meta.env.BASE_URL }}>
       // D-03: no server/middleware exists on OVH static hosting to read
       // cookies, so a returning visitor's locale preference is honored via a
