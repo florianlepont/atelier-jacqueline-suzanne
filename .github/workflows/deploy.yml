@@ -36,6 +36,9 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            sanity/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -72,8 +75,22 @@ jobs:
       - name: Verify root static artifact
         run: npm run test:artifact
 
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+
       - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium webkit
+
+      # OS-level browser deps are not stored in ~/.cache/ms-playwright, so
+      # they must still be installed even when the browser binary cache hits.
+      - name: Install Playwright OS dependencies (cache hit)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium webkit
 
       # BLOCKING gate: a test failure fails the run and prevents deploy.
       - name: Run Playwright e2e tests
