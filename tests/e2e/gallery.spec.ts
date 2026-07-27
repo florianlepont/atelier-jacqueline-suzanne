@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
 // homepage grid is now the sole browse entry point, D-03/D-11). Discovery in
 // every block below starts from the homepage: navigate to "/", switch to
 // grid mode via the 'Grille' toggle button, then read the first
-// `.home-grid__tile` link's href — mirroring tests/e2e/homepage.spec.ts's
+// `.home-grid__tile` link's href — mirroring tests/e2e/homepage-carousel-core.spec.ts's
 // own grid-discovery pattern. Detail-page and lightbox assertions are
 // otherwise unchanged from before the route removal.
 //
@@ -683,7 +683,7 @@ test.describe('gallery detail scroll-up-to-return (Item 6, quick-260725-tqs)', (
         const { href } = await discoverGallery(page);
         await page.goto(href);
 
-        // Mirrors homepage.spec.ts's own synthetic Touch/TouchEvent
+        // Mirrors homepage-wordmark-peek.spec.ts's own synthetic Touch/TouchEvent
         // construction for its "fresh load: one modest touch swipe" test,
         // but with an INCREASING clientY (finger moving down the screen =
         // upward scroll intent, the mirror direction).

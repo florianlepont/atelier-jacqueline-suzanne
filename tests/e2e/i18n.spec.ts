@@ -17,7 +17,7 @@ test.describe('locale content', () => {
     // quick-260726-obg: the homepage footer is present in the DOM but
     // hidden while in carousel mode (the default display mode) — reachable
     // via grid mode. See "footer visibility by display mode
-    // (quick-260726-obg)" in homepage.spec.ts for the full contract.
+    // (quick-260726-obg)" in homepage-chrome-nav.spec.ts for the full contract.
     await expect(page.locator('body > footer')).toHaveCount(1);
     await expect(page.locator('body > footer')).toBeHidden();
 

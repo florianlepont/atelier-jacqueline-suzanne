@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 // Phase 10 Plan 01, Task 1 (HOME-10/D-01/D-03) — Wave 0 RED contract for the
 // shared <SiteHeader> component on non-homepage pages (About/Contact). This
-// mirrors tests/e2e/homepage.spec.ts's "Instagram nav link (HOME-04)" describe
+// mirrors tests/e2e/homepage-chrome-nav.spec.ts's "Instagram nav link (HOME-04)" describe
 // block, but scoped to [data-role="site-header"]/.site-nav and driven against
 // /about/, /en/about/, /contact/, /en/contact/ instead of the homepage.
 //
