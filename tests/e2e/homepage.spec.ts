@@ -405,6 +405,52 @@ test.describe('carousel hover cursor (sketch 008 Variant C)', () => {
   });
 });
 
+// quick-260727-bsm (Bug A — wordmark peek desync): syncWordmarkAlignment()
+// reads heroImg.getBoundingClientRect(), which reflects the live CSS
+// `transform: translateX(var(--peek-shift))` set during a peek push — but
+// it used to only ever run on load/resize, so the wordmark photo-cutout
+// froze relative to the photo sliding underneath it during a peek. This
+// must fail on the pre-fix code (position frozen) and pass once the rAF
+// sync loop (keepWordmarkSynced) is wired into updatePeek()/resetPeek().
+test.describe('carousel wordmark stays synced to the peek (Bug A)', () => {
+  async function photoBox(page: import('@playwright/test').Page) {
+    const box = await page.locator('.home-hero__photo').boundingBox();
+    if (!box) throw new Error('.home-hero__photo has no bounding box');
+    return box;
+  }
+
+  test('FR: wordmark bg-position tracks a right-edge peek push', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+    await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
+
+    const wordmark = page.locator('.home-hero__wordmark');
+    const restPosition = await wordmark.evaluate((el) => getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim());
+
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.97, box.y + box.height * 0.3, { steps: 10 });
+
+    // expect.poll rides the rAF-driven updates rather than sampling a
+    // single frame — the assertion must observe the value actually change
+    // while the photo is mid-push/settling, not just at one instant.
+    await expect.poll(() => wordmark.evaluate((el) => getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim())).not.toBe(restPosition);
+  });
+
+  test('EN: wordmark bg-position tracks a right-edge peek push', async ({ page }) => {
+    await page.goto('/en/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+    await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
+
+    const wordmark = page.locator('.home-hero__wordmark');
+    const restPosition = await wordmark.evaluate((el) => getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim());
+
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.97, box.y + box.height * 0.3, { steps: 10 });
+
+    await expect.poll(() => wordmark.evaluate((el) => getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim())).not.toBe(restPosition);
+  });
+});
+
 // quick-260726-u97 (sketch 008 Variant C): as the pointer nears an edge, the
 // current photo peels back and the adjacent gallery's REAL photo is
 // revealed underneath — proportional to proximity, real cdn.sanity.io

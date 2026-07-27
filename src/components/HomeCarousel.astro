@@ -505,6 +505,41 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           wordmarkEl.style.setProperty('--wordmark-bg-position', result.position);
         }
 
+        // quick-260727-bsm (Bug A — wordmark peek desync): syncWordmarkAlignment()
+        // above already computes the correct cutout from heroImg's live rect
+        // (which reflects the CSS `transform: translateX(var(--peek-shift))`
+        // set by updatePeek() below), but it was previously only ever called
+        // on load/resize — never while the photo was actually mid-transform.
+        // This rAF pump keeps calling it every frame for as long as the photo
+        // can plausibly still be moving (an active peek push, or the ~420ms
+        // ease-settle after the mouse stops/leaves), so the "hole cut in the
+        // photo" illusion never freezes relative to the photo sliding
+        // underneath it.
+        let wordmarkSyncRaf: number | null = null;
+        let wordmarkSyncUntil = 0;
+
+        function pumpWordmarkSync() {
+          syncWordmarkAlignment();
+          if (performance.now() < wordmarkSyncUntil) {
+            wordmarkSyncRaf = requestAnimationFrame(pumpWordmarkSync);
+          } else {
+            wordmarkSyncRaf = null;
+          }
+        }
+
+        // References `hoverCapable`, declared later in this script (~line
+        // 830) — safe because this function is only ever CALLED at runtime
+        // (from updatePeek()/resetPeek(), both themselves only invoked on
+        // user interaction or from render(), which first runs at the very
+        // end of this script), never during initial synchronous parse.
+        function keepWordmarkSynced(ms = 500) {
+          if (!hoverCapable || reduceMotionQuery.matches) return;
+          wordmarkSyncUntil = Math.max(wordmarkSyncUntil, performance.now() + ms);
+          if (wordmarkSyncRaf === null) {
+            wordmarkSyncRaf = requestAnimationFrame(pumpWordmarkSync);
+          }
+        }
+
         function render() {
           const gallery = galleries[carouselIndex];
           if (!gallery) return;
@@ -847,6 +882,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           heroPhoto.style.setProperty('--peek-shift', '0');
           if (peekPrev) peekPrev.style.transform = 'translateX(-100%)';
           if (peekNext) peekNext.style.transform = 'translateX(100%)';
+          // quick-260727-bsm (Bug A): the mouseleave recede AND every
+          // render() swap (render() calls resetPeek() in its hoverCapable
+          // block) both change the photo's transform — keep the wordmark
+          // synced through the ease-settle here too.
+          keepWordmarkSynced();
         }
 
         // quick-260726-u97 (sketch 008 Variant C, exact sketch coefficients):
@@ -872,7 +912,15 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             if (peekPrev) peekPrev.style.transform = 'translateX(-100%)';
           } else {
             resetPeek();
+            return;
           }
+          // quick-260727-bsm (Bug A): covers the active-mousemove push AND
+          // the retarget-then-settle — 500ms comfortably exceeds the 420ms
+          // transform transition so the sync loop keeps running through the
+          // ease after the mouse stops moving. The `resetPeek()` branch
+          // above already calls this itself (and returns before reaching
+          // here), so this only fires for the left/right push branches.
+          keepWordmarkSynced();
         }
 
         if (hoverCapable && heroPhoto) {
