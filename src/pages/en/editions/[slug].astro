@@ -13,7 +13,6 @@ import Lightbox from '../../../components/Lightbox.astro';
 import { getEditions } from '../../../lib/sanity';
 import { thumbnailUrl, fullSizeUrl, responsiveImageSrcSet, responsiveThumbnailSrcSet } from '../../../lib/image';
 import { getRelatedGalleryLink } from '../../../lib/related-gallery';
-import type { Edition } from '../../../lib/sanity';
 
 export const getStaticPaths = (async () => {
   const editions = await getEditions();
@@ -22,10 +21,6 @@ export const getStaticPaths = (async () => {
     props: { edition },
   }));
 }) satisfies GetStaticPaths;
-
-interface Props {
-  edition: Edition;
-}
 
 const { edition } = Astro.props;
 const locale = 'en' as const;
