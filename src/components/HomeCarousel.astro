@@ -960,6 +960,19 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           // ease (a discrete moment, not continuous tracking).
           photo.classList.remove('is-tracking');
 
+          // quick-260727-g04: at +-100% peek-shift (the full-slide commit
+          // target below), the drq clamp in computeWordmarkBackgroundPosition()
+          // pins the wordmark sample to the photo's real pixel bounds almost
+          // immediately and holds it there for nearly the whole slide -- a
+          // frozen, wrongly-cropped slice of the DEPARTING photo, not
+          // tracking it. Revert to the solid-ink fallback for the slide's
+          // duration, mirroring what render() already does at the start of
+          // every other nav path -- finish()'s render() call below
+          // re-reveals the cutout realigned to the NEW photo once the swap
+          // lands, unchanged.
+          root!.classList.remove('has-wordmark-photo');
+          root!.style.setProperty('--wordmark-photo', 'none');
+
           if (direction === 'next') {
             photo.style.setProperty('--peek-shift', '-100%');
             if (peekNext) peekNext.style.transform = 'translateX(0)';
@@ -967,9 +980,15 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             photo.style.setProperty('--peek-shift', '100%');
             if (peekPrev) peekPrev.style.transform = 'translateX(0)';
           }
-          // Bug A machinery: keeps the wordmark cutout tracking the photo
-          // through the whole 420ms slide-to-full-commit.
-          keepWordmarkSynced(600);
+          // quick-260727-g04: the wordmark is hidden (solid ink, not the
+          // photo-cutout) for the entire slide now, so pumping rAF frames to
+          // recompute an invisible background-position is pointless. The
+          // sync window is re-established after the swap by render()'s own
+          // resetPeek() -> keepWordmarkSynced() call plus
+          // revealWordmarkPhoto()'s direct syncWordmarkAlignment() at reveal
+          // time (the reveal happens at a neutral transform, so a single
+          // sync at reveal is sufficient -- no moving transform to track
+          // once swapped).
 
           const relevantLayer = direction === 'next' ? peekNext : peekPrev;
           let done = false;

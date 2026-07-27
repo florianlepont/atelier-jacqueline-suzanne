@@ -501,6 +501,81 @@ test.describe('carousel is-tracking re-armed after edge-click commit (quick-2607
   });
 });
 
+// quick-260727-g04: commitEdge()'s full-slide commit pushes --peek-shift to
+// +-100% -- vastly beyond the ~16% hover-peek range the drq clamp in
+// computeWordmarkBackgroundPosition() was validated against. The raw
+// position blows past the photo's real pixel bounds almost immediately and
+// the clamp holds the OUTPUT frozen there for nearly the whole ~420-480ms
+// slide, so the wordmark visibly freezes a wrongly-cropped slice of the
+// departing photo instead of tracking it. Fix: commitEdge() now reverts the
+// wordmark to its solid-ink fallback (mirroring what render() already does
+// on every other nav path) at the START of the slide, and finish()'s
+// existing render() call re-reveals the cutout realigned to the NEW photo
+// once the swap lands. This must FAIL on the pre-fix code (mid-slide
+// has-wordmark-photo still present) and PASS once the reset is applied.
+test.describe('carousel wordmark does not freeze during edge-click commit (quick-260727-g04)', () => {
+  async function photoBox(page: import('@playwright/test').Page) {
+    const box = await page.locator('.home-hero__photo').boundingBox();
+    if (!box) throw new Error('.home-hero__photo has no bounding box');
+    return box;
+  }
+
+  test('FR: wordmark goes solid mid-slide and re-reveals realigned at settle', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+    await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
+
+    const indexLabel = page.locator('[data-role="index-label"]');
+    const initialIndex = await indexLabel.innerText();
+
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.97, box.y + box.height * 0.3, { steps: 10 });
+    await page.mouse.down();
+    await page.mouse.up();
+
+    // Deterministic mid-slide sample, well before the ~420-480ms settle.
+    // A fixed timeout (not Playwright's auto-retrying toHaveClass) is
+    // required here -- the pre-fix render() call at finish() removes+re-adds
+    // the class synchronously within the same tick, so it is never
+    // observably absent to a polling assertion; only a direct sample mid-
+    // flight catches the pre-fix freeze.
+    await page.waitForTimeout(150);
+    const midSlideHasCutout = await page.locator('.home').evaluate((el) => el.classList.contains('has-wordmark-photo'));
+    expect(midSlideHasCutout).toBe(false);
+
+    // The commit settles and re-reveals on the NEW slide, realigned.
+    await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
+    await expect(indexLabel).not.toHaveText(initialIndex);
+    const wordmark = page.locator('.home-hero__wordmark');
+    const settledPosition = await wordmark.evaluate((el) => getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim());
+    expect(settledPosition).toMatch(/^-?\d+(\.\d+)?px -?\d+(\.\d+)?px$/);
+  });
+
+  test('EN: wordmark goes solid mid-slide and re-reveals realigned at settle', async ({ page }) => {
+    await page.goto('/en/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+    await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
+
+    const indexLabel = page.locator('[data-role="index-label"]');
+    const initialIndex = await indexLabel.innerText();
+
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.97, box.y + box.height * 0.3, { steps: 10 });
+    await page.mouse.down();
+    await page.mouse.up();
+
+    await page.waitForTimeout(150);
+    const midSlideHasCutout = await page.locator('.home').evaluate((el) => el.classList.contains('has-wordmark-photo'));
+    expect(midSlideHasCutout).toBe(false);
+
+    await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
+    await expect(indexLabel).not.toHaveText(initialIndex);
+    const wordmark = page.locator('.home-hero__wordmark');
+    const settledPosition = await wordmark.evaluate((el) => getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim());
+    expect(settledPosition).toMatch(/^-?\d+(\.\d+)?px -?\d+(\.\d+)?px$/);
+  });
+});
+
 // quick-260727-bsm (Bug A — wordmark peek desync): syncWordmarkAlignment()
 // reads heroImg.getBoundingClientRect(), which reflects the live CSS
 // `transform: translateX(var(--peek-shift))` set during a peek push — but
