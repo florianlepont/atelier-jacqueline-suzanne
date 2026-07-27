@@ -1,0 +1,154 @@
+---
+// Shared fr/en Édition detail page body (quick-260727-the): holds the
+// entire `<div class="edition-detail">` markup PLUS the sibling
+// `<Lightbox />` element, plus the byte-identical style block previously
+// duplicated across src/pages/editions/[slug].astro and
+// src/pages/en/editions/[slug].astro. All locale-resolved data +
+// locale-specific visible strings arrive as props; no i18n/data-fetch
+// logic lives here.
+import DetailHero from './DetailHero.astro';
+import GalleryGrid, { type GalleryGridItem } from './GalleryGrid.astro';
+import Lightbox from './Lightbox.astro';
+import type { GalleryImage } from '../lib/sanity';
+
+interface Props {
+  leadPhotoSrc: string;
+  leadPhotoSrcSet: string;
+  leadPhotoAlt: string;
+  title: string;
+  formatText: string;
+  total: number;
+  heroAriaLabel: string;
+  caption: string;
+  statement: string;
+  scrollHintLabel: string;
+  overviewHref: string;
+  backLinkLabel: string;
+  relatedLink: { href: string; text: string } | null;
+  gridItems: GalleryGridItem[];
+  lightboxImages: GalleryImage[];
+  locale: 'fr' | 'en';
+}
+
+const {
+  leadPhotoSrc,
+  leadPhotoSrcSet,
+  leadPhotoAlt,
+  title,
+  formatText,
+  total,
+  heroAriaLabel,
+  caption,
+  statement,
+  scrollHintLabel,
+  overviewHref,
+  backLinkLabel,
+  relatedLink,
+  gridItems,
+  lightboxImages,
+  locale,
+} = Astro.props;
+---
+
+<div class="edition-detail">
+  <DetailHero
+    leadPhotoSrc={leadPhotoSrc}
+    leadPhotoSrcSet={leadPhotoSrcSet}
+    leadPhotoAlt={leadPhotoAlt}
+    title={title}
+    formatText={formatText}
+    total={total}
+    heroAriaLabel={heroAriaLabel}
+    caption={caption}
+    statement={statement}
+    scrollHintLabel={scrollHintLabel}
+  />
+  <div class="edition-detail__content">
+    <a class="edition-detail__back-link" href={overviewHref}>
+      <span aria-hidden="true">←</span> {backLinkLabel}
+    </a>
+    <p class="edition-detail__format">{formatText}</p>
+    {relatedLink && (
+      <a class="edition-detail__related" href={relatedLink.href}>
+        {relatedLink.text}
+      </a>
+    )}
+    {gridItems.length > 0 && <GalleryGrid items={gridItems} />}
+  </div>
+</div>
+<Lightbox images={lightboxImages} locale={locale} />
+
+<style>
+  .edition-detail {
+    padding: 0 0 var(--space-2xl);
+  }
+
+  .edition-detail__content {
+    padding: var(--space-2xl) var(--space-md) 0;
+  }
+
+  /* D-08: the "Retour aux éditions" back-link lives in NORMAL document flow
+     as the first child of .edition-detail__content — below the full-bleed
+     hero, above the statement — never absolutely positioned, never inside
+     the hero/scrim area. This is the deliberate fix for the Phase 10
+     header-backhome-overlap-logo regression, which came from an
+     absolutely-positioned link competing with SiteHeader's logo inside the
+     transparent-header hero zone. */
+  .edition-detail__back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    min-height: var(--tap-target-min);
+    font-size: var(--text-label-size);
+    font-weight: var(--weight-regular);
+    line-height: var(--text-label-leading);
+    color: var(--color-ink);
+    text-decoration: none;
+    margin-bottom: var(--space-lg);
+  }
+
+  .edition-detail__back-link:hover,
+  .edition-detail__back-link:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  /* D-09/D-10/sketch-003 synthesis: bold uppercase + pink accent underline
+     — a small graphic accent while staying inside the "informational, not
+     product-spec / not a commerce affordance" EDN-06 boundary. */
+  .edition-detail__format {
+    display: inline-block;
+    font-size: var(--text-label-size);
+    font-weight: var(--weight-semibold);
+    line-height: var(--text-label-leading);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-ink);
+    border-bottom: 2px solid var(--color-accent);
+    padding-bottom: var(--space-sm);
+    margin: 0 0 var(--space-2xl);
+  }
+
+  /* EDN-08: quiet "see also" cross-link, visually distinct from the bold
+     .edition-detail__format line above it -- label-size text, own vertical
+     rhythm, accent treatment on hover/focus consistent with the page's
+     existing --color-accent focus ring. */
+  .edition-detail__related {
+    display: inline-block;
+    font-size: var(--text-label-size);
+    font-weight: var(--weight-regular);
+    line-height: var(--text-label-leading);
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-decoration-color: var(--color-accent);
+    text-underline-offset: 3px;
+    margin: 0 0 var(--space-2xl);
+  }
+
+  .edition-detail__related:hover,
+  .edition-detail__related:focus-visible {
+    color: var(--color-accent);
+    outline: 2px solid var(--color-accent);
+    outline-offset: var(--focus-ring-offset);
+  }
+</style>

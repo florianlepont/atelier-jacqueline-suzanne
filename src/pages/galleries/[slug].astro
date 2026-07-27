@@ -5,13 +5,15 @@
 // (02-UI-SPEC.md interfaces note). Mirrors the EN counterpart at
 // src/pages/en/galleries/[slug].astro — only import depth and locale key
 // differ.
+//
+// quick-260727-the: the shared markup + style block live in
+// GalleryDetailBody.astro; this file keeps only data-fetch + locale
+// resolution + fallbacks.
 import type { GetStaticPaths } from 'astro';
 import { getRelativeLocaleUrl } from 'astro:i18n';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import DetailHero from '../../components/DetailHero.astro';
-import GalleryGrid from '../../components/GalleryGrid.astro';
+import GalleryDetailBody from '../../components/GalleryDetailBody.astro';
 import type { GalleryGridItem } from '../../components/GalleryGrid.astro';
-import Lightbox from '../../components/Lightbox.astro';
 import { getGalleries } from '../../lib/sanity';
 import { fullSizeUrl, responsiveImageSrcSet } from '../../lib/image';
 import { pickHeroIndex } from '../../lib/image-orientation';
@@ -39,6 +41,7 @@ const statement = gallery.statement?.[locale] ?? '';
 const heroIndex = pickHeroIndex(gallery.images);
 const heroImage = gallery.images[heroIndex];
 const heroSrc = fullSizeUrl(heroImage, 2000);
+const leadPhotoSrcSet = responsiveImageSrcSet(heroImage);
 const heroAlt = heroImage.alt?.[locale] ?? '';
 // quick-260724-mjp: hero cover photo is the shared DetailHero's clickable
 // trigger; quick-260724-oep fixes this label to state the hero's REAL
@@ -108,34 +111,19 @@ const structuredData = {
   headerVariant="transparent"
   hideFooter
 >
-  {/* quick-260726-ltr (Item 1): gallery-only footer hide — édition detail
-      pages deliberately keep the footer (see BaseLayout.astro Props doc). */}
-  <div class="gallery-detail">
-    <DetailHero
-      leadPhotoSrc={heroSrc}
-      leadPhotoSrcSet={responsiveImageSrcSet(heroImage)}
-      leadPhotoAlt={heroAlt}
-      title={gallery.title}
-      total={gallery.images.length}
-      heroAriaLabel={heroAriaLabel}
-      heroIndex={heroIndex}
-      statement={statement}
-      scrollHintLabel={scrollHintLabel}
-      carouselReturnHref={carouselReturnHref}
-    />
-    <div class="gallery-detail__content">
-      {gallery.images.length > 1 && <GalleryGrid items={gridItems} layout="masonry" />}
-    </div>
-  </div>
-  <Lightbox images={gallery.images} locale={locale} />
+  <GalleryDetailBody
+    leadPhotoSrc={heroSrc}
+    leadPhotoSrcSet={leadPhotoSrcSet}
+    leadPhotoAlt={heroAlt}
+    title={gallery.title}
+    total={gallery.images.length}
+    heroAriaLabel={heroAriaLabel}
+    heroIndex={heroIndex}
+    statement={statement}
+    scrollHintLabel={scrollHintLabel}
+    carouselReturnHref={carouselReturnHref}
+    gridItems={gridItems}
+    lightboxImages={gallery.images}
+    locale={locale}
+  />
 </BaseLayout>
-
-<style>
-  .gallery-detail {
-    padding: 0 0 var(--space-2xl);
-  }
-
-  .gallery-detail__content {
-    padding: var(--space-2xl) var(--space-md) 0;
-  }
-</style>
