@@ -1,4 +1,4 @@
-import { test, expect, devices } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 test.describe('Instagram nav link (HOME-04)', () => {
   test('exactly one Instagram link exists in the header with correct href/target/rel', async ({ page }) => {

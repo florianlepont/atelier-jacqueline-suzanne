@@ -1,4 +1,4 @@
-import { test, expect, devices } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 test.describe('progressive image loading (HOME-09)', () => {
   test('shell renders immediately without waiting on images', async ({ page }) => {

@@ -1,4 +1,4 @@
-import { test, expect, devices } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 // RED (Wave 0): the real homepage (hero carousel + grid toggle) does not exist
 // yet — the current "/" is still Phase 1's bare placeholder homepage. These

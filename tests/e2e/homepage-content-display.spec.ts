@@ -1,4 +1,4 @@
-import { test, expect, devices } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 test.describe('collection statements on the homepage', () => {
   // quick-260725-tqs (Item 2): the carousel's own per-slide byline/
