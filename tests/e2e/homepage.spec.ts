@@ -501,26 +501,53 @@ test.describe('carousel is-tracking re-armed after edge-click commit (quick-2607
   });
 });
 
-// quick-260727-g04: commitEdge()'s full-slide commit pushes --peek-shift to
-// +-100% -- vastly beyond the ~16% hover-peek range the drq clamp in
-// computeWordmarkBackgroundPosition() was validated against. The raw
-// position blows past the photo's real pixel bounds almost immediately and
-// the clamp holds the OUTPUT frozen there for nearly the whole ~420-480ms
-// slide, so the wordmark visibly freezes a wrongly-cropped slice of the
-// departing photo instead of tracking it. Fix: commitEdge() now reverts the
-// wordmark to its solid-ink fallback (mirroring what render() already does
-// on every other nav path) at the START of the slide, and finish()'s
-// existing render() call re-reveals the cutout realigned to the NEW photo
-// once the swap lands. This must FAIL on the pre-fix code (mid-slide
-// has-wordmark-photo still present) and PASS once the reset is applied.
-test.describe('carousel wordmark does not freeze during edge-click commit (quick-260727-g04)', () => {
+// quick-260727-iao: SUPERSEDES quick-260727-g04's "goes solid mid-slide"
+// contract. The wordmark cutout is now a true mirrored peek: three
+// independently-clamped layers (current/peekPrev/peekNext) mean there is
+// always a correct photo to show at every proximity, so the old "give up
+// and go solid ink" workaround is retired — has-wordmark-photo now stays
+// present continuously through a commit, and --wm-seam/data-peek-zone (the
+// deterministic, JS-set hooks written by syncWordmarkLayers()) prove the
+// seam moves continuously toward the incoming extreme instead of freezing.
+test.describe('carousel wordmark mirrored-peek commit (quick-260727-iao)', () => {
   async function photoBox(page: import('@playwright/test').Page) {
     const box = await page.locator('.home-hero__photo').boundingBox();
     if (!box) throw new Error('.home-hero__photo has no bounding box');
     return box;
   }
 
-  test('FR: wordmark goes solid mid-slide and re-reveals realigned at settle', async ({ page }) => {
+  // Samples --wm-seam/data-peek-zone/has-wordmark-photo on every animation
+  // frame from inside the page for ~400ms (comfortably inside the ~420-480ms
+  // slide, before commitEdge()'s fallback timer fires finish()) — an in-page
+  // rAF loop avoids the timing noise of round-tripping waitForTimeout calls
+  // over the CDP connection.
+  async function sampleSeamDuringSlide(page: import('@playwright/test').Page) {
+    return page.evaluate(() => {
+      const stack = document.querySelector('.home-hero__wordmark-stack');
+      const home = document.querySelector('.home');
+      if (!stack || !home) return [];
+      const start = performance.now();
+      const out: Array<{ t: number; seam: number; zone: string | null; hasWordmarkPhoto: boolean }> = [];
+      return new Promise<typeof out>((resolve) => {
+        function tick() {
+          out.push({
+            t: performance.now() - start,
+            seam: parseFloat(getComputedStyle(stack as Element).getPropertyValue('--wm-seam')),
+            zone: (stack as Element).getAttribute('data-peek-zone'),
+            hasWordmarkPhoto: home!.classList.contains('has-wordmark-photo'),
+          });
+          if (performance.now() - start < 400) {
+            requestAnimationFrame(tick);
+          } else {
+            resolve(out);
+          }
+        }
+        requestAnimationFrame(tick);
+      });
+    });
+  }
+
+  test('FR: right-edge commit — seam slides continuously to the incoming extreme, has-wordmark-photo never drops', async ({ page }) => {
     await page.goto('/');
     await page.locator('[data-role="autoplay-toggle"]').click();
     await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
@@ -533,25 +560,29 @@ test.describe('carousel wordmark does not freeze during edge-click commit (quick
     await page.mouse.down();
     await page.mouse.up();
 
-    // Deterministic mid-slide sample, well before the ~420-480ms settle.
-    // A fixed timeout (not Playwright's auto-retrying toHaveClass) is
-    // required here -- the pre-fix render() call at finish() removes+re-adds
-    // the class synchronously within the same tick, so it is never
-    // observably absent to a polling assertion; only a direct sample mid-
-    // flight catches the pre-fix freeze.
-    await page.waitForTimeout(150);
-    const midSlideHasCutout = await page.locator('.home').evaluate((el) => el.classList.contains('has-wordmark-photo'));
-    expect(midSlideHasCutout).toBe(false);
+    const samples = await sampleSeamDuringSlide(page);
+    expect(samples.length).toBeGreaterThan(0);
+    // The split moves continuously (not frozen): the seam is observed at a
+    // genuine intermediate value at least once...
+    expect(samples.some((s) => s.seam > 0 && s.seam < 1)).toBe(true);
+    // ...and trends toward the incoming (peekNext) extreme, 0.
+    expect(samples[samples.length - 1].seam).toBeLessThanOrEqual(samples[0].seam);
+    // Right-edge commit stays in the right zone throughout.
+    expect(samples.every((s) => s.zone === 'right')).toBe(true);
+    // No solid-ink beat anywhere in the sampled window.
+    expect(samples.every((s) => s.hasWordmarkPhoto)).toBe(true);
 
     // The commit settles and re-reveals on the NEW slide, realigned.
-    await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
     await expect(indexLabel).not.toHaveText(initialIndex);
+    await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
+    const stack = page.locator('.home-hero__wordmark-stack');
+    await expect.poll(() => stack.evaluate((el) => getComputedStyle(el).getPropertyValue('--wm-seam').trim())).toBe('1');
     const wordmark = page.locator('.home-hero__wordmark');
     const settledPosition = await wordmark.evaluate((el) => getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim());
     expect(settledPosition).toMatch(/^-?\d+(\.\d+)?px -?\d+(\.\d+)?px$/);
   });
 
-  test('EN: wordmark goes solid mid-slide and re-reveals realigned at settle', async ({ page }) => {
+  test('EN: right-edge commit — seam slides continuously to the incoming extreme, has-wordmark-photo never drops', async ({ page }) => {
     await page.goto('/en/');
     await page.locator('[data-role="autoplay-toggle"]').click();
     await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
@@ -564,15 +595,56 @@ test.describe('carousel wordmark does not freeze during edge-click commit (quick
     await page.mouse.down();
     await page.mouse.up();
 
-    await page.waitForTimeout(150);
-    const midSlideHasCutout = await page.locator('.home').evaluate((el) => el.classList.contains('has-wordmark-photo'));
-    expect(midSlideHasCutout).toBe(false);
+    const samples = await sampleSeamDuringSlide(page);
+    expect(samples.length).toBeGreaterThan(0);
+    expect(samples.some((s) => s.seam > 0 && s.seam < 1)).toBe(true);
+    expect(samples[samples.length - 1].seam).toBeLessThanOrEqual(samples[0].seam);
+    expect(samples.every((s) => s.zone === 'right')).toBe(true);
+    expect(samples.every((s) => s.hasWordmarkPhoto)).toBe(true);
 
-    await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
     await expect(indexLabel).not.toHaveText(initialIndex);
+    await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
+    const stack = page.locator('.home-hero__wordmark-stack');
+    await expect.poll(() => stack.evaluate((el) => getComputedStyle(el).getPropertyValue('--wm-seam').trim())).toBe('1');
     const wordmark = page.locator('.home-hero__wordmark');
     const settledPosition = await wordmark.evaluate((el) => getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim());
     expect(settledPosition).toMatch(/^-?\d+(\.\d+)?px -?\d+(\.\d+)?px$/);
+  });
+
+  // Mirror case: a LEFT-edge commit trends the seam toward 1 (the
+  // peekPrev-covers-all extreme) instead of 0 — one locale is sufficient to
+  // prove the mechanism is symmetric (the pure computeWordmarkSeamFraction
+  // unit tests already cover both zones' math exhaustively).
+  test('FR: left-edge commit — seam slides continuously toward the peekPrev extreme', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+    await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
+
+    const indexLabel = page.locator('[data-role="index-label"]');
+    const initialIndex = await indexLabel.innerText();
+
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.03, box.y + box.height * 0.3, { steps: 10 });
+    await page.mouse.down();
+    await page.mouse.up();
+
+    const samples = await sampleSeamDuringSlide(page);
+    expect(samples.length).toBeGreaterThan(0);
+    expect(samples.some((s) => s.seam > 0 && s.seam < 1)).toBe(true);
+    // Left-edge commit trends toward 1 (opposite direction from right).
+    expect(samples[samples.length - 1].seam).toBeGreaterThanOrEqual(samples[0].seam);
+    expect(samples.every((s) => s.zone === 'left')).toBe(true);
+    expect(samples.every((s) => s.hasWordmarkPhoto)).toBe(true);
+
+    await expect(indexLabel).not.toHaveText(initialIndex);
+    await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
+    // Left-zone rest is the OPPOSITE extreme from right-zone rest: at
+    // neutral (heroImg back at its full-viewport rect), heroLeft sits at
+    // the screen's left edge, well left of the wordmark box, so the seam
+    // clamps to 0 (current covers all) — not 1, which is the right-zone
+    // resting extreme asserted above.
+    const stack = page.locator('.home-hero__wordmark-stack');
+    await expect.poll(() => stack.evaluate((el) => getComputedStyle(el).getPropertyValue('--wm-seam').trim())).toBe('0');
   });
 });
 
@@ -619,6 +691,122 @@ test.describe('carousel wordmark stays synced to the peek (Bug A)', () => {
     await page.mouse.move(box.x + box.width * 0.97, box.y + box.height * 0.3, { steps: 10 });
 
     await expect.poll(() => wordmark.evaluate((el) => getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim())).not.toBe(restPosition);
+  });
+
+  // quick-260727-iao: proves the MIRRORED-PEEK side of the mechanism — as
+  // proximity to an edge increases, the peek-side wordmark layer's revealed
+  // portion grows (the seam fraction moves off its current-covers-all
+  // extreme) while the current layer's portion shrinks correspondingly, and
+  // the inactive peek layer never reveals anything.
+  //
+  // Reads the clip-path a layer actually computes to (not just the --wm-seam
+  // custom property) to prove the CSS clip rules themselves are wired
+  // correctly, not just the JS that feeds them — parses the browser's
+  // computed inset() (Chromium can serialize an equally-valid, zero-area
+  // inset() several ways depending on which side accumulated the 100%, so
+  // this converts to an effective visible-width fraction rather than
+  // matching one exact string).
+  async function peekVisibleFraction(page: import('@playwright/test').Page, selector: string): Promise<number> {
+    return page.locator(selector).evaluate((el) => {
+      const clip = getComputedStyle(el).clipPath;
+      const match = clip.match(/inset\(([^)]+)\)/);
+      if (!match) return 1;
+      const parts = match[1].trim().split(/\s+/);
+      const rect = el.getBoundingClientRect();
+      const toFraction = (value: string, axisSize: number) =>
+        value.endsWith('%') ? parseFloat(value) / 100 : parseFloat(value) / axisSize;
+      // inset(top right bottom left)
+      const leftFrac = toFraction(parts[3], rect.width);
+      const rightFrac = toFraction(parts[1], rect.width);
+      return Math.max(0, 1 - leftFrac - rightFrac);
+    });
+  }
+
+  test('FR: peek-side wordmark layer grows with right-edge proximity, inactive peek stays clipped', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+    await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
+
+    const stack = page.locator('.home-hero__wordmark-stack');
+    const box = await photoBox(page);
+
+    await page.mouse.move(box.x + box.width * 0.9, box.y + box.height * 0.3, { steps: 10 });
+    await page.waitForTimeout(200);
+    const s1 = await stack.evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--wm-seam')));
+    expect(await stack.getAttribute('data-peek-zone')).toBe('right');
+    expect(s1).toBeLessThan(1);
+
+    await page.mouse.move(box.x + box.width * 0.99, box.y + box.height * 0.3, { steps: 10 });
+    await expect.poll(() => stack.evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--wm-seam')))).toBeLessThan(s1);
+
+    // The active peek (next) reveals a growing portion; the inactive peek
+    // (prev) stays fully clipped throughout the right-zone push.
+    expect(await peekVisibleFraction(page, '.home-hero__wordmark-peek--next')).toBeGreaterThan(0);
+    expect(await peekVisibleFraction(page, '.home-hero__wordmark-peek--prev')).toBeLessThan(0.01);
+  });
+
+  test('EN: peek-side wordmark layer grows with right-edge proximity, inactive peek stays clipped', async ({ page }) => {
+    await page.goto('/en/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+    await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
+
+    const stack = page.locator('.home-hero__wordmark-stack');
+    const box = await photoBox(page);
+
+    await page.mouse.move(box.x + box.width * 0.9, box.y + box.height * 0.3, { steps: 10 });
+    await page.waitForTimeout(200);
+    const s1 = await stack.evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--wm-seam')));
+    expect(await stack.getAttribute('data-peek-zone')).toBe('right');
+    expect(s1).toBeLessThan(1);
+
+    await page.mouse.move(box.x + box.width * 0.99, box.y + box.height * 0.3, { steps: 10 });
+    await expect.poll(() => stack.evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--wm-seam')))).toBeLessThan(s1);
+
+    expect(await peekVisibleFraction(page, '.home-hero__wordmark-peek--next')).toBeGreaterThan(0);
+    expect(await peekVisibleFraction(page, '.home-hero__wordmark-peek--prev')).toBeLessThan(0.01);
+  });
+
+  // Mirror case: LEFT-edge proximity — NOT a growth assertion. Live
+  // verification (real Sanity content, real browser) found this panel's
+  // actual desktop geometry makes the left zone genuinely asymmetric with
+  // the right zone: .home-hero__accent is RIGHT-anchored (`right:
+  // var(--space-md); width: min(700px, 52%)`), so its left edge sits well
+  // right of center (e.g. ~600px in from the left on a 1280px-wide
+  // viewport). The hover-peek's max push is capped at PEEK_MAX_PUSH_FRACTION
+  // (16% of the photo's own width, ~205px on that same viewport) —
+  // heroImg's LEFT edge, even at maximum hover proximity, never travels far
+  // enough right to reach the panel's own left edge. This is the CORRECT
+  // consequence of the plan's own geometric model (the seam is wherever
+  // heroImg's live edge crosses the wordmark box's screen rect): the real
+  // photo's own peekPrev layer is equally confined to a narrow strip near
+  // the screen's left edge during a mere hover push (proven separately by
+  // the "carousel edge-peek preview" tests below), nowhere near the panel —
+  // so a 1:1 match with the photo's own motion means the wordmark correctly
+  // shows NOTHING new during a left-zone hover; only a full LEFT COMMIT
+  // (100% slide, already covered above) sweeps far enough to reach it. This
+  // guards against a regression where the seam erroneously moves off its
+  // resting extreme before the photo's real edge has actually arrived.
+  test('FR: left-edge hover-peek proximity correctly does NOT move the seam (panel is out of the hover-push reach; only a full commit reaches it)', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+    await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
+
+    const stack = page.locator('.home-hero__wordmark-stack');
+    const box = await photoBox(page);
+
+    await page.mouse.move(box.x + box.width * 0.1, box.y + box.height * 0.3, { steps: 10 });
+    await page.waitForTimeout(200);
+    expect(await stack.getAttribute('data-peek-zone')).toBe('left');
+    expect(await stack.evaluate((el) => getComputedStyle(el).getPropertyValue('--wm-seam').trim())).toBe('0');
+
+    await page.mouse.move(box.x + box.width * 0.01, box.y + box.height * 0.3, { steps: 10 });
+    await page.waitForTimeout(200);
+    expect(await stack.evaluate((el) => getComputedStyle(el).getPropertyValue('--wm-seam').trim())).toBe('0');
+
+    // Both peeks stay clipped (current shows in full) — the resting state
+    // is correctly held, not erroneously disturbed by the hover push.
+    expect(await peekVisibleFraction(page, '.home-hero__wordmark-peek--prev')).toBeLessThan(0.01);
+    expect(await peekVisibleFraction(page, '.home-hero__wordmark-peek--next')).toBeLessThan(0.01);
   });
 });
 
