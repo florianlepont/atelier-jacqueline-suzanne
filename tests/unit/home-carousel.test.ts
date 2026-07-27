@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { computeHoverZone, computeWordmarkBackgroundPosition, detectSwipeDirection } from '../../src/lib/home-carousel';
+import {
+  computeHoverZone,
+  computeWordmarkBackgroundPosition,
+  computeWordmarkSeamFraction,
+  detectSwipeDirection,
+} from '../../src/lib/home-carousel';
 
 // RED: src/lib/home-carousel.ts does not exist yet — this import failure is
 // the intended failing state for this task's TDD RED gate; the module is
@@ -136,6 +141,43 @@ describe('detectSwipeDirection', () => {
 
   it('returns null when the swipe is not horizontal enough relative to vertical movement', () => {
     expect(detectSwipeDirection(60, 60, 50, 1.5)).toBeNull();
+  });
+});
+
+// quick-260727-iao: pure seam-position math for the mirrored wordmark peek.
+// RED: computeWordmarkSeamFraction does not exist yet — this import/usage is
+// the intended failing state before Task 1's implementation lands.
+describe('computeWordmarkSeamFraction', () => {
+  it('right zone at rest: heroRight far past the wordmark right edge -> current covers all', () => {
+    expect(computeWordmarkSeamFraction('right', 0, 1920, 1300, 600)).toBe(1);
+  });
+
+  it('right zone mid-push: seam sits partway across the wordmark box', () => {
+    expect(computeWordmarkSeamFraction('right', 0, 1450, 1300, 600)).toBe(0.25);
+  });
+
+  it('right zone full commit: seam at the wordmark left edge -> current gone, peekNext covers all', () => {
+    expect(computeWordmarkSeamFraction('right', 0, 1300, 1300, 600)).toBe(0);
+  });
+
+  it('right zone beyond edge: negative ratio clamps to 0', () => {
+    expect(computeWordmarkSeamFraction('right', 0, 1000, 1300, 600)).toBe(0);
+  });
+
+  it('left zone at rest: heroLeft far left of the wordmark -> current covers all, peekPrev nothing', () => {
+    expect(computeWordmarkSeamFraction('left', 0, 1920, 1300, 600)).toBe(0);
+  });
+
+  it('left zone mid-push: seam sits partway across the wordmark box', () => {
+    expect(computeWordmarkSeamFraction('left', 1400, 1920, 1300, 600)).toBeCloseTo(0.1667, 3);
+  });
+
+  it('left zone full commit: heroLeft past the wordmark right edge -> current gone, peekPrev covers all', () => {
+    expect(computeWordmarkSeamFraction('left', 1920, 3840, 1300, 600)).toBe(1);
+  });
+
+  it('degenerate guard: zero-width wordmark box returns the safe no-op value 1', () => {
+    expect(computeWordmarkSeamFraction('right', 0, 1920, 1300, 0)).toBe(1);
   });
 });
 
