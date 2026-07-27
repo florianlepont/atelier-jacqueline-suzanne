@@ -265,8 +265,25 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         {/* D-08: the solid title is the no-JS/loading fallback. Once the
             responsive hero has loaded, render() uses its browser-selected
             currentSrc for this photo cutout, avoiding a second 2000px image
-            download on narrow screens. */}
-        <h1 class="home-hero__wordmark">Atelier<br />Jacqueline<br />Suzanne</h1>
+            download on narrow screens.
+
+            quick-260727-iao: mirrors .home-hero__photo's own current/peekPrev/
+            peekNext three-layer structure so the wordmark cutout can slide in
+            lockstep with the carousel photo through both hover-peek and
+            click-commit. The h1 stays the FIRST child, unchanged in class and
+            content — it remains the sole accessible heading; the two spans
+            after it are aria-hidden duplicates matched only by the distinct
+            `.home-hero__wordmark-peek` token (never `.home-hero__wordmark`),
+            so every existing single-match `.home-hero__wordmark` locator
+            keeps matching exactly this one element. --wm-seam/data-peek-zone
+            are written by syncWordmarkLayers() in the <script> below; the
+            inline defaults here (seam=1, zone=right) render identically to
+            "current full, both peeks clipped" for SSR/pre-JS. */}
+        <div class="home-hero__wordmark-stack" data-role="wordmark-stack" data-peek-zone="right" style={{ '--wm-seam': '1' }}>
+          <h1 class="home-hero__wordmark">Atelier<br />Jacqueline<br />Suzanne</h1>
+          <span class="home-hero__wordmark-peek home-hero__wordmark-peek--prev" data-role="wordmark-peek-prev" aria-hidden="true">Atelier<br />Jacqueline<br />Suzanne</span>
+          <span class="home-hero__wordmark-peek home-hero__wordmark-peek--next" data-role="wordmark-peek-next" aria-hidden="true">Atelier<br />Jacqueline<br />Suzanne</span>
+        </div>
         <p class="home-hero__intro">{introBody}</p>
       </div>
     </div>
@@ -329,7 +346,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     </ul>
 
     <script>
-      import { computeHoverZone, computeWordmarkBackgroundPosition, detectSwipeDirection } from '../lib/home-carousel';
+      import { computeHoverZone, computeWordmarkBackgroundPosition, computeWordmarkSeamFraction, detectSwipeDirection } from '../lib/home-carousel';
 
       interface GalleryEntry {
         slug: string;
@@ -385,6 +402,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         const titleEl = hero.querySelector<HTMLElement>('[data-role="gallery-title"]');
         const accentPanel = hero.querySelector<HTMLElement>('[data-role="accent-panel"]');
         const wordmarkEl = hero.querySelector<HTMLElement>('.home-hero__wordmark');
+        // quick-260727-iao: the mirrored-peek wordmark stack — all nullable,
+        // no-op safe if the markup is ever missing.
+        const wordmarkStackEl = hero.querySelector<HTMLElement>('.home-hero__wordmark-stack');
+        const wordmarkPeekPrevEl = hero.querySelector<HTMLElement>('.home-hero__wordmark-peek--prev');
+        const wordmarkPeekNextEl = hero.querySelector<HTMLElement>('.home-hero__wordmark-peek--next');
         const progressDashes = Array.from(hero.querySelectorAll<HTMLButtonElement>('[data-role="progress"] .home-hero__progress-dash'));
         const autoplayToggle = hero.querySelector<HTMLButtonElement>('[data-role="autoplay-toggle"]');
 
@@ -466,7 +488,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           const selectedSrc = heroImg.currentSrc || heroImg.src;
           if (!selectedSrc) return;
           root!.style.setProperty('--wordmark-photo', `url(${selectedSrc})`);
-          syncWordmarkAlignment();
+          syncWordmarkLayers();
           root!.classList.add('has-wordmark-photo');
         }
 
@@ -505,6 +527,63 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           wordmarkEl.style.setProperty('--wordmark-bg-position', result.position);
         }
 
+        // quick-260727-iao: which edge's peek layer is "active" — sticky
+        // across interactions so a mouseleave recede eases toward the SAME
+        // extreme the seam was already tracking (no snap/desync between the
+        // eased photo receding and the wordmark). Deliberately no 'center'
+        // value: at neutral the seam fraction naturally rests at its
+        // current-covers-all extreme (s=1 for right, s=0 for left), which
+        // renders identically to "center" (current full, both peeks
+        // clipped) — see the CSS zone selectors in Task 2.
+        let lastPeekZone: 'left' | 'right' = 'right';
+
+        // Extends (does not replace) syncWordmarkAlignment()'s current-layer
+        // math: also feeds the active peek layer its own independent crop
+        // via the SAME pure computeWordmarkBackgroundPosition(), and derives
+        // the live seam fraction from heroImg's LIVE edge via
+        // computeWordmarkSeamFraction() — mirroring exactly how the photo's
+        // own peekPrev/peekNext layers are positioned relative to heroImg.
+        function syncWordmarkLayers() {
+          syncWordmarkAlignment();
+          if (!wordmarkStackEl || !wordmarkEl || !heroImg) return;
+          const zone = lastPeekZone;
+          const peekImg = zone === 'right' ? peekNext : peekPrev;
+          const peekEl = zone === 'right' ? wordmarkPeekNextEl : wordmarkPeekPrevEl;
+          const restExtreme = zone === 'right' ? '1' : '0';
+          const wmRect = wordmarkEl.getBoundingClientRect();
+
+          // Rare fallback (nearest layer's clamped edge, NEVER solid ink):
+          // only hit before an adjacent photo has finished loading — peek
+          // srcs are preloaded in render(), so this is effectively just the
+          // very first paint.
+          if (!peekImg || !peekEl || !peekImg.naturalWidth) {
+            wordmarkStackEl.style.setProperty('--wm-seam', restExtreme);
+            wordmarkStackEl.dataset.peekZone = zone;
+            return;
+          }
+          const peekResult = computeWordmarkBackgroundPosition(
+            peekImg.naturalWidth,
+            peekImg.naturalHeight,
+            peekImg.getBoundingClientRect(),
+            wmRect,
+            OBJECT_POSITION_X,
+            OBJECT_POSITION_Y,
+          );
+          if (!peekResult) {
+            wordmarkStackEl.style.setProperty('--wm-seam', restExtreme);
+            wordmarkStackEl.dataset.peekZone = zone;
+            return;
+          }
+          peekEl.style.backgroundImage = `url(${peekImg.currentSrc || peekImg.src})`;
+          peekEl.style.setProperty('--wordmark-bg-size', peekResult.size);
+          peekEl.style.setProperty('--wordmark-bg-position', peekResult.position);
+
+          const heroRect = heroImg.getBoundingClientRect();
+          const seam = computeWordmarkSeamFraction(zone, heroRect.left, heroRect.right, wmRect.left, wmRect.width);
+          wordmarkStackEl.style.setProperty('--wm-seam', String(seam));
+          wordmarkStackEl.dataset.peekZone = zone;
+        }
+
         // quick-260727-bsm (Bug A — wordmark peek desync): syncWordmarkAlignment()
         // above already computes the correct cutout from heroImg's live rect
         // (which reflects the CSS `transform: translateX(var(--peek-shift))`
@@ -514,12 +593,14 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         // can plausibly still be moving (an active peek push, or the ~420ms
         // ease-settle after the mouse stops/leaves), so the "hole cut in the
         // photo" illusion never freezes relative to the photo sliding
-        // underneath it.
+        // underneath it. quick-260727-iao: the pump now keeps ALL THREE
+        // wordmark layers' cutouts AND the seam tracking the live photo
+        // motion, not just the single current-layer position.
         let wordmarkSyncRaf: number | null = null;
         let wordmarkSyncUntil = 0;
 
         function pumpWordmarkSync() {
-          syncWordmarkAlignment();
+          syncWordmarkLayers();
           if (performance.now() < wordmarkSyncUntil) {
             wordmarkSyncRaf = requestAnimationFrame(pumpWordmarkSync);
           } else {
@@ -886,6 +967,14 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           heroPhoto.style.setProperty('--peek-shift', '0');
           if (peekPrev) peekPrev.style.transform = 'translateX(-100%)';
           if (peekNext) peekNext.style.transform = 'translateX(100%)';
+          // quick-260727-iao: a synchronous snap (not just the eased rAF
+          // pump below) so a post-swap reset under .is-opening lands the
+          // seam on the current-full extreme immediately, with no stale
+          // peek frame left over from before the swap. lastPeekZone is
+          // deliberately left as-is (not reset here) so a genuine
+          // mouseleave recede eases the seam toward the SAME extreme the
+          // photo is also receding toward, in sync.
+          syncWordmarkLayers();
           // quick-260727-bsm (Bug A): the mouseleave recede AND every
           // render() swap (render() calls resetPeek() in its hoverCapable
           // block) both change the photo's transform — keep the wordmark
@@ -907,10 +996,12 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             return;
           }
           if (currentZone === 'left') {
+            lastPeekZone = 'left';
             heroPhoto.style.setProperty('--peek-shift', `${currentProximity * PEEK_MAX_PUSH_FRACTION * 100}%`);
             if (peekPrev) peekPrev.style.transform = `translateX(${-100 + currentProximity * 100}%)`;
             if (peekNext) peekNext.style.transform = 'translateX(100%)';
           } else if (currentZone === 'right') {
+            lastPeekZone = 'right';
             heroPhoto.style.setProperty('--peek-shift', `${-currentProximity * PEEK_MAX_PUSH_FRACTION * 100}%`);
             if (peekNext) peekNext.style.transform = `translateX(${100 - currentProximity * 100}%)`;
             if (peekPrev) peekPrev.style.transform = 'translateX(-100%)';
@@ -960,18 +1051,19 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           // ease (a discrete moment, not continuous tracking).
           photo.classList.remove('is-tracking');
 
-          // quick-260727-g04: at +-100% peek-shift (the full-slide commit
-          // target below), the drq clamp in computeWordmarkBackgroundPosition()
-          // pins the wordmark sample to the photo's real pixel bounds almost
-          // immediately and holds it there for nearly the whole slide -- a
-          // frozen, wrongly-cropped slice of the DEPARTING photo, not
-          // tracking it. Revert to the solid-ink fallback for the slide's
-          // duration, mirroring what render() already does at the start of
-          // every other nav path -- finish()'s render() call below
-          // re-reveals the cutout realigned to the NEW photo once the swap
-          // lands, unchanged.
-          root!.classList.remove('has-wordmark-photo');
-          root!.style.setProperty('--wordmark-photo', 'none');
+          // quick-260727-iao: g04's commit-time has-wordmark-photo/
+          // --wordmark-photo removal is RETIRED — with the mirrored-peek
+          // three-layer stack (Task 2/3) there is always a correct photo to
+          // show at every proximity (the active peek layer's own
+          // independently-clamped crop), so the "give up and go solid
+          // because the drq clamp froze the single old layer" failure mode
+          // this used to work around no longer exists. has-wordmark-photo
+          // now stays present continuously through the commit (the normal,
+          // cached-adjacent-photo case never toggles it at all); the seam
+          // is what visibly slides instead. render()'s own start-of-swap
+          // has-wordmark-photo removal (the genuine loading/error fallback
+          // for an uncached hero) is untouched below.
+          lastPeekZone = direction === 'next' ? 'right' : 'left';
 
           if (direction === 'next') {
             photo.style.setProperty('--peek-shift', '-100%');
@@ -980,15 +1072,12 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             photo.style.setProperty('--peek-shift', '100%');
             if (peekPrev) peekPrev.style.transform = 'translateX(0)';
           }
-          // quick-260727-g04: the wordmark is hidden (solid ink, not the
-          // photo-cutout) for the entire slide now, so pumping rAF frames to
-          // recompute an invisible background-position is pointless. The
-          // sync window is re-established after the swap by render()'s own
-          // resetPeek() -> keepWordmarkSynced() call plus
-          // revealWordmarkPhoto()'s direct syncWordmarkAlignment() at reveal
-          // time (the reveal happens at a neutral transform, so a single
-          // sync at reveal is sufficient -- no moving transform to track
-          // once swapped).
+          // quick-260727-iao: the wordmark cutout is visible (not solid ink)
+          // throughout the commit now, so the sync pump is meaningful again
+          // — it drives the seam continuously from the LIVE
+          // heroImg.getBoundingClientRect() through the ~420ms eased slide,
+          // mirroring the photo's own peek layers sliding in underneath.
+          keepWordmarkSynced(500);
 
           const relevantLayer = direction === 'next' ? peekNext : peekPrev;
           let done = false;
@@ -1259,7 +1348,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         let resizeTimer: ReturnType<typeof setTimeout> | null = null;
         window.addEventListener('resize', () => {
           if (resizeTimer) clearTimeout(resizeTimer);
-          resizeTimer = setTimeout(syncWordmarkAlignment, 100);
+          resizeTimer = setTimeout(syncWordmarkLayers, 100);
         });
       }
     </script>
@@ -2145,7 +2234,17 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
      behind. Outside the glyphs, the panel's plain solid color shows through
      normally, since the wordmark element itself has no background of its
      own beyond the text fill. */
-  .home-hero__wordmark {
+  /* quick-260727-iao: the wrapper owns the spacing to .home-hero__intro
+     below — the in-flow h1 still sizes the box (the two peek copies are
+     inset:0 overlays on that same box), but margin now lives here so all
+     three layers can share identical margin: 0. */
+  .home-hero__wordmark-stack {
+    position: relative;
+    margin: 0 0 var(--space-md);
+  }
+
+  .home-hero__wordmark,
+  .home-hero__wordmark-peek {
     font-family: var(--font-display);
     /* Matches the gallery caption title convention elsewhere in this same
        component (.home-hero__title / grid tile titles both render via
@@ -2175,26 +2274,38 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        this tightness — tight-but-legible is the goal, not overlapping. */
     line-height: 0.9;
     letter-spacing: 0.02em;
-    margin: 0 0 var(--space-md);
+    margin: 0;
     /* Solid inherited accent-text color is both the unsupported-engine
        fallback and the loading/error state. The photo cutout below becomes
        transparent only after render() confirms the sharp hero succeeded. */
     color: inherit;
   }
 
+  /* The two peek copies overlay the h1 exactly — the h1 stays in normal
+     flow and sizes the stack, the peeks are inset:0 overlays on the same
+     box. All three MUST render byte-identical glyphs at identical positions
+     (same text, same <br> breaks, same metrics — enforced by the grouped
+     typographic rule above) or the cutout seam will not line up. */
+  .home-hero__wordmark-peek {
+    position: absolute;
+    inset: 0;
+    display: block;
+    pointer-events: none;
+    /* Hidden by default; the zone-scoped rules below reveal exactly one
+       peek layer's share once the stack's data-peek-zone matches. */
+    clip-path: inset(0 0 0 100%);
+  }
+
   @supports (background-clip: text) or (-webkit-background-clip: text) {
-    .home-hero__wordmark {
-      /* Keep exactly one photographic background and no blended color layer.
-         Safari can produce raster seams when background-clip:text is combined
-         with extra paint layers on multiline text. Contrast is handled later
-         with a filter on the finished glyph pixels instead. */
-      background-image: var(--wordmark-photo);
+    .home-hero__wordmark,
+    .home-hero__wordmark-peek {
       /* --wordmark-bg-size/-position are computed live by
-         syncWordmarkAlignment() in the <script> below, so the visible
-         slice lines up with the exact same crop of the photo that's
-         actually behind the panel (a true cutout), not an independently
-         re-cropped/zoomed copy. cover/center are fallbacks only — for the
-         brief window before JS first runs, or if it never runs at all. */
+         syncWordmarkAlignment()/syncWordmarkLayers() in the <script> below,
+         so the visible slice lines up with the exact same crop of the
+         photo that's actually behind the panel (a true cutout), not an
+         independently re-cropped/zoomed copy. cover/center are fallbacks
+         only — for the brief window before JS first runs, or if it never
+         runs at all. */
       background-size: var(--wordmark-bg-size, cover);
       background-position: var(--wordmark-bg-position, center);
       /* Without this, a stale/out-of-range --wordmark-bg-position (e.g. the
@@ -2208,7 +2319,18 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       background-clip: text;
     }
 
-    .home.has-wordmark-photo .home-hero__wordmark {
+    .home-hero__wordmark {
+      /* Keep exactly one photographic background and no blended color layer.
+         Safari can produce raster seams when background-clip:text is combined
+         with extra paint layers on multiline text. Contrast is handled later
+         with a filter on the finished glyph pixels instead. The peek copies
+         get their own background-image set inline by syncWordmarkLayers() in
+         the <script> below — they do not read --wordmark-photo. */
+      background-image: var(--wordmark-photo);
+    }
+
+    .home.has-wordmark-photo .home-hero__wordmark,
+    .home.has-wordmark-photo .home-hero__wordmark-peek {
       color: transparent;
       -webkit-text-fill-color: transparent;
       /* Adjust the already-rasterized photo in the direction that contrasts
@@ -2217,6 +2339,27 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
          layer), since those produced geometric artifacts in Safari. */
       filter: var(--wordmark-photo-filter, brightness(0.65) contrast(1.12));
     }
+  }
+
+  /* quick-260727-iao: the seam-driven clip-path split. JS sets ONLY
+     --wm-seam (0..1) and data-peek-zone on the stack; CSS does all the
+     clipping — no clip-path strings are built in JS. Deliberately no
+     `transition` here: the seam must track the photo per-frame (driven by
+     the rAF loop in the <script> below), not run its own easing. */
+  .home-hero__wordmark-stack[data-peek-zone='right'] .home-hero__wordmark {
+    clip-path: inset(0 calc((1 - var(--wm-seam, 1)) * 100%) 0 0);
+  }
+
+  .home-hero__wordmark-stack[data-peek-zone='right'] .home-hero__wordmark-peek--next {
+    clip-path: inset(0 0 0 calc(var(--wm-seam, 1) * 100%));
+  }
+
+  .home-hero__wordmark-stack[data-peek-zone='left'] .home-hero__wordmark {
+    clip-path: inset(0 0 0 calc(var(--wm-seam, 0) * 100%));
+  }
+
+  .home-hero__wordmark-stack[data-peek-zone='left'] .home-hero__wordmark-peek--prev {
+    clip-path: inset(0 calc((1 - var(--wm-seam, 0)) * 100%) 0 0);
   }
 
   .home-hero__intro {
@@ -2509,8 +2652,22 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        margin everywhere, with most of the common phone range (390-428px)
        sitting at 16-23px of margin. 360px now floors at 36px (up from the
        previous pass's 34px); ~390-428px renders 38-42px (up from 36-39px);
-       cap raised from 46px to 50px for wider viewports. */
-    .home-hero__wordmark {
+       cap raised from 46px to 50px for wider viewports.
+
+       quick-260727-iao: the aria-hidden .home-hero__wordmark-peek layers
+       must get this SAME mobile override — without it they keep the
+       desktop clamp(38px, 5.2vw, 70px), and their unbroken words (e.g.
+       "JACQUELINE") render wider than the mobile panel, overflowing the
+       page even though the layer is invisible (fully clipped by default;
+       the mirrored-peek mechanism is desktop-only/hoverCapable-gated, so
+       these layers are always at their default clip on mobile, but a
+       clipped element's own layout box still counts toward document
+       scrollWidth). Confirmed via a real 320px-viewport overflow scan that
+       this is the actual regression source, not the pre-existing peek-
+       image/cursor transform overflow contributors (both present before
+       and after this task). */
+    .home-hero__wordmark,
+    .home-hero__wordmark-peek {
       font-size: clamp(36px, 9.8vw, 50px);
     }
 
@@ -2576,6 +2733,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
   @media (max-width: 359px) {
     .home-hero__wordmark,
+    .home-hero__wordmark-peek,
     .home-grid__wordmark {
       font-size: 9.8vw;
     }
