@@ -104,6 +104,43 @@ export function detectSwipeDirection(
   return deltaX < 0 ? 'next' : 'prev';
 }
 
+/**
+ * quick-260727-iao: pure seam-position math for the mirrored wordmark peek.
+ * The wordmark's photo-cutout is a three-layer stack (current / peekPrev /
+ * peekNext) that mirrors `.home-hero__photo`'s own layers. At any moment,
+ * the on-screen seam between "current photo visible" and "adjacent photo
+ * visible" is exactly the current photo's (heroImg's) LIVE translated edge
+ * — right edge when approaching/committing toward next, left edge when
+ * approaching/committing toward prev. This function converts that seam's
+ * screen-space x-coordinate into a 0..1 fraction of the wordmark box's own
+ * width, measured from the wordmark's LEFT edge, so the component can drive
+ * a CSS clip-path split with a single custom property (--wm-seam) instead
+ * of building clip-path strings in JS every frame.
+ *
+ * Fraction meaning per zone:
+ * - right: current occupies [0, s] (its width shrinks as the photo's right
+ *   edge slides left, i.e. as s shrinks); peekNext occupies [s, 1].
+ * - left: peekPrev occupies [0, s]; current occupies [s, 1] (current's
+ *   width shrinks as the photo's left edge slides right, i.e. as s grows).
+ *
+ * Pure/DOM-free like this module's other functions — deliberately, so the
+ * geometry is unit-testable outside Playwright.
+ */
+export function computeWordmarkSeamFraction(
+  zone: 'left' | 'right',
+  heroLeft: number,
+  heroRight: number,
+  wordmarkLeft: number,
+  wordmarkWidth: number,
+): number {
+  // A zero-width box has no visible glyphs regardless of the seam value —
+  // documented degenerate no-op, matches the "current covers all" extreme.
+  if (wordmarkWidth <= 0) return 1;
+  const seamScreenX = zone === 'right' ? heroRight : heroLeft;
+  const raw = (seamScreenX - wordmarkLeft) / wordmarkWidth;
+  return Math.min(1, Math.max(0, raw));
+}
+
 export interface HoverZone {
   zone: 'center' | 'left' | 'right';
   proximity: number;
