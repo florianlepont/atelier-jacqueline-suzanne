@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sketch 009 — Éditions Tile Hover/Depth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../themes/default.css" />
+<style>
+  body { padding-top: 52px; }
+
+  /* ---------- variant nav ---------- */
+  #variant-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9998;
+    background: var(--gray-0); border-bottom: var(--border-hairline) solid var(--color-border);
+    padding: 8px 16px; display: flex; gap: 8px; align-items: center;
+    font-family: var(--font-sans); overflow-x: auto;
+  }
+  .variant-tab {
+    font-family: var(--font-sans); font-size: 13px; font-weight: var(--weight-semibold);
+    padding: 8px 14px; border: var(--border-hairline) solid var(--color-border);
+    background: var(--gray-0); color: var(--color-ink); cursor: pointer; white-space: nowrap;
+    border-radius: var(--radius-sm); transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .variant-tab:hover { border-color: var(--color-ink); }
+  .variant-tab.active { background: var(--color-ink); color: var(--gray-0); border-color: var(--color-ink); }
+  .variant-tab .badge {
+    display: inline-block; margin-left: 6px; font-size: 10px; padding: 1px 6px;
+    background: var(--pink-600); color: var(--gray-0); border-radius: 999px; vertical-align: middle;
+  }
+
+  .variant { display: none; }
+  .variant.active { display: block; }
+
+  /* ---------- page shell (mirrors production EditionsOverviewBody.astro) ---------- */
+  .editions-list {
+    width: min(100%, var(--editorial-page-max));
+    margin: 0 auto;
+    padding: var(--editorial-page-padding-block) var(--editorial-page-padding-inline);
+  }
+  .editions-list__header {
+    padding-top: var(--space-md);
+    border-top: var(--border-hairline) solid var(--color-ink);
+    margin-bottom: var(--space-2xl);
+  }
+  .editions-list__eyebrow {
+    margin: 0; font-size: var(--text-label-size); font-weight: var(--weight-semibold);
+    line-height: 1.5; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .editions-list h1 {
+    margin: var(--space-md) 0 0; font-size: var(--editorial-page-title-size); font-weight: var(--weight-semibold);
+    font-family: var(--font-display); line-height: 0.95; letter-spacing: -0.04em;
+  }
+  .note {
+    margin: 0 0 var(--space-xl); font-size: 13px; color: #6b6b6b; max-width: 62ch; line-height: 1.5;
+  }
+  .note strong { color: var(--color-ink); }
+
+  .editions-grid__group {
+    display: grid; grid-template-columns: repeat(12, 1fr); grid-auto-rows: 16vw; gap: var(--space-md);
+  }
+  .editions-grid__group .tile:nth-child(1) { grid-column: 1 / 8; grid-row: 1 / 3; }
+  .editions-grid__group .tile:nth-child(2) { grid-column: 8 / 13; grid-row: 1 / 2; }
+
+  .tile { position: relative; overflow: hidden; display: block; color: var(--gray-0); text-decoration: none; background: var(--color-ink); }
+  .tile img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease, filter 0.4s ease; }
+  .tile__scrim { position: absolute; left: 0; right: 0; bottom: 0; height: 60%; background: linear-gradient(to top, rgba(26,26,26,0.9), rgba(26,26,26,0)); }
+  .tile__body { position: absolute; left: 0; right: 0; bottom: 0; padding: var(--space-lg); }
+  .tile__title { display: block; font-family: var(--font-display); font-weight: var(--weight-semibold); line-height: 0.95; margin-bottom: var(--space-xs); }
+  .tile:nth-child(1) .tile__title { font-size: clamp(28px, 4.5vw, 48px); }
+  .tile:nth-child(2) .tile__title { font-size: clamp(20px, 2.6vw, 28px); }
+  .tile__statement { font-size: var(--text-body-size); line-height: 1.4; max-width: 40ch; opacity: 0.9; margin: 0; }
+  .tile:nth-child(2) .tile__statement { display: none; }
+
+  @media (max-width: 800px) {
+    .editions-grid__group { grid-template-columns: 1fr; grid-auto-rows: auto; }
+    .editions-grid__group .tile { grid-column: 1 !important; grid-row: auto !important; aspect-ratio: 3 / 4; }
+  }
+
+  /* =====================================================================
+     TODAY (reference) — reproduces the live, disliked treatment exactly
+     ===================================================================== */
+  #variant-today .tile {
+    border: var(--border-hairline) solid var(--color-ink);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  #variant-today .tile:hover,
+  #variant-today .tile:focus-visible {
+    transform: translate(-4px, -4px);
+    box-shadow: 6px 6px 0 var(--color-ink);
+  }
+  #variant-today .tile:hover img { transform: scale(1.04); }
+
+  /* =====================================================================
+     A — Ambient Lift: no border, no hard shadow. Depth via a soft
+     diffused shadow + gentle rise. Photo does the talking.
+     ===================================================================== */
+  #variant-a .tile {
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  #variant-a .tile:hover,
+  #variant-a .tile:focus-visible {
+    transform: translateY(-6px);
+    box-shadow: 0 2px 4px rgba(26,26,26,0.06), 0 24px 48px -12px rgba(26,26,26,0.28);
+  }
+  #variant-a .tile:hover img { transform: scale(1.05); filter: brightness(1.03); }
+  #variant-a .tile:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+
+  /* =====================================================================
+     B — Soft Frame: hairline stays, but in the site's soft neutral
+     --color-border (not ink-black), invisible at rest, and a blurred
+     (not hard-offset) shadow eases in on hover. Calmest of the three.
+     ===================================================================== */
+  #variant-b .tile {
+    border: var(--border-hairline) solid transparent;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+  #variant-b .tile:hover,
+  #variant-b .tile:focus-visible {
+    transform: translateY(-4px);
+    border-color: var(--color-border);
+    box-shadow: 0 16px 32px -8px rgba(26,26,26,0.18);
+  }
+  #variant-b .tile:hover img { transform: scale(1.03); }
+  #variant-b .tile:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+
+  /* =====================================================================
+     C — Elevated Card: tiny radius-sm (2px) softens the corner just
+     enough to read "card", layered shadow (contact + ambient) for a
+     more conventional but still restrained "modern" elevation.
+     ===================================================================== */
+  #variant-c .tile {
+    border-radius: var(--radius-sm);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  #variant-c .tile img { border-radius: inherit; }
+  #variant-c .tile:hover,
+  #variant-c .tile:focus-visible {
+    transform: translateY(-5px) scale(1.006);
+    box-shadow: 0 1px 3px rgba(26,26,26,0.08), 0 4px 8px rgba(26,26,26,0.08), 0 20px 40px -8px rgba(26,26,26,0.24);
+  }
+  #variant-c .tile:hover img { transform: scale(1.04); }
+  #variant-c .tile:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+
+  /* =====================================================================
+     ROUND 2 — dramatically different mechanisms, not shadow tweaks.
+     Round 1 (A/B/C) was rejected as too safe/incremental.
+     ===================================================================== */
+
+  /* ---------------------------------------------------------------------
+     D — Magnetic Tilt + Color Reveal: image starts desaturated (nods to
+     print reproduction), tilts in 3D toward the cursor (tactile, like
+     handling a physical print), and blooms into full color on hover.
+     No border, no shadow — depth comes from motion, not a drop shadow.
+     --------------------------------------------------------------------- */
+  #variant-d .tile {
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
+  }
+  #variant-d .tile img {
+    transform: scale(1.12);
+    filter: grayscale(1) contrast(1.08);
+    transition: filter 0.6s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  #variant-d .tile:hover img,
+  #variant-d .tile:focus-visible img {
+    filter: grayscale(0) contrast(1.02);
+    transform: scale(1.16);
+  }
+  #variant-d .tile:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+  #variant-d .tile__hint {
+    position: absolute; top: var(--space-md); right: var(--space-md);
+    font-size: 11px; font-family: var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase;
+    color: rgba(255,255,255,0.55); opacity: 0; transition: opacity 0.3s ease;
+  }
+  #variant-d .tile:hover .tile__hint { opacity: 1; }
+
+  /* ---------------------------------------------------------------------
+     E — Duotone Reveal: tiles read as a flat pink duotone print by
+     default (a real reference — small-run éditions are often printed
+     duotone/riso). Hovering opens a circular "spotlight" at the cursor
+     that reveals the true photo color underneath, following the mouse.
+     --------------------------------------------------------------------- */
+  #variant-e .tile__duotone {
+    position: absolute; inset: 0; background: var(--pink-600); mix-blend-mode: color; pointer-events: none;
+  }
+  #variant-e .tile:hover .tile__duotone,
+  #variant-e .tile:focus-visible .tile__duotone {
+    -webkit-mask-image: radial-gradient(circle 140px at var(--mx, 50%) var(--my, 50%), transparent 0%, transparent 58%, black 100%);
+    mask-image: radial-gradient(circle 140px at var(--mx, 50%) var(--my, 50%), transparent 0%, transparent 58%, black 100%);
+  }
+  #variant-e .tile:hover img,
+  #variant-e .tile:focus-visible img { transform: scale(1.03); }
+  #variant-e .tile:focus-visible { outline: 2px solid var(--gray-0); outline-offset: -4px; }
+  #variant-e .tile__hint {
+    position: absolute; top: var(--space-md); right: var(--space-md);
+    font-size: 11px; font-family: var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase;
+    color: rgba(255,255,255,0.7); opacity: 0; transition: opacity 0.3s ease;
+  }
+  #variant-e .tile:hover .tile__hint { opacity: 1; }
+
+  /* ---------------------------------------------------------------------
+     F — Kinetic Marquee + Diagonal Clip: the tile's top-right corner
+     folds back like a lifting booklet page (clip-path), and the title
+     becomes a scrolling pink marquee ticker instead of a static label.
+     --------------------------------------------------------------------- */
+  #variant-f .tile {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+    transition: clip-path 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  #variant-f .tile:hover,
+  #variant-f .tile:focus-visible {
+    clip-path: polygon(0 0, 85% 0, 100% 11%, 100% 100%, 0 100%);
+  }
+  #variant-f .tile:hover img,
+  #variant-f .tile:focus-visible img { transform: scale(1.05); filter: brightness(0.82); }
+  #variant-f .tile:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -4px; }
+  #variant-f .tile__marquee { overflow: hidden; white-space: nowrap; margin-bottom: var(--space-xs); }
+  #variant-f .tile__marquee-track {
+    display: inline-flex; gap: 1.5ch;
+    font-family: var(--font-display); font-weight: var(--weight-semibold); text-transform: uppercase;
+    letter-spacing: -0.02em; color: var(--pink-600);
+    animation: marquee-scroll 6s linear infinite; animation-play-state: paused;
+  }
+  #variant-f .tile:hover .tile__marquee-track,
+  #variant-f .tile:focus-visible .tile__marquee-track { animation-play-state: running; }
+  #variant-f .tile:nth-child(1) .tile__marquee-track { font-size: clamp(28px, 4.5vw, 48px); }
+  #variant-f .tile:nth-child(2) .tile__marquee-track { font-size: clamp(20px, 2.6vw, 28px); }
+  @keyframes marquee-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  /* ---------- sketch toolbar ---------- */
+  #sketch-tools {
+    position: fixed; bottom: 12px; right: 12px; z-index: 9999; font-family: system-ui; font-size: 12px;
+    background: rgba(0,0,0,0.7); color: #fff; padding: 8px 12px; border-radius: 8px; opacity: 0.4;
+    transition: opacity 0.2s; display: flex; gap: 10px; align-items: center;
+  }
+  #sketch-tools:hover { opacity: 1; }
+  #sketch-tools button { font-size: 11px; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3); background: transparent; color: #fff; cursor: pointer; }
+  #sketch-tools button.active-vp { background: var(--pink-600); border-color: var(--pink-600); }
+  #vp-wrap { transition: max-width 0.2s ease; margin: 0 auto; }
+</style>
+</head>
+<body>
+
+<div id="variant-nav">
+  <button class="variant-tab" onclick="showVariant('today')">Aujourd'hui <span class="badge">à remplacer</span></button>
+  <button class="variant-tab" onclick="showVariant('a')">A — Ambient Lift</button>
+  <button class="variant-tab" onclick="showVariant('b')">B — Soft Frame</button>
+  <button class="variant-tab" onclick="showVariant('c')">C — Elevated Card</button>
+  <span style="width:1px;align-self:stretch;background:var(--color-border);margin:0 4px;"></span>
+  <button class="variant-tab active" onclick="showVariant('d')">D — Magnetic Tilt <span class="badge" style="background:var(--color-ink);">round 2</span></button>
+  <button class="variant-tab" onclick="showVariant('e')">E — Duotone Reveal ★ <span class="badge" style="background:var(--color-ink);">round 2</span></button>
+  <button class="variant-tab" onclick="showVariant('f')">F — Kinetic Marquee <span class="badge" style="background:var(--color-ink);">round 2</span></button>
+</div>
+
+<div id="vp-wrap">
+
+<div id="variant-today" class="variant">
+  <article class="editions-list">
+    <header class="editions-list__header">
+      <p class="editions-list__eyebrow">Atelier Jacqueline Suzanne</p>
+      <h1>Éditions</h1>
+    </header>
+    <p class="note"><strong>État actuel (en ligne) :</strong> bordure noire fine + au survol, la tuile se soulève et projette une ombre noire dure, sans flou (offset 6px, angle net). C'est ce traitement que Romane n'aime pas. Sert de référence pour comparer.</p>
+    <div class="editions-grid__group">
+      <a class="tile" href="#" onclick="return false;">
+        <img src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=900&h=900&fit=crop&auto=format" alt="Rebut" loading="lazy" />
+        <div class="tile__scrim"></div>
+        <div class="tile__body">
+          <span class="tile__title">Rebut</span>
+          <p class="tile__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Produite en tirage limité, elle rassemble en noir et blanc ce qui aurait pu être jeté et qui a été choisi d'être gardé.</p>
+        </div>
+      </a>
+      <a class="tile" href="#" onclick="return false;">
+        <img src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=900&h=900&fit=crop&auto=format" alt="Silos" loading="lazy" />
+        <div class="tile__scrim"></div>
+        <div class="tile__body"><span class="tile__title">Silos</span></div>
+      </a>
+    </div>
+  </article>
+</div>
+
+<div id="variant-a" class="variant">
+  <article class="editions-list">
+    <header class="editions-list__header">
+      <p class="editions-list__eyebrow">Atelier Jacqueline Suzanne</p>
+      <h1>Éditions</h1>
+    </header>
+    <p class="note"><strong>A — Ambient Lift :</strong> aucune bordure, aucune ombre dure. La tuile monte doucement et une ombre diffuse (floue, faible opacité) apparaît sous elle — la photo elle-même (léger zoom + luminosité) fait l'essentiel du travail. Le plus minimal des trois.</p>
+    <div class="editions-grid__group">
+      <a class="tile" href="#" onclick="return false;" tabindex="0">
+        <img src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=900&h=900&fit=crop&auto=format" alt="Rebut" loading="lazy" />
+        <div class="tile__scrim"></div>
+        <div class="tile__body">
+          <span class="tile__title">Rebut</span>
+          <p class="tile__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Produite en tirage limité, elle rassemble en noir et blanc ce qui aurait pu être jeté et qui a été choisi d'être gardé.</p>
+        </div>
+      </a>
+      <a class="tile" href="#" onclick="return false;" tabindex="0">
+        <img src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=900&h=900&fit=crop&auto=format" alt="Silos" loading="lazy" />
+        <div class="tile__scrim"></div>
+        <div class="tile__body"><span class="tile__title">Silos</span></div>
+      </a>
+    </div>
+  </article>
+</div>
+
+<div id="variant-b" class="variant">
+  <article class="editions-list">
+    <header class="editions-list__header">
+      <p class="editions-list__eyebrow">Atelier Jacqueline Suzanne</p>
+      <h1>Éditions</h1>
+    </header>
+    <p class="note"><strong>B — Soft Frame :</strong> un liseré fin existe toujours, mais dans le gris neutre déjà utilisé ailleurs sur le site (<code>--color-border</code>), invisible au repos et qui apparaît doucement au survol — avec une ombre floue (pas d'angle dur). Le plus proche, en retenue, du traitement d'aujourd'hui.</p>
+    <div class="editions-grid__group">
+      <a class="tile" href="#" onclick="return false;" tabindex="0">
+        <img src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=900&h=900&fit=crop&auto=format" alt="Rebut" loading="lazy" />
+        <div class="tile__scrim"></div>
+        <div class="tile__body">
+          <span class="tile__title">Rebut</span>
+          <p class="tile__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Produite en tirage limité, elle rassemble en noir et blanc ce qui aurait pu être jeté et qui a été choisi d'être gardé.</p>
+        </div>
+      </a>
+      <a class="tile" href="#" onclick="return false;" tabindex="0">
+        <img src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=900&h=900&fit=crop&auto=format" alt="Silos" loading="lazy" />
+        <div class="tile__scrim"></div>
+        <div class="tile__body"><span class="tile__title">Silos</span></div>
+      </a>
+    </div>
+  </article>
+</div>
+
+<div id="variant-c" class="variant">
+  <article class="editions-list">
+    <header class="editions-list__header">
+      <p class="editions-list__eyebrow">Atelier Jacqueline Suzanne</p>
+      <h1>Éditions</h1>
+    </header>
+    <p class="note"><strong>C — Elevated Card :</strong> un tout petit rayon (2px, <code>--radius-sm</code> — déjà utilisé sur les boutons/inputs du site) adoucit juste l'angle, combiné à une ombre en plusieurs couches (proche + ambiante) pour une élévation plus "carte moderne", tout en restant discret et monochrome.</p>
+    <div class="editions-grid__group">
+      <a class="tile" href="#" onclick="return false;" tabindex="0">
+        <img src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=900&h=900&fit=crop&auto=format" alt="Rebut" loading="lazy" />
+        <div class="tile__scrim"></div>
+        <div class="tile__body">
+          <span class="tile__title">Rebut</span>
+          <p class="tile__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Produite en tirage limité, elle rassemble en noir et blanc ce qui aurait pu être jeté et qui a été choisi d'être gardé.</p>
+        </div>
+      </a>
+      <a class="tile" href="#" onclick="return false;" tabindex="0">
+        <img src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=900&h=900&fit=crop&auto=format" alt="Silos" loading="lazy" />
+        <div class="tile__scrim"></div>
+        <div class="tile__body"><span class="tile__title">Silos</span></div>
+      </a>
+    </div>
+  </article>
+</div>
+
+<div id="variant-d" class="variant active">
+  <article class="editions-list">
+    <header class="editions-list__header">
+      <p class="editions-list__eyebrow">Atelier Jacqueline Suzanne</p>
+      <h1>Éditions</h1>
+    </header>
+    <p class="note"><strong>D — Magnetic Tilt + Color Reveal :</strong> la photo démarre désaturée (référence à la reproduction imprimée) et bascule en 3D vers le curseur, comme si on tenait un vrai tirage entre les mains — puis la couleur "éclot" au survol. Aucune bordure, aucune ombre : la profondeur vient du mouvement.</p>
+    <div class="editions-grid__group">
+      <a class="tile" href="#" onclick="return false;" tabindex="0">
+        <img src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=900&h=900&fit=crop&auto=format" alt="Rebut" loading="lazy" />
+        <div class="tile__scrim"></div>
+        <span class="tile__hint">Bouger la souris</span>
+        <div class="tile__body">
+          <span class="tile__title">Rebut</span>
+          <p class="tile__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Produite en tirage limité, elle rassemble en noir et blanc ce qui aurait pu être jeté et qui a été choisi d'être gardé.</p>
+        </div>
+      </a>
+      <a class="tile" href="#" onclick="return false;" tabindex="0">
+        <img src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=900&h=900&fit=crop&auto=format" alt="Silos" loading="lazy" />
+        <div class="tile__scrim"></div>
+        <span class="tile__hint">Bouger la souris</span>
+        <div class="tile__body"><span class="tile__title">Silos</span></div>
+      </a>
+    </div>
+  </article>
+</div>
+
+<div id="variant-e" class="variant">
+  <article class="editions-list">
+    <header class="editions-list__header">
+      <p class="editions-list__eyebrow">Atelier Jacqueline Suzanne</p>
+      <h1>Éditions</h1>
+    </header>
+    <p class="note"><strong>E — Duotone Reveal :</strong> par défaut la tuile est un duotone rose (référence directe aux petits tirages imprimés en duotone/riso). Au survol, une "lampe torche" circulaire suit le curseur et révèle la vraie couleur de la photo à cet endroit précis — le reste reste en duotone.</p>
+    <div class="editions-grid__group">
+      <a class="tile" href="#" onclick="return false;" tabindex="0" style="--mx:50%; --my:50%;">
+        <img src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=900&h=900&fit=crop&auto=format" alt="Rebut" loading="lazy" />
+        <div class="tile__duotone" aria-hidden="true"></div>
+        <div class="tile__scrim"></div>
+        <span class="tile__hint">Déplacer la lampe</span>
+        <div class="tile__body">
+          <span class="tile__title">Rebut</span>
+          <p class="tile__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Produite en tirage limité, elle rassemble en noir et blanc ce qui aurait pu être jeté et qui a été choisi d'être gardé.</p>
+        </div>
+      </a>
+      <a class="tile" href="#" onclick="return false;" tabindex="0" style="--mx:50%; --my:50%;">
+        <img src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=900&h=900&fit=crop&auto=format" alt="Silos" loading="lazy" />
+        <div class="tile__duotone" aria-hidden="true"></div>
+        <div class="tile__scrim"></div>
+        <span class="tile__hint">Déplacer la lampe</span>
+        <div class="tile__body"><span class="tile__title">Silos</span></div>
+      </a>
+    </div>
+  </article>
+</div>
+
+<div id="variant-f" class="variant">
+  <article class="editions-list">
+    <header class="editions-list__header">
+      <p class="editions-list__eyebrow">Atelier Jacqueline Suzanne</p>
+      <h1>Éditions</h1>
+    </header>
+    <p class="note"><strong>F — Kinetic Marquee + Diagonal Clip :</strong> le coin haut-droit se replie au survol, comme la page d'un livret qu'on soulève — et le titre devient un bandeau défilant rose en grand format, au lieu d'une étiquette statique.</p>
+    <div class="editions-grid__group">
+      <a class="tile" href="#" onclick="return false;" tabindex="0">
+        <img src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=900&h=900&fit=crop&auto=format" alt="Rebut" loading="lazy" />
+        <div class="tile__scrim"></div>
+        <div class="tile__body">
+          <div class="tile__marquee"><div class="tile__marquee-track"><span>Rebut</span><span>Rebut</span><span>Rebut</span><span>Rebut</span><span>Rebut</span><span>Rebut</span></div></div>
+          <p class="tile__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Produite en tirage limité, elle rassemble en noir et blanc ce qui aurait pu être jeté et qui a été choisi d'être gardé.</p>
+        </div>
+      </a>
+      <a class="tile" href="#" onclick="return false;" tabindex="0">
+        <img src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=900&h=900&fit=crop&auto=format" alt="Silos" loading="lazy" />
+        <div class="tile__scrim"></div>
+        <div class="tile__body">
+          <div class="tile__marquee"><div class="tile__marquee-track"><span>Silos</span><span>Silos</span><span>Silos</span><span>Silos</span><span>Silos</span><span>Silos</span></div></div>
+        </div>
+      </a>
+    </div>
+  </article>
+</div>
+
+</div>
+
+<div id="sketch-tools">
+  <span>Viewport:</span>
+  <button onclick="setViewport(375)" id="vp-375">Phone</button>
+  <button onclick="setViewport(768)" id="vp-768">Tablet</button>
+  <button onclick="setViewport(0)" id="vp-full" class="active-vp">Desktop</button>
+</div>
+
+<script>
+  function showVariant(id) {
+    document.querySelectorAll('.variant').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.variant-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('variant-' + id).classList.add('active');
+    event.target.closest('.variant-tab').classList.add('active');
+  }
+
+  function setViewport(px) {
+    const wrap = document.getElementById('vp-wrap');
+    wrap.style.maxWidth = px ? px + 'px' : 'none';
+    wrap.style.outline = px ? '1px dashed rgba(0,0,0,0.15)' : 'none';
+    document.querySelectorAll('#sketch-tools button').forEach(b => b.classList.remove('active-vp'));
+    event.target.classList.add('active-vp');
+  }
+
+  // D — Magnetic Tilt: rotate the tile in 3D toward the cursor position.
+  document.querySelectorAll('#variant-d .tile').forEach((tile) => {
+    tile.addEventListener('mousemove', (e) => {
+      const r = tile.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width - 0.5;
+      const py = (e.clientY - r.top) / r.height - 0.5;
+      tile.style.transform = `perspective(1000px) rotateX(${(-py * 9).toFixed(2)}deg) rotateY(${(px * 9).toFixed(2)}deg)`;
+    });
+    tile.addEventListener('mouseleave', () => { tile.style.transform = ''; });
+  });
+
+  // E — Duotone Reveal: the color "spotlight" hole follows the cursor.
+  document.querySelectorAll('#variant-e .tile').forEach((tile) => {
+    tile.addEventListener('mousemove', (e) => {
+      const r = tile.getBoundingClientRect();
+      const mx = (((e.clientX - r.left) / r.width) * 100).toFixed(1) + '%';
+      const my = (((e.clientY - r.top) / r.height) * 100).toFixed(1) + '%';
+      tile.style.setProperty('--mx', mx);
+      tile.style.setProperty('--my', my);
+    });
+  });
+</script>
+
+</body>
+</html>
