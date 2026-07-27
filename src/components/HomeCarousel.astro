@@ -997,6 +997,20 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             void photo.offsetWidth;
             photo.classList.remove('is-opening');
             committing = false;
+            // quick-260727-fc2: re-arm the continuous-tracking class once
+            // the commit has fully settled. commitEdge() removed it above
+            // (before setting its full-slide targets) for the discrete
+            // commit itself, but never re-added it — so without this, every
+            // peek AFTER the first edge-click commit in a single continuous
+            // hover session reverted to the eased CSS transition,
+            // reintroducing Bug 1's Safari transition-retarget jitter.
+            // Guarded by the live hover signal (.is-cursor-active, added on
+            // mouseenter / removed on mouseleave) so tracking is never left
+            // armed while the pointer has actually left the photo during
+            // the commit window.
+            if (photo.classList.contains('is-cursor-active')) {
+              photo.classList.add('is-tracking');
+            }
             if (timer !== null) startAutoAdvance();
           }
 
