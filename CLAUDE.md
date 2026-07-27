@@ -48,9 +48,11 @@ A bilingual (French/English) website for Romane Lepont's photography and artisti
 |------|---------|-------|
 | Vitest | 4.1.9 — unit tests (`npm run test:unit`) | Runs as a BLOCKING gate in CI before deploy. |
 | Playwright | 1.61.1 — e2e tests (`npm run test:e2e`) | Runs as a BLOCKING gate in CI before deploy. |
-| GitHub Actions | CI/CD pipeline (`.github/workflows/deploy.yml`) | Node 22 → `npm ci` → build (root base, test artifact) → Playwright e2e + Vitest unit as a BLOCKING gate → rebuild with GitHub Pages base → un-prefixed-link grep guard → deploy to GitHub Pages. Triggered on push to `main` and on `repository_dispatch (sanity-content-published)` fired by a Sanity publish webhook. |
+| GitHub Actions | CI/CD pipeline (`.github/workflows/deploy.yml`) | Full ordered flow below the table. Triggered on push to `main` and on `repository_dispatch (sanity-content-published)` fired by a Sanity publish webhook. |
 | Sanity CLI | Studio dev/build/deploy, run from `sanity/` | `sanity dev` (localhost:3333), `sanity build`, `sanity deploy`. |
 | TypeScript | Type safety across Astro components and config | Strict tsconfig; Astro ships TS support out of the box. |
+
+**GitHub Actions pipeline, in actual step order:** checkout → `actions/setup-node@v4` (`cache: npm`, `cache-dependency-path` covering both `package-lock.json` and `sanity/package-lock.json`) → `npm ci` → `npm ci --prefix sanity` → Sanity Studio lint + build as a BLOCKING gate (`npm --prefix sanity run lint`, `npm --prefix sanity run build`) → `npm run typecheck` (astro check) as its own BLOCKING gate, run BEFORE the first build → build (root base, test artifact) → verify root static artifact via `npm run test:artifact` → cache Playwright browser binaries (`actions/cache@v4` on `~/.cache/ms-playwright`, keyed on OS + `package-lock.json` hash) → install Playwright browsers scoped to `chromium` and `webkit` only (matching the two configured Playwright projects, `chromium` + `webkit-mobile`; on a cache hit, only `install-deps` runs for OS-level deps, since those aren't stored in the browser cache) → Playwright e2e as a BLOCKING gate → `npm run test:coverage` (Vitest unit tests with coverage thresholds) as a BLOCKING gate → rebuild with GitHub Pages base (`ASTRO_BASE: /ajs-website/`) → un-prefixed-link grep guard → verify GitHub Pages static artifact via `npm run test:artifact` with `EXPECTED_BASE: /ajs-website/` → upload Pages artifact → deploy to GitHub Pages.
 
 ## Deferred to v1.x (not yet implemented)
 
