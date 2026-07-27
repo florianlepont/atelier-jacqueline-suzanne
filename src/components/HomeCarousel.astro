@@ -514,6 +514,13 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           // 100%) — its own rect is read directly here (not .home-hero's)
           // since object-fit:cover's crop math is relative to the img's own
           // rendered box.
+          // quick-260727-kq8: opt out of the drq clamp (clampToPhoto=false)
+          // — the seam-driven clip-path (--wm-seam on
+          // .home-hero__wordmark-stack, CSS zone selectors) already
+          // guarantees only the in-bounds [0, seam] slice of this layer
+          // ever paints, so the full-box clamp is redundant here and its
+          // only effect was freezing this current layer's position once the
+          // raw value exceeded the photo's bounds.
           const result = computeWordmarkBackgroundPosition(
             heroImg.naturalWidth,
             heroImg.naturalHeight,
@@ -521,6 +528,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             wordmarkEl.getBoundingClientRect(),
             OBJECT_POSITION_X,
             OBJECT_POSITION_Y,
+            false,
           );
           if (!result) return;
           wordmarkEl.style.setProperty('--wordmark-bg-size', result.size);
@@ -561,6 +569,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             wordmarkStackEl.dataset.peekZone = zone;
             return;
           }
+          // quick-260727-kq8: same clamp opt-out as the current-layer call
+          // above — the peek layer is equally seam-clip-gated (its own
+          // CSS zone selector), so it needs the same continuous, unclamped
+          // tracking rather than freezing at a clamped boundary value.
           const peekResult = computeWordmarkBackgroundPosition(
             peekImg.naturalWidth,
             peekImg.naturalHeight,
@@ -568,6 +580,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             wmRect,
             OBJECT_POSITION_X,
             OBJECT_POSITION_Y,
+            false,
           );
           if (!peekResult) {
             wordmarkStackEl.style.setProperty('--wm-seam', restExtreme);

@@ -810,6 +810,70 @@ test.describe('carousel wordmark stays synced to the peek (Bug A)', () => {
   });
 });
 
+// quick-260727-kq8: proves the CURRENT layer's --wordmark-bg-position keeps
+// changing continuously across a right-edge hover approach, instead of
+// freezing at a fixed clamped value partway through (the confirmed live bug
+// this task fixes — root cause was computeWordmarkBackgroundPosition()'s
+// still-present drq clamp, now redundant once the seam clip-path gates both
+// mirrored-peek layers to in-bounds content). Fails on pre-fix (clamped)
+// code, where every sample from proximity 0.85 onward collapses to a single
+// frozen value (e.g. -804px -575.5px); passes once the current-layer call
+// site opts out of the clamp (Task 2 of this plan).
+test.describe('carousel wordmark current layer does not freeze during an edge approach (quick-260727-kq8)', () => {
+  async function photoBox(page: import('@playwright/test').Page) {
+    const box = await page.locator('.home-hero__photo').boundingBox();
+    if (!box) throw new Error('.home-hero__photo has no bounding box');
+    return box;
+  }
+
+  // Right-zone hover-fraction mapping mirrors computeHoverZone()'s own
+  // inverse: xFraction = (1 - EDGE_ZONE_FRACTION) + EDGE_ZONE_FRACTION * proximity.
+  // EDGE_ZONE_FRACTION (0.22) is grepped verbatim from HomeCarousel.astro.
+  const EDGE_ZONE_FRACTION = 0.22;
+  const PROXIMITY_SEQUENCE = [0.8, 0.85, 0.9, 0.93, 0.95, 0.97, 0.985, 0.995];
+
+  // Keeps the y fraction fixed (0.3) so only x varies across the sequence —
+  // full-string comparison of --wordmark-bg-position is therefore a valid
+  // proxy for "did the x component actually keep tracking the photo".
+  async function collectSamples(page: import('@playwright/test').Page): Promise<string[]> {
+    const box = await photoBox(page);
+    const wordmark = page.locator('.home-hero__wordmark');
+    const samples: string[] = [];
+    for (const proximity of PROXIMITY_SEQUENCE) {
+      const xFraction = 1 - EDGE_ZONE_FRACTION + EDGE_ZONE_FRACTION * proximity;
+      await page.mouse.move(box.x + box.width * xFraction, box.y + box.height * 0.3, { steps: 10 });
+      await page.waitForTimeout(200);
+      const position = await wordmark.evaluate((el) => getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim());
+      samples.push(position);
+    }
+    return samples;
+  }
+
+  test('FR: current-layer bg-position keeps changing across proximity 0.80-0.995, never freezes', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+    await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
+
+    const samples = await collectSamples(page);
+    // Pre-fix (clamped) code freezes at a fixed value from proximity 0.85
+    // onward — this tail must NOT collapse to a single repeated value.
+    const tail = samples.slice(1);
+    const distinct = new Set(tail);
+    expect(distinct.size).toBeGreaterThanOrEqual(3);
+  });
+
+  test('EN: current-layer bg-position keeps changing across proximity 0.80-0.995, never freezes', async ({ page }) => {
+    await page.goto('/en/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+    await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
+
+    const samples = await collectSamples(page);
+    const tail = samples.slice(1);
+    const distinct = new Set(tail);
+    expect(distinct.size).toBeGreaterThanOrEqual(3);
+  });
+});
+
 // quick-260726-u97 (sketch 008 Variant C): as the pointer nears an edge, the
 // current photo peels back and the adjacent gallery's REAL photo is
 // revealed underneath — proportional to proximity, real cdn.sanity.io
