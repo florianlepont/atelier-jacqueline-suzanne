@@ -632,6 +632,72 @@ test.describe('carousel hover-click navigation (sketch 008 Variant C)', () => {
     expect(page.url()).toMatch(/\/$/);
   });
 
+  // quick-260727-bsm (Bug C — abrupt edge-click pop): proves commit-then-
+  // swap ordering. Before the fix, goToPrev()/goToNext() swapped
+  // heroImg.src in the SAME tick as the click, while the photo was still at
+  // its peek-pushed offset. This asserts the swap is DEFERRED until the
+  // peek has slid fully in (never same-tick), lands on the exact photo that
+  // was already peeking (no third-image flash), and only happens once the
+  // photo is back at a neutral transform (not mid-push).
+  function transformTranslateXPx(transform: string): number | null {
+    if (transform === 'none') return 0;
+    const match = transform.match(/^matrix\(([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),/);
+    return match ? parseFloat(match[5]) : null;
+  }
+
+  test('FR right edge click defers the content swap until the peek has fully slid in, landing on the peeked photo at a neutral transform', async ({ page }) => {
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.goto('/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+
+    const heroImg = page.locator('[data-role="hero-image"]');
+    const preClickSrc = await heroImg.getAttribute('src');
+    const expectedNextSrc = await page.locator('[data-role="peek-next"]').getAttribute('src');
+    expect(preClickSrc).toBeTruthy();
+    expect(expectedNextSrc).toBeTruthy();
+    expect(expectedNextSrc).not.toBe(preClickSrc);
+
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.97, box.y + box.height * 0.3, { steps: 10 });
+    await page.mouse.down();
+    await page.mouse.up();
+
+    // Immediately (well within the 420ms slide), the swap must not have
+    // happened yet — proves it's deferred, not same-tick.
+    expect(await heroImg.getAttribute('src')).toBe(preClickSrc);
+
+    // Once the peek has fully slid in, the swap lands on the exact photo
+    // that was already peeking — no intermediate third image.
+    await expect.poll(() => heroImg.getAttribute('src')).toBe(expectedNextSrc);
+
+    // The swap happens at rest, not mid-push: the hero photo's transform
+    // is neutral (translateX ~0) once settled.
+    await expect.poll(async () => {
+      const transform = await page.locator('.home-hero__img--sharp').evaluate((el) => getComputedStyle(el).transform);
+      return transformTranslateXPx(transform);
+    }).toBeCloseTo(0, 0);
+  });
+
+  test('EN right edge click defers the content swap until the peek has fully slid in', async ({ page }) => {
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.goto('/en/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+
+    const heroImg = page.locator('[data-role="hero-image"]');
+    const preClickSrc = await heroImg.getAttribute('src');
+    const expectedNextSrc = await page.locator('[data-role="peek-next"]').getAttribute('src');
+    expect(preClickSrc).toBeTruthy();
+    expect(expectedNextSrc).toBeTruthy();
+
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.97, box.y + box.height * 0.3, { steps: 10 });
+    await page.mouse.down();
+    await page.mouse.up();
+
+    expect(await heroImg.getAttribute('src')).toBe(preClickSrc);
+    await expect.poll(() => heroImg.getAttribute('src')).toBe(expectedNextSrc);
+  });
+
   test('the autoplay toggle inside the caption is not hijacked by center-zone navigation', async ({ page }) => {
     await page.goto('/');
 

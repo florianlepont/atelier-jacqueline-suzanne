@@ -838,6 +838,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         // center-open click handler below), and native navigation must not
         // be triggered twice.
         let opening = false;
+        // quick-260727-bsm (Bug C — abrupt edge-click pop): guards
+        // commitEdge()'s in-flight peek-to-full-slide-then-swap sequence —
+        // see commitEdge() below.
+        let committing = false;
         function openCurrent() {
           if (opening) return;
           opening = true;
@@ -923,12 +927,95 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           keepWordmarkSynced();
         }
 
+        // quick-260727-bsm (Bug C — abrupt edge-click pop): an edge-zone
+        // CLICK used to swap heroImg.src synchronously via goToPrev()/
+        // goToNext() while the photo was still at its peek-pushed offset,
+        // then resetPeek() eased it back in the WRONG direction relative to
+        // the peek the user just watched — an abrupt "pop". This instead
+        // continues the in-progress peek to a FULL slide (easing from
+        // wherever the current proximity left off, not resetting first),
+        // then swaps content synchronously (transitions disabled via the
+        // existing .is-opening class) once the peek layer has fully arrived
+        // — at that instant the incoming photo sits at translateX(0),
+        // exactly where the outgoing heroImg (now advanced) will render, so
+        // the swap is pixel-coincident with no pop, no third-image flash,
+        // and no directional reversal. Only the desktop edge-zone CLICK
+        // path uses this — keyboard/dash/swipe/auto-advance keep calling
+        // goToPrev()/goToNext()/goToIndex() directly, unchanged.
+        function commitEdge(direction: 'prev' | 'next') {
+          if (committing || opening) return;
+          if (!heroPhoto || reduceMotionQuery.matches) {
+            // No peek to continue (reduced-motion never shows one, and
+            // without heroPhoto there's nothing to animate) — the plain
+            // swap is correct here.
+            if (direction === 'next') goToNext();
+            else goToPrev();
+            return;
+          }
+          committing = true;
+          const photo = heroPhoto;
+
+          if (direction === 'next') {
+            photo.style.setProperty('--peek-shift', '-100%');
+            if (peekNext) peekNext.style.transform = 'translateX(0)';
+          } else {
+            photo.style.setProperty('--peek-shift', '100%');
+            if (peekPrev) peekPrev.style.transform = 'translateX(0)';
+          }
+          // Bug A machinery: keeps the wordmark cutout tracking the photo
+          // through the whole 420ms slide-to-full-commit.
+          keepWordmarkSynced(600);
+
+          const relevantLayer = direction === 'next' ? peekNext : peekPrev;
+          let done = false;
+          let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+
+          // Single-shot: guarded by `done` so transitionend and the
+          // fallback timer can never both run it.
+          function finish() {
+            if (done) return;
+            done = true;
+            relevantLayer?.removeEventListener('transitionend', onTransitionEnd);
+            if (fallbackTimer !== null) clearTimeout(fallbackTimer);
+            // Synchronous, un-eased swap under .is-opening (reuses the
+            // existing openCurrent()/View-Transition-snapshot transition-
+            // disable rule) — advance the index, render() (swaps
+            // heroImg.src to the now-cached, already-loaded adjacent photo:
+            // instant showSharp, no fade — and resetPeek()s the layers to
+            // neutral, all un-eased), force a reflow, then remove
+            // .is-opening.
+            photo.classList.add('is-opening');
+            carouselIndex = direction === 'next'
+              ? (carouselIndex + 1) % galleries.length
+              : (carouselIndex - 1 + galleries.length) % galleries.length;
+            render();
+            void photo.offsetWidth;
+            photo.classList.remove('is-opening');
+            committing = false;
+            if (timer !== null) startAutoAdvance();
+          }
+
+          function onTransitionEnd(event: TransitionEvent) {
+            if (event.propertyName !== 'transform') return;
+            finish();
+          }
+
+          relevantLayer?.addEventListener('transitionend', onTransitionEnd);
+          // 420ms transition + slack — guarantees finish() always runs even
+          // if the transitionend event never fires (e.g. a null layer).
+          fallbackTimer = setTimeout(finish, 480);
+        }
+
         if (hoverCapable && heroPhoto) {
           const cursorEl = heroPhoto.querySelector<HTMLElement>('[data-role="hero-cursor"]');
           peekPrev = heroPhoto.querySelector<HTMLImageElement>('[data-role="peek-prev"]');
           peekNext = heroPhoto.querySelector<HTMLImageElement>('[data-role="peek-next"]');
 
           heroPhoto.addEventListener('mousemove', (event) => {
+            // quick-260727-bsm (Bug C): a stray move mid-commit must not
+            // rewrite --peek-shift and fight the in-progress full-slide
+            // animation commitEdge() is driving.
+            if (committing) return;
             const rect = heroPhoto.getBoundingClientRect();
             const x = event.clientX - rect.left;
             const y = event.clientY - rect.top;
@@ -955,21 +1042,27 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             if (cursorEl) {
               cursorEl.dataset.zone = 'center';
             }
-            resetPeek();
+            // quick-260727-bsm (Bug C): a commit already in flight owns the
+            // peek layers' animation to full-slide — resetting them here
+            // would fight it. finish()'s own render()->resetPeek() call
+            // handles the neutral reset once the commit completes.
+            if (!committing) resetPeek();
           });
 
           // Desktop click: center zone opens the current gallery, edge
-          // zones navigate prev/next. Clicks inside .home-hero__caption are
+          // zones commit the in-progress peek to a full slide then swap
+          // (commitEdge — Bug C). Clicks inside .home-hero__caption are
           // ignored so the title link, progress dashes, and autoplay toggle
           // keep their own existing handlers — they must never be hijacked
           // by zone navigation.
           heroPhoto.addEventListener('click', (event) => {
+            if (committing || opening) return;
             const target = event.target as HTMLElement;
             if (target.closest('.home-hero__caption')) return;
             if (currentZone === 'left') {
-              goToPrev();
+              commitEdge('prev');
             } else if (currentZone === 'right') {
-              goToNext();
+              commitEdge('next');
             } else {
               openCurrent();
             }
