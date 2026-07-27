@@ -124,6 +124,25 @@ describe('computeWordmarkBackgroundPosition', () => {
       ),
     ).toEqual({ size: '500px 500px', position: '-100px -450px' });
   });
+
+  // quick-260727-kq8: passing clampToPhoto=false skips the drq clamp above,
+  // returning the RAW (pre-clamp) position. Same geometry as the x-clamp
+  // test right above (large horizontal peek push), so the expected raw
+  // value here (-500px) is exactly the pre-fix, out-of-bounds value that
+  // test's own comment documents.
+  it('returns the raw unclamped x position when clampToPhoto is false', () => {
+    expect(
+      computeWordmarkBackgroundPosition(
+        1000,
+        1000,
+        { width: 500, height: 500, left: -400, top: 0 },
+        { width: 100, height: 50, left: 100, top: 100 },
+        0.5,
+        0.5,
+        false,
+      ),
+    ).toEqual({ size: '500px 500px', position: '-500px -100px' });
+  });
 });
 
 describe('detectSwipeDirection', () => {
