@@ -433,6 +433,74 @@ test.describe('carousel peek transform is un-eased while tracking (Bug 1)', () =
   });
 });
 
+// quick-260727-fc2: regression guard for a bug in quick-260727-drq's own
+// Bug 1 fix. commitEdge() removes .is-tracking BEFORE setting its full-slide
+// targets (correct — a discrete moment should keep the 420ms ease), but its
+// finish() cleanup never re-adds it once the commit settles. So after the
+// FIRST edge-click commit in a continuous hover session (mouse never leaving
+// the photo), every SUBSEQUENT peek reverts to the eased CSS transition,
+// reintroducing Bug 1's Safari transition-retarget jitter. This must FAIL on
+// the pre-fix (un-re-armed) code and PASS once finish() re-arms is-tracking
+// (guarded by the live hover signal, .is-cursor-active).
+test.describe('carousel is-tracking re-armed after edge-click commit (quick-260727-fc2)', () => {
+  async function photoBox(page: import('@playwright/test').Page) {
+    const box = await page.locator('.home-hero__photo').boundingBox();
+    if (!box) throw new Error('.home-hero__photo has no bounding box');
+    return box;
+  }
+
+  test('FR: a second peek after a settled edge-click commit stays un-eased (is-tracking re-armed)', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+
+    const box = await photoBox(page);
+    const edgeY = box.y + box.height * 0.3;
+
+    // First peek toward the right edge arms is-tracking via mouseenter,
+    // then the click commits a full slide (commitEdge('next')), which
+    // removes is-tracking before its full-slide targets.
+    await page.mouse.move(box.x + box.width * 0.97, edgeY, { steps: 10 });
+    await page.mouse.down();
+    await page.mouse.up();
+
+    // Let the ~420-480ms commit fully settle (past the fallback timer)
+    // WITHOUT the mouse ever leaving the photo box.
+    await page.waitForTimeout(700);
+
+    // Second peek in the SAME hover session, still inside the photo box —
+    // must be instant/un-eased if is-tracking was correctly re-armed.
+    await page.mouse.move(box.x + box.width * 0.95, edgeY, { steps: 10 });
+
+    await expect(page.locator('.home-hero__photo')).toHaveClass(/is-tracking/);
+    const transition = await page
+      .locator('.home-hero__img--sharp')
+      .evaluate((el) => getComputedStyle(el).transitionProperty);
+    expect(transition.split(',').map((p) => p.trim())).not.toContain('transform');
+  });
+
+  test('EN: a second peek after a settled edge-click commit stays un-eased (is-tracking re-armed)', async ({ page }) => {
+    await page.goto('/en/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+
+    const box = await photoBox(page);
+    const edgeY = box.y + box.height * 0.3;
+
+    await page.mouse.move(box.x + box.width * 0.97, edgeY, { steps: 10 });
+    await page.mouse.down();
+    await page.mouse.up();
+
+    await page.waitForTimeout(700);
+
+    await page.mouse.move(box.x + box.width * 0.95, edgeY, { steps: 10 });
+
+    await expect(page.locator('.home-hero__photo')).toHaveClass(/is-tracking/);
+    const transition = await page
+      .locator('.home-hero__img--sharp')
+      .evaluate((el) => getComputedStyle(el).transitionProperty);
+    expect(transition.split(',').map((p) => p.trim())).not.toContain('transform');
+  });
+});
+
 // quick-260727-bsm (Bug A — wordmark peek desync): syncWordmarkAlignment()
 // reads heroImg.getBoundingClientRect(), which reflects the live CSS
 // `transform: translateX(var(--peek-shift))` set during a peek push — but
