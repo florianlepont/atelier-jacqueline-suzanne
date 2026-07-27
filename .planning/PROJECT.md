@@ -16,7 +16,9 @@ A dedicated, non-transactional Éditions showcase (bilingual overview + detail p
 
 **Not yet live:** this milestone was built entirely on branch `claude/gsd-new-milestone-editions-ubjvt0` (108 commits) and has never been merged into `main` — GitHub Actions only deploys from `main`, so the public GitHub Pages staging URL does not yet serve Éditions. Merging to `main` is the outstanding cutover step.
 
-**Still open, separately tracked (not part of v1.3):** Phase 5 (Launch & Domain Cutover to atelierjacquelinesuzanne.fr) — part of the original v1.0 milestone, deliberately deferred behind v1.1/v1.2/v1.3 by explicit user choice, and not yet started.
+**Still open, separately tracked (not part of any shipped milestone):** Phase 5 (Launch & Domain Cutover to atelierjacquelinesuzanne.fr) — part of the original v1.0 milestone, deliberately deferred behind v1.1/v1.2/v1.3 by explicit user choice, and not yet started.
+
+**Retroactively closed 2026-07-27:** v1.0 MVP (Phases 1-4/04.1-04.3), v1.1 Homepage Refinements (Phase 6), and v1.2 Homepage Polish (Phases 7-10) were formally archived and given MILESTONES.md entries — they had shipped weeks earlier but, per the v1.3 retrospective's own "What Was Inefficient" note, milestone archival had lagged actual delivery. See `.planning/MILESTONES.md` for all three entries; phase detail archived at `.planning/milestones/v1.3-ROADMAP.md` (the only full-project snapshot that predates the collapse) and phase directories moved to `.planning/milestones/v1.0-phases/`, `v1.1-phases/`, `v1.2-phases/`.
 
 <details>
 <summary>Archived: v1.3 Éditions milestone brief (shipped 2026-07-23)</summary>
@@ -42,6 +44,14 @@ Not yet scoped — run `/gsd-new-milestone` to define it. Candidates already tra
 ## Requirements
 
 ### Validated
+
+**v1.0 MVP (Phases 1-4, 04.1-04.3, shipped 2026-07-12 — see `.planning/MILESTONES.md`):**
+- [x] Visitor can browse a portfolio of photo galleries/projects, migrated from the current site (Rebut, Silos, Brume, Adults, The Victorian Tea Room, Paysages, Accumulation, MADO, etc.) — PORT-01/02/03, Phase 2
+- [x] Visitor can read an About/bio page covering Romane's background, artistic approach, and atelier/practice info — ABOUT-01/02, Phase 3
+- [x] Visitor can contact Romane via a spam-protected contact form — CONT-01/02, Phase 3 (delivery mechanism itself still pending Phase 5's OVH cutover — see Key Decisions)
+- [x] Site is available in French and English with a persistent language switcher — I18N-01/02, Phase 1
+- [x] Romane (non-technical) can independently add/edit portfolio galleries and images without touching code — CMS-01, Phase 2
+- [x] Site displays mentions légales, a privacy/GDPR notice, and a CNIL-compliant cookie consent banner — LEGAL-01/03/05, Phase 4
 
 **v1.1 (Homepage Refinements — Phase 6, shipped 2026-07-13):**
 - [x] Visitor toggles between carousel and grid view via a single unified button (not two separate mode buttons) — Phase 6
@@ -78,13 +88,8 @@ Not yet scoped — run `/gsd-new-milestone` to define it. Candidates already tra
 
 ### Active
 
-**v1 (replace current site):**
-- [ ] Visitor can browse a portfolio of photo galleries/projects (migrated from the current site: Rebut, Silos, Brume, Adults, The Victorian Tea Room, Paysages, Accumulation, MADO, etc.)
-- [ ] Visitor can read an About/bio page covering Romane's background, artistic approach, and atelier/practice info
-- [ ] Visitor can contact Romane (contact page/form)
-- [ ] Site is available in French and English with a language switcher
-- [ ] Romane (non-technical) can independently update galleries/photos without touching code
-- [ ] Site is reachable at the existing domain, atelierjacquelinesuzanne.fr
+**v1.0 (Phase 5, deliberately deferred — not part of any shipped milestone):**
+- [ ] Site is reachable at the existing domain, atelierjacquelinesuzanne.fr, via a rehearsed DNS cutover from the current Myportfolio site — LAUNCH-01, Phase 5: Launch & Domain Cutover. Explicit user decision (2026-07-27), reconfirmed at v1.0's retroactive close: *"cancel the initial plan to deliver and publish the website officially... we'll do it later."* Not abandoned — the site has kept shipping on GitHub Pages staging through v1.1/v1.2/v1.3 instead, and this stays open for whenever launch is next prioritized.
 
 **v1.x (add shop, deferred until v1 is live — see REQUIREMENTS.md v2 section):**
 - [ ] Visitor can view a list of upcoming and past exhibitions (dates, location, description)
@@ -143,6 +148,7 @@ Not yet scoped — run `/gsd-new-milestone` to define it. Candidates already tra
 | Phase 8 (HOME-07/HOME-08) implemented directly on `main` outside the `/gsd-plan-phase`→`/gsd-execute-phase` cycle, then retroactively verified and closed via `/gsd-discuss-phase 8` | Florian shipped the gallery-description byline/hover-reveal work himself (commits `38457dd`..`602d24b`, 2026-07-13/14), reusing the existing `gallery.statement` field from Phase 2 rather than adding a new schema field. `/gsd-discuss-phase 8` found it already complete with dedicated e2e coverage; Florian confirmed it as the intended deliverable rather than re-planning from scratch. | Confirmed — verified 2026-07-14 (13/13 unit tests, 23/23 e2e tests passing), see `.planning/phases/08-gallery-descriptions/08-SUMMARY.md` |
 | Progressive image loading (HOME-09): blur-up placeholders sourced from Sanity's CDN `.blur()` param (no new dependency), applied to the hero on every swap and to grid tiles, with next-photo prefetch and a quick/subtle (~260ms) crossfade | User chose the more thorough option at every gray area during `/gsd-discuss-phase 9` — every-swap hero blur-up (not just first load), grid tiles included, and background prefetch — prioritizing a uniformly polished feel over minimizing implementation surface. Code review (09-REVIEW.md) found 4 warnings (missing image error handlers, listener accumulation, a test that would flake once more galleries are migrated) — all fixed in commit `39144b9`. The verifier also flagged the D-05 prefetch claim as code-present-but-unverified; rather than route to manual DevTools verification, an automated Playwright test asserting the actual network request was added (commit `65bfabc`) since it's a mechanical behavior, not a subjective judgment. | Confirmed — verified 2026-07-14 (7/7 must-haves, 76/76 e2e, 40/40 unit tests passing), see `.planning/phases/09-progressive-homepage-image-loading/09-VERIFICATION.md` |
 | The Portfolio gallery "Rebut" and the new Éditions "Rebut" are the SAME underlying subject presented as two distinct objects — the gallery shows the photographs, the édition is the printed book/zine of that photo collection | Raised with and confirmed by Romane during Phase 11 (D-01/D-02), resolving the "Open item (v1.3)" ambiguity carried in this document's Context section since the v1.3 roadmap was created. They stay as two separate documents/pages — the gallery is not moved, renamed, or merged into Éditions (D-01). An optional future gallery↔édition cross-link (so a visitor can navigate from one to the other) is tracked separately as EDN-08 in REQUIREMENTS.md's v2 section, deferred to a future milestone — Phase 11 does not add a reference field or any cross-link UI now (D-03). | Confirmed — raised with and confirmed by Romane during Phase 11 (D-01/D-02) |
+| Retroactively close v1.0/v1.1/v1.2 as formal milestones (MILESTONES.md entries, phase archives, git tags), and formally re-confirm Phase 5 (Launch & Domain Cutover) as deliberately deferred rather than left as ambiguous unfinished work | User request (2026-07-27): "make a formal shipped entry for the milestones and just cancel the initial plan to deliver and publish the website officially — we'll do it later." Closes the exact gap the v1.3 retrospective's own "What Was Inefficient" section flagged (milestone archival lagging actual delivery for v1.1/v1.2). Phase 5 stays open in ROADMAP.md, not deleted — "later" means deferred, not cancelled. | Confirmed — user decision 2026-07-27 |
 
 ## Evolution
 
@@ -162,4 +168,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-23 after v1.3 milestone completion (`/gsd-complete-milestone`) — v1.3 Éditions archived (`.planning/milestones/v1.3-ROADMAP.md`/`v1.3-REQUIREMENTS.md`, tag `v1.3`); "Current Milestone" replaced with "Current State"/"Next Milestone Goals"; fixed a Validated-section gap (EDN-05 wasn't explicitly tagged). Still outstanding, unaffected by this close: merging the milestone branch to `main` (deploy is main-only) and the still-deferred Phase 5 domain cutover.*
+*Last updated: 2026-07-27 after retroactively closing v1.0/v1.1/v1.2 (`/gsd-complete-milestone`) — MILESTONES.md entries added for all three, phase directories archived to `.planning/milestones/v1.0-phases/`/`v1.1-phases/`/`v1.2-phases/`, ROADMAP.md phase details collapsed to match the v1.3 pattern, and the 5 shipped v1.0 requirements moved from Active to Validated (a real drift this closure caught — they'd shipped back in Phase 1-4 but were never reconciled). Phase 5 (Launch & Domain Cutover) formally reconfirmed as deliberately deferred, not abandoned, per explicit user decision.*

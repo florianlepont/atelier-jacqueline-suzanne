@@ -1,5 +1,63 @@
 # Milestones
 
+## v1.0 MVP (Shipped: 2026-07-12)
+
+**Delivered:** A custom Astro + Sanity bilingual (FR/EN) replacement for the old Myportfolio site — portfolio galleries with self-serve editing, an About page, a spam-protected contact form, baseline French/EU legal pages, and (via three inserted phases) the imported design-system rebrand and a real hero-carousel/grid-toggle homepage — deployed to GitHub Pages staging on every push.
+
+**Phases completed:** 7 phases (1, 2, 3, 4, 04.1, 04.2, 04.3), 25 plans, ~60 tasks
+**Requirements:** 13/14 v1 requirements shipped (PORT-01..03, ABOUT-01/02, I18N-01/02, CMS-01, CONT-01/02, LEGAL-01/03/05) — see `.planning/milestones/v1.3-REQUIREMENTS.md` for the full historical table
+**Git range:** `6411501`..`1b0593a` (217 commits, 2026-07-05 → 2026-07-12, 791 files changed, +199496/-6)
+**Closeout type:** override_closeout — Phase 5 (Launch & Domain Cutover, requirement LAUNCH-01) intentionally not shipped; see Known Gaps below. This entry was written retroactively on 2026-07-27, alongside v1.1 and v1.2, closing a gap the v1.3 retrospective itself flagged: those two milestones had shipped weeks earlier with no formal archive/tag.
+**Known gaps:** Phase 5 "Launch & Domain Cutover" (LAUNCH-01) — the live DNS cutover to atelierjacquelinesuzanne.fr, replacing the old Myportfolio site — is **deliberately deferred, not abandoned**. Direct user decision (2026-07-27): *"cancel the initial plan to deliver and publish the website officially... we'll do it later."* The site has instead kept shipping and improving on GitHub Pages staging through v1.1/v1.2/v1.3 (and beyond); Phase 5 remains open in ROADMAP.md and will be picked up when launch is next prioritized.
+
+**Key accomplishments:**
+
+- Astro 7 static site (no SSR adapter, OVH-hosting-compatible) with built-in i18n routing (fr/en), a Playwright + Vitest test harness, and a GitHub Actions CI/CD pipeline deploying to GitHub Pages staging on every push.
+- Sanity CMS wired in with a locale-aware `siteSettings` singleton, giving Romane a real headless-CMS foundation for every later content type.
+- Portfolio galleries: browsable by project/series (Rebut, Silos, Brume, Adults, The Victorian Tea Room, Paysages, etc.), full-size lightbox viewing, per-gallery artist statements, and fully self-serve add/edit/reorder via the CMS (CMS-01) — verified with Romane directly.
+- Bilingual About page (bio + atelier/practice info) and a spam-protected (honeypot) contact form, both FR/EN.
+- Mentions légales, privacy/GDPR notice, and a CNIL-compliant cookie consent banner shipped ahead of any public launch.
+- Adopted the imported design system's monochrome + pop-pink rebrand and replaced the placeholder "under construction" homepage with a real hero-carousel/grid-toggle entry point (Phase 04.1).
+- Instagram link added site-wide, in the footer and on About/Contact (Phase 04.2).
+- Homepage refinement pass: logo hover crossfade, the grid view established as the single gallery-browsing entry point (standalone `/galleries` page removed), icon-based mode toggle, a real-device mobile hero-visibility fix, a three-line wordmark treatment, and clickable gallery titles (Phase 04.3).
+
+## v1.1 Homepage Refinements (Shipped: 2026-07-13)
+
+**Delivered:** The homepage's view-mode control, grid layout, and hero wordmark became one coherent surface — a single toggle, a grid view whose first tile *is* the hero, and a wordmark that reveals the hero photo through its own letterforms.
+
+**Phases completed:** 1 phase (6), 1 plan, 6 tasks
+**Requirements:** 3/3 v1.1 requirements shipped (HOME-01, HOME-02, HOME-03) — see `.planning/milestones/v1.3-REQUIREMENTS.md` for the full historical table
+**Git range:** `6eed4af`..`8fd6802` (17 commits, 2026-07-12 → 2026-07-13, 18 files changed, +1829/-230)
+**Closeout type:** verified_closeout — all Phase 6 work complete and verified at the time.
+**Known gaps:** None within v1.1's own scope. This entry was written retroactively on 2026-07-27 — see the v1.0 entry above for why.
+
+**Key accomplishments:**
+
+- Single unified carousel/grid toggle button, replacing two separate mode buttons, with a clear visible-active-mode state (HOME-01).
+- Grid view's hero (wordmark + intro paragraph, no CTA) now renders as the first tile inside the grid itself, not as a separate full-width band above it (HOME-02).
+- The "Atelier Jacqueline Suzanne" wordmark gained its signature transparent photo-cutout effect in carousel mode — the hero photo visible through the letterforms — the foundation the whole session's later wordmark-tracking work (mirrored-peek, clamp fixes) built on (HOME-03).
+- A live post-checkpoint follow-on folded in the same session: mobile full-bleed hero fix and a dashed swipe/keyboard progress nav.
+- A same-day quick follow-up (260713-hcj) extended the wordmark cutout to the mobile grid-mode hero tile for visual consistency.
+
+## v1.2 Homepage Polish, Pre-Launch (Shipped: 2026-07-20)
+
+**Delivered:** The remaining homepage UX rough edges resolved ahead of the (still-pending) domain cutover — social presence, visual consistency, a mobile regression fix, real per-gallery description content, progressive image loading, and a single shared header component site-wide.
+
+**Phases completed:** 4 phases (7, 8, 9, 10), 9 plans, ~15 tasks
+**Requirements:** 8/8 v1.2 requirements shipped (HOME-04..HOME-10, I18N-04) — see `.planning/milestones/v1.3-REQUIREMENTS.md` for the full historical table
+**Git range:** `eb0215d`..`580daa3` (170 commits, 2026-07-13 → 2026-07-20, 188 files changed, +34245/-1575)
+**Closeout type:** verified_closeout — all Phases 7-10 work complete and verified at the time.
+**Known gaps:** None within v1.2's own scope. This entry was written retroactively on 2026-07-27 — see the v1.0 entry above for why.
+
+**Key accomplishments:**
+
+- Instagram icon (not text) link in the header nav, and a square (not rectangular) mode-toggle border (HOME-04, HOME-05).
+- Root-caused and fixed a real-device mobile full-bleed hero regression via a view-transition-first fix (HOME-06).
+- Each gallery's own description text now replaces the generic "Un projet de Romane Lepont" byline — shown under the title in carousel mode, revealed on hover/focus in grid mode — backed by a real per-gallery Sanity field Romane can edit herself (HOME-07, HOME-08).
+- Progressive homepage image loading: the page shell renders immediately with no blocking full-screen loader, the hero photo loads with priority and a blur-to-sharp transition, and below-the-fold gallery tiles stay lazy (HOME-09).
+- Extracted a single shared `<SiteHeader>` component rendering identically on the homepage and About/Contact (eliminating two independently-styled header implementations), and simplified the language switcher to one other-language link plus a globe icon (HOME-10, I18N-04).
+- Gap-closure: removed a duplicate back-home link that overlapped the SiteHeader logo on gallery-detail pages, found during UAT.
+
 ## v1.3 Éditions (Shipped: 2026-07-23)
 
 **Delivered:** A dedicated, non-transactional Éditions showcase (bilingual overview + detail pages, Sanity-editable, zero commerce affordance) sits alongside the existing Portfolio, discoverable from the main nav on every page.

@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-07-22)
 Phase: Milestone v1.3 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-07-27 — Completed quick task 260727-kq8: fixed the wordmark current-layer freeze (iao's leftover drq clamp was pinning --wordmark-bg-position once it exceeded the photo's bounds, even though the new seam clip-path already made that clamp redundant) — both mirrored-peek layers now track the photo continuously through the full edge approach
+Last activity: 2026-07-27 — Retroactively closed v1.0 MVP, v1.1 Homepage Refinements, and v1.2 Homepage Polish as formal milestones (MILESTONES.md entries, phase archives, ROADMAP.md collapse, PROJECT.md Validated-section fix) — closing the archival-lag gap the v1.3 retrospective itself flagged. Phase 5 (Launch & Domain Cutover) formally reconfirmed as deliberately deferred by user decision, not abandoned. Immediately preceding this: completed quick task 260727-kq8, fixing the wordmark current-layer freeze (iao's leftover drq clamp was pinning --wordmark-bg-position once it exceeded the photo's bounds, even though the new seam clip-path already made that clamp redundant) — both mirrored-peek layers now track the photo continuously through the full edge approach
 
 ## Performance Metrics
 
@@ -202,6 +202,12 @@ Items acknowledged and carried forward from previous milestone close:
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
 | v1.x scope | Exhibitions, shop, checkout, shipping, commerce-specific legal (EXHB-*, SHOP-*, CHK-*, SHIP-*, LEGAL-02, LEGAL-04, CMS-02/03, I18N-02b/03), plus the Éditions cross-link differentiator (EDN-08) | Tracked in REQUIREMENTS.md v2 section, not yet roadmapped | Roadmap creation 2026-07-05 (v2 baseline); EDN-08 added 2026-07-22 |
+
+Items acknowledged and deferred at v1.0 milestone close on 2026-07-27 (retroactive `/gsd-complete-milestone`, closing v1.0/v1.1/v1.2 together — v1.1 and v1.2 had no open items requiring acknowledgment):
+
+| Category | Item | Status |
+|----------|------|--------|
+| phase | Phase 5: Launch & Domain Cutover (LAUNCH-01) | Not started — deliberately deferred, not abandoned. Direct user decision: "cancel the initial plan to deliver and publish the website officially... we'll do it later." Remains open in ROADMAP.md for whenever launch is next prioritized. |
 
 Items acknowledged and deferred at v1.3 milestone close on 2026-07-23 (`/gsd-complete-milestone` pre-close audit, 11 open items, user chose "Acknowledge all, proceed"):
 
