@@ -83,6 +83,42 @@ describe('computeWordmarkBackgroundPosition', () => {
       ),
     ).toBeNull();
   });
+
+  // quick-260727-drq (Bug 2): a large peek push moves the wordmark box
+  // (offsetX) far enough that the raw, unclamped position samples past the
+  // rendered image's actual right edge — with background-repeat: no-repeat
+  // this renders blank/transparent, letting the solid accent panel show
+  // through the glyph cutouts. Pre-fix this returns '-500px -100px'
+  // (out of bounds); clamped, x cannot exceed -(renderedW - wordmarkRect.width)
+  // = -(500 - 100) = -400.
+  it('clamps the x position so it never samples past the rendered image right edge (large horizontal peek push)', () => {
+    expect(
+      computeWordmarkBackgroundPosition(
+        1000,
+        1000,
+        { width: 500, height: 500, left: -400, top: 0 },
+        { width: 100, height: 50, left: 100, top: 100 },
+        0.5,
+        0.5,
+      ),
+    ).toEqual({ size: '500px 500px', position: '-400px -100px' });
+  });
+
+  // Analogous vertical-overflow case: y clamps to -(renderedH - wordmarkRect.height)
+  // = -(500 - 50) = -450 (mirrors the horizontal case's heroRect offset, but
+  // on the top/height axis instead of left/width — x stays in-bounds here).
+  it('clamps the y position so it never samples past the rendered image bottom edge (large vertical offset)', () => {
+    expect(
+      computeWordmarkBackgroundPosition(
+        1000,
+        1000,
+        { width: 500, height: 500, left: 0, top: -400 },
+        { width: 100, height: 50, left: 100, top: 100 },
+        0.5,
+        0.5,
+      ),
+    ).toEqual({ size: '500px 500px', position: '-100px -450px' });
+  });
 });
 
 describe('detectSwipeDirection', () => {
