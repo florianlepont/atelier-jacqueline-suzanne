@@ -868,6 +868,24 @@ test.describe('carousel accent panel narrowing, no wordmark clip (Item 4)', () =
   });
 });
 
+// quick-260727-drq (Bug 3 — accent-panel color cut): render() writes
+// --current-accent on every navigation with a plain custom-property write,
+// which without a transition applied as a hard instant color cut. Proves
+// the crossfade is wired; the live mid-transition color-sampling re-verify
+// is the orchestrator's step.
+test.describe('carousel accent panel crossfades on navigation (Bug 3)', () => {
+  test('the accent panel has a background-color transition', async ({ page }) => {
+    await page.goto('/');
+    const accentPanel = page.locator('[data-role="accent-panel"]');
+    const { transitionProperty, transitionDuration } = await accentPanel.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return { transitionProperty: style.transitionProperty, transitionDuration: style.transitionDuration };
+    });
+    expect(transitionProperty.split(',').map((p) => p.trim())).toContain('background-color');
+    expect(transitionDuration).not.toBe('0s');
+  });
+});
+
 // quick-260725-tqs (Item 5): resized + repositioned sitewide intro
 // paragraph. quick-260726-ltr (Item 2) widened it further to ~2/3 of the
 // panel.

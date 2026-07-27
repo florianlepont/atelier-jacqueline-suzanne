@@ -2090,6 +2090,18 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        D-08, which only meant the WORDMARK's own fill should reveal the
        photo, not that the surrounding panel should have no backing). */
     background-color: var(--current-accent, var(--color-accent));
+    /* quick-260727-drq (Bug 3): render() sets --current-accent on every
+       navigation (auto-advance/dash/keyboard/swipe/edge-click commit) with
+       a plain custom-property write, which without a transition applied as
+       a hard instant color cut. This crossfades consecutive navigations
+       instead — a duration in the same ~250-350ms band as the sharp-photo
+       opacity crossfade above so both read as part of the same swap. Safe
+       unconditionally: .is-opening only disables the .home-hero__img/
+       .home-hero__peek transform transitions, never this one; the section's
+       inline style + render()'s own on-load call both pre-set
+       --current-accent to the real first-gallery value before this rule can
+       ever transition, so no distracting fade fires on initial paint. */
+    transition: background-color 300ms ease;
   }
 
   /* D-07/D-08/D-09: carousel-mode wordmark cutout — the letters themselves
