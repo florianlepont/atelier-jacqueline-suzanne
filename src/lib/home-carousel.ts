@@ -61,9 +61,28 @@ export function computeWordmarkBackgroundPosition(
   const offsetX = wordmarkRect.left - heroRect.left;
   const offsetY = wordmarkRect.top - heroRect.top;
 
+  const rawX = -(cropX + offsetX);
+  const rawY = -(cropY + offsetY);
+
+  // quick-260727-drq (Bug 2): .home-hero__wordmark uses background-repeat:
+  // no-repeat (deliberately — repeating produced a worse garbled-tiling
+  // regression), so a position that samples past the rendered image's real
+  // edge renders blank/transparent, letting the solid accent panel show
+  // through the glyph cutouts. A large peek push (or any other offset) can
+  // make the raw position overflow the image's bounds on either axis — clamp
+  // each component to the inclusive range [-(rendered - box), 0] so the
+  // sampled slice always stays inside the actual photo. `Math.min(0,
+  // Math.max(-min, raw))` keeps this safe even if `min` were ever negative
+  // (the rendered image narrower/shorter than the wordmark box) — the
+  // degenerate case resolves to 0 rather than inverting the clamp range.
+  const minValidX = renderedW - wordmarkRect.width;
+  const minValidY = renderedH - wordmarkRect.height;
+  const clampedX = Math.min(0, Math.max(-minValidX, rawX));
+  const clampedY = Math.min(0, Math.max(-minValidY, rawY));
+
   return {
     size: `${renderedW}px ${renderedH}px`,
-    position: `${-(cropX + offsetX)}px ${-(cropY + offsetY)}px`,
+    position: `${clampedX}px ${clampedY}px`,
   };
 }
 
