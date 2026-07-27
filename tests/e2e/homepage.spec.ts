@@ -327,9 +327,12 @@ test.describe('carousel hover cursor (sketch 008 Variant C)', () => {
     // against its resolved computed color avoids depending on whether the
     // accent is a hex value or a CSS var() fallback chain. toHaveCSS polls
     // until it matches, riding out the 200ms background-color transition
-    // rather than sampling mid-transition.
+    // rather than sampling mid-transition. quick-260727-bsm (Bug B): the
+    // background now lives on the inner `.home-hero__cursor-ring` (the
+    // outer element is a pure position anchor), so the assertion retargets
+    // there.
     const expectedBg = await page.locator('[data-role="accent-panel"]').evaluate((el) => getComputedStyle(el).backgroundColor);
-    await expect(cursor).toHaveCSS('background-color', expectedBg);
+    await expect(cursor.locator('.home-hero__cursor-ring')).toHaveCSS('background-color', expectedBg);
   });
 
   test('right edge zone: arrow shown', async ({ page }) => {
@@ -346,6 +349,26 @@ test.describe('carousel hover cursor (sketch 008 Variant C)', () => {
     await page.goto('/');
     const photoCursor = await page.locator('.home-hero__photo').evaluate((el) => getComputedStyle(el).cursor);
     expect(photoCursor).toBe('none');
+  });
+
+  // quick-260727-bsm (Bug B — Safari cursor jitter): the outer position
+  // anchor (`[data-role="hero-cursor"]`) carries the JS-driven per-mousemove
+  // `translate(x, y)` and must NEVER be subject to a CSS transition on any
+  // browser — a shared transition on both position and an eased state morph
+  // is what caused Safari to jitter (every mousemove retargeted an
+  // in-flight eased transition). This is the core proof: it must fail if
+  // the position/morph split is ever reverted (e.g. back to a single
+  // .home-hero__cursor rule with `transition: transform ...` or the CSS
+  // default `all`).
+  test('the cursor position anchor carries no transform transition (Safari-jitter fix)', async ({ page }) => {
+    await page.goto('/');
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.3, { steps: 10 });
+
+    const cursor = page.locator('[data-role="hero-cursor"]');
+    const transitionProperty = await cursor.evaluate((el) => getComputedStyle(el).transitionProperty);
+    expect(transitionProperty).not.toBe('all');
+    expect(transitionProperty.split(',').map((p) => p.trim())).not.toContain('transform');
   });
 
   test.describe('mobile', () => {
@@ -379,6 +402,52 @@ test.describe('carousel hover cursor (sketch 008 Variant C)', () => {
       expect(style.position).toBe('absolute');
       expect(style.pointerEvents).toBe('none');
     });
+  });
+});
+
+// quick-260727-bsm (Bug A — wordmark peek desync): syncWordmarkAlignment()
+// reads heroImg.getBoundingClientRect(), which reflects the live CSS
+// `transform: translateX(var(--peek-shift))` set during a peek push — but
+// it used to only ever run on load/resize, so the wordmark photo-cutout
+// froze relative to the photo sliding underneath it during a peek. This
+// must fail on the pre-fix code (position frozen) and pass once the rAF
+// sync loop (keepWordmarkSynced) is wired into updatePeek()/resetPeek().
+test.describe('carousel wordmark stays synced to the peek (Bug A)', () => {
+  async function photoBox(page: import('@playwright/test').Page) {
+    const box = await page.locator('.home-hero__photo').boundingBox();
+    if (!box) throw new Error('.home-hero__photo has no bounding box');
+    return box;
+  }
+
+  test('FR: wordmark bg-position tracks a right-edge peek push', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+    await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
+
+    const wordmark = page.locator('.home-hero__wordmark');
+    const restPosition = await wordmark.evaluate((el) => getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim());
+
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.97, box.y + box.height * 0.3, { steps: 10 });
+
+    // expect.poll rides the rAF-driven updates rather than sampling a
+    // single frame — the assertion must observe the value actually change
+    // while the photo is mid-push/settling, not just at one instant.
+    await expect.poll(() => wordmark.evaluate((el) => getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim())).not.toBe(restPosition);
+  });
+
+  test('EN: wordmark bg-position tracks a right-edge peek push', async ({ page }) => {
+    await page.goto('/en/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+    await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
+
+    const wordmark = page.locator('.home-hero__wordmark');
+    const restPosition = await wordmark.evaluate((el) => getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim());
+
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.97, box.y + box.height * 0.3, { steps: 10 });
+
+    await expect.poll(() => wordmark.evaluate((el) => getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim())).not.toBe(restPosition);
   });
 });
 
@@ -561,6 +630,72 @@ test.describe('carousel hover-click navigation (sketch 008 Variant C)', () => {
 
     await expect(titleEl).not.toHaveText(initialTitle);
     expect(page.url()).toMatch(/\/$/);
+  });
+
+  // quick-260727-bsm (Bug C — abrupt edge-click pop): proves commit-then-
+  // swap ordering. Before the fix, goToPrev()/goToNext() swapped
+  // heroImg.src in the SAME tick as the click, while the photo was still at
+  // its peek-pushed offset. This asserts the swap is DEFERRED until the
+  // peek has slid fully in (never same-tick), lands on the exact photo that
+  // was already peeking (no third-image flash), and only happens once the
+  // photo is back at a neutral transform (not mid-push).
+  function transformTranslateXPx(transform: string): number | null {
+    if (transform === 'none') return 0;
+    const match = transform.match(/^matrix\(([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),/);
+    return match ? parseFloat(match[5]) : null;
+  }
+
+  test('FR right edge click defers the content swap until the peek has fully slid in, landing on the peeked photo at a neutral transform', async ({ page }) => {
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.goto('/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+
+    const heroImg = page.locator('[data-role="hero-image"]');
+    const preClickSrc = await heroImg.getAttribute('src');
+    const expectedNextSrc = await page.locator('[data-role="peek-next"]').getAttribute('src');
+    expect(preClickSrc).toBeTruthy();
+    expect(expectedNextSrc).toBeTruthy();
+    expect(expectedNextSrc).not.toBe(preClickSrc);
+
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.97, box.y + box.height * 0.3, { steps: 10 });
+    await page.mouse.down();
+    await page.mouse.up();
+
+    // Immediately (well within the 420ms slide), the swap must not have
+    // happened yet — proves it's deferred, not same-tick.
+    expect(await heroImg.getAttribute('src')).toBe(preClickSrc);
+
+    // Once the peek has fully slid in, the swap lands on the exact photo
+    // that was already peeking — no intermediate third image.
+    await expect.poll(() => heroImg.getAttribute('src')).toBe(expectedNextSrc);
+
+    // The swap happens at rest, not mid-push: the hero photo's transform
+    // is neutral (translateX ~0) once settled.
+    await expect.poll(async () => {
+      const transform = await page.locator('.home-hero__img--sharp').evaluate((el) => getComputedStyle(el).transform);
+      return transformTranslateXPx(transform);
+    }).toBeCloseTo(0, 0);
+  });
+
+  test('EN right edge click defers the content swap until the peek has fully slid in', async ({ page }) => {
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.goto('/en/');
+    await page.locator('[data-role="autoplay-toggle"]').click();
+
+    const heroImg = page.locator('[data-role="hero-image"]');
+    const preClickSrc = await heroImg.getAttribute('src');
+    const expectedNextSrc = await page.locator('[data-role="peek-next"]').getAttribute('src');
+    expect(preClickSrc).toBeTruthy();
+    expect(expectedNextSrc).toBeTruthy();
+
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width * 0.97, box.y + box.height * 0.3, { steps: 10 });
+    await page.mouse.down();
+    await page.mouse.up();
+
+    expect(await heroImg.getAttribute('src')).toBe(preClickSrc);
+    await expect.poll(() => heroImg.getAttribute('src')).toBe(expectedNextSrc);
   });
 
   test('the autoplay toggle inside the caption is not hijacked by center-zone navigation', async ({ page }) => {

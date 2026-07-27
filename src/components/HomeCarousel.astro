@@ -250,8 +250,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             (pointer: fine) in both CSS and JS below, so it never activates
             on touch (the mobile fallback is a plain tap, wired in Task 5). */}
         <div class="home-hero__cursor" data-role="hero-cursor" data-zone="center" aria-hidden="true">
-          <span class="home-hero__cursor-label">{openLabel}</span>
-          <span class="home-hero__cursor-arrow" aria-hidden="true">&#8594;</span>
+          <div class="home-hero__cursor-ring">
+            <span class="home-hero__cursor-label">{openLabel}</span>
+            <span class="home-hero__cursor-arrow" aria-hidden="true">&#8594;</span>
+          </div>
         </div>
       </div>
 
@@ -501,6 +503,41 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           if (!result) return;
           wordmarkEl.style.setProperty('--wordmark-bg-size', result.size);
           wordmarkEl.style.setProperty('--wordmark-bg-position', result.position);
+        }
+
+        // quick-260727-bsm (Bug A — wordmark peek desync): syncWordmarkAlignment()
+        // above already computes the correct cutout from heroImg's live rect
+        // (which reflects the CSS `transform: translateX(var(--peek-shift))`
+        // set by updatePeek() below), but it was previously only ever called
+        // on load/resize — never while the photo was actually mid-transform.
+        // This rAF pump keeps calling it every frame for as long as the photo
+        // can plausibly still be moving (an active peek push, or the ~420ms
+        // ease-settle after the mouse stops/leaves), so the "hole cut in the
+        // photo" illusion never freezes relative to the photo sliding
+        // underneath it.
+        let wordmarkSyncRaf: number | null = null;
+        let wordmarkSyncUntil = 0;
+
+        function pumpWordmarkSync() {
+          syncWordmarkAlignment();
+          if (performance.now() < wordmarkSyncUntil) {
+            wordmarkSyncRaf = requestAnimationFrame(pumpWordmarkSync);
+          } else {
+            wordmarkSyncRaf = null;
+          }
+        }
+
+        // References `hoverCapable`, declared later in this script (~line
+        // 830) — safe because this function is only ever CALLED at runtime
+        // (from updatePeek()/resetPeek(), both themselves only invoked on
+        // user interaction or from render(), which first runs at the very
+        // end of this script), never during initial synchronous parse.
+        function keepWordmarkSynced(ms = 500) {
+          if (!hoverCapable || reduceMotionQuery.matches) return;
+          wordmarkSyncUntil = Math.max(wordmarkSyncUntil, performance.now() + ms);
+          if (wordmarkSyncRaf === null) {
+            wordmarkSyncRaf = requestAnimationFrame(pumpWordmarkSync);
+          }
         }
 
         function render() {
@@ -801,6 +838,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         // center-open click handler below), and native navigation must not
         // be triggered twice.
         let opening = false;
+        // quick-260727-bsm (Bug C — abrupt edge-click pop): guards
+        // commitEdge()'s in-flight peek-to-full-slide-then-swap sequence —
+        // see commitEdge() below.
+        let committing = false;
         function openCurrent() {
           if (opening) return;
           opening = true;
@@ -845,6 +886,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           heroPhoto.style.setProperty('--peek-shift', '0');
           if (peekPrev) peekPrev.style.transform = 'translateX(-100%)';
           if (peekNext) peekNext.style.transform = 'translateX(100%)';
+          // quick-260727-bsm (Bug A): the mouseleave recede AND every
+          // render() swap (render() calls resetPeek() in its hoverCapable
+          // block) both change the photo's transform — keep the wordmark
+          // synced through the ease-settle here too.
+          keepWordmarkSynced();
         }
 
         // quick-260726-u97 (sketch 008 Variant C, exact sketch coefficients):
@@ -870,7 +916,94 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             if (peekPrev) peekPrev.style.transform = 'translateX(-100%)';
           } else {
             resetPeek();
+            return;
           }
+          // quick-260727-bsm (Bug A): covers the active-mousemove push AND
+          // the retarget-then-settle — 500ms comfortably exceeds the 420ms
+          // transform transition so the sync loop keeps running through the
+          // ease after the mouse stops moving. The `resetPeek()` branch
+          // above already calls this itself (and returns before reaching
+          // here), so this only fires for the left/right push branches.
+          keepWordmarkSynced();
+        }
+
+        // quick-260727-bsm (Bug C — abrupt edge-click pop): an edge-zone
+        // CLICK used to swap heroImg.src synchronously via goToPrev()/
+        // goToNext() while the photo was still at its peek-pushed offset,
+        // then resetPeek() eased it back in the WRONG direction relative to
+        // the peek the user just watched — an abrupt "pop". This instead
+        // continues the in-progress peek to a FULL slide (easing from
+        // wherever the current proximity left off, not resetting first),
+        // then swaps content synchronously (transitions disabled via the
+        // existing .is-opening class) once the peek layer has fully arrived
+        // — at that instant the incoming photo sits at translateX(0),
+        // exactly where the outgoing heroImg (now advanced) will render, so
+        // the swap is pixel-coincident with no pop, no third-image flash,
+        // and no directional reversal. Only the desktop edge-zone CLICK
+        // path uses this — keyboard/dash/swipe/auto-advance keep calling
+        // goToPrev()/goToNext()/goToIndex() directly, unchanged.
+        function commitEdge(direction: 'prev' | 'next') {
+          if (committing || opening) return;
+          if (!heroPhoto || reduceMotionQuery.matches) {
+            // No peek to continue (reduced-motion never shows one, and
+            // without heroPhoto there's nothing to animate) — the plain
+            // swap is correct here.
+            if (direction === 'next') goToNext();
+            else goToPrev();
+            return;
+          }
+          committing = true;
+          const photo = heroPhoto;
+
+          if (direction === 'next') {
+            photo.style.setProperty('--peek-shift', '-100%');
+            if (peekNext) peekNext.style.transform = 'translateX(0)';
+          } else {
+            photo.style.setProperty('--peek-shift', '100%');
+            if (peekPrev) peekPrev.style.transform = 'translateX(0)';
+          }
+          // Bug A machinery: keeps the wordmark cutout tracking the photo
+          // through the whole 420ms slide-to-full-commit.
+          keepWordmarkSynced(600);
+
+          const relevantLayer = direction === 'next' ? peekNext : peekPrev;
+          let done = false;
+          let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+
+          // Single-shot: guarded by `done` so transitionend and the
+          // fallback timer can never both run it.
+          function finish() {
+            if (done) return;
+            done = true;
+            relevantLayer?.removeEventListener('transitionend', onTransitionEnd);
+            if (fallbackTimer !== null) clearTimeout(fallbackTimer);
+            // Synchronous, un-eased swap under .is-opening (reuses the
+            // existing openCurrent()/View-Transition-snapshot transition-
+            // disable rule) — advance the index, render() (swaps
+            // heroImg.src to the now-cached, already-loaded adjacent photo:
+            // instant showSharp, no fade — and resetPeek()s the layers to
+            // neutral, all un-eased), force a reflow, then remove
+            // .is-opening.
+            photo.classList.add('is-opening');
+            carouselIndex = direction === 'next'
+              ? (carouselIndex + 1) % galleries.length
+              : (carouselIndex - 1 + galleries.length) % galleries.length;
+            render();
+            void photo.offsetWidth;
+            photo.classList.remove('is-opening');
+            committing = false;
+            if (timer !== null) startAutoAdvance();
+          }
+
+          function onTransitionEnd(event: TransitionEvent) {
+            if (event.propertyName !== 'transform') return;
+            finish();
+          }
+
+          relevantLayer?.addEventListener('transitionend', onTransitionEnd);
+          // 420ms transition + slack — guarantees finish() always runs even
+          // if the transitionend event never fires (e.g. a null layer).
+          fallbackTimer = setTimeout(finish, 480);
         }
 
         if (hoverCapable && heroPhoto) {
@@ -879,6 +1012,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           peekNext = heroPhoto.querySelector<HTMLImageElement>('[data-role="peek-next"]');
 
           heroPhoto.addEventListener('mousemove', (event) => {
+            // quick-260727-bsm (Bug C): a stray move mid-commit must not
+            // rewrite --peek-shift and fight the in-progress full-slide
+            // animation commitEdge() is driving.
+            if (committing) return;
             const rect = heroPhoto.getBoundingClientRect();
             const x = event.clientX - rect.left;
             const y = event.clientY - rect.top;
@@ -905,21 +1042,27 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             if (cursorEl) {
               cursorEl.dataset.zone = 'center';
             }
-            resetPeek();
+            // quick-260727-bsm (Bug C): a commit already in flight owns the
+            // peek layers' animation to full-slide — resetting them here
+            // would fight it. finish()'s own render()->resetPeek() call
+            // handles the neutral reset once the commit completes.
+            if (!committing) resetPeek();
           });
 
           // Desktop click: center zone opens the current gallery, edge
-          // zones navigate prev/next. Clicks inside .home-hero__caption are
+          // zones commit the in-progress peek to a full slide then swap
+          // (commitEdge — Bug C). Clicks inside .home-hero__caption are
           // ignored so the title link, progress dashes, and autoplay toggle
           // keep their own existing handlers — they must never be hijacked
           // by zone navigation.
           heroPhoto.addEventListener('click', (event) => {
+            if (committing || opening) return;
             const target = event.target as HTMLElement;
             if (target.closest('.home-hero__caption')) return;
             if (currentZone === 'left') {
-              goToPrev();
+              commitEdge('prev');
             } else if (currentZone === 'right') {
-              goToNext();
+              commitEdge('next');
             } else {
               openCurrent();
             }
@@ -1755,6 +1898,26 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     pointer-events: none;
   }
 
+  /* quick-260727-bsm (Bug B — Safari cursor jitter): the outer
+     .home-hero__cursor is now a PURE position anchor — its only JS-driven
+     property is `transform: translate(x, y)` (per-mousemove, see the
+     <script> above), and it must never carry a `transform` transition on
+     any browser. Safari coalesces/duplicates mousemove-driven inline style
+     writes against an in-flight CSS transition on the same property in a
+     way Chromium/WebKit-on-desktop tolerate better, producing a visible
+     jitter/vibration; it also meant the scale() this outer element used to
+     also own (transform: translate() scale()) was silently dropped on every
+     mousemove, since the inline write only ever set translate(). Splitting
+     position (outer, untransitioned) from the eased scale/geometry/color
+     morph (inner .home-hero__cursor-ring, its own independent transition)
+     fixes both: position updates are instant everywhere, and scale can ease
+     without fighting position on every frame. */
+  .home-hero__cursor-ring {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
   /* quick-260726-u97 (sketch 008 Variant C): the custom hover cursor,
      gated entirely to real-mouse desktop — (hover: hover) and
      (pointer: fine) never both match on a touchscreen, so none of this
@@ -1767,6 +1930,13 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
     .home-hero__cursor {
       z-index: 4;
+      /* Opacity only — explicitly NOT `transform` (that lives on the
+         untransitioned outer element itself) and explicitly not the CSS
+         default `all`, which would silently re-catch transform here. */
+      transition: opacity 160ms ease;
+    }
+
+    .home-hero__cursor-ring {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1781,9 +1951,8 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       font-size: 11px;
       font-weight: var(--weight-semibold);
       letter-spacing: 0.04em;
-      transform: translate(0, 0) scale(0.6);
+      transform: scale(0.6);
       transition:
-        opacity 160ms ease,
         transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
         width 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
         height 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
@@ -1795,14 +1964,20 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
     .home-hero__photo.is-cursor-active .home-hero__cursor {
       opacity: 1;
-      transform: translate(0, 0) scale(1);
+    }
+
+    .home-hero__photo.is-cursor-active .home-hero__cursor-ring {
+      transform: scale(1);
     }
 
     /* Edge zones: the ring morphs into an accent-tinted directional pill —
        .home-hero__cursor's own `transform: translate(x, y)` (JS, tracking
-       the pointer) is untouched by this; only geometry/color change. */
-    .home-hero__cursor[data-zone='left'],
-    .home-hero__cursor[data-zone='right'] {
+       the pointer) is untouched by this; only the inner ring's
+       geometry/color change. data-zone stays on the outer element, so
+       these descendant selectors keep matching through the new ring
+       wrapper unchanged. */
+    .home-hero__cursor[data-zone='left'] .home-hero__cursor-ring,
+    .home-hero__cursor[data-zone='right'] .home-hero__cursor-ring {
       width: 92px;
       height: 52px;
       margin: -26px 0 0 -46px;
@@ -1834,7 +2009,8 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .home-hero__cursor {
+      .home-hero__cursor,
+      .home-hero__cursor-ring {
         transition: none;
       }
     }
