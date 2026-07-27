@@ -327,9 +327,12 @@ test.describe('carousel hover cursor (sketch 008 Variant C)', () => {
     // against its resolved computed color avoids depending on whether the
     // accent is a hex value or a CSS var() fallback chain. toHaveCSS polls
     // until it matches, riding out the 200ms background-color transition
-    // rather than sampling mid-transition.
+    // rather than sampling mid-transition. quick-260727-bsm (Bug B): the
+    // background now lives on the inner `.home-hero__cursor-ring` (the
+    // outer element is a pure position anchor), so the assertion retargets
+    // there.
     const expectedBg = await page.locator('[data-role="accent-panel"]').evaluate((el) => getComputedStyle(el).backgroundColor);
-    await expect(cursor).toHaveCSS('background-color', expectedBg);
+    await expect(cursor.locator('.home-hero__cursor-ring')).toHaveCSS('background-color', expectedBg);
   });
 
   test('right edge zone: arrow shown', async ({ page }) => {
@@ -346,6 +349,26 @@ test.describe('carousel hover cursor (sketch 008 Variant C)', () => {
     await page.goto('/');
     const photoCursor = await page.locator('.home-hero__photo').evaluate((el) => getComputedStyle(el).cursor);
     expect(photoCursor).toBe('none');
+  });
+
+  // quick-260727-bsm (Bug B — Safari cursor jitter): the outer position
+  // anchor (`[data-role="hero-cursor"]`) carries the JS-driven per-mousemove
+  // `translate(x, y)` and must NEVER be subject to a CSS transition on any
+  // browser — a shared transition on both position and an eased state morph
+  // is what caused Safari to jitter (every mousemove retargeted an
+  // in-flight eased transition). This is the core proof: it must fail if
+  // the position/morph split is ever reverted (e.g. back to a single
+  // .home-hero__cursor rule with `transition: transform ...` or the CSS
+  // default `all`).
+  test('the cursor position anchor carries no transform transition (Safari-jitter fix)', async ({ page }) => {
+    await page.goto('/');
+    const box = await photoBox(page);
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.3, { steps: 10 });
+
+    const cursor = page.locator('[data-role="hero-cursor"]');
+    const transitionProperty = await cursor.evaluate((el) => getComputedStyle(el).transitionProperty);
+    expect(transitionProperty).not.toBe('all');
+    expect(transitionProperty.split(',').map((p) => p.trim())).not.toContain('transform');
   });
 
   test.describe('mobile', () => {

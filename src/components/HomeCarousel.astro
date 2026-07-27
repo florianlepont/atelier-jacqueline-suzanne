@@ -250,8 +250,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             (pointer: fine) in both CSS and JS below, so it never activates
             on touch (the mobile fallback is a plain tap, wired in Task 5). */}
         <div class="home-hero__cursor" data-role="hero-cursor" data-zone="center" aria-hidden="true">
-          <span class="home-hero__cursor-label">{openLabel}</span>
-          <span class="home-hero__cursor-arrow" aria-hidden="true">&#8594;</span>
+          <div class="home-hero__cursor-ring">
+            <span class="home-hero__cursor-label">{openLabel}</span>
+            <span class="home-hero__cursor-arrow" aria-hidden="true">&#8594;</span>
+          </div>
         </div>
       </div>
 
@@ -1755,6 +1757,26 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     pointer-events: none;
   }
 
+  /* quick-260727-bsm (Bug B — Safari cursor jitter): the outer
+     .home-hero__cursor is now a PURE position anchor — its only JS-driven
+     property is `transform: translate(x, y)` (per-mousemove, see the
+     <script> above), and it must never carry a `transform` transition on
+     any browser. Safari coalesces/duplicates mousemove-driven inline style
+     writes against an in-flight CSS transition on the same property in a
+     way Chromium/WebKit-on-desktop tolerate better, producing a visible
+     jitter/vibration; it also meant the scale() this outer element used to
+     also own (transform: translate() scale()) was silently dropped on every
+     mousemove, since the inline write only ever set translate(). Splitting
+     position (outer, untransitioned) from the eased scale/geometry/color
+     morph (inner .home-hero__cursor-ring, its own independent transition)
+     fixes both: position updates are instant everywhere, and scale can ease
+     without fighting position on every frame. */
+  .home-hero__cursor-ring {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
   /* quick-260726-u97 (sketch 008 Variant C): the custom hover cursor,
      gated entirely to real-mouse desktop — (hover: hover) and
      (pointer: fine) never both match on a touchscreen, so none of this
@@ -1767,6 +1789,13 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
     .home-hero__cursor {
       z-index: 4;
+      /* Opacity only — explicitly NOT `transform` (that lives on the
+         untransitioned outer element itself) and explicitly not the CSS
+         default `all`, which would silently re-catch transform here. */
+      transition: opacity 160ms ease;
+    }
+
+    .home-hero__cursor-ring {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1781,9 +1810,8 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       font-size: 11px;
       font-weight: var(--weight-semibold);
       letter-spacing: 0.04em;
-      transform: translate(0, 0) scale(0.6);
+      transform: scale(0.6);
       transition:
-        opacity 160ms ease,
         transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
         width 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
         height 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
@@ -1795,14 +1823,20 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
     .home-hero__photo.is-cursor-active .home-hero__cursor {
       opacity: 1;
-      transform: translate(0, 0) scale(1);
+    }
+
+    .home-hero__photo.is-cursor-active .home-hero__cursor-ring {
+      transform: scale(1);
     }
 
     /* Edge zones: the ring morphs into an accent-tinted directional pill —
        .home-hero__cursor's own `transform: translate(x, y)` (JS, tracking
-       the pointer) is untouched by this; only geometry/color change. */
-    .home-hero__cursor[data-zone='left'],
-    .home-hero__cursor[data-zone='right'] {
+       the pointer) is untouched by this; only the inner ring's
+       geometry/color change. data-zone stays on the outer element, so
+       these descendant selectors keep matching through the new ring
+       wrapper unchanged. */
+    .home-hero__cursor[data-zone='left'] .home-hero__cursor-ring,
+    .home-hero__cursor[data-zone='right'] .home-hero__cursor-ring {
       width: 92px;
       height: 52px;
       margin: -26px 0 0 -46px;
@@ -1834,7 +1868,8 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .home-hero__cursor {
+      .home-hero__cursor,
+      .home-hero__cursor-ring {
         transition: none;
       }
     }
