@@ -14,7 +14,6 @@ import type { GalleryGridItem } from '../../components/GalleryGrid.astro';
 import Lightbox from '../../components/Lightbox.astro';
 import { getGalleries } from '../../lib/sanity';
 import { fullSizeUrl, responsiveImageSrcSet } from '../../lib/image';
-import type { Gallery } from '../../lib/sanity';
 import { pickHeroIndex } from '../../lib/image-orientation';
 
 export const getStaticPaths = (async () => {
@@ -24,10 +23,6 @@ export const getStaticPaths = (async () => {
     props: { gallery },
   }));
 }) satisfies GetStaticPaths;
-
-interface Props {
-  gallery: Gallery;
-}
 
 const { gallery } = Astro.props;
 const locale = 'fr' as const;

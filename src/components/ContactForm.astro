@@ -217,7 +217,8 @@ const errMessageBlank = locale === 'en' ? 'Please enter a message.' : 'Merci dâ€
         } else {
           renderSubmissionError();
         }
-      } catch {
+      } catch (error) {
+        console.error('Contact form submission failed:', error);
         renderSubmissionError();
       } finally {
         isSubmitting = false;
