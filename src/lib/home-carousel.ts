@@ -42,6 +42,7 @@ export function computeWordmarkBackgroundPosition(
   wordmarkRect: Rect,
   objectPositionX: number,
   objectPositionY: number,
+  clampToPhoto: boolean = true,
 ): WordmarkBackground | null {
   if (!naturalW || !naturalH) return null;
   if (heroRect.width === 0 || heroRect.height === 0) return null;
@@ -75,6 +76,25 @@ export function computeWordmarkBackgroundPosition(
   // Math.max(-min, raw))` keeps this safe even if `min` were ever negative
   // (the rendered image narrower/shorter than the wordmark box) — the
   // degenerate case resolves to 0 rather than inverting the clamp range.
+  //
+  // quick-260727-kq8: this clamp is redundant (and actively harmful) for any
+  // caller already gated by the seam-driven clip-path (`--wm-seam` on
+  // `.home-hero__wordmark-stack`) — that clip-path guarantees only the
+  // in-bounds `[0, seam]` slice ever paints, so the full-box clamp below can
+  // never actually protect those callers from an out-of-bounds sample. Its
+  // only observable effect there was pinning the returned position at a
+  // fixed boundary value once the raw position exceeded the photo's bounds,
+  // freezing the visible background mid-interaction (the current-layer
+  // freeze bug this opt-out fixes). `clampToPhoto` defaults to `true` so
+  // every pre-existing caller/test is byte-for-byte unaffected; seam-gated
+  // callers pass `false` to get continuous 1:1 tracking instead.
+  if (!clampToPhoto) {
+    return {
+      size: `${renderedW}px ${renderedH}px`,
+      position: `${rawX}px ${rawY}px`,
+    };
+  }
+
   const minValidX = renderedW - wordmarkRect.width;
   const minValidY = renderedH - wordmarkRect.height;
   const clampedX = Math.min(0, Math.max(-minValidX, rawX));
