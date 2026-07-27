@@ -405,6 +405,34 @@ test.describe('carousel hover cursor (sketch 008 Variant C)', () => {
   });
 });
 
+// quick-260727-drq (Bug 1 — Safari peek-transition micro-jitter): proves
+// the structural fix — .is-tracking disables the transform transition on
+// both .home-hero__img and .home-hero__peek, so per-mousemove writes to
+// --peek-shift/the peek layers' transform apply instantly instead of
+// retargeting an in-flight 420ms eased transition. This is Chromium-only,
+// so it cannot directly observe Safari's jitter (that's the orchestrator's
+// live re-verify step, mirroring quick-260727-bsm's Bug B rationale) — it
+// proves the transition-disable wiring is present and correctly scoped.
+test.describe('carousel peek transform is un-eased while tracking (Bug 1)', () => {
+  test('is-tracking disables the transform transition on the hero image and peek layers; removing it restores the transition', async ({ page }) => {
+    await page.goto('/');
+    const heroImg = page.locator('.home-hero__img--sharp');
+    const peekPrev = page.locator('[data-role="peek-prev"]');
+
+    await page.locator('.home-hero__photo').evaluate((el) => el.classList.add('is-tracking'));
+    const trackingTransition = await heroImg.evaluate((el) => getComputedStyle(el).transitionProperty);
+    expect(trackingTransition.split(',').map((p) => p.trim())).not.toContain('transform');
+    const trackingPeekTransition = await peekPrev.evaluate((el) => getComputedStyle(el).transitionProperty);
+    expect(trackingPeekTransition.split(',').map((p) => p.trim())).not.toContain('transform');
+
+    await page.locator('.home-hero__photo').evaluate((el) => el.classList.remove('is-tracking'));
+    const restedTransition = await heroImg.evaluate((el) => getComputedStyle(el).transitionProperty);
+    expect(restedTransition.split(',').map((p) => p.trim())).toContain('transform');
+    const restedPeekTransition = await peekPrev.evaluate((el) => getComputedStyle(el).transitionProperty);
+    expect(restedPeekTransition.split(',').map((p) => p.trim())).toContain('transform');
+  });
+});
+
 // quick-260727-bsm (Bug A — wordmark peek desync): syncWordmarkAlignment()
 // reads heroImg.getBoundingClientRect(), which reflects the live CSS
 // `transform: translateX(var(--peek-shift))` set during a peek push — but

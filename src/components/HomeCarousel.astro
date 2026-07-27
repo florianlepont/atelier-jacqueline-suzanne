@@ -955,6 +955,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           committing = true;
           const photo = heroPhoto;
 
+          // quick-260727-drq (Bug 1): removed BEFORE setting the full-slide
+          // targets below so the edge-click commit re-engages the 420ms
+          // ease (a discrete moment, not continuous tracking).
+          photo.classList.remove('is-tracking');
+
           if (direction === 'next') {
             photo.style.setProperty('--peek-shift', '-100%');
             if (peekNext) peekNext.style.transform = 'translateX(0)';
@@ -1033,6 +1038,12 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
           heroPhoto.addEventListener('mouseenter', () => {
             heroPhoto.classList.add('is-cursor-active');
+            // quick-260727-drq (Bug 1): arms the instant, un-eased peek
+            // transform for the whole hover — removed only right before the
+            // two discrete moments (mouseleave's resetPeek() below, and
+            // commitEdge()'s full-slide targets) so those keep the 420ms
+            // ease.
+            heroPhoto.classList.add('is-tracking');
           });
 
           heroPhoto.addEventListener('mouseleave', () => {
@@ -1042,6 +1053,9 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             if (cursorEl) {
               cursorEl.dataset.zone = 'center';
             }
+            // quick-260727-drq (Bug 1): removed BEFORE resetPeek() below so
+            // the recede back to neutral re-engages the 420ms ease.
+            heroPhoto.classList.remove('is-tracking');
             // quick-260727-bsm (Bug C): a commit already in flight owns the
             // peek layers' animation to full-slide — resetting them here
             // would fight it. finish()'s own render()->resetPeek() call
@@ -1617,6 +1631,21 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
      photo already at rest, not mid-recede. */
   .home-hero__photo.is-opening .home-hero__img,
   .home-hero__photo.is-opening .home-hero__peek {
+    transition: none;
+  }
+
+  /* quick-260727-drq (Bug 1 — Safari peek-transition micro-jitter):
+     .is-tracking is added on mouseenter and stays on for the whole
+     continuous mousemove-driven peek push (removed only before the two
+     discrete moments — mouseleave's resetPeek() and commitEdge()'s
+     full-slide targets — so THOSE keep easing). Disabling the transition
+     here means every per-mousemove --peek-shift/transform write applies
+     instantly instead of retargeting an in-flight 420ms eased transition —
+     WebKit interpolates that retargeting far more roughly than Chromium
+     (the measured jitter), even though both engines are technically
+     spec-compliant. */
+  .home-hero__photo.is-tracking .home-hero__img,
+  .home-hero__photo.is-tracking .home-hero__peek {
     transition: none;
   }
 
