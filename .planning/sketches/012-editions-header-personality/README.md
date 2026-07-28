@@ -54,11 +54,21 @@ Florian's round-3 feedback: "et un fond un peu fun ou un effet dynamique ?" (and
 - **E2: Cursor Spotlight** — a soft pink glow follows the pointer within the header. This deliberately echoes the site's *existing* interaction language: the édition row list right below already has a cursor-follow photo preview panel, so this ties the header into a gesture visitors will already be learning on this exact page, rather than introducing an unrelated new pattern.
 - **E3: Drifting Hairlines** — thin diagonal lines, using the same hairline weight/color as the rest of the site's borders, slowly drift behind the header for ambient motion without a loud new texture.
 
+Florian's round-4 feedback: "I love E1! but it's not really dynamic and I don't want pink anymore. More blanc or grey." Round 5 keeps E1's exact composition and dot-halftone concept, switches the color from pink to ink-grey, and explores three different ways to make the texture actually move instead of just fading in once.
+
+## Variants — Round 5 (grey + dynamic halftone)
+
+`index.html` now shows Round 5 by default: **E1 (pink, static)** kept as a reference tab, plus three grey, in-motion takes:
+
+- **F1: Drifting Grey Halftone** — the same dot field as E1, recolored to ink-grey, now continuously drifts (the dot grid slowly scrolls in a loop) so it's quietly alive at rest, not just faded in once.
+- **F2: Ink Diffusion (cursor)** — a very faint grey dot grid sits behind the header at rest; moving the cursor over the header makes nearby dots grow larger and darker in a soft circle, like ink spreading into paper where you touch it. Ties into the same cursor-follow gesture the row list below already teaches on this page (same mechanic as round 4's E2, applied to the loved halftone instead of a glow).
+- **F3: Breathing Halftone** — the dot field pulses gently in opacity on a slow loop, a print-grain shimmer with no directional movement.
+
 ## What to Look For
 
 - Does it actually read as "fun/modern," or does it feel like a gimmick bolted onto a serious brand?
 - Does it still feel like the same site as the rest of AJS (Unbounded display font, monochrome + single pink accent, sharp corners, hairlines) — no foreign visual language?
-- E1: does the halftone read as an intentional "printed object" reference, or just as noise?
-- E2: does tying the header to the row list's existing cursor-follow gesture feel cohesive, or is a hover-only effect too easy to miss (nothing happens until you move the mouse over it)?
-- E3: is the ambient drift too subtle to register as "fun," or is that restraint exactly right for a brutalist-editorial brand?
-- All variants are cherry-pickable across every round so far — e.g. E1's halftone could sit behind D1's spark mark, or E2's spotlight could layer under C3's stamp badge.
+- Grey vs pink: does removing the pink make the texture read more "print," or does it lose some of the "fun" the pink added?
+- F1 vs F3: constant directional drift vs. a slow opacity pulse — which "dynamic" feels right for a page people may sit on and read, not just glance at?
+- F2: is cursor-only motion satisfying, or does the texture need to feel alive even before anyone touches it (in which case F1/F3 fit better as a base, with F2's diffusion possibly layered on top)?
+- All variants are cherry-pickable across every round so far — e.g. F1's drift could combine with F2's cursor diffusion for both ambient AND reactive motion at once.
