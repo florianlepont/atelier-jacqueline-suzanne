@@ -273,6 +273,94 @@
     #variant-d1 .bg-eyebrow::before, #variant-d2 .bg-eyebrow::before, #variant-d3 .bg-eyebrow::before { animation: none; }
   }
 
+  /* ============================================================
+     ROUND 4 — "et un fond un peu fun ou un effet dynamique ?"
+     Builds on D3's clean big-title + motion (no ghost mark) and
+     layers a background treatment or dynamic effect behind the
+     whole header block instead of behind just the title.
+     ============================================================ */
+  #variant-e1 .bg-h1, #variant-e2 .bg-h1, #variant-e3 .bg-h1 {
+    font-size: clamp(64px, 9vw, 140px);
+    display: inline-block; opacity: 0; transform: scale(0.82) translateY(18px) rotate(-2deg);
+  }
+  #variant-e1 .bg-eyebrow, #variant-e2 .bg-eyebrow, #variant-e3 .bg-eyebrow { opacity: 0; transform: translateY(6px); }
+  #variant-e1 .bg-eyebrow::before, #variant-e2 .bg-eyebrow::before, #variant-e3 .bg-eyebrow::before {
+    content: ''; width: 8px; height: 8px; background: var(--color-accent); display: inline-block;
+    animation: c4-pulse 2.2s ease-in-out infinite;
+  }
+  #variant-e1 .bg-intro, #variant-e2 .bg-intro, #variant-e3 .bg-intro { opacity: 0; transform: translateY(10px); }
+  #variant-e1.revealed .bg-eyebrow, #variant-e2.revealed .bg-eyebrow, #variant-e3.revealed .bg-eyebrow {
+    animation: c4-fade-up 0.45s cubic-bezier(0.16,1,0.3,1) 0s forwards;
+  }
+  #variant-e1.revealed .bg-h1, #variant-e2.revealed .bg-h1, #variant-e3.revealed .bg-h1 {
+    animation: c4-settle 0.65s cubic-bezier(0.16,1,0.3,1) 0.1s forwards;
+  }
+  #variant-e1.revealed .bg-intro, #variant-e2.revealed .bg-intro, #variant-e3.revealed .bg-intro {
+    animation: c4-fade-up 0.45s cubic-bezier(0.16,1,0.3,1) 0.5s forwards;
+  }
+  #variant-e1 .replay, #variant-e2 .replay, #variant-e3 .replay {
+    margin-top: var(--space-lg); font-family: var(--font-sans); font-size: 12px;
+    font-weight: var(--weight-semibold); letter-spacing: 0.04em; text-transform: uppercase;
+    background: none; border: 1px solid var(--color-border); padding: 8px 14px;
+    cursor: pointer; color: #6b6b6b; transition: all 0.15s ease; position: relative; z-index: 1;
+  }
+  #variant-e1 .replay:hover, #variant-e2 .replay:hover, #variant-e3 .replay:hover { border-color: var(--color-ink); color: var(--color-ink); }
+
+  /* E1 — Halftone Print Texture: a nod to Éditions being PRINTED objects.
+     A dot-halftone pattern sits behind the header, faded via a radial mask
+     so it reads as an intentional graphic zone, not a flat repeating tile. */
+  #variant-e1 .bg-header { position: relative; }
+  #variant-e1 .halftone {
+    position: absolute; inset: -40px -20px -40px auto; right: -20px; width: 60%; height: calc(100% + 80px);
+    background-image: radial-gradient(rgba(214, 50, 124, 0.45) 1.4px, transparent 1.6px);
+    background-size: 9px 9px;
+    -webkit-mask-image: radial-gradient(ellipse 70% 70% at 70% 40%, black 0%, transparent 75%);
+    mask-image: radial-gradient(ellipse 70% 70% at 70% 40%, black 0%, transparent 75%);
+    z-index: -1; pointer-events: none;
+    opacity: 0; transition: opacity 0.6s ease 0.3s;
+  }
+  #variant-e1.revealed .halftone { opacity: 1; }
+
+  /* E2 — Cursor Spotlight: a soft pink glow that follows the pointer within
+     the header, echoing the site's existing cursor-follow interaction
+     already used by the édition row list below (same page, same gesture
+     language) instead of introducing an unrelated new pattern. */
+  #variant-e2 .bg-header { position: relative; overflow: visible; }
+  #variant-e2 .spotlight {
+    position: absolute; inset: -60px; z-index: -1; pointer-events: none;
+    background: radial-gradient(circle 220px at var(--mx, 20%) var(--my, 40%), rgba(214, 50, 124, 0.18), transparent 70%);
+    opacity: 0; transition: opacity 0.4s ease;
+  }
+  #variant-e2 .bg-header:hover .spotlight { opacity: 1; }
+  #variant-e2 .hint {
+    margin-top: var(--space-sm); font-size: 12px; color: #9b9b9b; font-style: italic;
+  }
+
+  /* E3 — Drifting Diagonal Hairlines: subtle ambient motion using the same
+     hairline weight/color as the rest of the site's borders, not a loud
+     new texture — thin diagonal lines slowly drifting behind the header. */
+  #variant-e3 .bg-header { position: relative; }
+  #variant-e3 .drift {
+    position: absolute; inset: -30px -20px -30px auto; right: -20px; width: 55%; height: calc(100% + 60px);
+    background-image: repeating-linear-gradient(-45deg, var(--color-border) 0, var(--color-border) 1px, transparent 1px, transparent 14px);
+    -webkit-mask-image: linear-gradient(to left, black 0%, transparent 90%);
+    mask-image: linear-gradient(to left, black 0%, transparent 90%);
+    z-index: -1; pointer-events: none;
+    opacity: 0; animation: e3-drift 14s linear infinite;
+  }
+  #variant-e3.revealed .drift { opacity: 1; }
+  @keyframes e3-drift { from { background-position: 0 0; } to { background-position: 200px 200px; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    #variant-e1 .bg-eyebrow, #variant-e1 .bg-h1, #variant-e1 .bg-intro,
+    #variant-e2 .bg-eyebrow, #variant-e2 .bg-h1, #variant-e2 .bg-intro,
+    #variant-e3 .bg-eyebrow, #variant-e3 .bg-h1, #variant-e3 .bg-intro {
+      opacity: 1 !important; transform: none !important; animation: none !important;
+    }
+    #variant-e1 .bg-eyebrow::before, #variant-e2 .bg-eyebrow::before, #variant-e3 .bg-eyebrow::before { animation: none; }
+    #variant-e3 .drift { animation: none; }
+  }
+
   /* Toolbar */
   #sketch-tools {
     position: fixed; bottom: 12px; right: 12px; z-index: 9999;
@@ -286,97 +374,16 @@
 <body>
 
 <div id="variant-nav">
-  <div class="round-label">Round 3 — C4 liked, but "02" reads as meaningless: swapping the ghost mark</div>
+  <div class="round-label">Round 4 — "un fond un peu fun ou un effet dynamique ?" — background/effect on top of D3</div>
   <div class="tabs">
-    <button class="variant-tab" onclick="showVariant('c4')">C4: Motion Surge (with "02", for reference)</button>
-    <button class="variant-tab active" onclick="showVariant('d1')">D1: Spark Mark</button>
-    <button class="variant-tab" onclick="showVariant('d2')">D2: Ghost Echo ("É")</button>
-    <button class="variant-tab" onclick="showVariant('d3')">D3: No Ghost (clean)</button>
+    <button class="variant-tab" onclick="showVariant('d3')">D3: Clean (reference, no background)</button>
+    <button class="variant-tab active" onclick="showVariant('e1')">E1: Halftone Print Texture</button>
+    <button class="variant-tab" onclick="showVariant('e2')">E2: Cursor Spotlight</button>
+    <button class="variant-tab" onclick="showVariant('e3')">E3: Drifting Hairlines</button>
   </div>
 </div>
 
-<!-- ================= VARIANT C4 — Motion Surge (round 2, kept for reference) ================= -->
-<div id="variant-c4" class="variant">
-  <div class="page">
-    <header class="bg-header">
-      <div class="bg-titleblock">
-        <span class="ghost-num" aria-hidden="true">02</span>
-        <p class="bg-eyebrow">Atelier Jacqueline Suzanne</p>
-        <h1 class="bg-h1">Éditions</h1>
-      </div>
-      <p class="bg-intro">Les Éditions sont les objets imprimés — zines, livrets, tirages en petite série — qui prolongent le travail photographique de Romane Lepont sous une autre forme.</p>
-      <button class="replay" onclick="replayVariant('c4')">↻ Rejouer l'entrée</button>
-    </header>
-    <div class="editions-index">
-      <a class="editions-index__row" href="#">
-        <span class="editions-index__number">Édition 01</span>
-        <h2 class="editions-index__title">Rebut</h2>
-        <div class="editions-index__statement-wrap"><p class="editions-index__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder.</p></div>
-      </a>
-      <a class="editions-index__row" href="#">
-        <span class="editions-index__number">Édition 02</span>
-        <h2 class="editions-index__title">Silos</h2>
-        <div class="editions-index__statement-wrap"><p class="editions-index__statement">L'édition de Silo est un objet imprimé pensé à la croisée du fanzine et de l'édition cartographique. Conçu pour s'insérer facilement dans le quotidien.</p></div>
-      </a>
-    </div>
-  </div>
-</div>
-
-<!-- ================= VARIANT D1 — Spark Mark ================= -->
-<div id="variant-d1" class="variant active">
-  <div class="page">
-    <header class="bg-header">
-      <div class="bg-titleblock">
-        <span class="spark" aria-hidden="true">✳</span>
-        <p class="bg-eyebrow">Atelier Jacqueline Suzanne</p>
-        <h1 class="bg-h1">Éditions</h1>
-      </div>
-      <p class="bg-intro">Les Éditions sont les objets imprimés — zines, livrets, tirages en petite série — qui prolongent le travail photographique de Romane Lepont sous une autre forme.</p>
-      <button class="replay" onclick="replayVariant('d1')">↻ Rejouer l'entrée</button>
-    </header>
-    <div class="editions-index">
-      <a class="editions-index__row" href="#">
-        <span class="editions-index__number">Édition 01</span>
-        <h2 class="editions-index__title">Rebut</h2>
-        <div class="editions-index__statement-wrap"><p class="editions-index__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder.</p></div>
-      </a>
-      <a class="editions-index__row" href="#">
-        <span class="editions-index__number">Édition 02</span>
-        <h2 class="editions-index__title">Silos</h2>
-        <div class="editions-index__statement-wrap"><p class="editions-index__statement">L'édition de Silo est un objet imprimé pensé à la croisée du fanzine et de l'édition cartographique. Conçu pour s'insérer facilement dans le quotidien.</p></div>
-      </a>
-    </div>
-  </div>
-</div>
-
-<!-- ================= VARIANT D2 — Ghost Echo ("É") ================= -->
-<div id="variant-d2" class="variant">
-  <div class="page">
-    <header class="bg-header">
-      <div class="bg-titleblock">
-        <span class="echo" aria-hidden="true">É</span>
-        <p class="bg-eyebrow">Atelier Jacqueline Suzanne</p>
-        <h1 class="bg-h1">Éditions</h1>
-      </div>
-      <p class="bg-intro">Les Éditions sont les objets imprimés — zines, livrets, tirages en petite série — qui prolongent le travail photographique de Romane Lepont sous une autre forme.</p>
-      <button class="replay" onclick="replayVariant('d2')">↻ Rejouer l'entrée</button>
-    </header>
-    <div class="editions-index">
-      <a class="editions-index__row" href="#">
-        <span class="editions-index__number">Édition 01</span>
-        <h2 class="editions-index__title">Rebut</h2>
-        <div class="editions-index__statement-wrap"><p class="editions-index__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder.</p></div>
-      </a>
-      <a class="editions-index__row" href="#">
-        <span class="editions-index__number">Édition 02</span>
-        <h2 class="editions-index__title">Silos</h2>
-        <div class="editions-index__statement-wrap"><p class="editions-index__statement">L'édition de Silo est un objet imprimé pensé à la croisée du fanzine et de l'édition cartographique. Conçu pour s'insérer facilement dans le quotidien.</p></div>
-      </a>
-    </div>
-  </div>
-</div>
-
-<!-- ================= VARIANT D3 — No Ghost (clean) ================= -->
+<!-- ================= VARIANT D3 — No Ghost (clean, round 3 winner-leaning, kept for reference) ================= -->
 <div id="variant-d3" class="variant">
   <div class="page">
     <header class="bg-header">
@@ -402,8 +409,90 @@
   </div>
 </div>
 
+<!-- ================= VARIANT E1 — Halftone Print Texture ================= -->
+<div id="variant-e1" class="variant active">
+  <div class="page">
+    <header class="bg-header">
+      <div class="halftone" aria-hidden="true"></div>
+      <div class="bg-titleblock">
+        <p class="bg-eyebrow">Atelier Jacqueline Suzanne</p>
+        <h1 class="bg-h1">Éditions</h1>
+      </div>
+      <p class="bg-intro">Les Éditions sont les objets imprimés — zines, livrets, tirages en petite série — qui prolongent le travail photographique de Romane Lepont sous une autre forme.</p>
+      <button class="replay" onclick="replayVariant('e1')">↻ Rejouer l'entrée</button>
+    </header>
+    <div class="editions-index">
+      <a class="editions-index__row" href="#">
+        <span class="editions-index__number">Édition 01</span>
+        <h2 class="editions-index__title">Rebut</h2>
+        <div class="editions-index__statement-wrap"><p class="editions-index__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder.</p></div>
+      </a>
+      <a class="editions-index__row" href="#">
+        <span class="editions-index__number">Édition 02</span>
+        <h2 class="editions-index__title">Silos</h2>
+        <div class="editions-index__statement-wrap"><p class="editions-index__statement">L'édition de Silo est un objet imprimé pensé à la croisée du fanzine et de l'édition cartographique. Conçu pour s'insérer facilement dans le quotidien.</p></div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ================= VARIANT E2 — Cursor Spotlight ================= -->
+<div id="variant-e2" class="variant">
+  <div class="page">
+    <header class="bg-header">
+      <div class="spotlight" aria-hidden="true"></div>
+      <div class="bg-titleblock">
+        <p class="bg-eyebrow">Atelier Jacqueline Suzanne</p>
+        <h1 class="bg-h1">Éditions</h1>
+      </div>
+      <p class="bg-intro">Les Éditions sont les objets imprimés — zines, livrets, tirages en petite série — qui prolongent le travail photographique de Romane Lepont sous une autre forme.</p>
+      <button class="replay" onclick="replayVariant('e2')">↻ Rejouer l'entrée</button>
+      <p class="hint">(déplacez le curseur au-dessus du titre)</p>
+    </header>
+    <div class="editions-index">
+      <a class="editions-index__row" href="#">
+        <span class="editions-index__number">Édition 01</span>
+        <h2 class="editions-index__title">Rebut</h2>
+        <div class="editions-index__statement-wrap"><p class="editions-index__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder.</p></div>
+      </a>
+      <a class="editions-index__row" href="#">
+        <span class="editions-index__number">Édition 02</span>
+        <h2 class="editions-index__title">Silos</h2>
+        <div class="editions-index__statement-wrap"><p class="editions-index__statement">L'édition de Silo est un objet imprimé pensé à la croisée du fanzine et de l'édition cartographique. Conçu pour s'insérer facilement dans le quotidien.</p></div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ================= VARIANT E3 — Drifting Hairlines ================= -->
+<div id="variant-e3" class="variant">
+  <div class="page">
+    <header class="bg-header">
+      <div class="drift" aria-hidden="true"></div>
+      <div class="bg-titleblock">
+        <p class="bg-eyebrow">Atelier Jacqueline Suzanne</p>
+        <h1 class="bg-h1">Éditions</h1>
+      </div>
+      <p class="bg-intro">Les Éditions sont les objets imprimés — zines, livrets, tirages en petite série — qui prolongent le travail photographique de Romane Lepont sous une autre forme.</p>
+      <button class="replay" onclick="replayVariant('e3')">↻ Rejouer l'entrée</button>
+    </header>
+    <div class="editions-index">
+      <a class="editions-index__row" href="#">
+        <span class="editions-index__number">Édition 01</span>
+        <h2 class="editions-index__title">Rebut</h2>
+        <div class="editions-index__statement-wrap"><p class="editions-index__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder.</p></div>
+      </a>
+      <a class="editions-index__row" href="#">
+        <span class="editions-index__number">Édition 02</span>
+        <h2 class="editions-index__title">Silos</h2>
+        <div class="editions-index__statement-wrap"><p class="editions-index__statement">L'édition de Silo est un objet imprimé pensé à la croisée du fanzine et de l'édition cartographique. Conçu pour s'insérer facilement dans le quotidien.</p></div>
+      </a>
+    </div>
+  </div>
+</div>
+
 <div id="sketch-tools">
-  Sketch 012 — Round 2
+  Sketch 012 — Round 4
   <button onclick="location.reload()">↻ Reset</button>
 </div>
 
@@ -423,8 +512,23 @@
     requestAnimationFrame(() => el.classList.add('revealed'));
   }
 
-  // D1 is the default active tab on load — trigger its entrance once.
-  requestAnimationFrame(() => replayVariant('d1'));
+  // E1 is the default active tab on load — trigger its entrance once.
+  requestAnimationFrame(() => replayVariant('e1'));
+
+  // E2 — cursor spotlight: track pointer position within the header and
+  // expose it as CSS custom properties the .spotlight radial-gradient reads.
+  (function () {
+    const header = document.querySelector('#variant-e2 .bg-header');
+    const glow = document.querySelector('#variant-e2 .spotlight');
+    if (!header || !glow) return;
+    header.addEventListener('mousemove', (e) => {
+      const rect = header.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      glow.style.setProperty('--mx', x + '%');
+      glow.style.setProperty('--my', y + '%');
+    });
+  })();
 </script>
 
 </body>

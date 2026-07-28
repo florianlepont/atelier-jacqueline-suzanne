@@ -44,11 +44,21 @@ Florian's round-2 feedback: "j'aime bien C4 mais ça ne signifie rien le 02" (I 
 - **D2: Ghost Echo ("É")** — replaced with a huge thin-outline echo of the title's own accented initial. Reinforces the wordmark itself instead of introducing unexplained new content.
 - **D3: No Ghost (clean)** — the decorative mark is removed entirely. Personality comes only from the bigger title size and the settle-in motion.
 
+Florian's round-3 feedback: "et un fond un peu fun ou un effet dynamique ?" (and a bit of a fun background, or a dynamic effect?). Round 4 builds on D3 (clean, no ghost mark) and adds a background treatment or dynamic effect behind the whole header instead of a mark behind just the title.
+
+## Variants — Round 4 (background/effect on top of D3)
+
+`index.html` now shows Round 4 by default: **D3 (clean)** kept as a reference tab, plus three background/effect treatments:
+
+- **E1: Halftone Print Texture** — a pink dot-halftone pattern (a nod to Éditions being *printed* objects — zines, offset print) sits behind the header, faded out via a radial mask so it reads as an intentional graphic zone rather than a flat repeating tile.
+- **E2: Cursor Spotlight** — a soft pink glow follows the pointer within the header. This deliberately echoes the site's *existing* interaction language: the édition row list right below already has a cursor-follow photo preview panel, so this ties the header into a gesture visitors will already be learning on this exact page, rather than introducing an unrelated new pattern.
+- **E3: Drifting Hairlines** — thin diagonal lines, using the same hairline weight/color as the rest of the site's borders, slowly drift behind the header for ambient motion without a loud new texture.
+
 ## What to Look For
 
 - Does it actually read as "fun/modern," or does it feel like a gimmick bolted onto a serious brand?
 - Does it still feel like the same site as the rest of AJS (Unbounded display font, monochrome + single pink accent, sharp corners, hairlines) — no foreign visual language?
-- D1 vs D2: an abstract mark vs. an echo of the title's own initial — which still feels intentional rather than random?
-- D3: is the ghost mark actually adding anything, or was the bigger title + motion already enough "fun" on its own?
-- Does the entrance feel confident on first load, or does it wear thin on repeat visits (this is a page users may return to)?
-- All variants are cherry-pickable — e.g. D1's spark could use D2's outline-only treatment instead of solid fill, or vice versa.
+- E1: does the halftone read as an intentional "printed object" reference, or just as noise?
+- E2: does tying the header to the row list's existing cursor-follow gesture feel cohesive, or is a hover-only effect too easy to miss (nothing happens until you move the mouse over it)?
+- E3: is the ambient drift too subtle to register as "fun," or is that restraint exactly right for a brutalist-editorial brand?
+- All variants are cherry-pickable across every round so far — e.g. E1's halftone could sit behind D1's spark mark, or E2's spotlight could layer under C3's stamp badge.
