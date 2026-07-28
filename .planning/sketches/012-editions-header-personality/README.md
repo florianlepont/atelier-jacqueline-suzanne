@@ -2,7 +2,7 @@
 sketch: 012
 name: editions-header-personality
 question: "How should the Éditions overview page's header block (eyebrow + title + intro paragraph) get more 'fun' and 'modern' personality without breaking the established brutalist-editorial brand system?"
-winner: null
+winner: "F1 — Drifting Grey Halftone (Round 8: diffuse fade edge, hover response, staggered row entrance)"
 tags: [editions, header, typography, motion, layout]
 ---
 
@@ -79,11 +79,21 @@ Florian confirmed the diffuse-edge fix matches what he meant (sent a screenshot 
 
 Until this round, only the header (eyebrow, title, intro) animated in on load — the "Rebut"/"Silos" row list below was static, appearing instantly with no motion, which broke the sense of one coherent page-load sequence. Fixed: each `.editions-index__row` now fades up (`opacity: 0` + `translateY(20px)` → settled) using the same easing as the header's entrance, staggered after the intro finishes (row 1 at 0.6s, row 2 at 0.72s) so the whole page opens as one continuous choreography: eyebrow → title → intro → row 1 → row 2. Verified via computed styles mid-animation (700ms into the replay: row 1 partway through its fade at opacity ~0.68, row 2 not yet started at opacity 0) — confirms the stagger is real, not simultaneous.
 
+Florian then reconsidered: "non mais en fait prenons F1" (no, but actually let's go with F1) — switching the winner from F3 (Breathing) to F1 (Drifting). All three round-6/7 fixes validated on F3 (diffuse edge, hover response, row entrance) were ported over to F1 unchanged, since none of them were specific to the breathing mechanic.
+
+## Round 8 (current): F1 is the winner, same fixes ported
+
+`index.html` now shows Round 8 by default, with **F1 as the sole live variant** (F2/F3 kept as inert reference tabs):
+
+- Same generously-oversized box + fixed-radius circle mask as F3's fix — no hard edge, verified at 1493px actual box width vs. the 1084px visible header.
+- Hover response ported: hovering speeds up the drift animation (10s → 4s) and deepens the dots (`filter: contrast(1.35) brightness(0.85)`), same values as F3.
+- Row entrance ported: "Rebut"/"Silos" fade up staggered after the intro (0.6s / 0.72s), identical timing and easing to F3's.
+
 ## What to Look For
 
 - Does it actually read as "fun/modern," or does it feel like a gimmick bolted onto a serious brand?
 - Does it still feel like the same site as the rest of AJS (Unbounded display font, monochrome + single pink accent, sharp corners, hairlines) — no foreign visual language?
 - Confirm the dot field fades to nothing smoothly on every edge, at multiple viewport widths — no hard cutoff anywhere.
-- Does the hover response (faster pulse + deeper contrast) read as intentional feedback, or is it too subtle / too strong?
+- Constant drift (F1) vs. the breathing pulse (F3, still in the file for comparison) — now that both have identical polish, which motion actually feels better over time on a page people may read, not just glance at?
+- Does the hover response (faster motion + deeper contrast) read as intentional feedback, or is it too subtle / too strong?
 - Does the row entrance feel like a natural continuation of the title's entrance, or does the 0.6s/0.72s delay feel too slow if there are ever more than 2 éditions (e.g. 5-6 rows — should later rows keep incrementing the delay, or cap it so the list doesn't take forever to finish appearing)?
-- All variants are cherry-pickable across every round so far — e.g. F1's drift could combine with F2's cursor diffusion for both ambient AND reactive motion at once.
