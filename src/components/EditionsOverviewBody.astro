@@ -112,8 +112,6 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
     line-height: var(--text-label-leading);
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    transform: translateY(6px);
-    animation: editions-header-fade-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0s forwards;
   }
   .editions-list__eyebrow::before {
     content: '';
@@ -133,8 +131,6 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
     letter-spacing: -0.04em;
     white-space: nowrap;
     display: inline-block;
-    transform: scale(0.82) translateY(18px) rotate(-2deg);
-    animation: editions-header-settle 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
   }
 
   .editions-list__intro {
@@ -143,8 +139,6 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
     line-height: 1.5;
     color: #3a3a3a;
     max-width: 46ch;
-    transform: translateY(10px);
-    animation: editions-header-fade-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
   }
   @media (min-width: 760px) {
     .editions-list__intro {
@@ -155,12 +149,6 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
     }
   }
 
-  @keyframes editions-header-fade-up {
-    to { transform: translateY(0); }
-  }
-  @keyframes editions-header-settle {
-    to { transform: scale(1) translateY(0) rotate(0deg); }
-  }
   @keyframes editions-eyebrow-pulse {
     0%, 100% { opacity: 1; transform: scale(1); }
     50% { opacity: 0.4; transform: scale(0.7); }
@@ -319,9 +307,6 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .editions-list__eyebrow,
-    .editions-list h1,
-    .editions-list__intro,
     .editions-index__row {
       opacity: 1 !important;
       transform: none !important;
