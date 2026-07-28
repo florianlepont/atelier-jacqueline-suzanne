@@ -2,7 +2,7 @@
 sketch: 012
 name: editions-header-personality
 question: "How should the Éditions overview page's header block (eyebrow + title + intro paragraph) get more 'fun' and 'modern' personality without breaking the established brutalist-editorial brand system?"
-winner: "F1 — Drifting Grey Halftone (Round 8: diffuse fade edge, hover response, staggered row entrance)"
+winner: "F1 — Drifting Grey Halftone, APPROVED (Round 12 final: bigger title, broken-grid composition, grey dot-halftone drifting continuously with a mathematically-verified edge-less fade, deepens on hover, header+row-list entrance choreography)"
 tags: [editions, header, typography, motion, layout]
 ---
 
@@ -123,3 +123,7 @@ Fixed by re-deriving the geometry instead of guessing again: anchor the mask exa
 - At the softened 0.16 dot opacity, is the hover contrast bump still noticeable enough to register as feedback, or does it now need to be stronger since there's less base material to darken?
 - Constant drift (F1) vs. the breathing pulse (F3, still in the file for comparison) — now that both have identical polish, which motion actually feels better over time on a page people may read, not just glance at?
 - Does the row entrance feel like a natural continuation of the title's entrance, or does the 0.6s/0.72s delay feel too slow if there are ever more than 2 éditions (e.g. 5-6 rows — should later rows keep incrementing the delay, or cap it so the list doesn't take forever to finish appearing)?
+
+## Approved
+
+Florian: "It's amazing! approved." **F1 — Drifting Grey Halftone (Round 12 final state)** is the confirmed direction for the Éditions overview header. Ready to move to real implementation in `src/components/EditionsOverviewBody.astro` whenever the go-ahead is given — the row-entrance stagger's hardcoded 2-row timing (see note above) is the one open implementation detail to resolve for real content beyond 2 éditions.
