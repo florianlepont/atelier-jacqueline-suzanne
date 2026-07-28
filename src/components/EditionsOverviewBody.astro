@@ -10,6 +10,7 @@
 // with a floating cursor-follow 3:4 photo panel, replacing the previous
 // zigzag poster-grid tile layout.
 import EmptyState from './EmptyState.astro';
+import PageTitleHeader from './PageTitleHeader.astro';
 
 interface EditionTile {
   href: string;
@@ -33,14 +34,7 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
 ---
 
 <article class="editions-list">
-  <header class="editions-list__header">
-    <div class="editions-list__halftone" aria-hidden="true"></div>
-    <div class="editions-list__titleblock">
-      <p class="editions-list__eyebrow">Atelier Jacqueline Suzanne</p>
-      <h1>{heading}</h1>
-    </div>
-    <p class="editions-list__intro">{intro}</p>
-  </header>
+  <PageTitleHeader heading={heading} intro={intro} />
 
   {
     tiles.length === 0 ? (
@@ -88,129 +82,21 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
     background-color: var(--editions-row-accent);
   }
 
-  .editions-list__header {
-    position: relative;
-    isolation: isolate;
-    margin-bottom: var(--space-lg);
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-lg);
-  }
-  @media (min-width: 760px) {
-    .editions-list__header {
-      grid-template-columns: auto 1fr;
-      align-items: end;
-      column-gap: var(--space-2xl);
-    }
-  }
-
-  .editions-list__titleblock {
-    position: relative;
-    grid-column: 1;
-  }
-
-  .editions-list__eyebrow {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: fit-content;
-    margin: 0;
-    font-size: var(--text-label-size);
-    font-weight: var(--weight-semibold);
-    line-height: var(--text-label-leading);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    transition: color 0.35s ease;
-  }
-  .editions-list__eyebrow::before {
-    content: '';
-    width: 8px;
-    height: 8px;
-    background: var(--color-accent);
-    display: inline-block;
-    animation: editions-eyebrow-pulse 2.2s ease-in-out infinite;
-    transition: background-color 0.35s ease;
-  }
-  :global(html.editions-row-active) .editions-list__eyebrow {
+  /* PageTitleHeader.astro owns the header/eyebrow/h1/intro/halftone markup
+     and base styling now (shared with the Contact page). These :global()
+     rules only add the row-hover color sync that's Éditions-specific. */
+  :global(html.editions-row-active) .page-title-header__eyebrow {
     color: var(--editions-row-accent-text);
   }
-  :global(html.editions-row-active) .editions-list__eyebrow::before {
+  :global(html.editions-row-active) .page-title-header__eyebrow::before {
     background-color: var(--editions-row-accent-text);
   }
-
-  .editions-list h1 {
-    margin: var(--space-md) 0 0;
-    font-size: clamp(64px, 9vw, 140px);
-    font-weight: var(--weight-semibold);
-    font-family: var(--font-display);
-    line-height: 1.05;
-    letter-spacing: -0.04em;
-    white-space: nowrap;
-    display: inline-block;
-    transition: color 0.35s ease;
-  }
-  :global(html.editions-row-active) .editions-list h1 {
+  :global(html.editions-row-active) .page-title-header h1 {
     color: var(--editions-row-accent-text);
   }
-
-  .editions-list__intro {
-    grid-column: 1;
-    margin: 0;
-    line-height: 1.5;
-    color: #3a3a3a;
-    max-width: 46ch;
-    transition: color 0.35s ease, border-color 0.35s ease;
-  }
-  :global(html.editions-row-active) .editions-list__intro {
+  :global(html.editions-row-active) .page-title-header__intro {
     color: var(--editions-row-accent-text);
     border-color: var(--editions-row-accent-text);
-  }
-  @media (min-width: 760px) {
-    .editions-list__intro {
-      grid-column: 2;
-      padding-bottom: 0.3em;
-      border-left: var(--border-hairline) solid var(--color-border);
-      padding-left: var(--space-lg);
-    }
-  }
-
-  @keyframes editions-eyebrow-pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(0.7); }
-  }
-
-  .editions-list__halftone {
-    position: absolute;
-    top: -700px;
-    bottom: -700px;
-    left: -700px;
-    right: -700px;
-    background-image: radial-gradient(rgba(26, 26, 26, 0.16) 1.4px, transparent 1.6px);
-    background-size: 9px 9px;
-    -webkit-mask-image: radial-gradient(circle 640px at right 700px top 700px, black 0%, rgba(0, 0, 0, 0.72) 18%, rgba(0, 0, 0, 0.42) 40%, rgba(0, 0, 0, 0.18) 65%, rgba(0, 0, 0, 0.05) 85%, transparent 100%);
-    mask-image: radial-gradient(circle 640px at right 700px top 700px, black 0%, rgba(0, 0, 0, 0.72) 18%, rgba(0, 0, 0, 0.42) 40%, rgba(0, 0, 0, 0.18) 65%, rgba(0, 0, 0, 0.05) 85%, transparent 100%);
-    z-index: -1;
-    pointer-events: none;
-    display: none;
-    opacity: 0;
-    transition: filter 0.3s ease;
-    animation: editions-halftone-fade-in 0.6s ease 0.3s forwards, editions-halftone-drift 10s linear infinite;
-  }
-  @media (min-width: 760px) {
-    .editions-list__halftone {
-      display: block;
-    }
-  }
-  @keyframes editions-halftone-fade-in {
-    to { opacity: 1; }
-  }
-  @keyframes editions-halftone-drift {
-    from { background-position: 0 0; }
-    to { background-position: 90px 45px; }
-  }
-  .editions-list__header:hover .editions-list__halftone {
-    animation-duration: 0.6s, 4s;
-    filter: contrast(1.35) brightness(0.85);
   }
 
   .editions-index {
@@ -352,13 +238,6 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
       opacity: 1 !important;
       transform: none !important;
       animation: none !important;
-    }
-    .editions-list__eyebrow::before {
-      animation: none;
-    }
-    .editions-list__halftone {
-      animation: none;
-      opacity: 1 !important;
     }
   }
 

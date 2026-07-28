@@ -10,6 +10,7 @@
 // composition, hairline-bordered form panel (no offset shadow). See
 // .planning/sketches/012-contact-page-composition/README.md.
 import ContactForm from './ContactForm.astro';
+import PageTitleHeader from './PageTitleHeader.astro';
 
 interface Props {
   locale: 'fr' | 'en';
@@ -41,14 +42,7 @@ const {
 ---
 
 <div class="contact-page">
-  <section class="contact-page__header" aria-labelledby="contact-title">
-    <div class="contact-page__halftone" aria-hidden="true"></div>
-    <div class="contact-page__titleblock">
-      <p class="contact-page__eyebrow">Atelier Jacqueline Suzanne</p>
-      <h1 id="contact-title">Contact</h1>
-    </div>
-    <p class="contact-page__lead">{intro}</p>
-  </section>
+  <PageTitleHeader heading="Contact" headingId="contact-title" intro={intro} />
 
   <div class="contact-page__grid">
     <div class="contact-page__left">
@@ -104,155 +98,29 @@ const {
 </div>
 
 <style>
+  /* Same top-anchored positioning as Éditions' .editions-list (not
+     vertically centered) — title/eyebrow land at the exact same distance
+     from the site header on both pages (padding-top is identical, width-
+     based, matching Éditions exactly — that's what the title/eyebrow/line
+     alignment actually depends on). padding-bottom deliberately stays
+     height-responsive (unlike Éditions' fixed 7vw) — Éditions doesn't care
+     since it already scrolls; here a fixed ~96px bottom pad reintroduced
+     70px of scroll at 768px-tall viewports since nothing else shrinks to
+     compensate for it anymore now that centering is gone. */
   .contact-page {
     --color-accent: var(--color-ink);
 
-    display: flex;
-    flex-direction: column;
-    justify-content: center; /* header+grid move as ONE group — leftover space splits evenly top/bottom instead of pooling as a single void in the middle */
-    max-width: var(--editorial-page-max);
+    width: min(100%, var(--editorial-page-max));
     margin: 0 auto;
     box-sizing: border-box;
-    padding: clamp(var(--space-md), 2.4vh, var(--space-2xl)) var(--editorial-page-padding-inline);
-    min-height: calc(100svh - var(--contact-chrome-reserve, 152px)); /* header only — footer is hidden via hideFooter on this page */
+    padding-inline: var(--editorial-page-padding-inline);
+    padding-top: clamp(48px, 7vw, 56px);
+    padding-bottom: clamp(16px, 3vh, 96px);
   }
 
-  /* Same two-column broken-grid header as Éditions (sketch-012 F1): title
-     block left, lead beside it on the right past a hairline, ≥760px. */
-  .contact-page__header {
-    position: relative;
-    isolation: isolate; /* contains the halftone's z-index:-1 so it doesn't escape behind <main>'s background (same fix as 260728-lbh) */
-    /* Éditions' halftone is fine bleeding -700px in every direction because
-       that page already scrolls — here it would silently add 700px of
-       scrollable area below the fold and break the no-scroll guarantee.
-       Clip it; the mask's visible glow stays within a few hundred px of
-       the header's own corner, well inside this box. */
-    overflow: hidden;
-    margin-bottom: clamp(var(--space-xl), 6vh, 88px); /* bounded — never justify-content: space-between, which pools a single void on short-wide viewports */
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-lg);
-  }
-  @media (min-width: 760px) {
-    .contact-page__header {
-      grid-template-columns: auto 1fr;
-      align-items: end;
-      column-gap: var(--space-2xl);
-    }
-  }
-
-  .contact-page__titleblock {
-    position: relative;
-    grid-column: 1;
-  }
-
-  /* Identical drifting dot-halftone effect as the Éditions title (sketch-012
-     F1, quick-260728-lbh) — purely decorative, position:absolute so it never
-     affects layout height / the no-scroll budget. */
-  .contact-page__halftone {
-    position: absolute;
-    top: -700px;
-    bottom: -700px;
-    left: -700px;
-    right: -700px;
-    background-image: radial-gradient(rgba(26, 26, 26, 0.16) 1.4px, transparent 1.6px);
-    background-size: 9px 9px;
-    -webkit-mask-image: radial-gradient(circle 640px at right 700px top 700px, black 0%, rgba(0, 0, 0, 0.72) 18%, rgba(0, 0, 0, 0.42) 40%, rgba(0, 0, 0, 0.18) 65%, rgba(0, 0, 0, 0.05) 85%, transparent 100%);
-    mask-image: radial-gradient(circle 640px at right 700px top 700px, black 0%, rgba(0, 0, 0, 0.72) 18%, rgba(0, 0, 0, 0.42) 40%, rgba(0, 0, 0, 0.18) 65%, rgba(0, 0, 0, 0.05) 85%, transparent 100%);
-    z-index: -1;
-    pointer-events: none;
-    display: none;
-    opacity: 0;
-    transition: filter 0.3s ease;
-    animation: contact-halftone-fade-in 0.6s ease 0.3s forwards, contact-halftone-drift 10s linear infinite;
-  }
-  @media (min-width: 760px) {
-    .contact-page__halftone {
-      display: block;
-    }
-  }
-  @keyframes contact-halftone-fade-in {
-    to { opacity: 1; }
-  }
-  @keyframes contact-halftone-drift {
-    from { background-position: 0 0; }
-    to { background-position: 90px 45px; }
-  }
-  .contact-page__header:hover .contact-page__halftone {
-    animation-duration: 0.6s, 4s;
-    filter: contrast(1.35) brightness(0.85);
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .contact-page__halftone {
-      animation: none;
-      opacity: 1 !important;
-    }
-    .contact-page__eyebrow::before {
-      animation: none;
-    }
-  }
-
-  /* Matches the Éditions overview title's new typographic treatment
-     (quick-260728-dbf): pulsing accent dot + ink-colored label text,
-     --text-label-size token, 0.08em tracking. */
-  .contact-page__eyebrow {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0 0 clamp(var(--space-xs), 0.8vh, var(--space-sm));
-    font-size: var(--text-label-size);
-    font-weight: var(--weight-semibold);
-    line-height: var(--text-label-leading);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--color-ink);
-  }
-  .contact-page__eyebrow::before {
-    content: '';
-    width: 8px;
-    height: 8px;
-    flex-shrink: 0;
-    background: var(--color-accent);
-    display: inline-block;
-    animation: contact-eyebrow-pulse 2.2s ease-in-out infinite;
-  }
-  @keyframes contact-eyebrow-pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(0.7); }
-  }
-
-  /* Identical to the Éditions title (sketch-012 F1) — same margin, font-size
-     clamp, line-height, letter-spacing, white-space, and display. Spacing
-     to the lead now comes from the header grid's own `gap` (matching how
-     Éditions spaces its title block from its intro), not a margin here. */
-  .contact-page h1 {
-    margin: var(--space-md) 0 0;
-    font-size: clamp(64px, 9vw, 140px);
-    font-weight: var(--weight-semibold);
-    font-family: var(--font-display);
-    line-height: 1.05;
-    letter-spacing: -0.04em;
-    white-space: nowrap;
-    display: inline-block;
-  }
-
-  /* Identical to the Éditions intro: grid-column 1 (stacked) on mobile,
-     column 2 with a left hairline past 760px, 46ch max-width, 1.5 line-height. */
-  .contact-page__lead {
-    grid-column: 1;
-    margin: 0;
-    max-width: 46ch;
-    line-height: 1.5;
-    color: #3a3a3a;
-  }
-  @media (min-width: 760px) {
-    .contact-page__lead {
-      grid-column: 2;
-      padding-bottom: 0.3em;
-      padding-left: var(--space-lg);
-      border-left: var(--border-hairline) solid var(--color-border);
-    }
-  }
+  /* PageTitleHeader.astro owns the header/eyebrow/h1/intro/halftone markup
+     and styling now — shared byte-for-byte with the Éditions overview page
+     (sketch-012 F1), so the two can never drift out of alignment again. */
 
   .contact-page__grid {
     display: grid;
@@ -377,11 +245,6 @@ const {
   }
 
   @media (max-width: 800px) {
-    .contact-page {
-      display: block;
-      min-height: auto;
-    }
-
     .contact-page__grid {
       grid-template-columns: 1fr;
       gap: var(--space-xl);

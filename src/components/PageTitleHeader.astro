@@ -1,0 +1,158 @@
+---
+// Shared page header: pulsing-dot eyebrow, giant title, drifting dot-halftone
+// texture, and an intro paragraph beside the title (≥760px) with a hairline
+// divider. Originally built for the Éditions overview (sketch-012 F1,
+// quick-260728-lbh/nj7/ok5). Extracted so Contact (quick-260728-ek0 follow-up)
+// renders the EXACT same markup/CSS instead of a hand-synced copy — two
+// separate implementations of "the same" header drifted out of alignment
+// (title/eyebrow position, halftone coverage, hairline position) the moment
+// either one changed.
+//
+// overflow:hidden on the header contains the halftone's -700px bleed (needed
+// for its edge-less fade). On a normally-scrolling page like Éditions this
+// bleed was invisible; on a page constrained to fit one viewport height with
+// no scroll it silently added 700px of scrollable area. Baked into the base
+// so both call sites get the correct behavior without a per-page patch.
+interface Props {
+  eyebrow?: string;
+  heading: string;
+  headingId?: string;
+  intro: string;
+}
+
+const { eyebrow = 'Atelier Jacqueline Suzanne', heading, headingId, intro } = Astro.props;
+---
+
+<header class="page-title-header">
+  <div class="page-title-header__halftone" aria-hidden="true"></div>
+  <div class="page-title-header__titleblock">
+    <p class="page-title-header__eyebrow">{eyebrow}</p>
+    <h1 id={headingId}>{heading}</h1>
+  </div>
+  <p class="page-title-header__intro">{intro}</p>
+</header>
+
+<style>
+  .page-title-header {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    margin-bottom: var(--space-lg);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
+  @media (min-width: 760px) {
+    .page-title-header {
+      grid-template-columns: auto 1fr;
+      align-items: end;
+      column-gap: var(--space-2xl);
+    }
+  }
+
+  .page-title-header__titleblock {
+    position: relative;
+    grid-column: 1;
+  }
+
+  .page-title-header__eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    margin: 0;
+    font-size: var(--text-label-size);
+    font-weight: var(--weight-semibold);
+    line-height: var(--text-label-leading);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: color 0.35s ease;
+  }
+  .page-title-header__eyebrow::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    flex-shrink: 0;
+    background: var(--color-accent);
+    display: inline-block;
+    animation: page-title-header-eyebrow-pulse 2.2s ease-in-out infinite;
+    transition: background-color 0.35s ease;
+  }
+  @keyframes page-title-header-eyebrow-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+
+  .page-title-header h1 {
+    margin: var(--space-md) 0 0;
+    font-size: clamp(64px, 9vw, 140px);
+    font-weight: var(--weight-semibold);
+    font-family: var(--font-display);
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+    white-space: nowrap;
+    display: inline-block;
+    transition: color 0.35s ease;
+  }
+
+  .page-title-header__intro {
+    grid-column: 1;
+    margin: 0;
+    line-height: 1.5;
+    color: #3a3a3a;
+    max-width: 46ch;
+    transition: color 0.35s ease, border-color 0.35s ease;
+  }
+  @media (min-width: 760px) {
+    .page-title-header__intro {
+      grid-column: 2;
+      padding-bottom: 0.3em;
+      border-left: var(--border-hairline) solid var(--color-border);
+      padding-left: var(--space-lg);
+    }
+  }
+
+  .page-title-header__halftone {
+    position: absolute;
+    top: -700px;
+    bottom: -700px;
+    left: -700px;
+    right: -700px;
+    background-image: radial-gradient(rgba(26, 26, 26, 0.16) 1.4px, transparent 1.6px);
+    background-size: 9px 9px;
+    -webkit-mask-image: radial-gradient(circle 640px at right 700px top 700px, black 0%, rgba(0, 0, 0, 0.72) 18%, rgba(0, 0, 0, 0.42) 40%, rgba(0, 0, 0, 0.18) 65%, rgba(0, 0, 0, 0.05) 85%, transparent 100%);
+    mask-image: radial-gradient(circle 640px at right 700px top 700px, black 0%, rgba(0, 0, 0, 0.72) 18%, rgba(0, 0, 0, 0.42) 40%, rgba(0, 0, 0, 0.18) 65%, rgba(0, 0, 0, 0.05) 85%, transparent 100%);
+    z-index: -1;
+    pointer-events: none;
+    display: none;
+    opacity: 0;
+    transition: filter 0.3s ease;
+    animation: page-title-header-halftone-fade-in 0.6s ease 0.3s forwards, page-title-header-halftone-drift 10s linear infinite;
+  }
+  @media (min-width: 760px) {
+    .page-title-header__halftone {
+      display: block;
+    }
+  }
+  @keyframes page-title-header-halftone-fade-in {
+    to { opacity: 1; }
+  }
+  @keyframes page-title-header-halftone-drift {
+    from { background-position: 0 0; }
+    to { background-position: 90px 45px; }
+  }
+  .page-title-header:hover .page-title-header__halftone {
+    animation-duration: 0.6s, 4s;
+    filter: contrast(1.35) brightness(0.85);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .page-title-header__halftone {
+      animation: none;
+      opacity: 1 !important;
+    }
+    .page-title-header__eyebrow::before {
+      animation: none;
+    }
+  }
+</style>
