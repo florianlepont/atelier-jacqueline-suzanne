@@ -3,6 +3,7 @@ import {
   DEFAULT_INSTAGRAM_URL,
   getHeroTextColor,
   normalizeHeroColor,
+  resolveEditionsIntro,
   resolveHomepageIntro,
   resolveSiteCopy,
 } from '../../src/lib/site-config';
@@ -59,6 +60,23 @@ describe('resolveSiteCopy', () => {
     );
 
     expect(copy.editionsLabel).toBe('Nos éditions');
+  });
+});
+
+describe('resolveEditionsIntro', () => {
+  it('falls back to the fr placeholder copy when Sanity is empty', () => {
+    expect(resolveEditionsIntro(null, 'fr')).toContain('objets imprimés');
+  });
+
+  it('falls back to the en placeholder copy when Sanity is empty', () => {
+    expect(resolveEditionsIntro(null, 'en')).toContain('printed objects');
+  });
+
+  it('uses the populated Sanity value when present, and falls back per-locale when a locale is missing', () => {
+    const page = { intro: { fr: 'Texte éditable' } };
+
+    expect(resolveEditionsIntro(page, 'fr')).toBe('Texte éditable');
+    expect(resolveEditionsIntro(page, 'en')).toContain('printed objects');
   });
 });
 
