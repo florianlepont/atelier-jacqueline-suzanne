@@ -123,8 +123,12 @@ const {
      (sketch-012 F1), so the two can never drift out of alignment again.
      One Contact-specific override: the halftone's -700px bleed is fine on
      Éditions (already scrolls) but silently adds 700px of scrollable area
-     here, breaking the no-scroll budget — contain it on this page only. */
-  :global(.contact-page .page-title-header) {
+     here, breaking the no-scroll budget. Containing it at .contact-page
+     (not the tighter .page-title-header) lets the visible bleed spill as
+     far as this page's own bounds allow — closer to Éditions' coverage —
+     while everything past that edge still gets clipped, so it never grows
+     the document's scrollHeight. */
+  .contact-page {
     overflow: hidden;
   }
 
