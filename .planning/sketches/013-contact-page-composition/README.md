@@ -1,5 +1,5 @@
 ---
-sketch: 012
+sketch: 013
 name: contact-page-composition
 question: "What does a 'bold & graphic' Contact page look like, given the current form panel's hard offset shadow is the exact motif Romane already rejected on the Éditions tiles (sketch 009)?"
 winner: "A3"
@@ -13,7 +13,7 @@ The Contact page (`ContactPageBody.astro`) is the one page kept deliberately unc
 
 ## How to View
 ```
-open .planning/sketches/012-contact-page-composition/index.html
+open .planning/sketches/013-contact-page-composition/index.html
 ```
 
 ## Variants
