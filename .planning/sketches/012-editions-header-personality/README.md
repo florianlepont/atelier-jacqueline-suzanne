@@ -95,11 +95,23 @@ Florian clarified one more time, with a screenshot of F2 for reference: "ce que 
 
 Lowered F1's dot opacity from `0.32` to `0.16` — close to F2's `0.14` resting state — so the field reads as muted/diffuse throughout, not just at the fade boundary. The hover response (`contrast(1.35) brightness(0.85)`, drift speeding up 10s → 4s) is unchanged and still applies correctly on top of the softer base — confirmed via computed style that `:hover` triggers the same filter values as before.
 
+Florian corrected the round-9 fix: "non c'est pas ce que je veux dire c'est que je n'aime pas qu'on voit autant le cadre de la limitation de ton animation. Si tu fais les points à l'extrémité plus diffus, on voit moins l'effet cadre / rebord" (that's not what I meant — I don't like seeing the frame/boundary of your animation's extent so clearly. If you make the dots at the extremity more diffuse, the frame/edge effect is less visible). So the issue was never the overall dot opacity — it was that the mask's fade-to-transparent happened over too short a visual distance, so the boundary of the dot cluster still read as a perceivable shape/frame even though it was technically a smooth gradient.
+
+## Round 10: a genuinely gradual, frame-less fade
+
+Reworked `.halftone`'s mask from a simple two-stop `black 0%, transparent 100%` circle (260px radius) to a four-stop gradient with a much longer tail — `black 0%, rgba(0,0,0,0.65) 30%, rgba(0,0,0,0.22) 60%, transparent 100%` at a 420px radius — and enlarged the box accordingly (`top/bottom: -160px`, `left: -55%`, `right: -60px`) so the far larger fade radius still completes safely within the box before hitting its real edge. The extra gradient stops slow the falloff curve near the outer edge specifically (the previous version's tail dropped too fast, "using up" its softness before it registered visually) — verified by screenshot that the dot field now trails off gradually across a wide area with no perceivable ring/frame boundary anywhere in the header.
+
+Round 10's fix wasn't enough: "je vois toujours la boundary même si elle à été réduite" (I still see the boundary even though it's been reduced). Root cause: round 10's mask (420px radius) had only been visually checked at a ~1280px-wide viewport. At narrower widths the same fixed-pixel radius covers proportionally more of the header, but the multi-stop gradient's early stops (30%/60% of only 420px) still completed their transition to near-transparent within a fairly short absolute distance — short enough to still read as a discernible edge once the header itself was narrower and closer to that transition zone.
+
+## Round 11: much longer fade, verified at multiple widths
+
+Reworked the mask again — radius `420px → 640px`, five gradient stops instead of three for an even more gradual curve (`black 0%, 0.72 @18%, 0.42 @40%, 0.18 @65%, 0.05 @85%, transparent 100%`), and the box enlarged to comfortably contain the new radius on every side (`top/bottom: -260px`, `left: -90%`, `right: -100px`). This time verified visually at **three viewport widths (800px, 1024px, 1440px)**, not just one — confirmed via screenshots at each that the dot field trails off gradually with no perceivable edge anywhere, which is what exposed round 10's gap in the first place (narrow-viewport testing was missing).
+
 ## What to Look For
 
 - Does it actually read as "fun/modern," or does it feel like a gimmick bolted onto a serious brand?
 - Does it still feel like the same site as the rest of AJS (Unbounded display font, monochrome + single pink accent, sharp corners, hairlines) — no foreign visual language?
-- Confirm the dot field fades to nothing smoothly on every edge, at multiple viewport widths — no hard cutoff anywhere.
-- At the new, softer 0.16 opacity, is the hover contrast bump still noticeable enough to register as feedback, or does it now need to be stronger since there's less base material to darken?
+- Confirm no perceivable frame/edge to the dot cluster anywhere, at YOUR actual browser window width — if it's still visible, the exact width/zoom level would help narrow down whether this is a further mask-tuning issue or a genuinely different rendering environment (e.g. Safari vs Chrome, actual DPI/zoom).
+- At the softened 0.16 dot opacity, is the hover contrast bump still noticeable enough to register as feedback, or does it now need to be stronger since there's less base material to darken?
 - Constant drift (F1) vs. the breathing pulse (F3, still in the file for comparison) — now that both have identical polish, which motion actually feels better over time on a page people may read, not just glance at?
 - Does the row entrance feel like a natural continuation of the title's entrance, or does the 0.6s/0.72s delay feel too slow if there are ever more than 2 éditions (e.g. 5-6 rows — should later rows keep incrementing the delay, or cap it so the list doesn't take forever to finish appearing)?
