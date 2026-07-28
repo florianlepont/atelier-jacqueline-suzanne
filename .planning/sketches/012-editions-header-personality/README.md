@@ -34,11 +34,21 @@ Florian's round-1 feedback: "j'aime bien le 3 ! mais j'aimerais un truc encore p
 - **C3: Stamp Pop** — the index numeral becomes a tilted (-9°) rubber-stamp badge: pink outline box, pink numeral, sticker-like. Hovering it snaps upright, scales up, and fills solid pink — a tactile micro-interaction.
 - **C4: Motion Surge** — combines the bigger title with an entrance animation: the title scales/settles in with a slight rotation, the ghost numeral spins in on a delay and lands tilted, the eyebrow marker pulses continuously. Personality comes from scale + motion together. Includes "Rejouer l'entrée" and respects `prefers-reduced-motion`.
 
+Florian's round-2 feedback: "j'aime bien C4 mais ça ne signifie rien le 02" (I like C4, but the "02" doesn't mean anything) — correct catch: it was a static decorative placeholder standing in for "number of published éditions," but nothing on the page explained that, so it just read as a random unexplained number. Round 3 keeps C4's motion exactly, swaps out what fills that space.
+
+## Variants — Round 3 (swapping the "02" in C4)
+
+`index.html` now shows Round 3 by default: **C4 (with "02")** kept as a reference tab, plus three replacements — same title size, same entrance motion (scale/settle + eyebrow pulse + intro fade), only the decorative mark behind the title changes:
+
+- **D1: Spark Mark** — the "02" is replaced with a solid pink spark/asterisk glyph (✳). Purely decorative — doesn't pretend to be data, just graphic energy. Spins in on load like the old numeral did.
+- **D2: Ghost Echo ("É")** — replaced with a huge thin-outline echo of the title's own accented initial. Reinforces the wordmark itself instead of introducing unexplained new content.
+- **D3: No Ghost (clean)** — the decorative mark is removed entirely. Personality comes only from the bigger title size and the settle-in motion.
+
 ## What to Look For
 
 - Does it actually read as "fun/modern," or does it feel like a gimmick bolted onto a serious brand?
 - Does it still feel like the same site as the rest of AJS (Unbounded display font, monochrome + single pink accent, sharp corners, hairlines) — no foreign visual language?
-- C2 vs C3: solid-tilted ghost shape vs. tactile stamp badge — which pink treatment feels more "AJS" and less generic?
-- C4: does the entrance feel confident on first load, or does it wear thin on repeat visits (this is a page users may return to)?
-- Is the enlarged title now too big relative to the "Rebut"/"Silos" édition titles below it, or does the size hierarchy still read clearly?
-- All variants are cherry-pickable — e.g. C3's stamp could sit inside C4's motion, or C2's hover-deepen could apply to C3's stamp too.
+- D1 vs D2: an abstract mark vs. an echo of the title's own initial — which still feels intentional rather than random?
+- D3: is the ghost mark actually adding anything, or was the bigger title + motion already enough "fun" on its own?
+- Does the entrance feel confident on first load, or does it wear thin on repeat visits (this is a page users may return to)?
+- All variants are cherry-pickable — e.g. D1's spark could use D2's outline-only treatment instead of solid fill, or vice versa.
