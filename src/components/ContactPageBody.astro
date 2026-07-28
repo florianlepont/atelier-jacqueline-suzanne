@@ -98,15 +98,16 @@ const {
 </div>
 
 <style>
-  /* Same top-anchored positioning as Éditions' .editions-list (not
-     vertically centered) — title/eyebrow land at the exact same distance
-     from the site header on both pages (padding-top is identical, width-
-     based, matching Éditions exactly — that's what the title/eyebrow/line
-     alignment actually depends on). padding-bottom deliberately stays
-     height-responsive (unlike Éditions' fixed 7vw) — Éditions doesn't care
-     since it already scrolls; here a fixed ~96px bottom pad reintroduced
-     70px of scroll at 768px-tall viewports since nothing else shrinks to
-     compensate for it anymore now that centering is gone. */
+  /* Same top-anchored positioning AND padding as Éditions' .editions-list —
+     title/eyebrow land at the exact same distance from the site header on
+     both pages, and padding-bottom now matches exactly too. The no-scroll
+     requirement (and the html/body hard-clip it needed) was dropped at the
+     user's request once the footer came back — Contact now scrolls like
+     any normal page, same as Éditions, so there's no more tension between
+     "fits one screen" and "footer is visible." PageTitleHeader.astro's
+     halftone bleed (shared byte-for-byte with Éditions, sketch-012 F1) is
+     fully unclipped here too, exactly like Éditions, since nothing needs
+     to contain it anymore. */
   .contact-page {
     --color-accent: var(--color-ink);
 
@@ -115,46 +116,7 @@ const {
     box-sizing: border-box;
     padding-inline: var(--editorial-page-padding-inline);
     padding-top: clamp(48px, 7vw, 56px);
-    padding-bottom: clamp(16px, 3vh, 96px);
-  }
-
-  /* PageTitleHeader.astro owns the header/eyebrow/h1/intro/halftone markup
-     and styling now — shared byte-for-byte with the Éditions overview page
-     (sketch-012 F1), so the two can never drift out of alignment again —
-     including the halftone's -700px bleed, completely unclipped, same as
-     Éditions. Clipping it at any container narrower than the viewport
-     (.page-title-header, then .contact-page) kept falling short of
-     Éditions' actual reach, since .contact-page itself is inset from the
-     real page edge (max-width + centering). Solved at the source instead:
-     clip vertical overflow at <body> (see the :global(body) rule below),
-     which spans the full viewport width — so the halftone reaches exactly
-     as far right as it does on Éditions, with no container narrower than
-     the viewport ever clipping it. */
-
-  /* Guarantees no vertical scroll on desktop regardless of the halftone's
-     unclipped bleed, WITHOUT touching horizontal overflow (the halftone
-     still reaches the true right edge of the viewport, matching Éditions).
-     Explicitly scoped to min-width:800px — mobile MUST keep real scrolling
-     (stacked layout is legitimately taller than the viewport there; this
-     is not the "content might overflow" edge case below, it's expected,
-     everyday mobile content). Verified directly: without this guard,
-     overflow-y:hidden still measured as computed on mobile in testing, yet
-     window.scrollTo() kept working there anyway (Chromium quirk not fully
-     understood) — not something to depend on. The @media guard removes all
-     doubt regardless of that.
-     Trade-off on desktop: this is a hard clip, not a "content naturally
-     fits" budget — verified 0px overflow and full submit-button visibility
-     at 650-1080px+ height across both locales, but at some untested
-     viewport/font-rendering combination content could clip and become
-     unreachable rather than scrollable. Scoped via :global() so it only
-     loads in the bundle for pages using ContactPageBody (same pattern as
-     EditionsOverviewBody's :global(html.editions-row-active) rules).
-  */
-  @media (min-width: 800px) {
-    :global(html:has(.contact-page)),
-    :global(body:has(.contact-page)) {
-      overflow-y: hidden;
-    }
+    padding-bottom: var(--editorial-page-padding-block);
   }
 
   .contact-page__grid {
