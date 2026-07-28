@@ -437,25 +437,53 @@
   }
   #variant-f2 .bg-header:hover .halftone-diffuse { opacity: 1; }
 
-  /* F3 — Breathing Halftone: same static grid as E1 but the whole field
-     pulses gently in opacity, a slow "alive" print-grain shimmer with no
-     directional movement. */
+  /* F3 — Breathing Halftone: same grid as before but the whole field pulses
+     gently in opacity, a slow "alive" print-grain shimmer with no
+     directional movement. Round 6 fixes: (1) the dot field previously
+     ended at a hard box edge inside the visible area because the mask
+     percentage never fully reached transparent before the box boundary —
+     now the box is generously oversized (well beyond the visible header on
+     every side) and the mask uses a fixed-radius circle anchored near the
+     top-right, so it fades all the way to nothing long before the box's
+     real edge is reached, wherever that edge happens to be. (2) a small
+     hover response: hovering the header speeds up the breathing and
+     deepens the dots slightly, so the texture visibly reacts to attention. */
   #variant-f3 .halftone {
-    position: absolute; inset: -40px -20px -40px auto; right: -20px; width: 60%; height: calc(100% + 80px);
+    position: absolute; top: -80px; bottom: -80px; left: -35%; right: -30px;
     background-image: radial-gradient(rgba(26, 26, 26, 0.34) 1.4px, transparent 1.6px);
     background-size: 9px 9px;
-    -webkit-mask-image: radial-gradient(ellipse 70% 70% at 70% 40%, black 0%, transparent 75%);
-    mask-image: radial-gradient(ellipse 70% 70% at 70% 40%, black 0%, transparent 75%);
+    -webkit-mask-image: radial-gradient(circle 260px at right 70px top 90px, black 0%, transparent 100%);
+    mask-image: radial-gradient(circle 260px at right 70px top 90px, black 0%, transparent 100%);
     z-index: -1; pointer-events: none;
-    opacity: 0; transition: opacity 0.6s ease 0.3s;
+    opacity: 0; transition: opacity 0.6s ease 0.3s, filter 0.3s ease;
   }
   #variant-f3.revealed .halftone { opacity: 1; animation: f3-breathe 4s ease-in-out infinite; }
   @keyframes f3-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+  #variant-f3 .bg-header:hover .halftone {
+    animation-duration: 1.6s;
+    filter: contrast(1.35) brightness(0.85);
+  }
+
+  /* Round 7 — "les Éditions devraient aussi avoir un effet d'apparition à
+     l'ouverture de la page, pour rester cohérent avec celui du titre": the
+     row list below the header currently has zero entrance motion while the
+     title/intro settle in — extending the same page-load choreography to
+     each édition row, staggered slightly after the intro finishes, so the
+     whole page opens as one coherent sequence rather than header-then-static. */
+  #variant-f3 .editions-index__row {
+    opacity: 0; transform: translateY(20px);
+  }
+  #variant-f3.revealed .editions-index__row {
+    animation: f3-row-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  #variant-f3.revealed .editions-index__row:nth-of-type(1) { animation-delay: 0.6s; }
+  #variant-f3.revealed .editions-index__row:nth-of-type(2) { animation-delay: 0.72s; }
+  @keyframes f3-row-in { to { opacity: 1; transform: translateY(0); } }
 
   @media (prefers-reduced-motion: reduce) {
     #variant-f1 .bg-eyebrow, #variant-f1 .bg-h1, #variant-f1 .bg-intro,
     #variant-f2 .bg-eyebrow, #variant-f2 .bg-h1, #variant-f2 .bg-intro,
-    #variant-f3 .bg-eyebrow, #variant-f3 .bg-h1, #variant-f3 .bg-intro {
+    #variant-f3 .bg-eyebrow, #variant-f3 .bg-h1, #variant-f3 .bg-intro, #variant-f3 .editions-index__row {
       opacity: 1 !important; transform: none !important; animation: none !important;
     }
     #variant-f1 .bg-eyebrow::before, #variant-f2 .bg-eyebrow::before, #variant-f3 .bg-eyebrow::before { animation: none; }
@@ -476,12 +504,11 @@
 <body>
 
 <div id="variant-nav">
-  <div class="round-label">Round 5 — E1 loved, but wanted more dynamic + no pink: grey halftone, 3 ways to keep it moving</div>
+  <div class="round-label">Round 7 — F3 refined: smooth diffuse edge, hover response, and rows now animate in with the title</div>
   <div class="tabs">
-    <button class="variant-tab" onclick="showVariant('e1')">E1: Static Pink (reference)</button>
-    <button class="variant-tab active" onclick="showVariant('f1')">F1: Drifting Grey Halftone</button>
-    <button class="variant-tab" onclick="showVariant('f2')">F2: Ink Diffusion (cursor)</button>
-    <button class="variant-tab" onclick="showVariant('f3')">F3: Breathing Halftone</button>
+    <button class="variant-tab" onclick="showVariant('f1')">F1: Drifting (reference)</button>
+    <button class="variant-tab" onclick="showVariant('f2')">F2: Ink Diffusion (reference)</button>
+    <button class="variant-tab active" onclick="showVariant('f3')">F3: Breathing Halftone (fixed)</button>
   </div>
 </div>
 
@@ -539,7 +566,7 @@
 </div>
 
 <!-- ================= VARIANT F1 — Drifting Grey Halftone ================= -->
-<div id="variant-f1" class="variant active">
+<div id="variant-f1" class="variant">
   <div class="page">
     <header class="bg-header">
       <div class="halftone" aria-hidden="true"></div>
@@ -595,7 +622,7 @@
 </div>
 
 <!-- ================= VARIANT F3 — Breathing Halftone ================= -->
-<div id="variant-f3" class="variant">
+<div id="variant-f3" class="variant active">
   <div class="page">
     <header class="bg-header">
       <div class="halftone" aria-hidden="true"></div>
@@ -642,8 +669,8 @@
     requestAnimationFrame(() => el.classList.add('revealed'));
   }
 
-  // F1 is the default active tab on load — trigger its entrance once.
-  requestAnimationFrame(() => replayVariant('f1'));
+  // F3 is the default active tab on load — trigger its entrance once.
+  requestAnimationFrame(() => replayVariant('f3'));
 
   // F2 — ink diffusion: track pointer position within the header and
   // expose it as CSS custom properties the .halftone-diffuse mask reads.

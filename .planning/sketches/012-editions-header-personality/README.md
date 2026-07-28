@@ -64,11 +64,26 @@ Florian's round-4 feedback: "I love E1! but it's not really dynamic and I don't 
 - **F2: Ink Diffusion (cursor)** — a very faint grey dot grid sits behind the header at rest; moving the cursor over the header makes nearby dots grow larger and darker in a soft circle, like ink spreading into paper where you touch it. Ties into the same cursor-follow gesture the row list below already teaches on this page (same mechanic as round 4's E2, applied to the loved halftone instead of a glow).
 - **F3: Breathing Halftone** — the dot field pulses gently in opacity on a slow loop, a print-grain shimmer with no directional movement.
 
+Florian's round-5 feedback: "I love F3, but I was expecting a small interaction when hovering on it + the dots not stoping on the margin" — F3 chosen as the winner, with two concrete bugs to fix: (1) the dot field visibly hit a hard rectangular cutoff inside the visible area instead of fading out smoothly — the mask's math was fine, but the underlying `.halftone` box itself was too narrow (`width: 60%`), so dots simply stopped existing at that box's edge before the mask ever reached full transparency; (2) no hover response — F3 only breathed ambiently, nothing changed on interaction.
+
+## Round 6 (final): F3 fixed
+
+`index.html` now shows Round 6 by default, with **F3 as the sole live variant** (F1/F2 kept as inert reference tabs, not iterated further):
+
+- **Edge fix**: `.halftone`'s box is now generously oversized (extends ~35% past the header on the left, well past the visible area on every side) and the mask switched to a fixed-pixel-radius circle anchored near the top-right (`circle 260px at right 70px top 90px`) instead of a percentage-sized ellipse. Because the mask's radius is fixed and small relative to the new, much larger box, the fade always completes to full transparency long before the box's real edge is reached — there's no longer any point where dots simply stop existing.
+- **Hover response**: hovering the header now speeds up the breathing animation (4s → 1.6s) and deepens the dots (`filter: contrast(1.35) brightness(0.85)`), so the texture visibly reacts to attention instead of only pulsing ambiently regardless of interaction.
+
+Florian confirmed the diffuse-edge fix matches what he meant (sent a screenshot of the fixed, smoothly-fading state as reference for "quelque chose de diffus comme ça"), and added one more ask in the same message: "les Éditions devraient aussi avoir un effet d'apparition à l'ouverture de la page, pour rester cohérent avec celui du titre" (the éditions [row list] should also have an appearance effect when the page opens, to stay consistent with the title's).
+
+## Round 7: rows now animate in with the header
+
+Until this round, only the header (eyebrow, title, intro) animated in on load — the "Rebut"/"Silos" row list below was static, appearing instantly with no motion, which broke the sense of one coherent page-load sequence. Fixed: each `.editions-index__row` now fades up (`opacity: 0` + `translateY(20px)` → settled) using the same easing as the header's entrance, staggered after the intro finishes (row 1 at 0.6s, row 2 at 0.72s) so the whole page opens as one continuous choreography: eyebrow → title → intro → row 1 → row 2. Verified via computed styles mid-animation (700ms into the replay: row 1 partway through its fade at opacity ~0.68, row 2 not yet started at opacity 0) — confirms the stagger is real, not simultaneous.
+
 ## What to Look For
 
 - Does it actually read as "fun/modern," or does it feel like a gimmick bolted onto a serious brand?
 - Does it still feel like the same site as the rest of AJS (Unbounded display font, monochrome + single pink accent, sharp corners, hairlines) — no foreign visual language?
-- Grey vs pink: does removing the pink make the texture read more "print," or does it lose some of the "fun" the pink added?
-- F1 vs F3: constant directional drift vs. a slow opacity pulse — which "dynamic" feels right for a page people may sit on and read, not just glance at?
-- F2: is cursor-only motion satisfying, or does the texture need to feel alive even before anyone touches it (in which case F1/F3 fit better as a base, with F2's diffusion possibly layered on top)?
+- Confirm the dot field fades to nothing smoothly on every edge, at multiple viewport widths — no hard cutoff anywhere.
+- Does the hover response (faster pulse + deeper contrast) read as intentional feedback, or is it too subtle / too strong?
+- Does the row entrance feel like a natural continuation of the title's entrance, or does the 0.6s/0.72s delay feel too slow if there are ever more than 2 éditions (e.g. 5-6 rows — should later rows keep incrementing the delay, or cap it so the list doesn't take forever to finish appearing)?
 - All variants are cherry-pickable across every round so far — e.g. F1's drift could combine with F2's cursor diffusion for both ambient AND reactive motion at once.
