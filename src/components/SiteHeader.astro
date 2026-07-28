@@ -118,11 +118,12 @@ const {
     align-items: center;
     justify-content: space-between;
     gap: var(--space-md);
+    transition: background-color 0.35s ease, color 0.35s ease;
   }
 
   /* quick-260724-uf5 (sketch 006): deliberately REUSES the exact same
-     `ajs-header` name HomeCarousel.astro's own `.home :global(.site-header)`
-     rule already assigns to this same element (that more-specific homepage
+     `ajs-header` name HomeCarousel.astro's own `.home`-scoped global override
+     of `.site-header` rule already assigns to this same element (that more-specific homepage
      rule wins on the homepage, but sets the IDENTICAL value, so there is no
      conflict). Everywhere else (gallery/edition/about/contact) this newly
      lets the header participate as a persistent, named element in

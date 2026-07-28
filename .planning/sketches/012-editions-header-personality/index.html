@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sketch 012 — Éditions Header Personality (Round 2: Broken Grid refinements)</title>
+<link rel="stylesheet" href="../themes/default.css" />
+<style>
+  body { padding-top: 78px; }
+
+  /* ===== Variant tab nav ===== */
+  #variant-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9998;
+    background: var(--gray-0); border-bottom: 1px solid var(--color-border);
+    padding: 10px 16px; font-family: var(--font-sans);
+  }
+  #variant-nav .round-label {
+    font-size: 11px; font-weight: var(--weight-semibold); letter-spacing: 0.08em;
+    text-transform: uppercase; color: #6b6b6b; margin-bottom: 6px;
+  }
+  #variant-nav .tabs { display: flex; gap: 8px; }
+  .variant-tab {
+    font-family: var(--font-sans); font-size: 13px; font-weight: var(--weight-semibold);
+    padding: 8px 14px; border: 1px solid var(--color-border); background: var(--gray-0);
+    color: var(--color-ink); cursor: pointer; border-radius: var(--radius-sm);
+    transition: all 0.15s ease;
+  }
+  .variant-tab:hover { border-color: var(--color-ink); }
+  .variant-tab.active { background: var(--color-ink); color: var(--gray-0); border-color: var(--color-ink); }
+
+  .variant { display: none; }
+  .variant.active { display: block; }
+
+  /* ===== Shared page shell (matches real .editions-list) ===== */
+  .page {
+    width: min(100%, var(--editorial-page-max));
+    margin: 0 auto;
+    padding: var(--editorial-page-padding-block) var(--editorial-page-padding-inline);
+  }
+
+  /* Shared row-list below the header — NOT the subject of this sketch, kept
+     visually identical to production so the header can be judged in context. */
+  .editions-index { position: relative; margin-top: 0; }
+  .editions-index__row {
+    display: block; padding: var(--space-xl) 0;
+    border-bottom: var(--border-hairline) solid var(--color-border);
+    text-decoration: none; color: var(--color-ink);
+  }
+  .editions-index__row:first-of-type { border-top: var(--border-hairline) solid var(--color-ink); }
+  .editions-index__number {
+    font-size: 13px; color: #6b6b6b; font-weight: var(--weight-semibold);
+    letter-spacing: 0.08em; margin-bottom: var(--space-sm); display: block;
+  }
+  .editions-index__title {
+    font-family: var(--font-display); font-weight: var(--weight-semibold);
+    font-size: clamp(32px, 5vw, 64px); line-height: 0.95; letter-spacing: -0.02em;
+    margin: 0; transition: opacity 0.25s ease;
+  }
+  .editions-index__statement-wrap { display: grid; grid-template-rows: 0fr; overflow: hidden; transition: grid-template-rows 0.3s ease; }
+  .editions-index__statement { min-height: 0; max-width: 46ch; line-height: 1.5; margin: var(--space-sm) 0 0; color: #6b6b6b; opacity: 0; overflow: hidden; transition: opacity 0.3s ease; }
+  .editions-index:hover .editions-index__title { opacity: 0.28; }
+  .editions-index__row:hover .editions-index__title { opacity: 1; }
+  .editions-index__row:hover .editions-index__statement-wrap { grid-template-rows: 1fr; }
+  .editions-index__row:hover .editions-index__statement { opacity: 1; }
+
+  /* ============================================================
+     Shared broken-grid skeleton (all Round 2 variants + baseline C
+     build on this composition — title beside intro, hairline divider)
+     ============================================================ */
+  .bg-header {
+    position: relative; margin-bottom: var(--space-2xl);
+    display: grid; grid-template-columns: 1fr; gap: var(--space-lg);
+  }
+  @media (min-width: 760px) {
+    .bg-header { grid-template-columns: auto 1fr; align-items: end; column-gap: var(--space-2xl); }
+  }
+  .bg-titleblock { position: relative; grid-column: 1; }
+  .bg-eyebrow {
+    display: flex; align-items: center; gap: 8px; width: fit-content; margin: 0;
+    font-size: var(--text-label-size); font-weight: var(--weight-semibold);
+    line-height: var(--text-label-leading); letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .bg-h1 {
+    margin: var(--space-md) 0 0;
+    font-weight: var(--weight-semibold); font-family: var(--font-display);
+    line-height: 0.9; letter-spacing: -0.04em; white-space: nowrap;
+  }
+  .bg-intro {
+    grid-column: 1; margin: 0; line-height: 1.5; color: #3a3a3a; max-width: 46ch;
+  }
+  @media (min-width: 760px) {
+    .bg-intro { grid-column: 2; padding-bottom: 0.3em; border-left: var(--border-hairline) solid var(--color-border); padding-left: var(--space-lg); }
+  }
+
+  /* ============================================================
+     VARIANT C — Broken Grid (Round 1 baseline, kept for comparison)
+     ============================================================ */
+  #variant-c .bg-h1 { font-size: var(--editorial-page-title-size); }
+  #variant-c .bg-eyebrow::before { content: ''; width: 8px; height: 8px; background: var(--color-accent); display: inline-block; }
+  #variant-c .ghost-num {
+    position: absolute; right: 0; top: -0.35em; font-family: var(--font-display);
+    font-weight: var(--weight-semibold); font-size: clamp(64px, 11vw, 160px);
+    line-height: 1; color: transparent; -webkit-text-stroke: 1.5px var(--color-border);
+    z-index: -1; pointer-events: none; user-select: none; display: none;
+  }
+  @media (min-width: 760px) { #variant-c .ghost-num { display: block; right: -12px; } }
+
+  /* ============================================================
+     VARIANT C2 — Bold & Tilted
+     Much bigger title; the ghost numeral is now solid-filled pale
+     pink (not just an outline) and tilted, peeking out from behind
+     the title like a torn poster layer.
+     ============================================================ */
+  #variant-c2 .bg-h1 { font-size: clamp(64px, 9vw, 140px); }
+  #variant-c2 .bg-eyebrow::before {
+    content: ''; width: 9px; height: 9px; background: var(--color-accent);
+    display: inline-block; transform: rotate(45deg);
+  }
+  #variant-c2 .ghost-num {
+    position: absolute; right: -8px; top: -0.5em; font-family: var(--font-display);
+    font-weight: var(--weight-semibold); font-size: clamp(80px, 13vw, 200px);
+    line-height: 1; color: rgba(214, 50, 124, 0.16);
+    transform: rotate(-6deg); z-index: -1; pointer-events: none; user-select: none;
+    display: none; transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), color 0.4s ease;
+  }
+  @media (min-width: 760px) { #variant-c2 .ghost-num { display: block; } }
+  #variant-c2 .bg-titleblock:hover .ghost-num { transform: rotate(-2deg) scale(1.04); color: rgba(214, 50, 124, 0.26); }
+
+  /* ============================================================
+     VARIANT C3 — Stamp Pop
+     Big title; the index numeral becomes a tilted rubber-stamp badge
+     (solid pink fill, thin pink box outline) that snaps upright and
+     scales slightly on hover — a fun, tactile, sticker-like detail.
+     ============================================================ */
+  #variant-c3 .bg-h1 { font-size: clamp(64px, 9vw, 140px); }
+  #variant-c3 .bg-eyebrow::before {
+    content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--color-accent);
+    display: inline-block;
+  }
+  #variant-c3 .stamp {
+    position: absolute; right: -4px; top: -0.6em; display: none;
+    font-family: var(--font-display); font-weight: var(--weight-semibold);
+    font-size: clamp(28px, 3vw, 40px); line-height: 1; color: var(--color-accent);
+    border: 2px solid var(--color-accent); padding: 6px 14px;
+    transform: rotate(-9deg); z-index: 1; user-select: none; cursor: default;
+    transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), background 0.25s ease, color 0.25s ease;
+  }
+  @media (min-width: 760px) { #variant-c3 .stamp { display: block; } }
+  #variant-c3 .stamp:hover {
+    transform: rotate(0deg) scale(1.08);
+    background: var(--color-accent); color: var(--gray-0);
+  }
+
+  /* ============================================================
+     VARIANT C4 — Motion Surge
+     Big title, entrance-animated: the title scales/settles in, the
+     ghost numeral spins in slightly delayed and lands tilted, the
+     eyebrow marker pulses. Same broken-grid composition, personality
+     comes from combining scale + motion.
+     ============================================================ */
+  #variant-c4 .bg-h1 {
+    font-size: clamp(64px, 9vw, 140px);
+    display: inline-block; opacity: 0; transform: scale(0.82) translateY(18px) rotate(-2deg);
+  }
+  #variant-c4 .bg-eyebrow { opacity: 0; transform: translateY(6px); }
+  #variant-c4 .bg-eyebrow::before {
+    content: ''; width: 8px; height: 8px; background: var(--color-accent); display: inline-block;
+    animation: c4-pulse 2.2s ease-in-out infinite;
+  }
+  @keyframes c4-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
+  #variant-c4 .ghost-num {
+    position: absolute; right: -8px; top: -0.5em; font-family: var(--font-display);
+    font-weight: var(--weight-semibold); font-size: clamp(80px, 13vw, 200px);
+    line-height: 1; color: rgba(214, 50, 124, 0.16);
+    z-index: -1; pointer-events: none; user-select: none; display: none;
+    opacity: 0; transform: rotate(24deg) scale(0.7);
+  }
+  @media (min-width: 760px) { #variant-c4 .ghost-num { display: block; } }
+  #variant-c4 .bg-intro { opacity: 0; transform: translateY(10px); }
+  #variant-c4.revealed .bg-eyebrow { animation: c4-fade-up 0.45s cubic-bezier(0.16,1,0.3,1) 0s forwards; }
+  #variant-c4.revealed .bg-h1 { animation: c4-settle 0.65s cubic-bezier(0.16,1,0.3,1) 0.1s forwards; }
+  #variant-c4.revealed .ghost-num { animation: c4-spin-in 0.7s cubic-bezier(0.16,1,0.3,1) 0.2s forwards; }
+  #variant-c4.revealed .bg-intro { animation: c4-fade-up 0.45s cubic-bezier(0.16,1,0.3,1) 0.5s forwards; }
+  @keyframes c4-fade-up { to { opacity: 1; transform: translateY(0); } }
+  @keyframes c4-settle { to { opacity: 1; transform: scale(1) translateY(0) rotate(0deg); } }
+  @keyframes c4-spin-in { to { opacity: 1; transform: rotate(-6deg) scale(1); } }
+  #variant-c4 .replay {
+    margin-top: var(--space-lg); font-family: var(--font-sans); font-size: 12px;
+    font-weight: var(--weight-semibold); letter-spacing: 0.04em; text-transform: uppercase;
+    background: none; border: 1px solid var(--color-border); padding: 8px 14px;
+    cursor: pointer; color: #6b6b6b; transition: all 0.15s ease;
+  }
+  #variant-c4 .replay:hover { border-color: var(--color-ink); color: var(--color-ink); }
+  @media (prefers-reduced-motion: reduce) {
+    #variant-c4 .bg-eyebrow, #variant-c4 .bg-h1, #variant-c4 .ghost-num, #variant-c4 .bg-intro {
+      opacity: 1 !important; transform: none !important; animation: none !important;
+    }
+    #variant-c4 .bg-eyebrow::before { animation: none; }
+  }
+
+  /* ============================================================
+     ROUND 3 — "02 means nothing" (Florian's feedback on C4).
+     All three keep C4's exact motion (title scale/settle, eyebrow
+     pulse, intro fade) but replace or remove the ghost numeral,
+     which was decorative-only and unreadable as data.
+     ============================================================ */
+  #variant-d1 .bg-h1, #variant-d2 .bg-h1 {
+    font-size: clamp(64px, 9vw, 140px);
+    display: inline-block; opacity: 0; transform: scale(0.82) translateY(18px) rotate(-2deg);
+  }
+  #variant-d3 .bg-h1 {
+    font-size: clamp(64px, 9vw, 140px);
+    display: inline-block; opacity: 0; transform: scale(0.82) translateY(18px) rotate(-2deg);
+  }
+  #variant-d1 .bg-eyebrow, #variant-d2 .bg-eyebrow, #variant-d3 .bg-eyebrow { opacity: 0; transform: translateY(6px); }
+  #variant-d1 .bg-eyebrow::before, #variant-d2 .bg-eyebrow::before, #variant-d3 .bg-eyebrow::before {
+    content: ''; width: 8px; height: 8px; background: var(--color-accent); display: inline-block;
+    animation: c4-pulse 2.2s ease-in-out infinite;
+  }
+  #variant-d1 .bg-intro, #variant-d2 .bg-intro, #variant-d3 .bg-intro { opacity: 0; transform: translateY(10px); }
+
+  #variant-d1.revealed .bg-eyebrow, #variant-d2.revealed .bg-eyebrow, #variant-d3.revealed .bg-eyebrow {
+    animation: c4-fade-up 0.45s cubic-bezier(0.16,1,0.3,1) 0s forwards;
+  }
+  #variant-d1.revealed .bg-h1, #variant-d2.revealed .bg-h1, #variant-d3.revealed .bg-h1 {
+    animation: c4-settle 0.65s cubic-bezier(0.16,1,0.3,1) 0.1s forwards;
+  }
+  #variant-d1.revealed .bg-intro, #variant-d2.revealed .bg-intro, #variant-d3.revealed .bg-intro {
+    animation: c4-fade-up 0.45s cubic-bezier(0.16,1,0.3,1) 0.5s forwards;
+  }
+
+  /* D1 — Spark Mark: a purely decorative pink spark glyph, no implied meaning */
+  #variant-d1 .spark {
+    position: absolute; right: -6px; top: -0.4em; display: none;
+    font-family: var(--font-display); font-size: clamp(64px, 10vw, 150px);
+    line-height: 1; color: var(--color-accent);
+    z-index: -1; pointer-events: none; user-select: none;
+    opacity: 0; transform: rotate(24deg) scale(0.6);
+  }
+  @media (min-width: 760px) { #variant-d1 .spark { display: block; } }
+  #variant-d1.revealed .spark { animation: c4-spin-in 0.7s cubic-bezier(0.16,1,0.3,1) 0.2s forwards; }
+
+  /* D2 — Ghost Echo: a huge thin-outline echo of the title's own accented
+     initial ("É") — reinforces the wordmark instead of introducing new,
+     unexplained content. */
+  #variant-d2 .echo {
+    position: absolute; right: -10px; top: -0.5em; display: none;
+    font-family: var(--font-display); font-weight: var(--weight-semibold);
+    font-size: clamp(90px, 15vw, 220px); line-height: 1;
+    color: transparent; -webkit-text-stroke: 1.5px var(--color-border);
+    z-index: -1; pointer-events: none; user-select: none;
+    opacity: 0; transform: rotate(24deg) scale(0.7);
+  }
+  @media (min-width: 760px) { #variant-d2 .echo { display: block; } }
+  #variant-d2.revealed .echo { animation: c4-spin-in 0.7s cubic-bezier(0.16,1,0.3,1) 0.2s forwards; }
+
+  /* D3 — No Ghost: nothing decorative behind the title at all. Personality
+     comes only from title size + the settle-in motion + intro placement. */
+
+  #variant-d1 .replay, #variant-d2 .replay, #variant-d3 .replay {
+    margin-top: var(--space-lg); font-family: var(--font-sans); font-size: 12px;
+    font-weight: var(--weight-semibold); letter-spacing: 0.04em; text-transform: uppercase;
+    background: none; border: 1px solid var(--color-border); padding: 8px 14px;
+    cursor: pointer; color: #6b6b6b; transition: all 0.15s ease;
+  }
+  #variant-d1 .replay:hover, #variant-d2 .replay:hover, #variant-d3 .replay:hover { border-color: var(--color-ink); color: var(--color-ink); }
+  @media (prefers-reduced-motion: reduce) {
+    #variant-d1 .bg-eyebrow, #variant-d1 .bg-h1, #variant-d1 .spark, #variant-d1 .bg-intro,
+    #variant-d2 .bg-eyebrow, #variant-d2 .bg-h1, #variant-d2 .echo, #variant-d2 .bg-intro,
+    #variant-d3 .bg-eyebrow, #variant-d3 .bg-h1, #variant-d3 .bg-intro {
+      opacity: 1 !important; transform: none !important; animation: none !important;
+    }
+    #variant-d1 .bg-eyebrow::before, #variant-d2 .bg-eyebrow::before, #variant-d3 .bg-eyebrow::before { animation: none; }
+  }
+
+  /* ============================================================
+     ROUND 4 — "et un fond un peu fun ou un effet dynamique ?"
+     Builds on D3's clean big-title + motion (no ghost mark) and
+     layers a background treatment or dynamic effect behind the
+     whole header block instead of behind just the title.
+     ============================================================ */
+  #variant-e1 .bg-h1, #variant-e2 .bg-h1, #variant-e3 .bg-h1 {
+    font-size: clamp(64px, 9vw, 140px);
+    display: inline-block; opacity: 0; transform: scale(0.82) translateY(18px) rotate(-2deg);
+  }
+  #variant-e1 .bg-eyebrow, #variant-e2 .bg-eyebrow, #variant-e3 .bg-eyebrow { opacity: 0; transform: translateY(6px); }
+  #variant-e1 .bg-eyebrow::before, #variant-e2 .bg-eyebrow::before, #variant-e3 .bg-eyebrow::before {
+    content: ''; width: 8px; height: 8px; background: var(--color-accent); display: inline-block;
+    animation: c4-pulse 2.2s ease-in-out infinite;
+  }
+  #variant-e1 .bg-intro, #variant-e2 .bg-intro, #variant-e3 .bg-intro { opacity: 0; transform: translateY(10px); }
+  #variant-e1.revealed .bg-eyebrow, #variant-e2.revealed .bg-eyebrow, #variant-e3.revealed .bg-eyebrow {
+    animation: c4-fade-up 0.45s cubic-bezier(0.16,1,0.3,1) 0s forwards;
+  }
+  #variant-e1.revealed .bg-h1, #variant-e2.revealed .bg-h1, #variant-e3.revealed .bg-h1 {
+    animation: c4-settle 0.65s cubic-bezier(0.16,1,0.3,1) 0.1s forwards;
+  }
+  #variant-e1.revealed .bg-intro, #variant-e2.revealed .bg-intro, #variant-e3.revealed .bg-intro {
+    animation: c4-fade-up 0.45s cubic-bezier(0.16,1,0.3,1) 0.5s forwards;
+  }
+  #variant-e1 .replay, #variant-e2 .replay, #variant-e3 .replay {
+    margin-top: var(--space-lg); font-family: var(--font-sans); font-size: 12px;
+    font-weight: var(--weight-semibold); letter-spacing: 0.04em; text-transform: uppercase;
+    background: none; border: 1px solid var(--color-border); padding: 8px 14px;
+    cursor: pointer; color: #6b6b6b; transition: all 0.15s ease; position: relative; z-index: 1;
+  }
+  #variant-e1 .replay:hover, #variant-e2 .replay:hover, #variant-e3 .replay:hover { border-color: var(--color-ink); color: var(--color-ink); }
+
+  /* E1 — Halftone Print Texture: a nod to Éditions being PRINTED objects.
+     A dot-halftone pattern sits behind the header, faded via a radial mask
+     so it reads as an intentional graphic zone, not a flat repeating tile. */
+  #variant-e1 .bg-header { position: relative; }
+  #variant-e1 .halftone {
+    position: absolute; inset: -40px -20px -40px auto; right: -20px; width: 60%; height: calc(100% + 80px);
+    background-image: radial-gradient(rgba(214, 50, 124, 0.45) 1.4px, transparent 1.6px);
+    background-size: 9px 9px;
+    -webkit-mask-image: radial-gradient(ellipse 70% 70% at 70% 40%, black 0%, transparent 75%);
+    mask-image: radial-gradient(ellipse 70% 70% at 70% 40%, black 0%, transparent 75%);
+    z-index: -1; pointer-events: none;
+    opacity: 0; transition: opacity 0.6s ease 0.3s;
+  }
+  #variant-e1.revealed .halftone { opacity: 1; }
+
+  /* E2 — Cursor Spotlight: a soft pink glow that follows the pointer within
+     the header, echoing the site's existing cursor-follow interaction
+     already used by the édition row list below (same page, same gesture
+     language) instead of introducing an unrelated new pattern. */
+  #variant-e2 .bg-header { position: relative; overflow: visible; }
+  #variant-e2 .spotlight {
+    position: absolute; inset: -60px; z-index: -1; pointer-events: none;
+    background: radial-gradient(circle 220px at var(--mx, 20%) var(--my, 40%), rgba(214, 50, 124, 0.18), transparent 70%);
+    opacity: 0; transition: opacity 0.4s ease;
+  }
+  #variant-e2 .bg-header:hover .spotlight { opacity: 1; }
+  #variant-e2 .hint {
+    margin-top: var(--space-sm); font-size: 12px; color: #9b9b9b; font-style: italic;
+  }
+
+  /* E3 — Drifting Diagonal Hairlines: subtle ambient motion using the same
+     hairline weight/color as the rest of the site's borders, not a loud
+     new texture — thin diagonal lines slowly drifting behind the header. */
+  #variant-e3 .bg-header { position: relative; }
+  #variant-e3 .drift {
+    position: absolute; inset: -30px -20px -30px auto; right: -20px; width: 55%; height: calc(100% + 60px);
+    background-image: repeating-linear-gradient(-45deg, var(--color-border) 0, var(--color-border) 1px, transparent 1px, transparent 14px);
+    -webkit-mask-image: linear-gradient(to left, black 0%, transparent 90%);
+    mask-image: linear-gradient(to left, black 0%, transparent 90%);
+    z-index: -1; pointer-events: none;
+    opacity: 0; animation: e3-drift 14s linear infinite;
+  }
+  #variant-e3.revealed .drift { opacity: 1; }
+  @keyframes e3-drift { from { background-position: 0 0; } to { background-position: 200px 200px; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    #variant-e1 .bg-eyebrow, #variant-e1 .bg-h1, #variant-e1 .bg-intro,
+    #variant-e2 .bg-eyebrow, #variant-e2 .bg-h1, #variant-e2 .bg-intro,
+    #variant-e3 .bg-eyebrow, #variant-e3 .bg-h1, #variant-e3 .bg-intro {
+      opacity: 1 !important; transform: none !important; animation: none !important;
+    }
+    #variant-e1 .bg-eyebrow::before, #variant-e2 .bg-eyebrow::before, #variant-e3 .bg-eyebrow::before { animation: none; }
+    #variant-e3 .drift { animation: none; }
+  }
+
+  /* ============================================================
+     ROUND 5 — "j'aime bien E1 mais pas dynamique + plus de pink"
+     E1 loved, but wanted: (a) actual ongoing motion, not just a
+     fade-in, and (b) grey/ink dots instead of pink. All three keep
+     the same header motion + grey halftone dot pattern, differing
+     only in HOW the dots stay in motion.
+     ============================================================ */
+  #variant-f1 .bg-h1, #variant-f2 .bg-h1, #variant-f3 .bg-h1 {
+    font-size: clamp(64px, 9vw, 140px);
+    display: inline-block; opacity: 0; transform: scale(0.82) translateY(18px) rotate(-2deg);
+  }
+  #variant-f1 .bg-eyebrow, #variant-f2 .bg-eyebrow, #variant-f3 .bg-eyebrow { opacity: 0; transform: translateY(6px); }
+  #variant-f1 .bg-eyebrow::before, #variant-f2 .bg-eyebrow::before, #variant-f3 .bg-eyebrow::before {
+    content: ''; width: 8px; height: 8px; background: var(--color-accent); display: inline-block;
+    animation: c4-pulse 2.2s ease-in-out infinite;
+  }
+  #variant-f1 .bg-intro, #variant-f2 .bg-intro, #variant-f3 .bg-intro { opacity: 0; transform: translateY(10px); }
+  #variant-f1.revealed .bg-eyebrow, #variant-f2.revealed .bg-eyebrow, #variant-f3.revealed .bg-eyebrow {
+    animation: c4-fade-up 0.45s cubic-bezier(0.16,1,0.3,1) 0s forwards;
+  }
+  #variant-f1.revealed .bg-h1, #variant-f2.revealed .bg-h1, #variant-f3.revealed .bg-h1 {
+    animation: c4-settle 0.65s cubic-bezier(0.16,1,0.3,1) 0.1s forwards;
+  }
+  #variant-f1.revealed .bg-intro, #variant-f2.revealed .bg-intro, #variant-f3.revealed .bg-intro {
+    animation: c4-fade-up 0.45s cubic-bezier(0.16,1,0.3,1) 0.5s forwards;
+  }
+  #variant-f1 .replay, #variant-f2 .replay, #variant-f3 .replay {
+    margin-top: var(--space-lg); font-family: var(--font-sans); font-size: 12px;
+    font-weight: var(--weight-semibold); letter-spacing: 0.04em; text-transform: uppercase;
+    background: none; border: 1px solid var(--color-border); padding: 8px 14px;
+    cursor: pointer; color: #6b6b6b; transition: all 0.15s ease; position: relative; z-index: 1;
+  }
+  #variant-f1 .replay:hover, #variant-f2 .replay:hover, #variant-f3 .replay:hover { border-color: var(--color-ink); color: var(--color-ink); }
+  #variant-f1 .bg-header, #variant-f2 .bg-header, #variant-f3 .bg-header { position: relative; }
+  #variant-f1 .hint, #variant-f2 .hint { margin-top: var(--space-sm); font-size: 12px; color: #9b9b9b; font-style: italic; }
+
+  /* F1 — Drifting Grey Halftone: same dot pattern as E1, but the dot field
+     itself continuously drifts (background-position animates), so the
+     texture is quietly alive at rest, not just faded in once.
+     Round 8 — F1 chosen as the actual winner over F3; porting the same
+     fixes validated on F3: (1) generously oversized box + fixed-radius
+     circle mask so the fade completes smoothly, no hard edge; (2) a hover
+     response (faster drift + deeper contrast); (3) row-list entrance
+     motion staggered after the header, matching F3's choreography. */
+  /* Round 12: rounds 10-11 kept the mask radius/stops but never scaled the
+     box's overflow on the RIGHT and TOP sides to match — the mask anchor
+     sits near the header's top-right corner, so a 640px-radius fade needs
+     >640px of box overflow in EVERY direction from that anchor, not just
+     on the left (which is where all the prior tuning focused). Fixed by
+     anchoring the mask exactly at the header's top-right corner and
+     overflowing the box by a flat 700px on all four sides — provably more
+     than the 640px radius in every direction, so the box edge can never
+     clip the fade again, regardless of viewport width. */
+  #variant-f1 .halftone {
+    position: absolute; top: -700px; bottom: -700px; left: -700px; right: -700px;
+    background-image: radial-gradient(rgba(26, 26, 26, 0.16) 1.4px, transparent 1.6px);
+    background-size: 9px 9px;
+    -webkit-mask-image: radial-gradient(circle 640px at right 700px top 700px, black 0%, rgba(0,0,0,0.72) 18%, rgba(0,0,0,0.42) 40%, rgba(0,0,0,0.18) 65%, rgba(0,0,0,0.05) 85%, transparent 100%);
+    mask-image: radial-gradient(circle 640px at right 700px top 700px, black 0%, rgba(0,0,0,0.72) 18%, rgba(0,0,0,0.42) 40%, rgba(0,0,0,0.18) 65%, rgba(0,0,0,0.05) 85%, transparent 100%);
+    z-index: -1; pointer-events: none;
+    opacity: 0; transition: opacity 0.6s ease 0.3s, filter 0.3s ease;
+  }
+  #variant-f1.revealed .halftone { opacity: 1; animation: f1-drift 10s linear infinite; }
+  @keyframes f1-drift { from { background-position: 0 0; } to { background-position: 90px 45px; } }
+  #variant-f1 .bg-header:hover .halftone {
+    animation-duration: 4s;
+    filter: contrast(1.35) brightness(0.85);
+  }
+
+  #variant-f1 .editions-index__row {
+    opacity: 0; transform: translateY(20px);
+  }
+  #variant-f1.revealed .editions-index__row {
+    animation: f3-row-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  #variant-f1.revealed .editions-index__row:nth-of-type(1) { animation-delay: 0.6s; }
+  #variant-f1.revealed .editions-index__row:nth-of-type(2) { animation-delay: 0.72s; }
+
+  /* F2 — Ink Diffusion Halftone: a faint base grid of grey dots that grow
+     larger and darker in a circle around the cursor, like ink spreading
+     into paper where you touch it. Ties into the same cursor-follow
+     gesture the row list below already teaches on this page. */
+  #variant-f2 .halftone-base {
+    position: absolute; inset: -40px -20px -40px auto; right: -20px; width: 60%; height: calc(100% + 80px);
+    background-image: radial-gradient(rgba(26, 26, 26, 0.14) 1.2px, transparent 1.4px);
+    background-size: 9px 9px;
+    -webkit-mask-image: radial-gradient(ellipse 70% 70% at 70% 40%, black 0%, transparent 75%);
+    mask-image: radial-gradient(ellipse 70% 70% at 70% 40%, black 0%, transparent 75%);
+    z-index: -1; pointer-events: none;
+    opacity: 0; transition: opacity 0.6s ease 0.3s;
+  }
+  #variant-f2.revealed .halftone-base { opacity: 1; }
+  #variant-f2 .halftone-diffuse {
+    position: absolute; inset: -40px -20px -40px auto; right: -20px; width: 60%; height: calc(100% + 80px);
+    background-image: radial-gradient(rgba(26, 26, 26, 0.55) 2.6px, transparent 3px);
+    background-size: 9px 9px;
+    -webkit-mask-image: radial-gradient(circle 130px at var(--mx, 50%) var(--my, 50%), black 0%, transparent 100%);
+    mask-image: radial-gradient(circle 130px at var(--mx, 50%) var(--my, 50%), black 0%, transparent 100%);
+    z-index: -1; pointer-events: none;
+    opacity: 0; transition: opacity 0.25s ease;
+  }
+  #variant-f2 .bg-header:hover .halftone-diffuse { opacity: 1; }
+
+  /* F3 — Breathing Halftone: same grid as before but the whole field pulses
+     gently in opacity, a slow "alive" print-grain shimmer with no
+     directional movement. Round 6 fixes: (1) the dot field previously
+     ended at a hard box edge inside the visible area because the mask
+     percentage never fully reached transparent before the box boundary —
+     now the box is generously oversized (well beyond the visible header on
+     every side) and the mask uses a fixed-radius circle anchored near the
+     top-right, so it fades all the way to nothing long before the box's
+     real edge is reached, wherever that edge happens to be. (2) a small
+     hover response: hovering the header speeds up the breathing and
+     deepens the dots slightly, so the texture visibly reacts to attention. */
+  #variant-f3 .halftone {
+    position: absolute; top: -80px; bottom: -80px; left: -35%; right: -30px;
+    background-image: radial-gradient(rgba(26, 26, 26, 0.34) 1.4px, transparent 1.6px);
+    background-size: 9px 9px;
+    -webkit-mask-image: radial-gradient(circle 260px at right 70px top 90px, black 0%, transparent 100%);
+    mask-image: radial-gradient(circle 260px at right 70px top 90px, black 0%, transparent 100%);
+    z-index: -1; pointer-events: none;
+    opacity: 0; transition: opacity 0.6s ease 0.3s, filter 0.3s ease;
+  }
+  #variant-f3.revealed .halftone { opacity: 1; animation: f3-breathe 4s ease-in-out infinite; }
+  @keyframes f3-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+  #variant-f3 .bg-header:hover .halftone {
+    animation-duration: 1.6s;
+    filter: contrast(1.35) brightness(0.85);
+  }
+
+  /* Round 7 — "les Éditions devraient aussi avoir un effet d'apparition à
+     l'ouverture de la page, pour rester cohérent avec celui du titre": the
+     row list below the header currently has zero entrance motion while the
+     title/intro settle in — extending the same page-load choreography to
+     each édition row, staggered slightly after the intro finishes, so the
+     whole page opens as one coherent sequence rather than header-then-static. */
+  #variant-f3 .editions-index__row {
+    opacity: 0; transform: translateY(20px);
+  }
+  #variant-f3.revealed .editions-index__row {
+    animation: f3-row-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  #variant-f3.revealed .editions-index__row:nth-of-type(1) { animation-delay: 0.6s; }
+  #variant-f3.revealed .editions-index__row:nth-of-type(2) { animation-delay: 0.72s; }
+  @keyframes f3-row-in { to { opacity: 1; transform: translateY(0); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    #variant-f1 .bg-eyebrow, #variant-f1 .bg-h1, #variant-f1 .bg-intro, #variant-f1 .editions-index__row,
+    #variant-f2 .bg-eyebrow, #variant-f2 .bg-h1, #variant-f2 .bg-intro,
+    #variant-f3 .bg-eyebrow, #variant-f3 .bg-h1, #variant-f3 .bg-intro, #variant-f3 .editions-index__row {
+      opacity: 1 !important; transform: none !important; animation: none !important;
+    }
+    #variant-f1 .bg-eyebrow::before, #variant-f2 .bg-eyebrow::before, #variant-f3 .bg-eyebrow::before { animation: none; }
+    #variant-f1 .halftone { animation: none; opacity: 1 !important; }
+    #variant-f3 .halftone { animation: none; opacity: 1 !important; }
+  }
+
+  /* Toolbar */
+  #sketch-tools {
+    position: fixed; bottom: 12px; right: 12px; z-index: 9999;
+    font-family: system-ui; font-size: 12px; background: rgba(0,0,0,0.7); color: #fff;
+    padding: 8px 12px; border-radius: 8px; opacity: 0.4; transition: opacity 0.2s;
+  }
+  #sketch-tools:hover { opacity: 1; }
+  #sketch-tools button { font-size: 11px; margin-left: 6px; }
+</style>
+</head>
+<body>
+
+<div id="variant-nav">
+  <div class="round-label">FINAL — F1 approved (round 12: diffuse edge fixed at the root, hover response, row entrance)</div>
+  <div class="tabs">
+    <button class="variant-tab active" onclick="showVariant('f1')">F1: Drifting Grey Halftone ★ Selected</button>
+    <button class="variant-tab" onclick="showVariant('f2')">F2: Ink Diffusion (reference)</button>
+    <button class="variant-tab" onclick="showVariant('f3')">F3: Breathing (reference)</button>
+  </div>
+</div>
+
+<!-- ================= VARIANT D3 — No Ghost (clean, round 3 winner-leaning, kept for reference) ================= -->
+<div id="variant-d3" class="variant">
+  <div class="page">
+    <header class="bg-header">
+      <div class="bg-titleblock">
+        <p class="bg-eyebrow">Atelier Jacqueline Suzanne</p>
+        <h1 class="bg-h1">Éditions</h1>
+      </div>
+      <p class="bg-intro">Les Éditions sont les objets imprimés — zines, livrets, tirages en petite série — qui prolongent le travail photographique de Romane Lepont sous une autre forme.</p>
+      <button class="replay" onclick="replayVariant('d3')">↻ Rejouer l'entrée</button>
+    </header>
+    <div class="editions-index">
+      <a class="editions-index__row" href="#">
+        <span class="editions-index__number">Édition 01</span>
+        <h2 class="editions-index__title">Rebut</h2>
+        <div class="editions-index__statement-wrap"><p class="editions-index__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder.</p></div>
+      </a>
+      <a class="editions-index__row" href="#">
+        <span class="editions-index__number">Édition 02</span>
+        <h2 class="editions-index__title">Silos</h2>
+        <div class="editions-index__statement-wrap"><p class="editions-index__statement">L'édition de Silo est un objet imprimé pensé à la croisée du fanzine et de l'édition cartographique. Conçu pour s'insérer facilement dans le quotidien.</p></div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ================= VARIANT E1 — Halftone Print Texture (pink, static — kept for reference) ================= -->
+<div id="variant-e1" class="variant">
+  <div class="page">
+    <header class="bg-header">
+      <div class="halftone" aria-hidden="true"></div>
+      <div class="bg-titleblock">
+        <p class="bg-eyebrow">Atelier Jacqueline Suzanne</p>
+        <h1 class="bg-h1">Éditions</h1>
+      </div>
+      <p class="bg-intro">Les Éditions sont les objets imprimés — zines, livrets, tirages en petite série — qui prolongent le travail photographique de Romane Lepont sous une autre forme.</p>
+      <button class="replay" onclick="replayVariant('e1')">↻ Rejouer l'entrée</button>
+    </header>
+    <div class="editions-index">
+      <a class="editions-index__row" href="#">
+        <span class="editions-index__number">Édition 01</span>
+        <h2 class="editions-index__title">Rebut</h2>
+        <div class="editions-index__statement-wrap"><p class="editions-index__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder.</p></div>
+      </a>
+      <a class="editions-index__row" href="#">
+        <span class="editions-index__number">Édition 02</span>
+        <h2 class="editions-index__title">Silos</h2>
+        <div class="editions-index__statement-wrap"><p class="editions-index__statement">L'édition de Silo est un objet imprimé pensé à la croisée du fanzine et de l'édition cartographique. Conçu pour s'insérer facilement dans le quotidien.</p></div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ================= VARIANT F1 — Drifting Grey Halftone ================= -->
+<div id="variant-f1" class="variant active">
+  <div class="page">
+    <header class="bg-header">
+      <div class="halftone" aria-hidden="true"></div>
+      <div class="bg-titleblock">
+        <p class="bg-eyebrow">Atelier Jacqueline Suzanne</p>
+        <h1 class="bg-h1">Éditions</h1>
+      </div>
+      <p class="bg-intro">Les Éditions sont les objets imprimés — zines, livrets, tirages en petite série — qui prolongent le travail photographique de Romane Lepont sous une autre forme.</p>
+      <button class="replay" onclick="replayVariant('f1')">↻ Rejouer l'entrée</button>
+    </header>
+    <div class="editions-index">
+      <a class="editions-index__row" href="#">
+        <span class="editions-index__number">Édition 01</span>
+        <h2 class="editions-index__title">Rebut</h2>
+        <div class="editions-index__statement-wrap"><p class="editions-index__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder.</p></div>
+      </a>
+      <a class="editions-index__row" href="#">
+        <span class="editions-index__number">Édition 02</span>
+        <h2 class="editions-index__title">Silos</h2>
+        <div class="editions-index__statement-wrap"><p class="editions-index__statement">L'édition de Silo est un objet imprimé pensé à la croisée du fanzine et de l'édition cartographique. Conçu pour s'insérer facilement dans le quotidien.</p></div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ================= VARIANT F2 — Ink Diffusion Halftone (cursor) ================= -->
+<div id="variant-f2" class="variant">
+  <div class="page">
+    <header class="bg-header">
+      <div class="halftone-base" aria-hidden="true"></div>
+      <div class="halftone-diffuse" aria-hidden="true"></div>
+      <div class="bg-titleblock">
+        <p class="bg-eyebrow">Atelier Jacqueline Suzanne</p>
+        <h1 class="bg-h1">Éditions</h1>
+      </div>
+      <p class="bg-intro">Les Éditions sont les objets imprimés — zines, livrets, tirages en petite série — qui prolongent le travail photographique de Romane Lepont sous une autre forme.</p>
+      <button class="replay" onclick="replayVariant('f2')">↻ Rejouer l'entrée</button>
+      <p class="hint">(déplacez le curseur au-dessus du titre)</p>
+    </header>
+    <div class="editions-index">
+      <a class="editions-index__row" href="#">
+        <span class="editions-index__number">Édition 01</span>
+        <h2 class="editions-index__title">Rebut</h2>
+        <div class="editions-index__statement-wrap"><p class="editions-index__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder.</p></div>
+      </a>
+      <a class="editions-index__row" href="#">
+        <span class="editions-index__number">Édition 02</span>
+        <h2 class="editions-index__title">Silos</h2>
+        <div class="editions-index__statement-wrap"><p class="editions-index__statement">L'édition de Silo est un objet imprimé pensé à la croisée du fanzine et de l'édition cartographique. Conçu pour s'insérer facilement dans le quotidien.</p></div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ================= VARIANT F3 — Breathing Halftone ================= -->
+<div id="variant-f3" class="variant">
+  <div class="page">
+    <header class="bg-header">
+      <div class="halftone" aria-hidden="true"></div>
+      <div class="bg-titleblock">
+        <p class="bg-eyebrow">Atelier Jacqueline Suzanne</p>
+        <h1 class="bg-h1">Éditions</h1>
+      </div>
+      <p class="bg-intro">Les Éditions sont les objets imprimés — zines, livrets, tirages en petite série — qui prolongent le travail photographique de Romane Lepont sous une autre forme.</p>
+      <button class="replay" onclick="replayVariant('f3')">↻ Rejouer l'entrée</button>
+    </header>
+    <div class="editions-index">
+      <a class="editions-index__row" href="#">
+        <span class="editions-index__number">Édition 01</span>
+        <h2 class="editions-index__title">Rebut</h2>
+        <div class="editions-index__statement-wrap"><p class="editions-index__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder.</p></div>
+      </a>
+      <a class="editions-index__row" href="#">
+        <span class="editions-index__number">Édition 02</span>
+        <h2 class="editions-index__title">Silos</h2>
+        <div class="editions-index__statement-wrap"><p class="editions-index__statement">L'édition de Silo est un objet imprimé pensé à la croisée du fanzine et de l'édition cartographique. Conçu pour s'insérer facilement dans le quotidien.</p></div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<div id="sketch-tools">
+  Sketch 012 — Round 4
+  <button onclick="location.reload()">↻ Reset</button>
+</div>
+
+<script>
+  function showVariant(id) {
+    document.querySelectorAll('.variant').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.variant-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('variant-' + id).classList.add('active');
+    event.target.classList.add('active');
+    replayVariant(id);
+  }
+
+  function replayVariant(id) {
+    const el = document.getElementById('variant-' + id);
+    el.classList.remove('revealed');
+    void el.offsetWidth; // force reflow so the animation restarts
+    requestAnimationFrame(() => el.classList.add('revealed'));
+  }
+
+  // F1 is the default active tab on load — trigger its entrance once.
+  requestAnimationFrame(() => replayVariant('f1'));
+
+  // F2 — ink diffusion: track pointer position within the header and
+  // expose it as CSS custom properties the .halftone-diffuse mask reads.
+  (function () {
+    const header = document.querySelector('#variant-f2 .bg-header');
+    const diffuse = document.querySelector('#variant-f2 .halftone-diffuse');
+    if (!header || !diffuse) return;
+    header.addEventListener('mousemove', (e) => {
+      const rect = header.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      diffuse.style.setProperty('--mx', x + '%');
+      diffuse.style.setProperty('--my', y + '%');
+    });
+  })();
+</script>
+
+</body>
+</html>

@@ -22,19 +22,24 @@ interface EditionTile {
 
 interface Props {
   heading: string;
+  intro: string;
   tiles: EditionTile[];
   emptyHeading: string;
   emptyBody: string;
   viewEditionLabel: string;
 }
 
-const { heading, tiles, emptyHeading, emptyBody, viewEditionLabel } = Astro.props;
+const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Astro.props;
 ---
 
 <article class="editions-list">
   <header class="editions-list__header">
-    <p class="editions-list__eyebrow">Atelier Jacqueline Suzanne</p>
-    <h1>{heading}</h1>
+    <div class="editions-list__halftone" aria-hidden="true"></div>
+    <div class="editions-list__titleblock">
+      <p class="editions-list__eyebrow">Atelier Jacqueline Suzanne</p>
+      <h1>{heading}</h1>
+    </div>
+    <p class="editions-list__intro">{intro}</p>
   </header>
 
   {
@@ -45,11 +50,14 @@ const { heading, tiles, emptyHeading, emptyBody, viewEditionLabel } = Astro.prop
         <div class="editions-index">
           {tiles.map((tile, idx) => {
             const label = `${heading.replace(/s$/, '')} ${String(idx + 1).padStart(2, '0')}`;
+            const rowDelay = Math.min(0.6 + idx * 0.12, 1.2);
             return (
-              <a class="editions-index__row" href={tile.href} data-img={tile.imgSrc}>
+              <a class="editions-index__row" href={tile.href} data-img={tile.imgSrc} style={`animation-delay: ${rowDelay}s`}>
                 <span class="editions-index__number">{label}</span>
                 <h2 class="editions-index__title">{tile.title}</h2>
-                <p class="editions-index__statement">{tile.statement}</p>
+                <div class="editions-index__statement-wrap">
+                  <p class="editions-index__statement">{tile.statement}</p>
+                </div>
                 <span class="sr-only">{viewEditionLabel}</span>
               </a>
             );
@@ -67,31 +75,142 @@ const { heading, tiles, emptyHeading, emptyBody, viewEditionLabel } = Astro.prop
   .editions-list {
     width: min(100%, var(--editorial-page-max));
     margin: 0 auto;
-    padding: var(--editorial-page-padding-block) var(--editorial-page-padding-inline);
+    padding-inline: var(--editorial-page-padding-inline);
+    padding-top: clamp(48px, 7vw, 56px);
+    padding-bottom: var(--editorial-page-padding-block);
+    transition: background-color 0.35s ease;
+  }
+  /* Per-row hover accent, cycling the same palette the homepage's gallery
+     hero panels use (HomeCarousel's ACCENTS array) — set by the <script>
+     below via --editions-row-accent(-text) on <html> so the shared
+     SiteHeader can pick up the same colors while a row is hovered. */
+  :global(html.editions-row-active) .editions-list {
+    background-color: var(--editions-row-accent);
   }
 
   .editions-list__header {
-    padding-top: var(--space-md);
-    border-top: var(--border-hairline) solid var(--color-ink);
-    margin-bottom: var(--space-2xl);
+    position: relative;
+    isolation: isolate;
+    margin-bottom: var(--space-lg);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
+  @media (min-width: 760px) {
+    .editions-list__header {
+      grid-template-columns: auto 1fr;
+      align-items: end;
+      column-gap: var(--space-2xl);
+    }
+  }
+
+  .editions-list__titleblock {
+    position: relative;
+    grid-column: 1;
   }
 
   .editions-list__eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
     margin: 0;
     font-size: var(--text-label-size);
     font-weight: var(--weight-semibold);
     line-height: var(--text-label-leading);
     letter-spacing: 0.08em;
     text-transform: uppercase;
+    transition: color 0.35s ease;
+  }
+  .editions-list__eyebrow::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: var(--color-accent);
+    display: inline-block;
+    animation: editions-eyebrow-pulse 2.2s ease-in-out infinite;
+    transition: background-color 0.35s ease;
+  }
+  :global(html.editions-row-active) .editions-list__eyebrow {
+    color: var(--editions-row-accent-text);
+  }
+  :global(html.editions-row-active) .editions-list__eyebrow::before {
+    background-color: var(--editions-row-accent-text);
   }
 
   .editions-list h1 {
     margin: var(--space-md) 0 0;
-    font-size: var(--editorial-page-title-size);
+    font-size: clamp(64px, 9vw, 140px);
     font-weight: var(--weight-semibold);
     font-family: var(--font-display);
-    line-height: 0.95;
+    line-height: 1.05;
     letter-spacing: -0.04em;
+    white-space: nowrap;
+    display: inline-block;
+    transition: color 0.35s ease;
+  }
+  :global(html.editions-row-active) .editions-list h1 {
+    color: var(--editions-row-accent-text);
+  }
+
+  .editions-list__intro {
+    grid-column: 1;
+    margin: 0;
+    line-height: 1.5;
+    color: #3a3a3a;
+    max-width: 46ch;
+    transition: color 0.35s ease, border-color 0.35s ease;
+  }
+  :global(html.editions-row-active) .editions-list__intro {
+    color: var(--editions-row-accent-text);
+    border-color: var(--editions-row-accent-text);
+  }
+  @media (min-width: 760px) {
+    .editions-list__intro {
+      grid-column: 2;
+      padding-bottom: 0.3em;
+      border-left: var(--border-hairline) solid var(--color-border);
+      padding-left: var(--space-lg);
+    }
+  }
+
+  @keyframes editions-eyebrow-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+
+  .editions-list__halftone {
+    position: absolute;
+    top: -700px;
+    bottom: -700px;
+    left: -700px;
+    right: -700px;
+    background-image: radial-gradient(rgba(26, 26, 26, 0.16) 1.4px, transparent 1.6px);
+    background-size: 9px 9px;
+    -webkit-mask-image: radial-gradient(circle 640px at right 700px top 700px, black 0%, rgba(0, 0, 0, 0.72) 18%, rgba(0, 0, 0, 0.42) 40%, rgba(0, 0, 0, 0.18) 65%, rgba(0, 0, 0, 0.05) 85%, transparent 100%);
+    mask-image: radial-gradient(circle 640px at right 700px top 700px, black 0%, rgba(0, 0, 0, 0.72) 18%, rgba(0, 0, 0, 0.42) 40%, rgba(0, 0, 0, 0.18) 65%, rgba(0, 0, 0, 0.05) 85%, transparent 100%);
+    z-index: -1;
+    pointer-events: none;
+    display: none;
+    opacity: 0;
+    transition: filter 0.3s ease;
+    animation: editions-halftone-fade-in 0.6s ease 0.3s forwards, editions-halftone-drift 10s linear infinite;
+  }
+  @media (min-width: 760px) {
+    .editions-list__halftone {
+      display: block;
+    }
+  }
+  @keyframes editions-halftone-fade-in {
+    to { opacity: 1; }
+  }
+  @keyframes editions-halftone-drift {
+    from { background-position: 0 0; }
+    to { background-position: 90px 45px; }
+  }
+  .editions-list__header:hover .editions-list__halftone {
+    animation-duration: 0.6s, 4s;
+    filter: contrast(1.35) brightness(0.85);
   }
 
   .editions-index {
@@ -104,10 +223,22 @@ const { heading, tiles, emptyHeading, emptyBody, viewEditionLabel } = Astro.prop
     border-bottom: var(--border-hairline) solid var(--color-border);
     text-decoration: none;
     color: var(--color-ink);
+    transform: translateY(20px);
+    animation: editions-row-fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transition: color 0.35s ease, border-color 0.35s ease;
+  }
+  @keyframes editions-row-fade-up {
+    to { transform: translateY(0); }
   }
 
   .editions-index__row:first-of-type {
     border-top: var(--border-hairline) solid var(--color-ink);
+    transition: color 0.35s ease, border-color 0.35s ease;
+  }
+
+  :global(html.editions-row-active) .editions-index__row {
+    color: var(--editions-row-accent-text);
+    border-color: var(--editions-row-accent-text);
   }
 
   .editions-index__number {
@@ -117,6 +248,11 @@ const { heading, tiles, emptyHeading, emptyBody, viewEditionLabel } = Astro.prop
     letter-spacing: 0.08em;
     margin-bottom: var(--space-sm);
     display: block;
+    transition: color 0.35s ease;
+  }
+
+  :global(html.editions-row-active) .editions-index__number {
+    color: var(--editions-row-accent-text);
   }
 
   .editions-index__title {
@@ -129,15 +265,26 @@ const { heading, tiles, emptyHeading, emptyBody, viewEditionLabel } = Astro.prop
     transition: opacity 0.25s ease;
   }
 
+  .editions-index__statement-wrap {
+    display: grid;
+    grid-template-rows: 0fr;
+    overflow: hidden;
+    transition: grid-template-rows 0.3s ease;
+  }
+
   .editions-index__statement {
+    min-height: 0;
     max-width: 46ch;
     line-height: 1.5;
     margin: var(--space-sm) 0 0;
     color: #6b6b6b;
-    max-height: 0;
     opacity: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
+    transition: opacity 0.3s ease, color 0.35s ease;
+  }
+
+  :global(html.editions-row-active) .editions-index__statement {
+    color: var(--editions-row-accent-text);
   }
 
   .editions-index:hover .editions-index__title {
@@ -148,8 +295,11 @@ const { heading, tiles, emptyHeading, emptyBody, viewEditionLabel } = Astro.prop
     opacity: 1;
   }
 
+  .editions-index__row:hover .editions-index__statement-wrap {
+    grid-template-rows: 1fr;
+  }
+
   .editions-index__row:hover .editions-index__statement {
-    max-height: 80px;
     opacity: 1;
   }
 
@@ -162,8 +312,11 @@ const { heading, tiles, emptyHeading, emptyBody, viewEditionLabel } = Astro.prop
     opacity: 1;
   }
 
+  .editions-index__row:focus-visible .editions-index__statement-wrap {
+    grid-template-rows: 1fr;
+  }
+
   .editions-index__row:focus-visible .editions-index__statement {
-    max-height: 80px;
     opacity: 1;
   }
 
@@ -194,9 +347,27 @@ const { heading, tiles, emptyHeading, emptyBody, viewEditionLabel } = Astro.prop
     display: block;
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    .editions-index__row {
+      opacity: 1 !important;
+      transform: none !important;
+      animation: none !important;
+    }
+    .editions-list__eyebrow::before {
+      animation: none;
+    }
+    .editions-list__halftone {
+      animation: none;
+      opacity: 1 !important;
+    }
+  }
+
   @media (max-width: 800px) {
+    .editions-index__statement-wrap {
+      grid-template-rows: 1fr;
+    }
+
     .editions-index__statement {
-      max-height: none;
       opacity: 1;
       margin-top: var(--space-sm);
     }
@@ -221,13 +392,35 @@ const { heading, tiles, emptyHeading, emptyBody, viewEditionLabel } = Astro.prop
       }px)`;
     });
 
-    container.querySelectorAll('.editions-index__row').forEach((row) => {
+    // Per-row hover accent: cycles the same bg/text pairs as the homepage's
+    // gallery hero panels (HomeCarousel's ACCENTS array) by row position, so
+    // it extends automatically as more éditions are added. Set on <html> (not
+    // scoped to this component) so the shared SiteHeader can pick up the same
+    // colors — see EditionsOverviewBody.astro's :global(html.editions-row-active)
+    // rules and SiteHeader.astro's matching rules.
+    const ACCENTS = [
+      { bg: 'var(--color-accent)', text: 'var(--color-on-accent)', light: true },
+      { bg: 'var(--palette-purple)', text: '#FFFFFF', light: false },
+      { bg: 'var(--palette-teal)', text: 'var(--color-ink)', light: true },
+      { bg: 'var(--palette-lime)', text: 'var(--color-ink)', light: true },
+      { bg: 'var(--palette-plum)', text: '#FFFFFF', light: false },
+    ];
+    const root = document.documentElement;
+
+    container.querySelectorAll('.editions-index__row').forEach((row, idx) => {
+      const accent = ACCENTS[idx % ACCENTS.length];
       row.addEventListener('mouseenter', () => {
         (previewImg as HTMLImageElement).src = (row as HTMLElement).dataset.img ?? '';
         preview.classList.add('active');
+        root.style.setProperty('--editions-row-accent', accent.bg);
+        root.style.setProperty('--editions-row-accent-text', accent.text);
+        root.classList.add('editions-row-active');
+        root.classList.toggle('editions-row-light', accent.light);
+        root.classList.toggle('editions-row-dark', !accent.light);
       });
       row.addEventListener('mouseleave', () => {
         preview.classList.remove('active');
+        root.classList.remove('editions-row-active', 'editions-row-light', 'editions-row-dark');
       });
     });
   })();

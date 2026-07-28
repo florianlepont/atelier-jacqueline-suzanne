@@ -1,4 +1,4 @@
-import type {HomePage, SiteSettings} from './sanity'
+import type {EditionsPage, HomePage, SiteSettings} from './sanity'
 
 export type Locale = 'fr' | 'en'
 
@@ -18,6 +18,15 @@ const DEFAULT_HOMEPAGE_INTRO: Record<Locale, string> = {
   en: "This site showcases Romane Lepont's photographic work through her different series and editions.",
 }
 
+// quick-260728-el6: byte-identical to defaultIntro in
+// sanity/schemas/editionsPage.ts so Studio and this code-side fallback
+// read the same placeholder copy until Romane edits it. Deliberately
+// EDN-06-clean (no commerce-affordance wording).
+const DEFAULT_EDITIONS_INTRO: Record<Locale, string> = {
+  fr: 'Les Éditions sont les objets imprimés — zines, livrets, tirages en petite série — qui prolongent le travail photographique de Romane Lepont sous une autre forme.',
+  en: "Éditions are the printed objects — zines, booklets, small-run prints — that extend Romane Lepont's photographic work into another form.",
+}
+
 export function resolveSiteCopy(settings: SiteSettings | null, locale: Locale) {
   return {
     editionsLabel: settings?.navLabels?.editions?.[locale] || 'Éditions',
@@ -30,6 +39,10 @@ export function resolveSiteCopy(settings: SiteSettings | null, locale: Locale) {
 
 export function resolveHomepageIntro(page: HomePage | null, locale: Locale) {
   return page?.intro?.[locale] || DEFAULT_HOMEPAGE_INTRO[locale]
+}
+
+export function resolveEditionsIntro(page: EditionsPage | null, locale: Locale) {
+  return page?.intro?.[locale] || DEFAULT_EDITIONS_INTRO[locale]
 }
 
 /** Resolve only named colors from the site's decorative design-system palette. */
