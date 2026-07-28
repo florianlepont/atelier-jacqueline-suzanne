@@ -277,6 +277,13 @@ test.describe('editions overview layout', () => {
       const secondRowImg = await secondRow.getAttribute('data-img');
       const previewSrcAfterSecond = await preview.locator('img').getAttribute('src');
       expect(previewSrcAfterSecond).toBe(secondRowImg);
+
+      // Anti-truncation: proves the reveal animates to the statement's true
+      // intrinsic height, not the old fixed 80px clip. Poll to accommodate
+      // the 0.3s grid-template-rows reveal transition.
+      await expect
+        .poll(async () => (await secondRow.locator('.editions-index__statement').boundingBox())?.height ?? 0)
+        .toBeGreaterThan(80);
     }
   });
 });
