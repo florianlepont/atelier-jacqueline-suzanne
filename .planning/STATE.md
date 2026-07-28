@@ -1,20 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3
-milestone_name: Éditions
-current_phase: 3
-status: Awaiting next milestone
-stopped_at: Phase 14 context gathered
-last_updated: "2026-07-23T16:48:27.281Z"
-last_activity: 2026-07-23
-last_activity_desc: Milestone v1.3 completed and archived
+milestone: v1.4
+milestone_name: Editorial Design Consistency
+status: planning
+last_updated: "2026-07-28T21:21:03.228Z"
+last_activity: 2026-07-28
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 11
-  completed_plans: 11
-  percent: 100
-current_phase_name: verification-uat
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -28,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-07-22)
 
 ## Current Position
 
-Phase: Milestone v1.3 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-07-28 — Completed quick task 260728-ek0: implemented sketch-013's confirmed winner (variant A3 — "Grand titre, sans scroll") in the real ContactPageBody.astro, replacing the two-column layout with a hard offset-shadow form panel. Giant `--font-display` title (self-scaling via `min(15vw,20vh)`), desktop composition centered as one flex group with a bounded `clamp()` header-to-grid gap (not `justify-content: space-between`, which was tried first and pooled all leftover space into a single disconnected void on short/wide viewports), hairline-bordered form panel with tinted/boxed `ContactForm` fields replacing the drop-shadow Romane had already rejected elsewhere (sketch 009). Real `<ContactForm>` island (script/markup/validation/honeypot) left untouched — only its `<style>` block adapted. Independent orchestrator verification (this worktree had no `.env`, so the executor could not build) found the composition overflowed the real desktop viewport by 239px at 1440×900 once the actual SiteHeader+footer were accounted for — invisible from the sketch, which had no equivalent chrome. Root-caused (Textarea's `rows=5` default, an always-margined empty status paragraph, a wrong `--contact-chrome-reserve` guess) and fixed. Built both a footer-visible and footer-hidden variant, showed the user a live side-by-side comparison; they chose footer-hidden (matches the existing gallery/edition-detail-page pattern) after initially comparing against the English route by mistake, which caught that `hideFooter` had only been applied to the French page — fixed for both locales. Final: 0px overflow at 900–1080px height, 6px at 768px (imperceptible), both locales. Additionally restyled the Contact title/eyebrow to match the Éditions title's new typographic treatment (pulsing accent dot, ink-colored eyebrow text, `-0.04em` h1 tracking) at the user's request, deliberately keeping Contact's own `min(vw,vh)`/0.82-line-height size formula rather than Éditions' pure-vw one, since that formula is what keeps the no-scroll guarantee. Full gate green: typecheck 0 errors, 207/207 unit, 252/252 e2e (chromium + webkit-mobile), mobile tap targets still 44px. Also surfaced and corrected a process risk: an overly broad `pkill -f "astro preview"` briefly risked killing a concurrent agent's dev server sharing the same machine — subsequent servers pinned to dedicated ports, killed only by exact PID from then on. Worked entirely in an isolated worktree (`sketch-012-contact-finalize`) per explicit user instruction, since another agent was active on `main` concurrently; caught and resolved a sketch-numbering collision on merge (both this branch and the concurrent Éditions-header work had independently claimed "sketch 012" — this branch's Contact sketch renumbered to 013, the free slot on `main`, before merging). Previous (from `main`, concurrent session): completed quick task 260728-ok5, fixed a third, distinct live-reported gap on the sketch-012 F1 Éditions header (site-nav-to-title gap above the eyebrow/title block) by capping `.editions-list`'s `padding-top` at an Éditions-scoped `clamp(48px, 7vw, 56px)` instead of the shared `--editorial-page-padding-block` token, leaving About/Contact's shared token untouched. This closed out the entire Éditions-overview design arc from that session (sketch 010's B2 layout → 260728-dbf/el6/fjl/g76/hxv corrections → sketch 012's header personality exploration → 260728-lbh shipping it → 260728-nj7 and 260728-ok5 polishing it). Still outstanding from that arc (not blocking): seed/publish the live `editionsPage` Sanity document with the placeholder intro copy via a temporary write token.
+Status: Defining requirements
+Last activity: 2026-07-28 — Milestone v1.4 started
 
 ## Performance Metrics
 
