@@ -3,17 +3,22 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Sketch 012 — Éditions Header Personality</title>
+<title>Sketch 012 — Éditions Header Personality (Round 2: Broken Grid refinements)</title>
 <link rel="stylesheet" href="../themes/default.css" />
 <style>
-  body { padding-top: 52px; }
+  body { padding-top: 78px; }
 
   /* ===== Variant tab nav ===== */
   #variant-nav {
     position: fixed; top: 0; left: 0; right: 0; z-index: 9998;
     background: var(--gray-0); border-bottom: 1px solid var(--color-border);
-    padding: 8px 16px; display: flex; gap: 8px; font-family: var(--font-sans);
+    padding: 10px 16px; font-family: var(--font-sans);
   }
+  #variant-nav .round-label {
+    font-size: 11px; font-weight: var(--weight-semibold); letter-spacing: 0.08em;
+    text-transform: uppercase; color: #6b6b6b; margin-bottom: 6px;
+  }
+  #variant-nav .tabs { display: flex; gap: 8px; }
   .variant-tab {
     font-family: var(--font-sans); font-size: 13px; font-weight: var(--weight-semibold);
     padding: 8px 14px; border: 1px solid var(--color-border); background: var(--gray-0);
@@ -59,140 +64,138 @@
   .editions-index__row:hover .editions-index__statement { opacity: 1; }
 
   /* ============================================================
-     VARIANT A — Graphic Eyebrow + Pull-Quote
-     Typographic-personality direction: a pink marker + underline give
-     the eyebrow/title a hand-placed graphic accent, and the intro is
-     treated as a pull-quote with an oversized display-font quote mark.
+     Shared broken-grid skeleton (all Round 2 variants + baseline C
+     build on this composition — title beside intro, hairline divider)
      ============================================================ */
-  #variant-a .header {
-    margin-bottom: var(--space-2xl);
+  .bg-header {
+    position: relative; margin-bottom: var(--space-2xl);
+    display: grid; grid-template-columns: 1fr; gap: var(--space-lg);
   }
-  #variant-a .eyebrow {
-    display: flex; align-items: center; gap: 8px; width: fit-content;
-    margin: 0; font-size: var(--text-label-size); font-weight: var(--weight-semibold);
+  @media (min-width: 760px) {
+    .bg-header { grid-template-columns: auto 1fr; align-items: end; column-gap: var(--space-2xl); }
+  }
+  .bg-titleblock { position: relative; grid-column: 1; }
+  .bg-eyebrow {
+    display: flex; align-items: center; gap: 8px; width: fit-content; margin: 0;
+    font-size: var(--text-label-size); font-weight: var(--weight-semibold);
     line-height: var(--text-label-leading); letter-spacing: 0.08em; text-transform: uppercase;
   }
-  #variant-a .eyebrow::before {
-    content: ''; width: 8px; height: 8px; background: var(--color-accent);
-    display: inline-block; flex-shrink: 0;
-  }
-  #variant-a h1 {
-    position: relative; display: inline-block;
-    margin: var(--space-md) 0 0; font-size: var(--editorial-page-title-size);
+  .bg-h1 {
+    margin: var(--space-md) 0 0;
     font-weight: var(--weight-semibold); font-family: var(--font-display);
-    line-height: 0.95; letter-spacing: -0.04em;
+    line-height: 0.9; letter-spacing: -0.04em; white-space: nowrap;
   }
-  #variant-a h1::after {
-    content: ''; position: absolute; left: 2px; right: 8%; bottom: 6px; height: 0.28em;
-    background: var(--color-accent); z-index: -1;
-    transform: scaleX(0); transform-origin: left; transition: transform 0.5s cubic-bezier(0.16,1,0.3,1);
+  .bg-intro {
+    grid-column: 1; margin: 0; line-height: 1.5; color: #3a3a3a; max-width: 46ch;
   }
-  #variant-a.revealed h1::after { transform: scaleX(1); }
-  #variant-a .pullquote {
-    position: relative; margin: var(--space-xl) 0 0; padding-left: 44px; max-width: 56ch;
-  }
-  #variant-a .pullquote .mark {
-    position: absolute; left: -4px; top: -22px; font-family: var(--font-display);
-    font-size: 72px; font-weight: var(--weight-semibold); color: var(--color-accent);
-    line-height: 1; user-select: none; pointer-events: none;
-  }
-  #variant-a .pullquote p {
-    margin: 0; font-size: var(--editorial-page-lead-size, 20px); line-height: 1.4;
-    color: var(--color-ink); font-weight: var(--weight-regular);
+  @media (min-width: 760px) {
+    .bg-intro { grid-column: 2; padding-bottom: 0.3em; border-left: var(--border-hairline) solid var(--color-border); padding-left: var(--space-lg); }
   }
 
   /* ============================================================
-     VARIANT B — Kinetic Entrance
-     Motion-driven direction: the title settles in with a confident
-     staggered slide+tilt on load, the eyebrow's marker pulses gently,
-     and the whole block still respects prefers-reduced-motion.
+     VARIANT C — Broken Grid (Round 1 baseline, kept for comparison)
      ============================================================ */
-  #variant-b .header { margin-bottom: var(--space-2xl); }
-  #variant-b .eyebrow {
-    display: flex; align-items: center; gap: 8px; width: fit-content;
-    margin: 0; font-size: var(--text-label-size); font-weight: var(--weight-semibold);
-    line-height: var(--text-label-leading); letter-spacing: 0.08em; text-transform: uppercase;
-    opacity: 0; transform: translateY(6px);
+  #variant-c .bg-h1 { font-size: var(--editorial-page-title-size); }
+  #variant-c .bg-eyebrow::before { content: ''; width: 8px; height: 8px; background: var(--color-accent); display: inline-block; }
+  #variant-c .ghost-num {
+    position: absolute; right: 0; top: -0.35em; font-family: var(--font-display);
+    font-weight: var(--weight-semibold); font-size: clamp(64px, 11vw, 160px);
+    line-height: 1; color: transparent; -webkit-text-stroke: 1.5px var(--color-border);
+    z-index: -1; pointer-events: none; user-select: none; display: none;
   }
-  #variant-b .eyebrow .dot {
-    width: 7px; height: 7px; border-radius: 50%; background: var(--color-accent);
-    display: inline-block; animation: pulse-dot 2.2s ease-in-out infinite;
+  @media (min-width: 760px) { #variant-c .ghost-num { display: block; right: -12px; } }
+
+  /* ============================================================
+     VARIANT C2 — Bold & Tilted
+     Much bigger title; the ghost numeral is now solid-filled pale
+     pink (not just an outline) and tilted, peeking out from behind
+     the title like a torn poster layer.
+     ============================================================ */
+  #variant-c2 .bg-h1 { font-size: clamp(64px, 9vw, 140px); }
+  #variant-c2 .bg-eyebrow::before {
+    content: ''; width: 9px; height: 9px; background: var(--color-accent);
+    display: inline-block; transform: rotate(45deg);
   }
-  @keyframes pulse-dot { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.75); } }
-  #variant-b h1 {
-    margin: var(--space-md) 0 0; font-size: var(--editorial-page-title-size);
-    font-weight: var(--weight-semibold); font-family: var(--font-display);
-    line-height: 0.95; letter-spacing: -0.04em;
+  #variant-c2 .ghost-num {
+    position: absolute; right: -8px; top: -0.5em; font-family: var(--font-display);
+    font-weight: var(--weight-semibold); font-size: clamp(80px, 13vw, 200px);
+    line-height: 1; color: rgba(214, 50, 124, 0.16);
+    transform: rotate(-6deg); z-index: -1; pointer-events: none; user-select: none;
+    display: none; transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), color 0.4s ease;
+  }
+  @media (min-width: 760px) { #variant-c2 .ghost-num { display: block; } }
+  #variant-c2 .bg-titleblock:hover .ghost-num { transform: rotate(-2deg) scale(1.04); color: rgba(214, 50, 124, 0.26); }
+
+  /* ============================================================
+     VARIANT C3 — Stamp Pop
+     Big title; the index numeral becomes a tilted rubber-stamp badge
+     (solid pink fill, thin pink box outline) that snaps upright and
+     scales slightly on hover — a fun, tactile, sticker-like detail.
+     ============================================================ */
+  #variant-c3 .bg-h1 { font-size: clamp(64px, 9vw, 140px); }
+  #variant-c3 .bg-eyebrow::before {
+    content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--color-accent);
     display: inline-block;
-    opacity: 0; transform: translateY(28px) rotate(-2deg);
   }
-  #variant-b .intro {
-    max-width: 60ch; margin: var(--space-md) 0 0; line-height: 1.5; color: #3a3a3a;
-    opacity: 0; transform: translateY(10px);
+  #variant-c3 .stamp {
+    position: absolute; right: -4px; top: -0.6em; display: none;
+    font-family: var(--font-display); font-weight: var(--weight-semibold);
+    font-size: clamp(28px, 3vw, 40px); line-height: 1; color: var(--color-accent);
+    border: 2px solid var(--color-accent); padding: 6px 14px;
+    transform: rotate(-9deg); z-index: 1; user-select: none; cursor: default;
+    transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), background 0.25s ease, color 0.25s ease;
   }
-  #variant-b.revealed .eyebrow {
-    animation: fade-up 0.5s cubic-bezier(0.16,1,0.3,1) 0s forwards;
+  @media (min-width: 760px) { #variant-c3 .stamp { display: block; } }
+  #variant-c3 .stamp:hover {
+    transform: rotate(0deg) scale(1.08);
+    background: var(--color-accent); color: var(--gray-0);
   }
-  #variant-b.revealed h1 {
-    animation: settle-in 0.7s cubic-bezier(0.16,1,0.3,1) 0.12s forwards;
+
+  /* ============================================================
+     VARIANT C4 — Motion Surge
+     Big title, entrance-animated: the title scales/settles in, the
+     ghost numeral spins in slightly delayed and lands tilted, the
+     eyebrow marker pulses. Same broken-grid composition, personality
+     comes from combining scale + motion.
+     ============================================================ */
+  #variant-c4 .bg-h1 {
+    font-size: clamp(64px, 9vw, 140px);
+    display: inline-block; opacity: 0; transform: scale(0.82) translateY(18px) rotate(-2deg);
   }
-  #variant-b.revealed .intro {
-    animation: fade-up 0.5s cubic-bezier(0.16,1,0.3,1) 0.45s forwards;
+  #variant-c4 .bg-eyebrow { opacity: 0; transform: translateY(6px); }
+  #variant-c4 .bg-eyebrow::before {
+    content: ''; width: 8px; height: 8px; background: var(--color-accent); display: inline-block;
+    animation: c4-pulse 2.2s ease-in-out infinite;
   }
-  @keyframes fade-up { to { opacity: 1; transform: translateY(0); } }
-  @keyframes settle-in { to { opacity: 1; transform: translateY(0) rotate(0deg); } }
-  #variant-b .replay {
+  @keyframes c4-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
+  #variant-c4 .ghost-num {
+    position: absolute; right: -8px; top: -0.5em; font-family: var(--font-display);
+    font-weight: var(--weight-semibold); font-size: clamp(80px, 13vw, 200px);
+    line-height: 1; color: rgba(214, 50, 124, 0.16);
+    z-index: -1; pointer-events: none; user-select: none; display: none;
+    opacity: 0; transform: rotate(24deg) scale(0.7);
+  }
+  @media (min-width: 760px) { #variant-c4 .ghost-num { display: block; } }
+  #variant-c4 .bg-intro { opacity: 0; transform: translateY(10px); }
+  #variant-c4.revealed .bg-eyebrow { animation: c4-fade-up 0.45s cubic-bezier(0.16,1,0.3,1) 0s forwards; }
+  #variant-c4.revealed .bg-h1 { animation: c4-settle 0.65s cubic-bezier(0.16,1,0.3,1) 0.1s forwards; }
+  #variant-c4.revealed .ghost-num { animation: c4-spin-in 0.7s cubic-bezier(0.16,1,0.3,1) 0.2s forwards; }
+  #variant-c4.revealed .bg-intro { animation: c4-fade-up 0.45s cubic-bezier(0.16,1,0.3,1) 0.5s forwards; }
+  @keyframes c4-fade-up { to { opacity: 1; transform: translateY(0); } }
+  @keyframes c4-settle { to { opacity: 1; transform: scale(1) translateY(0) rotate(0deg); } }
+  @keyframes c4-spin-in { to { opacity: 1; transform: rotate(-6deg) scale(1); } }
+  #variant-c4 .replay {
     margin-top: var(--space-lg); font-family: var(--font-sans); font-size: 12px;
     font-weight: var(--weight-semibold); letter-spacing: 0.04em; text-transform: uppercase;
     background: none; border: 1px solid var(--color-border); padding: 8px 14px;
     cursor: pointer; color: #6b6b6b; transition: all 0.15s ease;
   }
-  #variant-b .replay:hover { border-color: var(--color-ink); color: var(--color-ink); }
+  #variant-c4 .replay:hover { border-color: var(--color-ink); color: var(--color-ink); }
   @media (prefers-reduced-motion: reduce) {
-    #variant-b .eyebrow, #variant-b h1, #variant-b .intro { opacity: 1 !important; transform: none !important; animation: none !important; }
-    #variant-b .eyebrow .dot { animation: none; }
-  }
-
-  /* ============================================================
-     VARIANT C — Broken Grid
-     Compositional direction: title and intro sit side by side instead
-     of stacked, with an oversized ghost index numeral filling the
-     negative space — an editorial-poster move, still monochrome+pink.
-     ============================================================ */
-  #variant-c .header {
-    position: relative; margin-bottom: var(--space-2xl);
-    display: grid; grid-template-columns: 1fr; gap: var(--space-lg);
-  }
-  @media (min-width: 760px) {
-    #variant-c .header { grid-template-columns: auto 1fr; align-items: end; column-gap: var(--space-2xl); }
-  }
-  #variant-c .titleblock { position: relative; grid-column: 1; }
-  #variant-c .eyebrow {
-    display: flex; align-items: center; gap: 8px; width: fit-content; margin: 0;
-    font-size: var(--text-label-size); font-weight: var(--weight-semibold);
-    line-height: var(--text-label-leading); letter-spacing: 0.08em; text-transform: uppercase;
-  }
-  #variant-c .eyebrow::before { content: ''; width: 8px; height: 8px; background: var(--color-accent); display: inline-block; }
-  #variant-c h1 {
-    margin: var(--space-md) 0 0; font-size: var(--editorial-page-title-size);
-    font-weight: var(--weight-semibold); font-family: var(--font-display);
-    line-height: 0.95; letter-spacing: -0.04em; white-space: nowrap;
-  }
-  #variant-c .ghost-num {
-    position: absolute; right: 0; top: -0.35em; font-family: var(--font-display);
-    font-weight: var(--weight-semibold); font-size: clamp(64px, 11vw, 160px);
-    line-height: 1; color: transparent; -webkit-text-stroke: 1.5px var(--color-border);
-    z-index: -1; pointer-events: none; user-select: none;
-    display: none;
-  }
-  @media (min-width: 760px) {
-    #variant-c .ghost-num { display: block; right: -12px; }
-  }
-  #variant-c .intro {
-    grid-column: 1; margin: 0; line-height: 1.5; color: #3a3a3a; max-width: 46ch;
-  }
-  @media (min-width: 760px) {
-    #variant-c .intro { grid-column: 2; padding-bottom: 0.3em; border-left: var(--border-hairline) solid var(--color-border); padding-left: var(--space-lg); }
+    #variant-c4 .bg-eyebrow, #variant-c4 .bg-h1, #variant-c4 .ghost-num, #variant-c4 .bg-intro {
+      opacity: 1 !important; transform: none !important; animation: none !important;
+    }
+    #variant-c4 .bg-eyebrow::before { animation: none; }
   }
 
   /* Toolbar */
@@ -208,104 +211,122 @@
 <body>
 
 <div id="variant-nav">
-  <button class="variant-tab active" onclick="showVariant('a')">A: Graphic Eyebrow + Pull-Quote</button>
-  <button class="variant-tab" onclick="showVariant('b')">B: Kinetic Entrance</button>
-  <button class="variant-tab" onclick="showVariant('c')">C: Broken Grid</button>
-</div>
-
-<!-- ================= VARIANT A ================= -->
-<div id="variant-a" class="variant active">
-  <div class="page">
-    <header class="header">
-      <p class="eyebrow">Atelier Jacqueline Suzanne</p>
-      <h1>Éditions</h1>
-      <div class="pullquote">
-        <span class="mark" aria-hidden="true">"</span>
-        <p>Les Éditions sont les objets imprimés — zines, livrets, tirages en petite série — qui prolongent le travail photographique de Romane Lepont sous une autre forme.</p>
-      </div>
-    </header>
-
-    <div class="editions-index">
-      <a class="editions-index__row" href="#">
-        <span class="editions-index__number">Édition 01</span>
-        <h2 class="editions-index__title">Rebut</h2>
-        <div class="editions-index__statement-wrap">
-          <p class="editions-index__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder.</p>
-        </div>
-      </a>
-      <a class="editions-index__row" href="#">
-        <span class="editions-index__number">Édition 02</span>
-        <h2 class="editions-index__title">Silos</h2>
-        <div class="editions-index__statement-wrap">
-          <p class="editions-index__statement">L'édition de Silo est un objet imprimé pensé à la croisée du fanzine et de l'édition cartographique. Conçu pour s'insérer facilement dans le quotidien.</p>
-        </div>
-      </a>
-    </div>
+  <div class="round-label">Round 2 — refining "C: Broken Grid" per feedback: bigger title, more fun</div>
+  <div class="tabs">
+    <button class="variant-tab" onclick="showVariant('c')">C: Original (round 1)</button>
+    <button class="variant-tab active" onclick="showVariant('c2')">C2: Bold &amp; Tilted</button>
+    <button class="variant-tab" onclick="showVariant('c3')">C3: Stamp Pop</button>
+    <button class="variant-tab" onclick="showVariant('c4')">C4: Motion Surge</button>
   </div>
 </div>
 
-<!-- ================= VARIANT B ================= -->
-<div id="variant-b" class="variant">
-  <div class="page">
-    <header class="header">
-      <p class="eyebrow"><span class="dot" aria-hidden="true"></span>Atelier Jacqueline Suzanne</p>
-      <h1>Éditions</h1>
-      <p class="intro">Les Éditions sont les objets imprimés — zines, livrets, tirages en petite série — qui prolongent le travail photographique de Romane Lepont sous une autre forme.</p>
-      <button class="replay" onclick="replayB()">↻ Rejouer l'entrée</button>
-    </header>
-
-    <div class="editions-index">
-      <a class="editions-index__row" href="#">
-        <span class="editions-index__number">Édition 01</span>
-        <h2 class="editions-index__title">Rebut</h2>
-        <div class="editions-index__statement-wrap">
-          <p class="editions-index__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder.</p>
-        </div>
-      </a>
-      <a class="editions-index__row" href="#">
-        <span class="editions-index__number">Édition 02</span>
-        <h2 class="editions-index__title">Silos</h2>
-        <div class="editions-index__statement-wrap">
-          <p class="editions-index__statement">L'édition de Silo est un objet imprimé pensé à la croisée du fanzine et de l'édition cartographique. Conçu pour s'insérer facilement dans le quotidien.</p>
-        </div>
-      </a>
-    </div>
-  </div>
-</div>
-
-<!-- ================= VARIANT C ================= -->
+<!-- ================= VARIANT C (baseline) ================= -->
 <div id="variant-c" class="variant">
   <div class="page">
-    <header class="header">
-      <div class="titleblock">
+    <header class="bg-header">
+      <div class="bg-titleblock">
         <span class="ghost-num" aria-hidden="true">02</span>
-        <p class="eyebrow">Atelier Jacqueline Suzanne</p>
-        <h1>Éditions</h1>
+        <p class="bg-eyebrow">Atelier Jacqueline Suzanne</p>
+        <h1 class="bg-h1">Éditions</h1>
       </div>
-      <p class="intro">Les Éditions sont les objets imprimés — zines, livrets, tirages en petite série — qui prolongent le travail photographique de Romane Lepont sous une autre forme.</p>
+      <p class="bg-intro">Les Éditions sont les objets imprimés — zines, livrets, tirages en petite série — qui prolongent le travail photographique de Romane Lepont sous une autre forme.</p>
     </header>
-
     <div class="editions-index">
       <a class="editions-index__row" href="#">
         <span class="editions-index__number">Édition 01</span>
         <h2 class="editions-index__title">Rebut</h2>
-        <div class="editions-index__statement-wrap">
-          <p class="editions-index__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder.</p>
-        </div>
+        <div class="editions-index__statement-wrap"><p class="editions-index__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder.</p></div>
       </a>
       <a class="editions-index__row" href="#">
         <span class="editions-index__number">Édition 02</span>
         <h2 class="editions-index__title">Silos</h2>
-        <div class="editions-index__statement-wrap">
-          <p class="editions-index__statement">L'édition de Silo est un objet imprimé pensé à la croisée du fanzine et de l'édition cartographique. Conçu pour s'insérer facilement dans le quotidien.</p>
-        </div>
+        <div class="editions-index__statement-wrap"><p class="editions-index__statement">L'édition de Silo est un objet imprimé pensé à la croisée du fanzine et de l'édition cartographique. Conçu pour s'insérer facilement dans le quotidien.</p></div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ================= VARIANT C2 — Bold & Tilted ================= -->
+<div id="variant-c2" class="variant active">
+  <div class="page">
+    <header class="bg-header">
+      <div class="bg-titleblock">
+        <span class="ghost-num" aria-hidden="true">02</span>
+        <p class="bg-eyebrow">Atelier Jacqueline Suzanne</p>
+        <h1 class="bg-h1">Éditions</h1>
+      </div>
+      <p class="bg-intro">Les Éditions sont les objets imprimés — zines, livrets, tirages en petite série — qui prolongent le travail photographique de Romane Lepont sous une autre forme.</p>
+    </header>
+    <div class="editions-index">
+      <a class="editions-index__row" href="#">
+        <span class="editions-index__number">Édition 01</span>
+        <h2 class="editions-index__title">Rebut</h2>
+        <div class="editions-index__statement-wrap"><p class="editions-index__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder.</p></div>
+      </a>
+      <a class="editions-index__row" href="#">
+        <span class="editions-index__number">Édition 02</span>
+        <h2 class="editions-index__title">Silos</h2>
+        <div class="editions-index__statement-wrap"><p class="editions-index__statement">L'édition de Silo est un objet imprimé pensé à la croisée du fanzine et de l'édition cartographique. Conçu pour s'insérer facilement dans le quotidien.</p></div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ================= VARIANT C3 — Stamp Pop ================= -->
+<div id="variant-c3" class="variant">
+  <div class="page">
+    <header class="bg-header">
+      <div class="bg-titleblock">
+        <span class="stamp" aria-hidden="true">02</span>
+        <p class="bg-eyebrow">Atelier Jacqueline Suzanne</p>
+        <h1 class="bg-h1">Éditions</h1>
+      </div>
+      <p class="bg-intro">Les Éditions sont les objets imprimés — zines, livrets, tirages en petite série — qui prolongent le travail photographique de Romane Lepont sous une autre forme.</p>
+    </header>
+    <div class="editions-index">
+      <a class="editions-index__row" href="#">
+        <span class="editions-index__number">Édition 01</span>
+        <h2 class="editions-index__title">Rebut</h2>
+        <div class="editions-index__statement-wrap"><p class="editions-index__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder.</p></div>
+      </a>
+      <a class="editions-index__row" href="#">
+        <span class="editions-index__number">Édition 02</span>
+        <h2 class="editions-index__title">Silos</h2>
+        <div class="editions-index__statement-wrap"><p class="editions-index__statement">L'édition de Silo est un objet imprimé pensé à la croisée du fanzine et de l'édition cartographique. Conçu pour s'insérer facilement dans le quotidien.</p></div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ================= VARIANT C4 — Motion Surge ================= -->
+<div id="variant-c4" class="variant">
+  <div class="page">
+    <header class="bg-header">
+      <div class="bg-titleblock">
+        <span class="ghost-num" aria-hidden="true">02</span>
+        <p class="bg-eyebrow">Atelier Jacqueline Suzanne</p>
+        <h1 class="bg-h1">Éditions</h1>
+      </div>
+      <p class="bg-intro">Les Éditions sont les objets imprimés — zines, livrets, tirages en petite série — qui prolongent le travail photographique de Romane Lepont sous une autre forme.</p>
+      <button class="replay" onclick="replayC4()">↻ Rejouer l'entrée</button>
+    </header>
+    <div class="editions-index">
+      <a class="editions-index__row" href="#">
+        <span class="editions-index__number">Édition 01</span>
+        <h2 class="editions-index__title">Rebut</h2>
+        <div class="editions-index__statement-wrap"><p class="editions-index__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Tirée en nombre limité, elle rassemble en noir et blanc ce qu'on aurait pu jeter et qu'on choisit de garder.</p></div>
+      </a>
+      <a class="editions-index__row" href="#">
+        <span class="editions-index__number">Édition 02</span>
+        <h2 class="editions-index__title">Silos</h2>
+        <div class="editions-index__statement-wrap"><p class="editions-index__statement">L'édition de Silo est un objet imprimé pensé à la croisée du fanzine et de l'édition cartographique. Conçu pour s'insérer facilement dans le quotidien.</p></div>
       </a>
     </div>
   </div>
 </div>
 
 <div id="sketch-tools">
-  Sketch 012
+  Sketch 012 — Round 2
   <button onclick="location.reload()">↻ Reset</button>
 </div>
 
@@ -315,20 +336,18 @@
     document.querySelectorAll('.variant-tab').forEach(t => t.classList.remove('active'));
     document.getElementById('variant-' + id).classList.add('active');
     event.target.classList.add('active');
-    if (id === 'a') requestAnimationFrame(() => document.getElementById('variant-a').classList.add('revealed'));
-    if (id === 'b') replayB();
+    if (id === 'c4') replayC4();
   }
 
-  function replayB() {
-    const el = document.getElementById('variant-b');
+  function replayC4() {
+    const el = document.getElementById('variant-c4');
     el.classList.remove('revealed');
-    // force reflow so the animation restarts
-    void el.offsetWidth;
+    void el.offsetWidth; // force reflow so the animation restarts
     requestAnimationFrame(() => el.classList.add('revealed'));
   }
 
-  // Reveal variant A's underline on first load too
-  requestAnimationFrame(() => document.getElementById('variant-a').classList.add('revealed'));
+  // C2 is the default active tab — nothing to trigger on load (no entrance
+  // animation on C2/C3, only C4 animates in).
 </script>
 
 </body>
