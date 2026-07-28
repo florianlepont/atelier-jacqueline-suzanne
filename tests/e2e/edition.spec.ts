@@ -1,11 +1,12 @@
 import { test, expect } from '@playwright/test';
 
 // These routes are live: `/editions/`, `/en/editions/` render the
-// sketch-approved asymmetric "Poster Grid" (grouped-by-3 hero+small tiles,
-// side alternating by group index); `/editions/{slug}/`,
-// `/en/editions/{slug}/` render the per-édition détail page. Discover the
-// détail URL dynamically from the overview's first `.tile` href — never
-// hardcode a slug, never use the main nav (nav wiring is Phase 13).
+// sketch-010-B2-approved "Cursor Preview" flat text-row index (index
+// label + big title + statement, floating hover-following photo panel on
+// desktop); `/editions/{slug}/`, `/en/editions/{slug}/` render the
+// per-édition détail page. Discover the détail URL dynamically from the
+// overview's first `.editions-index__row` href — never hardcode a slug,
+// never use the main nav (nav wiring is Phase 13).
 
 // <!-- planner-discipline-allow: prix price acheter buy panier cart stock disponib availab épuisé -->
 // Mirrors tests/scripts/verify-static-artifact.mjs's whole-word token matching:
@@ -50,24 +51,27 @@ function containsForbiddenCommerceToken(text: string): boolean {
 }
 
 test.describe('editions overview', () => {
-  test('lists each published édition as a linked tile with title, lead photo, and full statement (fr)', async ({
+  test('lists each published édition as a linked row with title and full statement (fr)', async ({
     page,
   }) => {
     await page.goto('/editions/');
 
-    const tile = page.locator('.tile').first();
-    await expect(tile).toBeVisible();
-    await expect(tile.locator('img').first()).toBeVisible();
+    const row = page.locator('.editions-index__row').first();
+    await expect(row).toBeVisible();
 
-    const title = tile.locator('.tile__title');
+    const title = row.locator('.editions-index__title');
     const titleText = (await title.innerText()).trim();
     expect(titleText.length).toBeGreaterThan(0);
 
-    const statement = tile.locator('.tile__statement');
-    const frStatementText = (await statement.innerText()).trim();
-    expect(frStatementText.length).toBeGreaterThan(0);
+    // The statement is CSS-hidden (opacity:0/max-height:0) until hover, but
+    // its text is always present in the DOM — textContent() is
+    // state-independent, matching the pattern used at the detail no-JS
+    // reachability test below.
+    const statement = row.locator('.editions-index__statement');
+    const frStatementText = (await statement.textContent())?.trim();
+    expect(frStatementText?.length).toBeGreaterThan(0);
 
-    const href = await tile.getAttribute('href');
+    const href = await row.getAttribute('href');
     expect(href).toMatch(/\/editions\/[^/]+\/?$/);
   });
 
@@ -76,20 +80,20 @@ test.describe('editions overview', () => {
   }) => {
     await page.goto('/editions/');
     const frStatement = (
-      await page.locator('.tile').first().locator('.tile__statement').innerText()
-    ).trim();
+      await page.locator('.editions-index__row').first().locator('.editions-index__statement').textContent()
+    )?.trim();
 
     await page.goto('/en/editions/');
 
-    const tile = page.locator('.tile').first();
-    await expect(tile).toBeVisible();
+    const row = page.locator('.editions-index__row').first();
+    await expect(row).toBeVisible();
 
-    const statement = tile.locator('.tile__statement');
-    const enStatementText = (await statement.innerText()).trim();
-    expect(enStatementText.length).toBeGreaterThan(0);
+    const statement = row.locator('.editions-index__statement');
+    const enStatementText = (await statement.textContent())?.trim();
+    expect(enStatementText?.length).toBeGreaterThan(0);
     expect(enStatementText).not.toBe(frStatement);
 
-    const href = await tile.getAttribute('href');
+    const href = await row.getAttribute('href');
     expect(href).toMatch(/\/en\/editions\/[^/]+\/?$/);
   });
 
@@ -105,7 +109,7 @@ test.describe('editions overview', () => {
 });
 
 // Détail routes. Discover the détail URL dynamically from the overview's
-// first `.tile` href (never hardcode a slug, never use the main nav — nav
+// first `.editions-index__row` href (never hardcode a slug, never use the main nav — nav
 // wiring is Phase 13).
 
 test.describe('editions detail', () => {
@@ -113,7 +117,7 @@ test.describe('editions detail', () => {
     page,
   }) => {
     await page.goto('/editions/');
-    const frHref = await page.locator('.tile').first().getAttribute('href');
+    const frHref = await page.locator('.editions-index__row').first().getAttribute('href');
     expect(frHref).toBeTruthy();
 
     const slugMatch = frHref!.match(/\/editions\/([^/]+)\/?$/);
@@ -167,7 +171,7 @@ test.describe('editions detail', () => {
     page,
   }) => {
     await page.goto('/editions/');
-    const frHref = await page.locator('.tile').first().getAttribute('href');
+    const frHref = await page.locator('.editions-index__row').first().getAttribute('href');
     expect(frHref).toBeTruthy();
 
     await page.goto(frHref!);
@@ -188,7 +192,7 @@ test.describe('editions related-gallery cross-link (EDN-08)', () => {
     page,
   }) => {
     await page.goto('/editions/');
-    const frHref = await page.locator('.tile').first().getAttribute('href');
+    const frHref = await page.locator('.editions-index__row').first().getAttribute('href');
     expect(frHref).toBeTruthy();
 
     const slugMatch = frHref!.match(/\/editions\/([^/]+)\/?$/);
@@ -209,7 +213,7 @@ test.describe('editions lightbox', () => {
     page,
   }) => {
     await page.goto('/editions/');
-    const rowHref = await page.locator('.tile').first().getAttribute('href');
+    const rowHref = await page.locator('.editions-index__row').first().getAttribute('href');
     expect(rowHref).toBeTruthy();
 
     await page.goto(rowHref!);
@@ -247,33 +251,32 @@ test.describe('editions lightbox', () => {
 test.describe('editions overview layout', () => {
   test.use({ viewport: { width: 1280, height: 900 } });
 
-  test('hero tile is larger than and left of its sibling small tile', async ({ page }) => {
+  test('hovering a row reveals its statement and activates the cursor-following preview panel with that row\'s photo', async ({
+    page,
+  }) => {
     for (const url of ['/editions/', '/en/editions/']) {
       await page.goto(url);
 
-      // Today's real content is exactly 2 published éditions → one trailing
-      // group of size 2, side=left (group index 0).
-      const group = page.locator('.editions-grid__group').first();
-      await expect(group).toHaveAttribute('data-size', '2');
-      await expect(group).toHaveAttribute('data-side', 'left');
+      const preview = page.locator('.editions-preview');
+      const rows = page.locator('.editions-index__row');
 
-      const hero = group.locator('.tile--hero');
-      const small = group.locator('.tile--small').first();
+      const firstRow = rows.nth(0);
+      const secondRow = rows.nth(1);
 
-      const heroBox = await hero.boundingBox();
-      const smallBox = await small.boundingBox();
+      await expect(preview).not.toHaveClass(/active/);
 
-      expect(heroBox).not.toBeNull();
-      expect(smallBox).not.toBeNull();
+      await firstRow.hover();
+      await expect(preview).toHaveClass(/active/);
+      await expect(firstRow.locator('.editions-index__statement')).toBeVisible();
 
-      // Hero spans 7 of 12 columns vs the small's 5 → wider.
-      expect(heroBox!.width).toBeGreaterThan(smallBox!.width);
-      // Hero spans 2 grid rows vs the small's 1 → taller.
-      expect(heroBox!.height).toBeGreaterThan(smallBox!.height);
-      // side=left → hero sits to the left of the small tile.
-      expect(heroBox!.x).toBeLessThan(smallBox!.x);
-      // Both top-aligned to the group's first row.
-      expect(Math.abs(heroBox!.y - smallBox!.y)).toBeLessThan(4);
+      const firstRowImg = await firstRow.getAttribute('data-img');
+      const previewSrcAfterFirst = await preview.locator('img').getAttribute('src');
+      expect(previewSrcAfterFirst).toBe(firstRowImg);
+
+      await secondRow.hover();
+      const secondRowImg = await secondRow.getAttribute('data-img');
+      const previewSrcAfterSecond = await preview.locator('img').getAttribute('src');
+      expect(previewSrcAfterSecond).toBe(secondRowImg);
     }
   });
 });
@@ -281,7 +284,7 @@ test.describe('editions overview layout', () => {
 test.describe('no commerce affordances (detail)', () => {
   test('shows no price, availability, or purchase affordance (EDN-06)', async ({ page }) => {
     await page.goto('/editions/');
-    const rowHref = await page.locator('.tile').first().getAttribute('href');
+    const rowHref = await page.locator('.editions-index__row').first().getAttribute('href');
     expect(rowHref).toBeTruthy();
 
     const slugMatch = rowHref!.match(/\/editions\/([^/]+)\/?$/);
@@ -314,7 +317,7 @@ test.describe('editions hero reduced-motion (sketch 005)', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
 
     await page.goto('/editions/');
-    const rowHref = await page.locator('.tile').first().getAttribute('href');
+    const rowHref = await page.locator('.editions-index__row').first().getAttribute('href');
     expect(rowHref).toBeTruthy();
 
     await page.goto(rowHref!);
@@ -346,7 +349,7 @@ test.describe('editions hero reduced-motion (sketch 005)', () => {
 
   test('without reduced motion, the desktop hero pin is sticky by default', async ({ page }) => {
     await page.goto('/editions/');
-    const rowHref = await page.locator('.tile').first().getAttribute('href');
+    const rowHref = await page.locator('.editions-index__row').first().getAttribute('href');
     expect(rowHref).toBeTruthy();
 
     await page.goto(rowHref!);
@@ -370,7 +373,7 @@ test.describe('editions scroll-down hint label (quick-260724-wdr)', () => {
     page,
   }) => {
     await page.goto('/editions/');
-    const frHref = await page.locator('.tile').first().getAttribute('href');
+    const frHref = await page.locator('.editions-index__row').first().getAttribute('href');
     expect(frHref).toBeTruthy();
 
     const slugMatch = frHref!.match(/\/editions\/([^/]+)\/?$/);

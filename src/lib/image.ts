@@ -20,6 +20,21 @@ export function thumbnailUrl(img: GalleryImage, size = 600): string {
 }
 
 /**
+ * 3:4 portrait-crop preview URL, for the éditions overview cursor-follow
+ * preview panel (sketch 010 B2) — same crop idea as thumbnailUrl, but
+ * portrait instead of square.
+ */
+export function previewPanelUrl(img: GalleryImage, width = 680): string {
+  return builder
+    .image(img)
+    .width(width)
+    .height(Math.round((width * 4) / 3))
+    .fit('crop')
+    .auto('format')
+    .url()
+}
+
+/**
  * Full-size, uncropped URL, for the lightbox (UI-SPEC: `object-fit: contain`,
  * never cropped).
  */
