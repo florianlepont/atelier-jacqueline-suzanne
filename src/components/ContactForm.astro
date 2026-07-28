@@ -79,7 +79,7 @@ const errMessageBlank = locale === 'en' ? 'Please enter a message.' : 'Merci dâ€
   </div>
 
   <div class="contact-form__field">
-    <Textarea label={messageLabel} id="contact-message" name="message" required />
+    <Textarea label={messageLabel} id="contact-message" name="message" rows={2} required />
     <p data-role="error-message" class="contact-form__error" role="alert"></p>
   </div>
 
@@ -232,7 +232,7 @@ const errMessageBlank = locale === 'en' ? 'Please enter a message.' : 'Merci dâ€
   .contact-form {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-lg) var(--space-md);
+    gap: var(--space-md);
   }
 
   .contact-form__field {
@@ -260,11 +260,11 @@ const errMessageBlank = locale === 'en' ? 'Please enter a message.' : 'Merci dâ€
   }
 
   .contact-form :global(.field__input) {
-    min-height: 52px;
+    min-height: var(--tap-target-min);
   }
 
   .contact-form :global(.field__textarea) {
-    min-height: 160px;
+    min-height: 70px;
     resize: vertical;
   }
 
@@ -299,7 +299,7 @@ const errMessageBlank = locale === 'en' ? 'Please enter a message.' : 'Merci dâ€
     grid-column: 1 / -1;
     align-self: flex-start;
     border-top: var(--border-hairline) solid var(--color-border);
-    padding-top: var(--space-md);
+    padding-top: var(--space-sm);
   }
 
   /* A3's bold display-font submit â€” the Button primitive and its localized
@@ -309,7 +309,7 @@ const errMessageBlank = locale === 'en' ? 'Please enter a message.' : 'Merci dâ€
   .contact-form :global(.btn--primary) {
     font-family: var(--font-display);
     font-size: clamp(16px, 1.6vw, 20px);
-    padding: var(--space-md) var(--space-xl);
+    padding: var(--space-sm) var(--space-xl);
   }
 
   .contact-form :global(.btn--primary)::after {
@@ -323,6 +323,12 @@ const errMessageBlank = locale === 'en' ? 'Please enter a message.' : 'Merci dâ€
     font-weight: var(--weight-regular);
     line-height: var(--text-body-leading);
     color: var(--color-ink);
+  }
+
+  /* Desktop no-scroll budget: an empty status paragraph must not reserve
+     space before any message exists (mirrors .contact-form__error:empty). */
+  .contact-form__status:empty {
+    display: none;
   }
 
   /* D-03/Pitfall 2: submission-failure status is a class toggle, not an
