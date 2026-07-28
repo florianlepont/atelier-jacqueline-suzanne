@@ -22,19 +22,21 @@ interface EditionTile {
 
 interface Props {
   heading: string;
+  intro: string;
   tiles: EditionTile[];
   emptyHeading: string;
   emptyBody: string;
   viewEditionLabel: string;
 }
 
-const { heading, tiles, emptyHeading, emptyBody, viewEditionLabel } = Astro.props;
+const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Astro.props;
 ---
 
 <article class="editions-list">
   <header class="editions-list__header">
     <p class="editions-list__eyebrow">Atelier Jacqueline Suzanne</p>
     <h1>{heading}</h1>
+    <p class="editions-list__intro">{intro}</p>
   </header>
 
   {
@@ -49,7 +51,9 @@ const { heading, tiles, emptyHeading, emptyBody, viewEditionLabel } = Astro.prop
               <a class="editions-index__row" href={tile.href} data-img={tile.imgSrc}>
                 <span class="editions-index__number">{label}</span>
                 <h2 class="editions-index__title">{tile.title}</h2>
-                <p class="editions-index__statement">{tile.statement}</p>
+                <div class="editions-index__statement-wrap">
+                  <p class="editions-index__statement">{tile.statement}</p>
+                </div>
                 <span class="sr-only">{viewEditionLabel}</span>
               </a>
             );
@@ -94,6 +98,13 @@ const { heading, tiles, emptyHeading, emptyBody, viewEditionLabel } = Astro.prop
     letter-spacing: -0.04em;
   }
 
+  .editions-list__intro {
+    max-width: 60ch;
+    margin: var(--space-md) 0 0;
+    line-height: 1.5;
+    color: #3a3a3a;
+  }
+
   .editions-index {
     position: relative;
   }
@@ -104,10 +115,6 @@ const { heading, tiles, emptyHeading, emptyBody, viewEditionLabel } = Astro.prop
     border-bottom: var(--border-hairline) solid var(--color-border);
     text-decoration: none;
     color: var(--color-ink);
-  }
-
-  .editions-index__row:first-of-type {
-    border-top: var(--border-hairline) solid var(--color-ink);
   }
 
   .editions-index__number {
@@ -129,15 +136,22 @@ const { heading, tiles, emptyHeading, emptyBody, viewEditionLabel } = Astro.prop
     transition: opacity 0.25s ease;
   }
 
+  .editions-index__statement-wrap {
+    display: grid;
+    grid-template-rows: 0fr;
+    overflow: hidden;
+    transition: grid-template-rows 0.3s ease;
+  }
+
   .editions-index__statement {
+    min-height: 0;
     max-width: 46ch;
     line-height: 1.5;
     margin: var(--space-sm) 0 0;
     color: #6b6b6b;
-    max-height: 0;
     opacity: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
+    transition: opacity 0.3s ease;
   }
 
   .editions-index:hover .editions-index__title {
@@ -148,8 +162,11 @@ const { heading, tiles, emptyHeading, emptyBody, viewEditionLabel } = Astro.prop
     opacity: 1;
   }
 
+  .editions-index__row:hover .editions-index__statement-wrap {
+    grid-template-rows: 1fr;
+  }
+
   .editions-index__row:hover .editions-index__statement {
-    max-height: 80px;
     opacity: 1;
   }
 
@@ -162,8 +179,11 @@ const { heading, tiles, emptyHeading, emptyBody, viewEditionLabel } = Astro.prop
     opacity: 1;
   }
 
+  .editions-index__row:focus-visible .editions-index__statement-wrap {
+    grid-template-rows: 1fr;
+  }
+
   .editions-index__row:focus-visible .editions-index__statement {
-    max-height: 80px;
     opacity: 1;
   }
 
@@ -195,8 +215,11 @@ const { heading, tiles, emptyHeading, emptyBody, viewEditionLabel } = Astro.prop
   }
 
   @media (max-width: 800px) {
+    .editions-index__statement-wrap {
+      grid-template-rows: 1fr;
+    }
+
     .editions-index__statement {
-      max-height: none;
       opacity: 1;
       margin-top: var(--space-sm);
     }

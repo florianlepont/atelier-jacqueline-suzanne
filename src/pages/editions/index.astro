@@ -14,12 +14,15 @@
 // resolution.
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import EditionsOverviewBody from '../../components/EditionsOverviewBody.astro';
-import { getEditions } from '../../lib/sanity';
+import { getEditions, getEditionsPage } from '../../lib/sanity';
 import { getRelativeLocaleUrl } from 'astro:i18n';
 import { previewPanelUrl, responsiveThumbnailSrcSet } from '../../lib/image';
+import { resolveEditionsIntro } from '../../lib/site-config';
 
 const locale = 'fr' as const;
 const editions = await getEditions();
+const editionsPage = await getEditionsPage();
+const intro = resolveEditionsIntro(editionsPage, locale);
 
 const tiles = editions.map((edition) => ({
   href: getRelativeLocaleUrl(locale, `editions/${edition.slug}`),
@@ -38,6 +41,7 @@ const seoDescription =
 <BaseLayout title={seoTitle} description={seoDescription}>
   <EditionsOverviewBody
     heading={"Éditions"}
+    intro={intro}
     tiles={tiles}
     emptyHeading={"Éditions à venir"}
     emptyBody={"De nouvelles éditions seront bientôt visibles ici. Revenez prochainement."}

@@ -208,6 +208,11 @@ export interface HomePage {
   seo?: SeoSettings
 }
 
+/** The published `editionsPage` singleton, intro-only (no seo field/group). */
+export interface EditionsPage {
+  intro?: Partial<LocaleString>
+}
+
 export interface ContactPage {
   intro?: Partial<LocaleString>
   publicEmail?: string
@@ -225,6 +230,8 @@ const HOME_PAGE_QUERY = /* groq */ `*[_id == "homePage"][0]{
   intro,
   seo
 }`
+
+const EDITIONS_PAGE_QUERY = /* groq */ `*[_id == "editionsPage"][0]{ intro }`
 
 const ABOUT_PAGE_QUERY = /* groq */ `*[_id == "aboutPage"][0]{
   biography,
@@ -289,6 +296,11 @@ export async function getAboutPage(): Promise<AboutPage | null> {
 
 export async function getHomePage(): Promise<HomePage | null> {
   const result = await sanityClient.fetch<HomePage | null>(HOME_PAGE_QUERY)
+  return result ?? null
+}
+
+export async function getEditionsPage(): Promise<EditionsPage | null> {
+  const result = await sanityClient.fetch<EditionsPage | null>(EDITIONS_PAGE_QUERY)
   return result ?? null
 }
 
