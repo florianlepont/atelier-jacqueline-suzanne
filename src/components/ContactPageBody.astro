@@ -110,8 +110,8 @@ const {
     max-width: var(--editorial-page-max);
     margin: 0 auto;
     box-sizing: border-box;
-    padding: clamp(var(--space-md), 3vh, var(--space-2xl)) var(--editorial-page-padding-inline);
-    min-height: calc(100svh - var(--contact-chrome-reserve, 258px));
+    padding: clamp(var(--space-md), 2.4vh, var(--space-2xl)) var(--editorial-page-padding-inline);
+    min-height: calc(100svh - var(--contact-chrome-reserve, 152px)); /* header only — footer is hidden via hideFooter on this page */
   }
 
   .contact-page__header {
@@ -243,7 +243,7 @@ const {
   }
 
   .contact-page__form-panel {
-    padding: clamp(var(--space-md), 2.4vh, var(--space-xl));
+    padding: clamp(var(--space-md), 2vh, var(--space-xl));
     border: var(--border-hairline) solid var(--color-ink);
   }
 
