@@ -30,6 +30,7 @@ const { eyebrow = 'Atelier Jacqueline Suzanne', heading, headingId, intro } = As
     <h1 id={headingId}>{heading}</h1>
   </div>
   <p class="page-title-header__intro">{intro}</p>
+  <div class="page-title-header__divider" aria-hidden="true"></div>
 </header>
 
 <style>
@@ -53,6 +54,7 @@ const { eyebrow = 'Atelier Jacqueline Suzanne', heading, headingId, intro } = As
   .page-title-header__titleblock {
     position: relative;
     grid-column: 1;
+    grid-row: 1;
   }
 
   .page-title-header__eyebrow {
@@ -106,9 +108,32 @@ const { eyebrow = 'Atelier Jacqueline Suzanne', heading, headingId, intro } = As
   @media (min-width: 760px) {
     .page-title-header__intro {
       grid-column: 2;
+      grid-row: 1; /* explicit row — otherwise auto-placement pushes this to row 2 once .page-title-header__divider explicitly claims column 2/row 1 */
       padding-bottom: 0.3em;
-      border-left: var(--border-hairline) solid var(--color-border);
       padding-left: var(--space-lg);
+    }
+  }
+
+  /* The vertical divider used to be border-left on the intro paragraph
+     itself — sized to that paragraph's own content height. That meant a
+     shorter intro (Contact: 2 lines) drew a visibly shorter, lower-starting
+     line than a longer one (Éditions: 4 lines), even with byte-identical
+     CSS. Decoupled into its own grid item with align-self:stretch so the
+     line always spans the full row height, on both pages, regardless of
+     how many lines the intro text happens to wrap to. */
+  .page-title-header__divider {
+    display: none;
+  }
+  @media (min-width: 760px) {
+    .page-title-header__divider {
+      display: block;
+      grid-column: 2;
+      grid-row: 1;
+      justify-self: start;
+      align-self: stretch;
+      width: var(--border-hairline);
+      background: var(--color-border);
+      transition: background-color 0.35s ease;
     }
   }
 
