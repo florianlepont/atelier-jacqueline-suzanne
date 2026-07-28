@@ -208,12 +208,11 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
     border-bottom: var(--border-hairline) solid var(--color-border);
     text-decoration: none;
     color: var(--color-ink);
-    opacity: 0;
     transform: translateY(20px);
     animation: editions-row-fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
   @keyframes editions-row-fade-up {
-    to { opacity: 1; transform: translateY(0); }
+    to { transform: translateY(0); }
   }
 
   .editions-index__row:first-of-type {
