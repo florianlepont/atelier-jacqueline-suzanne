@@ -120,16 +120,41 @@ const {
 
   /* PageTitleHeader.astro owns the header/eyebrow/h1/intro/halftone markup
      and styling now — shared byte-for-byte with the Éditions overview page
-     (sketch-012 F1), so the two can never drift out of alignment again.
-     One Contact-specific override: the halftone's -700px bleed is fine on
-     Éditions (already scrolls) but silently adds 700px of scrollable area
-     here, breaking the no-scroll budget. Containing it at .contact-page
-     (not the tighter .page-title-header) lets the visible bleed spill as
-     far as this page's own bounds allow — closer to Éditions' coverage —
-     while everything past that edge still gets clipped, so it never grows
-     the document's scrollHeight. */
-  .contact-page {
-    overflow: hidden;
+     (sketch-012 F1), so the two can never drift out of alignment again —
+     including the halftone's -700px bleed, completely unclipped, same as
+     Éditions. Clipping it at any container narrower than the viewport
+     (.page-title-header, then .contact-page) kept falling short of
+     Éditions' actual reach, since .contact-page itself is inset from the
+     real page edge (max-width + centering). Solved at the source instead:
+     clip vertical overflow at <body> (see the :global(body) rule below),
+     which spans the full viewport width — so the halftone reaches exactly
+     as far right as it does on Éditions, with no container narrower than
+     the viewport ever clipping it. */
+
+  /* Guarantees no vertical scroll on desktop regardless of the halftone's
+     unclipped bleed, WITHOUT touching horizontal overflow (the halftone
+     still reaches the true right edge of the viewport, matching Éditions).
+     Explicitly scoped to min-width:800px — mobile MUST keep real scrolling
+     (stacked layout is legitimately taller than the viewport there; this
+     is not the "content might overflow" edge case below, it's expected,
+     everyday mobile content). Verified directly: without this guard,
+     overflow-y:hidden still measured as computed on mobile in testing, yet
+     window.scrollTo() kept working there anyway (Chromium quirk not fully
+     understood) — not something to depend on. The @media guard removes all
+     doubt regardless of that.
+     Trade-off on desktop: this is a hard clip, not a "content naturally
+     fits" budget — verified 0px overflow and full submit-button visibility
+     at 650-1080px+ height across both locales, but at some untested
+     viewport/font-rendering combination content could clip and become
+     unreachable rather than scrollable. Scoped via :global() so it only
+     loads in the bundle for pages using ContactPageBody (same pattern as
+     EditionsOverviewBody's :global(html.editions-row-active) rules).
+  */
+  @media (min-width: 800px) {
+    :global(html:has(.contact-page)),
+    :global(body:has(.contact-page)) {
+      overflow-y: hidden;
+    }
   }
 
   .contact-page__grid {
