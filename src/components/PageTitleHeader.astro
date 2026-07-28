@@ -130,8 +130,8 @@ const { eyebrow = 'Atelier Jacqueline Suzanne', heading, headingId, intro } = As
       grid-column: 2;
       grid-row: 1;
       justify-self: start;
-      align-self: stretch;
-      margin-block: var(--space-sm); /* inset slightly — full row height read as too tall */
+      align-self: center; /* fixed height, centered in the row — independent of row height so it stays exactly this size on both pages */
+      height: 120px;
       width: var(--border-hairline);
       background: var(--color-border);
       transition: background-color 0.35s ease;
