@@ -118,22 +118,46 @@ const {
     margin-bottom: clamp(var(--space-xl), 6vh, 88px); /* bounded — never justify-content: space-between, which pools a single void on short-wide viewports */
   }
 
+  /* Matches the Éditions overview title's new typographic treatment
+     (quick-260728-dbf): pulsing accent dot + ink-colored label text,
+     --text-label-size token, 0.08em tracking. */
   .contact-page__eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin: 0 0 clamp(var(--space-xs), 0.8vh, var(--space-sm));
-    font-size: 12px;
+    font-size: var(--text-label-size);
     font-weight: var(--weight-semibold);
-    letter-spacing: 0.1em;
+    line-height: var(--text-label-leading);
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--color-accent);
+    color: var(--color-ink);
+  }
+  .contact-page__eyebrow::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    flex-shrink: 0;
+    background: var(--color-accent);
+    display: inline-block;
+    animation: contact-eyebrow-pulse 2.2s ease-in-out infinite;
+  }
+  @keyframes contact-eyebrow-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
   }
 
   .contact-page h1 {
     margin: 0 0 clamp(var(--space-sm), 1.2vh, var(--space-md));
     font-family: var(--font-display);
     font-weight: var(--weight-semibold);
+    /* Size/line-height stay Contact-specific (min(vw,vh) + 0.82), not
+       Éditions' clamp(64px,9vw,140px)/1.05 — those keep the desktop
+       composition fitting one screen with no scroll (sketch-012 A3,
+       confirmed with the user); only tracking matches Éditions' -0.04em. */
     font-size: clamp(64px, min(15vw, 20vh), 220px);
     line-height: 0.82;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.04em;
   }
 
   .contact-page__lead {
