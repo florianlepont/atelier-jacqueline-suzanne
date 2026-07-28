@@ -75,7 +75,9 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
   .editions-list {
     width: min(100%, var(--editorial-page-max));
     margin: 0 auto;
-    padding: var(--editorial-page-padding-block) var(--editorial-page-padding-inline);
+    padding-inline: var(--editorial-page-padding-inline);
+    padding-top: clamp(48px, 7vw, 56px);
+    padding-bottom: var(--editorial-page-padding-block);
   }
 
   .editions-list__header {
