@@ -34,8 +34,11 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
 
 <article class="editions-list">
   <header class="editions-list__header">
-    <p class="editions-list__eyebrow">Atelier Jacqueline Suzanne</p>
-    <h1>{heading}</h1>
+    <div class="editions-list__halftone" aria-hidden="true"></div>
+    <div class="editions-list__titleblock">
+      <p class="editions-list__eyebrow">Atelier Jacqueline Suzanne</p>
+      <h1>{heading}</h1>
+    </div>
     <p class="editions-list__intro">{intro}</p>
   </header>
 
@@ -47,8 +50,9 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
         <div class="editions-index">
           {tiles.map((tile, idx) => {
             const label = `${heading.replace(/s$/, '')} ${String(idx + 1).padStart(2, '0')}`;
+            const rowDelay = Math.min(0.6 + idx * 0.12, 1.2);
             return (
-              <a class="editions-index__row" href={tile.href} data-img={tile.imgSrc}>
+              <a class="editions-index__row" href={tile.href} data-img={tile.imgSrc} style={`animation-delay: ${rowDelay}s`}>
                 <span class="editions-index__number">{label}</span>
                 <h2 class="editions-index__title">{tile.title}</h2>
                 <div class="editions-index__statement-wrap">
@@ -75,32 +79,123 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
   }
 
   .editions-list__header {
+    position: relative;
+    isolation: isolate;
     margin-bottom: var(--space-2xl);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
+  @media (min-width: 760px) {
+    .editions-list__header {
+      grid-template-columns: auto 1fr;
+      align-items: end;
+      column-gap: var(--space-2xl);
+    }
+  }
+
+  .editions-list__titleblock {
+    position: relative;
+    grid-column: 1;
   }
 
   .editions-list__eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
     margin: 0;
     font-size: var(--text-label-size);
     font-weight: var(--weight-semibold);
     line-height: var(--text-label-leading);
     letter-spacing: 0.08em;
     text-transform: uppercase;
+    transform: translateY(6px);
+    animation: editions-header-fade-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0s forwards;
+  }
+  .editions-list__eyebrow::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: var(--color-accent);
+    display: inline-block;
+    animation: editions-eyebrow-pulse 2.2s ease-in-out infinite;
   }
 
   .editions-list h1 {
     margin: var(--space-md) 0 0;
-    font-size: var(--editorial-page-title-size);
+    font-size: clamp(64px, 9vw, 140px);
     font-weight: var(--weight-semibold);
     font-family: var(--font-display);
-    line-height: 0.95;
+    line-height: 0.9;
     letter-spacing: -0.04em;
+    white-space: nowrap;
+    display: inline-block;
+    transform: scale(0.82) translateY(18px) rotate(-2deg);
+    animation: editions-header-settle 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
   }
 
   .editions-list__intro {
-    max-width: 60ch;
-    margin: var(--space-md) 0 0;
+    grid-column: 1;
+    margin: 0;
     line-height: 1.5;
     color: #3a3a3a;
+    max-width: 46ch;
+    transform: translateY(10px);
+    animation: editions-header-fade-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+  }
+  @media (min-width: 760px) {
+    .editions-list__intro {
+      grid-column: 2;
+      padding-bottom: 0.3em;
+      border-left: var(--border-hairline) solid var(--color-border);
+      padding-left: var(--space-lg);
+    }
+  }
+
+  @keyframes editions-header-fade-up {
+    to { transform: translateY(0); }
+  }
+  @keyframes editions-header-settle {
+    to { transform: scale(1) translateY(0) rotate(0deg); }
+  }
+  @keyframes editions-eyebrow-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+
+  .editions-list__halftone {
+    position: absolute;
+    top: -700px;
+    bottom: -700px;
+    left: -700px;
+    right: -700px;
+    background-image: radial-gradient(rgba(26, 26, 26, 0.16) 1.4px, transparent 1.6px);
+    background-size: 9px 9px;
+    -webkit-mask-image: radial-gradient(circle 640px at right 700px top 700px, black 0%, rgba(0, 0, 0, 0.72) 18%, rgba(0, 0, 0, 0.42) 40%, rgba(0, 0, 0, 0.18) 65%, rgba(0, 0, 0, 0.05) 85%, transparent 100%);
+    mask-image: radial-gradient(circle 640px at right 700px top 700px, black 0%, rgba(0, 0, 0, 0.72) 18%, rgba(0, 0, 0, 0.42) 40%, rgba(0, 0, 0, 0.18) 65%, rgba(0, 0, 0, 0.05) 85%, transparent 100%);
+    z-index: -1;
+    pointer-events: none;
+    display: none;
+    opacity: 0;
+    transition: filter 0.3s ease;
+    animation: editions-halftone-fade-in 0.6s ease 0.3s forwards, editions-halftone-drift 10s linear infinite;
+  }
+  @media (min-width: 760px) {
+    .editions-list__halftone {
+      display: block;
+    }
+  }
+  @keyframes editions-halftone-fade-in {
+    to { opacity: 1; }
+  }
+  @keyframes editions-halftone-drift {
+    from { background-position: 0 0; }
+    to { background-position: 90px 45px; }
+  }
+  .editions-list__header:hover .editions-list__halftone {
+    animation-duration: 0.6s, 4s;
+    filter: contrast(1.35) brightness(0.85);
   }
 
   .editions-index {
@@ -113,6 +208,12 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
     border-bottom: var(--border-hairline) solid var(--color-border);
     text-decoration: none;
     color: var(--color-ink);
+    opacity: 0;
+    transform: translateY(20px);
+    animation: editions-row-fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  @keyframes editions-row-fade-up {
+    to { opacity: 1; transform: translateY(0); }
   }
 
   .editions-index__row:first-of-type {
@@ -214,6 +315,24 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
     height: 100%;
     object-fit: cover;
     display: block;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .editions-list__eyebrow,
+    .editions-list h1,
+    .editions-list__intro,
+    .editions-index__row {
+      opacity: 1 !important;
+      transform: none !important;
+      animation: none !important;
+    }
+    .editions-list__eyebrow::before {
+      animation: none;
+    }
+    .editions-list__halftone {
+      animation: none;
+      opacity: 1 !important;
+    }
   }
 
   @media (max-width: 800px) {
