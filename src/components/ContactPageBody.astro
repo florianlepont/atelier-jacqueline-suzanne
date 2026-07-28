@@ -120,7 +120,13 @@ const {
 
   /* PageTitleHeader.astro owns the header/eyebrow/h1/intro/halftone markup
      and styling now — shared byte-for-byte with the Éditions overview page
-     (sketch-012 F1), so the two can never drift out of alignment again. */
+     (sketch-012 F1), so the two can never drift out of alignment again.
+     One Contact-specific override: the halftone's -700px bleed is fine on
+     Éditions (already scrolls) but silently adds 700px of scrollable area
+     here, breaking the no-scroll budget — contain it on this page only. */
+  :global(.contact-page .page-title-header) {
+    overflow: hidden;
+  }
 
   .contact-page__grid {
     display: grid;

@@ -34,10 +34,15 @@ const { eyebrow = 'Atelier Jacqueline Suzanne', heading, headingId, intro } = As
 </header>
 
 <style>
+  /* No overflow:hidden here — the halftone's -700px bleed is meant to show
+     past this box (that's how Éditions originally looked: the dot field
+     visibly extends beyond the header itself). Containing that bleed is a
+     Contact-specific need (no-scroll budget), scoped in ContactPageBody's
+     own styles instead of baked in here, so Éditions keeps its full,
+     original coverage. */
   .page-title-header {
     position: relative;
     isolation: isolate;
-    overflow: hidden;
     margin-bottom: var(--space-lg);
     display: grid;
     grid-template-columns: 1fr;
