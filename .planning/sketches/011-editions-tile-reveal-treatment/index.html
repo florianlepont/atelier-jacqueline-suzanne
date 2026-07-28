@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sketch 011 — Éditions Tile Reveal Treatment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../themes/default.css" />
+<style>
+  body { padding-top: 52px; }
+
+  #variant-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9998;
+    background: var(--gray-0); border-bottom: var(--border-hairline) solid var(--color-border);
+    padding: 8px 16px; display: flex; gap: 8px; align-items: center;
+    font-family: var(--font-sans); overflow-x: auto;
+  }
+  .variant-tab {
+    font-family: var(--font-sans); font-size: 13px; font-weight: var(--weight-semibold);
+    padding: 8px 14px; border: var(--border-hairline) solid var(--color-border);
+    background: var(--gray-0); color: var(--color-ink); cursor: pointer; white-space: nowrap;
+    border-radius: var(--radius-sm); transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .variant-tab:hover { border-color: var(--color-ink); }
+  .variant-tab.active { background: var(--color-ink); color: var(--gray-0); border-color: var(--color-ink); }
+
+  .variant { display: none; }
+  .variant.active { display: block; }
+
+  .page-head {
+    width: min(100%, var(--editorial-page-max)); margin: 0 auto;
+    padding: var(--editorial-page-padding-block) var(--editorial-page-padding-inline) var(--space-2xl);
+  }
+  .page-head__inner { border-top: var(--border-hairline) solid var(--color-ink); padding-top: var(--space-md); }
+  .page-head__eyebrow { margin: 0; font-size: var(--text-label-size); font-weight: var(--weight-semibold); letter-spacing: 0.08em; text-transform: uppercase; }
+  .page-head h1 { margin: var(--space-md) 0 0; font-size: var(--editorial-page-title-size); font-weight: var(--weight-semibold); font-family: var(--font-display); line-height: 0.95; letter-spacing: -0.04em; }
+  .note { margin: var(--space-md) 0 0; font-size: 13px; color: #6b6b6b; max-width: 70ch; line-height: 1.5; }
+  .note strong { color: var(--color-ink); }
+
+  .row { width: min(100%, var(--editorial-page-max)); margin: 0 auto; padding: 0 var(--editorial-page-padding-inline) var(--space-3xl); display: flex; gap: var(--space-md); flex-wrap: wrap; }
+
+  /* ---------------------------------------------------------------------
+     Shared "reveal tile" (rt) — same interaction mechanic in every
+     variant: a cursor-follow circular spotlight cuts a hole in the
+     "cover" layer, revealing the true color photo underneath. Only the
+     COVER TREATMENT changes between variants (that's the whole point).
+     --------------------------------------------------------------------- */
+  .rt { position: relative; overflow: hidden; display: block; flex: 1 1 220px; aspect-ratio: 3/4; color: var(--gray-0); text-decoration: none; background: var(--color-ink); }
+  .rt__base { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .rt__cover { position: absolute; inset: 0; }
+  .rt__cover-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .rt:hover .rt__cover, .rt:focus-visible .rt__cover {
+    -webkit-mask-image: radial-gradient(circle 130px at var(--mx, 50%) var(--my, 50%), transparent 0%, transparent 58%, black 100%);
+    mask-image: radial-gradient(circle 130px at var(--mx, 50%) var(--my, 50%), transparent 0%, transparent 58%, black 100%);
+  }
+  .rt:hover .rt__base { transform: scale(1.03); }
+  .rt__base { transition: transform 0.4s ease; }
+  .rt:focus-visible { outline: 2px solid var(--gray-0); outline-offset: -4px; }
+  .rt__scrim { position: absolute; left: 0; right: 0; bottom: 0; height: 55%; background: linear-gradient(to top, rgba(26,26,26,0.85), rgba(26,26,26,0)); pointer-events: none; }
+  .rt__body { position: absolute; left: 0; right: 0; bottom: 0; padding: var(--space-md) var(--space-lg); pointer-events: none; }
+  .rt__title { display: block; font-family: var(--font-display); font-weight: var(--weight-semibold); font-size: clamp(18px, 2vw, 24px); line-height: 0.95; }
+
+  /* REFERENCE — the pink duotone from sketch 009/010, for direct A/B */
+  #variant-ref .rt__cover { background: var(--pink-600); mix-blend-mode: color; }
+
+  /* A — Ink Duotone: identical mechanic + technique, swapped to a
+     neutral warm-graphite tone instead of the brand pink. */
+  #variant-ink .rt__cover { background: #4A4038; mix-blend-mode: color; }
+
+  /* B — Monochrome Reveal: no color anywhere. Default is a plain black
+     & white photo (like a real photocopied/riso zine) — hovering
+     "colorizes" the spot under the cursor. */
+  #variant-mono .rt__cover-img { filter: grayscale(1) contrast(1.05); }
+
+  /* C — Negative Reveal: default shows the photo as a B&W film
+     negative (tonally inverted) — hovering develops the positive.
+     Zero color, and literally how photography works. */
+  #variant-neg .rt__cover-img { filter: grayscale(1) invert(1) contrast(1.05); }
+
+  /* D — Halftone Reveal: default is a high-contrast, dot-screened
+     print simulation (like actual offset/riso print halftone) —
+     hovering reveals the clean photo. Zero color, most "print object". */
+  #variant-half .rt__cover-img { filter: grayscale(1) contrast(1.7) brightness(1.05); }
+  #variant-half .rt__cover::after {
+    content: ''; position: absolute; inset: 0;
+    background-image: radial-gradient(circle, rgba(0,0,0,0.6) 1.1px, transparent 1.3px);
+    background-size: 5px 5px;
+    mix-blend-mode: multiply;
+  }
+
+  /* E — Négatif couleur: not a neutral B&W invert like C, but the warm
+     orange/amber cast of an actual unprocessed color negative (the
+     film base + fog color real negatives carry before correction).
+     Zero brand-pink, but more "colorful" than C on purpose. */
+  #variant-e .rt__cover-img { filter: invert(0.88) sepia(0.45) saturate(2.1) hue-rotate(-14deg) contrast(1.05); }
+
+  /* F — Négatif au survol (mécanique inversée) : la photo de base reste
+     normale/couleur partout. Au survol, c'est l'INVERSE du mécanisme
+     précédent — au lieu de révéler la couleur à travers un trou, on
+     révèle le négatif À TRAVERS un disque qui suit le curseur. Le
+     disque est masqué à 0 au repos (rien ne se voit), et seul le
+     disque devient visible au survol — le reste de la photo ne change
+     jamais. */
+  #variant-f .rt__cover-img { filter: invert(0.88) sepia(0.45) saturate(2.1) hue-rotate(-14deg) contrast(1.05); }
+  #variant-f .rt__cover {
+    opacity: 0; transition: opacity 0.12s ease;
+    -webkit-mask-image: radial-gradient(circle 130px at var(--mx, 50%) var(--my, 50%), black 0%, black 55%, transparent 100%);
+    mask-image: radial-gradient(circle 130px at var(--mx, 50%) var(--my, 50%), black 0%, black 55%, transparent 100%);
+  }
+  #variant-f .rt:hover .rt__cover, #variant-f .rt:focus-visible .rt__cover { opacity: 1; }
+
+  #sketch-tools {
+    position: fixed; bottom: 12px; right: 12px; z-index: 9999; font-family: system-ui; font-size: 12px;
+    background: rgba(0,0,0,0.7); color: #fff; padding: 8px 12px; border-radius: 8px; opacity: 0.4;
+    transition: opacity 0.2s;
+  }
+  #sketch-tools:hover { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div id="variant-nav">
+  <button class="variant-tab" onclick="showVariant('ref')">Référence <span style="opacity:.7;font-weight:400;">(rose, actuel)</span></button>
+  <button class="variant-tab active" onclick="showVariant('ink')">A — Duotone encre</button>
+  <button class="variant-tab" onclick="showVariant('mono')">B — Monochrome</button>
+  <button class="variant-tab" onclick="showVariant('neg')">C — Négatif</button>
+  <button class="variant-tab" onclick="showVariant('half')">D — Trame (halftone)</button>
+  <button class="variant-tab" onclick="showVariant('e')">E — Négatif couleur</button>
+  <button class="variant-tab" onclick="showVariant('f')">F — Négatif AU survol (mécanique inversée)</button>
+</div>
+
+<!-- Same 4 tiles (Rebut, Silos, Grain, Marée basse — 2 sombres, 1 sombre-coloré, 1 clair) reused identically across every variant so the ONLY variable is the cover treatment. -->
+
+<div id="variant-ref" class="variant">
+  <div class="page-head">
+    <div class="page-head__inner"><p class="page-head__eyebrow">Atelier Jacqueline Suzanne</p><h1>Éditions</h1></div>
+    <p class="note"><strong>Référence — Duotone rose (sketch 009/010) :</strong> le mécanisme que tu aimes (lampe torche qui suit le curseur), avec la teinte rose actuelle. Sert de point de comparaison pour les 4 alternatives sans couleur d'accentuation.</p>
+  </div>
+  <div class="row">
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Rebut</span></div></a>
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Silos</span></div></a>
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Grain</span></div></a>
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Marée basse</span></div></a>
+  </div>
+</div>
+
+<div id="variant-ink" class="variant active">
+  <div class="page-head">
+    <div class="page-head__inner"><p class="page-head__eyebrow">Atelier Jacqueline Suzanne</p><h1>Éditions</h1></div>
+    <p class="note"><strong>A — Duotone encre :</strong> exactement la même technique que la référence (même mécanisme, même code) — juste la teinte rose remplacée par un graphite/encre neutre. La réponse la plus directe à "même effet, sans le rose".</p>
+  </div>
+  <div class="row">
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Rebut</span></div></a>
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Silos</span></div></a>
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Grain</span></div></a>
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Marée basse</span></div></a>
+  </div>
+</div>
+
+<div id="variant-mono" class="variant">
+  <div class="page-head">
+    <div class="page-head__inner"><p class="page-head__eyebrow">Atelier Jacqueline Suzanne</p><h1>Éditions</h1></div>
+    <p class="note"><strong>B — Monochrome Reveal :</strong> zéro couleur, nulle part. Par défaut c'est une vraie photo noir & blanc (comme un fanzine photocopié) — le survol "colorise" l'endroit sous le curseur. La réponse la plus simple à "sans couleur d'accentuation".</p>
+  </div>
+  <div class="row">
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"><img class="rt__cover-img" src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=700&h=933&fit=crop&auto=format" /></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Rebut</span></div></a>
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"><img class="rt__cover-img" src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=700&h=933&fit=crop&auto=format" /></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Silos</span></div></a>
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"><img class="rt__cover-img" src="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=700&h=933&fit=crop&auto=format" /></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Grain</span></div></a>
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"><img class="rt__cover-img" src="https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=700&h=933&fit=crop&auto=format" /></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Marée basse</span></div></a>
+  </div>
+</div>
+
+<div id="variant-neg" class="variant">
+  <div class="page-head">
+    <div class="page-head__inner"><p class="page-head__eyebrow">Atelier Jacqueline Suzanne</p><h1>Éditions</h1></div>
+    <p class="note"><strong>C — Négatif :</strong> par défaut, la photo apparaît comme un négatif film (tons inversés, noir & blanc) — le survol la "développe" en positif. Zéro couleur, et littéralement comment fonctionne la photographie argentique.</p>
+  </div>
+  <div class="row">
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"><img class="rt__cover-img" src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=700&h=933&fit=crop&auto=format" /></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Rebut</span></div></a>
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"><img class="rt__cover-img" src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=700&h=933&fit=crop&auto=format" /></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Silos</span></div></a>
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"><img class="rt__cover-img" src="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=700&h=933&fit=crop&auto=format" /></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Grain</span></div></a>
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"><img class="rt__cover-img" src="https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=700&h=933&fit=crop&auto=format" /></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Marée basse</span></div></a>
+  </div>
+</div>
+
+<div id="variant-half" class="variant">
+  <div class="page-head">
+    <div class="page-head__inner"><p class="page-head__eyebrow">Atelier Jacqueline Suzanne</p><h1>Éditions</h1></div>
+    <p class="note"><strong>D — Trame (halftone) :</strong> par défaut, une simulation de trame d'impression offset/riso (points noirs, fort contraste) — le survol révèle la photo propre. Zéro couleur, et la piste la plus "objet imprimé" des quatre.</p>
+  </div>
+  <div class="row">
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"><img class="rt__cover-img" src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=700&h=933&fit=crop&auto=format" /></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Rebut</span></div></a>
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"><img class="rt__cover-img" src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=700&h=933&fit=crop&auto=format" /></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Silos</span></div></a>
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"><img class="rt__cover-img" src="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=700&h=933&fit=crop&auto=format" /></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Grain</span></div></a>
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"><img class="rt__cover-img" src="https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=700&h=933&fit=crop&auto=format" /></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Marée basse</span></div></a>
+  </div>
+</div>
+
+<div id="variant-e" class="variant">
+  <div class="page-head">
+    <div class="page-head__inner"><p class="page-head__eyebrow">Atelier Jacqueline Suzanne</p><h1>Éditions</h1></div>
+    <p class="note"><strong>E — Négatif couleur :</strong> une variation de C — pas un négatif neutre gris, mais la teinte orange/ambrée d'un vrai négatif couleur non corrigé (le masque de base du film). Toujours zéro rose, mais plus "coloré"/vivant que le négatif neutre.</p>
+  </div>
+  <div class="row">
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"><img class="rt__cover-img" src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=700&h=933&fit=crop&auto=format" /></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Rebut</span></div></a>
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"><img class="rt__cover-img" src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=700&h=933&fit=crop&auto=format" /></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Silos</span></div></a>
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"><img class="rt__cover-img" src="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=700&h=933&fit=crop&auto=format" /></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Grain</span></div></a>
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"><img class="rt__cover-img" src="https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=700&h=933&fit=crop&auto=format" /></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Marée basse</span></div></a>
+  </div>
+</div>
+
+<div id="variant-f" class="variant">
+  <div class="page-head">
+    <div class="page-head__inner"><p class="page-head__eyebrow">Atelier Jacqueline Suzanne</p><h1>Éditions</h1></div>
+    <p class="note"><strong>F — Négatif au survol (mécanique inversée) :</strong> la photo reste normale/couleur partout, tout le temps. Au survol, c'est l'inverse d'avant — un disque qui suit le curseur affiche le négatif à cet endroit précis ; en dehors du disque, rien ne change jamais.</p>
+  </div>
+  <div class="row">
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"><img class="rt__cover-img" src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=700&h=933&fit=crop&auto=format" /></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Rebut</span></div></a>
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"><img class="rt__cover-img" src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=700&h=933&fit=crop&auto=format" /></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Silos</span></div></a>
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"><img class="rt__cover-img" src="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=700&h=933&fit=crop&auto=format" /></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Grain</span></div></a>
+    <a class="rt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;"><img class="rt__base" src="https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=700&h=933&fit=crop&auto=format" /><div class="rt__cover" aria-hidden="true"><img class="rt__cover-img" src="https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=700&h=933&fit=crop&auto=format" /></div><div class="rt__scrim"></div><div class="rt__body"><span class="rt__title">Marée basse</span></div></a>
+  </div>
+</div>
+
+<div id="sketch-tools">Déplace la souris sur une photo</div>
+
+<script>
+  function showVariant(id) {
+    document.querySelectorAll('.variant').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.variant-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('variant-' + id).classList.add('active');
+    event.target.closest('.variant-tab').classList.add('active');
+  }
+
+  document.querySelectorAll('.rt').forEach((tile) => {
+    tile.addEventListener('mousemove', (e) => {
+      const r = tile.getBoundingClientRect();
+      const mx = (((e.clientX - r.left) / r.width) * 100).toFixed(1) + '%';
+      const my = (((e.clientY - r.top) / r.height) * 100).toFixed(1) + '%';
+      tile.style.setProperty('--mx', mx);
+      tile.style.setProperty('--my', my);
+    });
+  });
+</script>
+
+</body>
+</html>

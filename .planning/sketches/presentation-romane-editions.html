@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Éditions — pistes pour Romane</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./themes/default.css" />
+<style>
+  body { font-family: var(--font-sans); }
+
+  header {
+    padding: var(--space-2xl) var(--editorial-page-padding-inline) var(--space-xl);
+    max-width: var(--editorial-page-max); margin: 0 auto;
+    border-bottom: var(--border-hairline) solid var(--color-border);
+  }
+  header h1 {
+    font-family: var(--font-display); font-weight: 900; font-size: clamp(32px, 5vw, 52px);
+    line-height: 0.95; letter-spacing: -0.03em; margin: 0 0 var(--space-md);
+  }
+  header p { max-width: 68ch; line-height: 1.55; margin: 0 0 var(--space-md); color: #3a3a3a; }
+  header p strong { color: var(--color-ink); }
+
+  nav.toc {
+    display: flex; gap: var(--space-sm); flex-wrap: wrap; margin-top: var(--space-lg);
+  }
+  nav.toc a {
+    display: inline-block; padding: 8px 16px; border: var(--border-hairline) solid var(--color-ink);
+    border-radius: var(--radius-sm); font-size: 14px; font-weight: var(--weight-semibold);
+    color: var(--color-ink); text-decoration: none; transition: background 0.15s ease, color 0.15s ease;
+  }
+  nav.toc a:hover { background: var(--color-ink); color: var(--gray-0); }
+
+  section.block {
+    max-width: var(--editorial-page-max); margin: 0 auto;
+    padding: var(--space-2xl) var(--editorial-page-padding-inline);
+    border-bottom: var(--border-hairline) solid var(--color-border);
+  }
+  section.block:last-of-type { border-bottom: none; }
+
+  .block__eyebrow {
+    margin: 0; font-size: var(--text-label-size); font-weight: var(--weight-semibold);
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--pink-600);
+  }
+  .block h2 {
+    font-family: var(--font-display); font-weight: 900; font-size: clamp(24px, 3.4vw, 36px);
+    line-height: 1; letter-spacing: -0.02em; margin: var(--space-sm) 0 var(--space-md);
+  }
+  .block__question { max-width: 72ch; line-height: 1.55; margin: 0 0 var(--space-lg); color: #3a3a3a; }
+  .block__question strong { color: var(--color-ink); }
+  .block__hint {
+    display: inline-block; margin: 0 0 var(--space-md); padding: 6px 12px;
+    background: #F4F1EE; border-radius: var(--radius-sm); font-size: 13px; color: #3a3a3a;
+  }
+
+  iframe {
+    width: 100%; height: 92vh; border: var(--border-hairline) solid var(--color-ink);
+    display: block; background: var(--gray-0);
+  }
+
+  footer {
+    max-width: var(--editorial-page-max); margin: 0 auto; padding: var(--space-2xl) var(--editorial-page-padding-inline) var(--space-3xl);
+    color: #6b6b6b; font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <p class="block__eyebrow" style="margin-bottom: var(--space-sm);">Atelier Jacqueline Suzanne — brouillon interne</p>
+  <h1>Pistes pour la page Éditions</h1>
+  <p>Cette page réunit les 3 explorations en cours pour faire évoluer <strong>/editions/</strong>, pour qu'on puisse les regarder ensemble avec Romane. Chaque section est interactive — <strong>passe la souris sur les photos</strong> pour voir l'effet, et clique les onglets en haut de chaque encadré pour comparer les options.</p>
+  <p>Rien n'est décidé ni en ligne — ce sont des maquettes de travail, pas le site réel.</p>
+  <nav class="toc">
+    <a href="#s9">1. Effet au survol des tuiles</a>
+    <a href="#s10">2. Mise en page de la liste</a>
+    <a href="#s11">3. Sans la couleur rose</a>
+  </nav>
+</header>
+
+<section class="block" id="s9">
+  <p class="block__eyebrow">1 — Sketch 009</p>
+  <h2>Quel effet au survol d'une tuile ?</h2>
+  <p class="block__question">Le point de départ : Romane n'aimait pas le contour noir et l'ombre dure actuels. On a testé plusieurs idées ; <strong>l'onglet "E — Duotone Reveal ★" a été retenu</strong> — mais depuis, on a exploré des variantes sans le rose (voir section 3).</p>
+  <span class="block__hint">Onglets "Aujourd'hui" à "F" — le ★ marque le gagnant de cette étape</span>
+  <iframe src="./009-editions-tile-hover-depth/index.html" title="Sketch 009"></iframe>
+</section>
+
+<section class="block" id="s10">
+  <p class="block__eyebrow">2 — Sketch 010</p>
+  <h2>Faut-il changer la mise en page elle-même ?</h2>
+  <p class="block__question">Une fois l'effet de survol choisi, on s'est demandé si la grille elle-même (photos en zigzag) était la bonne forme, ou si une autre présentation serait plus moderne. <strong>Rien n'est choisi ici encore</strong> — les 4 pistes sont à comparer, avec 4 "fausses" éditions ajoutées pour juger avec plus de contenu.</p>
+  <span class="block__hint">Onglets "Référence" à "C — Scattered Table"</span>
+  <iframe src="./010-editions-overview-layout/index.html" title="Sketch 010"></iframe>
+</section>
+
+<section class="block" id="s11">
+  <p class="block__eyebrow">3 — Sketch 011</p>
+  <h2>Le même effet, sans le rose ?</h2>
+  <p class="block__question">Florian n'était pas sûr d'aimer la couleur rose de l'effet retenu en section 1. On a cherché d'autres traitements — et surtout, une bonne précision : <strong>la photo doit rester normale, et c'est seulement au survol qu'un disque affiche l'effet</strong> (pas l'inverse). <strong>L'onglet "F" est la version la plus à jour.</strong></p>
+  <span class="block__hint">Onglets "Référence" à "F" — F est le plus récent/corrigé</span>
+  <iframe src="./011-editions-tile-reveal-treatment/index.html" title="Sketch 011"></iframe>
+</section>
+
+<footer>
+  Brouillon de travail — <span id="stamp"></span>
+</footer>
+
+<script>
+  document.getElementById('stamp').textContent = 'généré pour discussion, pas pour publication.';
+</script>
+
+</body>
+</html>

@@ -1,0 +1,861 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sketch 010 — Éditions Overview Layout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../themes/default.css" />
+<style>
+  body { padding-top: 52px; }
+
+  #variant-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9998;
+    background: var(--gray-0); border-bottom: var(--border-hairline) solid var(--color-border);
+    padding: 8px 16px; display: flex; gap: 8px; align-items: center;
+    font-family: var(--font-sans); overflow-x: auto;
+  }
+  .variant-tab {
+    font-family: var(--font-sans); font-size: 13px; font-weight: var(--weight-semibold);
+    padding: 8px 14px; border: var(--border-hairline) solid var(--color-border);
+    background: var(--gray-0); color: var(--color-ink); cursor: pointer; white-space: nowrap;
+    border-radius: var(--radius-sm); transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .variant-tab:hover { border-color: var(--color-ink); }
+  .variant-tab.active { background: var(--color-ink); color: var(--gray-0); border-color: var(--color-ink); }
+
+  .variant { display: none; }
+  .variant.active { display: block; }
+
+  .page-head {
+    width: min(100%, var(--editorial-page-max)); margin: 0 auto;
+    padding: var(--editorial-page-padding-block) var(--editorial-page-padding-inline) var(--space-2xl);
+  }
+  .page-head__inner { border-top: var(--border-hairline) solid var(--color-ink); padding-top: var(--space-md); }
+  .page-head__eyebrow { margin: 0; font-size: var(--text-label-size); font-weight: var(--weight-semibold); letter-spacing: 0.08em; text-transform: uppercase; }
+  .page-head h1 { margin: var(--space-md) 0 0; font-size: var(--editorial-page-title-size); font-weight: var(--weight-semibold); font-family: var(--font-display); line-height: 0.95; letter-spacing: -0.04em; }
+  .note { margin: var(--space-md) 0 0; font-size: 13px; color: #6b6b6b; max-width: 66ch; line-height: 1.5; }
+  .note strong { color: var(--color-ink); }
+
+  /* ---------------------------------------------------------------------
+     Shared "duotone tile" (dt) component — the E winner from sketch 009.
+     Pink duotone by default; cursor-follow spotlight reveals true color.
+     Every layout variant below reuses this exact mechanic so the ONLY
+     variable being compared here is the page composition, not the hover.
+     --------------------------------------------------------------------- */
+  .dt { position: relative; overflow: hidden; display: block; color: var(--gray-0); text-decoration: none; background: var(--color-ink); }
+  .dt__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.45s cubic-bezier(0.16,1,0.3,1); }
+  .dt__duotone { position: absolute; inset: 0; background: var(--pink-600); mix-blend-mode: color; pointer-events: none; }
+  .dt:hover .dt__duotone, .dt:focus-visible .dt__duotone {
+    -webkit-mask-image: radial-gradient(circle 140px at var(--mx, 50%) var(--my, 50%), transparent 0%, transparent 58%, black 100%);
+    mask-image: radial-gradient(circle 140px at var(--mx, 50%) var(--my, 50%), transparent 0%, transparent 58%, black 100%);
+  }
+  .dt:hover .dt__img, .dt:focus-visible .dt__img { transform: scale(1.045); }
+  .dt:focus-visible { outline: 2px solid var(--gray-0); outline-offset: -4px; }
+  .dt__scrim { position: absolute; left: 0; right: 0; bottom: 0; height: 55%; background: linear-gradient(to top, rgba(26,26,26,0.85), rgba(26,26,26,0)); pointer-events: none; }
+  .dt__body { position: absolute; left: 0; right: 0; bottom: 0; padding: var(--space-lg); pointer-events: none; }
+  .dt__title { display: block; font-family: var(--font-display); font-weight: var(--weight-semibold); line-height: 0.95; margin-bottom: var(--space-xs); }
+  .dt__statement { font-size: var(--text-body-size); line-height: 1.4; max-width: 40ch; opacity: 0.9; margin: 0; }
+
+  /* =====================================================================
+     REFERENCE — today's zigzag bento grid, wearing the E treatment.
+     Isolates layout as the only variable under test.
+     ===================================================================== */
+  #variant-ref .editions-list { width: min(100%, var(--editorial-page-max)); margin: 0 auto; padding: 0 var(--editorial-page-padding-inline) var(--editorial-page-padding-block); }
+  #variant-ref .grid { display: flex; flex-direction: column; gap: var(--space-md); }
+  #variant-ref .grid__group { display: grid; grid-template-columns: repeat(12, 1fr); grid-auto-rows: 16vw; gap: var(--space-md); }
+  /* Exact production chunking rules (EditionsOverviewBody.astro) — groups of 3, alternating sides */
+  #variant-ref .grid__group[data-side='left'] .dt:nth-child(1) { grid-column: 1 / 8; grid-row: 1 / 3; }
+  #variant-ref .grid__group[data-side='left'] .dt:nth-child(2) { grid-column: 8 / 13; grid-row: 1 / 2; }
+  #variant-ref .grid__group[data-side='left'] .dt:nth-child(3) { grid-column: 8 / 13; grid-row: 2 / 3; }
+  #variant-ref .grid__group[data-side='right'] .dt:nth-child(1) { grid-column: 6 / 13; grid-row: 1 / 3; }
+  #variant-ref .grid__group[data-side='right'] .dt:nth-child(2) { grid-column: 1 / 6; grid-row: 1 / 2; }
+  #variant-ref .grid__group[data-side='right'] .dt:nth-child(3) { grid-column: 1 / 6; grid-row: 2 / 3; }
+  #variant-ref .grid__group .dt:nth-child(1) .dt__title { font-size: clamp(28px, 4.5vw, 48px); }
+  #variant-ref .grid__group .dt:nth-child(2) .dt__title,
+  #variant-ref .grid__group .dt:nth-child(3) .dt__title { font-size: clamp(20px, 2.6vw, 28px); }
+  #variant-ref .grid__group .dt:nth-child(2) .dt__statement,
+  #variant-ref .grid__group .dt:nth-child(3) .dt__statement { display: none; }
+  @media (max-width: 800px) {
+    #variant-ref .grid__group { grid-template-columns: 1fr; grid-auto-rows: auto; }
+    #variant-ref .grid__group .dt { grid-column: 1 !important; grid-row: auto !important; aspect-ratio: 3/4; }
+  }
+
+  /* =====================================================================
+     A — Horizontal Filmstrip: ditch the 2D grid for a scroll-snap
+     carousel of large cards. Echoes the homepage hero carousel language
+     (consistency across the site) and never looks "sparse" regardless
+     of how many éditions exist — 2 items or 20, it just scrolls.
+     ===================================================================== */
+  #variant-a .filmstrip {
+    display: flex; gap: var(--space-md); overflow-x: auto; scroll-snap-type: x mandatory;
+    padding: 0 var(--editorial-page-padding-inline) var(--editorial-page-padding-block);
+    scrollbar-width: none;
+  }
+  #variant-a .filmstrip::-webkit-scrollbar { display: none; }
+  #variant-a .dt { flex: 0 0 min(78vw, 640px); aspect-ratio: 4/5; scroll-snap-align: start; }
+  #variant-a .dt__title { font-size: clamp(28px, 3.6vw, 42px); }
+  #variant-a .filmstrip__hint {
+    width: min(100%, var(--editorial-page-max)); margin: 0 auto var(--space-md);
+    padding: 0 var(--editorial-page-padding-inline); font-size: 12px; color: #6b6b6b;
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+
+  /* =====================================================================
+     B — Editorial Stacked List: type-led. Giant Unbounded titles carry
+     the page; the duotone photo becomes a secondary inset element, not
+     the full-bleed hero. Rhythm comes from typography, not a grid.
+     ===================================================================== */
+  #variant-b .stack { width: min(100%, var(--editorial-page-max)); margin: 0 auto; padding: 0 var(--editorial-page-padding-inline) var(--editorial-page-padding-block); }
+  #variant-b .erow {
+    display: grid; grid-template-columns: 1fr min(38vw, 420px); align-items: center; gap: var(--space-2xl);
+    padding: var(--space-2xl) 0; border-bottom: var(--border-hairline) solid var(--color-border);
+    text-decoration: none; color: var(--color-ink);
+  }
+  #variant-b .erow:first-of-type { border-top: var(--border-hairline) solid var(--color-ink); }
+  #variant-b .erow__index { font-size: 13px; color: var(--pink-600); font-weight: var(--weight-semibold); letter-spacing: 0.08em; margin-bottom: var(--space-sm); display: block; }
+  #variant-b .erow__title { font-family: var(--font-display); font-weight: var(--weight-semibold); font-size: clamp(40px, 7vw, 96px); line-height: 0.92; letter-spacing: -0.03em; margin: 0 0 var(--space-md); transition: color 0.2s ease, transform 0.3s cubic-bezier(0.16,1,0.3,1); }
+  #variant-b .erow:hover .erow__title { color: var(--pink-600); transform: translateX(8px); }
+  #variant-b .erow__statement { max-width: 46ch; line-height: 1.5; margin: 0; color: var(--color-ink); }
+  #variant-b .erow .dt { aspect-ratio: 4/5; }
+  #variant-b .erow .dt__body, #variant-b .erow .dt__scrim { display: none; }
+  @media (max-width: 800px) {
+    #variant-b .erow { grid-template-columns: 1fr; }
+    #variant-b .erow .dt { order: -1; aspect-ratio: 16/10; }
+  }
+
+  /* =====================================================================
+     B2 — Cursor-Follow Preview: B's static side-by-side photo column,
+     but pushed further. Rows become pure text (index + title +
+     statement), full width — no thumbnail sitting in the layout at
+     all. Hovering a row makes a large photo panel appear and follow
+     the cursor. The classic "modern editorial index" move.
+     ===================================================================== */
+  #variant-b2 .stack2 { width: min(100%, var(--editorial-page-max)); margin: 0 auto; padding: 0 var(--editorial-page-padding-inline) var(--editorial-page-padding-block); position: relative; }
+  #variant-b2 .erow2 {
+    display: block; padding: var(--space-xl) 0; border-bottom: var(--border-hairline) solid var(--color-border);
+    text-decoration: none; color: var(--color-ink);
+  }
+  #variant-b2 .erow2:first-of-type { border-top: var(--border-hairline) solid var(--color-ink); }
+  #variant-b2 .erow2__index { font-size: 13px; color: #6b6b6b; font-weight: var(--weight-semibold); letter-spacing: 0.08em; margin-bottom: var(--space-sm); display: block; }
+  #variant-b2 .erow2__title {
+    font-family: var(--font-display); font-weight: var(--weight-semibold); font-size: clamp(32px, 5vw, 64px);
+    line-height: 0.95; letter-spacing: -0.02em; margin: 0; transition: opacity 0.25s ease;
+  }
+  #variant-b2 .erow2__statement {
+    max-width: 46ch; line-height: 1.5; margin: var(--space-sm) 0 0; color: #6b6b6b;
+    max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
+  }
+  #variant-b2 .stack2:hover .erow2__title { opacity: 0.28; }
+  #variant-b2 .erow2:hover .erow2__title { opacity: 1; }
+  #variant-b2 .erow2:hover .erow2__statement { max-height: 80px; opacity: 1; }
+  #variant-b2-preview {
+    position: fixed; top: 0; left: 0; width: 340px; aspect-ratio: 3/4; z-index: 9997;
+    pointer-events: none; opacity: 0; transform: translate(-1000px, -1000px) scale(0.96);
+    transition: opacity 0.25s ease, transform 0.35s cubic-bezier(0.16,1,0.3,1);
+    overflow: hidden; box-shadow: 0 24px 48px -12px rgba(26,26,26,0.35); background: var(--gray-0);
+  }
+  #variant-b2-preview.active { opacity: 1; }
+  #variant-b2-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  @media (max-width: 800px) {
+    #variant-b2 .erow2__statement { max-height: none; opacity: 1; margin-top: var(--space-sm); }
+    #variant-b2-preview { display: none; }
+  }
+
+  /* =====================================================================
+     B4 — Horizontal Index: same cursor-follow preview concept as B2,
+     but titles flow horizontally (wrap into a single dense block) —
+     a glance-able index instead of a list you scroll down through.
+     ===================================================================== */
+  #variant-b4 .hindex {
+    width: min(100%, var(--editorial-page-max)); margin: 0 auto;
+    padding: var(--space-lg) var(--editorial-page-padding-inline) var(--space-3xl);
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-sm) var(--space-md);
+    border-top: var(--border-hairline) solid var(--color-ink);
+  }
+  #variant-b4 .hitem {
+    font-family: var(--font-display); font-weight: var(--weight-semibold); font-size: clamp(28px, 4.2vw, 52px);
+    line-height: 1.15; letter-spacing: -0.02em; color: var(--color-ink); text-decoration: none;
+    opacity: 1; transition: opacity 0.25s ease;
+  }
+  #variant-b4 .hindex:hover .hitem { opacity: 0.28; }
+  #variant-b4 .hitem:hover { opacity: 1; }
+  #variant-b4 .hsep { font-size: clamp(18px, 2.4vw, 28px); color: var(--color-border); font-weight: 300; user-select: none; }
+  @media (max-width: 800px) {
+    #variant-b4 .hitem { font-size: clamp(24px, 7vw, 36px); }
+  }
+
+  /* =====================================================================
+     B5 — Horizontal Index (B3's mechanic): same horizontal title flow
+     as B4, but instead of a cursor-follow panel, hovering a title opens
+     a shared accordion band below the whole index (pure CSS, :has() —
+     no JS) — the horizontal counterpart to B3, not B2.
+     ===================================================================== */
+  #variant-b5 .hindex5 {
+    width: min(100%, var(--editorial-page-max)); margin: 0 auto;
+    padding: var(--space-lg) var(--editorial-page-padding-inline) var(--space-md);
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-sm) var(--space-md);
+    border-top: var(--border-hairline) solid var(--color-ink);
+  }
+  #variant-b5 .hitem5 {
+    font-family: var(--font-display); font-weight: var(--weight-semibold); font-size: clamp(28px, 4.2vw, 52px);
+    line-height: 1.15; letter-spacing: -0.02em; color: var(--color-ink); text-decoration: none;
+    opacity: 1; transition: opacity 0.25s ease;
+  }
+  #variant-b5 .hindex5:hover .hitem5 { opacity: 0.28; }
+  #variant-b5 .hitem5:hover { opacity: 1; }
+  #variant-b5 .hsep5 { font-size: clamp(18px, 2.4vw, 28px); color: var(--color-border); font-weight: 300; user-select: none; }
+  #variant-b5 .hreveal-wrap { width: min(100%, var(--editorial-page-max)); margin: 0 auto; padding: 0 var(--editorial-page-padding-inline) var(--space-3xl); }
+  #variant-b5 .hreveal { max-height: 0; overflow: hidden; transition: max-height 0.45s cubic-bezier(0.16,1,0.3,1); }
+  #variant-b5 .hreveal .dt { width: 100%; height: 420px; }
+  #variant-b5 .hreveal .dt__body, #variant-b5 .hreveal .dt__scrim, #variant-b5 .hreveal .dt__duotone { display: none; }
+  #variant-b5 .hindex5:has(.hitem5[data-key="rebut"]:hover) ~ .hreveal-wrap .hreveal[data-for="rebut"],
+  #variant-b5 .hindex5:has(.hitem5[data-key="silos"]:hover) ~ .hreveal-wrap .hreveal[data-for="silos"],
+  #variant-b5 .hindex5:has(.hitem5[data-key="grain"]:hover) ~ .hreveal-wrap .hreveal[data-for="grain"],
+  #variant-b5 .hindex5:has(.hitem5[data-key="maree"]:hover) ~ .hreveal-wrap .hreveal[data-for="maree"],
+  #variant-b5 .hindex5:has(.hitem5[data-key="contact"]:hover) ~ .hreveal-wrap .hreveal[data-for="contact"],
+  #variant-b5 .hindex5:has(.hitem5[data-key="repetition"]:hover) ~ .hreveal-wrap .hreveal[data-for="repetition"] {
+    max-height: 420px; margin-top: var(--space-lg);
+  }
+  @media (max-width: 800px) {
+    #variant-b5 .hitem5 { font-size: clamp(24px, 7vw, 36px); }
+    #variant-b5 .hreveal .dt { height: 260px; }
+  }
+
+  /* =====================================================================
+     B6 — Horizontal Panels: what "horizontal panels" actually meant —
+     not a text index, but real side-by-side vertical strips (like a
+     fan gallery). At rest all 6 are equal-width narrow columns; the
+     hovered one grows wide, the rest compress — a real panel layout,
+     not a hover-triggered reveal bolted onto a text list.
+     ===================================================================== */
+  #variant-b6 .panels {
+    width: min(100%, var(--editorial-page-max)); margin: 0 auto;
+    padding: 0 var(--editorial-page-padding-inline) var(--space-3xl);
+    display: flex; gap: 4px; height: 65vh;
+  }
+  #variant-b6 .panel {
+    position: relative; overflow: hidden; flex: 1 1 0%; min-width: 0;
+    display: block; text-decoration: none; background: var(--color-ink);
+    transition: flex-grow 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  #variant-b6 .panel__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.55s ease; }
+  #variant-b6 .panel:hover .panel__img { transform: scale(1.04); }
+  #variant-b6 .panel__scrim { position: absolute; inset: 0; background: linear-gradient(to top, rgba(26,26,26,0.75), rgba(26,26,26,0) 55%); }
+  #variant-b6 .panel__title {
+    position: absolute; left: var(--space-sm); bottom: var(--space-md); color: var(--gray-0);
+    font-family: var(--font-display); font-weight: var(--weight-semibold); white-space: nowrap;
+    font-size: clamp(22px, 2.6vw, 34px); letter-spacing: -0.01em;
+    writing-mode: vertical-rl;
+  }
+  #variant-b6 .panel:hover { flex-grow: 7; }
+  @media (max-width: 800px) {
+    #variant-b6 .panels { flex-direction: column; height: auto; gap: var(--space-sm); }
+    #variant-b6 .panel { height: 110px; flex-grow: 0 !important; }
+    #variant-b6 .panel__title { writing-mode: horizontal-tb; transform: none; font-size: clamp(20px, 5vw, 28px); }
+  }
+
+  /* =====================================================================
+     B3 — Expand Reveal: stays list-first like B, but drops the static
+     photo column entirely — hovering a row expands a full-width photo
+     band open beneath it (pure CSS, no JS), pushing the rows below
+     down. A calmer, no-JS alternative to B2's cursor-follow panel.
+     ===================================================================== */
+  #variant-b3 .stack3 { width: min(100%, var(--editorial-page-max)); margin: 0 auto; padding: 0 var(--editorial-page-padding-inline) var(--editorial-page-padding-block); }
+  #variant-b3 .erow3 { display: block; padding: var(--space-lg) 0; border-bottom: var(--border-hairline) solid var(--color-border); text-decoration: none; color: var(--color-ink); }
+  #variant-b3 .erow3:first-of-type { border-top: var(--border-hairline) solid var(--color-ink); }
+  #variant-b3 .erow3__index { font-size: 13px; color: #6b6b6b; font-weight: var(--weight-semibold); letter-spacing: 0.08em; margin-bottom: var(--space-sm); display: block; }
+  #variant-b3 .erow3__title { font-family: var(--font-display); font-weight: var(--weight-semibold); font-size: clamp(40px, 7vw, 96px); line-height: 0.92; letter-spacing: -0.03em; margin: 0; transition: transform 0.3s cubic-bezier(0.16,1,0.3,1); }
+  #variant-b3 .erow3:hover .erow3__title { transform: translateX(8px); }
+  #variant-b3 .erow3__statement { max-width: 46ch; line-height: 1.5; margin: var(--space-sm) 0 0; color: #6b6b6b; }
+  #variant-b3 .erow3__reveal { max-height: 0; overflow: hidden; transition: max-height 0.45s cubic-bezier(0.16,1,0.3,1); }
+  #variant-b3 .erow3:hover .erow3__reveal, #variant-b3 .erow3:focus-within .erow3__reveal { max-height: 360px; }
+  #variant-b3 .erow3__reveal .dt { width: 100%; height: 340px; margin-top: var(--space-lg); }
+  #variant-b3 .erow3__reveal .dt__body, #variant-b3 .erow3__reveal .dt__scrim { display: none; }
+  #variant-b3 .erow3__reveal .dt__duotone { display: none; }
+
+  /* =====================================================================
+     C — Scattered Print Table: photos laid out like real loose prints —
+     slightly rotated, overlapping, uneven sizes — leaning fully into
+     "these are physical printed objects", literalized. Hover lifts and
+     straightens the print before the duotone spotlight kicks in.
+     ===================================================================== */
+  /* Flex-wrap scatter (not hand-placed absolute coordinates) so this
+     genuinely scales from 2 items to a full catalog without redesign. */
+  #variant-c .table {
+    width: min(100%, var(--editorial-page-max)); margin: 0 auto;
+    padding: var(--space-2xl) var(--editorial-page-padding-inline) var(--space-3xl);
+    display: flex; flex-wrap: wrap; align-items: flex-start;
+  }
+  #variant-c .dt {
+    box-shadow: 0 10px 30px -8px rgba(26,26,26,0.25);
+    transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s ease;
+    aspect-ratio: 3/4; margin: 0 -18px var(--space-2xl) -18px;
+  }
+  #variant-c .dt:hover, #variant-c .dt:focus-visible {
+    box-shadow: 0 24px 48px -12px rgba(26,26,26,0.35); z-index: 5;
+    transform: rotate(0deg) translateY(-10px) scale(1.05) !important;
+  }
+  #variant-c .dt:nth-child(6n+1) { width: min(30vw, 340px); transform: rotate(-4deg) translateY(10px); }
+  #variant-c .dt:nth-child(6n+2) { width: min(22vw, 250px); transform: rotate(3deg) translateY(-20px); }
+  #variant-c .dt:nth-child(6n+3) { width: min(26vw, 290px); transform: rotate(-2deg) translateY(30px); }
+  #variant-c .dt:nth-child(6n+4) { width: min(24vw, 270px); transform: rotate(5deg) translateY(-10px); }
+  #variant-c .dt:nth-child(6n+5) { width: min(28vw, 310px); transform: rotate(-3deg) translateY(15px); }
+  #variant-c .dt:nth-child(6n+0) { width: min(23vw, 260px); transform: rotate(2deg) translateY(-25px); }
+  @media (max-width: 800px) {
+    #variant-c .table { display: block; padding-top: var(--space-lg); }
+    #variant-c .dt { width: 100% !important; aspect-ratio: 3/4; transform: none !important; margin: 0 0 var(--space-xl) 0; box-shadow: none; }
+  }
+
+  /* ---------- sketch toolbar ---------- */
+  #sketch-tools {
+    position: fixed; bottom: 12px; right: 12px; z-index: 9999; font-family: system-ui; font-size: 12px;
+    background: rgba(0,0,0,0.7); color: #fff; padding: 8px 12px; border-radius: 8px; opacity: 0.4;
+    transition: opacity 0.2s; display: flex; gap: 10px; align-items: center;
+  }
+  #sketch-tools:hover { opacity: 1; }
+  #sketch-tools button { font-size: 11px; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3); background: transparent; color: #fff; cursor: pointer; }
+  #sketch-tools button.active-vp { background: var(--pink-600); border-color: var(--pink-600); }
+  #vp-wrap { transition: max-width 0.2s ease; margin: 0 auto; }
+</style>
+</head>
+<body>
+
+<div id="variant-nav">
+  <button class="variant-tab active" onclick="showVariant('ref')">Référence <span style="opacity:.7;font-weight:400;">(grille + Duotone)</span></button>
+  <button class="variant-tab" onclick="showVariant('a')">A — Filmstrip</button>
+  <button class="variant-tab" onclick="showVariant('b')">B — Editorial List</button>
+  <button class="variant-tab" onclick="showVariant('b2')">B2 — Cursor Preview ★</button>
+  <button class="variant-tab" onclick="showVariant('b3')">B3 — Expand Reveal <span style="opacity:.7;font-weight:400;">(nouveau)</span></button>
+  <button class="variant-tab" onclick="showVariant('b4')">B4 — Index horizontal (B2) <span style="opacity:.7;font-weight:400;">(nouveau)</span></button>
+  <button class="variant-tab" onclick="showVariant('b5')">B5 — Index horizontal (B3) <span style="opacity:.7;font-weight:400;">(nouveau)</span></button>
+  <button class="variant-tab" onclick="showVariant('b6')">B6 — Panneaux horizontaux <span style="opacity:.7;font-weight:400;">(nouveau)</span></button>
+  <button class="variant-tab" onclick="showVariant('c')">C — Scattered Table</button>
+</div>
+
+<div id="vp-wrap">
+
+<!-- REFERENCE -->
+<div id="variant-ref" class="variant active">
+  <div class="page-head">
+    <div class="page-head__inner">
+      <p class="page-head__eyebrow">Atelier Jacqueline Suzanne</p>
+      <h1>Éditions</h1>
+    </div>
+    <p class="note"><strong>Référence :</strong> la grille zigzag actuelle (bento asymétrique), avec le traitement Duotone Reveal choisi (sketch 009 / variante E) à la place de l'ancienne bordure+ombre. Sert de point de comparaison — seule la mise en page change dans les 3 variantes suivantes. <strong>Rebut et Silos sont réelles ; Grain, Marée basse, Contact et Répétition sont fictives</strong>, ajoutées uniquement pour juger le rendu avec plus de contenu à l'écran.</p>
+  </div>
+  <article class="editions-list">
+    <div class="grid">
+      <div class="grid__group" data-side="left">
+        <a class="dt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;">
+          <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=900&h=900&fit=crop&auto=format" alt="Rebut" loading="lazy" />
+          <div class="dt__duotone" aria-hidden="true"></div>
+          <div class="dt__scrim"></div>
+          <div class="dt__body"><span class="dt__title">Rebut</span><p class="dt__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Produite en tirage limité.</p></div>
+        </a>
+        <a class="dt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;">
+          <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=900&h=900&fit=crop&auto=format" alt="Silos" loading="lazy" />
+          <div class="dt__duotone" aria-hidden="true"></div>
+          <div class="dt__scrim"></div>
+          <div class="dt__body"><span class="dt__title">Silos</span></div>
+        </a>
+        <a class="dt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;">
+          <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=900&h=900&fit=crop&auto=format" alt="Grain (fictif)" loading="lazy" />
+          <div class="dt__duotone" aria-hidden="true"></div>
+          <div class="dt__scrim"></div>
+          <div class="dt__body"><span class="dt__title">Grain</span></div>
+        </a>
+      </div>
+      <div class="grid__group" data-side="right">
+        <a class="dt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;">
+          <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=900&h=900&fit=crop&auto=format" alt="Marée basse (fictif)" loading="lazy" />
+          <div class="dt__duotone" aria-hidden="true"></div>
+          <div class="dt__scrim"></div>
+          <div class="dt__body"><span class="dt__title">Marée basse</span><p class="dt__statement">Marée basse rassemble des images prises sur la côte entre deux saisons, reliées à la main en petite série.</p></div>
+        </a>
+        <a class="dt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;">
+          <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/0aaa6feb8807302a8b0a7a893014ac99033d7c75-3872x2592.jpg?w=900&h=900&fit=crop&auto=format" alt="Contact (fictif)" loading="lazy" />
+          <div class="dt__duotone" aria-hidden="true"></div>
+          <div class="dt__scrim"></div>
+          <div class="dt__body"><span class="dt__title">Contact</span></div>
+        </a>
+        <a class="dt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;">
+          <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/14300295cc4bd35d7c36206a348373074466c230-4000x3218.jpg?w=900&h=900&fit=crop&auto=format" alt="Répétition (fictif)" loading="lazy" />
+          <div class="dt__duotone" aria-hidden="true"></div>
+          <div class="dt__scrim"></div>
+          <div class="dt__body"><span class="dt__title">Répétition</span></div>
+        </a>
+      </div>
+    </div>
+  </article>
+</div>
+
+<!-- A: FILMSTRIP -->
+<div id="variant-a" class="variant">
+  <div class="page-head">
+    <div class="page-head__inner">
+      <p class="page-head__eyebrow">Atelier Jacqueline Suzanne</p>
+      <h1>Éditions</h1>
+    </div>
+    <p class="note"><strong>A — Horizontal Filmstrip :</strong> on abandonne la grille 2D pour un défilement horizontal de grandes cartes (scroll-snap) — écho direct au carrousel de la page d'accueil (cohérence de site). Ne "manque" jamais de contenu : que ce soit 2 ou 20 éditions, ça reste juste plus ou moins long à faire défiler. <strong>4 éditions fictives ajoutées</strong> pour juger le défilement avec un vrai catalogue.</p>
+  </div>
+  <p class="filmstrip__hint">← Faire défiler →</p>
+  <div class="filmstrip">
+    <a class="dt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;">
+      <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=900&h=900&fit=crop&auto=format" alt="Rebut" loading="lazy" />
+      <div class="dt__duotone" aria-hidden="true"></div>
+      <div class="dt__scrim"></div>
+      <div class="dt__body"><span class="dt__title">Rebut</span><p class="dt__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom.</p></div>
+    </a>
+    <a class="dt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;">
+      <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=900&h=900&fit=crop&auto=format" alt="Silos" loading="lazy" />
+      <div class="dt__duotone" aria-hidden="true"></div>
+      <div class="dt__scrim"></div>
+      <div class="dt__body"><span class="dt__title">Silos</span></div>
+    </a>
+    <a class="dt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;">
+      <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=900&h=1200&fit=crop&auto=format" alt="Grain (fictif)" loading="lazy" />
+      <div class="dt__duotone" aria-hidden="true"></div>
+      <div class="dt__scrim"></div>
+      <div class="dt__body"><span class="dt__title">Grain</span><p class="dt__statement">Série risographiée explorant la texture du papier journal recyclé.</p></div>
+    </a>
+    <a class="dt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;">
+      <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=900&h=1200&fit=crop&auto=format" alt="Marée basse (fictif)" loading="lazy" />
+      <div class="dt__duotone" aria-hidden="true"></div>
+      <div class="dt__scrim"></div>
+      <div class="dt__body"><span class="dt__title">Marée basse</span></div>
+    </a>
+    <a class="dt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;">
+      <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/0aaa6feb8807302a8b0a7a893014ac99033d7c75-3872x2592.jpg?w=900&h=1200&fit=crop&auto=format" alt="Contact (fictif)" loading="lazy" />
+      <div class="dt__duotone" aria-hidden="true"></div>
+      <div class="dt__scrim"></div>
+      <div class="dt__body"><span class="dt__title">Contact</span></div>
+    </a>
+    <a class="dt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;">
+      <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/14300295cc4bd35d7c36206a348373074466c230-4000x3218.jpg?w=900&h=1200&fit=crop&auto=format" alt="Répétition (fictif)" loading="lazy" />
+      <div class="dt__duotone" aria-hidden="true"></div>
+      <div class="dt__scrim"></div>
+      <div class="dt__body"><span class="dt__title">Répétition</span></div>
+    </a>
+  </div>
+</div>
+
+<!-- B: EDITORIAL LIST -->
+<div id="variant-b" class="variant">
+  <div class="page-head">
+    <div class="page-head__inner">
+      <p class="page-head__eyebrow">Atelier Jacqueline Suzanne</p>
+      <h1>Éditions</h1>
+    </div>
+    <p class="note"><strong>B — Editorial Stacked List :</strong> la typographie mène, la photo devient un élément secondaire (encart, pas plein cadre). Le rythme vient du texte, pas d'une grille — plus "magazine" que "portfolio photo". <strong>4 lignes fictives ajoutées</strong> pour juger le rythme sur une vraie liste.</p>
+  </div>
+  <div class="stack">
+    <a class="erow" href="#" onclick="return false;">
+      <div>
+        <span class="erow__index">Édition 01</span>
+        <h2 class="erow__title">Rebut</h2>
+        <p class="erow__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Produite en tirage limité, elle rassemble en noir et blanc ce qui aurait pu être jeté et qui a été choisi d'être gardé.</p>
+      </div>
+      <div class="dt" tabindex="0" style="--mx:50%;--my:50%;">
+        <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=900&h=900&fit=crop&auto=format" alt="Rebut" loading="lazy" />
+        <div class="dt__duotone" aria-hidden="true"></div>
+      </div>
+    </a>
+    <a class="erow" href="#" onclick="return false;">
+      <div>
+        <span class="erow__index">Édition 02</span>
+        <h2 class="erow__title">Silos</h2>
+        <p class="erow__statement">Deux tirages pliés, format poche, typographie brute sérigraphiée à la main.</p>
+      </div>
+      <div class="dt" tabindex="0" style="--mx:50%;--my:50%;">
+        <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=900&h=900&fit=crop&auto=format" alt="Silos" loading="lazy" />
+        <div class="dt__duotone" aria-hidden="true"></div>
+      </div>
+    </a>
+    <a class="erow" href="#" onclick="return false;">
+      <div>
+        <span class="erow__index">Édition 03 — fictif</span>
+        <h2 class="erow__title">Grain</h2>
+        <p class="erow__statement">Grain est une série de tirages risographiés explorant la texture du papier journal recyclé — chaque exemplaire légèrement différent du précédent.</p>
+      </div>
+      <div class="dt" tabindex="0" style="--mx:50%;--my:50%;">
+        <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=900&h=1100&fit=crop&auto=format" alt="Grain (fictif)" loading="lazy" />
+        <div class="dt__duotone" aria-hidden="true"></div>
+      </div>
+    </a>
+    <a class="erow" href="#" onclick="return false;">
+      <div>
+        <span class="erow__index">Édition 04 — fictif</span>
+        <h2 class="erow__title">Marée basse</h2>
+        <p class="erow__statement">Marée basse rassemble des images prises sur la côte entre deux saisons, reliées à la main en petite série.</p>
+      </div>
+      <div class="dt" tabindex="0" style="--mx:50%;--my:50%;">
+        <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=900&h=1100&fit=crop&auto=format" alt="Marée basse (fictif)" loading="lazy" />
+        <div class="dt__duotone" aria-hidden="true"></div>
+      </div>
+    </a>
+    <a class="erow" href="#" onclick="return false;">
+      <div>
+        <span class="erow__index">Édition 05 — fictif</span>
+        <h2 class="erow__title">Contact</h2>
+        <p class="erow__statement">Une planche-contact augmentée, pensée comme un carnet de recherche plus que comme un livre fini.</p>
+      </div>
+      <div class="dt" tabindex="0" style="--mx:50%;--my:50%;">
+        <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/0aaa6feb8807302a8b0a7a893014ac99033d7c75-3872x2592.jpg?w=900&h=1100&fit=crop&auto=format" alt="Contact (fictif)" loading="lazy" />
+        <div class="dt__duotone" aria-hidden="true"></div>
+      </div>
+    </a>
+    <a class="erow" href="#" onclick="return false;">
+      <div>
+        <span class="erow__index">Édition 06 — fictif</span>
+        <h2 class="erow__title">Répétition</h2>
+        <p class="erow__statement">Répétition explore la variation d'un même geste photographié à intervalles réguliers sur une année.</p>
+      </div>
+      <div class="dt" tabindex="0" style="--mx:50%;--my:50%;">
+        <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/14300295cc4bd35d7c36206a348373074466c230-4000x3218.jpg?w=900&h=1100&fit=crop&auto=format" alt="Répétition (fictif)" loading="lazy" />
+        <div class="dt__duotone" aria-hidden="true"></div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- B2: CURSOR-FOLLOW PREVIEW -->
+<div id="variant-b2" class="variant">
+  <div class="page-head">
+    <div class="page-head__inner">
+      <p class="page-head__eyebrow">Atelier Jacqueline Suzanne</p>
+      <h1>Éditions</h1>
+    </div>
+    <p class="note"><strong>B2 — Cursor Preview :</strong> on pousse B plus loin — plus de vignette fixe dans la mise en page du tout. La liste devient pur texte (index + titre énorme + statement), et au survol, une grande photo apparaît et suit le curseur. Le geste "index éditorial moderne" le plus reconnaissable.</p>
+  </div>
+  <div class="stack2">
+    <a class="erow2" href="#" onclick="return false;" data-img="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?w=800&h=1000&fit=crop&auto=format">
+      <span class="erow2__index">Édition 01</span>
+      <h2 class="erow2__title">Rebut</h2>
+      <p class="erow2__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom. Produite en tirage limité.</p>
+    </a>
+    <a class="erow2" href="#" onclick="return false;" data-img="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?w=800&h=1000&fit=crop&auto=format">
+      <span class="erow2__index">Édition 02</span>
+      <h2 class="erow2__title">Silos</h2>
+      <p class="erow2__statement">Deux tirages pliés, format poche, typographie brute sérigraphiée à la main.</p>
+    </a>
+    <a class="erow2" href="#" onclick="return false;" data-img="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=800&h=1000&fit=crop&auto=format">
+      <span class="erow2__index">Édition 03 — fictif</span>
+      <h2 class="erow2__title">Grain</h2>
+      <p class="erow2__statement">Série risographiée explorant la texture du papier journal recyclé.</p>
+    </a>
+    <a class="erow2" href="#" onclick="return false;" data-img="https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=800&h=1000&fit=crop&auto=format">
+      <span class="erow2__index">Édition 04 — fictif</span>
+      <h2 class="erow2__title">Marée basse</h2>
+      <p class="erow2__statement">Images prises sur la côte entre deux saisons, reliées à la main en petite série.</p>
+    </a>
+    <a class="erow2" href="#" onclick="return false;" data-img="https://cdn.sanity.io/images/gwz8iug4/production/0aaa6feb8807302a8b0a7a893014ac99033d7c75-3872x2592.jpg?w=800&h=1000&fit=crop&auto=format">
+      <span class="erow2__index">Édition 05 — fictif</span>
+      <h2 class="erow2__title">Contact</h2>
+      <p class="erow2__statement">Une planche-contact augmentée, pensée comme un carnet de recherche.</p>
+    </a>
+    <a class="erow2" href="#" onclick="return false;" data-img="https://cdn.sanity.io/images/gwz8iug4/production/14300295cc4bd35d7c36206a348373074466c230-4000x3218.jpg?w=800&h=1000&fit=crop&auto=format">
+      <span class="erow2__index">Édition 06 — fictif</span>
+      <h2 class="erow2__title">Répétition</h2>
+      <p class="erow2__statement">Variation d'un même geste photographié à intervalles réguliers sur une année.</p>
+    </a>
+  </div>
+</div>
+<div id="variant-b2-preview"><img src="" alt="" /></div>
+
+<!-- B3: EXPAND REVEAL -->
+<div id="variant-b3" class="variant">
+  <div class="page-head">
+    <div class="page-head__inner">
+      <p class="page-head__eyebrow">Atelier Jacqueline Suzanne</p>
+      <h1>Éditions</h1>
+    </div>
+    <p class="note"><strong>B3 — Expand Reveal :</strong> même esprit texte-d'abord que B, mais sans vignette fixe non plus — au survol, une bande photo pleine largeur s'ouvre sous la ligne (accordéon). Pas de JS, plus calme que B2, mais toujours plus dynamique que B.</p>
+  </div>
+  <div class="stack3">
+    <a class="erow3" href="#" onclick="return false;">
+      <span class="erow3__index">Édition 01</span>
+      <h2 class="erow3__title">Rebut</h2>
+      <p class="erow3__statement">Rebut est l'édition imprimée qui prolonge la série photographique du même nom.</p>
+      <div class="erow3__reveal">
+        <div class="dt" tabindex="0" style="--mx:50%;--my:50%;">
+          <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=2000&h=600&fit=crop&auto=format" alt="Rebut" loading="lazy" />
+          <div class="dt__duotone" aria-hidden="true"></div>
+        </div>
+      </div>
+    </a>
+    <a class="erow3" href="#" onclick="return false;">
+      <span class="erow3__index">Édition 02</span>
+      <h2 class="erow3__title">Silos</h2>
+      <p class="erow3__statement">Deux tirages pliés, format poche, typographie brute sérigraphiée à la main.</p>
+      <div class="erow3__reveal">
+        <div class="dt" tabindex="0" style="--mx:50%;--my:50%;">
+          <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=2000&h=600&fit=crop&auto=format" alt="Silos" loading="lazy" />
+          <div class="dt__duotone" aria-hidden="true"></div>
+        </div>
+      </div>
+    </a>
+    <a class="erow3" href="#" onclick="return false;">
+      <span class="erow3__index">Édition 03 — fictif</span>
+      <h2 class="erow3__title">Grain</h2>
+      <p class="erow3__statement">Série risographiée explorant la texture du papier journal recyclé.</p>
+      <div class="erow3__reveal">
+        <div class="dt" tabindex="0" style="--mx:50%;--my:50%;">
+          <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=2000&h=600&fit=crop&auto=format" alt="Grain (fictif)" loading="lazy" />
+          <div class="dt__duotone" aria-hidden="true"></div>
+        </div>
+      </div>
+    </a>
+    <a class="erow3" href="#" onclick="return false;">
+      <span class="erow3__index">Édition 04 — fictif</span>
+      <h2 class="erow3__title">Marée basse</h2>
+      <p class="erow3__statement">Images prises sur la côte entre deux saisons, reliées à la main en petite série.</p>
+      <div class="erow3__reveal">
+        <div class="dt" tabindex="0" style="--mx:50%;--my:50%;">
+          <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=2000&h=600&fit=crop&auto=format" alt="Marée basse (fictif)" loading="lazy" />
+          <div class="dt__duotone" aria-hidden="true"></div>
+        </div>
+      </div>
+    </a>
+    <a class="erow3" href="#" onclick="return false;">
+      <span class="erow3__index">Édition 05 — fictif</span>
+      <h2 class="erow3__title">Contact</h2>
+      <p class="erow3__statement">Une planche-contact augmentée, pensée comme un carnet de recherche.</p>
+      <div class="erow3__reveal">
+        <div class="dt" tabindex="0" style="--mx:50%;--my:50%;">
+          <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/0aaa6feb8807302a8b0a7a893014ac99033d7c75-3872x2592.jpg?w=2000&h=600&fit=crop&auto=format" alt="Contact (fictif)" loading="lazy" />
+          <div class="dt__duotone" aria-hidden="true"></div>
+        </div>
+      </div>
+    </a>
+    <a class="erow3" href="#" onclick="return false;">
+      <span class="erow3__index">Édition 06 — fictif</span>
+      <h2 class="erow3__title">Répétition</h2>
+      <p class="erow3__statement">Variation d'un même geste photographié à intervalles réguliers sur une année.</p>
+      <div class="erow3__reveal">
+        <div class="dt" tabindex="0" style="--mx:50%;--my:50%;">
+          <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/14300295cc4bd35d7c36206a348373074466c230-4000x3218.jpg?w=2000&h=600&fit=crop&auto=format" alt="Répétition (fictif)" loading="lazy" />
+          <div class="dt__duotone" aria-hidden="true"></div>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- B4: HORIZONTAL INDEX -->
+<div id="variant-b4" class="variant">
+  <div class="page-head">
+    <div class="page-head__inner">
+      <p class="page-head__eyebrow">Atelier Jacqueline Suzanne</p>
+      <h1>Éditions</h1>
+    </div>
+    <p class="note"><strong>B4 — Index horizontal :</strong> même geste que B2 (une photo suit le curseur au survol), mais les titres se lisent à l'horizontale, en un seul bloc dense, plutôt qu'en liste qu'on descend verticalement. Un index d'un coup d'œil plutôt qu'une liste à parcourir.</p>
+  </div>
+  <div class="hindex">
+    <a class="hitem" href="#" onclick="return false;" data-img="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?w=800&h=1000&fit=crop&auto=format">Rebut</a><span class="hsep">/</span>
+    <a class="hitem" href="#" onclick="return false;" data-img="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?w=800&h=1000&fit=crop&auto=format">Silos</a><span class="hsep">/</span>
+    <a class="hitem" href="#" onclick="return false;" data-img="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=800&h=1000&fit=crop&auto=format">Grain</a><span class="hsep">/</span>
+    <a class="hitem" href="#" onclick="return false;" data-img="https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=800&h=1000&fit=crop&auto=format">Marée basse</a><span class="hsep">/</span>
+    <a class="hitem" href="#" onclick="return false;" data-img="https://cdn.sanity.io/images/gwz8iug4/production/0aaa6feb8807302a8b0a7a893014ac99033d7c75-3872x2592.jpg?w=800&h=1000&fit=crop&auto=format">Contact</a><span class="hsep">/</span>
+    <a class="hitem" href="#" onclick="return false;" data-img="https://cdn.sanity.io/images/gwz8iug4/production/14300295cc4bd35d7c36206a348373074466c230-4000x3218.jpg?w=800&h=1000&fit=crop&auto=format">Répétition</a>
+  </div>
+</div>
+
+<!-- B5: HORIZONTAL INDEX (B3's accordion mechanic, not B2's cursor panel) -->
+<div id="variant-b5" class="variant">
+  <div class="page-head">
+    <div class="page-head__inner">
+      <p class="page-head__eyebrow">Atelier Jacqueline Suzanne</p>
+      <h1>Éditions</h1>
+    </div>
+    <p class="note"><strong>B5 — Index horizontal (mécanique B3) :</strong> mêmes titres à l'horizontale que B4, mais le geste au survol est celui de B3, pas de B2 — une bande photo s'ouvre en accordéon sous tout l'index (pas de panneau qui suit le curseur). Photo propre, sans duotone rose ; recadrage élargi pour ne plus "trop zoomer".</p>
+  </div>
+  <div class="hindex5">
+    <a class="hitem5" href="#" onclick="return false;" data-key="rebut">Rebut</a><span class="hsep5">/</span>
+    <a class="hitem5" href="#" onclick="return false;" data-key="silos">Silos</a><span class="hsep5">/</span>
+    <a class="hitem5" href="#" onclick="return false;" data-key="grain">Grain</a><span class="hsep5">/</span>
+    <a class="hitem5" href="#" onclick="return false;" data-key="maree">Marée basse</a><span class="hsep5">/</span>
+    <a class="hitem5" href="#" onclick="return false;" data-key="contact">Contact</a><span class="hsep5">/</span>
+    <a class="hitem5" href="#" onclick="return false;" data-key="repetition">Répétition</a>
+  </div>
+  <div class="hreveal-wrap">
+    <div class="hreveal" data-for="rebut">
+      <div class="dt"><img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=2000&h=600&fit=crop&auto=format" alt="Rebut" loading="lazy" /><div class="dt__duotone" aria-hidden="true"></div></div>
+    </div>
+    <div class="hreveal" data-for="silos">
+      <div class="dt"><img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=2000&h=600&fit=crop&auto=format" alt="Silos" loading="lazy" /><div class="dt__duotone" aria-hidden="true"></div></div>
+    </div>
+    <div class="hreveal" data-for="grain">
+      <div class="dt"><img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=2000&h=600&fit=crop&auto=format" alt="Grain (fictif)" loading="lazy" /><div class="dt__duotone" aria-hidden="true"></div></div>
+    </div>
+    <div class="hreveal" data-for="maree">
+      <div class="dt"><img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=2000&h=600&fit=crop&auto=format" alt="Marée basse (fictif)" loading="lazy" /><div class="dt__duotone" aria-hidden="true"></div></div>
+    </div>
+    <div class="hreveal" data-for="contact">
+      <div class="dt"><img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/0aaa6feb8807302a8b0a7a893014ac99033d7c75-3872x2592.jpg?w=2000&h=600&fit=crop&auto=format" alt="Contact (fictif)" loading="lazy" /><div class="dt__duotone" aria-hidden="true"></div></div>
+    </div>
+    <div class="hreveal" data-for="repetition">
+      <div class="dt"><img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/14300295cc4bd35d7c36206a348373074466c230-4000x3218.jpg?w=2000&h=600&fit=crop&auto=format" alt="Répétition (fictif)" loading="lazy" /><div class="dt__duotone" aria-hidden="true"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- B6: HORIZONTAL PANELS (fan gallery) -->
+<div id="variant-b6" class="variant">
+  <div class="page-head">
+    <div class="page-head__inner">
+      <p class="page-head__eyebrow">Atelier Jacqueline Suzanne</p>
+      <h1>Éditions</h1>
+    </div>
+    <p class="note"><strong>B6 — Panneaux horizontaux :</strong> ce que "panneaux à l'horizontale" voulait vraiment dire — pas un index texte, mais 6 vraies bandes verticales posées côte à côte. Au repos, tout est égal ; au survol, le panneau survolé s'élargit et les autres se compressent, comme un éventail.</p>
+  </div>
+  <div class="panels">
+    <a class="panel" href="#" onclick="return false;">
+      <img class="panel__img" src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=900&h=1400&fit=crop&auto=format" alt="Rebut" loading="lazy" />
+      <div class="panel__scrim"></div>
+      <span class="panel__title">Rebut</span>
+    </a>
+    <a class="panel" href="#" onclick="return false;">
+      <img class="panel__img" src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=900&h=1400&fit=crop&auto=format" alt="Silos" loading="lazy" />
+      <div class="panel__scrim"></div>
+      <span class="panel__title">Silos</span>
+    </a>
+    <a class="panel" href="#" onclick="return false;">
+      <img class="panel__img" src="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=900&h=1400&fit=crop&auto=format" alt="Grain (fictif)" loading="lazy" />
+      <div class="panel__scrim"></div>
+      <span class="panel__title">Grain</span>
+    </a>
+    <a class="panel" href="#" onclick="return false;">
+      <img class="panel__img" src="https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=900&h=1400&fit=crop&auto=format" alt="Marée basse (fictif)" loading="lazy" />
+      <div class="panel__scrim"></div>
+      <span class="panel__title">Marée basse</span>
+    </a>
+    <a class="panel" href="#" onclick="return false;">
+      <img class="panel__img" src="https://cdn.sanity.io/images/gwz8iug4/production/0aaa6feb8807302a8b0a7a893014ac99033d7c75-3872x2592.jpg?w=900&h=1400&fit=crop&auto=format" alt="Contact (fictif)" loading="lazy" />
+      <div class="panel__scrim"></div>
+      <span class="panel__title">Contact</span>
+    </a>
+    <a class="panel" href="#" onclick="return false;">
+      <img class="panel__img" src="https://cdn.sanity.io/images/gwz8iug4/production/14300295cc4bd35d7c36206a348373074466c230-4000x3218.jpg?w=900&h=1400&fit=crop&auto=format" alt="Répétition (fictif)" loading="lazy" />
+      <div class="panel__scrim"></div>
+      <span class="panel__title">Répétition</span>
+    </a>
+  </div>
+</div>
+
+<!-- C: SCATTERED TABLE -->
+<div id="variant-c" class="variant">
+  <div class="page-head">
+    <div class="page-head__inner">
+      <p class="page-head__eyebrow">Atelier Jacqueline Suzanne</p>
+      <h1>Éditions</h1>
+    </div>
+    <p class="note"><strong>C — Scattered Print Table :</strong> les tirages sont posés comme de vrais imprimés sur une table — légèrement pivotés, qui se chevauchent, tailles inégales. Au survol, le tirage se soulève et se redresse avant que le duotone ne révèle sa couleur. La piste la plus "objet physique". <strong>4 tirages fictifs ajoutés</strong> — c'est le test le plus important à 6 items : est-ce que le chevauchement reste lisible/intentionnel, ou ça devient un fouillis ?</p>
+  </div>
+  <div class="table">
+    <a class="dt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;">
+      <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/6b189c54db97dd6f9d29846f3ef0c75cdbf882d4-5742x3828.jpg?rect=957,0,3828,3828&w=900&h=900&fit=crop&auto=format" alt="Rebut" loading="lazy" />
+      <div class="dt__duotone" aria-hidden="true"></div>
+      <div class="dt__scrim"></div>
+      <div class="dt__body"><span class="dt__title">Rebut</span></div>
+    </a>
+    <a class="dt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;">
+      <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/57850703c4ede20e4ddb8a6c92e03eb8b4e8cc37-6520x4865.jpg?rect=828,0,4865,4865&w=900&h=900&fit=crop&auto=format" alt="Silos" loading="lazy" />
+      <div class="dt__duotone" aria-hidden="true"></div>
+      <div class="dt__scrim"></div>
+      <div class="dt__body"><span class="dt__title">Silos</span></div>
+    </a>
+    <a class="dt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;">
+      <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/1c69a1aa066d07582a4f683e96a9256446ae6398-6520x4865.jpg?w=700&h=933&fit=crop&auto=format" alt="Grain (fictif)" loading="lazy" />
+      <div class="dt__duotone" aria-hidden="true"></div>
+      <div class="dt__scrim"></div>
+      <div class="dt__body"><span class="dt__title">Grain</span></div>
+    </a>
+    <a class="dt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;">
+      <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=700&h=933&fit=crop&auto=format" alt="Marée basse (fictif)" loading="lazy" />
+      <div class="dt__duotone" aria-hidden="true"></div>
+      <div class="dt__scrim"></div>
+      <div class="dt__body"><span class="dt__title">Marée basse</span></div>
+    </a>
+    <a class="dt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;">
+      <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/0aaa6feb8807302a8b0a7a893014ac99033d7c75-3872x2592.jpg?w=700&h=933&fit=crop&auto=format" alt="Contact (fictif)" loading="lazy" />
+      <div class="dt__duotone" aria-hidden="true"></div>
+      <div class="dt__scrim"></div>
+      <div class="dt__body"><span class="dt__title">Contact</span></div>
+    </a>
+    <a class="dt" href="#" onclick="return false;" tabindex="0" style="--mx:50%;--my:50%;">
+      <img class="dt__img" src="https://cdn.sanity.io/images/gwz8iug4/production/14300295cc4bd35d7c36206a348373074466c230-4000x3218.jpg?w=700&h=933&fit=crop&auto=format" alt="Répétition (fictif)" loading="lazy" />
+      <div class="dt__duotone" aria-hidden="true"></div>
+      <div class="dt__scrim"></div>
+      <div class="dt__body"><span class="dt__title">Répétition</span></div>
+    </a>
+  </div>
+</div>
+
+</div>
+
+<div id="sketch-tools">
+  <span>Viewport:</span>
+  <button onclick="setViewport(375)" id="vp-375">Phone</button>
+  <button onclick="setViewport(768)" id="vp-768">Tablet</button>
+  <button onclick="setViewport(0)" id="vp-full" class="active-vp">Desktop</button>
+</div>
+
+<script>
+  function showVariant(id) {
+    document.querySelectorAll('.variant').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.variant-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('variant-' + id).classList.add('active');
+    event.target.closest('.variant-tab').classList.add('active');
+  }
+
+  function setViewport(px) {
+    const wrap = document.getElementById('vp-wrap');
+    wrap.style.maxWidth = px ? px + 'px' : 'none';
+    wrap.style.outline = px ? '1px dashed rgba(0,0,0,0.15)' : 'none';
+    document.querySelectorAll('#sketch-tools button').forEach(b => b.classList.remove('active-vp'));
+    event.target.classList.add('active-vp');
+  }
+
+  // Shared duotone-reveal spotlight (sketch 009 / variant E) — cursor
+  // position drives the mask-image reveal circle on every .dt tile.
+  document.querySelectorAll('.dt').forEach((tile) => {
+    tile.addEventListener('mousemove', (e) => {
+      const r = tile.getBoundingClientRect();
+      const mx = (((e.clientX - r.left) / r.width) * 100).toFixed(1) + '%';
+      const my = (((e.clientY - r.top) / r.height) * 100).toFixed(1) + '%';
+      tile.style.setProperty('--mx', mx);
+      tile.style.setProperty('--my', my);
+    });
+  });
+
+  // B2 / B4 — shared floating preview panel that follows the cursor and
+  // shows whichever item's photo is currently hovered (list rows in B2,
+  // horizontal index items in B4).
+  (function () {
+    const preview = document.getElementById('variant-b2-preview');
+    const previewImg = preview.querySelector('img');
+    const containers = [
+      document.querySelector('#variant-b2 .stack2'),
+      document.querySelector('#variant-b4 .hindex'),
+    ].filter(Boolean);
+
+    containers.forEach((container) => {
+      container.addEventListener('mousemove', (e) => {
+        preview.style.transform = `translate(${e.clientX + 28}px, ${e.clientY - preview.offsetHeight / 2}px)`;
+      });
+      container.querySelectorAll('.erow2, .hitem').forEach((item) => {
+        item.addEventListener('mouseenter', () => {
+          previewImg.src = item.dataset.img;
+          preview.classList.add('active');
+        });
+        item.addEventListener('mouseleave', () => preview.classList.remove('active'));
+      });
+    });
+  })();
+</script>
+
+</body>
+</html>
