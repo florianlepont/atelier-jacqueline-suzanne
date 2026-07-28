@@ -123,12 +123,26 @@ const {
     display: grid;
     grid-template-columns: 1fr 1.3fr;
     gap: clamp(18px, 2.6vw, 40px);
-    align-items: start;
+    /* Stretch: the channels column is much shorter than the form panel.
+       Centering its content inside the taller box just moved the dead
+       space from "below the links" to "above the links" (a gap under
+       the header, breaking the same content-starts-right-after-the-
+       divider rhythm every other page uses) without reducing it. Giving
+       .contact-page__left its own hairline frame (below) instead turns
+       that leftover height into legible panel padding, matching the
+       form panel's own box treatment, so nothing needs repositioning. */
+    align-items: stretch;
     /* Same hairline weight/color as the line below the Éditions title
        (.editions-index__row:first-of-type) — full-width here, since
        Contact's content below the header is a two-column grid, not a
        row list. */
     border-top: var(--border-hairline) solid var(--color-ink);
+  }
+
+  .contact-page__left {
+    box-sizing: border-box;
+    padding: clamp(var(--space-md), 2vh, var(--space-xl));
+    border: var(--border-hairline) solid var(--color-ink);
   }
 
   .contact-page__channels {
