@@ -41,6 +41,11 @@ export const structure: StructureResolver = (S, context) =>
         .icon(HomeIcon)
         .child(S.document().schemaType('homePage').documentId('homePage')),
       S.listItem()
+        .title('Page Éditions')
+        .id('editionsPage')
+        .icon(BookIcon)
+        .child(S.document().schemaType('editionsPage').documentId('editionsPage')),
+      S.listItem()
         .title('Page À propos')
         .id('aboutPage')
         .icon(UserIcon)
@@ -75,6 +80,7 @@ export const structure: StructureResolver = (S, context) =>
           ![
             'siteSettings',
             'homePage',
+            'editionsPage',
             'aboutPage',
             'contactPage',
             'gallery',
