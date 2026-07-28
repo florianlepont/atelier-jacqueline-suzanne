@@ -245,10 +245,18 @@ const errMessageBlank = locale === 'en' ? 'Please enter a message.' : 'Merci dâ€
     grid-column: 1 / -1;
   }
 
+  /* quick-260728-ek0 (sketch-012 variant A3): boxed/tinted fields replace
+     the previous transparent, ink-underline-only treatment â€” fields now
+     read as real bordered boxes against the white page. */
   .contact-form :global(.field__input),
   .contact-form :global(.field__textarea) {
-    background: transparent;
-    border-color: var(--color-ink);
+    background: #F5F4F0;
+    border: var(--border-hairline) solid var(--color-border);
+  }
+
+  .contact-form :global(.field__input:focus),
+  .contact-form :global(.field__textarea:focus) {
+    background: var(--color-dominant);
   }
 
   .contact-form :global(.field__input) {
@@ -290,6 +298,23 @@ const errMessageBlank = locale === 'en' ? 'Please enter a message.' : 'Merci dâ€
   .contact-form__submit-wrap {
     grid-column: 1 / -1;
     align-self: flex-start;
+    border-top: var(--border-hairline) solid var(--color-border);
+    padding-top: var(--space-md);
+  }
+
+  /* A3's bold display-font submit â€” the Button primitive and its localized
+     label text stay untouched; this only scales the presentation. The
+     decorative arrow is a CSS pseudo-element (not a markup child span) so
+     it survives the script's textContent swap during the submitting state. */
+  .contact-form :global(.btn--primary) {
+    font-family: var(--font-display);
+    font-size: clamp(16px, 1.6vw, 20px);
+    padding: var(--space-md) var(--space-xl);
+  }
+
+  .contact-form :global(.btn--primary)::after {
+    content: '\2197';
+    margin-left: var(--space-xs);
   }
 
   .contact-form__status {
@@ -306,7 +331,7 @@ const errMessageBlank = locale === 'en' ? 'Please enter a message.' : 'Merci dâ€
     font-weight: var(--weight-semibold);
   }
 
-  @media (max-width: 560px) {
+  @media (max-width: 800px) {
     .contact-form {
       grid-template-columns: 1fr;
     }

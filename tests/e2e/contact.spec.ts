@@ -200,12 +200,19 @@ test.describe('contact form submission failures', () => {
 });
 
 test.describe('contact reachability', () => {
-  test('alternative contact channels continue the editorial sequence with 02 and 03', async ({
+  // sketch-012 / variant A3 (quick-260728-ek0): the numbered editorial
+  // sequence (.contact-page__number "02"/"03") was dropped along with the
+  // old two-column editorial grid. Reachability is now asserted against the
+  // surviving channel markup instead: both alternative contact channels
+  // (email + Instagram) must be present on each locale.
+  test('alternative contact channels (email + Instagram) are reachable in both locales', async ({
     page,
   }) => {
     for (const path of ['/contact/', '/en/contact/']) {
       await page.goto(path);
-      await expect(page.locator('.contact-page__number')).toHaveText(['02', '03']);
+      const emailLink = page.locator('.contact-page__detail[href^="mailto:"]');
+      await expect(emailLink).toHaveCount(1);
+      await expect(page.locator('.contact-page__social')).toHaveCount(1);
     }
   });
 
