@@ -89,11 +89,17 @@ Florian then reconsidered: "non mais en fait prenons F1" (no, but actually let's
 - Hover response ported: hovering speeds up the drift animation (10s → 4s) and deepens the dots (`filter: contrast(1.35) brightness(0.85)`), same values as F3.
 - Row entrance ported: "Rebut"/"Silos" fade up staggered after the intro (0.6s / 0.72s), identical timing and easing to F3's.
 
+Florian clarified one more time, with a screenshot of F2 for reference: "ce que je voulais dire c'est que j'aime bien le fait que sur les bord l'effet est plus diffu / estompé... comme sur F2" (what I meant is I like that on the edges the effect is more diffuse/muted... like on F2). The actual difference: F2's resting dot layer uses `rgba(26,26,26,0.14)`, much fainter than F1's `rgba(26,26,26,0.32)` — the edge *mask math* was already identical between them (both fixed in round 8), but F1's higher base opacity made the whole field, edges included, read as more present/less diffuse than F2's.
+
+## Round 9: F1's dots softened to match
+
+Lowered F1's dot opacity from `0.32` to `0.16` — close to F2's `0.14` resting state — so the field reads as muted/diffuse throughout, not just at the fade boundary. The hover response (`contrast(1.35) brightness(0.85)`, drift speeding up 10s → 4s) is unchanged and still applies correctly on top of the softer base — confirmed via computed style that `:hover` triggers the same filter values as before.
+
 ## What to Look For
 
 - Does it actually read as "fun/modern," or does it feel like a gimmick bolted onto a serious brand?
 - Does it still feel like the same site as the rest of AJS (Unbounded display font, monochrome + single pink accent, sharp corners, hairlines) — no foreign visual language?
 - Confirm the dot field fades to nothing smoothly on every edge, at multiple viewport widths — no hard cutoff anywhere.
+- At the new, softer 0.16 opacity, is the hover contrast bump still noticeable enough to register as feedback, or does it now need to be stronger since there's less base material to darken?
 - Constant drift (F1) vs. the breathing pulse (F3, still in the file for comparison) — now that both have identical polish, which motion actually feels better over time on a page people may read, not just glance at?
-- Does the hover response (faster motion + deeper contrast) read as intentional feedback, or is it too subtle / too strong?
 - Does the row entrance feel like a natural continuation of the title's entrance, or does the 0.6s/0.72s delay feel too slow if there are ever more than 2 éditions (e.g. 5-6 rows — should later rows keep incrementing the delay, or cap it so the list doesn't take forever to finish appearing)?
