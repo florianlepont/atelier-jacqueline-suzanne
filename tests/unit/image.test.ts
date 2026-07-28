@@ -38,6 +38,7 @@ vi.mock('../../src/lib/sanity', () => ({sanityClient: {}}))
 import {
   blurPlaceholderUrl,
   fullSizeUrl,
+  previewPanelUrl,
   responsiveImageSrcSet,
   responsiveThumbnailSrcSet,
   thumbnailUrl,
@@ -52,6 +53,12 @@ describe('Sanity image URL helpers', () => {
 
   it('builds a square crop thumbnail with the default size', () => {
     expect(thumbnailUrl(image as never)).toContain('width:600|height:600|fit:crop|auto:format')
+  })
+
+  it('builds a 3:4 portrait crop preview with the default width', () => {
+    expect(previewPanelUrl(image as never)).toContain(
+      'width:680|height:907|fit:crop|auto:format',
+    )
   })
 
   it('builds an uncropped full-size URL with an explicit maximum width', () => {

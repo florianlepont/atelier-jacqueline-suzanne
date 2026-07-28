@@ -10,14 +10,14 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
 import EditionsOverviewBody from '../../../components/EditionsOverviewBody.astro';
 import { getEditions } from '../../../lib/sanity';
 import { getRelativeLocaleUrl } from 'astro:i18n';
-import { thumbnailUrl, responsiveThumbnailSrcSet } from '../../../lib/image';
+import { previewPanelUrl, responsiveThumbnailSrcSet } from '../../../lib/image';
 
 const locale = 'en' as const;
 const editions = await getEditions();
 
 const tiles = editions.map((edition) => ({
   href: getRelativeLocaleUrl(locale, `editions/${edition.slug}`),
-  imgSrc: thumbnailUrl(edition.leadPhoto, 600),
+  imgSrc: previewPanelUrl(edition.leadPhoto, 680),
   imgSrcset: responsiveThumbnailSrcSet(edition.leadPhoto),
   alt: edition.leadPhoto.alt?.[locale] ?? '',
   title: edition.title,
