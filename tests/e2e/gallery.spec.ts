@@ -738,7 +738,7 @@ test.describe('gallery detail scroll-up-to-return (Item 6, quick-260725-tqs)', (
   test.describe('feature scoping — inert on edition heroes', () => {
     test('the carousel-return attribute is absent on an edition detail page', async ({ page }) => {
       await page.goto('/editions/');
-      const tileHref = await page.locator('.tile').first().getAttribute('href');
+      const tileHref = await page.locator('.editions-index__row').first().getAttribute('href');
       expect(tileHref).toBeTruthy();
 
       await page.goto(tileHref!);
@@ -802,7 +802,7 @@ test.describe('gallery detail footer-hidden scoping + scroll-track safety (quick
 
   test('scoping: footer is still present on an édition detail page', async ({ page }) => {
     await page.goto('/editions/');
-    const tileHref = await page.locator('.tile').first().getAttribute('href');
+    const tileHref = await page.locator('.editions-index__row').first().getAttribute('href');
     expect(tileHref).toBeTruthy();
 
     await page.goto(tileHref!);

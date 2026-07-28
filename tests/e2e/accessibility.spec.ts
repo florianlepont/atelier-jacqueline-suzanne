@@ -23,13 +23,13 @@ for (const path of [
 }
 
 // Détail routes need a REAL slug, so they cannot be a static array entry.
-// Discover it dynamically from the overview's first `.tile` href, mirroring
+// Discover it dynamically from the overview's first `.editions-index__row` href, mirroring
 // tests/e2e/edition.spec.ts -- never hardcode a slug, never use the main nav.
 test('the first published édition détail page has no serious or critical automated accessibility violations', async ({
   page,
 }) => {
   await page.goto('/editions/')
-  const href = await page.locator('.tile').first().getAttribute('href')
+  const href = await page.locator('.editions-index__row').first().getAttribute('href')
   expect(href).toBeTruthy()
 
   await page.goto(href!)
