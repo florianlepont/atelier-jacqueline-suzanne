@@ -159,10 +159,11 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
     line-height: 1.5;
     color: #3a3a3a;
     max-width: 46ch;
-    transition: color 0.35s ease;
+    transition: color 0.35s ease, border-color 0.35s ease;
   }
   :global(html.editions-row-active) .editions-list__intro {
     color: var(--editions-row-accent-text);
+    border-color: var(--editions-row-accent-text);
   }
   @media (min-width: 760px) {
     .editions-list__intro {
@@ -224,7 +225,7 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
     color: var(--color-ink);
     transform: translateY(20px);
     animation: editions-row-fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    transition: color 0.35s ease;
+    transition: color 0.35s ease, border-color 0.35s ease;
   }
   @keyframes editions-row-fade-up {
     to { transform: translateY(0); }
@@ -232,10 +233,12 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
 
   .editions-index__row:first-of-type {
     border-top: var(--border-hairline) solid var(--color-ink);
+    transition: color 0.35s ease, border-color 0.35s ease;
   }
 
   :global(html.editions-row-active) .editions-index__row {
     color: var(--editions-row-accent-text);
+    border-color: var(--editions-row-accent-text);
   }
 
   .editions-index__number {

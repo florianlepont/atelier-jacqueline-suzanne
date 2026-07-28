@@ -405,6 +405,19 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
   html.editions-row-active.editions-row-light .logo-mark__img--hover {
     display: none;
   }
+
+  /* Same page-wide accent, extended to <main>'s own background (visible in
+     the inline gutters beyond --editorial-page-max on wide viewports) and
+     the shared footer, so "the whole page" genuinely means the whole page,
+     not just the header + .editions-list content column. */
+  html.editions-row-active main {
+    background-color: var(--editions-row-accent);
+  }
+  html.editions-row-active footer.chrome-band {
+    background-color: var(--editions-row-accent);
+    color: var(--editions-row-accent-text);
+    border-color: var(--editions-row-accent-text);
+  }
 </style>
 
 <style>
@@ -425,6 +438,7 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
     text-align: left;
     color: var(--color-ink);
     border-top: var(--border-hairline) solid var(--color-border);
+    transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease;
   }
 
   .footer-text {
@@ -447,5 +461,6 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
 
   main {
     background-color: var(--color-dominant);
+    transition: background-color 0.35s ease;
   }
 </style>
