@@ -78,6 +78,14 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
     padding-inline: var(--editorial-page-padding-inline);
     padding-top: clamp(48px, 7vw, 56px);
     padding-bottom: var(--editorial-page-padding-block);
+    transition: background-color 0.35s ease;
+  }
+  /* Per-row hover accent, cycling the same palette the homepage's gallery
+     hero panels use (HomeCarousel's ACCENTS array) — set by the <script>
+     below via --editions-row-accent(-text) on <html> so the shared
+     SiteHeader can pick up the same colors while a row is hovered. */
+  :global(html.editions-row-active) .editions-list {
+    background-color: var(--editions-row-accent);
   }
 
   .editions-list__header {
@@ -112,6 +120,7 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
     line-height: var(--text-label-leading);
     letter-spacing: 0.08em;
     text-transform: uppercase;
+    transition: color 0.35s ease;
   }
   .editions-list__eyebrow::before {
     content: '';
@@ -120,6 +129,13 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
     background: var(--color-accent);
     display: inline-block;
     animation: editions-eyebrow-pulse 2.2s ease-in-out infinite;
+    transition: background-color 0.35s ease;
+  }
+  :global(html.editions-row-active) .editions-list__eyebrow {
+    color: var(--editions-row-accent-text);
+  }
+  :global(html.editions-row-active) .editions-list__eyebrow::before {
+    background-color: var(--editions-row-accent-text);
   }
 
   .editions-list h1 {
@@ -131,6 +147,10 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
     letter-spacing: -0.04em;
     white-space: nowrap;
     display: inline-block;
+    transition: color 0.35s ease;
+  }
+  :global(html.editions-row-active) .editions-list h1 {
+    color: var(--editions-row-accent-text);
   }
 
   .editions-list__intro {
@@ -139,6 +159,10 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
     line-height: 1.5;
     color: #3a3a3a;
     max-width: 46ch;
+    transition: color 0.35s ease;
+  }
+  :global(html.editions-row-active) .editions-list__intro {
+    color: var(--editions-row-accent-text);
   }
   @media (min-width: 760px) {
     .editions-list__intro {
@@ -200,6 +224,7 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
     color: var(--color-ink);
     transform: translateY(20px);
     animation: editions-row-fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transition: color 0.35s ease;
   }
   @keyframes editions-row-fade-up {
     to { transform: translateY(0); }
@@ -209,6 +234,10 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
     border-top: var(--border-hairline) solid var(--color-ink);
   }
 
+  :global(html.editions-row-active) .editions-index__row {
+    color: var(--editions-row-accent-text);
+  }
+
   .editions-index__number {
     font-size: 13px;
     color: #6b6b6b;
@@ -216,6 +245,11 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
     letter-spacing: 0.08em;
     margin-bottom: var(--space-sm);
     display: block;
+    transition: color 0.35s ease;
+  }
+
+  :global(html.editions-row-active) .editions-index__number {
+    color: var(--editions-row-accent-text);
   }
 
   .editions-index__title {
@@ -243,7 +277,11 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
     color: #6b6b6b;
     opacity: 0;
     overflow: hidden;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.3s ease, color 0.35s ease;
+  }
+
+  :global(html.editions-row-active) .editions-index__statement {
+    color: var(--editions-row-accent-text);
   }
 
   .editions-index:hover .editions-index__title {
@@ -351,13 +389,35 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
       }px)`;
     });
 
-    container.querySelectorAll('.editions-index__row').forEach((row) => {
+    // Per-row hover accent: cycles the same bg/text pairs as the homepage's
+    // gallery hero panels (HomeCarousel's ACCENTS array) by row position, so
+    // it extends automatically as more éditions are added. Set on <html> (not
+    // scoped to this component) so the shared SiteHeader can pick up the same
+    // colors — see EditionsOverviewBody.astro's :global(html.editions-row-active)
+    // rules and SiteHeader.astro's matching rules.
+    const ACCENTS = [
+      { bg: 'var(--color-accent)', text: 'var(--color-on-accent)', light: true },
+      { bg: 'var(--palette-purple)', text: '#FFFFFF', light: false },
+      { bg: 'var(--palette-teal)', text: 'var(--color-ink)', light: true },
+      { bg: 'var(--palette-lime)', text: 'var(--color-ink)', light: true },
+      { bg: 'var(--palette-plum)', text: '#FFFFFF', light: false },
+    ];
+    const root = document.documentElement;
+
+    container.querySelectorAll('.editions-index__row').forEach((row, idx) => {
+      const accent = ACCENTS[idx % ACCENTS.length];
       row.addEventListener('mouseenter', () => {
         (previewImg as HTMLImageElement).src = (row as HTMLElement).dataset.img ?? '';
         preview.classList.add('active');
+        root.style.setProperty('--editions-row-accent', accent.bg);
+        root.style.setProperty('--editions-row-accent-text', accent.text);
+        root.classList.add('editions-row-active');
+        root.classList.toggle('editions-row-light', accent.light);
+        root.classList.toggle('editions-row-dark', !accent.light);
       });
       row.addEventListener('mouseleave', () => {
         preview.classList.remove('active');
+        root.classList.remove('editions-row-active', 'editions-row-light', 'editions-row-dark');
       });
     });
   })();

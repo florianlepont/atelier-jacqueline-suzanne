@@ -249,8 +249,10 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
     --gray-900: #1A1A1A;
     --pink-600: #D6327C;
 
-    /* Decorative palette — homepage hero-carousel-only (D-05), never used
-       for functional/interactive UI elsewhere on the site. */
+    /* Decorative palette — originally homepage hero-carousel-only (D-05);
+       also cycled by the Éditions overview page's row-hover accent (see
+       EditionsOverviewBody.astro). Still never used for semantic/functional
+       state UI (errors, success, etc.) elsewhere on the site. */
     --palette-purple: #AF3DFF;
     --palette-teal: #55FFE1;
     --palette-lime: #A6FD29;
@@ -375,6 +377,33 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
+  }
+
+  /* Éditions page-wide hover accent, cross-component: EditionsOverviewBody's
+     row hover sets --editions-row-accent(-text) and toggles these classes on
+     <html>; SiteHeader.astro's own scoped <style> can't reach across that
+     component boundary the normal way (Astro's :global() scoping helper
+     mis-compiles a bare `:global(html.foo) .bar` selector when it targets
+     .site-header specifically here — verified against the built CSS output,
+     the whole rule was silently dropped as invalid) so this lives here
+     instead, in the site-wide global stylesheet, unscoped by nature.
+     .nav-link/.switcher-link already use `color: inherit`, so setting color
+     on .site-header covers them too; only the logo needs its own swap. */
+  html.editions-row-active .site-header {
+    background-color: var(--editions-row-accent);
+    color: var(--editions-row-accent-text);
+  }
+  html.editions-row-active.editions-row-dark .logo-mark__img--default {
+    display: none;
+  }
+  html.editions-row-active.editions-row-dark .logo-mark__img--hover {
+    display: block;
+  }
+  html.editions-row-active.editions-row-light .logo-mark__img--default {
+    display: block;
+  }
+  html.editions-row-active.editions-row-light .logo-mark__img--hover {
+    display: none;
   }
 </style>
 
