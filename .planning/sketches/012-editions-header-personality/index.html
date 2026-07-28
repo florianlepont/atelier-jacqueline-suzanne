@@ -405,12 +405,21 @@
      circle mask so the fade completes smoothly, no hard edge; (2) a hover
      response (faster drift + deeper contrast); (3) row-list entrance
      motion staggered after the header, matching F3's choreography. */
+  /* Round 12: rounds 10-11 kept the mask radius/stops but never scaled the
+     box's overflow on the RIGHT and TOP sides to match — the mask anchor
+     sits near the header's top-right corner, so a 640px-radius fade needs
+     >640px of box overflow in EVERY direction from that anchor, not just
+     on the left (which is where all the prior tuning focused). Fixed by
+     anchoring the mask exactly at the header's top-right corner and
+     overflowing the box by a flat 700px on all four sides — provably more
+     than the 640px radius in every direction, so the box edge can never
+     clip the fade again, regardless of viewport width. */
   #variant-f1 .halftone {
-    position: absolute; top: -260px; bottom: -260px; left: -90%; right: -100px;
+    position: absolute; top: -700px; bottom: -700px; left: -700px; right: -700px;
     background-image: radial-gradient(rgba(26, 26, 26, 0.16) 1.4px, transparent 1.6px);
     background-size: 9px 9px;
-    -webkit-mask-image: radial-gradient(circle 640px at right 110px top 130px, black 0%, rgba(0,0,0,0.72) 18%, rgba(0,0,0,0.42) 40%, rgba(0,0,0,0.18) 65%, rgba(0,0,0,0.05) 85%, transparent 100%);
-    mask-image: radial-gradient(circle 640px at right 110px top 130px, black 0%, rgba(0,0,0,0.72) 18%, rgba(0,0,0,0.42) 40%, rgba(0,0,0,0.18) 65%, rgba(0,0,0,0.05) 85%, transparent 100%);
+    -webkit-mask-image: radial-gradient(circle 640px at right 700px top 700px, black 0%, rgba(0,0,0,0.72) 18%, rgba(0,0,0,0.42) 40%, rgba(0,0,0,0.18) 65%, rgba(0,0,0,0.05) 85%, transparent 100%);
+    mask-image: radial-gradient(circle 640px at right 700px top 700px, black 0%, rgba(0,0,0,0.72) 18%, rgba(0,0,0,0.42) 40%, rgba(0,0,0,0.18) 65%, rgba(0,0,0,0.05) 85%, transparent 100%);
     z-index: -1; pointer-events: none;
     opacity: 0; transition: opacity 0.6s ease 0.3s, filter 0.3s ease;
   }

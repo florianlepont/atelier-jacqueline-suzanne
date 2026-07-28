@@ -107,11 +107,19 @@ Round 10's fix wasn't enough: "je vois toujours la boundary même si elle à ét
 
 Reworked the mask again — radius `420px → 640px`, five gradient stops instead of three for an even more gradual curve (`black 0%, 0.72 @18%, 0.42 @40%, 0.18 @65%, 0.05 @85%, transparent 100%`), and the box enlarged to comfortably contain the new radius on every side (`top/bottom: -260px`, `left: -90%`, `right: -100px`). This time verified visually at **three viewport widths (800px, 1024px, 1440px)**, not just one — confirmed via screenshots at each that the dot field trails off gradually with no perceivable edge anywhere, which is what exposed round 10's gap in the first place (narrow-viewport testing was missing).
 
+Still visible: "I still see the boundary :(", with a screenshot showing a hard vertical cutoff on the right side of the dot field, well before reaching the actual page edge.
+
+## Round 12: the actual root cause, finally isolated
+
+Rounds 10-11 grew the mask's fade radius (420px → 640px) but never re-checked whether the `.halftone` box's overflow on each side actually exceeded that radius — it didn't, on two of four sides. The mask anchor sits near the header's top-right corner; a 640px-radius circular fade needs >640px of box overflow in *every* direction from that anchor, including right and top, not just left. The box only had `right: -100px` and `top: -260px` of overflow — so the mask's own fade was being clipped by the box's edge on those sides before it ever reached transparent, which is exactly the hard cutoff visible in Florian's screenshot (on the right, this time — round 6-11's fixes had all focused on the left edge because that's what earlier, narrower-radius screenshots happened to expose).
+
+Fixed by re-deriving the geometry instead of guessing again: anchor the mask exactly at the header's top-right corner (`right 700px top 700px` on a box with `700px` overflow on *all four* sides — right: -700px, top: -700px, bottom: -700px, left: -700px), which makes the margin from anchor to box edge a flat 700px in every direction, `>` the 640px radius, always, regardless of viewport width. Verified two ways this time, not just visually: (1) computed the actual margin via `getBoundingClientRect()` at 800px and 1440px viewports — 700px in every direction at both, confirming the box can never be the limiting factor again; (2) screenshots at both widths show the fade completing smoothly with no visible edge anywhere in the frame.
+
 ## What to Look For
 
 - Does it actually read as "fun/modern," or does it feel like a gimmick bolted onto a serious brand?
 - Does it still feel like the same site as the rest of AJS (Unbounded display font, monochrome + single pink accent, sharp corners, hairlines) — no foreign visual language?
-- Confirm no perceivable frame/edge to the dot cluster anywhere, at YOUR actual browser window width — if it's still visible, the exact width/zoom level would help narrow down whether this is a further mask-tuning issue or a genuinely different rendering environment (e.g. Safari vs Chrome, actual DPI/zoom).
+- Confirm no perceivable frame/edge to the dot cluster anywhere, at your actual browser window width — this was checked mathematically (not just by eye) this round, so it should hold at any width now, but flag it immediately if not.
 - At the softened 0.16 dot opacity, is the hover contrast bump still noticeable enough to register as feedback, or does it now need to be stronger since there's less base material to darken?
 - Constant drift (F1) vs. the breathing pulse (F3, still in the file for comparison) — now that both have identical polish, which motion actually feels better over time on a page people may read, not just glance at?
 - Does the row entrance feel like a natural continuation of the title's entrance, or does the 0.6s/0.72s delay feel too slow if there are ever more than 2 éditions (e.g. 5-6 rows — should later rows keep incrementing the delay, or cap it so the list doesn't take forever to finish appearing)?
