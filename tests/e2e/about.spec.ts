@@ -69,7 +69,12 @@ test.describe('about page content', () => {
     await expect(page).toHaveURL(/\/about\/$/);
   });
 
-  test('About and Contact share the same editorial type scale and page frame', async ({ page }) => {
+  // sketch-012 / variant A3 (quick-260728-ek0): Contact intentionally gives
+  // up the shared editorial type scale/page frame in favor of its own
+  // big-title, one-viewport composition — its giant title no longer matches
+  // --editorial-page-title-size and its frame padding differs from About's.
+  // This test now validates About's own editorial scale only.
+  test('About uses the shared editorial type scale and page frame', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
 
     for (const localePrefix of ['', '/en']) {
@@ -117,15 +122,18 @@ test.describe('about page content', () => {
         lead: '.about-page__lead',
         sectionTitle: '.about-page h2',
       });
-      const contactStyles = await readStyles(`${localePrefix}/contact/`, {
-        frame: '.contact-page',
-        eyebrow: '.contact-page__eyebrow',
-        title: '.contact-page h1',
-        lead: '.contact-page__lead',
-        sectionTitle: '.contact-page__form-heading h2',
-      });
 
-      expect(aboutStyles).toEqual(contactStyles);
+      // Editorial hierarchy invariants: eyebrow is a small uppercase label,
+      // the title is the largest display element, and the section title
+      // sits between the title and the lead body copy in size.
+      expect(aboutStyles.eyebrow.textTransform).toBe('uppercase');
+      const titleSize = parseFloat(aboutStyles.title.fontSize);
+      const leadSize = parseFloat(aboutStyles.lead.fontSize);
+      const sectionTitleSize = parseFloat(aboutStyles.sectionTitle.fontSize);
+      expect(titleSize).toBeGreaterThan(sectionTitleSize);
+      expect(sectionTitleSize).toBeGreaterThan(leadSize);
+      expect(aboutStyles.frame.width).toBeTruthy();
+      expect(parseFloat(aboutStyles.frame.paddingTop)).toBeGreaterThan(0);
     }
   });
 
