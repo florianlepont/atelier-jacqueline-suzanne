@@ -1,5 +1,6 @@
 import {describe, expect, it} from 'vitest'
 import {
+  CHECKLIST_ENABLED_TYPES,
   PUBLIC_SINGLETON_TYPES,
   PUBLIC_SITE_DOCUMENT_TYPES,
   collectionStatusBadge,
@@ -29,6 +30,13 @@ describe('Sanity workflow decision logic', () => {
     ])
     expect(isPublicSiteDocumentType('edition')).toBe(true)
     expect(isPublicSiteDocumentType('exhibition')).toBe(false)
+    expect(CHECKLIST_ENABLED_TYPES).toEqual([
+      ...PUBLIC_SITE_DOCUMENT_TYPES,
+      'exhibition',
+    ])
+    expect(PUBLIC_SITE_DOCUMENT_TYPES.every((type) => CHECKLIST_ENABLED_TYPES.includes(type))).toBe(
+      true,
+    )
   })
 
   it('removes publish paths while retaining draft-management actions in order', () => {

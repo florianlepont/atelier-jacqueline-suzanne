@@ -7,6 +7,7 @@ import {
   baseId,
   buildActivities,
   buildAttentionGroups,
+  ConfirmationChangedError,
   createPublicationController,
   compactCheckLabel,
   contentNoun,
@@ -22,6 +23,7 @@ import {
   pairPublicDocuments,
   pluralize,
   preparePublicationBatch,
+  preflightForConfirmation,
 } from '../../sanity/editorial/dashboardLogic';
 import type {DashboardDocument, DashboardRow} from '../../sanity/editorial/dashboardLogic';
 import {summarizeChecks} from '../../sanity/editorial/checks';
@@ -256,17 +258,24 @@ describe('publication controller', () => {
           actionType: 'sanity.action.document.publish',
           draftId: 'drafts.homePage',
           publishedId: 'homePage',
+          ifDraftRevisionId: 'drafts.homePage-rev',
           ifPublishedRevisionId: 'published-home-rev',
         },
         {
           actionType: 'sanity.action.document.publish',
           draftId: 'drafts.gallery-new',
           publishedId: 'gallery-new',
+          ifDraftRevisionId: 'drafts.gallery-new-rev',
         },
       ],
       {tag: 'editorial.publish-all'},
     );
-    expect(result.publishedAt).toBe('2026-07-29T09:01:00Z');
+    expect(result).toEqual({
+      committed: true,
+      trackingVerified: true,
+      publishedAt: '2026-07-29T09:01:00Z',
+      publishedIds: ['homePage', 'gallery-new'],
+    });
     expect(onRefresh).toHaveBeenCalledTimes(1);
     expect(controller.state.phase).toBe('success');
   });
@@ -285,11 +294,13 @@ describe('publication controller', () => {
       fetch: vi
         .fn()
         .mockResolvedValueOnce(raw)
+        .mockResolvedValueOnce(raw)
         .mockResolvedValueOnce([{_id: 'homePage', _updatedAt: '2026-07-29T09:00:00Z'}]),
       action: vi.fn().mockReturnValue(actionPromise),
     };
     const controller = createPublicationController({client});
 
+    await controller.preflight();
     const first = controller.publish();
     const second = controller.publish();
     expect(first).toBe(second);
@@ -307,6 +318,7 @@ describe('publication controller', () => {
       action: vi.fn(),
     };
     const controller = createPublicationController({client});
+    await controller.preflight();
     await expect(controller.publish()).rejects.toThrow('publication');
     expect(client.action).not.toHaveBeenCalled();
     expect(controller.state.phase).toBe('error');
@@ -324,6 +336,8 @@ describe('publication controller', () => {
         .fn()
         .mockResolvedValueOnce(raw)
         .mockResolvedValueOnce(raw)
+        .mockResolvedValueOnce(raw)
+        .mockResolvedValueOnce(raw)
         .mockResolvedValueOnce([{_id: 'homePage', _updatedAt: '2026-07-29T09:00:00Z'}]),
       action: vi
         .fn()
@@ -332,13 +346,139 @@ describe('publication controller', () => {
     };
     const controller = createPublicationController({client});
 
+    await controller.preflight();
     await expect(controller.publish()).rejects.toThrow('permission');
     expect(controller.state.phase).toBe('error');
+    await controller.preflight();
     await expect(controller.publish()).resolves.toEqual({
+      committed: true,
+      trackingVerified: true,
       publishedAt: '2026-07-29T09:00:00Z',
       publishedIds: ['homePage'],
     });
     expect(client.action).toHaveBeenCalledTimes(2);
+  });
+
+  it('requires re-confirmation when another draft joins the batch after preview', async () => {
+    const first = [
+      publicationDocument('drafts.homePage', 'homePage', {
+        intro: {fr: 'Bienvenue', en: 'Welcome'},
+      }),
+    ];
+    const changed = [...first, publicationDocument('drafts.gallery-new', 'gallery')];
+    const client = {
+      fetch: vi.fn().mockResolvedValueOnce(first).mockResolvedValueOnce(changed),
+      action: vi.fn(),
+    };
+    const controller = createPublicationController({client});
+
+    await controller.preflight();
+    await expect(controller.publish()).rejects.toBeInstanceOf(ConfirmationChangedError);
+    expect(client.action).not.toHaveBeenCalled();
+    expect(controller.state.phase).toBe('confirming');
+    expect(controller.state.batch?.pairs.map(({id}) => id)).toEqual([
+      'homePage',
+      'gallery-new',
+    ]);
+  });
+
+  it.each([
+    ['draft', 'drafts.homePage', 'draft-rev-after-autosave'],
+    ['published', 'homePage', 'published-rev-after-concurrent-publish'],
+  ])('requires re-confirmation when the %s revision changes', async (_kind, changedId, revision) => {
+    const first = [
+      publicationDocument('homePage', 'homePage', {_rev: 'published-rev-before'}),
+      publicationDocument('drafts.homePage', 'homePage', {
+        _rev: 'draft-rev-before',
+        intro: {fr: 'Bienvenue', en: 'Welcome'},
+      }),
+    ];
+    const changed = first.map((document) =>
+      document._id === changedId ? {...document, _rev: revision} : document,
+    );
+    const client = {
+      fetch: vi.fn().mockResolvedValueOnce(first).mockResolvedValueOnce(changed),
+      action: vi.fn(),
+    };
+    const controller = createPublicationController({client});
+
+    await controller.preflight();
+    await expect(controller.publish()).rejects.toBeInstanceOf(ConfirmationChangedError);
+    expect(client.action).not.toHaveBeenCalled();
+    expect(controller.state.phase).toBe('confirming');
+  });
+
+  it('records committed success and refreshes inventory when timestamp tracking fails', async () => {
+    const raw = [
+      publicationDocument('drafts.homePage', 'homePage', {
+        intro: {fr: 'Bienvenue', en: 'Welcome'},
+      }),
+    ];
+    const client = {
+      fetch: vi
+        .fn()
+        .mockResolvedValueOnce(raw)
+        .mockResolvedValueOnce(raw)
+        .mockRejectedValueOnce(new Error('timestamp query unavailable'))
+        .mockResolvedValueOnce([{_id: 'homePage', _updatedAt: '2026-07-29T09:00:00Z'}]),
+      action: vi.fn().mockResolvedValue({transactionId: 'tx-committed'}),
+    };
+    const onRefresh = vi.fn();
+    const controller = createPublicationController({client, onRefresh});
+
+    await controller.preflight();
+    await expect(controller.publish()).resolves.toEqual({
+      committed: true,
+      trackingVerified: false,
+      publishedAt: undefined,
+      publishedIds: ['homePage'],
+    });
+    expect(controller.state.phase).toBe('tracking-error');
+    expect(controller.state.error).toContain('Contenus publiés dans Sanity');
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+    expect(client.action).toHaveBeenCalledTimes(1);
+
+    await expect(controller.refreshTracking()).resolves.toEqual({
+      committed: true,
+      trackingVerified: true,
+      publishedAt: '2026-07-29T09:00:00Z',
+      publishedIds: ['homePage'],
+    });
+    expect(client.action).toHaveBeenCalledTimes(1);
+    expect(controller.state.phase).toBe('success');
+  });
+
+  it('fails tracking closed when any committed document timestamp is missing', async () => {
+    const raw = [
+      publicationDocument('drafts.homePage', 'homePage', {
+        intro: {fr: 'Bienvenue', en: 'Welcome'},
+      }),
+      publicationDocument('drafts.gallery-new', 'gallery'),
+    ];
+    const client = {
+      fetch: vi
+        .fn()
+        .mockResolvedValueOnce(raw)
+        .mockResolvedValueOnce(raw)
+        .mockResolvedValueOnce([
+          {_id: 'homePage', _updatedAt: '2026-07-29T09:00:00Z'},
+        ]),
+      action: vi.fn().mockResolvedValue({transactionId: 'tx-partial-timestamps'}),
+    };
+    const controller = createPublicationController({client});
+
+    await controller.preflight();
+    const result = await controller.publish();
+    expect(result.trackingVerified).toBe(false);
+    expect(controller.state.phase).toBe('tracking-error');
+    expect(controller.state.error).toContain('gallery-new');
+  });
+
+  it('turns a rejected preflight into a handled no-confirmation result', async () => {
+    const controller = {
+      preflight: vi.fn().mockRejectedValue(new Error('403 permission denied')),
+    };
+    await expect(preflightForConfirmation(controller)).resolves.toBeNull();
   });
 });
 
@@ -584,6 +724,24 @@ describe('identity helpers', () => {
       _updatedAt: '2026-07-21T10:00:00Z',
     };
     expect(documentTitle(document)).toBe('Collection sans nom');
+  });
+
+  it('names editions individually and provides an edition-specific fallback', () => {
+    expect(
+      documentTitle({
+        _id: 'edition-a',
+        _type: 'edition',
+        _updatedAt: '2026-07-21T10:00:00Z',
+        title: 'Le livre bleu',
+      }),
+    ).toBe('Le livre bleu');
+    expect(
+      documentTitle({
+        _id: 'edition-b',
+        _type: 'edition',
+        _updatedAt: '2026-07-21T10:00:00Z',
+      }),
+    ).toBe('Édition sans nom');
   });
 
   it('uses the fixed page label for singleton pages', () => {

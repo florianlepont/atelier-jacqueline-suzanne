@@ -1,7 +1,9 @@
 import {afterEach, describe, expect, it, vi} from 'vitest'
 import {
   deploymentState,
+  deploymentSubtitle,
   getRecentDeployments,
+  latestValidTimestamp,
   nextDeploymentPollDelay,
   selectQualifiedRun,
   type DeploymentRun,
@@ -52,6 +54,20 @@ describe('GitHub deployment reads', () => {
 })
 
 describe('deployment freshness state machine', () => {
+  it('uses the newest valid local or remote publication timestamp across tabs', () => {
+    const localPublication = '2026-07-29T09:00:00.000Z'
+    const remotePublication = '2026-07-29T09:02:00.000Z'
+    const reference = latestValidTimestamp(localPublication, remotePublication)
+    expect(reference).toBe(remotePublication)
+    expect(
+      deploymentState({
+        runs: [run({created_at: '2026-07-29T09:01:00Z'})],
+        publishedAt: reference,
+        pendingCount: 0,
+      }).kind,
+    ).toBe('waiting-run')
+  })
+
   it('selects the newest qualified run regardless of API order', () => {
     expect(
       selectQualifiedRun(
@@ -149,6 +165,34 @@ describe('deployment freshness state machine', () => {
     ).toBe('unknown')
   })
 
+  it('fails closed for a same-second candidate whose ordering is precision-ambiguous', () => {
+    const state = deploymentState({
+      runs: [run({created_at: '2026-07-29T09:00:00Z'})],
+      publishedAt: '2026-07-29T09:00:00.750Z',
+      pendingCount: 0,
+    })
+    expect(selectQualifiedRun(state.run ? [state.run] : [], '2026-07-29T09:00:00.750Z')).toBeNull()
+    expect(state.kind).toBe('unknown')
+    expect(state.detail).toContain('précision')
+  })
+
+  it('ignores a malformed old run when a coherent post-publication success exists', () => {
+    const malformedOldRun = run({
+      id: 1,
+      created_at: '2026-07-29T08:59:00Z',
+      run_started_at: 'invalid',
+      updated_at: 'invalid',
+    })
+    const validNewRun = run({id: 2, created_at: '2026-07-29T09:01:00Z'})
+    const state = deploymentState({
+      runs: [malformedOldRun, validNewRun],
+      publishedAt,
+      pendingCount: 0,
+    })
+    expect(state.kind).toBe('current')
+    expect(state.run?.id).toBe(2)
+  })
+
   it('surfaces the not-started timeout after three minutes', () => {
     const state = deploymentState({
       runs: [],
@@ -159,6 +203,39 @@ describe('deployment freshness state machine', () => {
     expect(state.kind).toBe('waiting-run')
     expect(state.label).toBe('Mise à jour non démarrée')
     expect(state.actionLabel).toBe('Prévenir le mainteneur')
+  })
+})
+
+describe('deployment-aware dashboard subtitle', () => {
+  it.each([
+    ['waiting-run', 'Mise à jour en attente'],
+    ['deploying', 'Mise à jour en cours'],
+    ['failed', 'Échec de la mise à jour'],
+    ['unknown', 'État temporairement indisponible'],
+  ] as const)('does not claim the site is current for %s', (kind, label) => {
+    const subtitle = deploymentSubtitle({
+      kind,
+      label,
+      detail: label,
+      tone: kind === 'failed' ? 'critical' : 'caution',
+      terminal: kind === 'failed' || kind === 'unknown',
+      actionUrl: 'https://example.com',
+    })
+    expect(subtitle).toContain(label)
+    expect(subtitle).not.toContain('Site à jour')
+  })
+
+  it('mentions Site à jour only for a proven current deployment', () => {
+    expect(
+      deploymentSubtitle({
+        kind: 'current',
+        label: 'Site à jour',
+        detail: 'Verified',
+        tone: 'positive',
+        terminal: true,
+        actionUrl: 'https://example.com',
+      }),
+    ).toBe('Tous les contenus sont publiés · Site à jour.')
   })
 })
 
