@@ -11,8 +11,8 @@ Extend the giant-title editorial identity established on Contact/Éditions (shar
 
 ### About Page
 
-- [ ] **ABOUT-03**: About page's title uses the shared `PageTitleHeader` component — same font/size/position, halftone texture, and hairline divider as Contact and Éditions
-- [ ] **ABOUT-04**: About page's supporting layout (portrait treatment, hero photo, numbered sections) is redesigned with a modern, editorial-coherent composition — explored via multiple layout proposals before implementation, same process as the Contact page redesign (sketch variants → chosen winner → implement)
+- [x] **ABOUT-03**: About page's title uses the shared `PageTitleHeader` component — same font/size/position, halftone texture, and hairline divider as Contact and Éditions
+- [x] **ABOUT-04**: About page's supporting layout (portrait treatment, hero photo, numbered sections) is redesigned with a modern, editorial-coherent composition — explored via multiple layout proposals before implementation, same process as the Contact page redesign (sketch variants → chosen winner → implement)
 
 ### Error Page
 
@@ -108,8 +108,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ABOUT-03 | Phase 15 | Pending |
-| ABOUT-04 | Phase 15 | Pending |
+| ABOUT-03 | Phase 15 | Complete |
+| ABOUT-04 | Phase 15 | Complete |
 | ERR-01 | Phase 16 | Pending |
 | LAUNCH-01 | Phase 5 | Pending |
 
