@@ -142,3 +142,12 @@ None - no external service configuration required.
 ---
 *Phase: 16-404-page-editorial-redesign*
 *Completed: 2026-07-29*
+
+## Self-Check: PASSED
+
+- FOUND: src/pages/404.astro
+- FOUND: tests/e2e/not-found.spec.ts
+- FOUND: tests/e2e/accessibility.spec.ts
+- FOUND: 71f0211 (feat: rewrite static 404 page)
+- FOUND: 1b92796 (test: realign e2e specs)
+- FOUND: efdbb63 (docs: summary + deferred-items)
