@@ -8,17 +8,16 @@ A bilingual (French/English) website for Romane Lepont's photography and artisti
 
 Visitors can browse Romane's photographic work and buy a piece (print, original, book, or merch) through a real, working checkout — everything else supports that. **Delivered in two milestones**: v1 replaces the current site fast with portfolio/about/contact so the old Myportfolio site can be retired sooner; v1.x adds exhibitions, the shop, and checkout on top of that foundation.
 
-## Current State
+## Current Milestone: v1.4 Editorial Design Consistency
 
-**Shipped: v1.3 Éditions** (2026-07-23) — archived at `.planning/milestones/v1.3-ROADMAP.md` / `v1.3-REQUIREMENTS.md`; full accomplishments in `.planning/MILESTONES.md`.
+**Goal:** Extend the giant-title editorial identity established on Contact/Éditions (shared `PageTitleHeader` component: display title, halftone texture, hairline divider) to the About and 404 pages, closing the visual gap between them.
 
-A dedicated, non-transactional Éditions showcase (bilingual overview + detail pages, Sanity-editable by Romane without touching code, zero commerce affordance) now sits alongside the existing Portfolio, discoverable from the main nav on every page. All 8 v1.3 requirements (EDN-01..07, CMS-04) shipped and were independently verified (`.planning/phases/14-verification-uat/14-VERIFICATION.md`).
+**Target features:**
+- About page's title switches to the shared `PageTitleHeader` component (same font/size/position/halftone/divider as Contact and Éditions)
+- About page's broader layout reworked for visual coherence with that identity (spacing rhythm, hairline treatment, section structure) — not just the title
+- 404 page gets the same visual redesign (currently a bare, unstyled fallback page with no editorial treatment) — content/copy unchanged, no added navigation links (decided: visual redesign only, not a navigation-recovery redesign)
 
-**Not yet live:** this milestone was built entirely on branch `claude/gsd-new-milestone-editions-ubjvt0` (108 commits) and has never been merged into `main` — GitHub Actions only deploys from `main`, so the public GitHub Pages staging URL does not yet serve Éditions. Merging to `main` is the outstanding cutover step.
-
-**Still open, separately tracked (not part of any shipped milestone):** Phase 5 (Launch & Domain Cutover to atelierjacquelinesuzanne.fr) — part of the original v1.0 milestone, deliberately deferred behind v1.1/v1.2/v1.3 by explicit user choice, and not yet started.
-
-**Retroactively closed 2026-07-27:** v1.0 MVP (Phases 1-4/04.1-04.3), v1.1 Homepage Refinements (Phase 6), and v1.2 Homepage Polish (Phases 7-10) were formally archived and given MILESTONES.md entries — they had shipped weeks earlier but, per the v1.3 retrospective's own "What Was Inefficient" note, milestone archival had lagged actual delivery. See `.planning/MILESTONES.md` for all three entries; phase detail archived at `.planning/milestones/v1.3-ROADMAP.md` (the only full-project snapshot that predates the collapse) and phase directories moved to `.planning/milestones/v1.0-phases/`, `v1.1-phases/`, `v1.2-phases/`.
+**Note:** v1.3 Éditions (shipped 2026-07-23) is fully live on `main`/GitHub Pages staging. Phase 5 (Launch & Domain Cutover) and the broader v1.x candidates (Exhibitions, Shop, Checkout, Shipping, commerce Legal, Éditions↔Portfolio cross-link — tracked in REQUIREMENTS.md's v2 section) remain open and deliberately deferred, not part of this milestone.
 
 <details>
 <summary>Archived: v1.3 Éditions milestone brief (shipped 2026-07-23)</summary>
@@ -36,10 +35,6 @@ A dedicated, non-transactional Éditions showcase (bilingual overview + detail p
 **Note:** Prior milestones — v1.0 (Phases 1–4.3), v1.1 Homepage Refinements (Phase 6, shipped 2026-07-13), and v1.2 Homepage Polish (Phases 7–10, shipped 2026-07-20) — are functionally complete. Phase 5 (DNS cutover to atelierjacquelinesuzanne.fr) remains open and deliberately deferred, by explicit user choice; it is not part of this milestone.
 
 </details>
-
-## Next Milestone Goals
-
-Not yet scoped — run `/gsd-new-milestone` to define it. Candidates already tracked in REQUIREMENTS.md's v2 section: Exhibitions/agenda (EXHB-01/02, CMS-02), Shop (SHOP-01..04), Checkout (CHK-01..05), Shipping (SHIP-01/02), commerce-specific Legal (LEGAL-02/04), and the Éditions↔Portfolio cross-link (EDN-08). Phase 5 (Launch & Domain Cutover) also remains open, separately tracked from these v1.x candidates.
 
 ## Requirements
 
@@ -86,7 +81,14 @@ Not yet scoped — run `/gsd-new-milestone` to define it. Candidates already tra
 **v1.3 (Verification & UAT — Phase 14, shipped 2026-07-23):**
 - [x] Romane (non-technical) can independently add/edit éditions via Sanity without touching code (CMS-04) — genuinely confirmed by Romane's own hands-on create/edit/publish/drag-reorder pass in the hosted Studio (closing the drag-reorder gap `11-UAT.md` waived), not just Phase 11's automated implementation — Phase 14
 
+**v1.4 (About Page Editorial Redesign — Phase 15, shipped 2026-07-29):**
+- [x] About page's title uses the shared `PageTitleHeader` component, pixel-parity with Contact/Éditions (title/eyebrow land at the same distance from the site header) — ABOUT-03, Phase 15
+- [x] About page's broader layout reworked for visual coherence with the Contact/Éditions editorial identity: standalone bio lead, circular portrait accent, pinned scroll-shrink hero-photo reveal, two-column numbered sections, chosen from a reviewed 3-variant design sketch (sketch-014) — ABOUT-04, Phase 15
+
 ### Active
+
+**v1.4 (Editorial Design Consistency, this milestone):**
+- [ ] 404 page receives the same visual/editorial redesign (content and links unchanged)
 
 **v1.0 (Phase 5, deliberately deferred — not part of any shipped milestone):**
 - [ ] Site is reachable at the existing domain, atelierjacquelinesuzanne.fr, via a rehearsed DNS cutover from the current Myportfolio site — LAUNCH-01, Phase 5: Launch & Domain Cutover. Explicit user decision (2026-07-27), reconfirmed at v1.0's retroactive close: *"cancel the initial plan to deliver and publish the website officially... we'll do it later."* Not abandoned — the site has kept shipping on GitHub Pages staging through v1.1/v1.2/v1.3 instead, and this stays open for whenever launch is next prioritized.
@@ -168,4 +170,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-27 after retroactively closing v1.0/v1.1/v1.2 (`/gsd-complete-milestone`) — MILESTONES.md entries added for all three, phase directories archived to `.planning/milestones/v1.0-phases/`/`v1.1-phases/`/`v1.2-phases/`, ROADMAP.md phase details collapsed to match the v1.3 pattern, and the 5 shipped v1.0 requirements moved from Active to Validated (a real drift this closure caught — they'd shipped back in Phase 1-4 but were never reconciled). Phase 5 (Launch & Domain Cutover) formally reconfirmed as deliberately deferred, not abandoned, per explicit user decision.*
+*Last updated: 2026-07-29 — Phase 15 (About Page Editorial Redesign) complete: ABOUT-03/04 validated. Phase 16 (404 Page Editorial Redesign) is the last phase of v1.4.*

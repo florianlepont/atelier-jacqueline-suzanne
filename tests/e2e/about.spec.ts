@@ -74,6 +74,11 @@ test.describe('about page content', () => {
   // big-title, one-viewport composition — its giant title no longer matches
   // --editorial-page-title-size and its frame padding differs from About's.
   // This test now validates About's own editorial scale only.
+  //
+  // Phase 15 plan 02 (ABOUT-03): the giant title/eyebrow now render via the
+  // shared PageTitleHeader component instead of a local .about-page h1 /
+  // .about-page__eyebrow — read the same hierarchy from PageTitleHeader's
+  // own selectors.
   test('About uses the shared editorial type scale and page frame', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
 
@@ -117,8 +122,8 @@ test.describe('about page content', () => {
 
       const aboutStyles = await readStyles(`${localePrefix}/about/`, {
         frame: '.about-page',
-        eyebrow: '.about-page__eyebrow',
-        title: '.about-page h1',
+        eyebrow: '.page-title-header__eyebrow',
+        title: '#about-title',
         lead: '.about-page__lead',
         sectionTitle: '.about-page h2',
       });
@@ -137,7 +142,24 @@ test.describe('about page content', () => {
     }
   });
 
-  test('the portrait belongs to the intro while the exhibition image spans the editorial frame', async ({
+  // Proves ABOUT-03's wiring: the old hand-rolled eyebrow is gone and the
+  // shared PageTitleHeader's structural siblings (halftone, eyebrow,
+  // divider) render on About, the same title identity Contact/Éditions use.
+  test('About retires its local eyebrow in favor of the shared PageTitleHeader', async ({
+    page,
+  }) => {
+    await page.goto('/about/');
+
+    await expect(page.locator('.about-page__eyebrow')).toHaveCount(0);
+    await expect(page.locator('.page-title-header__eyebrow')).toContainText(
+      'Atelier Jacqueline Suzanne',
+    );
+    await expect(page.locator('.page-title-header__halftone')).toHaveCount(1);
+    await expect(page.locator('.page-title-header__divider')).toHaveCount(1);
+    await expect(page.locator('main h1#about-title')).toContainText('À propos');
+  });
+
+  test('the portrait stays a small circular accent while the exhibition image spans the editorial frame', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
@@ -150,7 +172,7 @@ test.describe('about page content', () => {
     const [portraitDesktopBox, exhibitionDesktopBox, desktopContentBox] = await Promise.all([
       portrait.boundingBox(),
       exhibition.boundingBox(),
-      page.locator('.about-page__hero').boundingBox(),
+      page.locator('.about-page__bio-row').boundingBox(),
     ]);
     expect(portraitDesktopBox?.width).toBeLessThanOrEqual(112);
     expect(portraitDesktopBox?.width).toBe(portraitDesktopBox?.height);
@@ -163,10 +185,101 @@ test.describe('about page content', () => {
     const [portraitMobileBox, exhibitionMobileBox, contentBox] = await Promise.all([
       portrait.boundingBox(),
       exhibition.boundingBox(),
-      page.locator('.about-page__hero').boundingBox(),
+      page.locator('.about-page__bio-row').boundingBox(),
     ]);
     expect(portraitMobileBox?.width).toBeLessThanOrEqual(72);
     expect(portraitMobileBox?.width).toBe(portraitMobileBox?.height);
     expect(exhibitionMobileBox?.width).toBe(contentBox?.width);
+  });
+});
+
+// Phase 15 plan 03 (ABOUT-04, D-04/D-05/D-06): the pin+shrink scroll-driver
+// ported from DetailHero.astro (sketch 005), scoped to About's own
+// .about-page__exhibition-* classes (never .detail-hero*). Desktop viewport
+// is required for the pin-position assertions — same rationale as
+// edition.spec.ts's "editions hero reduced-motion" block: the
+// `min-width: 768px` branch of the script/CSS is what makes the pin
+// genuinely sticky (default) vs relative (reduced-motion settled
+// end-state); the `max-width: 767px` mobile branch overrides position to
+// `relative` regardless of motion preference, which would make the
+// "sticky by default" assertion meaningless on a narrow viewport. D-05
+// resolved to a pure motion "settle" (no text reveal), so there is no
+// reveal-target/overlay-title assertion here, unlike the édition hero.
+test.describe('about hero scroll-reveal (ABOUT-04)', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  for (const [localeLabel, path] of [
+    ['French', '/about/'],
+    ['English', '/en/about/'],
+  ] as const) {
+    test(`${localeLabel} About page: desktop pin is sticky by default (motion enabled)`, async ({
+      page,
+    }) => {
+      await page.goto(path);
+
+      const pin = page.locator('.about-page__exhibition-pin');
+      await expect(pin).toBeVisible();
+      const pinPosition = await pin.evaluate((el) => getComputedStyle(el).position);
+      expect(pinPosition).toBe('sticky');
+
+      // Code review CR-01: the pin-position check above previously passed
+      // even when the shrink itself was silently broken (CSS-over-constraint
+      // on the animated element). Assert the actual rendered width of the
+      // animated wrapper, not just that something is visible/sticky.
+      const photoTrack = page.locator('.about-page__exhibition-photo-track');
+      const pinBoxBefore = await pin.boundingBox();
+      const trackBoxBefore = await photoTrack.boundingBox();
+      expect(trackBoxBefore!.width).toBeCloseTo(pinBoxBefore!.width, 0);
+
+      await page.evaluate(() => {
+        const outerTrack = document.querySelector('.about-page__exhibition-track')!;
+        window.scrollBy(0, outerTrack.getBoundingClientRect().top + 500);
+      });
+      await expect(async () => {
+        const trackBoxAfter = await photoTrack.boundingBox();
+        const pct = (trackBoxAfter!.width / pinBoxBefore!.width) * 100;
+        expect(pct).toBeGreaterThan(80);
+        expect(pct).toBeLessThan(92);
+      }).toPass();
+    });
+
+    test(`${localeLabel} About page: prefers-reduced-motion: reduce shows the settled end-state immediately, no sticky pin`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.goto(path);
+
+      const pin = page.locator('.about-page__exhibition-pin');
+      await expect(pin).toBeVisible();
+      const pinPosition = await pin.evaluate((el) => getComputedStyle(el).position);
+      expect(pinPosition).not.toBe('sticky');
+
+      const photo = page.locator('.about-page__exhibition-photo');
+      await expect(photo).toBeVisible();
+
+      // Code review CR-01/WR-01: the settled end-state must already show the
+      // ~86%-width shrink with zero scrolling, not just an unshrunk visible photo.
+      const photoTrack = page.locator('.about-page__exhibition-photo-track');
+      const pinBox = await pin.boundingBox();
+      const trackBox = await photoTrack.boundingBox();
+      const pct = (trackBox!.width / pinBox!.width) * 100;
+      expect(pct).toBeGreaterThan(80);
+      expect(pct).toBeLessThan(92);
+    });
+  }
+
+  test('mobile viewport renders a static band — no sticky pin, no scroll-linked motion', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/about/');
+
+    const pin = page.locator('.about-page__exhibition-pin');
+    await expect(pin).toBeVisible();
+    const pinPosition = await pin.evaluate((el) => getComputedStyle(el).position);
+    expect(pinPosition).toBe('relative');
+
+    const photo = page.locator('.about-page__exhibition-photo');
+    await expect(photo).toBeVisible();
   });
 });

@@ -6,6 +6,7 @@
 // visible strings arrive as props; no i18n/data-fetch logic lives here.
 import { fullSizeUrl, responsiveImageSrcSet } from '../lib/image';
 import type { SanityImage } from '../lib/sanity';
+import PageTitleHeader from './PageTitleHeader.astro';
 
 interface Props {
   heading: string;
@@ -35,11 +36,10 @@ const {
 ---
 
 <article class="about-page">
-  <header class:list={['about-page__hero', {'about-page__hero--with-portrait': portraitImage}]}>
-    <div class="about-page__identity">
-      <p class="about-page__eyebrow">Atelier Jacqueline Suzanne</p>
-      <h1>{heading}</h1>
-    </div>
+  <PageTitleHeader heading={heading} headingId="about-title" intro="" />
+
+  <div class="about-page__bio-row">
+    <p class="about-page__lead">{biography}</p>
     {portraitImage && (
       <figure class="about-page__portrait">
         <img
@@ -52,20 +52,26 @@ const {
         />
       </figure>
     )}
-    <p class="about-page__lead">{biography}</p>
-  </header>
+  </div>
 
   {exhibitionImage && (
-    <figure class="about-page__exhibition">
-      <img
-        src={fullSizeUrl(exhibitionImage, 1600)}
-        srcset={responsiveImageSrcSet(exhibitionImage, [480, 768, 1200, 1600])}
-        sizes="(max-width: 767px) 100vw, 1180px"
-        alt={exhibitionAlt}
-        loading="lazy"
-        decoding="async"
-      />
-    </figure>
+    <div class="about-page__exhibition-track">
+      <div class="about-page__exhibition-pin">
+        <div class="about-page__exhibition-photo-track">
+          <figure class="about-page__exhibition">
+            <img
+              src={fullSizeUrl(exhibitionImage, 1600)}
+              srcset={responsiveImageSrcSet(exhibitionImage, [480, 768, 1200, 1600])}
+              sizes="(max-width: 767px) 100vw, 1180px"
+              alt={exhibitionAlt}
+              class="about-page__exhibition-photo"
+              loading="lazy"
+              decoding="async"
+            />
+          </figure>
+        </div>
+      </div>
+    </div>
   )}
 
   <div class="about-page__sections">
@@ -86,59 +92,169 @@ const {
   </div>
 </article>
 
+<script>
+  // Phase 15 plan 03 (ABOUT-04, D-04/D-05): pinned scroll-scrubbed shrink
+  // reveal for the About exhibition photo, ported (not imported/called)
+  // from DetailHero.astro's proven mechanism (sketch 005) — its Props/
+  // markup carry a lightbox trigger, expand icon, and title-reveal panel
+  // that don't fit About, per UI-SPEC's Component Reuse contract. Scoped
+  // to new .about-page__exhibition-* class names, never .detail-hero*.
+  //
+  // sketch-014 winner (Variant A, "Settle & Restyled Two-Column Grid")
+  // resolves D-05 to a PURE motion settle: the photo shrinks to ~86% and
+  // gently recenters, revealing no text — unlike DetailHero's 100%->55%
+  // left-settle-plus-title-reveal, this only interpolates symmetric
+  // left/right insets so the photo shrinks toward its own center. There is
+  // therefore no opacity-gated reveal target to drive here (no scrim, no
+  // overlay title, no format line) — see the <noscript> note in the
+  // SUMMARY for why no escape-hatch style block is needed for this photo.
+  function clamp01(v: number): number {
+    return Math.max(0, Math.min(1, v));
+  }
+
+  function lerp(a: number, b: number, t: number): number {
+    return a + (b - a) * t;
+  }
+
+  const track = document.querySelector<HTMLElement>('.about-page__exhibition-track');
+  // The animated element is this wrapper, NOT the <img> (.about-page__exhibition-photo)
+  // — the img keeps a static width:100%/height:100%/object-fit:cover and is never
+  // touched by JS. Animating left/right directly on the img would be CSS-over-
+  // constrained (left + width:100% + right all non-auto on a replaced element), so
+  // the browser drops `right` and the image never actually shrinks, just clips.
+  // This wrapper has no explicit width, so left/right alone correctly determine it.
+  const photoTrack = document.querySelector<HTMLElement>('.about-page__exhibition-photo-track');
+
+  if (track && photoTrack) {
+    // About's hero sits mid-page (below the header/bio), not a full-100svh
+    // page hero like DetailHero's — REVEAL_DISTANCE is a new, smaller value
+    // sized to About's gentler ~86% settle, not DetailHero's literal 900px.
+    // Keep this in sync with the `+ 400px` addend in the track-height CSS
+    // rule below (track height = pinned height + REVEAL_DISTANCE).
+    const REVEAL_DISTANCE = 400;
+
+    function onProgress(t: number) {
+      const width = lerp(100, 86, t);
+      const inset = (100 - width) / 2;
+      photoTrack!.style.left = `${inset}%`;
+      photoTrack!.style.right = `${inset}%`;
+    }
+
+    function clearInlineStyles() {
+      // CSS end-state (reduced-motion / mobile media queries) must fully
+      // control layout when the driver is inactive — an inline style set
+      // by a previous desktop run must never outlive a matchMedia change.
+      photoTrack!.style.removeProperty('left');
+      photoTrack!.style.removeProperty('right');
+    }
+
+    const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+    const desktop = matchMedia('(min-width: 768px)');
+
+    let rafId: number | null = null;
+    let scrollAttached = false;
+
+    function computeProgress(): number {
+      return clamp01(-track!.getBoundingClientRect().top / REVEAL_DISTANCE);
+    }
+
+    function onScroll() {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        onProgress(computeProgress());
+      });
+    }
+
+    function setup() {
+      if (reduceMotion.matches || !desktop.matches) {
+        if (scrollAttached) {
+          window.removeEventListener('scroll', onScroll);
+          scrollAttached = false;
+        }
+        clearInlineStyles();
+      } else {
+        if (!scrollAttached) {
+          window.addEventListener('scroll', onScroll, { passive: true });
+          scrollAttached = true;
+        }
+        onProgress(computeProgress());
+      }
+    }
+
+    setup();
+    reduceMotion.addEventListener('change', setup);
+    desktop.addEventListener('change', setup);
+
+    let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+    window.addEventListener('resize', () => {
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(setup, 100);
+    });
+  }
+</script>
+
 <style>
+  /* Top/bottom padding split, not a single `padding` shorthand: Contact and
+     Éditions land their title/eyebrow at the exact same distance from the
+     site header via a smaller, dedicated top value (see ContactPageBody's
+     own comment on this) while reserving the larger --editorial-page-padding-
+     block token for bottom whitespace only. About must match that same-
+     distance contract (ROADMAP Phase 15 criterion 1) rather than applying
+     the bottom-sized token to both edges. */
   .about-page {
     width: min(100%, var(--editorial-page-max));
     margin: 0 auto;
-    padding: var(--editorial-page-padding-block) var(--editorial-page-padding-inline);
+    padding-inline: var(--editorial-page-padding-inline);
+    padding-top: clamp(48px, 7vw, 56px);
+    padding-bottom: var(--editorial-page-padding-block);
   }
 
-  .about-page__hero {
-    display: grid;
-    grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr);
-    gap: clamp(var(--space-lg), 3.5vw, 48px);
-    align-items: center;
-    padding-top: var(--space-md);
-    border-top: var(--border-hairline) solid var(--color-ink);
+  /* D-01/D-05 empty-intro-column fix (sketch-014 winner, Variant A: page-
+     scoped suppression). PageTitleHeader is called with intro="" (D-01 —
+     the full biography does not fit its 2-line/46ch teaser slot), which
+     would otherwise leave an empty intro paragraph + orphaned vertical
+     hairline divider in the shared header's second column on >=760px
+     viewports. Hidden entirely here, scoped to this page, without editing
+     PageTitleHeader.astro itself — the giant title then spans the full
+     header width instead of leaving a ghost column. */
+  .about-page :global(.page-title-header__intro),
+  .about-page :global(.page-title-header__divider) {
+    display: none;
+  }
+  @media (min-width: 760px) {
+    .about-page :global(.page-title-header) {
+      grid-template-columns: 1fr;
+    }
   }
 
-  .about-page__hero--with-portrait {
-    grid-template-columns: minmax(240px, 0.75fr) 112px minmax(0, 1.25fr);
-  }
-
-  .about-page__eyebrow,
   .about-page__number {
     margin: 0;
-    font-size: var(--text-label-size);
+    font-size: var(--text-body-size); /* Body role (folds former 14px Label role) */
     font-weight: var(--weight-semibold);
-    line-height: var(--text-label-leading);
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
 
-  .about-page h1 {
-    margin: var(--space-md) 0 0;
-    font-size: var(--editorial-page-title-size);
-    font-weight: var(--weight-semibold);
-    font-family: var(--font-display);
-    line-height: 0.95;
-    letter-spacing: -0.04em;
+  .about-page__bio-row {
+    display: flex;
+    gap: var(--space-2xl);
+    align-items: flex-start;
+    margin-top: var(--space-md);
+    padding-top: var(--space-md);
+    border-top: var(--border-hairline) solid var(--color-ink);
   }
 
   .about-page__lead {
-    grid-column: 2;
+    flex: 1 1 auto;
     margin: 0;
     font-size: var(--editorial-page-lead-size);
     font-weight: var(--weight-regular);
     line-height: var(--editorial-page-lead-leading);
   }
 
-  .about-page__hero--with-portrait .about-page__lead {
-    grid-column: 3;
-  }
-
   .about-page__portrait {
-    grid-column: 2;
+    flex: 0 0 auto;
     width: 112px;
     height: 112px;
     margin: 0;
@@ -147,26 +263,67 @@ const {
     border-radius: 50%;
   }
 
-  .about-page__exhibition {
-    width: 100%;
-    height: clamp(360px, 44vw, 520px);
+  /* Phase 15 plan 03 (ABOUT-04, D-04/D-05): the static band shipped by
+     15-02 is now wrapped in a track/pin structure so the photo can pin
+     (position: sticky) and scroll-shrink on desktop-with-motion, per the
+     mechanism ported from DetailHero.astro (see the scoped <script>
+     above). track height = pinned height + REVEAL_DISTANCE (400px, kept
+     in sync with the script's own constant), mirroring DetailHero's own
+     track-height relationship but sized to About's smaller mid-page shrink
+     rather than DetailHero's full-100svh literal values. */
+  .about-page__exhibition-track {
+    position: relative;
+    height: calc(clamp(360px, 44vw, 520px) + 400px);
     margin: clamp(var(--space-2xl), 6vw, 80px) 0 0;
+  }
+
+  .about-page__exhibition-pin {
+    position: sticky;
+    top: 0;
+    height: clamp(360px, 44vw, 520px);
+    overflow: hidden;
+  }
+
+  /* The element the <script> above actually animates via left/right. It
+     deliberately carries NO explicit width — position:absolute + inset:0
+     with only left/right set inline lets the browser derive width from
+     those two insets. .about-page__exhibition (below) and its <img> just
+     passively fill whatever box this wrapper resolves to; animating the
+     <img> directly (the pre-fix approach) was CSS-over-constrained, since
+     that element also has an explicit width:100% rule — see code review
+     CR-01 (15-REVIEW.md). */
+  .about-page__exhibition-photo-track {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  .about-page__exhibition {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    margin: 0;
     overflow: hidden;
   }
 
   .about-page__portrait img,
-  .about-page__exhibition img {
+  .about-page__exhibition-photo {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
 
+  .about-page__exhibition-photo {
+    position: absolute;
+    inset: 0;
+  }
+
   .about-page__sections {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--editorial-page-column-gap);
-    margin-top: clamp(var(--space-lg), 3vw, 40px);
+    margin-top: clamp(var(--space-2xl), 5vw, 64px);
   }
 
   .about-page__section {
@@ -193,37 +350,47 @@ const {
   }
 
   @media (max-width: 767px) {
-    .about-page__hero,
-    .about-page__hero--with-portrait {
-      grid-template-columns: minmax(0, 1fr) auto;
-      column-gap: var(--space-md);
-    }
-
-    .about-page__identity {
-      grid-column: 1;
-      grid-row: 1;
+    .about-page__bio-row {
+      flex-direction: column-reverse;
+      gap: var(--space-md);
     }
 
     .about-page__portrait {
-      grid-column: 2;
-      grid-row: 1;
       width: 72px;
       height: 72px;
+      align-self: flex-end;
     }
 
-    .about-page__lead,
-    .about-page__hero--with-portrait .about-page__lead {
-      grid-column: 1 / -1;
-      grid-row: 2;
+    /* D-06: mobile keeps a plain static full-bleed photo band — today's
+       treatment, unchanged — with no pin and no scroll listener attached
+       at all (the script's own `matchMedia('(min-width: 768px)')` gate
+       already prevents attachment below 768px; these rules exist purely
+       so the CSS end-state matches with zero JS dependency). Applies
+       regardless of motion preference, mirroring DetailHero.astro's own
+       `@media (max-width: 767px)` block. */
+    .about-page__exhibition-track {
+      height: auto;
+      margin: clamp(var(--space-2xl), 6vw, 80px) 0 0;
     }
 
-    .about-page__lead {
-      margin-top: var(--space-xl);
+    .about-page__exhibition-pin {
+      position: relative;
+      height: auto;
     }
 
     .about-page__exhibition {
       height: auto;
       aspect-ratio: 16 / 10;
+    }
+
+    /* .about-page__exhibition-pin's height is auto here, so its only child
+       (.about-page__exhibition-photo-track) must stay in normal flow —
+       left absolute, an auto-height ancestor with only an out-of-flow
+       child resolves to 0 height, collapsing the whole band. Figure's own
+       aspect-ratio above still drives the visible height; this wrapper no
+       longer needs to size or position anything on mobile. */
+    .about-page__exhibition-photo-track {
+      position: relative;
     }
 
     .about-page__sections {
@@ -236,9 +403,27 @@ const {
       padding-top: var(--space-xl);
       padding-bottom: var(--space-3xl);
     }
+  }
 
-    .about-page h1 {
-      font-size: clamp(38px, 13vw, 52px);
+  /* Reduced-motion settled end-state (desktop only): mirrors onProgress(1)
+     purely in CSS (86% width, i.e. a 7% inset on each side), so the photo
+     shows immediately at its final settled size with zero scroll-linked
+     motion and no dependence on the driver ever running — exactly
+     matching DetailHero.astro's own
+     `@media (prefers-reduced-motion: reduce) and (min-width: 768px)`
+     convention (a site-wide pattern also used by HomeCarousel/Lightbox). */
+  @media (prefers-reduced-motion: reduce) and (min-width: 768px) {
+    .about-page__exhibition-track {
+      height: clamp(360px, 44vw, 520px);
+    }
+
+    .about-page__exhibition-pin {
+      position: relative;
+    }
+
+    .about-page__exhibition-photo-track {
+      left: 7%;
+      right: 7%;
     }
   }
 </style>
