@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Editorial Design Consistency
 current_phase: 15
-current_phase_name: About Page Editorial Redesign
-status: planning
+current_phase_name: about-page-editorial-redesign
+status: executing
 stopped_at: Phase 15 UI-SPEC approved
-last_updated: "2026-07-29T05:46:17.900Z"
+last_updated: "2026-07-29T06:51:07.495Z"
 last_activity: 2026-07-29
-last_activity_desc: "v1.4 ROADMAP.md created: Phase 15 (About Page Editorial Redesign, ABOUT-03/04) then Phase 16 (404 Page Editorial Redesign, ERR-01)"
+last_activity_desc: Phase 15 execution started
 progress:
   total_phases: 3
   completed_phases: 0
-  total_plans: 0
+  total_plans: 4
   completed_plans: 0
   percent: 0
 ---
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-22)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; v1.3 adds a non-transactional Éditions showcase; checkout still follows in the future v1.x shop milestone.)
-**Current focus:** v1.4 Editorial Design Consistency — Phase 15 (About Page Editorial Redesign)
+**Current focus:** Phase 15 — about-page-editorial-redesign
 
 ## Current Position
 
-Phase: 15 of 16 (About Page Editorial Redesign) — not started
-Plan: — (not yet planned)
-Status: Roadmapped, ready to plan
-Last activity: 2026-07-29 — v1.4 ROADMAP.md created: Phase 15 (About Page Editorial Redesign, ABOUT-03/04) then Phase 16 (404 Page Editorial Redesign, ERR-01)
+Phase: 15 (about-page-editorial-redesign) — EXECUTING
+Plan: 1 of 4
+Status: Executing Phase 15
+Last activity: 2026-07-29 — Phase 15 execution started
 
 ## Performance Metrics
 
