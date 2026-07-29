@@ -1,23 +1,50 @@
 import {describe, expect, it} from 'vitest';
-import {getDocumentChecks, summarizeChecks} from '../../sanity/editorial/checks';
+import {
+  getDocumentChecks,
+  hasBlockingChecklist,
+  summarizeChecks,
+} from '../../sanity/editorial/checks';
+import {PUBLIC_SITE_DOCUMENT_TYPES} from '../../sanity/editorial/workflowLogic';
+
+const localized = {fr: 'Texte', en: 'Text'};
+const rights = {
+  credit: 'Romane Lepont',
+  copyrightNotice: '© Romane Lepont',
+  usage: 'allRightsReserved',
+};
+const completeImage = {
+  asset: {_ref: 'image-asset'},
+  alt: {fr: 'Photo', en: 'Photograph'},
+  rights,
+};
 
 describe('Sanity editorial checklist', () => {
+  it('has an explicit blocking checklist for every public document type', () => {
+    expect(PUBLIC_SITE_DOCUMENT_TYPES).toEqual([
+      'siteSettings',
+      'homePage',
+      'editionsPage',
+      'aboutPage',
+      'contactPage',
+      'gallery',
+      'edition',
+    ]);
+    expect(PUBLIC_SITE_DOCUMENT_TYPES.every(hasBlockingChecklist)).toBe(true);
+    expect(hasBlockingChecklist('exhibition')).toBe(true);
+    expect(hasBlockingChecklist('unknown')).toBe(false);
+  });
+
+  it('fails closed when no checklist exists', () => {
+    expect(summarizeChecks([]).requiredComplete).toBe(false);
+  });
+
   it('requires bilingual copy, accessibility text, and image rights for a collection', () => {
     const checks = getDocumentChecks('gallery', {
       publicationStatus: 'published',
       title: 'Test',
       slug: {current: 'test'},
       statement: {fr: 'FR', en: 'EN'},
-      images: [
-        {
-          alt: {fr: 'Photo', en: 'Photograph'},
-          rights: {
-            credit: 'Romane Lepont',
-            copyrightNotice: '© Romane Lepont',
-            usage: 'allRightsReserved',
-          },
-        },
-      ],
+      images: [completeImage],
     });
 
     const summary = summarizeChecks(checks);
@@ -31,10 +58,25 @@ describe('Sanity editorial checklist', () => {
       title: 'Test',
       slug: {current: 'test'},
       statement: {fr: 'FR', en: 'EN'},
-      images: [{alt: {fr: 'Photo', en: 'Photograph'}}],
+      images: [{asset: {_ref: 'image-asset'}, alt: {fr: 'Photo', en: 'Photograph'}}],
     });
 
     expect(summarizeChecks(checks).requiredComplete).toBe(false);
+  });
+
+  it('marks a collection incomplete when an image has no Sanity asset reference', () => {
+    const checks = getDocumentChecks('gallery', {
+      publicationStatus: 'published',
+      title: 'Test',
+      slug: {current: 'test'},
+      statement: localized,
+      images: [{alt: localized, rights}],
+    });
+
+    expect(summarizeChecks(checks).requiredComplete).toBe(false);
+    expect(checks).toContainEqual(
+      expect.objectContaining({label: expect.stringContaining('photo 1'), complete: false}),
+    );
   });
 
   it('names the exact photos and languages with missing accessibility text', () => {
@@ -45,12 +87,9 @@ describe('Sanity editorial checklist', () => {
       statement: {fr: 'FR', en: 'EN'},
       images: [
         {
+          asset: {_ref: 'image-asset'},
           alt: {fr: 'Photo'},
-          rights: {
-            credit: 'Romane Lepont',
-            copyrightNotice: '© Romane Lepont',
-            usage: 'allRightsReserved',
-          },
+          rights,
         },
       ],
     });
@@ -69,8 +108,52 @@ describe('Sanity editorial checklist', () => {
     expect(summarizeChecks(checks).requiredComplete).toBe(true);
   });
 
+  it('requires the Éditions navigation label and the bilingual Éditions introduction', () => {
+    const settingsWithoutEditions = getDocumentChecks('siteSettings', {
+      siteTitle: localized,
+      navLabels: {about: localized, contact: localized},
+      footerText: localized,
+    });
+    expect(summarizeChecks(settingsWithoutEditions).requiredComplete).toBe(false);
+    expect(
+      summarizeChecks(
+        getDocumentChecks('editionsPage', {intro: {fr: 'Les éditions', en: 'Editions'}}),
+      ).requiredComplete,
+    ).toBe(true);
+    expect(
+      summarizeChecks(getDocumentChecks('editionsPage', {intro: {fr: 'Les éditions'}}))
+        .requiredComplete,
+    ).toBe(false);
+  });
+
+  it('requires a complete edition including assets, rights, and positive format details', () => {
+    const completeEdition = {
+      publicationStatus: 'published',
+      title: 'Rebut',
+      slug: {current: 'rebut'},
+      statement: localized,
+      leadPhoto: completeImage,
+      images: [completeImage],
+      pageCount: 96,
+      printRun: 250,
+      dimensions: {width: 21, height: 29.7, unit: 'cm'},
+    };
+    expect(
+      summarizeChecks(getDocumentChecks('edition', completeEdition)).requiredComplete,
+    ).toBe(true);
+
+    for (const invalid of [
+      {...completeEdition, leadPhoto: {...completeImage, asset: undefined}},
+      {...completeEdition, images: [{...completeImage, rights: undefined}]},
+      {...completeEdition, pageCount: 2.5},
+      {...completeEdition, printRun: 0},
+      {...completeEdition, dimensions: {width: 21, height: -1, unit: 'mm'}},
+    ]) {
+      expect(summarizeChecks(getDocumentChecks('edition', invalid)).requiredComplete).toBe(false);
+    }
+  });
+
   it('covers singleton, settings, exhibition, and unknown document types', () => {
-    const localized = {fr: 'Texte', en: 'Text'};
     expect(getDocumentChecks('homePage', {intro: localized})).toHaveLength(4);
     expect(
       getDocumentChecks('aboutPage', {
@@ -84,7 +167,7 @@ describe('Sanity editorial checklist', () => {
     expect(
       getDocumentChecks('siteSettings', {
         siteTitle: localized,
-        navLabels: {about: localized, contact: localized},
+        navLabels: {about: localized, editions: localized, contact: localized},
         footerText: localized,
       })
         .filter((item) => !item.recommended)

@@ -1,22 +1,67 @@
 import {describe, expect, it} from 'vitest'
 import {
+  PUBLIC_SINGLETON_TYPES,
+  PUBLIC_SITE_DOCUMENT_TYPES,
   collectionStatusBadge,
   completenessBadge,
-  filterUnsafeSingletonActions,
-  shouldRenamePublishAction,
+  filterDocumentActions,
+  isPublicSiteDocumentType,
+  passiveDocumentActionLabel,
 } from '../../sanity/editorial/workflowLogic'
 
 describe('Sanity workflow decision logic', () => {
-  it('removes destructive singleton actions without touching ordinary documents', () => {
-    const actions = [{action: 'publish'}, {action: 'delete'}, {action: 'duplicate'}]
-    expect(filterUnsafeSingletonActions(actions, 'siteSettings')).toEqual([{action: 'publish'}])
-    expect(filterUnsafeSingletonActions(actions, 'gallery')).toBe(actions)
+  it('defines the exact public and singleton scopes', () => {
+    expect(PUBLIC_SITE_DOCUMENT_TYPES).toEqual([
+      'siteSettings',
+      'homePage',
+      'editionsPage',
+      'aboutPage',
+      'contactPage',
+      'gallery',
+      'edition',
+    ])
+    expect(PUBLIC_SINGLETON_TYPES).toEqual([
+      'siteSettings',
+      'homePage',
+      'editionsPage',
+      'aboutPage',
+      'contactPage',
+    ])
+    expect(isPublicSiteDocumentType('edition')).toBe(true)
+    expect(isPublicSiteDocumentType('exhibition')).toBe(false)
   })
 
-  it('renames publish only for documents that update the public site', () => {
-    expect(shouldRenamePublishAction('gallery', 'publish')).toBe(true)
-    expect(shouldRenamePublishAction('exhibition', 'publish')).toBe(false)
-    expect(shouldRenamePublishAction('gallery', 'delete')).toBe(false)
+  it('removes publish paths while retaining draft-management actions in order', () => {
+    const actions = [
+      {action: 'publish'},
+      {action: 'discardChanges'},
+      {action: 'unpublish'},
+      {action: 'restore'},
+      {action: 'delete'},
+      {action: 'duplicate'},
+    ]
+    expect(filterDocumentActions(actions, 'gallery')).toEqual([
+      {action: 'discardChanges'},
+      {action: 'restore'},
+      {action: 'delete'},
+      {action: 'duplicate'},
+    ])
+    expect(filterDocumentActions(actions, 'edition')).toEqual([
+      {action: 'discardChanges'},
+      {action: 'restore'},
+      {action: 'delete'},
+      {action: 'duplicate'},
+    ])
+    expect(filterDocumentActions(actions, 'editionsPage')).toEqual([
+      {action: 'discardChanges'},
+      {action: 'restore'},
+    ])
+    expect(filterDocumentActions(actions, 'exhibition')).toBe(actions)
+  })
+
+  it('provides passive draft and current labels', () => {
+    expect(passiveDocumentActionLabel(true)).toBe('Modifications enregistrées')
+    expect(passiveDocumentActionLabel(false)).toBe('À jour')
   })
 
   it('reports required, recommended, and ready completeness states', () => {
