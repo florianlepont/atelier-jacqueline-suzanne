@@ -1,6 +1,7 @@
 ---
 phase: quick-260729-f3r
 reviewed: 2026-07-29T09:44:12Z
+re_reviewed: 2026-07-29T09:59:03Z
 depth: deep
 files_reviewed: 17
 files_reviewed_list:
@@ -22,14 +23,19 @@ files_reviewed_list:
   - tests/unit/editorial-checks.test.ts
   - tests/unit/workflow-logic.test.ts
 findings:
+  critical: 0
+  warning: 0
+  info: 0
+  total: 0
+original_findings:
   critical: 4
   warning: 5
   info: 0
   total: 9
-resolved_findings: 9
+resolved_findings: 10
 remaining_findings: 0
-resolved_at: 2026-07-29T09:53:36Z
-resolution_commits: [2f769a6, ee93b6e]
+resolved_at: 2026-07-29T10:03:18Z
+resolution_commits: [2f769a6, ee93b6e, 196e9f7, a4adf30]
 status: resolved
 ---
 
@@ -38,7 +44,7 @@ status: resolved
 **Reviewed:** 2026-07-29T09:44:12Z
 **Depth:** deep
 **Files Reviewed:** 17
-**Status:** resolved (original review status: issues_found)
+**Status:** resolved after WR-06 remediation
 
 ## Summary
 
@@ -258,7 +264,8 @@ _Depth: deep_
 ## Resolution
 
 **Resolved:** 2026-07-29T09:53:36Z
-**Status:** All 9 findings resolved; no code-review finding remains open.
+**Status:** All 9 original findings resolved; the independent re-review found one remediation
+regression.
 
 The original finding detail above is retained as the audit record. Resolution was implemented as
 a RED regression commit (`2f769a6`) followed by the bounded correction commit (`ee93b6e`).
@@ -287,3 +294,72 @@ a RED regression commit (`2f769a6`) followed by the bounded correction commit (`
 No Studio deployment, live content publication, webhook observation, secret, package, server or
 public-site behavior change was performed. Real Editor permission and webhook fan-out remain the
 separately authorized Pending Manual UAT recorded in the plan and SUMMARY.
+
+## Independent Re-review
+
+**Re-reviewed:** 2026-07-29T09:59:03Z
+**Commits:** `2f769a6`, `ee93b6e`
+**Status:** resolved after WR-06 remediation (original re-review status: issues_found)
+
+All nine original findings are fixed in the submitted remediation. Confirmation fingerprints cover
+batch membership and both draft/published revisions, every action carries `ifDraftRevisionId`,
+post-commit observation has a tracking-only retry, timestamp qualification fails closed at the
+same-second precision boundary, terminal polling remains on the documented background cadence, and
+the checklist registry now covers every public type.
+
+Independent verification passed: the three focused suites ran 120 tests, the full unit suite ran
+251 tests, `npm run typecheck` reported zero errors, and the Sanity Studio build completed.
+
+### WR-06: A newly blocked confirmation batch is discarded by the visible publication card
+
+**Classification:** WARNING
+
+**Files:** `sanity/editorial/dashboardLogic.ts:557-566`,
+`sanity/editorial/EditorialDashboard.tsx:315-333`,
+`sanity/editorial/EditorialDashboard.tsx:453-531`
+
+**Issue:** `publish()` correctly re-fetches the batch and, when membership changes, stores the fresh
+batch in controller state before throwing `ConfirmationChangedError`. If the newly discovered
+content is blocked, `confirmPublication()` immediately closes the dialog because
+`publicationController.state.batch.ready` is false. The only variable that adopts the controller's
+fresh batch (`publicationBatch`) is used inside that now-closed dialog. The main card still derives
+its count, rows, blocked reasons, and disabled state exclusively from the older
+`publicationSnapshot`.
+
+For example, if another editor creates an incomplete public draft after confirmation, the controller
+prevents publication but the card can continue showing the old ready lot and an enabled button.
+Clicking it again performs another blocked preflight and returns without opening the dialog, while
+still rendering no explanation. A realtime mutation normally refreshes the React snapshot later,
+but that subscription is explicitly best-effort and its error path performs no fallback refresh, so
+the fresh blocking result can be lost for the rest of the mounted session. This does not bypass the
+transaction guard, but it makes the conflict/blocking error non-actionable and leaves the editor in
+a misleading retry loop.
+
+**Fix:** Promote the controller's latest preflight batch to the main card until the document query
+catches up (for example, render counts, rows, blockers, and button eligibility from
+`publicationState.batch ?? publicationSnapshot`). On a changed batch that is no longer ready, show
+its blocking reasons outside the confirmation dialog and request an inventory refresh. Add a
+component-level regression where an incomplete draft joins after confirmation and assert that the
+dialog closes into a disabled card naming the new blocker.
+
+**Resolution:** RESOLVED in `196e9f7` (RED) and `a4adf30` (GREEN).
+
+- The controller’s latest confirmation batch now drives the main card until the queried inventory
+  contains the same or newer draft revisions.
+- Count, rows, blocking reasons and button eligibility all use that visible batch.
+- A changed blocked batch requests a best-effort inventory refresh while remaining visible if the
+  refresh fails.
+- The regression proves the dialog closes into a two-item, disabled, blocker-naming card state with
+  zero Actions API calls.
+
+### Final verification after WR-06
+
+- `npm run test:unit -- tests/unit/dashboard-logic.test.ts` — 94 passed.
+- `npm run test:unit` — 14 suites, 252 tests passed.
+- `npm run lint` — passed.
+- `npm run typecheck` — passed with zero errors.
+- `npm --prefix sanity run lint` — passed.
+- `npm --prefix sanity run build` — passed.
+
+All ten findings across the original review and independent re-review are resolved. Remaining code
+review findings: **0**. Pending Manual UAT is unchanged and no external action was performed.

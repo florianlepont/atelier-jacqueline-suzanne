@@ -97,7 +97,7 @@ coverage:
     human_judgment: true
     rationale: "Requires a deployed Studio, the real Editor account and separately authorized mutations on the live dataset."
 
-duration: 32min
+duration: 41min
 completed: 2026-07-29
 status: complete
 ---
@@ -108,9 +108,9 @@ status: complete
 
 ## Performance
 
-- **Duration:** 32 min
+- **Duration:** 41 min
 - **Started:** 2026-07-29T09:21:58Z
-- **Completed:** 2026-07-29T09:53:36Z
+- **Completed:** 2026-07-29T10:03:18Z
 - **Tasks:** 3 plus deep-review remediation
 - **Files modified:** 18
 
@@ -120,6 +120,7 @@ status: complete
 - Added a dominant dashboard workflow that deduplicates drafts, exposes four publication categories, blocks incomplete or unresolved content, and issues exactly one revision-guarded Sanity Actions API request.
 - Added post-publication GitHub state tracking with qualified runs, honest waiting/failure/unknown states, adaptive polling and an editor-facing French operating guide.
 - Closed all four critical and five warning findings from deep review with revision-bound confirmation, explicit committed/tracking states, cross-tab timestamps and complete inspector coverage.
+- Resolved independent re-review WR-06 so a newly blocked batch immediately replaces the stale ready card and stays actionable while inventory refreshes.
 
 ## Task Commits
 
@@ -137,6 +138,9 @@ Each TDD task was committed as a RED test gate followed by its GREEN implementat
 4. **Deep review remediation**
    - `2f769a6` — RED regressions for all critical findings and warnings
    - `ee93b6e` — race-safe publication, committed tracking and honest freshness fixes
+5. **Independent re-review remediation**
+   - `196e9f7` — RED regression for a newly added incomplete draft
+   - `a4adf30` — controller-visible blocked card and best-effort inventory refresh
 
 ## Files Created/Modified
 
@@ -149,7 +153,7 @@ Each TDD task was committed as a RED test gate followed by its GREEN implementat
 - `sanity/editorial/EditorialDashboard.tsx` — global publication card, confirmation, retry, refresh and deployment status integration.
 - `sanity/editorial/deployment.ts` — bounded public GitHub run query, freshness state machine and polling cadence.
 - `sanity/README.md` — French editor workflow and troubleshooting guide.
-- `tests/unit/*.test.ts` — 251 passing tests across 14 suites, including publication-race, cross-tab and freshness invariants.
+- `tests/unit/*.test.ts` — 252 passing tests across 14 suites, including publication-race, cross-tab, blocked-card and freshness invariants.
 
 ## Decisions Made
 
@@ -208,9 +212,18 @@ Each TDD task was committed as a RED test gate followed by its GREEN implementat
 - **Verification:** Edition blocking/title, handled rejection and checklist-scope invariants.
 - **Committed in:** `2f769a6`, `ee93b6e`
 
+**6. [Rule 1 - Bug] Kept newly blocked confirmation batches visible**
+
+- **Found during:** Independent deep re-review (WR-06)
+- **Issue:** The controller rejected a changed incomplete batch, but the closed dialog left the main card rendering an older ready snapshot.
+- **Fix:** Added a visible-batch selector for the main card and requested inventory refresh when a changed batch is blocked.
+- **Files modified:** `sanity/editorial/dashboardLogic.ts`, `sanity/editorial/EditorialDashboard.tsx`, `tests/unit/dashboard-logic.test.ts`
+- **Verification:** A newly added incomplete draft produces a disabled two-item card naming its blocker, requests refresh and makes zero Actions API calls.
+- **Committed in:** `196e9f7`, `a4adf30`
+
 ---
 
-**Total deviations:** 5 auto-fixed groups (3 Rule 1, 1 Rule 1/2, 1 Rule 3).
+**Total deviations:** 6 auto-fixed groups (4 Rule 1, 1 Rule 1/2, 1 Rule 3).
 
 **Impact on plan:** Every correction is bounded to correctness, editor safety or the required seven-type contract; no package, secret, server, workflow or public-site behavior was added.
 
@@ -226,7 +239,8 @@ Each TDD task was committed as a RED test gate followed by its GREEN implementat
 - `npm run test:unit -- tests/unit/dashboard-logic.test.ts tests/unit/deployment.test.ts tests/unit/workflow-logic.test.ts tests/unit/editorial-checks.test.ts` — 130 passed.
 - `npm run lint` — passed.
 - `npm run typecheck` — passed with zero errors.
-- `npm run test:unit` — 14 suites and 251 tests passed.
+- `npm run test:unit -- tests/unit/dashboard-logic.test.ts` — 94 passed.
+- `npm run test:unit` — 14 suites and 252 tests passed.
 - `npm --prefix sanity run lint` — passed.
 - `npm --prefix sanity run build` — passed.
 
@@ -265,8 +279,8 @@ deployment and live/staging content exercise.
 
 ## Self-Check: PASSED
 
-All key implementation files, the original six RED/GREEN commits and the two deep-review
-remediation commits were found. The summary also passes `git diff --check`.
+All key implementation files, the original six RED/GREEN commits, both deep-review remediation
+commits and the WR-06 RED/GREEN commits were found. The summary also passes `git diff --check`.
 
 ---
 
