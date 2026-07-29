@@ -141,3 +141,12 @@ None - no external service configuration required.
 ---
 *Phase: 15-about-page-editorial-redesign*
 *Completed: 2026-07-29*
+
+## Self-Check: PASSED
+
+- FOUND: src/components/AboutPageBody.astro
+- FOUND: tests/e2e/about.spec.ts
+- FOUND: .planning/phases/15-about-page-editorial-redesign/15-03-SUMMARY.md
+- FOUND commit: 0044397 (feat(15-03): pin+shrink scroll-driver and fallback CSS)
+- FOUND commit: eee191d (test(15-03): motion-state e2e assertions)
+- FOUND commit: 504aa05 (docs(15-03): add plan summary)
