@@ -127,3 +127,14 @@ None - no external service configuration required by this plan itself. (The pre-
 ---
 *Phase: 15-about-page-editorial-redesign*
 *Completed: 2026-07-29*
+
+## Self-Check: PASSED
+
+All claimed files exist and all claimed commits are present in git history:
+- FOUND: src/components/AboutPageBody.astro
+- FOUND: tests/e2e/about.spec.ts
+- FOUND: .planning/phases/15-about-page-editorial-redesign/15-02-SUMMARY.md
+- FOUND: 03bcc5e
+- FOUND: bca2c4b
+- FOUND: 5b36821
+- FOUND: f76df90
