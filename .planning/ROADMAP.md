@@ -18,7 +18,7 @@ It also covers the **v1.2 milestone** (Phases 7–10): homepage polish before th
 
 It also covers the **v1.3 milestone "Éditions"** (Phases 11–14): a dedicated, non-transactional showcase for Romane's paper éditions (zines/artist books), added as a new content type and route tree alongside the existing Portfolio galleries, with its own main-nav entry. The four phases are sequenced by dependency and blast radius, per direct research grounded in this codebase: the `edition` Sanity schema and seeded content come first since every later phase builds on that shape existing (Phase 11); the build-time data-fetch layer and bilingual overview/detail routes come next, verifiable in isolation before touching anything shared (Phase 12); nav wiring — the one part of this feature that touches every-page shared chrome (`SiteHeader`, rendered from two independent call sites) — comes third, once the routes it points to already exist and work (Phase 13); and a dedicated verification/UAT pass closes the milestone, because this feature's dominant risk class is omission bugs (a missed locale, a missed sitemap entry, a missed nav call site) that don't fail loudly and need an explicit checklist rather than incidental testing (Phase 14). Selling éditions (price, stock, checkout) remains deferred to the future v1.x shop/checkout milestone.
 
-It also covers the **v1.4 milestone "Editorial Design Consistency"** (Phases 15–16): extending the giant-title `PageTitleHeader` identity already established on Contact and Éditions to the two remaining pages still showing the old treatment. Phase 15 covers the About page: first the mechanical `PageTitleHeader` title swap (ABOUT-03), then a broader layout rework (ABOUT-04) explored via multiple sketched proposals before implementation — the same process already used for the Contact page redesign this session — kept as a single phase because both requirements touch the same file (`AboutPageBody.astro`) and are sequential steps toward one end state: an About page that reads as a coherent editorial composition, not a title swap grafted onto an unchanged layout. Phase 16 covers the 404 page (ERR-01): an independent, explicitly visual-only redesign reusing the same component with no design exploration needed, since the target treatment is already fully specified by Contact/Éditions/About. No backend or content-model changes anywhere in this milestone — pure Astro component/CSS work.
+It also covers the **v1.4 milestone "Editorial Design Consistency"** (Phases 15–16): extending the giant-title `PageTitleHeader` identity already established on Contact and Éditions to the two remaining pages still showing the old treatment. Phase 15 covers the About page: first the mechanical `PageTitleHeader` title swap (ABOUT-03), then a broader layout rework (ABOUT-04) explored via multiple sketched proposals before implementation — the same process already used for the Contact page redesign this session — kept as a single phase because both requirements touch the same file (`AboutPageBody.astro`) and are sequential steps toward one end state: an About page that reads as a coherent editorial composition, not a title swap grafted onto an unchanged layout. Phase 16 covers the 404 page (ERR-01): originally scoped as a visual-only redesign reusing the shared `PageTitleHeader` component, this was revised during `/gsd-discuss-phase 16` (2026-07-29) into a fully custom, interactive concept instead — a full-bleed backdrop of Romane's photography popping at a pointer/touch-proximity-driven rate, with the AJS logo, a small "404" marker, and the bilingual message centered over a dimming scrim (see `16-CONTEXT.md`). No backend or content-model changes anywhere in this milestone — pure Astro component/CSS/vanilla-JS work.
 
 ## Phases
 
@@ -47,7 +47,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 13: Nav Integration** - Visitors can discover Éditions from the main site nav on every page, without it appearing on the homepage's photography carousel/grid (gaps found 2026-07-23 — see 13-VERIFICATION.md) (completed 2026-07-23)
 - [x] **Phase 14: Verification & UAT** - The Éditions feature closes with no omission-class gaps (locale, sitemap, nav call sites) and the "no commerce" boundary confirmed to hold (completed 2026-07-23)
 - [x] **Phase 15: About Page Editorial Redesign** - About page's title and broader layout adopt the shared PageTitleHeader editorial identity, via a sketch-explored layout redesign (completed 2026-07-29)
-- [ ] **Phase 16: 404 Page Editorial Redesign** - The 404 fallback page gets the same PageTitleHeader treatment, visual-only, content and links unchanged
+- [ ] **Phase 16: 404 Page Editorial Redesign** - The 404 fallback page gets a fully custom, interactive redesign: full-bleed photo backdrop popping at a pointer/touch-proximity-driven rate, centered AJS logo/404 marker/bilingual message (revised from the original PageTitleHeader-reuse plan, per user direction 2026-07-29 — see `16-CONTEXT.md`)
 
 ## Phase Details
 
@@ -115,15 +115,16 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
 
 ### Phase 16: 404 Page Editorial Redesign
 
-**Goal**: The 404 fallback page adopts the same editorial visual identity as Contact/Éditions/About, replacing today's bare, unstyled page.
-**Depends on**: Nothing (uses the already-shipped `PageTitleHeader` component; independent of Phase 15)
+**Goal**: The 404 fallback page becomes a fully custom, interactive redesign: a full-bleed backdrop of Romane's photography popping (hard-cutting) at a pointer/touch-proximity-driven rate, with the AJS logo, a small "404" marker, and the bilingual "Page introuvable / Not found" message centered over a dimming scrim.
+**Depends on**: Nothing (fully custom implementation reusing existing logo assets and the DetailHero scrim pattern; independent of Phase 15)
 **Requirements**: ERR-01
 **Success Criteria** (what must be TRUE):
 
-  1. Visiting a nonexistent URL shows the giant-title `PageTitleHeader` treatment (display title, halftone texture, hairline divider) instead of the current bare fallback.
-  2. 404 page copy/content is unchanged — only the visual presentation is redesigned.
-  3. No new navigation or recovery links are added — the change stays visual-only, per the explicit out-of-scope decision.
-  4. 404 page renders correctly in both French and English.
+  1. Full-bleed background of Romane's photography, one photo at a time, hard-cutting between photos — not the bare current fallback, not the `PageTitleHeader` treatment.
+  2. Photo-change rate is driven by pointer/touch distance from the screen's center (closer = faster, farther = slower), capped at roughly 3 changes/second maximum for photosensitive safety.
+  3. Centered over a dimming scrim: the AJS logo, a small "404" marker, the bilingual "Page introuvable / Not found" phrase, and the "Retourner à l'accueil" / "Return home" links side by side.
+  4. `prefers-reduced-motion` shows a slow, constant drift instead of pointer-driven popping.
+  5. 404 page renders correctly in both French and English (both languages shown together on every load, since this page has no per-locale routing).
 
 **Plans**: TBD
 **UI hint**: yes

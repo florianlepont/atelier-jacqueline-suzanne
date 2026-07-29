@@ -16,7 +16,7 @@ Extend the giant-title editorial identity established on Contact/Éditions (shar
 
 ### Error Page
 
-- [ ] **ERR-01**: 404 page uses the same editorial visual identity (`PageTitleHeader`: giant title, halftone texture, hairline divider) as Contact/Éditions/About
+- [ ] **ERR-01**: 404 page gets a fully custom, interactive redesign — a full-bleed backdrop of Romane's photography popping (hard-cutting) at a pointer/touch-proximity-driven rate, with the AJS logo, a small "404" marker, and the bilingual "Page introuvable / Not found" message centered over a dimming scrim (revised 2026-07-29 from the original `PageTitleHeader`-reuse framing — see `.planning/phases/16-404-page-editorial-redesign/16-CONTEXT.md`)
 
 ## Carried Forward (still open, not part of v1.3)
 
@@ -123,4 +123,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-07-05*
-*Last updated: 2026-07-29 — v1.4 (Editorial Design Consistency) roadmapped: ABOUT-03/04 → Phase 15 (About Page Editorial Redesign), ERR-01 → Phase 16 (404 Page Editorial Redesign); 3/3 mapped*
+*Last updated: 2026-07-29 — v1.4 (Editorial Design Consistency) roadmapped: ABOUT-03/04 → Phase 15 (About Page Editorial Redesign), ERR-01 → Phase 16 (404 Page Editorial Redesign); 3/3 mapped. ERR-01 wording revised same day during /gsd-discuss-phase 16 (custom interactive concept, no longer PageTitleHeader-based).*
