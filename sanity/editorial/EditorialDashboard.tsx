@@ -43,6 +43,7 @@ import {
   pluralize,
   preflightForConfirmation,
   preparePublicationBatch,
+  publicationBatchForDisplay,
   PUBLIC_DOCUMENTS_QUERY,
   PUBLIC_DOCUMENTS_QUERY_PARAMS,
   rowTypeLabels,
@@ -312,7 +313,7 @@ export function EditorialDashboard() {
     publicationState.phase,
   )
   const publicationTrackingFailed = publicationState.phase === 'tracking-error'
-  const publicationBatch = publicationState.batch ?? publicationSnapshot
+  const publicationBatch = publicationBatchForDisplay(publicationState, publicationSnapshot)
 
   const requestPublication = async () => {
     const batch = await preflightForConfirmation(publicationController)
@@ -450,10 +451,10 @@ export function EditorialDashboard() {
                         Mettre le site à jour
                       </Heading>
                       <Text size={1} muted>
-                        {publicationSnapshot.total === 0
+                        {publicationBatch.total === 0
                           ? 'Aucune modification publique en attente.'
-                          : `${publicationSnapshot.total} ${pluralize(
-                              publicationSnapshot.total,
+                          : `${publicationBatch.total} ${pluralize(
+                              publicationBatch.total,
                               'contenu modifié',
                               'contenus modifiés',
                             )} depuis la dernière mise en ligne.`}
@@ -466,8 +467,8 @@ export function EditorialDashboard() {
                     disabled={
                       publicationBusy ||
                       publicationTrackingFailed ||
-                      publicationSnapshot.total === 0 ||
-                      publicationSnapshot.blockedRows.length > 0
+                      publicationBatch.total === 0 ||
+                      publicationBatch.blockedRows.length > 0
                     }
                     loading={publicationBusy}
                     onClick={() => void requestPublication()}
@@ -475,9 +476,9 @@ export function EditorialDashboard() {
                   />
                 </Flex>
 
-                {publicationSnapshot.pairs.length > 0 && (
+                {publicationBatch.pairs.length > 0 && (
                   <Stack space={2}>
-                    {publicationSnapshot.pairs.map((pair) => (
+                    {publicationBatch.pairs.map((pair) => (
                       <Flex
                         key={pair.id}
                         align="center"
@@ -508,13 +509,13 @@ export function EditorialDashboard() {
                   </Stack>
                 )}
 
-                {publicationSnapshot.blockedRows.length > 0 && (
+                {publicationBatch.blockedRows.length > 0 && (
                   <Card padding={3} radius={2} tone="critical">
                     <Stack space={3}>
                       <Text size={1} weight="semibold">
                         Le lot entier est bloqué par des informations indispensables.
                       </Text>
-                      {publicationSnapshot.blockedRows.map((blocked) => (
+                      {publicationBatch.blockedRows.map((blocked) => (
                         <IntentLink
                           key={blocked.id}
                           intent="edit"

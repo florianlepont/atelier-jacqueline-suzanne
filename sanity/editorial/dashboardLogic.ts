@@ -406,6 +406,40 @@ export function batchFingerprint(batch: PublicationBatch): string {
   )
 }
 
+function inventoryHasCaughtUp(
+  inventory: PublicationBatch,
+  controllerBatch: PublicationBatch,
+): boolean {
+  if (inventory.pairs.length !== controllerBatch.pairs.length) return false
+  const inventoryById = new Map(inventory.pairs.map((pair) => [pair.id, pair]))
+  return controllerBatch.pairs.every((controllerPair) => {
+    const inventoryPair = inventoryById.get(controllerPair.id)
+    if (!inventoryPair) return false
+    if (inventoryPair.draft._rev === controllerPair.draft._rev) return true
+    const inventoryUpdatedAt = new Date(inventoryPair.draft._updatedAt).getTime()
+    const controllerUpdatedAt = new Date(controllerPair.draft._updatedAt).getTime()
+    return (
+      Number.isFinite(inventoryUpdatedAt) &&
+      Number.isFinite(controllerUpdatedAt) &&
+      inventoryUpdatedAt > controllerUpdatedAt
+    )
+  })
+}
+
+export function publicationBatchForDisplay(
+  state: PublicationControllerState,
+  inventory: PublicationBatch,
+): PublicationBatch {
+  if (
+    !state.batch ||
+    !['confirming', 'publishing', 'error'].includes(state.phase) ||
+    inventoryHasCaughtUp(inventory, state.batch)
+  ) {
+    return inventory
+  }
+  return state.batch
+}
+
 export async function preflightForConfirmation(controller: {
   preflight(): Promise<PublicationBatch>
 }): Promise<PublicationBatch | null> {
@@ -559,6 +593,14 @@ export function createPublicationController({
           confirmedBatch = freshBatch
           const reason = new ConfirmationChangedError()
           setState({phase: 'confirming', batch: freshBatch, error: reason.message})
+          if (!freshBatch.ready) {
+            try {
+              await onRefresh?.()
+            } catch {
+              // The controller batch remains the visible fail-closed source of
+              // truth when the best-effort inventory refresh cannot complete.
+            }
+          }
           throw reason
         }
         if (!freshBatch.ready) {
