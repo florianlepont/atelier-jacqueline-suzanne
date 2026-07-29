@@ -81,11 +81,13 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 **v1.3 (Verification & UAT — Phase 14, shipped 2026-07-23):**
 - [x] Romane (non-technical) can independently add/edit éditions via Sanity without touching code (CMS-04) — genuinely confirmed by Romane's own hands-on create/edit/publish/drag-reorder pass in the hosted Studio (closing the drag-reorder gap `11-UAT.md` waived), not just Phase 11's automated implementation — Phase 14
 
+**v1.4 (About Page Editorial Redesign — Phase 15, shipped 2026-07-29):**
+- [x] About page's title uses the shared `PageTitleHeader` component, pixel-parity with Contact/Éditions (title/eyebrow land at the same distance from the site header) — ABOUT-03, Phase 15
+- [x] About page's broader layout reworked for visual coherence with the Contact/Éditions editorial identity: standalone bio lead, circular portrait accent, pinned scroll-shrink hero-photo reveal, two-column numbered sections, chosen from a reviewed 3-variant design sketch (sketch-014) — ABOUT-04, Phase 15
+
 ### Active
 
 **v1.4 (Editorial Design Consistency, this milestone):**
-- [ ] About page's title uses the shared `PageTitleHeader` component (same treatment as Contact/Éditions)
-- [ ] About page's broader layout reworked for visual coherence with the Contact/Éditions editorial identity
 - [ ] 404 page receives the same visual/editorial redesign (content and links unchanged)
 
 **v1.0 (Phase 5, deliberately deferred — not part of any shipped milestone):**
@@ -168,4 +170,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-28 — milestone v1.4 (Editorial Design Consistency) started; v1.3 Éditions fully live on main/GitHub Pages staging, Phase 5 (domain cutover) and the broader v1.x candidates remain deliberately deferred*
+*Last updated: 2026-07-29 — Phase 15 (About Page Editorial Redesign) complete: ABOUT-03/04 validated. Phase 16 (404 Page Editorial Redesign) is the last phase of v1.4.*
