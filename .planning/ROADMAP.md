@@ -46,7 +46,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 12: Data-Fetch Layer & Routes** - Visitors can browse an Éditions overview page and open per-édition detail pages, bilingually, with zero commerce affordances (completed 2026-07-22)
 - [x] **Phase 13: Nav Integration** - Visitors can discover Éditions from the main site nav on every page, without it appearing on the homepage's photography carousel/grid (gaps found 2026-07-23 — see 13-VERIFICATION.md) (completed 2026-07-23)
 - [x] **Phase 14: Verification & UAT** - The Éditions feature closes with no omission-class gaps (locale, sitemap, nav call sites) and the "no commerce" boundary confirmed to hold (completed 2026-07-23)
-- [ ] **Phase 15: About Page Editorial Redesign** - About page's title and broader layout adopt the shared PageTitleHeader editorial identity, via a sketch-explored layout redesign
+- [x] **Phase 15: About Page Editorial Redesign** - About page's title and broader layout adopt the shared PageTitleHeader editorial identity, via a sketch-explored layout redesign (completed 2026-07-29)
 - [ ] **Phase 16: 404 Page Editorial Redesign** - The 404 fallback page gets the same PageTitleHeader treatment, visual-only, content and links unchanged
 
 ## Phase Details
@@ -94,7 +94,7 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
   4. About page's existing bio/practice copy is fully preserved — only presentation changes, no content rewrite.
   5. About page renders correctly in both French and English.
 
-**Plans**: 3/4 plans executed
+**Plans**: 4/4 plans complete
 **Wave 1**
 
 - [x] 15-01-PLAN.md — About-page layout sketch exploration (2-3 variants → named winner; resolves D-05/D-07) [Wave 1]
@@ -109,7 +109,7 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 15-04-PLAN.md — Full-gate + human-verify against all 5 success criteria [Wave 4]
+- [x] 15-04-PLAN.md — Full-gate + human-verify against all 5 success criteria [Wave 4]
 
 **UI hint**: yes
 
@@ -151,7 +151,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 12. Data-Fetch Layer & Routes | 3/3 | Complete    | 2026-07-22 |
 | 13. Nav Integration | 2/2 | Complete    | 2026-07-23 |
 | 14. Verification & UAT | 4/4 | Complete    | 2026-07-23 |
-| 15. About Page Editorial Redesign | 3/4 | In Progress|  |
+| 15. About Page Editorial Redesign | 4/4 | Complete   | 2026-07-29 |
 | 16. 404 Page Editorial Redesign | 0/TBD | Not started | - |
 
 ## Milestone Scope Note
