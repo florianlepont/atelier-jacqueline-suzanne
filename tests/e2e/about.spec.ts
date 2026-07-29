@@ -221,6 +221,26 @@ test.describe('about hero scroll-reveal (ABOUT-04)', () => {
       await expect(pin).toBeVisible();
       const pinPosition = await pin.evaluate((el) => getComputedStyle(el).position);
       expect(pinPosition).toBe('sticky');
+
+      // Code review CR-01: the pin-position check above previously passed
+      // even when the shrink itself was silently broken (CSS-over-constraint
+      // on the animated element). Assert the actual rendered width of the
+      // animated wrapper, not just that something is visible/sticky.
+      const photoTrack = page.locator('.about-page__exhibition-photo-track');
+      const pinBoxBefore = await pin.boundingBox();
+      const trackBoxBefore = await photoTrack.boundingBox();
+      expect(trackBoxBefore!.width).toBeCloseTo(pinBoxBefore!.width, 0);
+
+      await page.evaluate(() => {
+        const outerTrack = document.querySelector('.about-page__exhibition-track')!;
+        window.scrollBy(0, outerTrack.getBoundingClientRect().top + 500);
+      });
+      await expect(async () => {
+        const trackBoxAfter = await photoTrack.boundingBox();
+        const pct = (trackBoxAfter!.width / pinBoxBefore!.width) * 100;
+        expect(pct).toBeGreaterThan(80);
+        expect(pct).toBeLessThan(92);
+      }).toPass();
     });
 
     test(`${localeLabel} About page: prefers-reduced-motion: reduce shows the settled end-state immediately, no sticky pin`, async ({
@@ -236,6 +256,15 @@ test.describe('about hero scroll-reveal (ABOUT-04)', () => {
 
       const photo = page.locator('.about-page__exhibition-photo');
       await expect(photo).toBeVisible();
+
+      // Code review CR-01/WR-01: the settled end-state must already show the
+      // ~86%-width shrink with zero scrolling, not just an unshrunk visible photo.
+      const photoTrack = page.locator('.about-page__exhibition-photo-track');
+      const pinBox = await pin.boundingBox();
+      const trackBox = await photoTrack.boundingBox();
+      const pct = (trackBox!.width / pinBox!.width) * 100;
+      expect(pct).toBeGreaterThan(80);
+      expect(pct).toBeLessThan(92);
     });
   }
 

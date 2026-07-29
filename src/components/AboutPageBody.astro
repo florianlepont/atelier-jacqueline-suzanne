@@ -57,17 +57,19 @@ const {
   {exhibitionImage && (
     <div class="about-page__exhibition-track">
       <div class="about-page__exhibition-pin">
-        <figure class="about-page__exhibition">
-          <img
-            src={fullSizeUrl(exhibitionImage, 1600)}
-            srcset={responsiveImageSrcSet(exhibitionImage, [480, 768, 1200, 1600])}
-            sizes="(max-width: 767px) 100vw, 1180px"
-            alt={exhibitionAlt}
-            class="about-page__exhibition-photo"
-            loading="lazy"
-            decoding="async"
-          />
-        </figure>
+        <div class="about-page__exhibition-photo-track">
+          <figure class="about-page__exhibition">
+            <img
+              src={fullSizeUrl(exhibitionImage, 1600)}
+              srcset={responsiveImageSrcSet(exhibitionImage, [480, 768, 1200, 1600])}
+              sizes="(max-width: 767px) 100vw, 1180px"
+              alt={exhibitionAlt}
+              class="about-page__exhibition-photo"
+              loading="lazy"
+              decoding="async"
+            />
+          </figure>
+        </div>
       </div>
     </div>
   )}
@@ -115,9 +117,15 @@ const {
   }
 
   const track = document.querySelector<HTMLElement>('.about-page__exhibition-track');
-  const photo = document.querySelector<HTMLElement>('.about-page__exhibition-photo');
+  // The animated element is this wrapper, NOT the <img> (.about-page__exhibition-photo)
+  // — the img keeps a static width:100%/height:100%/object-fit:cover and is never
+  // touched by JS. Animating left/right directly on the img would be CSS-over-
+  // constrained (left + width:100% + right all non-auto on a replaced element), so
+  // the browser drops `right` and the image never actually shrinks, just clips.
+  // This wrapper has no explicit width, so left/right alone correctly determine it.
+  const photoTrack = document.querySelector<HTMLElement>('.about-page__exhibition-photo-track');
 
-  if (track && photo) {
+  if (track && photoTrack) {
     // About's hero sits mid-page (below the header/bio), not a full-100svh
     // page hero like DetailHero's — REVEAL_DISTANCE is a new, smaller value
     // sized to About's gentler ~86% settle, not DetailHero's literal 900px.
@@ -128,16 +136,16 @@ const {
     function onProgress(t: number) {
       const width = lerp(100, 86, t);
       const inset = (100 - width) / 2;
-      photo!.style.left = `${inset}%`;
-      photo!.style.right = `${inset}%`;
+      photoTrack!.style.left = `${inset}%`;
+      photoTrack!.style.right = `${inset}%`;
     }
 
     function clearInlineStyles() {
       // CSS end-state (reduced-motion / mobile media queries) must fully
       // control layout when the driver is inactive — an inline style set
       // by a previous desktop run must never outlive a matchMedia change.
-      photo!.style.removeProperty('left');
-      photo!.style.removeProperty('right');
+      photoTrack!.style.removeProperty('left');
+      photoTrack!.style.removeProperty('right');
     }
 
     const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -276,6 +284,20 @@ const {
     overflow: hidden;
   }
 
+  /* The element the <script> above actually animates via left/right. It
+     deliberately carries NO explicit width — position:absolute + inset:0
+     with only left/right set inline lets the browser derive width from
+     those two insets. .about-page__exhibition (below) and its <img> just
+     passively fill whatever box this wrapper resolves to; animating the
+     <img> directly (the pre-fix approach) was CSS-over-constrained, since
+     that element also has an explicit width:100% rule — see code review
+     CR-01 (15-REVIEW.md). */
+  .about-page__exhibition-photo-track {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+
   .about-page__exhibition {
     position: relative;
     width: 100%;
@@ -361,9 +383,14 @@ const {
       aspect-ratio: 16 / 10;
     }
 
-    .about-page__exhibition-photo {
-      left: 0;
-      right: 0;
+    /* .about-page__exhibition-pin's height is auto here, so its only child
+       (.about-page__exhibition-photo-track) must stay in normal flow —
+       left absolute, an auto-height ancestor with only an out-of-flow
+       child resolves to 0 height, collapsing the whole band. Figure's own
+       aspect-ratio above still drives the visible height; this wrapper no
+       longer needs to size or position anything on mobile. */
+    .about-page__exhibition-photo-track {
+      position: relative;
     }
 
     .about-page__sections {
@@ -394,7 +421,7 @@ const {
       position: relative;
     }
 
-    .about-page__exhibition-photo {
+    .about-page__exhibition-photo-track {
       left: 7%;
       right: 7%;
     }
