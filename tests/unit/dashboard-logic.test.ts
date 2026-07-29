@@ -24,6 +24,7 @@ import {
   pluralize,
   preparePublicationBatch,
   preflightForConfirmation,
+  publicationBatchForDisplay,
 } from '../../sanity/editorial/dashboardLogic';
 import type {DashboardDocument, DashboardRow} from '../../sanity/editorial/dashboardLogic';
 import {summarizeChecks} from '../../sanity/editorial/checks';
@@ -391,6 +392,44 @@ describe('publication controller', () => {
     expect(controller.state.batch?.pairs.map(({id}) => id)).toEqual([
       'homePage',
       'gallery-new',
+    ]);
+  });
+
+  it('closes a changed incomplete batch into the controller-visible blocked card state', async () => {
+    const first = [
+      publicationDocument('drafts.homePage', 'homePage', {
+        intro: {fr: 'Bienvenue', en: 'Welcome'},
+      }),
+    ];
+    const changed = [
+      ...first,
+      publicationDocument('drafts.gallery-incomplete-after-confirmation', 'gallery', {
+        title: 'Collection incomplète ajoutée',
+        images: [],
+      }),
+    ];
+    const staleSnapshot = preparePublicationBatch(first);
+    const onRefresh = vi.fn();
+    const client = {
+      fetch: vi.fn().mockResolvedValueOnce(first).mockResolvedValueOnce(changed),
+      action: vi.fn(),
+    };
+    const controller = createPublicationController({client, onRefresh});
+
+    await controller.preflight();
+    await expect(controller.publish()).rejects.toBeInstanceOf(ConfirmationChangedError);
+
+    const visibleBatch = publicationBatchForDisplay(controller.state, staleSnapshot);
+    expect(client.action).not.toHaveBeenCalled();
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+    expect(controller.state.phase).toBe('confirming');
+    expect(visibleBatch.total).toBe(2);
+    expect(visibleBatch.ready).toBe(false);
+    expect(visibleBatch.blockedRows).toEqual([
+      expect.objectContaining({
+        id: 'gallery-incomplete-after-confirmation',
+        title: 'Collection incomplète ajoutée',
+      }),
     ]);
   });
 
