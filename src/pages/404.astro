@@ -1,60 +1,265 @@
 ---
-// Bilingual 404 page (RESEARCH.md "Don't Hand-Roll" — Apache does not
-// auto-wire Astro's prerendered 404 into its own error handling; this page
-// is paired with public/.htaccess's `ErrorDocument 404 /404.html`). Renders
-// through the same BaseLayout chrome as every other page.
+// Full-bleed, bilingual, editorial 404 page (16-CONTEXT.md D-01 through
+// D-12 -- the fully custom, interactive concept that supersedes the stale
+// PageTitleHeader-reuse framing still described in ROADMAP.md/REQUIREMENTS.md
+// for this phase; 16-CONTEXT.md is authoritative). Apache serves this one
+// static file for every 404 across the whole site
+// (public/.htaccess: `ErrorDocument 404 /404.html`), so FR and EN content
+// must both appear together on every load -- unchanged by this redesign.
+//
+// This plan (16-02) builds the STATIC half only: build-time photo-pool
+// sourcing, the stacked background <img> markup (first photo visible by
+// default -- the entire no-JS fallback, RESEARCH Pattern 2), the radial
+// dimming scrim, and the centered bilingual content. The pointer/touch-
+// driven pop-rate engine <script> is added on top of this in plan 16-03 --
+// this file intentionally ships with NO <script> yet.
 import { getRelativeLocaleUrl } from 'astro:i18n';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { getGalleries } from '../lib/sanity';
+import { fullSizeUrl, responsiveImageSrcSet } from '../lib/image';
+import { pickHeroIndex } from '../lib/image-orientation';
 
-// CR-01: astro:i18n's URL helpers are the only thing that apply the
-// deployed `base` (e.g. "/ajs-website/" on GitHub Pages) to a link — plain
-// literal href strings are never rewritten. Every other "return home" link
-// in the codebase (BaseLayout's nav, LanguageSwitcher) already goes through
-// getRelativeLocaleUrl(); this page must too, or a visitor who lands here
-// under a non-root base gets bounced off the site entirely.
+// CR-01 (Phase 1 review): astro:i18n's URL helpers are the only thing that
+// apply the deployed `base` (e.g. "/ajs-website/" on GitHub Pages) to a
+// link -- plain literal href strings are never rewritten. Rendered below as
+// plain literal anchors, never a JS-computed/conditional href (RESEARCH
+// Pitfall 5 -- tests/scripts/verify-static-artifact.mjs does an exact-string
+// href="${base}" match against the built 404.html).
 const frHome = getRelativeLocaleUrl('fr', '');
 const enHome = getRelativeLocaleUrl('en', '');
+
+// Base-aware logo path, computed locally exactly as BaseLayout.astro does
+// (this page renders standalone -- it does not receive logoWhiteSrc as a
+// Prop from anywhere). Per 16-UI-SPEC.md Color, default to the white
+// variant unconditionally: the radial scrim below guarantees contrast
+// against every pool photo, so no per-photo dominant-color analysis or
+// logoBlackSrc is needed.
+const assetBase = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '');
+const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
+
+// Pattern 1 (16-RESEARCH.md): build-time photo-pool sourcing, reusing
+// index.astro's exact gallery-cover-photo selection pipeline -- but
+// deliberately WITHOUT its `showOnHomePage` filter (RESEARCH A3: this pool
+// wants maximum variety across the whole site, not homepage curation).
+// getGalleries() already only returns published galleries (its own GROQ
+// query already applies PUBLISHED_GALLERY_FILTER), so no extra visibility
+// filter is needed here. Every pool photo is decorative background, never
+// documented content, so alt is unconditionally '' (RESEARCH Pitfall 6) --
+// unlike index.astro/DetailHero.astro, no per-image Sanity alt is read.
+const pool = (await getGalleries())
+  .filter((gallery) => gallery.images.length > 0)
+  .map((gallery) => {
+    const cover = gallery.images[pickHeroIndex(gallery.images)];
+    return {
+      src: fullSizeUrl(cover, 1920),
+      srcset: responsiveImageSrcSet(cover),
+    };
+  })
+  // T-16-01 (threat model): cap the pool for client resource-exhaustion
+  // safety -- bounds preload competition regardless of how many galleries
+  // Sanity ever ends up holding.
+  .slice(0, 16);
 ---
 
-<BaseLayout title="Page introuvable / Page not found" noIndex>
+<BaseLayout
+  title="Page introuvable / Page not found"
+  noIndex
+  headerVariant="none"
+  hideFooter
+>
   <div class="not-found">
-    <section>
-      <h1>Page introuvable</h1>
-      <p>Page introuvable. Retournez à l'accueil.</p>
-      <p><a href={frHome}>Retourner à l'accueil</a></p>
-    </section>
-    <section>
-      <h2>Page not found</h2>
-      <p>Page not found. Return home.</p>
-      <p><a href={enHome}>Return home</a></p>
-    </section>
+    {pool.length > 0 && (
+      <div class="not-found__pool" aria-hidden="true">
+        {pool.map((photo, index) => (
+          <img
+            class={index === 0 ? 'pop-photo is-active' : 'pop-photo'}
+            src={photo.src}
+            srcset={photo.srcset}
+            sizes="100vw"
+            alt=""
+            loading="eager"
+            fetchpriority={index === 0 ? undefined : 'low'}
+          />
+        ))}
+      </div>
+    )}
+    <div class="not-found__scrim" aria-hidden="true"></div>
+    <div class="not-found__content">
+      <img class="not-found__logo" src={logoWhiteSrc} alt="" width="1024" height="1536" />
+      <p class="not-found__marker">404</p>
+      <h1 class="not-found__phrase">
+        <span>Page introuvable</span>
+        <br />
+        <span>Not found</span>
+      </h1>
+      <p class="not-found__links">
+        <a href={frHome}>Retourner à l'accueil</a>
+        <span aria-hidden="true"> · </span>
+        <a href={enHome}>Return home</a>
+      </p>
+    </div>
   </div>
 </BaseLayout>
 
+<style is:global>
+  /* RESEARCH Pattern 4 belt-and-braces: touch-action: none on .not-found
+     (below) has historically had partial support on iOS Safari, so also
+     suppress body scroll on this single-viewport, no-scroll page. is:global
+     is safe here because this <style> only ever ships as part of this one
+     page's build output (404.astro is a top-level page, never imported by
+     another component). */
+  body {
+    overflow: hidden;
+  }
+</style>
+
 <style>
+  /* Container: full-viewport, no scroll (single-viewport composition, no
+     PageTitleHeader/footer chrome -- see BaseLayout headerVariant="none"/
+     hideFooter above). --color-ink prevents a white flash before the first
+     pool photo paints (UI-SPEC Color, Dominant fallback). touch-action: none
+     keeps the page's own touch-drag from being hijacked into a scroll/pan
+     gesture, since the pop-rate engine (plan 16-03) will read pointer/touch
+     position from this same element. */
   .not-found {
-    max-width: 640px;
-    margin: 0 auto;
-    padding: 48px 16px; /* 2xl vertical, md horizontal */
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    background: var(--color-ink);
+    display: grid;
+    place-items: center;
+    touch-action: none;
+  }
+
+  .not-found__pool {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+
+  /* D-05/RESEARCH Pattern 2: hard-cut swap mechanic. Deliberately NO
+     `transition` property -- that absence IS the hard cut. Never
+     `display: none` (RESEARCH Pitfall 2 -- would suppress the browser's
+     normal eager fetch for the hidden photos and reintroduce a network
+     stall risk at the capped pop rate plan 16-03 introduces). */
+  .pop-photo {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    z-index: 0;
+  }
+
+  /* The first pool photo carries this class directly in the static markup
+     above -- this IS the entire no-JS fallback (RESEARCH Pattern 2): a
+     single correct photo, already visible, with zero JS dependency. */
+  .pop-photo.is-active {
+    opacity: 1;
+    z-index: 1;
+  }
+
+  /* D-07/UI-SPEC Color: radial, center-weighted dimming -- NOT
+     DetailHero.astro's bottom-anchored linear-gradient scrim, which would
+     under-dim this page's centered composition (16-PATTERNS.md). */
+  .not-found__scrim {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse at center,
+      rgba(26, 26, 26, 0.72) 0%,
+      rgba(26, 26, 26, 0.55) 45%,
+      rgba(26, 26, 26, 0.35) 100%
+    );
+  }
+
+  /* D-06: centered content -- logo, "404" marker, bilingual phrase, home
+     links -- reading order top to bottom. */
+  .not-found__content {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     text-align: center;
+    gap: var(--space-sm);
+    padding: var(--space-lg) var(--space-md);
+    max-width: min(90vw, 640px);
+    color: #FFFFFF;
   }
 
-  .not-found h1,
-  .not-found h2 {
-    font-size: 20px; /* Heading role */
+  @media (max-width: 480px) {
+    .not-found__content {
+      padding-inline: var(--space-xl);
+    }
+  }
+
+  /* D-06/UI-SPEC Spacing exception: much larger than the header's 56px
+     logo -- a one-off hero-scale exception, same category as
+     DetailHero.astro's own --text-display-size clamp overrides. */
+  .not-found__logo {
+    width: clamp(120px, 14vw, 160px);
+    height: auto;
+  }
+
+  /* Label role (UI-SPEC Typography), accent underline mirroring
+     DetailHero.astro's .detail-hero__format convention verbatim. */
+  .not-found__marker {
+    display: inline-block;
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: var(--text-label-size);
     font-weight: 600;
+    line-height: var(--text-label-leading);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    border-bottom: 2px solid var(--color-accent);
+    padding-bottom: var(--space-xs);
+  }
+
+  /* Display role (UI-SPEC Typography) -- both bilingual lines at the same
+     size/weight, since neither language is "primary" on this un-routed
+     page (structural constraint: FR+EN must both appear on every load). */
+  .not-found__phrase {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(28px, 5vw, 40px);
+    font-weight: var(--weight-semibold);
     line-height: 1.2;
-    margin: 0 0 16px;
   }
 
-  .not-found p {
-    font-size: 16px; /* Body role */
-    font-weight: 400;
-    line-height: 1.5;
-    margin: 0 0 16px;
+  /* D-06: side by side, not stacked. */
+  .not-found__links {
+    display: flex;
+    gap: var(--space-lg);
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    margin-top: var(--space-md);
   }
 
-  .not-found a {
+  .not-found__links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap-target-min);
+    font-family: var(--font-display);
+    font-size: var(--text-label-size);
+    font-weight: 600;
+    line-height: var(--text-label-leading);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #FFFFFF;
+    text-decoration: none;
+  }
+
+  /* UI-SPEC Color: accent reserved for exactly the marker underline (above)
+     and this hover/focus state -- never the logo, never the phrase. */
+  .not-found__links a:hover,
+  .not-found__links a:focus-visible {
     color: var(--color-accent);
+    text-decoration: none;
   }
 </style>
