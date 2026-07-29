@@ -20,6 +20,7 @@ tech-stack:
     - Canonical public-type registry shared by schemas, actions and dashboard inventory
     - Atomic multi-document publication through one Sanity Actions API call
     - Fail-closed deployment freshness derived from authoritative publication timestamps
+    - Confirmation fingerprint binding membership and both draft/published revisions
 
 key-files:
   created:
@@ -40,6 +41,7 @@ key-decisions:
   - "The seven public types share one canonical registry; exhibition remains an independent Agenda workflow."
   - "Public document panes save drafts only; the dashboard publishes every ready draft in one guarded Actions API call."
   - "Site freshness is proven only by a successful GitHub run created at or after the authoritative Sanity publication timestamp."
+  - "Same-second Sanity/GitHub timestamps are treated as ambiguous and resolve to unknown."
   - "Real editor permissions and webhook fan-out remain unknown until separately authorized manual UAT."
 
 patterns-established:
@@ -95,7 +97,7 @@ coverage:
     human_judgment: true
     rationale: "Requires a deployed Studio, the real Editor account and separately authorized mutations on the live dataset."
 
-duration: 14min
+duration: 32min
 completed: 2026-07-29
 status: complete
 ---
@@ -106,17 +108,18 @@ status: complete
 
 ## Performance
 
-- **Duration:** 14 min
+- **Duration:** 32 min
 - **Started:** 2026-07-29T09:21:58Z
-- **Completed:** 2026-07-29T09:35:32Z
-- **Tasks:** 3
-- **Files modified:** 17
+- **Completed:** 2026-07-29T09:53:36Z
+- **Tasks:** 3 plus deep-review remediation
+- **Files modified:** 18
 
 ## Accomplishments
 
 - Centralized the seven public types and five singletons, made every public checklist fail closed, and removed per-document Publish/Unpublish paths while preserving draft-management actions.
 - Added a dominant dashboard workflow that deduplicates drafts, exposes four publication categories, blocks incomplete or unresolved content, and issues exactly one revision-guarded Sanity Actions API request.
 - Added post-publication GitHub state tracking with qualified runs, honest waiting/failure/unknown states, adaptive polling and an editor-facing French operating guide.
+- Closed all four critical and five warning findings from deep review with revision-bound confirmation, explicit committed/tracking states, cross-tab timestamps and complete inspector coverage.
 
 ## Task Commits
 
@@ -131,6 +134,9 @@ Each TDD task was committed as a RED test gate followed by its GREEN implementat
 3. **Task 3: Rendre la fraîcheur GitHub vérifiable et documenter le workflow**
    - `b71af3d` — failing deployment freshness tests
    - `cd7c537` — qualified-run state machine, polling integration and editorial guide
+4. **Deep review remediation**
+   - `2f769a6` — RED regressions for all critical findings and warnings
+   - `ee93b6e` — race-safe publication, committed tracking and honest freshness fixes
 
 ## Files Created/Modified
 
@@ -143,13 +149,14 @@ Each TDD task was committed as a RED test gate followed by its GREEN implementat
 - `sanity/editorial/EditorialDashboard.tsx` — global publication card, confirmation, retry, refresh and deployment status integration.
 - `sanity/editorial/deployment.ts` — bounded public GitHub run query, freshness state machine and polling cadence.
 - `sanity/README.md` — French editor workflow and troubleshooting guide.
-- `tests/unit/*.test.ts` — 234 passing tests across 14 suites, including new publication and freshness invariants.
+- `tests/unit/*.test.ts` — 251 passing tests across 14 suites, including publication-race, cross-tab and freshness invariants.
 
 ## Decisions Made
 
 - `exhibition` keeps its independent Agenda checklist and publication behavior because no current public route consumes it.
 - Sanity Content Lake remains the authorization and atomicity boundary; the browser receives no GitHub secret and makes only public read-only GitHub API calls.
 - Published document `_updatedAt` values are the authoritative reference for qualifying a post-publication GitHub run.
+- The maximum valid local/remote `_updatedAt` wins; same-second GitHub candidates fail closed because GitHub timestamps are less precise.
 - The dashboard fails closed for missing checklists, strong-reference failures, timestamp anomalies, permission errors and API errors.
 
 ## Deviations from Plan
@@ -165,11 +172,47 @@ Each TDD task was committed as a RED test gate followed by its GREEN implementat
 - **Verification:** `npm --prefix sanity run lint` and `npm --prefix sanity run build`
 - **Committed in:** `ac634b1`
 
+**2. [Rule 1 - Bug] Bound dispatch to the batch and revisions the editor confirmed**
+
+- **Found during:** Deep code review (CR-02)
+- **Issue:** A new draft or concurrent edit could enter the transaction after confirmation.
+- **Fix:** Added membership/revision fingerprints, re-confirmation on change, and `ifDraftRevisionId` plus `ifPublishedRevisionId` optimistic guards.
+- **Files modified:** `sanity/editorial/dashboardLogic.ts`, `sanity/editorial/EditorialDashboard.tsx`, `tests/unit/dashboard-logic.test.ts`
+- **Verification:** Added-draft, draft-revision and published-revision race regressions.
+- **Committed in:** `2f769a6`, `ee93b6e`
+
+**3. [Rule 1 - Bug] Separated committed Sanity success from tracking failure**
+
+- **Found during:** Deep code review (CR-03)
+- **Issue:** A post-commit timestamp failure was presented as a failed publication and offered a dangerous retry.
+- **Fix:** Added committed/tracking-error states, immediate inventory refresh, full timestamp-ID coverage validation and a tracking-only retry.
+- **Files modified:** `sanity/editorial/dashboardLogic.ts`, `sanity/editorial/EditorialDashboard.tsx`, `tests/unit/dashboard-logic.test.ts`
+- **Verification:** Timestamp-query and partial-response regressions; atomic action count remains one.
+- **Committed in:** `2f769a6`, `ee93b6e`
+
+**4. [Rule 1 - Bug] Made deployment freshness and dashboard copy fail closed**
+
+- **Found during:** Deep code review (CR-01, CR-04, WR-02, WR-03)
+- **Issue:** Stale local timestamps, unconditional “à jour” copy, precision ambiguity and malformed irrelevant runs could misreport freshness.
+- **Fix:** Use the maximum valid publication timestamp, derive the subtitle from deployment state, return unknown for same-second ambiguity and validate only the selected run.
+- **Files modified:** `sanity/editorial/deployment.ts`, `sanity/editorial/EditorialDashboard.tsx`, `tests/unit/deployment.test.ts`
+- **Verification:** Cross-tab, fractional/exact-second, malformed-old-run and state-copy regressions.
+- **Committed in:** `2f769a6`, `ee93b6e`
+
+**5. [Rule 1/2 - Bug and Missing Critical] Completed editor-facing recovery and checklist coverage**
+
+- **Found during:** Deep code review (WR-01, WR-04, WR-05)
+- **Issue:** Editions were generically named, preflight rejection escaped the UI, and edition inspectors were not registered.
+- **Fix:** Added edition titles/fallbacks, handled preflight helpers, and derived inspector types from all seven public types plus exhibition.
+- **Files modified:** `sanity/editorial/dashboardLogic.ts`, `sanity/editorial/EditorialDashboard.tsx`, `sanity/editorial/workflowLogic.ts`, `sanity/editorial/DocumentChecklist.tsx`
+- **Verification:** Edition blocking/title, handled rejection and checklist-scope invariants.
+- **Committed in:** `2f769a6`, `ee93b6e`
+
 ---
 
-**Total deviations:** 1 auto-fixed (1 blocking issue).
+**Total deviations:** 5 auto-fixed groups (3 Rule 1, 1 Rule 1/2, 1 Rule 3).
 
-**Impact on plan:** The bounded import-only fix was necessary for the planned build gate and introduced no functional scope.
+**Impact on plan:** Every correction is bounded to correctness, editor safety or the required seven-type contract; no package, secret, server, workflow or public-site behavior was added.
 
 ## Issues Encountered
 
@@ -180,10 +223,10 @@ Each TDD task was committed as a RED test gate followed by its GREEN implementat
 
 - `npm run test:unit -- tests/unit/editorial-checks.test.ts tests/unit/workflow-logic.test.ts` — passed.
 - `npm run test:unit -- tests/unit/dashboard-logic.test.ts tests/unit/editorial-checks.test.ts tests/unit/workflow-logic.test.ts` — passed.
-- `npm run test:unit -- tests/unit/deployment.test.ts tests/unit/dashboard-logic.test.ts` — 98 passed.
+- `npm run test:unit -- tests/unit/dashboard-logic.test.ts tests/unit/deployment.test.ts tests/unit/workflow-logic.test.ts tests/unit/editorial-checks.test.ts` — 130 passed.
 - `npm run lint` — passed.
 - `npm run typecheck` — passed with zero errors.
-- `npm run test:unit` — 14 suites and 234 tests passed.
+- `npm run test:unit` — 14 suites and 251 tests passed.
 - `npm --prefix sanity run lint` — passed.
 - `npm --prefix sanity run build` — passed.
 
@@ -222,8 +265,8 @@ deployment and live/staging content exercise.
 
 ## Self-Check: PASSED
 
-All key implementation files and all six RED/GREEN task commits were found. The summary also
-passes `git diff --check`.
+All key implementation files, the original six RED/GREEN commits and the two deep-review
+remediation commits were found. The summary also passes `git diff --check`.
 
 ---
 
