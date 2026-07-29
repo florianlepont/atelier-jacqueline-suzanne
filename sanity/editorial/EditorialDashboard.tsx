@@ -17,8 +17,10 @@ import {
   WarningOutlineIcon,
 } from '@sanity/icons'
 import {
+  deploymentSubtitle,
   deploymentState,
   getRecentDeployments,
+  latestValidTimestamp,
   nextDeploymentPollDelay,
   SITE_PREVIEW_URL,
 } from './deployment'
@@ -39,6 +41,7 @@ import {
   formatRelativeDate,
   isGalleryOnline,
   pluralize,
+  preflightForConfirmation,
   preparePublicationBatch,
   PUBLIC_DOCUMENTS_QUERY,
   PUBLIC_DOCUMENTS_QUERY_PARAMS,
@@ -221,7 +224,7 @@ export function EditorialDashboard() {
     .map((document) => document._updatedAt)
     .filter((value): value is string => Boolean(value) && Number.isFinite(new Date(value).getTime()))
     .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0]
-  const publishedReference = publishedAt ?? lastPublishedDocumentAt ?? ''
+  const publishedReference = latestValidTimestamp(publishedAt, lastPublishedDocumentAt)
   const currentDeploymentState = deploymentState({
     runs: deploymentRuns,
     publishedAt: publishedReference,
@@ -304,24 +307,42 @@ export function EditorialDashboard() {
       ? 'L’essentiel du contenu et de la mise en ligne.'
       : subtitleParts.length > 0
         ? subtitleParts.join(' · ')
-        : 'Tout est publié et à jour.'
-  const publicationBusy = ['preflighting', 'publishing', 'refreshing'].includes(
+        : deploymentSubtitle(currentDeploymentState)
+  const publicationBusy = ['preflighting', 'publishing', 'committed', 'refreshing'].includes(
     publicationState.phase,
   )
+  const publicationTrackingFailed = publicationState.phase === 'tracking-error'
   const publicationBatch = publicationState.batch ?? publicationSnapshot
 
   const requestPublication = async () => {
-    const batch = await publicationController.preflight()
-    if (batch.ready) setConfirmationOpen(true)
+    const batch = await preflightForConfirmation(publicationController)
+    if (batch) setConfirmationOpen(true)
   }
 
   const confirmPublication = async () => {
     try {
       const result = await publicationController.publish()
-      setPublishedAt(result.publishedAt)
+      if (result.publishedAt) {
+        setPublishedAt((current) => latestValidTimestamp(current, result.publishedAt))
+      }
       setConfirmationOpen(false)
     } catch {
-      setConfirmationOpen(false)
+      setConfirmationOpen(
+        publicationController.state.phase === 'confirming' &&
+          Boolean(publicationController.state.batch?.ready),
+      )
+    }
+  }
+
+  const refreshPublicationTracking = async () => {
+    try {
+      const result = await publicationController.refreshTracking()
+      if (result.publishedAt) {
+        setPublishedAt((current) => latestValidTimestamp(current, result.publishedAt))
+      }
+    } catch {
+      // The controller owns the user-facing state. This catch prevents a
+      // tracking refresh failure from escaping as an unhandled rejection.
     }
   }
 
@@ -444,6 +465,7 @@ export function EditorialDashboard() {
                     text={publicationBusy ? 'Vérification…' : 'Mettre le site à jour'}
                     disabled={
                       publicationBusy ||
+                      publicationTrackingFailed ||
                       publicationSnapshot.total === 0 ||
                       publicationSnapshot.blockedRows.length > 0
                     }
@@ -513,6 +535,24 @@ export function EditorialDashboard() {
                     Contenus publiés dans Sanity. La mise à jour du site est maintenant suivie
                     séparément.
                   </Text>
+                )}
+
+                {publicationState.phase === 'tracking-error' && (
+                  <Card padding={3} radius={2} tone="caution">
+                    <Flex align="center" justify="space-between" gap={3} wrap="wrap">
+                      <Stack space={2} style={{minWidth: 0}}>
+                        <Text size={1} weight="semibold">
+                          Contenus publiés dans Sanity; fraîcheur du site non vérifiable.
+                        </Text>
+                        <Text size={1}>{publicationState.error}</Text>
+                      </Stack>
+                      <Button
+                        text="Actualiser le suivi"
+                        onClick={() => void refreshPublicationTracking()}
+                        disabled={publicationBusy}
+                      />
+                    </Flex>
+                  </Card>
                 )}
 
                 {publicationState.phase === 'error' && (
@@ -763,6 +803,11 @@ export function EditorialDashboard() {
                 seront publiés ensemble. Si un élément échoue, le lot entier est refusé.
               </Text>
               <Stack space={2}>
+                {publicationState.phase === 'confirming' && publicationState.error && (
+                  <Card padding={3} radius={2} tone="caution">
+                    <Text size={1}>{publicationState.error}</Text>
+                  </Card>
+                )}
                 {(Object.entries(publicationBatch.categories) as Array<
                   [PublicationCategory, number]
                 >)

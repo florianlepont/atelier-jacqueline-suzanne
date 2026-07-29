@@ -221,6 +221,18 @@ describe('publication inventory and preflight', () => {
     expect(batch.actions).toEqual([]);
     expect(batch.blockedRows[0].reasons.join(' ')).toContain('missing-gallery');
   });
+
+  it('names multiple blocked editions with their individual titles', () => {
+    const batch = preparePublicationBatch([
+      publicationDocument('drafts.edition-blue', 'edition', {title: 'Le livre bleu'}),
+      publicationDocument('drafts.edition-red', 'edition', {title: 'Le livre rouge'}),
+    ]);
+    expect(batch.ready).toBe(false);
+    expect(batch.blockedRows.map(({title}) => title)).toEqual([
+      'Le livre bleu',
+      'Le livre rouge',
+    ]);
+  });
 });
 
 describe('publication controller', () => {

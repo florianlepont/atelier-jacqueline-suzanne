@@ -61,6 +61,13 @@ function timestamp(value: string | null | undefined): number | null {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+export function latestValidTimestamp(...values: Array<string | null | undefined>): string {
+  return values
+    .map((value) => ({value, time: timestamp(value)}))
+    .filter((entry): entry is {value: string; time: number} => entry.time !== null)
+    .sort((left, right) => right.time - left.time)[0]?.value ?? ''
+}
+
 function runTimelineIsCoherent(run: DeploymentRun): boolean {
   const createdAt = timestamp(run.created_at)
   const updatedAt = timestamp(run.updated_at)
@@ -93,6 +100,41 @@ export function selectQualifiedRun(
   )
 }
 
+function isPrecisionAmbiguousCandidate(
+  run: DeploymentRun,
+  publishedAtTime: number,
+): boolean {
+  const createdAt = timestamp(run.created_at)
+  return (
+    createdAt !== null &&
+    Math.floor(createdAt / 1000) === Math.floor(publishedAtTime / 1000)
+  )
+}
+
+function hasPrecisionAmbiguousCandidate(runs: DeploymentRun[], publishedAtTime: number): boolean {
+  const publicationSecond = Math.floor(publishedAtTime / 1000)
+  return runs.some((run) => {
+    const createdAt = timestamp(run.created_at)
+    return (
+      createdAt !== null &&
+      createdAt < publishedAtTime &&
+      Math.floor(createdAt / 1000) === publicationSecond
+    )
+  })
+}
+
+function unknownDeployment(detail: string): DeploymentState {
+  return {
+    kind: 'unknown',
+    label: 'État temporairement indisponible',
+    detail,
+    tone: 'default',
+    terminal: true,
+    actionLabel: 'Voir les mises à jour',
+    actionUrl: GITHUB_WORKFLOW_URL,
+  }
+}
+
 export function deploymentState({
   runs,
   publishedAt,
@@ -118,20 +160,31 @@ export function deploymentState({
   }
 
   const publishedAtTime = timestamp(publishedAt)
-  if (error || publishedAtTime === null || runs.some((run) => !runTimelineIsCoherent(run))) {
-    return {
-      kind: 'unknown',
-      label: 'État temporairement indisponible',
-      detail: "La fraîcheur du site n'a pas pu être vérifiée.",
-      tone: 'default',
-      terminal: true,
-      actionLabel: 'Voir les mises à jour',
-      actionUrl: GITHUB_WORKFLOW_URL,
-    }
+  if (error || publishedAtTime === null) {
+    return unknownDeployment("La fraîcheur du site n'a pas pu être vérifiée.")
   }
 
   const qualifiedRun = selectQualifiedRun(runs, publishedAt)
+  if (qualifiedRun && isPrecisionAmbiguousCandidate(qualifiedRun, publishedAtTime)) {
+    return unknownDeployment(
+      "La précision des horodatages ne permet pas de prouver si ce déploiement suit la publication.",
+    )
+  }
+  if (qualifiedRun && !runTimelineIsCoherent(qualifiedRun)) {
+    return unknownDeployment("La chronologie du déploiement sélectionné n'a pas pu être vérifiée.")
+  }
+
   if (!qualifiedRun) {
+    if (runs.some((run) => timestamp(run.created_at) === null)) {
+      return unknownDeployment(
+        "La date d'un déploiement récent n'a pas pu être interprétée.",
+      )
+    }
+    if (hasPrecisionAmbiguousCandidate(runs, publishedAtTime)) {
+      return unknownDeployment(
+        "La précision des horodatages ne permet pas de prouver si ce déploiement suit la publication.",
+      )
+    }
     const timedOut = now.getTime() - publishedAtTime >= 3 * 60_000
     return {
       kind: 'waiting-run',
@@ -182,6 +235,10 @@ export function deploymentState({
     actionLabel: 'Voir le déploiement',
     actionUrl: qualifiedRun.html_url,
   }
+}
+
+export function deploymentSubtitle(state: DeploymentState): string {
+  return `Tous les contenus sont publiés · ${state.label}.`
 }
 
 export function nextDeploymentPollDelay({

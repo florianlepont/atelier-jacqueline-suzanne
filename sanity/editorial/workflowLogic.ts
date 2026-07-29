@@ -26,6 +26,11 @@ export const PUBLIC_SINGLETON_TYPES = [
   'contactPage',
 ] as const
 
+export const CHECKLIST_ENABLED_TYPES = [
+  ...PUBLIC_SITE_DOCUMENT_TYPES,
+  'exhibition',
+] as const
+
 export const PUBLIC_DOCUMENT_LABELS: Record<PublicSiteDocumentType, string> = {
   siteSettings: 'Réglages du site',
   homePage: 'Accueil',

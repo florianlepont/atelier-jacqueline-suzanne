@@ -166,12 +166,25 @@ describe('deployment freshness state machine', () => {
   })
 
   it('fails closed for a same-second candidate whose ordering is precision-ambiguous', () => {
+    const sameSecondCandidate = run({created_at: '2026-07-29T09:00:00Z'})
     const state = deploymentState({
-      runs: [run({created_at: '2026-07-29T09:00:00Z'})],
+      runs: [sameSecondCandidate],
       publishedAt: '2026-07-29T09:00:00.750Z',
       pendingCount: 0,
     })
-    expect(selectQualifiedRun(state.run ? [state.run] : [], '2026-07-29T09:00:00.750Z')).toBeNull()
+    expect(
+      selectQualifiedRun([sameSecondCandidate], '2026-07-29T09:00:00.750Z'),
+    ).toBeNull()
+    expect(state.kind).toBe('unknown')
+    expect(state.detail).toContain('précision')
+  })
+
+  it('also treats exact whole-second equality as precision-ambiguous', () => {
+    const state = deploymentState({
+      runs: [run({created_at: '2026-07-29T09:00:00Z'})],
+      publishedAt: '2026-07-29T09:00:00.000Z',
+      pendingCount: 0,
+    })
     expect(state.kind).toBe('unknown')
     expect(state.detail).toContain('précision')
   })
@@ -183,7 +196,12 @@ describe('deployment freshness state machine', () => {
       run_started_at: 'invalid',
       updated_at: 'invalid',
     })
-    const validNewRun = run({id: 2, created_at: '2026-07-29T09:01:00Z'})
+    const validNewRun = run({
+      id: 2,
+      created_at: '2026-07-29T09:01:00Z',
+      run_started_at: '2026-07-29T09:01:03Z',
+      updated_at: '2026-07-29T09:02:00Z',
+    })
     const state = deploymentState({
       runs: [malformedOldRun, validNewRun],
       publishedAt,

@@ -65,6 +65,7 @@ export interface PublishDocumentAction {
   actionType: 'sanity.action.document.publish'
   draftId: string
   publishedId: string
+  ifDraftRevisionId: string
   ifPublishedRevisionId?: string
 }
 
@@ -83,8 +84,10 @@ export type PublicationPhase =
   | 'preflighting'
   | 'confirming'
   | 'publishing'
+  | 'committed'
   | 'refreshing'
   | 'success'
+  | 'tracking-error'
   | 'error'
 
 export interface PublicationControllerState {
@@ -92,6 +95,14 @@ export interface PublicationControllerState {
   batch?: PublicationBatch
   error?: string
   publishedAt?: string
+  publishedIds?: string[]
+}
+
+export interface PublicationResult {
+  committed: true
+  trackingVerified: boolean
+  publishedAt?: string
+  publishedIds: string[]
 }
 
 export interface PublicationClient {
@@ -301,6 +312,13 @@ export function preparePublicationBatch(documents: DashboardDocument[]): Publica
   }
 
   for (const pair of pairs) {
+    if (!pair.draft._rev) {
+      block(pair, 'Révision du brouillon indisponible.')
+    }
+    if (pair.published && !pair.published._rev) {
+      block(pair, 'Révision de la version publiée indisponible.')
+    }
+
     if (!hasBlockingChecklist(pair.draft._type)) {
       block(
         pair,
@@ -344,6 +362,7 @@ export function preparePublicationBatch(documents: DashboardDocument[]): Publica
           actionType: 'sanity.action.document.publish',
           draftId: pair.draft._id,
           publishedId: pair.id,
+          ifDraftRevisionId: pair.draft._rev!,
           ...(pair.published?._rev
             ? {ifPublishedRevisionId: pair.published._rev}
             : {}),
@@ -370,6 +389,34 @@ function publicationError(reason: unknown): string {
   return typeof reason === 'string' ? reason : 'Erreur de publication inconnue.'
 }
 
+export class ConfirmationChangedError extends Error {
+  constructor() {
+    super(
+      'Le lot a changé depuis la confirmation. Vérifiez le nouveau récapitulatif et confirmez à nouveau.',
+    )
+    this.name = 'ConfirmationChangedError'
+  }
+}
+
+export function batchFingerprint(batch: PublicationBatch): string {
+  return JSON.stringify(
+    batch.pairs
+      .map((pair) => [pair.id, pair.draft._rev ?? null, pair.published?._rev ?? null])
+      .sort(([left], [right]) => String(left).localeCompare(String(right))),
+  )
+}
+
+export async function preflightForConfirmation(controller: {
+  preflight(): Promise<PublicationBatch>
+}): Promise<PublicationBatch | null> {
+  try {
+    const batch = await controller.preflight()
+    return batch.ready ? batch : null
+  } catch {
+    return null
+  }
+}
+
 export function createPublicationController({
   client,
   onRefresh,
@@ -380,7 +427,11 @@ export function createPublicationController({
   onStateChange?: (state: PublicationControllerState) => void
 }) {
   let currentState: PublicationControllerState = {phase: 'idle'}
-  let publishPromise: Promise<{publishedAt: string; publishedIds: string[]}> | null = null
+  let confirmedBatch: PublicationBatch | undefined
+  let committedBatch: PublicationBatch | undefined
+  let committedPublishedIds: string[] = []
+  let publishPromise: Promise<PublicationResult> | null = null
+  let trackingPromise: Promise<PublicationResult> | null = null
 
   const setState = (state: PublicationControllerState) => {
     currentState = state
@@ -393,10 +444,92 @@ export function createPublicationController({
       {perspective: 'raw'},
     )
 
+  const fetchPublishedAt = async (publishedIds: string[]) => {
+    const timestamps = await client.fetch<Array<{_id: string; _updatedAt: string}>>(
+      PUBLISHED_TIMESTAMPS_QUERY,
+      {ids: publishedIds},
+      {perspective: 'published'},
+    )
+    const validById = new Map(
+      timestamps
+        .filter(
+          ({_id, _updatedAt}) =>
+            publishedIds.includes(_id) && Number.isFinite(new Date(_updatedAt).getTime()),
+        )
+        .map(({_id, _updatedAt}) => [_id, _updatedAt] as const),
+    )
+    const missingIds = publishedIds.filter((id) => !validById.has(id))
+    if (missingIds.length > 0) {
+      throw new Error(`Horodatage Sanity manquant pour : ${missingIds.join(', ')}.`)
+    }
+    return [...validById.values()].sort(
+      (left, right) => new Date(right).getTime() - new Date(left).getTime(),
+    )[0]
+  }
+
+  const trackCommittedPublication = () => {
+    if (trackingPromise) return trackingPromise
+    if (!committedBatch || committedPublishedIds.length === 0) {
+      return Promise.reject(new Error('Aucune publication confirmée à suivre.'))
+    }
+
+    const batch = committedBatch
+    const publishedIds = [...committedPublishedIds]
+    setState({phase: 'refreshing', batch, publishedIds})
+
+    let refreshRequest: Promise<void>
+    try {
+      refreshRequest = Promise.resolve(onRefresh?.())
+    } catch (reason) {
+      refreshRequest = Promise.reject(reason)
+    }
+
+    trackingPromise = (async (): Promise<PublicationResult> => {
+      const [refreshResult, timestampResult] = await Promise.allSettled([
+        refreshRequest,
+        fetchPublishedAt(publishedIds),
+      ])
+      const publishedAt =
+        timestampResult.status === 'fulfilled' ? timestampResult.value : undefined
+      const failures = [refreshResult, timestampResult]
+        .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+        .map((result) => publicationError(result.reason))
+
+      if (failures.length > 0) {
+        setState({
+          phase: 'tracking-error',
+          batch,
+          publishedAt,
+          publishedIds,
+          error: `Contenus publiés dans Sanity; fraîcheur du site non vérifiable. ${failures.join(' ')}`,
+        })
+        return {
+          committed: true,
+          trackingVerified: false,
+          publishedAt,
+          publishedIds,
+        }
+      }
+
+      setState({phase: 'success', batch, publishedAt, publishedIds})
+      return {
+        committed: true,
+        trackingVerified: true,
+        publishedAt,
+        publishedIds,
+      }
+    })().finally(() => {
+      trackingPromise = null
+    })
+
+    return trackingPromise
+  }
+
   const preflight = async () => {
     setState({phase: 'preflighting'})
     try {
       const batch = preparePublicationBatch(await fetchRaw())
+      confirmedBatch = batch
       setState({phase: batch.ready || batch.total > 0 ? 'confirming' : 'idle', batch})
       return batch
     } catch (reason) {
@@ -409,48 +542,50 @@ export function createPublicationController({
     if (publishPromise) return publishPromise
 
     publishPromise = (async () => {
-      let batch: PublicationBatch | undefined
+      let batch = confirmedBatch
+      let committed = false
       try {
-        setState({phase: 'publishing'})
-        batch = preparePublicationBatch(await fetchRaw())
-        if (!batch.ready) {
+        if (!batch?.ready) {
           const reason =
-            batch.total === 0
+            !batch || batch.total === 0
               ? 'Aucune modification à publier.'
               : 'Le lot de publication contient des informations bloquantes.'
           throw new Error(reason)
         }
 
-        await client.action(batch.actions, {tag: 'editorial.publish-all'})
-        setState({phase: 'refreshing', batch})
-
-        const publishedIds = batch.actions.map(({publishedId}) => publishedId)
-        const timestamps = await client.fetch<
-          Array<{_id: string; _updatedAt: string}>
-        >(
-          PUBLISHED_TIMESTAMPS_QUERY,
-          {ids: publishedIds},
-          {perspective: 'published'},
-        )
-        const publishedAt = timestamps
-          .map(({_updatedAt}) => _updatedAt)
-          .filter((value) => Number.isFinite(new Date(value).getTime()))
-          .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0]
-        if (!publishedAt) {
-          throw new Error(
-            "La publication a réussi, mais son horodatage Sanity n'a pas pu être vérifié.",
-          )
+        setState({phase: 'publishing', batch})
+        const freshBatch = preparePublicationBatch(await fetchRaw())
+        if (batchFingerprint(freshBatch) !== batchFingerprint(batch)) {
+          confirmedBatch = freshBatch
+          const reason = new ConfirmationChangedError()
+          setState({phase: 'confirming', batch: freshBatch, error: reason.message})
+          throw reason
+        }
+        if (!freshBatch.ready) {
+          confirmedBatch = freshBatch
+          throw new Error('Le lot de publication contient des informations bloquantes.')
         }
 
-        await onRefresh?.()
-        setState({phase: 'success', batch, publishedAt})
-        return {publishedAt, publishedIds}
-      } catch (reason) {
+        batch = freshBatch
+        await client.action(batch.actions, {tag: 'editorial.publish-all'})
+        committed = true
+        committedBatch = batch
+        committedPublishedIds = batch.actions.map(({publishedId}) => publishedId)
+        confirmedBatch = undefined
         setState({
-          phase: 'error',
+          phase: 'committed',
           batch,
-          error: publicationError(reason),
+          publishedIds: committedPublishedIds,
         })
+        return await trackCommittedPublication()
+      } catch (reason) {
+        if (!committed && !(reason instanceof ConfirmationChangedError)) {
+          setState({
+            phase: 'error',
+            batch,
+            error: publicationError(reason),
+          })
+        }
         throw reason
       } finally {
         publishPromise = null
@@ -466,6 +601,7 @@ export function createPublicationController({
     },
     preflight,
     publish,
+    refreshTracking: trackCommittedPublication,
   }
 }
 
@@ -474,10 +610,18 @@ export function pluralize(count: number, singular: string, plural: string = `${s
 }
 
 export function documentTitle(document: DashboardDocument) {
-  if (document._type === 'gallery' || document._type === 'exhibition') {
+  if (
+    document._type === 'gallery' ||
+    document._type === 'edition' ||
+    document._type === 'exhibition'
+  ) {
     return (
       document.title ||
-      (document._type === 'gallery' ? 'Collection sans nom' : 'Événement sans nom')
+      (document._type === 'gallery'
+        ? 'Collection sans nom'
+        : document._type === 'edition'
+          ? 'Édition sans nom'
+          : 'Événement sans nom')
     )
   }
   return typeLabels[document._type] || document._type
