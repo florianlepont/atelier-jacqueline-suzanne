@@ -187,10 +187,19 @@ const {
 </script>
 
 <style>
+  /* Top/bottom padding split, not a single `padding` shorthand: Contact and
+     Éditions land their title/eyebrow at the exact same distance from the
+     site header via a smaller, dedicated top value (see ContactPageBody's
+     own comment on this) while reserving the larger --editorial-page-padding-
+     block token for bottom whitespace only. About must match that same-
+     distance contract (ROADMAP Phase 15 criterion 1) rather than applying
+     the bottom-sized token to both edges. */
   .about-page {
     width: min(100%, var(--editorial-page-max));
     margin: 0 auto;
-    padding: var(--editorial-page-padding-block) var(--editorial-page-padding-inline);
+    padding-inline: var(--editorial-page-padding-inline);
+    padding-top: clamp(48px, 7vw, 56px);
+    padding-bottom: var(--editorial-page-padding-block);
   }
 
   /* D-01/D-05 empty-intro-column fix (sketch-014 winner, Variant A: page-
