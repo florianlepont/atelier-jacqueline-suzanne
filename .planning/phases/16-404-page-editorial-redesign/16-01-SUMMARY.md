@@ -113,3 +113,45 @@ None - no external service configuration required. This plan adds zero new depen
 - FOUND: tests/unit/pop-rate.test.ts
 - FOUND: commit 0ec999c (test(16-01): add failing pop-rate contract suite)
 - FOUND: commit 597fc5a (feat(16-01): implement capped pop-rate interval math)
+
+## Addendum: D-10 cap override (2026-07-29, post-completion)
+
+This plan was already complete and merged when, at the plan 16-03 human-verify
+checkpoint, the user tested the live ~2.86/sec-capped build and asked for it
+to go "vraiment plus vite" (really faster), explicitly accepting the
+flash-rate tradeoff ("tant pis pour les flash effect"). Presented with the
+WCAG 2.3.1 risk restated plainly and three options (keep the WCAG-safe cap /
+raise it significantly but keep a finite ceiling / remove the cap entirely),
+the user chose to raise it significantly while keeping a finite ceiling.
+Recorded as a live post-checkpoint follow-on reconciled into tracked history,
+mirroring this project's own Phase 6 precedent (see STATE.md's note on
+`06-01-SUMMARY.md`).
+
+**What changed:**
+- `src/lib/pop-rate.ts`: `MIN_INTERVAL_MS` raised from `350` (≈2.86/sec) to
+  `150` (≈6.7/sec). `MAX_INTERVAL_MS`/`DRIFT_INTERVAL_MS` and
+  `proximityToInterval`'s logic are untouched.
+- `tests/unit/pop-rate.test.ts`: the now-intentionally-false
+  `1000/MIN_INTERVAL_MS < 3` WCAG-framed assertion was replaced with the
+  invariant that still holds — a hard floor exists and
+  `proximityToInterval` never returns below `MIN_INTERVAL_MS` for any input.
+  The `proximity=0.5` exact-midpoint expectation was recomputed from `1275`
+  to `1175` to match the new constant.
+- `.planning/phases/16-404-page-editorial-redesign/16-CONTEXT.md`: D-10
+  marked SUPERSEDED with a dated override entry recording the exact
+  decision and options presented (commit `4049bdb`).
+- `.planning/phases/16-404-page-editorial-redesign/16-01-PLAN.md`:
+  `must_haves.truths` amended in place (marked `[AMENDED 2026-07-29
+  post-completion]`) to point here rather than restate the now-superseded
+  ≈3/sec framing.
+
+**Verification:** `npx vitest run tests/unit/pop-rate.test.ts` (9/9),
+`npm run typecheck` (0 errors), `npm run build` all green post-change.
+
+**This is a knowing, explicit, user-confirmed departure from WCAG 2.3.1
+general-flash guidance for this one page** — not a regression or an
+oversight. Do not revert `MIN_INTERVAL_MS` back toward 350 without the user
+raising the cap again.
+
+**Commit:** `0707207` (fix(16-01): raise pop-rate cap to ~6.7/sec per live
+checkpoint override (D-10))
