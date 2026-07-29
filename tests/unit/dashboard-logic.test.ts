@@ -130,10 +130,10 @@ describe('publication inventory and preflight', () => {
 
     expect(pairs).toHaveLength(4);
     expect(pairs.map(({category}) => category)).toEqual([
-      'new-hidden',
       'modified',
       'new',
       'withdrawal',
+      'new-hidden',
     ]);
   });
 
@@ -293,6 +293,7 @@ describe('publication controller', () => {
     const first = controller.publish();
     const second = controller.publish();
     expect(first).toBe(second);
+    await vi.waitFor(() => expect(client.action).toHaveBeenCalledTimes(1));
     expect(client.action).toHaveBeenCalledTimes(1);
     resolveAction();
     await first;

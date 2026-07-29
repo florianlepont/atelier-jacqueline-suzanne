@@ -1,15 +1,18 @@
 import type {ComponentType, SVGProps} from 'react'
-import {BulbOutlineIcon} from '@sanity/icons/BulbOutline'
-import {ErrorOutlineIcon} from '@sanity/icons/ErrorOutline'
-import {PublishIcon} from '@sanity/icons/Publish'
-import {TaskIcon} from '@sanity/icons/Task'
+import {BulbOutlineIcon, ErrorOutlineIcon, PublishIcon, TaskIcon} from '@sanity/icons'
 import type {TransactionLogEventWithMutations, TransactionLogMutation, User} from '@sanity/types'
-import {summarizeChecks} from './checks'
+import {getDocumentChecks, hasBlockingChecklist, summarizeChecks} from './checks'
 import type {CheckItem} from './checks'
+import {
+  PUBLIC_DOCUMENT_LABELS,
+  PUBLIC_SITE_DOCUMENT_TYPES,
+  isPublicSiteDocumentType,
+} from './workflowLogic'
 
 export interface DashboardDocument extends Record<string, unknown> {
   _id: string
   _type: string
+  _rev?: string
   _updatedAt: string
   title?: string
   isVisible?: boolean
@@ -41,6 +44,82 @@ export type DashboardTone = 'default' | 'primary' | 'positive' | 'caution' | 'cr
 
 export type Severity = 'Bloquant' | 'Important' | 'Suggestion'
 
+export type PublicationCategory = 'modified' | 'new' | 'withdrawal' | 'new-hidden'
+
+export interface PublicationPair {
+  id: string
+  draft: DashboardDocument
+  published?: DashboardDocument
+  category: PublicationCategory
+  title: string
+}
+
+export interface PublicationBlock {
+  id: string
+  type: string
+  title: string
+  reasons: string[]
+}
+
+export interface PublishDocumentAction {
+  actionType: 'sanity.action.document.publish'
+  draftId: string
+  publishedId: string
+  ifPublishedRevisionId?: string
+}
+
+export interface PublicationBatch {
+  total: number
+  categories: Record<PublicationCategory, number>
+  pairs: PublicationPair[]
+  blockedRows: PublicationBlock[]
+  orderedIds: string[]
+  actions: PublishDocumentAction[]
+  ready: boolean
+}
+
+export type PublicationPhase =
+  | 'idle'
+  | 'preflighting'
+  | 'confirming'
+  | 'publishing'
+  | 'refreshing'
+  | 'success'
+  | 'error'
+
+export interface PublicationControllerState {
+  phase: PublicationPhase
+  batch?: PublicationBatch
+  error?: string
+  publishedAt?: string
+}
+
+export interface PublicationClient {
+  fetch<T>(
+    query: string,
+    params?: Record<string, unknown>,
+    options?: Record<string, unknown>,
+  ): Promise<T>
+  action(actions: PublishDocumentAction[], options: {tag: string}): Promise<unknown>
+}
+
+export const PUBLIC_DOCUMENTS_QUERY =
+  '*[_type in $types] | order(_updatedAt desc)'
+
+export const PUBLIC_DOCUMENTS_QUERY_PARAMS = {
+  types: [...PUBLIC_SITE_DOCUMENT_TYPES],
+}
+
+export const PUBLISHED_TIMESTAMPS_QUERY =
+  '*[_id in $ids] {_id, _updatedAt}'
+
+const EMPTY_CATEGORY_COUNTS: Record<PublicationCategory, number> = {
+  modified: 0,
+  new: 0,
+  withdrawal: 0,
+  'new-hidden': 0,
+}
+
 export interface AttentionGroup {
   id: string
   severity: Severity
@@ -53,17 +132,19 @@ export interface AttentionGroup {
 }
 
 export const typeLabels: Record<string, string> = {
-  gallery: 'Collection photo',
+  ...PUBLIC_DOCUMENT_LABELS,
   homePage: "Page d'accueil",
+  editionsPage: 'Page Éditions',
   aboutPage: 'Page À propos',
   contactPage: 'Page Contact',
-  siteSettings: 'Réglages du site',
   exhibition: 'Exposition',
 }
 
 export const rowTypeLabels: Record<string, string> = {
   gallery: 'Collection photo',
+  edition: 'Édition',
   homePage: 'Page',
+  editionsPage: 'Page',
   aboutPage: 'Page',
   contactPage: 'Page',
   siteSettings: 'Réglages',
@@ -97,6 +178,295 @@ export const fieldLabels: Record<string, string> = {
 
 export function baseId(id: string) {
   return id.replace(/^drafts\./, '')
+}
+
+function isVisibleAfterPublication(document: DashboardDocument): boolean {
+  if (document._type !== 'gallery' && document._type !== 'edition') return true
+  if (document.publicationStatus) return document.publicationStatus === 'published'
+  return document.isVisible !== false
+}
+
+function publicationCategory(
+  draft: DashboardDocument,
+  published?: DashboardDocument,
+): PublicationCategory {
+  if (isVisibleAfterPublication(draft)) return published ? 'modified' : 'new'
+  return published ? 'withdrawal' : 'new-hidden'
+}
+
+function groupPublicVersions(documents: DashboardDocument[]) {
+  const byId = new Map<
+    string,
+    {draft?: DashboardDocument; published?: DashboardDocument}
+  >()
+  for (const document of documents) {
+    if (!isPublicSiteDocumentType(document._type)) continue
+    const id = baseId(document._id)
+    const versions = byId.get(id) ?? {}
+    if (document._id.startsWith('drafts.')) versions.draft = document
+    else versions.published = document
+    byId.set(id, versions)
+  }
+  return byId
+}
+
+export function pairPublicDocuments(documents: DashboardDocument[]): PublicationPair[] {
+  return Array.from(groupPublicVersions(documents), ([id, versions]) => {
+    if (!versions.draft) return null
+    return {
+      id,
+      draft: versions.draft,
+      published: versions.published,
+      category: publicationCategory(versions.draft, versions.published),
+      title: documentTitle(versions.draft),
+    }
+  }).filter((pair): pair is PublicationPair => pair !== null)
+}
+
+function collectStrongReferenceIds(
+  value: unknown,
+  parentKey = '',
+  found: string[] = [],
+): string[] {
+  if (!value || typeof value !== 'object') return found
+  if (Array.isArray(value)) {
+    for (const item of value) collectStrongReferenceIds(item, parentKey, found)
+    return found
+  }
+
+  const object = value as Record<string, unknown>
+  if (
+    parentKey !== 'asset' &&
+    object._type === 'reference' &&
+    object._weak !== true &&
+    typeof object._ref === 'string'
+  ) {
+    found.push(baseId(object._ref))
+    return found
+  }
+
+  for (const [key, child] of Object.entries(object)) {
+    if (key === 'asset' || key.startsWith('_')) continue
+    collectStrongReferenceIds(child, key, found)
+  }
+  return found
+}
+
+function topologicalOrder(
+  pairs: PublicationPair[],
+  dependencies: Map<string, Set<string>>,
+): string[] | null {
+  const originalOrder = pairs.map(({id}) => id)
+  const dependants = new Map<string, Set<string>>()
+  const indegree = new Map(originalOrder.map((id) => [id, 0]))
+
+  for (const [dependant, targets] of dependencies) {
+    for (const target of targets) {
+      if (!indegree.has(target)) continue
+      const targetDependants = dependants.get(target) ?? new Set<string>()
+      targetDependants.add(dependant)
+      dependants.set(target, targetDependants)
+      indegree.set(dependant, (indegree.get(dependant) ?? 0) + 1)
+    }
+  }
+
+  const queue = originalOrder.filter((id) => indegree.get(id) === 0)
+  const ordered: string[] = []
+  while (queue.length > 0) {
+    const id = queue.shift()!
+    ordered.push(id)
+    for (const dependant of dependants.get(id) ?? []) {
+      indegree.set(dependant, (indegree.get(dependant) ?? 1) - 1)
+      if (indegree.get(dependant) === 0) queue.push(dependant)
+    }
+  }
+  return ordered.length === pairs.length ? ordered : null
+}
+
+export function preparePublicationBatch(documents: DashboardDocument[]): PublicationBatch {
+  const allVersions = groupPublicVersions(documents)
+  const pairs = pairPublicDocuments(documents)
+  const blocks = new Map<string, PublicationBlock>()
+  const dependencies = new Map<string, Set<string>>()
+
+  const block = (pair: PublicationPair, reason: string) => {
+    const current = blocks.get(pair.id) ?? {
+      id: pair.id,
+      type: pair.draft._type,
+      title: pair.title,
+      reasons: [],
+    }
+    if (!current.reasons.includes(reason)) current.reasons.push(reason)
+    blocks.set(pair.id, current)
+  }
+
+  for (const pair of pairs) {
+    if (!hasBlockingChecklist(pair.draft._type)) {
+      block(
+        pair,
+        `Aucune checklist bloquante n'est définie pour ${pair.draft._type}.`,
+      )
+      continue
+    }
+
+    const checks = getDocumentChecks(pair.draft._type, pair.draft)
+    const summary = summarizeChecks(checks)
+    if (!summary.requiredComplete) {
+      for (const check of checks.filter((item) => !item.recommended && !item.complete)) {
+        block(pair, check.label)
+      }
+      if (checks.length === 0) block(pair, 'Checklist obligatoire absente.')
+    }
+
+    const targets = new Set(collectStrongReferenceIds(pair.draft))
+    dependencies.set(pair.id, targets)
+    for (const targetId of targets) {
+      const target = allVersions.get(targetId)
+      if (!target?.published && !target?.draft) {
+        block(pair, `Référence indisponible : ${targetId}.`)
+      }
+    }
+  }
+
+  let orderedIds = topologicalOrder(pairs, dependencies)
+  if (!orderedIds) {
+    for (const pair of pairs) block(pair, 'Cycle de références fortes dans le lot.')
+    orderedIds = []
+  }
+
+  const blockedRows = Array.from(blocks.values())
+  const ready = pairs.length > 0 && blockedRows.length === 0
+  const pairsById = new Map(pairs.map((pair) => [pair.id, pair]))
+  const actions = ready
+    ? orderedIds.map((id): PublishDocumentAction => {
+        const pair = pairsById.get(id)!
+        return {
+          actionType: 'sanity.action.document.publish',
+          draftId: pair.draft._id,
+          publishedId: pair.id,
+          ...(pair.published?._rev
+            ? {ifPublishedRevisionId: pair.published._rev}
+            : {}),
+        }
+      })
+    : []
+
+  const categories = {...EMPTY_CATEGORY_COUNTS}
+  for (const pair of pairs) categories[pair.category] += 1
+
+  return {
+    total: pairs.length,
+    categories,
+    pairs,
+    blockedRows,
+    orderedIds,
+    actions,
+    ready,
+  }
+}
+
+function publicationError(reason: unknown): string {
+  if (reason instanceof Error) return reason.message
+  return typeof reason === 'string' ? reason : 'Erreur de publication inconnue.'
+}
+
+export function createPublicationController({
+  client,
+  onRefresh,
+  onStateChange,
+}: {
+  client: PublicationClient
+  onRefresh?: () => void | Promise<void>
+  onStateChange?: (state: PublicationControllerState) => void
+}) {
+  let currentState: PublicationControllerState = {phase: 'idle'}
+  let publishPromise: Promise<{publishedAt: string; publishedIds: string[]}> | null = null
+
+  const setState = (state: PublicationControllerState) => {
+    currentState = state
+    onStateChange?.(state)
+  }
+  const fetchRaw = () =>
+    client.fetch<DashboardDocument[]>(
+      PUBLIC_DOCUMENTS_QUERY,
+      PUBLIC_DOCUMENTS_QUERY_PARAMS,
+      {perspective: 'raw'},
+    )
+
+  const preflight = async () => {
+    setState({phase: 'preflighting'})
+    try {
+      const batch = preparePublicationBatch(await fetchRaw())
+      setState({phase: batch.ready || batch.total > 0 ? 'confirming' : 'idle', batch})
+      return batch
+    } catch (reason) {
+      setState({phase: 'error', error: publicationError(reason)})
+      throw reason
+    }
+  }
+
+  const publish = () => {
+    if (publishPromise) return publishPromise
+
+    publishPromise = (async () => {
+      let batch: PublicationBatch | undefined
+      try {
+        setState({phase: 'publishing'})
+        batch = preparePublicationBatch(await fetchRaw())
+        if (!batch.ready) {
+          const reason =
+            batch.total === 0
+              ? 'Aucune modification à publier.'
+              : 'Le lot de publication contient des informations bloquantes.'
+          throw new Error(reason)
+        }
+
+        await client.action(batch.actions, {tag: 'editorial.publish-all'})
+        setState({phase: 'refreshing', batch})
+
+        const publishedIds = batch.actions.map(({publishedId}) => publishedId)
+        const timestamps = await client.fetch<
+          Array<{_id: string; _updatedAt: string}>
+        >(
+          PUBLISHED_TIMESTAMPS_QUERY,
+          {ids: publishedIds},
+          {perspective: 'published'},
+        )
+        const publishedAt = timestamps
+          .map(({_updatedAt}) => _updatedAt)
+          .filter((value) => Number.isFinite(new Date(value).getTime()))
+          .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0]
+        if (!publishedAt) {
+          throw new Error(
+            "La publication a réussi, mais son horodatage Sanity n'a pas pu être vérifié.",
+          )
+        }
+
+        await onRefresh?.()
+        setState({phase: 'success', batch, publishedAt})
+        return {publishedAt, publishedIds}
+      } catch (reason) {
+        setState({
+          phase: 'error',
+          batch,
+          error: publicationError(reason),
+        })
+        throw reason
+      } finally {
+        publishPromise = null
+      }
+    })()
+
+    return publishPromise
+  }
+
+  return {
+    get state() {
+      return currentState
+    },
+    preflight,
+    publish,
+  }
 }
 
 export function pluralize(count: number, singular: string, plural: string = `${singular}s`) {

@@ -1,18 +1,21 @@
 import {useEffect, useMemo, useRef, useState} from 'react'
 import type {ComponentType, SVGProps} from 'react'
-import {Badge, Box, Button, Card, Flex, Heading, Spinner, Stack, Text} from '@sanity/ui'
+import {Badge, Box, Button, Card, Dialog, Flex, Heading, Spinner, Stack, Text} from '@sanity/ui'
 import {IntentButton, useClient, useHistoryStore, useUserStore} from 'sanity'
 import {IntentLink} from 'sanity/router'
-import {AddIcon} from '@sanity/icons/Add'
-import {CheckmarkCircleIcon} from '@sanity/icons/CheckmarkCircle'
-import {ChevronRightIcon} from '@sanity/icons/ChevronRight'
-import {CogIcon} from '@sanity/icons/Cog'
-import {DocumentIcon} from '@sanity/icons/Document'
-import {ErrorOutlineIcon} from '@sanity/icons/ErrorOutline'
-import {FolderIcon} from '@sanity/icons/Folder'
-import {ImagesIcon} from '@sanity/icons/Images'
-import {LaunchIcon} from '@sanity/icons/Launch'
-import {WarningOutlineIcon} from '@sanity/icons/WarningOutline'
+import {
+  AddIcon,
+  CheckmarkCircleIcon,
+  ChevronRightIcon,
+  CogIcon,
+  DocumentIcon,
+  ErrorOutlineIcon,
+  FolderIcon,
+  ImagesIcon,
+  LaunchIcon,
+  PublishIcon,
+  WarningOutlineIcon,
+} from '@sanity/icons'
 import {deploymentLabel, getLatestDeployment, SITE_PREVIEW_URL} from './deployment'
 import type {DeploymentRun} from './deployment'
 import {getDocumentChecks, summarizeChecks} from './checks'
@@ -24,12 +27,16 @@ import {
   buildActivities,
   buildAttentionGroups,
   contentNoun,
+  createPublicationController,
   documentTitle,
   editorialStatus,
   formatActivityDate,
   formatRelativeDate,
   isGalleryOnline,
   pluralize,
+  preparePublicationBatch,
+  PUBLIC_DOCUMENTS_QUERY,
+  PUBLIC_DOCUMENTS_QUERY_PARAMS,
   rowTypeLabels,
 } from './dashboardLogic'
 import type {
@@ -38,14 +45,18 @@ import type {
   DashboardDocument,
   DashboardRow,
   DashboardTone,
+  PublicationCategory,
+  PublicationClient,
+  PublicationControllerState,
 } from './dashboardLogic'
 import './EditorialDashboard.css'
 
-const query = `*[_type in ["gallery", "homePage", "aboutPage", "contactPage", "siteSettings", "exhibition"]] | order(_updatedAt desc) {
-  _id, _type, _updatedAt, title, slug, isVisible, publicationStatus, statement, images, seo,
-  intro, biography, practice, medium, siteTitle, navLabels, footerText, defaultSeo,
-  publicEmail, professionalLinks, startDate, venue, city, description, image
-}`
+const publicationCategoryLabels: Record<PublicationCategory, string> = {
+  modified: 'Modifié',
+  new: 'Nouveau',
+  withdrawal: 'Sera retiré du site',
+  'new-hidden': 'Nouveau, gardé hors ligne',
+}
 
 export function EditorialDashboard() {
   const client = useClient({apiVersion: '2025-08-15'})
@@ -59,12 +70,30 @@ export function EditorialDashboard() {
   const [showAllActivity, setShowAllActivity] = useState(false)
   const [showAllAttention, setShowAllAttention] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [publicationState, setPublicationState] = useState<PublicationControllerState>({
+    phase: 'idle',
+  })
+  const [confirmationOpen, setConfirmationOpen] = useState(false)
+  const [publishedAt, setPublishedAt] = useState<string>()
   const hasDataRef = useRef(false)
+  const publicationController = useMemo(
+    () =>
+      createPublicationController({
+        client: client as unknown as PublicationClient,
+        onRefresh: () => setRefreshKey((key) => key + 1),
+        onStateChange: setPublicationState,
+      }),
+    [client],
+  )
 
   useEffect(() => {
     let cancelled = false
     client
-      .fetch<DashboardDocument[]>(query, {}, {perspective: 'raw'})
+      .fetch<DashboardDocument[]>(
+        PUBLIC_DOCUMENTS_QUERY,
+        PUBLIC_DOCUMENTS_QUERY_PARAMS,
+        {perspective: 'raw'},
+      )
       .then(async (content) => {
         if (cancelled) return
         setDocuments(content)
@@ -110,7 +139,11 @@ export function EditorialDashboard() {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined
     const subscription = client
-      .listen(query, {}, {visibility: 'query', includeResult: false, events: ['mutation']})
+      .listen(PUBLIC_DOCUMENTS_QUERY, PUBLIC_DOCUMENTS_QUERY_PARAMS, {
+        visibility: 'query',
+        includeResult: false,
+        events: ['mutation'],
+      })
       .subscribe({
         next: () => {
           clearTimeout(timer)
@@ -182,6 +215,7 @@ export function EditorialDashboard() {
       })
       .sort((a, b) => new Date(b.lastUpdatedAt).getTime() - new Date(a.lastUpdatedAt).getTime())
   }, [documents])
+  const publicationSnapshot = useMemo(() => preparePublicationBatch(documents), [documents])
 
   const attention = rows
     .filter((row) => {
@@ -224,6 +258,25 @@ export function EditorialDashboard() {
       : subtitleParts.length > 0
         ? subtitleParts.join(' · ')
         : 'Tout est publié et à jour.'
+  const publicationBusy = ['preflighting', 'publishing', 'refreshing'].includes(
+    publicationState.phase,
+  )
+  const publicationBatch = publicationState.batch ?? publicationSnapshot
+
+  const requestPublication = async () => {
+    const batch = await publicationController.preflight()
+    if (batch.ready) setConfirmationOpen(true)
+  }
+
+  const confirmPublication = async () => {
+    try {
+      const result = await publicationController.publish()
+      setPublishedAt(result.publishedAt)
+      setConfirmationOpen(false)
+    } catch {
+      setConfirmationOpen(false)
+    }
+  }
 
   return (
     <div className="editorial-dashboard__page">
@@ -302,6 +355,136 @@ export function EditorialDashboard() {
                     {error}
                   </Text>
                 </details>
+              </Stack>
+            </Card>
+          )}
+
+          {!loading && !error && (
+            <Card
+              radius={3}
+              tone="primary"
+              shadow={2}
+              padding={[3, 4]}
+              style={{border: '1px solid var(--card-border-color)'}}
+            >
+              <Stack space={4}>
+                <Flex align="flex-start" justify="space-between" gap={4} wrap="wrap">
+                  <Flex align="center" gap={3} style={{minWidth: 0, flex: '1 1 360px'}}>
+                    <TintChip
+                      icon={PublishIcon}
+                      size={44}
+                      radius={12}
+                      iconSize={24}
+                      tint={metricAccentStyles.primary}
+                    />
+                    <Stack space={2}>
+                      <Heading as="h2" size={2}>
+                        Mettre le site à jour
+                      </Heading>
+                      <Text size={1} muted>
+                        {publicationSnapshot.total === 0
+                          ? 'Aucune modification publique en attente.'
+                          : `${publicationSnapshot.total} ${pluralize(
+                              publicationSnapshot.total,
+                              'contenu modifié',
+                              'contenus modifiés',
+                            )} depuis la dernière mise en ligne.`}
+                      </Text>
+                    </Stack>
+                  </Flex>
+                  <Button
+                    tone="primary"
+                    text={publicationBusy ? 'Vérification…' : 'Mettre le site à jour'}
+                    disabled={
+                      publicationBusy ||
+                      publicationSnapshot.total === 0 ||
+                      publicationSnapshot.blockedRows.length > 0
+                    }
+                    loading={publicationBusy}
+                    onClick={() => void requestPublication()}
+                    style={{minHeight: 44}}
+                  />
+                </Flex>
+
+                {publicationSnapshot.pairs.length > 0 && (
+                  <Stack space={2}>
+                    {publicationSnapshot.pairs.map((pair) => (
+                      <Flex
+                        key={pair.id}
+                        align="center"
+                        justify="space-between"
+                        gap={3}
+                        wrap="wrap"
+                      >
+                        <IntentLink
+                          intent="edit"
+                          params={{id: pair.id, type: pair.draft._type}}
+                          style={{color: 'inherit', textDecoration: 'none'}}
+                        >
+                          <Text size={1} weight="semibold">
+                            {pair.title}
+                          </Text>
+                        </IntentLink>
+                        <Badge
+                          tone={
+                            pair.category === 'withdrawal' || pair.category === 'new-hidden'
+                              ? 'caution'
+                              : 'primary'
+                          }
+                        >
+                          {publicationCategoryLabels[pair.category]}
+                        </Badge>
+                      </Flex>
+                    ))}
+                  </Stack>
+                )}
+
+                {publicationSnapshot.blockedRows.length > 0 && (
+                  <Card padding={3} radius={2} tone="critical">
+                    <Stack space={3}>
+                      <Text size={1} weight="semibold">
+                        Le lot entier est bloqué par des informations indispensables.
+                      </Text>
+                      {publicationSnapshot.blockedRows.map((blocked) => (
+                        <IntentLink
+                          key={blocked.id}
+                          intent="edit"
+                          params={{id: blocked.id, type: blocked.type}}
+                          style={{color: 'inherit'}}
+                        >
+                          <Text size={1}>
+                            {blocked.title} — {blocked.reasons.join(' · ')}
+                          </Text>
+                        </IntentLink>
+                      ))}
+                    </Stack>
+                  </Card>
+                )}
+
+                {publicationState.phase === 'success' && publishedAt && (
+                  <Text size={1} weight="semibold">
+                    Contenus publiés dans Sanity. La mise à jour du site est maintenant suivie
+                    séparément.
+                  </Text>
+                )}
+
+                {publicationState.phase === 'error' && (
+                  <Card padding={3} radius={2} tone="critical">
+                    <Flex align="center" justify="space-between" gap={3} wrap="wrap">
+                      <Stack space={2} style={{minWidth: 0}}>
+                        <Text size={1} weight="semibold">
+                          La mise en ligne n’a pas abouti. Aucun succès partiel n’est annoncé.
+                        </Text>
+                        <Text size={1}>{publicationState.error}</Text>
+                      </Stack>
+                      <Button
+                        text="Actualiser et réessayer"
+                        onClick={() => void requestPublication()}
+                        disabled={publicationBusy}
+                      />
+                    </Flex>
+                  </Card>
+                )}
               </Stack>
             </Card>
           )}
@@ -517,6 +700,54 @@ export function EditorialDashboard() {
           )}
         </Stack>
       </Box>
+      {confirmationOpen && (
+        <Dialog
+          id="editorial-publication-confirmation"
+          header="Confirmer la mise à jour du site"
+          onClose={() => {
+            if (!publicationBusy) setConfirmationOpen(false)
+          }}
+          width={1}
+        >
+          <Box padding={4}>
+            <Stack space={4}>
+              <Text size={1}>
+                {publicationBatch.total} {pluralize(publicationBatch.total, 'contenu', 'contenus')}{' '}
+                seront publiés ensemble. Si un élément échoue, le lot entier est refusé.
+              </Text>
+              <Stack space={2}>
+                {(Object.entries(publicationBatch.categories) as Array<
+                  [PublicationCategory, number]
+                >)
+                  .filter(([, count]) => count > 0)
+                  .map(([category, count]) => (
+                    <Flex key={category} justify="space-between" gap={3}>
+                      <Text size={1}>{publicationCategoryLabels[category]}</Text>
+                      <Text size={1} weight="semibold">
+                        {count}
+                      </Text>
+                    </Flex>
+                  ))}
+              </Stack>
+              <Flex justify="flex-end" gap={2}>
+                <Button
+                  text="Annuler"
+                  mode="bleed"
+                  disabled={publicationBusy}
+                  onClick={() => setConfirmationOpen(false)}
+                />
+                <Button
+                  tone="primary"
+                  text={publicationState.phase === 'publishing' ? 'Publication…' : 'Confirmer'}
+                  loading={publicationBusy}
+                  disabled={publicationBusy}
+                  onClick={() => void confirmPublication()}
+                />
+              </Flex>
+            </Stack>
+          </Box>
+        </Dialog>
+      )}
     </div>
   )
 }
