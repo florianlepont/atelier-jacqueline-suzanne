@@ -108,14 +108,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
+| ABOUT-03 | Phase 15 | Pending |
+| ABOUT-04 | Phase 15 | Pending |
+| ERR-01 | Phase 16 | Pending |
 | LAUNCH-01 | Phase 5 | Pending |
 
 **Coverage:**
 
+- v1.4 requirements: 3 total (ABOUT-03, ABOUT-04, ERR-01)
+- Mapped to phases: 3/3 ✓ (Phase 15: ABOUT-03, ABOUT-04; Phase 16: ERR-01 — both not started)
 - Carried-forward requirements: 1 total (LAUNCH-01)
 - Mapped to phases: 1/1 ✓ (Phase 5, not started)
 - v2 (v1.x fast-follow) requirements: 18 tracked, not yet in roadmap (out of scope for this roadmap by design)
 
 ---
 *Requirements defined: 2026-07-05*
-*Last updated: 2026-07-29 — added v1.4 (Editorial Design Consistency) requirements: ABOUT-03/04, ERR-01*
+*Last updated: 2026-07-29 — v1.4 (Editorial Design Consistency) roadmapped: ABOUT-03/04 → Phase 15 (About Page Editorial Redesign), ERR-01 → Phase 16 (404 Page Editorial Redesign); 3/3 mapped*

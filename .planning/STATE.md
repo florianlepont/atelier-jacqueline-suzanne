@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Editorial Design Consistency
 status: planning
-last_updated: "2026-07-28T21:21:03.228Z"
-last_activity: 2026-07-28
+last_updated: "2026-07-29T00:00:00.000Z"
+last_activity: 2026-07-29
 progress:
-  total_phases: 0
+  total_phases: 2
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-22)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; v1.3 adds a non-transactional Éditions showcase; checkout still follows in the future v1.x shop milestone.)
-**Current focus:** Planning next milestone
+**Current focus:** v1.4 Editorial Design Consistency — Phase 15 (About Page Editorial Redesign)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-07-28 — Milestone v1.4 started
+Phase: 15 of 16 (About Page Editorial Redesign) — not started
+Plan: — (not yet planned)
+Status: Roadmapped, ready to plan
+Last activity: 2026-07-29 — v1.4 ROADMAP.md created: Phase 15 (About Page Editorial Redesign, ABOUT-03/04) then Phase 16 (404 Page Editorial Redesign, ERR-01)
 
 ## Performance Metrics
 
@@ -85,6 +85,7 @@ Last activity: 2026-07-28 — Milestone v1.4 started
 - Phase 6 completed 2026-07-13: HOME-01/02/03 delivered per plan (commits `ad27437`..`dbebd6f`), plus a substantial live post-checkpoint follow-on (commit `44cc10d`) reworking the mobile hero (full-bleed `100svh`, panel overlaid on the photo) and replacing the arrow-button navigation with a clickable dashed progress indicator plus keyboard/swipe support — none of this follow-on was in the original plan; it was discovered through direct use after Task 3's checkpoint was already approved, and reconciled into tracked history via `06-01-SUMMARY.md` per explicit user request. v1.1 milestone is now complete; Phase 5 (Launch & Domain Cutover) is the only remaining v1 phase.
 - v1.2 milestone (Homepage Polish, Pre-Launch) roadmapped 2026-07-13: four new integer phases (7–10, continuing numbering from Phase 6) cover all eight v1.2 requirements (HOME-04..HOME-10, I18N-04), sequenced by blast radius rather than dumped into one phase — Phase 7 (HOME-04, HOME-05, HOME-06): small, contained, homepage-only header/CSS tweaks and a mobile bug fix, done first with no shared-component or content-model risk. Phase 8 (HOME-07, HOME-08): grouped together because both surface the same new per-gallery description content (Sanity schema addition), just in two display forms (carousel byline, grid hover) — building the schema once and wiring both displays in the same phase avoids doing the content-model work twice. Phase 9 (HOME-09): kept standalone — progressive image loading has its own distinct testing surface (loading states/priority/transition timing) and potentially touches more than just the homepage's own images, so it wasn't folded into Phase 7's contained fixes. Phase 10 (HOME-10, I18N-04): the highest-risk item (structural header-consolidation refactor spanning homepage + About/Contact) done last, in its own phase, depending on Phase 7 — so the header nav/toggle groundwork already fixed in Phase 7 gets carried into the unified component once, rather than rebuilt twice; I18N-04 (language switcher globe-icon change) is bundled in because its presentation lives inside the same header being unified.
 - v1.3 milestone "Éditions" roadmapped 2026-07-22: four new integer phases (11–14, continuing numbering from Phase 10; Phase 5 stays untouched/separately tracked and out of this milestone) cover all eight v1.3 requirements (EDN-01..EDN-07, CMS-04), following research/SUMMARY.md's proposed 4-phase structure near-verbatim (schema before data-fetch, routes before nav since nav touches every-page shared chrome, verification as an explicit final pass for omission-class risks). Phase 11 (Schema & Content Model — CMS-04, EDN-05): new `edition` Sanity document type mirroring `gallery.ts`'s richer editorial workflow, seeded with real content; format-detail fields grouped and typed now so a future shop `commerce` field group is additive, not a restructuring; also the phase where the "Rebut" gallery/édition naming-overlap question gets raised with Romane. Phase 12 (Data-Fetch Layer & Routes — EDN-02, EDN-03, EDN-04, EDN-06, EDN-07): build-time GROQ layer + bilingual overview/detail routes, verifiable in isolation before anything shared is touched; detail page mirrors `galleries/[slug].astro` directly, overview page is genuinely new (no gallery equivalent). Phase 13 (Nav Integration — EDN-01): touches the one piece of shared, every-page chrome in this feature (`SiteHeader`, threaded through two independent call sites — `BaseLayout.astro` and `HomeCarousel.astro`); sequenced last of the build phases so nav never points at an unready route. Phase 14 (Verification & UAT — no primary requirement, cross-cutting): a dedicated pass because this milestone's dominant risk class is omission bugs (missed locale, missed sitemap entry, missed nav call site) that don't fail loudly on a single happy-path check.
+- v1.4 milestone "Editorial Design Consistency" roadmapped 2026-07-29: two new integer phases (15–16, continuing numbering from Phase 14; Phase 5 stays untouched/separately tracked and out of this milestone) cover all three v1.4 requirements (ABOUT-03, ABOUT-04, ERR-01). Phase 15 (About Page Editorial Redesign — ABOUT-03, ABOUT-04): both requirements touch the same file (`AboutPageBody.astro`) and are sequential steps toward one end state, so kept as a single phase rather than split — the mechanical `PageTitleHeader` title swap (ABOUT-03) done first, then the broader layout rework (ABOUT-04) via a sketch-explored design process mirroring the Contact page redesign (multiple layout proposals sketched, a winner picked, then implemented). Phase 16 (404 Page Editorial Redesign — ERR-01): kept separate from Phase 15 despite reusing the identical `PageTitleHeader` component, because it targets a different page/user surface and needs no design exploration (the treatment is already fully specified by Contact/Éditions/About) — a small, independent, visual-only phase.
 
 ### Decisions
 
@@ -97,6 +98,7 @@ Recent decisions affecting current work:
 - [Roadmap]: v1.1 milestone (Homepage Refinements) mapped to a single new Phase 6, continuing integer numbering from v1.0's Phase 5 — all three requirements (HOME-01/02/03) touch the same component (HomeCarousel.astro) and are cosmetic/interaction refinements with no new backend/data model, so a single phase was judged more coherent than splitting.
 - [Roadmap]: v1.2 milestone (Homepage Polish, Pre-Launch) mapped to four new phases (7–10), continuing integer numbering from Phase 6 — split by blast radius/risk (contained visual fixes → shared content-model addition → self-contained perf change → shared-component structural refactor done last) rather than one large phase, since HOME-10/I18N-04 carry materially higher risk (multi-page shared component) than the other six requirements.
 - [Roadmap]: v1.3 milestone "Éditions" mapped to four new phases (11–14), continuing integer numbering from Phase 10 — Phase 5 (Launch & Domain Cutover) is untouched and remains separately tracked, not part of this milestone. Phase order follows dependency + blast-radius reasoning from research/SUMMARY.md: schema/content model must exist and be seeded before the data-fetch layer can be verified against anything real; routes come before nav wiring since nav is the only part touching shared chrome used by every existing page; verification is its own explicit final phase because this milestone's pitfalls are dominated by omission-class bugs.
+- [Roadmap]: v1.4 milestone "Editorial Design Consistency" mapped to two new phases (15–16), continuing integer numbering from Phase 14 — Phase 5 (Launch & Domain Cutover) remains untouched and separately tracked. ABOUT-03 and ABOUT-04 grouped into one phase (15) rather than split, since both touch the same file and are sequential steps of the same About-page deliverable (mechanical title swap first, then a sketch-explored layout rework) — splitting would have created a thin, single-requirement phase for ABOUT-03 alone. ERR-01 kept as its own phase (16), independent of Phase 15, since it's a different page/user surface needing no design exploration.
 - [Phase 01]: No SSR adapter installed for Astro (output: 'static' framework default) per OVH static-hosting constraint — OVH Web Hosting is a zero-compute Apache file server; @astrojs/cloudflare/wrangler are explicitly excluded
 - [Phase 01]: Phase 1 staging deploys to GitHub Pages (repo now public) instead of an OVH subdomain; OVH SFTP facts recorded for Phase 5 — OVH Free hosting tier cannot attach any subdomain (multisite requires paid tier); GitHub Pages reuses existing repo with zero new signup and automatic HTTPS
 - [Phase 01]: Sanity read-only + one-time write tokens created and revoked entirely via CLI (sanity tokens add/delete), no dashboard visit needed — sanity tokens add/list/delete supports full non-interactive token lifecycle management
@@ -238,12 +240,13 @@ Items acknowledged and deferred at v1.3 milestone close on 2026-07-23 (`/gsd-com
 
 ## Session Continuity
 
-Last session: 2026-07-27
-Stopped at: v1.0/v1.1/v1.2 retroactive milestone closure complete (MILESTONES.md entries, phase archives, ROADMAP.md collapse, PROJECT.md Validated-section fix, tags v1.0/v1.1/v1.2 pushed) — not mid-task, fully wrapped up
-Resume file: none — Phase 14's archive now lives at `.planning/milestones/v1.3-phases/14-verification-uat/` (moved by `/gsd-cleanup` earlier in this session; this pointer was stale before today's edit)
+Last session: 2026-07-29
+Stopped at: v1.4 ROADMAP.md created (Phase 15: About Page Editorial Redesign — ABOUT-03/04; Phase 16: 404 Page Editorial Redesign — ERR-01), REQUIREMENTS.md traceability updated, 3/3 v1.4 requirements mapped — not yet planned or executed
+Resume file: none
 
-**Next up:** `/gsd-new-milestone` — scope the next milestone. All shipped work through v1.3 is now formally archived and tagged (v1.0, v1.1, v1.2, v1.3); Phase 5 (Launch & Domain Cutover) remains open and deliberately deferred whenever launch is next prioritized.
+**Next up:** `/gsd-plan-phase 15` (or `/gsd-discuss-phase 15` first, given ABOUT-04's exploratory design-sketch step) to plan About Page Editorial Redesign; Phase 16 (404 Page Editorial Redesign) follows, independent and lower-risk. Phase 5 (Launch & Domain Cutover) remains open and deliberately deferred whenever launch is next prioritized.
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Run `/gsd-discuss-phase 15` or `/gsd-plan-phase 15` to begin About Page Editorial Redesign (ABOUT-03 mechanical title swap, then ABOUT-04's sketch-explored layout rework)
+- Then `/gsd-plan-phase 16` for the independent, lower-risk 404 Page Editorial Redesign (ERR-01)
