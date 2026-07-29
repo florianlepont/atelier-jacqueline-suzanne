@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sketch 014 — About Page Composition</title>
+<link rel="stylesheet" href="../themes/default.css" />
+<style>
+  :root {
+    /* Tokens present in the real BaseLayout.astro :root but not yet mirrored
+       into themes/default.css — added here so this sketch consumes the exact
+       same editorial-page role set the real component uses. No new values. */
+    --editorial-page-lead-size: clamp(18px, 1.5vw, 22px);
+    --editorial-page-lead-leading: 1.35;
+    --editorial-page-section-title-leading: 1.15;
+    --editorial-page-column-gap: clamp(var(--space-2xl), 6vw, 96px);
+  }
+
+  body { padding-top: 56px; }
+
+  /* ---------- Variant nav ---------- */
+  #variant-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9998; height: 56px;
+    background: var(--gray-900); color: var(--gray-0);
+    padding: 0 16px; display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; overflow-x: auto;
+    font-family: var(--font-sans); font-size: 13px;
+    box-sizing: border-box;
+  }
+  .variant-tab {
+    flex-shrink: 0; background: transparent; border: 1px solid rgba(255,255,255,0.3); color: var(--gray-0);
+    padding: 8px 14px; cursor: pointer; font-family: var(--font-sans); font-size: 13px;
+    border-radius: var(--radius-sm); transition: all 0.15s ease;
+  }
+  .variant-tab:hover { border-color: var(--pink-600); }
+  .variant-tab.active { background: var(--pink-600); border-color: var(--pink-600); font-weight: 600; }
+
+  .variant { display: none; }
+  .variant.active { display: block; }
+
+  /* ---------- Sketch toolbar ---------- */
+  #sketch-tools {
+    position: fixed; bottom: 12px; right: 12px; z-index: 9999; font-family: system-ui; font-size: 12px;
+    background: rgba(0,0,0,0.78); color: white; padding: 10px 14px; border-radius: 8px;
+    opacity: 0.5; transition: opacity 0.2s; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; max-width: 90vw;
+  }
+  #sketch-tools:hover { opacity: 1; }
+  #sketch-tools button {
+    background: rgba(255,255,255,0.15); color: white; border: none; padding: 5px 9px;
+    border-radius: 4px; cursor: pointer; font-size: 12px;
+  }
+  #sketch-tools button:hover { background: rgba(255,255,255,0.3); }
+  #sketch-tools button.active-vp { background: var(--pink-600); }
+  #sketch-tools label { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+
+  .sketch-viewport {
+    margin: 0 auto; transition: max-width 0.2s ease;
+    container-type: inline-size; container-name: sketch-vp;
+  }
+  .sketch-viewport.vp-desktop { max-width: none; }
+  .sketch-viewport.vp-phone { max-width: 375px; }
+  .sketch-viewport.vp-shortwide { max-width: none; max-height: 560px; overflow-y: auto; border: 2px dashed var(--pink-600); }
+
+  /* ---------- Meta / review-annotation chrome (not part of the About page
+     itself — mirrors sketch 005/013's own .stage h2 / .question panel) ---------- */
+  .meta-panel { max-width: var(--editorial-page-max); margin: 0 auto; padding: 0 var(--editorial-page-padding-inline); }
+  .meta-panel h2 { font-family: var(--font-display); font-weight: var(--weight-semibold); font-size: 22px; margin: var(--space-lg) 0 4px; }
+  .meta-question { color: #6b6b6b; font-size: 14px; margin: 0 0 var(--space-md); max-width: 760px; font-family: var(--font-sans); line-height: 1.5; }
+  .frame-hint { font-size: 12px; color: #8a8a8a; margin: var(--space-sm) 0 0; text-transform: uppercase; letter-spacing: 0.04em; font-family: var(--font-sans); }
+
+  /* ============================================================
+     Shared page shell + PageTitleHeader replica (byte-for-byte
+     mirror of src/components/PageTitleHeader.astro, scoped to
+     .pth so all 3 variants reuse the identical real component
+     treatment — this is NOT re-designed, only reproduced).
+     ============================================================ */
+  .about-shell { width: min(100%, var(--editorial-page-max)); margin: 0 auto; padding: var(--editorial-page-padding-block) var(--editorial-page-padding-inline); overflow: hidden; }
+
+  .pth {
+    position: relative; isolation: isolate; margin-bottom: var(--space-lg);
+    display: grid; grid-template-columns: 1fr; gap: var(--space-lg);
+  }
+  @container sketch-vp (min-width: 760px) {
+    .pth { grid-template-columns: auto 1fr; align-items: end; column-gap: var(--space-2xl); }
+  }
+  .pth__titleblock { position: relative; grid-column: 1; grid-row: 1; }
+  .pth__eyebrow {
+    display: flex; align-items: center; gap: 8px; width: fit-content; margin: 0;
+    font-size: var(--text-label-size); font-weight: var(--weight-semibold); line-height: var(--text-label-leading);
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .pth__eyebrow::before {
+    content: ''; width: 8px; height: 8px; flex-shrink: 0; background: var(--color-accent); display: inline-block;
+    animation: pth-eyebrow-pulse 2.2s ease-in-out infinite;
+  }
+  @keyframes pth-eyebrow-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
+  .pth h1 {
+    margin: var(--space-md) 0 0; font-size: clamp(64px, 9vw, 140px); font-weight: var(--weight-semibold);
+    font-family: var(--font-display); line-height: 1.05; letter-spacing: -0.04em; white-space: nowrap; display: inline-block;
+  }
+  .pth__intro { grid-column: 1; margin: 0; line-height: 1.5; color: #3a3a3a; max-width: 46ch; }
+  @container sketch-vp (min-width: 760px) {
+    .pth__intro { grid-column: 2; grid-row: 1; padding-bottom: 0.3em; padding-left: var(--space-lg); }
+  }
+  .pth__divider { display: none; }
+  @container sketch-vp (min-width: 760px) {
+    .pth__divider {
+      display: block; grid-column: 2; grid-row: 1; justify-self: start; align-self: end;
+      height: 120px; width: var(--border-hairline); background: var(--color-border);
+    }
+  }
+  .pth__halftone {
+    position: absolute; top: -700px; bottom: -700px; left: -700px; right: -700px;
+    background-image: radial-gradient(rgba(26, 26, 26, 0.16) 1.4px, transparent 1.6px);
+    background-size: 9px 9px;
+    -webkit-mask-image: radial-gradient(circle 640px at right 700px top 700px, black 0%, rgba(0,0,0,0.72) 18%, rgba(0,0,0,0.42) 40%, rgba(0,0,0,0.18) 65%, rgba(0,0,0,0.05) 85%, transparent 100%);
+    mask-image: radial-gradient(circle 640px at right 700px top 700px, black 0%, rgba(0,0,0,0.72) 18%, rgba(0,0,0,0.42) 40%, rgba(0,0,0,0.18) 65%, rgba(0,0,0,0.05) 85%, transparent 100%);
+    z-index: -1; pointer-events: none; opacity: 0.9;
+  }
+
+  /* Empty-intro right-column watch-out: because `intro=""` per D-01, the
+     ≥760px grid still lays out an intro paragraph + hairline divider column
+     with nothing in it unless a variant explicitly resolves that space. Each
+     variant below resolves it differently (see .meta-question copy). */
+
+  /* ============================================================
+     VARIANT A — Settle & Restyled Two-Column Grid
+     D-05: pure motion settle (no text reveal)
+     D-07: two-column restyle (closest to today's layout, re-skinned)
+     Empty-intro fix: page-scoped SUPPRESSION — intro + divider hidden
+     entirely, header collapses to a single full-width column.
+     ============================================================ */
+  .pth--a .pth__intro, .pth--a .pth__divider { display: none; }
+  @container sketch-vp (min-width: 760px) {
+    .pth--a { grid-template-columns: 1fr; }
+  }
+
+  .a-bio-row {
+    display: flex; gap: var(--space-2xl); align-items: flex-start;
+    padding-top: var(--space-md); border-top: var(--border-hairline) solid var(--color-ink);
+  }
+  .a-lead { flex: 1 1 auto; margin: 0; font-size: var(--editorial-page-lead-size); font-weight: var(--weight-regular); line-height: var(--editorial-page-lead-leading); }
+  .a-portrait { flex: 0 0 auto; width: 112px; height: 112px; margin: 0; overflow: hidden; border: var(--border-hairline) solid var(--color-ink); border-radius: 50%; }
+  .a-portrait img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  @container sketch-vp (max-width: 767px) {
+    .a-bio-row { flex-direction: column-reverse; gap: var(--space-md); }
+    .a-portrait { width: 72px; height: 72px; align-self: flex-end; }
+  }
+
+  .a-hero-wrap { margin-top: clamp(var(--space-2xl), 6vw, 80px); }
+  .a-hero-viewport { position: relative; width: 100%; height: 460px; overflow: hidden; background: var(--color-ink); border: var(--border-hairline) solid var(--color-border); }
+  .a-hero-track { position: relative; height: 1100px; }
+  .a-hero-pin { position: sticky; top: 0; height: 460px; overflow: hidden; }
+  .a-hero-imgwrap { position: absolute; inset: 0; overflow: hidden; }
+  .a-hero-imgwrap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+  @container sketch-vp (max-width: 767px) {
+    .a-hero-viewport { height: auto; aspect-ratio: 16 / 10; }
+    .a-hero-track { height: auto; }
+    .a-hero-pin { position: relative; height: auto; aspect-ratio: 16 / 10; }
+  }
+
+  .a-sections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--editorial-page-column-gap); margin-top: clamp(var(--space-2xl), 5vw, 64px); }
+  .a-section { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: var(--space-md); padding-top: var(--space-md); border-top: var(--border-hairline) solid var(--color-ink); }
+  .a-number { margin: 0; font-size: var(--text-body-size); font-weight: var(--weight-semibold); letter-spacing: 0.08em; text-transform: uppercase; }
+  .a-section h2 { font-size: var(--editorial-page-section-title-size); font-weight: var(--weight-semibold); font-family: var(--font-display); line-height: var(--editorial-page-section-title-leading); margin: 0 0 var(--space-md); }
+  .a-section p { font-size: var(--text-body-size); font-weight: var(--weight-regular); line-height: 1.5; margin: 0; }
+  @container sketch-vp (max-width: 767px) {
+    .a-sections { grid-template-columns: 1fr; }
+  }
+
+  /* ============================================================
+     VARIANT B — Reveal into Section 01 & Stacked Row-List
+     D-05: hero shrink reveals "01 Atelier & pratique" in the freed space
+     D-07: stacked full-width row-list (Éditions-style)
+     Empty-intro fix: the circular PORTRAIT occupies the header's second
+     grid column/row (the exact slot the empty intro + divider would sit
+     in), instead of leaving it empty or hiding it.
+     ============================================================ */
+  .pth--b .pth__intro, .pth--b .pth__divider { display: none; }
+  .pth__portrait-slot { margin-top: var(--space-md); }
+  @container sketch-vp (min-width: 760px) {
+    .pth__portrait-slot { grid-column: 2; grid-row: 1; justify-self: start; align-self: end; padding-left: var(--space-lg); margin-top: 0; }
+  }
+  .b-portrait { width: 112px; height: 112px; margin: 0; border-radius: 50%; overflow: hidden; border: var(--border-hairline) solid var(--color-ink); }
+  .b-portrait img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  @container sketch-vp (max-width: 767px) {
+    .b-portrait { width: 72px; height: 72px; }
+  }
+
+  .b-lead { margin: var(--space-xl) 0 0; padding-top: var(--space-md); border-top: var(--border-hairline) solid var(--color-ink); font-size: var(--editorial-page-lead-size); font-weight: var(--weight-regular); line-height: var(--editorial-page-lead-leading); }
+
+  .b-hero-wrap { margin-top: clamp(var(--space-2xl), 6vw, 80px); }
+  .b-hero-viewport { position: relative; width: 100%; height: 480px; overflow: hidden; background: var(--color-ink); border: var(--border-hairline) solid var(--color-border); }
+  .b-hero-track { position: relative; height: 1400px; }
+  .b-hero-pin { position: sticky; top: 0; height: 480px; overflow: hidden; }
+  .b-hero-imgwrap { position: absolute; inset: 0; overflow: hidden; }
+  .b-hero-imgwrap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+  .b-hero-scrim { position: absolute; inset: 0; background: linear-gradient(to right, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.1) 55%, transparent 75%); pointer-events: none; }
+  .b-hero-reveal { position: absolute; top: 50%; right: var(--space-2xl); transform: translateY(-50%); max-width: 420px; opacity: 0; pointer-events: none; }
+  .b-hero-reveal .reveal-number { display: inline-block; margin: 0 0 var(--space-sm); font-size: var(--text-body-size); font-weight: var(--weight-semibold); letter-spacing: 0.08em; text-transform: uppercase; color: #FFFFFF; border-bottom: 2px solid var(--color-accent); padding-bottom: 4px; }
+  .b-hero-reveal h2 { margin: 0 0 var(--space-md); font-family: var(--font-display); font-weight: var(--weight-semibold); font-size: var(--editorial-page-section-title-size); line-height: var(--editorial-page-section-title-leading); color: #FFFFFF; }
+  .b-hero-reveal p { margin: 0; font-size: var(--text-body-size); line-height: 1.5; color: rgba(255,255,255,0.85); }
+  @container sketch-vp (max-width: 767px) {
+    .b-hero-viewport { height: auto; aspect-ratio: 16 / 10; }
+    .b-hero-track { height: auto; }
+    .b-hero-pin { position: relative; height: auto; aspect-ratio: 16 / 10; }
+    .b-hero-reveal { display: none; }
+  }
+
+  .b-index { margin-top: clamp(var(--space-2xl), 5vw, 64px); }
+  .b-row { display: grid; grid-template-columns: 80px minmax(0, 1fr); gap: var(--space-lg); padding: var(--space-lg) 0; border-top: var(--border-hairline) solid var(--color-ink); align-items: baseline; }
+  .b-row:last-child { border-bottom: var(--border-hairline) solid var(--color-ink); }
+  .b-row-number { margin: 0; font-size: var(--text-body-size); font-weight: var(--weight-semibold); letter-spacing: 0.08em; text-transform: uppercase; }
+  .b-row h2 { margin: 0 0 var(--space-sm); font-family: var(--font-display); font-weight: var(--weight-semibold); font-size: var(--editorial-page-section-title-size); line-height: var(--editorial-page-section-title-leading); }
+  .b-row p { margin: 0; font-size: var(--text-body-size); line-height: 1.5; max-width: 64ch; }
+  @container sketch-vp (max-width: 767px) {
+    .b-row { grid-template-columns: 1fr; gap: var(--space-sm); }
+  }
+
+  /* ============================================================
+     VARIANT C — Reveal into Section 01 & Asymmetric Structure
+     D-05: hero shrink (settles right) reveals "01 Atelier & pratique"
+     into the freed left space, mirrored from B for variety
+     D-07: other asymmetric structure — unequal-width columns, section 02
+     offset downward, distinct from both A's even grid and B's stacked rows
+     Empty-intro fix: divider KEPT (not suppressed, not filled) — the
+     circular portrait is anchored directly beneath it, so the hairline
+     visually "runs into" the portrait instead of ending in dead space.
+     ============================================================ */
+  .c-portrait-anchor { display: flex; justify-content: flex-end; margin-top: calc(-1 * var(--space-sm)); }
+  .c-portrait { width: 112px; height: 112px; border-radius: 50%; overflow: hidden; border: var(--border-hairline) solid var(--color-ink); }
+  .c-portrait img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  @container sketch-vp (max-width: 767px) {
+    .c-portrait-anchor { justify-content: flex-start; margin-top: var(--space-md); }
+    .c-portrait { width: 72px; height: 72px; }
+  }
+
+  .c-lead { margin: var(--space-xl) 0 0; padding-top: var(--space-md); border-top: var(--border-hairline) solid var(--color-ink); font-size: var(--editorial-page-lead-size); font-weight: var(--weight-regular); line-height: var(--editorial-page-lead-leading); }
+
+  .c-hero-wrap { margin-top: clamp(var(--space-2xl), 6vw, 80px); }
+  .c-hero-viewport { position: relative; width: 100%; height: 480px; overflow: hidden; background: var(--color-ink); border: var(--border-hairline) solid var(--color-border); }
+  .c-hero-track { position: relative; height: 1400px; }
+  .c-hero-pin { position: sticky; top: 0; height: 480px; overflow: hidden; }
+  .c-hero-imgwrap { position: absolute; inset: 0; overflow: hidden; }
+  .c-hero-imgwrap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+  .c-hero-scrim { position: absolute; inset: 0; background: linear-gradient(to left, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.1) 55%, transparent 75%); pointer-events: none; }
+  .c-hero-reveal { position: absolute; top: 50%; left: var(--space-2xl); transform: translateY(-50%); max-width: 460px; opacity: 0; pointer-events: none; }
+  .c-hero-reveal .reveal-number { display: inline-block; margin: 0 0 var(--space-sm); font-size: var(--text-body-size); font-weight: var(--weight-semibold); letter-spacing: 0.08em; text-transform: uppercase; color: #FFFFFF; border-bottom: 2px solid var(--color-accent); padding-bottom: 4px; }
+  .c-hero-reveal h2 { margin: 0 0 var(--space-md); font-family: var(--font-display); font-weight: var(--weight-semibold); font-size: var(--editorial-page-section-title-size); line-height: var(--editorial-page-section-title-leading); color: #FFFFFF; }
+  .c-hero-reveal p { margin: 0; font-size: var(--text-body-size); line-height: 1.5; color: rgba(255,255,255,0.85); }
+  @container sketch-vp (max-width: 767px) {
+    .c-hero-viewport { height: auto; aspect-ratio: 16 / 10; }
+    .c-hero-track { height: auto; }
+    .c-hero-pin { position: relative; height: auto; aspect-ratio: 16 / 10; }
+    .c-hero-reveal { display: none; }
+  }
+
+  .c-sections { display: grid; grid-template-columns: 1.6fr 1fr; gap: var(--editorial-page-column-gap); margin-top: clamp(var(--space-2xl), 5vw, 64px); align-items: start; }
+  .c-section { padding-top: var(--space-md); border-top: var(--border-hairline) solid var(--color-ink); }
+  .c-section--narrow { margin-top: clamp(var(--space-2xl), 4vw, 56px); }
+  .c-number { margin: 0 0 var(--space-md); font-size: var(--text-body-size); font-weight: var(--weight-semibold); letter-spacing: 0.08em; text-transform: uppercase; }
+  .c-section h2 { margin: 0 0 var(--space-md); font-family: var(--font-display); font-weight: var(--weight-semibold); font-size: var(--editorial-page-section-title-size); line-height: var(--editorial-page-section-title-leading); }
+  .c-section p { margin: 0; font-size: var(--text-body-size); line-height: 1.5; }
+  @container sketch-vp (max-width: 767px) {
+    .c-sections { grid-template-columns: 1fr; }
+    .c-section--narrow { margin-top: var(--space-2xl); }
+  }
+</style>
+</head>
+<body>
+
+<div id="variant-nav">
+  <button class="variant-tab active" data-variant="A" onclick="showVariant('A', event)">A — Settle &amp; Grille restylée</button>
+  <button class="variant-tab" data-variant="B" onclick="showVariant('B', event)">B — Révélation section 01 &amp; Liste empilée</button>
+  <button class="variant-tab" data-variant="C" onclick="showVariant('C', event)">C — Révélation section 01 &amp; Asymétrie</button>
+</div>
+
+<!-- Real production copy used throughout (live FR content from
+     atelierjacquelinesuzanne.fr's Sanity-managed About page, fetched
+     2026-07-29 — not the build-time fallback strings, the actual
+     resolved biography/practice/medium text). -->
+
+<div class="sketch-viewport vp-desktop" id="viewport">
+
+<!-- ============ VARIANT A ============ -->
+<div id="variant-A" class="variant active">
+  <div class="meta-panel">
+    <h2>A — Settle &amp; Grille restylée</h2>
+    <p class="meta-question">D-05 (révélation photo) : la photo se réduit et se recentre légèrement (~86%) sans jamais révéler de texte — un simple "rangement" avant d'atteindre les sections, pas un spectacle. D-07 (sections) : les deux sections numérotées gardent leur grille à deux colonnes actuelle, seulement réharmonisée au nouveau rythme d'espacement (gouttières plus larges, bordures hairline cohérentes avec le header). Colonne 2 du header (intro vide) : <strong>supprimée entièrement</strong> via un CSS scopé à la page (intro + diviseur masqués) — le titre géant occupe alors toute la largeur disponible, sans colonne fantôme.</p>
+  </div>
+  <div class="about-shell">
+    <header class="pth pth--a">
+      <div class="pth__halftone" aria-hidden="true"></div>
+      <div class="pth__titleblock">
+        <p class="pth__eyebrow">Atelier Jacqueline Suzanne</p>
+        <h1 id="about-title-a">À propos</h1>
+      </div>
+      <p class="pth__intro"></p>
+      <div class="pth__divider" aria-hidden="true"></div>
+    </header>
+
+    <div class="a-bio-row">
+      <p class="a-lead">Romane Lepont est photographe et développe son travail artistique sous le nom d’Atelier Jacqueline Suzanne. À travers différentes séries, elle compose un univers sensible où le regard se pose sur les détails, les matières et les instants suspendus. Sa démarche explore la capacité de la photographie à révéler ce qui, dans le quotidien, demeure parfois invisible ou passe inaperçu.</p>
+      <figure class="a-portrait">
+        <img src="https://cdn.sanity.io/images/gwz8iug4/production/f12e7efcb7326ba682ac03c92c80e1166e9e644f-5751x7004.jpg?rect=844,1063,4304,5514&w=240&fit=max&auto=format" alt="" />
+      </figure>
+    </div>
+
+    <div class="a-hero-wrap">
+      <div class="a-hero-viewport" id="a-hero-viewport">
+        <div class="a-hero-track" style="height: 1100px;">
+          <div class="a-hero-pin">
+            <div class="a-hero-imgwrap" id="a-hero-imgwrap">
+              <img src="https://cdn.sanity.io/images/gwz8iug4/production/b9a46e193a268efa35a18c9f66acb8ca7620ca17-3297x3014.jpg?w=1600&fit=max&auto=format" alt="" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="frame-hint">↕ scroller dans le cadre pour simuler le pin+shrink desktop (D-04)</p>
+    </div>
+
+    <div class="a-sections">
+      <section class="a-section">
+        <p class="a-number" aria-hidden="true">01</p>
+        <div>
+          <h2>Atelier &amp; pratique</h2>
+          <p>La pratique de l’Atelier Jacqueline Suzanne s’articule autour de la photographie et se construit au fil de séries pensées comme des ensembles à part entière. De la prise de vue à la sélection des images, chaque projet repose sur une attention particulière portée à la lumière, aux textures et au rythme du récit visuel. Ce travail prend forme à travers des tirages, des éditions et différents projets artistiques.</p>
+        </div>
+      </section>
+      <section class="a-section">
+        <p class="a-number" aria-hidden="true">02</p>
+        <div>
+          <h2>Médium &amp; technique</h2>
+          <p>La photographie constitue le médium principal de l’atelier. Le travail de l’image repose sur une attention particulière portée au cadrage, à la lumière, aux couleurs et aux textures. Chaque photographie est ensuite sélectionnée et préparée avec soin afin de préserver la cohérence visuelle de la série et d’accompagner sa déclinaison sous forme de tirage ou d’édition.</p>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- ============ VARIANT B ============ -->
+<div id="variant-B" class="variant">
+  <div class="meta-panel">
+    <h2>B — Révélation section 01 &amp; Liste empilée</h2>
+    <p class="meta-question">D-05 (révélation photo) : la photo se réduit fortement (~55%) et se cale à gauche ; l'espace libéré à droite laisse entrer le titre "Atelier &amp; pratique" et le début de son texte réel — un aperçu qui prépare la section complète plus bas, avec un soulignement rose (motif <code>DetailHero__format</code>) sur l'index "01". D-07 (sections) : les deux sections deviennent une liste empilée pleine-largeur façon Éditions (une ligne par section, index + titre + texte). Colonne 2 du header (intro vide) : le <strong>portrait circulaire occupe cet emplacement</strong> — la même case de la grille où le diviseur/intro vide se trouverait autrement.</p>
+  </div>
+  <div class="about-shell">
+    <header class="pth pth--b">
+      <div class="pth__halftone" aria-hidden="true"></div>
+      <div class="pth__titleblock">
+        <p class="pth__eyebrow">Atelier Jacqueline Suzanne</p>
+        <h1 id="about-title-b">À propos</h1>
+      </div>
+      <div class="pth__portrait-slot">
+        <figure class="b-portrait">
+          <img src="https://cdn.sanity.io/images/gwz8iug4/production/f12e7efcb7326ba682ac03c92c80e1166e9e644f-5751x7004.jpg?rect=844,1063,4304,5514&w=240&fit=max&auto=format" alt="" />
+        </figure>
+      </div>
+    </header>
+
+    <p class="b-lead">Romane Lepont est photographe et développe son travail artistique sous le nom d’Atelier Jacqueline Suzanne. À travers différentes séries, elle compose un univers sensible où le regard se pose sur les détails, les matières et les instants suspendus. Sa démarche explore la capacité de la photographie à révéler ce qui, dans le quotidien, demeure parfois invisible ou passe inaperçu.</p>
+
+    <div class="b-hero-wrap">
+      <div class="b-hero-viewport" id="b-hero-viewport">
+        <div class="b-hero-track" style="height: 1400px;">
+          <div class="b-hero-pin">
+            <div class="b-hero-imgwrap" id="b-hero-imgwrap">
+              <img src="https://cdn.sanity.io/images/gwz8iug4/production/b9a46e193a268efa35a18c9f66acb8ca7620ca17-3297x3014.jpg?w=1600&fit=max&auto=format" alt="" />
+            </div>
+            <div class="b-hero-scrim" id="b-hero-scrim"></div>
+            <div class="b-hero-reveal" id="b-hero-reveal">
+              <span class="reveal-number">01</span>
+              <h2>Atelier &amp; pratique</h2>
+              <p>La pratique de l’Atelier Jacqueline Suzanne s’articule autour de la photographie et se construit au fil de séries pensées comme des ensembles à part entière.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="frame-hint">↕ scroller dans le cadre — révélation dans l'espace libéré (D-05)</p>
+    </div>
+
+    <div class="b-index">
+      <div class="b-row">
+        <span class="b-row-number" aria-hidden="true">01</span>
+        <div>
+          <h2>Atelier &amp; pratique</h2>
+          <p>La pratique de l’Atelier Jacqueline Suzanne s’articule autour de la photographie et se construit au fil de séries pensées comme des ensembles à part entière. De la prise de vue à la sélection des images, chaque projet repose sur une attention particulière portée à la lumière, aux textures et au rythme du récit visuel. Ce travail prend forme à travers des tirages, des éditions et différents projets artistiques.</p>
+        </div>
+      </div>
+      <div class="b-row">
+        <span class="b-row-number" aria-hidden="true">02</span>
+        <div>
+          <h2>Médium &amp; technique</h2>
+          <p>La photographie constitue le médium principal de l’atelier. Le travail de l’image repose sur une attention particulière portée au cadrage, à la lumière, aux couleurs et aux textures. Chaque photographie est ensuite sélectionnée et préparée avec soin afin de préserver la cohérence visuelle de la série et d’accompagner sa déclinaison sous forme de tirage ou d’édition.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ VARIANT C ============ -->
+<div id="variant-C" class="variant">
+  <div class="meta-panel">
+    <h2>C — Révélation section 01 &amp; Asymétrie</h2>
+    <p class="meta-question">D-05 (révélation photo) : miroir de B mais la photo se réduit (~60%) et se cale à <em>droite</em> — l'espace libéré à gauche révèle "Atelier &amp; pratique" (même traitement, index "01" souligné de rose). D-07 (sections) : structure asymétrique inédite — colonnes de largeurs inégales (1.6fr / 1fr), la section 02 décalée plus bas pour casser la symétrie de A et la répétition de B. Colonne 2 du header (intro vide) : le diviseur hairline est <strong>conservé tel quel</strong>, mais le portrait circulaire est ancré juste en dessous — la ligne "continue" visuellement dans le portrait au lieu de finir dans le vide.</p>
+  </div>
+  <div class="about-shell">
+    <header class="pth pth--c">
+      <div class="pth__halftone" aria-hidden="true"></div>
+      <div class="pth__titleblock">
+        <p class="pth__eyebrow">Atelier Jacqueline Suzanne</p>
+        <h1 id="about-title-c">À propos</h1>
+      </div>
+      <p class="pth__intro"></p>
+      <div class="pth__divider" aria-hidden="true"></div>
+    </header>
+
+    <div class="c-portrait-anchor">
+      <figure class="c-portrait">
+        <img src="https://cdn.sanity.io/images/gwz8iug4/production/f12e7efcb7326ba682ac03c92c80e1166e9e644f-5751x7004.jpg?rect=844,1063,4304,5514&w=240&fit=max&auto=format" alt="" />
+      </figure>
+    </div>
+
+    <p class="c-lead">Romane Lepont est photographe et développe son travail artistique sous le nom d’Atelier Jacqueline Suzanne. À travers différentes séries, elle compose un univers sensible où le regard se pose sur les détails, les matières et les instants suspendus. Sa démarche explore la capacité de la photographie à révéler ce qui, dans le quotidien, demeure parfois invisible ou passe inaperçu.</p>
+
+    <div class="c-hero-wrap">
+      <div class="c-hero-viewport" id="c-hero-viewport">
+        <div class="c-hero-track" style="height: 1400px;">
+          <div class="c-hero-pin">
+            <div class="c-hero-imgwrap" id="c-hero-imgwrap">
+              <img src="https://cdn.sanity.io/images/gwz8iug4/production/b9a46e193a268efa35a18c9f66acb8ca7620ca17-3297x3014.jpg?w=1600&fit=max&auto=format" alt="" />
+            </div>
+            <div class="c-hero-scrim" id="c-hero-scrim"></div>
+            <div class="c-hero-reveal" id="c-hero-reveal">
+              <span class="reveal-number">01</span>
+              <h2>Atelier &amp; pratique</h2>
+              <p>La pratique de l’Atelier Jacqueline Suzanne s’articule autour de la photographie et se construit au fil de séries pensées comme des ensembles à part entière.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="frame-hint">↕ scroller dans le cadre — révélation dans l'espace libéré (D-05)</p>
+    </div>
+
+    <div class="c-sections">
+      <section class="c-section c-section--wide">
+        <p class="c-number" aria-hidden="true">01</p>
+        <h2>Atelier &amp; pratique</h2>
+        <p>La pratique de l’Atelier Jacqueline Suzanne s’articule autour de la photographie et se construit au fil de séries pensées comme des ensembles à part entière. De la prise de vue à la sélection des images, chaque projet repose sur une attention particulière portée à la lumière, aux textures et au rythme du récit visuel. Ce travail prend forme à travers des tirages, des éditions et différents projets artistiques.</p>
+      </section>
+      <section class="c-section c-section--narrow">
+        <p class="c-number" aria-hidden="true">02</p>
+        <h2>Médium &amp; technique</h2>
+        <p>La photographie constitue le médium principal de l’atelier. Le travail de l’image repose sur une attention particulière portée au cadrage, à la lumière, aux couleurs et aux textures. Chaque photographie est ensuite sélectionnée et préparée avec soin afin de préserver la cohérence visuelle de la série et d’accompagner sa déclinaison sous forme de tirage ou d’édition.</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<noscript>
+  <style>
+    .b-hero-reveal, .c-hero-reveal { opacity: 1 !important; }
+    .a-hero-imgwrap, .b-hero-imgwrap, .c-hero-imgwrap { left: 12% !important; right: 12% !important; top: 6% !important; bottom: 6% !important; }
+  </style>
+</noscript>
+
+<div id="sketch-tools">
+  Viewport:
+  <button class="viewport-btn active-vp" id="vpbtn-desktop" onclick="setViewport('desktop')">🖥️ Desktop</button>
+  <button class="viewport-btn" id="vpbtn-shortwide" onclick="setViewport('shortwide')">📐 Short-but-wide</button>
+  <button class="viewport-btn" id="vpbtn-phone" onclick="setViewport('phone')">📱 Mobile</button>
+  <label><input type="checkbox" id="force-rm" onchange="onForceReducedMotionChange()" /> Simuler prefers-reduced-motion</label>
+</div>
+
+<script>
+function showVariant(id, evt) {
+  document.querySelectorAll('.variant').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.variant-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('variant-' + id).classList.add('active');
+  (evt ? evt.target : document.querySelector('[data-variant="' + id + '"]')).classList.add('active');
+  requestAnimationFrame(checkAllStages);
+}
+
+function setViewport(size) {
+  const vp = document.getElementById('viewport');
+  vp.classList.remove('vp-phone', 'vp-desktop', 'vp-shortwide');
+  vp.classList.add('vp-' + size);
+  document.querySelectorAll('.viewport-btn').forEach(b => b.classList.remove('active-vp'));
+  document.getElementById('vpbtn-' + size).classList.add('active-vp');
+  requestAnimationFrame(checkAllStages);
+}
+
+let forcedReducedMotion = false;
+function onForceReducedMotionChange() {
+  forcedReducedMotion = document.getElementById('force-rm').checked;
+  checkAllStages();
+}
+
+function isReducedMotion() {
+  return forcedReducedMotion || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+const heroStages = [];
+
+function registerHero(cfg) {
+  heroStages.push(cfg);
+  setupHero(cfg);
+}
+
+function isMobileSim() {
+  const vp = document.getElementById('viewport');
+  return vp.getBoundingClientRect().width < 768;
+}
+
+function setupHero(cfg) {
+  const el = document.getElementById(cfg.viewportId);
+  if (!el) return;
+
+  if (isMobileSim()) {
+    // D-06: mobile keeps a plain static photo band, regardless of motion
+    // preference — no pin, no scroll listener at all (CSS container-query
+    // handles the visual static-band layout; JS only needs to detach).
+    el.onscroll = null;
+    cfg.clear();
+    return;
+  }
+
+  if (isReducedMotion()) {
+    // Desktop + prefers-reduced-motion: settled end-state immediately, no
+    // sticky pin, no scroll-linked motion (mirrors DetailHero.astro).
+    el.onscroll = null;
+    el.scrollTop = 0;
+    cfg.onProgress(1);
+    return;
+  }
+
+  cfg.onProgress(0);
+  el.onscroll = () => {
+    const progress = clamp01(el.scrollTop / cfg.revealDistance);
+    cfg.onProgress(progress);
+  };
+}
+
+function checkAllStages() {
+  heroStages.forEach(setupHero);
+}
+
+// ---- Variant A: pure settle, no reveal ----
+registerHero({
+  viewportId: 'a-hero-viewport',
+  revealDistance: 640,
+  refs: { imgwrap: document.getElementById('a-hero-imgwrap') },
+  onProgress(t) {
+    const width = lerp(100, 86, t);
+    const inset = (100 - width) / 2;
+    this.refs.imgwrap.style.left = inset + '%';
+    this.refs.imgwrap.style.right = inset + '%';
+    this.refs.imgwrap.style.top = (inset * 0.5) + '%';
+    this.refs.imgwrap.style.bottom = (inset * 0.5) + '%';
+  },
+  clear() {
+    ['left', 'right', 'top', 'bottom'].forEach(p => this.refs.imgwrap.style.removeProperty(p));
+  },
+});
+
+// ---- Variant B: reveal into section 01, shrinks left (55%) ----
+registerHero({
+  viewportId: 'b-hero-viewport',
+  revealDistance: 900,
+  refs: {
+    imgwrap: document.getElementById('b-hero-imgwrap'),
+    scrim: document.getElementById('b-hero-scrim'),
+    reveal: document.getElementById('b-hero-reveal'),
+  },
+  onProgress(t) {
+    const width = lerp(100, 55, t);
+    this.refs.imgwrap.style.left = '0%';
+    this.refs.imgwrap.style.right = (100 - width) + '%';
+    this.refs.imgwrap.style.top = '0%';
+    this.refs.imgwrap.style.bottom = '0%';
+    this.refs.scrim.style.opacity = String(clamp01(1 - t * 2.5));
+    const revealT = clamp01((t - 0.35) / 0.65);
+    this.refs.reveal.style.opacity = String(revealT);
+    this.refs.reveal.style.transform = 'translateY(-50%) translateX(' + lerp(24, 0, revealT) + 'px)';
+  },
+  clear() {
+    ['left', 'right', 'top', 'bottom'].forEach(p => this.refs.imgwrap.style.removeProperty(p));
+    this.refs.scrim.style.removeProperty('opacity');
+    this.refs.reveal.style.removeProperty('opacity');
+    this.refs.reveal.style.removeProperty('transform');
+  },
+});
+
+// ---- Variant C: reveal into section 01, shrinks right (60%), mirrored ----
+registerHero({
+  viewportId: 'c-hero-viewport',
+  revealDistance: 900,
+  refs: {
+    imgwrap: document.getElementById('c-hero-imgwrap'),
+    scrim: document.getElementById('c-hero-scrim'),
+    reveal: document.getElementById('c-hero-reveal'),
+  },
+  onProgress(t) {
+    const width = lerp(100, 60, t);
+    this.refs.imgwrap.style.right = '0%';
+    this.refs.imgwrap.style.left = (100 - width) + '%';
+    this.refs.imgwrap.style.top = '0%';
+    this.refs.imgwrap.style.bottom = '0%';
+    this.refs.scrim.style.opacity = String(clamp01(1 - t * 2.5));
+    const revealT = clamp01((t - 0.35) / 0.65);
+    this.refs.reveal.style.opacity = String(revealT);
+    this.refs.reveal.style.transform = 'translateY(-50%) translateX(' + lerp(-24, 0, revealT) + 'px)';
+  },
+  clear() {
+    ['left', 'right', 'top', 'bottom'].forEach(p => this.refs.imgwrap.style.removeProperty(p));
+    this.refs.scrim.style.removeProperty('opacity');
+    this.refs.reveal.style.removeProperty('opacity');
+    this.refs.reveal.style.removeProperty('transform');
+  },
+});
+
+window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', checkAllStages);
+window.addEventListener('resize', () => requestAnimationFrame(checkAllStages));
+</script>
+
+</body>
+</html>
