@@ -1,8 +1,8 @@
 ---
 phase: 16
 slug: 404-page-editorial-redesign
-status: draft
-nyquist_compliant: false
+status: mapped
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-07-29
 ---
@@ -38,11 +38,11 @@ created: 2026-07-29
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| TBD (assigned by planner) | TBD | TBD | ERR-01 | — | Pop-rate math never produces an interval below the WCAG-adjacent cap, across the full proximity range 0..1 | unit | `npx vitest run tests/unit/pop-rate.test.ts` | ❌ W0 | ⬜ pending |
-| TBD (assigned by planner) | TBD | TBD | ERR-01 | — | Reduced-motion branch ignores pointer entirely and swaps on the fixed drift interval | e2e | `npx playwright test not-found -g "reduced motion"` | ❌ W0 | ⬜ pending |
-| TBD (assigned by planner) | TBD | TBD | ERR-01 | — | 404 still serves HTTP 404, bilingual content, correct `noindex` meta, base-aware home link hrefs | e2e | `npx playwright test not-found` | ✅ (needs updated assertions) | ⬜ pending |
-| TBD (assigned by planner) | TBD | TBD | ERR-01 | T-Client-DoS (resource exhaustion via unbounded preload pool) | Built `404.html` contains exact base-prefixed home link hrefs (CR-01 regression class) | build-artifact | `npm run test:artifact` | ✅ (no change needed if hrefs stay base-aware) | ⬜ pending |
-| TBD (assigned by planner) | TBD | TBD | ERR-01 | — | No serious/critical automated a11y violations on the redesigned 404 page (decorative images, contrast, focus order) | e2e (axe) | `npx playwright test accessibility` | ❌ W0 — 404 path absent from scanned array | ⬜ pending |
+| 16-01 T1/T2 | 16-01 | 1 | ERR-01 | T-16-CAP | Pop-rate math never produces an interval below the WCAG-adjacent cap, across the full proximity range 0..1 (incl. NaN/out-of-range) | unit | `npx vitest run tests/unit/pop-rate.test.ts` | ❌ W0 → created in 16-01 | ⬜ pending |
+| 16-03 T2 | 16-03 | 2 | ERR-01 | T-16-05 | Reduced-motion branch ignores pointer entirely and swaps on the fixed drift interval | e2e | `npx playwright test not-found -g "reduced motion"` | ❌ W0 → added in 16-03 | ⬜ pending |
+| 16-02 T2 | 16-02 | 1 | ERR-01 | — | 404 still serves HTTP 404, bilingual content, correct `noindex` meta, base-aware home link hrefs | e2e | `npx playwright test not-found` | ✅ (assertions realigned in 16-02) | ⬜ pending |
+| 16-02 T1 | 16-02 | 1 | ERR-01 | T-16-01 (resource exhaustion via unbounded preload pool) | Built `404.html` contains exact base-prefixed home link hrefs (CR-01 regression class) | build-artifact | `EXPECTED_BASE=/ npm run test:artifact` | ✅ (hrefs stay base-aware via getRelativeLocaleUrl) | ⬜ pending |
+| 16-02 T2 | 16-02 | 1 | ERR-01 | T-16-02 | No serious/critical automated a11y violations on the redesigned 404 page (decorative images, contrast, focus order) | e2e (axe) | `npx playwright test accessibility` | ❌ W0 → 404 path added in 16-02 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -70,11 +70,11 @@ created: 2026-07-29
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency acceptable (unit tests run in well under a second; e2e/a11y run per wave, not per task)
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies (every non-checkpoint task has an `<automated>` command; the pop-rate module + test and both e2e specs are the Wave 0 gaps, created within the same phase in plans 16-01/16-02/16-03)
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify (each auto task carries a vitest/playwright/build+artifact command)
+- [x] Wave 0 covers all MISSING references (`src/lib/pop-rate.ts` + `tests/unit/pop-rate.test.ts` in 16-01; `not-found.spec.ts` reassert + `accessibility.spec.ts` 404 entry in 16-02; `not-found.spec.ts` reduced-motion case in 16-03)
+- [x] No watch-mode flags (all commands use `vitest run` / one-shot `playwright test` / `npm run test:*`)
+- [x] Feedback latency acceptable (pop-rate unit test runs in well under a second per task commit; e2e/a11y run per wave, not per task)
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** mapped 2026-07-29 (Task/Plan/Wave IDs assigned during /gsd-plan-phase 16)
