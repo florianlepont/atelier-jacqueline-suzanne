@@ -94,14 +94,14 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
   4. About page's existing bio/practice copy is fully preserved — only presentation changes, no content rewrite.
   5. About page renders correctly in both French and English.
 
-**Plans**: 1/4 plans executed
+**Plans**: 2/4 plans executed
 **Wave 1**
 
 - [x] 15-01-PLAN.md — About-page layout sketch exploration (2-3 variants → named winner; resolves D-05/D-07) [Wave 1]
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 15-02-PLAN.md — PageTitleHeader integration + static editorial composition (ABOUT-03 + ABOUT-04 static layer) [Wave 2]
+- [x] 15-02-PLAN.md — PageTitleHeader integration + static editorial composition (ABOUT-03 + ABOUT-04 static layer) [Wave 2]
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -151,7 +151,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 12. Data-Fetch Layer & Routes | 3/3 | Complete    | 2026-07-22 |
 | 13. Nav Integration | 2/2 | Complete    | 2026-07-23 |
 | 14. Verification & UAT | 4/4 | Complete    | 2026-07-23 |
-| 15. About Page Editorial Redesign | 1/4 | In Progress|  |
+| 15. About Page Editorial Redesign | 2/4 | In Progress|  |
 | 16. 404 Page Editorial Redesign | 0/TBD | Not started | - |
 
 ## Milestone Scope Note
