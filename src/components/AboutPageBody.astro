@@ -38,20 +38,21 @@ const {
 <article class="about-page">
   <PageTitleHeader heading={heading} headingId="about-title" intro="" />
 
-  <p class="about-page__lead">{biography}</p>
-
-  {portraitImage && (
-    <figure class="about-page__portrait">
-      <img
-        src={fullSizeUrl(portraitImage, 480)}
-        srcset={responsiveImageSrcSet(portraitImage, [160, 240, 320, 480])}
-        sizes="(max-width: 767px) 72px, 112px"
-        alt={portraitAlt}
-        loading="lazy"
-        decoding="async"
-      />
-    </figure>
-  )}
+  <div class="about-page__bio-row">
+    <p class="about-page__lead">{biography}</p>
+    {portraitImage && (
+      <figure class="about-page__portrait">
+        <img
+          src={fullSizeUrl(portraitImage, 480)}
+          srcset={responsiveImageSrcSet(portraitImage, [160, 240, 320, 480])}
+          sizes="(max-width: 767px) 72px, 112px"
+          alt={portraitAlt}
+          loading="lazy"
+          decoding="async"
+        />
+      </figure>
+    )}
+  </div>
 
   {exhibitionImage && (
     <figure class="about-page__exhibition">
@@ -117,19 +118,28 @@ const {
     text-transform: uppercase;
   }
 
-  .about-page__lead {
-    margin: var(--space-md) 0 0;
+  .about-page__bio-row {
+    display: flex;
+    gap: var(--space-2xl);
+    align-items: flex-start;
+    margin-top: var(--space-md);
     padding-top: var(--space-md);
     border-top: var(--border-hairline) solid var(--color-ink);
+  }
+
+  .about-page__lead {
+    flex: 1 1 auto;
+    margin: 0;
     font-size: var(--editorial-page-lead-size);
     font-weight: var(--weight-regular);
     line-height: var(--editorial-page-lead-leading);
   }
 
   .about-page__portrait {
+    flex: 0 0 auto;
     width: 112px;
     height: 112px;
-    margin: var(--space-md) 0 0;
+    margin: 0;
     overflow: hidden;
     border: var(--border-hairline) solid var(--color-ink);
     border-radius: 50%;
@@ -154,7 +164,7 @@ const {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--editorial-page-column-gap);
-    margin-top: clamp(var(--space-lg), 3vw, 40px);
+    margin-top: clamp(var(--space-2xl), 5vw, 64px);
   }
 
   .about-page__section {
@@ -181,9 +191,15 @@ const {
   }
 
   @media (max-width: 767px) {
+    .about-page__bio-row {
+      flex-direction: column-reverse;
+      gap: var(--space-md);
+    }
+
     .about-page__portrait {
       width: 72px;
       height: 72px;
+      align-self: flex-end;
     }
 
     .about-page__exhibition {
