@@ -16,7 +16,7 @@ Extend the giant-title editorial identity established on Contact/Éditions (shar
 
 ### Error Page
 
-- [ ] **ERR-01**: 404 page gets a fully custom, interactive redesign — a full-bleed backdrop of Romane's photography popping (hard-cutting) at a pointer/touch-proximity-driven rate, with the AJS logo, a small "404" marker, and the bilingual "Page introuvable / Not found" message centered over a dimming scrim (revised 2026-07-29 from the original `PageTitleHeader`-reuse framing — see `.planning/phases/16-404-page-editorial-redesign/16-CONTEXT.md`)
+- [x] **ERR-01**: 404 page gets a fully custom, interactive redesign — a full-bleed backdrop of Romane's photography popping (hard-cutting) at a pointer/touch-proximity-driven rate, with the AJS logo, a small "404" marker, and the bilingual "Page introuvable / Not found" message centered over a dimming scrim (revised 2026-07-29 from the original `PageTitleHeader`-reuse framing — see `.planning/phases/16-404-page-editorial-redesign/16-CONTEXT.md`)
 
 ## Carried Forward (still open, not part of v1.3)
 
@@ -110,17 +110,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | ABOUT-03 | Phase 15 | Complete |
 | ABOUT-04 | Phase 15 | Complete |
-| ERR-01 | Phase 16 | Pending |
+| ERR-01 | Phase 16 | Complete |
 | LAUNCH-01 | Phase 5 | Pending |
 
 **Coverage:**
 
 - v1.4 requirements: 3 total (ABOUT-03, ABOUT-04, ERR-01)
-- Mapped to phases: 3/3 ✓ (Phase 15: ABOUT-03, ABOUT-04; Phase 16: ERR-01 — both not started)
+- Mapped to phases: 3/3 ✓ (Phase 15: ABOUT-03, ABOUT-04; Phase 16: ERR-01 — both complete, v1.4 milestone shipped 2026-07-29)
 - Carried-forward requirements: 1 total (LAUNCH-01)
 - Mapped to phases: 1/1 ✓ (Phase 5, not started)
 - v2 (v1.x fast-follow) requirements: 18 tracked, not yet in roadmap (out of scope for this roadmap by design)
 
 ---
 *Requirements defined: 2026-07-05*
-*Last updated: 2026-07-29 — v1.4 (Editorial Design Consistency) roadmapped: ABOUT-03/04 → Phase 15 (About Page Editorial Redesign), ERR-01 → Phase 16 (404 Page Editorial Redesign); 3/3 mapped. ERR-01 wording revised same day during /gsd-discuss-phase 16 (custom interactive concept, no longer PageTitleHeader-based).*
+*Last updated: 2026-07-29 — Phase 16 (404 Page Editorial Redesign) complete: ERR-01 marked done. Both v1.4 requirements (ABOUT-03/04 via Phase 15, ERR-01 via Phase 16) now shipped — see 16-03-SUMMARY.md for the D-10 accessibility-cap override (≈3/sec → ≈6.7/sec) approved live at the plan's human-verify checkpoint.*

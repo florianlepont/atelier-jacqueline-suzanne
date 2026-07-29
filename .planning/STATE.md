@@ -4,17 +4,17 @@ milestone: v1.4
 milestone_name: Editorial Design Consistency
 current_phase: 16
 current_phase_name: 404 Page Editorial Redesign
-status: executing
-stopped_at: Phase 16 UI-SPEC approved
-last_updated: "2026-07-29T13:31:20.928Z"
+status: v1.4 milestone complete
+stopped_at: Phase 16 complete (16-01/16-02/16-03 all merged); v1.4 milestone complete
+last_updated: "2026-07-29T15:19:54.000Z"
 last_activity: 2026-07-29
-last_activity_desc: Phase 16 execution started
+last_activity_desc: Phase 16 complete (16-03 merged, incl. live D-10 cap override reconciled across 16-01 docs); v1.4 milestone complete
 progress:
   total_phases: 3
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 7
-  completed_plans: 6
-  percent: 33
+  completed_plans: 7
+  percent: 100
 ---
 
 # Project State
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-22)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; v1.3 adds a non-transactional Éditions showcase; checkout still follows in the future v1.x shop milestone.)
-**Current focus:** Phase 16 — 404 Page Editorial Redesign
+**Current focus:** v1.4 milestone complete (Phase 15 About Page + Phase 16 404 Page both shipped) — awaiting next milestone/phase selection.
 
 ## Current Position
 
-Phase: 16 (404 Page Editorial Redesign) — EXECUTING
-Plan: 2 of 3 (Wave 1 complete: 16-01, 16-02; Wave 2 pending: 16-03)
-Status: Executing Phase 16
-Last activity: 2026-07-29 — Wave 1 complete (16-01, 16-02 merged)
+Phase: 16 (404 Page Editorial Redesign) — COMPLETE
+Plan: 3 of 3 (all merged: 16-01, 16-02, 16-03)
+Status: v1.4 milestone complete
+Last activity: 2026-07-29 — Phase 16 complete (16-03 merged, including a live D-10 cap override approved at the human-verify checkpoint and reconciled back into plan 16-01's docs)
 
 ## Performance Metrics
 
@@ -131,6 +131,8 @@ Recent decisions affecting current work:
 - [Phase 07]: [Phase 07 Plan 02]: HOME-06's D-10 view-transition hypothesis could not be directly confirmed/reproduced under Chromium mobile emulation (test passed GREEN before and after a disable/re-enable experiment) — applied the fix anyway per D-12 since it corrects a real, identified asymmetry (.home-hero__photo/.home-hero__accent's unconditional CSS view-transition-name vs the grid tile's always-dynamic naming)
 - [Phase 07]: [Phase 07 Plan 02]: dynamic view-transition-name assignment for the hero photo/accent panel is set once per toggle click and never cleared afterward (not via transition.finished) — clearing raced a rapid second click and broke the pre-existing accent-panel fade-timing test
 - [Phase 08]: HOME-07 and HOME-08 (gallery description on homepage byline + grid-tile hover) were implemented and shipped directly to `main` by Florian (commits `38457dd`, `3360f16`, `78f3c61`, `04b10a1`, `a68ee00`, `602d24b`, 2026-07-13/14) ahead of the formal `/gsd-discuss-phase` → `/gsd-plan-phase` → `/gsd-execute-phase` cycle. Both surfaces reuse the existing `gallery.statement` field from Phase 2 — no new Sanity schema field was needed, confirming the roadmap's rationale for grouping HOME-07/08 into one phase. `/gsd-discuss-phase 8` (2026-07-14) found the implementation already complete, verified it (13/13 unit tests, 23/23 e2e tests passing, including the dedicated "collection statements on the homepage" describe block), and retroactively closed the phase — see `.planning/phases/08-gallery-descriptions/08-CONTEXT.md` and `08-SUMMARY.md`.
+- [Phase 16]: Pointer Events (`pointermove`) used as the single input source for both mouse and touch in the pop-rate engine, rather than separate `mousemove`/`touchmove` listeners — satisfies D-09's behavioral intent (touch position drives the same speed curve) without duplicated/desyncable logic, per RESEARCH Open Question 1.
+- [Phase 16]: D-10 cap override (2026-07-29, live at plan 16-03's human-verify checkpoint): after testing the original WCAG-adjacent-capped build (`MIN_INTERVAL_MS = 350`, ≈2.86/sec), the user explicitly asked for a faster rate and knowingly accepted the WCAG 2.3.1 flash-rate tradeoff ("tant pis pour les flash effect"). Presented with the risk and three concrete options, they chose to raise the cap significantly while keeping a finite ceiling: `MIN_INTERVAL_MS` moved from 350ms to 150ms (≈6.7/sec at dead-center); `MAX_INTERVAL_MS`/`DRIFT_INTERVAL_MS` unchanged. This is a knowing, user-confirmed departure from WCAG general-flash guidance for this one page, not an oversight — do not revert without the user raising the cap again. Reconciled back into plan 16-01's already-merged `16-01-PLAN.md`/`16-01-SUMMARY.md` via a dated post-completion addendum (mirroring the Phase 6 `06-01-SUMMARY.md` precedent for live post-checkpoint follow-ons), rather than left to silently drift out of sync with the shipped code. See `16-CONTEXT.md` D-10 override and `16-03-SUMMARY.md`.
 
 ### Pending Todos
 
@@ -246,13 +248,14 @@ Items acknowledged and deferred at v1.3 milestone close on 2026-07-23 (`/gsd-com
 
 ## Session Continuity
 
-Last session: 2026-07-29T12:54:12.526Z
-Stopped at: Phase 16 UI-SPEC approved
-Resume file: .planning/phases/16-404-page-editorial-redesign/16-UI-SPEC.md
+Last session: 2026-07-29T15:19:54.000Z
+Stopped at: Phase 16 complete (16-01/16-02/16-03 all merged); v1.4 milestone complete
+Resume file: .planning/phases/16-404-page-editorial-redesign/16-03-SUMMARY.md
 
-**Next up:** `/gsd-plan-phase 15` (or `/gsd-discuss-phase 15` first, given ABOUT-04's exploratory design-sketch step) to plan About Page Editorial Redesign; Phase 16 (404 Page Editorial Redesign) follows, independent and lower-risk. Phase 5 (Launch & Domain Cutover) remains open and deliberately deferred whenever launch is next prioritized.
+**Next up:** v1.4 milestone (Editorial Design Consistency — Phase 15 About + Phase 16 404) is fully shipped. Phase 5 (Launch & Domain Cutover) remains open and deliberately deferred whenever launch is next prioritized. The pre-existing `/about/` mobile-header overflow regression (Phase 15, logged in `.planning/phases/16-404-page-editorial-redesign/deferred-items.md`) is still open and recommended as a follow-up quick task before or alongside launch.
 
 ## Operator Next Steps
 
-- Run `/gsd-discuss-phase 15` or `/gsd-plan-phase 15` to begin About Page Editorial Redesign (ABOUT-03 mechanical title swap, then ABOUT-04's sketch-explored layout rework)
-- Then `/gsd-plan-phase 16` for the independent, lower-risk 404 Page Editorial Redesign (ERR-01)
+- Consider `/gsd-complete-milestone` to close out v1.4 and prepare for the next milestone
+- Optionally address the deferred `/about/` mobile-header overflow regression (see deferred-items.md) as a quick task
+- Phase 5 (Launch & Domain Cutover) remains the only open v1 phase whenever domain cutover is next prioritized
