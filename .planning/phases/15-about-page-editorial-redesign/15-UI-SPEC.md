@@ -53,13 +53,15 @@ Exceptions:
 
 Reuse the project's existing global roles exactly. Do NOT introduce new font sizes/weights — About's redesign must fit inside this already-declared set plus the two editorial-page-specific roles already established by Contact/Éditions.
 
-| Role | Size | Weight | Line Height | Source |
-|------|------|--------|-------------|--------|
-| Label / eyebrow / section number | 14px (`--text-label-size`) | 400 regular | 1.5 | Global token, used verbatim by `PageTitleHeader__eyebrow` and `.about-page__number` |
-| Body | 16px (`--text-body-size`) | 400 regular | 1.5 | Global token — section paragraph text (`.about-page__section p`) |
-| Heading (section h2) | clamp(22px, 2.25vw, 30px) (`--editorial-page-section-title-size`) | 600 semibold, `--font-display` | 1.15 | Existing editorial-page token, already used by `.about-page h2` |
-| Display (page title) | clamp(64px, 9vw, 140px) | 600 semibold, `--font-display` | 1.05 | `PageTitleHeader h1` — supersedes About's own current `h1` rule (`--editorial-page-title-size`, clamp 40–56px) once ABOUT-03 lands. Delete the now-dead `.about-page h1` rule rather than leaving two competing title styles. |
-| Lead / biography paragraph | clamp(18px, 1.5vw, 22px) (`--editorial-page-lead-size`) | 400 regular | 1.35 (`--editorial-page-lead-leading`) | Existing `--editorial-page-lead-*` tokens — per D-01, the biography keeps this exact role, just repositioned below the header instead of beside the old in-body `h1` |
+**Declared exception to the 4-size maximum (5 roles in use, all pre-existing):** This composition draws from three separate token families that already coexist in production — the global base scale (`--text-label-size` 14px, `--text-body-size` 16px, plus the unused-here `--text-heading-size` 20px / `--text-display-size` 32px), the editorial-page family (`--editorial-page-section-title-size` clamp(22–30px), `--editorial-page-lead-size` clamp(18–22px), plus the unused-here `--editorial-page-title-size` clamp(40–56px)), and `PageTitleHeader.astro`'s own hardcoded h1 rule (`clamp(64px, 9vw, 140px)` — a literal value in that component's `<style>` block, not itself a named CSS custom property). About's redesign needs 5 of these pre-existing roles simultaneously: Label, Body, Heading, Display, and Lead below. Collapsing any two would mean either (a) editing a shared component (`PageTitleHeader.astro`, used by Contact/Éditions/other detail pages) or (b) editing a cross-page token (`--editorial-page-lead-size` / `--editorial-page-section-title-size`, both already live outside About) — purely to satisfy this phase's local budget, which would fight the existing design system rather than serve it. Per this section's own opening line and REQUIREMENTS.md ABOUT-04, the actual compliance target for this phase is **zero new sizes**, which holds: every value below pre-exists in production today, and this phase introduces none. This is a bounded, explicitly-stated exception to the general 4-size guideline — not an unflagged gap.
+
+| Role | Size | Weight | Line Height | Status | Source |
+|------|------|--------|-------------|--------|--------|
+| Label / eyebrow / section number | 14px (`--text-label-size`) | 400 regular | 1.5 | Pre-existing (global token) | Used verbatim by `PageTitleHeader__eyebrow` and `.about-page__number` |
+| Body | 16px (`--text-body-size`) | 400 regular | 1.5 | Pre-existing (global token) | Section paragraph text (`.about-page__section p`) |
+| Heading (section h2) | clamp(22px, 2.25vw, 30px) (`--editorial-page-section-title-size`) | 600 semibold, `--font-display` | 1.15 | Pre-existing (editorial-page token) | Already used by `.about-page h2` |
+| Display (page title) | clamp(64px, 9vw, 140px) | 600 semibold, `--font-display` | 1.05 | Pre-existing (hardcoded in `PageTitleHeader.astro`, not a shared variable) | `PageTitleHeader h1` — supersedes About's own current `h1` rule (`--editorial-page-title-size`, clamp 40–56px) once ABOUT-03 lands. Delete the now-dead `.about-page h1` rule rather than leaving two competing title styles. |
+| Lead / biography paragraph | clamp(18px, 1.5vw, 22px) (`--editorial-page-lead-size`) | 400 regular | 1.35 (`--editorial-page-lead-leading`) | Pre-existing (editorial-page token) | Per D-01, the biography keeps this exact role, just repositioned below the header instead of beside the old in-body `h1` |
 
 Font weights used across this phase: exactly 2 (`--weight-regular` 400, `--weight-semibold` 600) — matches the project-wide 2-weight contract.
 
@@ -167,7 +169,7 @@ The sketch must:
 - [ ] Dimension 1 Copywriting: PASS — no new copy introduced; bio/practice/medium preserved verbatim
 - [ ] Dimension 2 Visuals: PASS — sketch-exploration requirement satisfied (named winner, real copy, multi-viewport check) before implementation
 - [ ] Dimension 3 Color: PASS — 60/30/10 held; accent used only where this contract permits
-- [ ] Dimension 4 Typography: PASS — no new sizes/weights beyond the roles declared above
+- [ ] Dimension 4 Typography: PASS — 5 pre-existing roles in use (declared exception above, justified: zero new sizes/weights introduced by this phase)
 - [ ] Dimension 5 Spacing: PASS — 8pt scale held; only the pre-existing portrait-size exception used
 - [ ] Dimension 6 Registry Safety: PASS — not applicable (no shadcn/registry usage)
 
