@@ -11,7 +11,8 @@ findings:
   warning: 1
   info: 0
   total: 2
-status: issues_found
+status: fixed
+fixed: 3656623
 ---
 
 # Phase 15: Code Review Report
@@ -19,7 +20,15 @@ status: issues_found
 **Reviewed:** 2026-07-29T00:00:00Z
 **Depth:** standard
 **Files Reviewed:** 2
-**Status:** issues_found
+**Status:** fixed (both findings resolved in commit `3656623`)
+
+> **Resolution:** CR-01 fixed by reintroducing the two-layer wrapper/img
+> split (new `.about-page__exhibition-photo-track` wrapper is the only
+> animated element; `<img>` keeps a static full-fill rule). WR-01 fixed by
+> adding bounding-box width assertions to the desktop-scroll and
+> reduced-motion e2e tests. Verified empirically: photo now measures exactly
+> 86% of pin width post-scroll and under reduced-motion, both locales;
+> mobile band unaffected. See commit `3656623`.
 
 ## Summary
 

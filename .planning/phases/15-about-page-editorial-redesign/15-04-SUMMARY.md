@@ -10,21 +10,26 @@ requires:
 provides:
   - Phase 15 acceptance verification against all 5 ROADMAP success criteria
   - Padding-parity fix so About's PageTitleHeader lands at the same position as Contact/Éditions
+  - Fix for the ported scroll-shrink reveal (CR-01) — it now actually shrinks the photo, not just clips it
 affects: [16-404-page-editorial-redesign]
 
 tech-stack:
   added: []
   patterns:
     - "Page container padding must split top/bottom (dedicated smaller top clamp for header position parity; larger --editorial-page-padding-block reserved for bottom only) — now proven across Contact, Éditions, and About."
+    - "Scroll-driven shrink/inset animations must target a wrapper with no explicit width, never the <img> itself if that <img> also carries a static width rule — animating left+width+right together on the same element is CSS-over-constrained and silently drops one edge."
 
 key-files:
   created:
     - .planning/phases/15-about-page-editorial-redesign/15-04-SUMMARY.md
+    - .planning/phases/15-about-page-editorial-redesign/15-REVIEW.md
   modified:
     - src/components/AboutPageBody.astro
+    - tests/e2e/about.spec.ts
 
 key-decisions:
   - "UAT (human-verify checkpoint) found the About title rendering ~40-56px lower than Contact/Éditions — a real violation of ROADMAP criterion 1 ('same display font, size, position...'). Root-caused to About's container applying --editorial-page-padding-block to both top and bottom, instead of splitting top/bottom like Contact/Éditions do. Fixed directly (not deferred to a gap-closure phase) since the diagnosis was precise and the fix was a single CSS property change, verified pixel-for-pixel before re-requesting sign-off."
+  - "The execute:post code-review gate (run after Task 2 sign-off, per workflow.code_review) found a second, more serious defect: the scroll-shrink reveal (15-03's headline deliverable) never actually shrank the photo due to a CSS over-constraint. Fixed by restoring DetailHero.astro's two-layer wrapper/img split; verified empirically with Playwright (86% width post-scroll and under reduced-motion) rather than trusting visual inspection alone, since the pre-fix clip-instead-of-shrink was subtle enough to pass human UAT."
   - "Isolated worktree executors lack a real Sanity .env (gitignored, not copied into fresh worktrees) — build/e2e/preview cannot run there. All gate verification for this plan was run at the orchestrator level (the checkout that has a working .env), consistent with how the Contact redesign was verified."
 
 patterns-established: []
@@ -111,8 +116,26 @@ _No `15-04-PLAN.md` task itself was a `type="auto"` code-modifying task; this fi
 
 ---
 
-**Total deviations:** 1 auto-fixed (UAT finding, not a plan-execution rule violation)
-**Impact on plan:** Necessary correctness fix for ROADMAP criterion 1. No scope creep — single CSS property change, no new abstractions.
+**2. [Code review CR-01] Ported scroll-shrink reveal never visually shrinks**
+- **Found during:** the phase's `execute:post` code-review gate (`/gsd-code-review 15`, standard depth), run after Task 2 sign-off
+- **Issue:** `onProgress()` animated `left`/`right` directly on `.about-page__exhibition-photo` (the `<img>` itself), which also carries an explicit `width: 100%` rule. For an absolutely-positioned replaced element, `left`+`width`+`right` all non-`auto` is CSS-over-constrained — the browser drops `right`, so the image only shifted and got clipped by the parent's `overflow: hidden` instead of actually shrinking. This also broke the reduced-motion settled end-state (`left: 7%; right: 7%`), not just the live scroll animation. The reviewer reproduced this empirically with Playwright (photo stayed 100% width instead of the intended 86%).
+- **Fix:** Restored `DetailHero.astro`'s proven two-layer split — a new `.about-page__exhibition-photo-track` wrapper (no explicit width) is the only element the script animates; the `<img>` keeps its static fill rule and passively fills whatever box the wrapper resolves to. Added a mobile-only `position: relative` override for the new wrapper so `.about-page__exhibition-pin`'s auto-height on mobile doesn't collapse (an absolutely-positioned-only child contributes nothing to an auto-height ancestor).
+- **Files modified:** `src/components/AboutPageBody.astro`
+- **Verification:** Empirical Playwright measurement — photo now measures exactly 86% of pin width after scrolling past `REVEAL_DISTANCE` and immediately under `prefers-reduced-motion`, both locales; mobile band confirmed non-collapsed. Full gate (typecheck, build, 210 unit tests, 12 About e2e) re-run and green.
+- **Committed in:** `3656623`
+
+**3. [Code review WR-01] e2e suite never asserted the actual shrink width**
+- **Found during:** same code-review pass as CR-01
+- **Issue:** The `about hero scroll-reveal` tests only checked pin `position` (sticky/relative) and photo visibility — never the photo's actual rendered width, so CR-01's regression produced zero test failures.
+- **Fix:** Added bounding-box width assertions (~100% before scroll, ~86% after scroll past `REVEAL_DISTANCE`; ~86% immediately under reduced-motion) to `tests/e2e/about.spec.ts`.
+- **Files modified:** `tests/e2e/about.spec.ts`
+- **Verification:** New assertions pass against the fixed code; would have failed against the pre-fix code (manually confirmed via a standalone Playwright measurement showing ~100% width pre-fix vs. the asserted 80-92% band).
+- **Committed in:** `3656623`
+
+---
+
+**Total deviations:** 3 auto-fixed (1 UAT finding, 2 code-review findings — none were plan-execution rule violations)
+**Impact on plan:** All three necessary correctness fixes (ROADMAP criterion 1 position parity; ROADMAP criterion 2's actual motion behavior; regression coverage for the same). No scope creep — targeted CSS/test changes, no new abstractions.
 
 ## Issues Encountered
 - Isolated worktree executors (both this plan's own Wave 4 dispatch and prior waves) cannot run `npm run build`/`test:e2e`/`preview` — the gitignored `.env` with Sanity credentials isn't copied into fresh git worktrees. Resolved by running the full gate at the orchestrator's own checkout for every wave's post-merge verification, per the project's established pattern (documented in prior waves' SUMMARYs and in project memory).
