@@ -263,3 +263,173 @@ const pool = (await getGalleries())
     text-decoration: none;
   }
 </style>
+
+<script>
+  // 16-03: pointer/touch-proximity-driven pop-rate engine + a deliberately
+  // INVERTED prefers-reduced-motion branch (D-08/D-09/D-10/D-11), layered as
+  // a progressive enhancement on top of plan 16-02's static shell. No
+  // client:* directive -- this is a page-level plain module <script>,
+  // matching DetailHero.astro's own convention (module-scope rafId/loop,
+  // matchMedia + setup() + reduceMotion.addEventListener('change', setup)).
+  // The D-10 photosensitive-safety cap has exactly one enforcement point --
+  // the imported proximityToInterval/MIN_INTERVAL_MS from pop-rate.ts (plan
+  // 16-01) -- this file never redefines or re-derives that floor.
+  import {
+    proximityToInterval,
+    MIN_INTERVAL_MS,
+    MAX_INTERVAL_MS,
+    DRIFT_INTERVAL_MS,
+  } from '../lib/pop-rate';
+
+  const container = document.querySelector<HTMLElement>('.not-found');
+  const photos = Array.from(document.querySelectorAll<HTMLElement>('.pop-photo'));
+
+  // Progressive enhancement: if the plan 16-02 DOM contract is missing, or
+  // the pool is too small to cut between, do nothing -- the static first
+  // photo (already .is-active in the markup) is the complete, correct
+  // no-JS fallback.
+  if (container && photos.length >= 2) {
+    // Non-null, non-union local: closures below capture this instead of
+    // `container` itself so their types stay `HTMLElement`, not
+    // `HTMLElement | null` (mirrors DetailHero.astro's own narrowing
+    // workaround, there done via `!` assertions).
+    const containerEl = container;
+
+    // Dev-only defense-in-depth: confirms the imported curve's own output
+    // stays within the imported MIN/MAX bounds. Not a second enforcement
+    // point for the D-10 cap (that lives solely in pop-rate.ts) -- purely a
+    // regression guard that fires only in local/dev builds.
+    if (import.meta.env.DEV) {
+      console.assert(
+        proximityToInterval(1) >= MIN_INTERVAL_MS,
+        'pop-rate: dead-center interval dipped below MIN_INTERVAL_MS',
+      );
+      console.assert(
+        proximityToInterval(0) <= MAX_INTERVAL_MS,
+        'pop-rate: idle interval exceeded MAX_INTERVAL_MS',
+      );
+    }
+
+    // Shared swap primitive (both branches below call this) -- the ONLY
+    // visual mutation; no inline opacity/transition writes (D-05 owns the
+    // hard-cut styling via the .pop-photo/.pop-photo.is-active CSS from
+    // plan 16-02).
+    let activeIndex = Math.max(
+      0,
+      photos.findIndex((photo) => photo.classList.contains('is-active')),
+    );
+
+    function swapTo(nextIndex: number) {
+      const normalized = nextIndex % photos.length;
+      photos[activeIndex].classList.remove('is-active');
+      photos[normalized].classList.add('is-active');
+      activeIndex = normalized;
+    }
+
+    // Pointer-driven mode (non-reduced-motion) state.
+    let currentProximity = 0;
+    let lastSwapAt = 0;
+    let rafId: number | null = null;
+    let pointerAttached = false;
+
+    function updateProximity(clientX: number, clientY: number) {
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      const maxDistance = Math.hypot(cx, cy); // center-to-corner distance
+      const distance = Math.hypot(clientX - cx, clientY - cy);
+      currentProximity = maxDistance > 0 ? 1 - Math.min(1, distance / maxDistance) : 0;
+    }
+
+    function onPointerMove(event: PointerEvent) {
+      updateProximity(event.clientX, event.clientY);
+    }
+
+    // RESEARCH Pitfall 3: without this reset, a visitor who touches
+    // dead-center once and lifts a finger (or a mouse that moves off
+    // window / a tab that loses focus) would leave the engine cycling at
+    // max speed indefinitely.
+    function resetProximity() {
+      currentProximity = 0;
+    }
+
+    function tick(now: number) {
+      // Recomputed every frame from the *current* proximity -- this is
+      // what lets the cadence smoothly speed up/slow down with zero
+      // timer-reconfiguration drift (RESEARCH Pattern 3). The imported
+      // function already applies the D-10 floor; no second floor here.
+      const targetInterval = proximityToInterval(currentProximity);
+      if (now - lastSwapAt >= targetInterval) {
+        swapTo(activeIndex + 1);
+        lastSwapAt = now;
+      }
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function startPointerLoop() {
+      containerEl.addEventListener('pointermove', onPointerMove, { passive: true });
+      containerEl.addEventListener('pointerleave', resetProximity, { passive: true });
+      containerEl.addEventListener('pointerup', resetProximity, { passive: true });
+      containerEl.addEventListener('pointercancel', resetProximity, { passive: true });
+      window.addEventListener('blur', resetProximity, { passive: true });
+      pointerAttached = true;
+      currentProximity = 0;
+      lastSwapAt = performance.now();
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function stopPointerLoop() {
+      if (!pointerAttached) return;
+      containerEl.removeEventListener('pointermove', onPointerMove);
+      containerEl.removeEventListener('pointerleave', resetProximity);
+      containerEl.removeEventListener('pointerup', resetProximity);
+      containerEl.removeEventListener('pointercancel', resetProximity);
+      window.removeEventListener('blur', resetProximity);
+      pointerAttached = false;
+    }
+
+    // Reduced-motion mode (D-11 -- the INVERTED branch): pointer ignored
+    // entirely (no pointermove listener attached in this branch at all), a
+    // slow fixed-cadence drift instead.
+    let driftId: ReturnType<typeof setInterval> | null = null;
+
+    function startDriftLoop() {
+      driftId = setInterval(() => {
+        swapTo(activeIndex + 1);
+      }, DRIFT_INTERVAL_MS);
+    }
+
+    function stopDriftLoop() {
+      if (driftId !== null) {
+        clearInterval(driftId);
+        driftId = null;
+      }
+    }
+
+    function teardown() {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      stopDriftLoop();
+      stopPointerLoop();
+    }
+
+    const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+
+    // Branch wiring mirrors DetailHero.astro's setup()/addEventListener
+    // convention verbatim -- teardown-then-setup is idempotent, so a live
+    // `change` event can never double-attach listeners or leak a
+    // previous branch's rAF/interval.
+    function setup() {
+      teardown();
+      if (reduceMotion.matches) {
+        startDriftLoop();
+      } else {
+        startPointerLoop();
+      }
+    }
+
+    setup();
+    reduceMotion.addEventListener('change', setup);
+  }
+</script>
