@@ -11,8 +11,9 @@ import {checklistEnabledTypes} from './DocumentChecklist'
 import {
   collectionStatusBadge,
   completenessBadge,
-  filterUnsafeSingletonActions,
-  shouldRenamePublishAction,
+  filterDocumentActions,
+  isPublicSiteDocumentType,
+  passiveDocumentActionLabel,
 } from './workflowLogic'
 
 // Invisible side-effect host (not a visible badge): auto-opens the Checklist
@@ -56,23 +57,15 @@ export const resolveBadges: DocumentBadgesResolver = (prev, context) =>
     ? [AutoOpenChecklistBadge, CompletenessBadge, CollectionStatusBadge, ...prev]
     : prev
 
-function renamePublishAction(action: DocumentActionComponent): DocumentActionComponent {
-  const PublishAndDeploy: DocumentActionComponent = (props) => {
-    const result = action(props)
-    if (!result) return null
-    return {
-      ...result,
-      label: 'Publier et mettre à jour le site',
-      title: 'Publie le contenu puis déclenche automatiquement la reconstruction du site.',
-    }
-  }
-  PublishAndDeploy.action = action.action
-  return PublishAndDeploy
-}
+const PublicationStatusAction: DocumentActionComponent = (props) => ({
+  label: passiveDocumentActionLabel(Boolean(props.draft)),
+  title: 'La mise en ligne se fait depuis le tableau de bord.',
+  disabled: true,
+})
 
 export const resolveActions: DocumentActionsResolver = (prev, context) => {
-  const withoutUnsafeSingletonActions = filterUnsafeSingletonActions(prev, context.schemaType)
-  return withoutUnsafeSingletonActions.map((action) =>
-    shouldRenamePublishAction(context.schemaType, action.action) ? renamePublishAction(action) : action,
-  )
+  const actions = filterDocumentActions(prev, context.schemaType)
+  return isPublicSiteDocumentType(context.schemaType)
+    ? [PublicationStatusAction, ...actions]
+    : actions
 }

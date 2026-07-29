@@ -6,35 +6,67 @@ export interface EditorialBadge {
   color?: EditorialTone
 }
 
-export const protectedDocumentTypes = new Set([
+export const PUBLIC_SITE_DOCUMENT_TYPES = [
   'siteSettings',
   'homePage',
+  'editionsPage',
   'aboutPage',
   'contactPage',
-])
-
-export const publicSiteDocumentTypes = new Set([
   'gallery',
+  'edition',
+] as const
+
+export type PublicSiteDocumentType = (typeof PUBLIC_SITE_DOCUMENT_TYPES)[number]
+
+export const PUBLIC_SINGLETON_TYPES = [
+  'siteSettings',
   'homePage',
+  'editionsPage',
   'aboutPage',
   'contactPage',
-  'siteSettings',
-])
+] as const
 
-export function filterUnsafeSingletonActions<T extends {action?: string}>(
+export const PUBLIC_DOCUMENT_LABELS: Record<PublicSiteDocumentType, string> = {
+  siteSettings: 'Réglages du site',
+  homePage: 'Accueil',
+  editionsPage: 'Page Éditions',
+  aboutPage: 'À propos',
+  contactPage: 'Contact',
+  gallery: 'Collection photo',
+  edition: 'Édition',
+}
+
+const publicTypeSet = new Set<string>(PUBLIC_SITE_DOCUMENT_TYPES)
+const singletonTypeSet = new Set<string>(PUBLIC_SINGLETON_TYPES)
+
+export const protectedDocumentTypes = singletonTypeSet
+export const publicSiteDocumentTypes = publicTypeSet
+
+export function isPublicSiteDocumentType(schemaType: string): schemaType is PublicSiteDocumentType {
+  return publicTypeSet.has(schemaType)
+}
+
+export function filterDocumentActions<T extends {action?: string}>(
   actions: T[],
   schemaType: string,
 ): T[] {
-  return protectedDocumentTypes.has(schemaType)
-    ? actions.filter((action) => !['delete', 'duplicate'].includes(action.action ?? ''))
-    : actions
+  if (!isPublicSiteDocumentType(schemaType)) return actions
+
+  const blockedActions = singletonTypeSet.has(schemaType)
+    ? new Set(['publish', 'unpublish', 'delete', 'duplicate'])
+    : new Set(['publish', 'unpublish'])
+
+  return actions.filter((action) => !blockedActions.has(action.action ?? ''))
 }
 
-export function shouldRenamePublishAction(schemaType: string, action?: string): boolean {
-  return publicSiteDocumentTypes.has(schemaType) && action === 'publish'
+export function passiveDocumentActionLabel(hasDraft: boolean): string {
+  return hasDraft ? 'Modifications enregistrées' : 'À jour'
 }
 
-export function completenessBadge(requiredComplete: boolean, recommendedComplete: boolean): EditorialBadge {
+export function completenessBadge(
+  requiredComplete: boolean,
+  recommendedComplete: boolean,
+): EditorialBadge {
   if (!requiredComplete) {
     return {
       label: 'À compléter',

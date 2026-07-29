@@ -12,6 +12,7 @@ import {checklistEnabledTypes, checklistInspector} from './editorial/DocumentChe
 import {openSitePageInspector} from './editorial/OpenSitePage'
 import {MediaLibrary} from './editorial/MediaLibrary'
 import {StudioLayout} from './editorial/StudioLayout'
+import {PUBLIC_SINGLETON_TYPES} from './editorial/workflowLogic'
 
 export default defineConfig({
   name: 'default',
@@ -80,8 +81,8 @@ export default defineConfig({
       context.creationContext.type === 'global'
         ? prev.filter(
             (template) =>
-              !['siteSettings', 'homePage', 'aboutPage', 'contactPage'].includes(
-                template.templateId,
+              !PUBLIC_SINGLETON_TYPES.includes(
+                template.templateId as (typeof PUBLIC_SINGLETON_TYPES)[number],
               ),
           )
         : prev,
