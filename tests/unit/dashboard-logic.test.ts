@@ -1,10 +1,13 @@
-import {describe, expect, it} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import {
+  PUBLIC_DOCUMENTS_QUERY,
+  PUBLIC_DOCUMENTS_QUERY_PARAMS,
   attentionPriority,
   attentionRowSummary,
   baseId,
   buildActivities,
   buildAttentionGroups,
+  createPublicationController,
   compactCheckLabel,
   contentNoun,
   describeTransaction,
@@ -16,7 +19,9 @@ import {
   mergePairedCheckLabels,
   mutationDocumentId,
   mutationFields,
+  pairPublicDocuments,
   pluralize,
+  preparePublicationBatch,
 } from '../../sanity/editorial/dashboardLogic';
 import type {DashboardDocument, DashboardRow} from '../../sanity/editorial/dashboardLogic';
 import {summarizeChecks} from '../../sanity/editorial/checks';
@@ -56,6 +61,284 @@ const missing = (label: string, recommended = false): CheckItem => ({
   label,
   complete: false,
   recommended,
+});
+
+const publicationRights = {
+  credit: 'Romane Lepont',
+  copyrightNotice: '© Romane Lepont',
+  usage: 'allRightsReserved',
+};
+
+function publicationDocument(
+  id: string,
+  type: DashboardDocument['_type'],
+  overrides: Partial<DashboardDocument> = {},
+): DashboardDocument {
+  return {
+    _id: id,
+    _type: type,
+    _rev: `${id}-rev`,
+    _updatedAt: '2026-07-29T08:00:00Z',
+    ...(type === 'gallery'
+      ? {
+          publicationStatus: 'published',
+          title: 'Collection',
+          slug: {current: 'collection'},
+          statement: {fr: 'Texte', en: 'Text'},
+          images: [
+            {
+              asset: {_ref: 'image-asset'},
+              alt: {fr: 'Photo', en: 'Photograph'},
+              rights: publicationRights,
+            },
+          ],
+        }
+      : {}),
+    ...overrides,
+  };
+}
+
+describe('publication inventory and preflight', () => {
+  it('builds the raw public query from the canonical registry', () => {
+    expect(PUBLIC_DOCUMENTS_QUERY).toContain('_type in $types');
+    expect(PUBLIC_DOCUMENTS_QUERY).not.toContain('exhibition');
+    expect(PUBLIC_DOCUMENTS_QUERY_PARAMS.types).toEqual([
+      'siteSettings',
+      'homePage',
+      'editionsPage',
+      'aboutPage',
+      'contactPage',
+      'gallery',
+      'edition',
+    ]);
+  });
+
+  it('counts one pending item per public id and classifies all four categories', () => {
+    const pairs = pairPublicDocuments([
+      publicationDocument('gallery-modified', 'gallery'),
+      publicationDocument('drafts.gallery-modified', 'gallery'),
+      publicationDocument('drafts.gallery-new', 'gallery'),
+      publicationDocument('gallery-withdrawal', 'gallery'),
+      publicationDocument('drafts.gallery-withdrawal', 'gallery', {
+        publicationStatus: 'archived',
+      }),
+      publicationDocument('drafts.gallery-hidden', 'gallery', {
+        publicationStatus: 'preparation',
+      }),
+      publicationDocument('exhibition-ignored', 'exhibition'),
+    ]);
+
+    expect(pairs).toHaveLength(4);
+    expect(pairs.map(({category}) => category)).toEqual([
+      'new-hidden',
+      'modified',
+      'new',
+      'withdrawal',
+    ]);
+  });
+
+  it('blocks the whole batch for incomplete content while leaving SEO non-blocking', () => {
+    const incomplete = preparePublicationBatch([
+      publicationDocument('drafts.gallery-incomplete', 'gallery', {images: []}),
+      publicationDocument('drafts.homePage', 'homePage', {
+        intro: {fr: 'Bienvenue', en: 'Welcome'},
+      }),
+    ]);
+    expect(incomplete.ready).toBe(false);
+    expect(incomplete.actions).toEqual([]);
+    expect(incomplete.blockedRows.map(({id}) => id)).toContain('gallery-incomplete');
+
+    const seoOnly = preparePublicationBatch([
+      publicationDocument('drafts.homePage', 'homePage', {
+        intro: {fr: 'Bienvenue', en: 'Welcome'},
+      }),
+    ]);
+    expect(seoOnly.ready).toBe(true);
+    expect(seoOnly.actions).toHaveLength(1);
+  });
+
+  it('orders an unpublished reference target before its dependant', () => {
+    const gallery = publicationDocument('drafts.gallery-related', 'gallery');
+    const edition = publicationDocument('drafts.edition-related', 'edition', {
+      publicationStatus: 'published',
+      title: 'Livre',
+      slug: {current: 'livre'},
+      statement: {fr: 'Texte', en: 'Text'},
+      relatedGallery: {_type: 'reference', _ref: 'gallery-related'},
+      leadPhoto: {
+        asset: {_ref: 'lead-asset'},
+        alt: {fr: 'Livre', en: 'Book'},
+        rights: publicationRights,
+      },
+      images: [
+        {
+          asset: {_ref: 'edition-asset'},
+          alt: {fr: 'Livre', en: 'Book'},
+          rights: publicationRights,
+        },
+      ],
+      pageCount: 96,
+      printRun: 250,
+      dimensions: {width: 21, height: 29.7, unit: 'cm'},
+    });
+
+    const batch = preparePublicationBatch([edition, gallery]);
+    expect(batch.ready).toBe(true);
+    expect(batch.orderedIds).toEqual(['gallery-related', 'edition-related']);
+    expect(batch.actions.map(({publishedId}) => publishedId)).toEqual([
+      'gallery-related',
+      'edition-related',
+    ]);
+  });
+
+  it('blocks a missing strong reference and emits no actions', () => {
+    const edition = publicationDocument('drafts.edition-related', 'edition', {
+      publicationStatus: 'published',
+      title: 'Livre',
+      slug: {current: 'livre'},
+      statement: {fr: 'Texte', en: 'Text'},
+      relatedGallery: {_type: 'reference', _ref: 'missing-gallery'},
+      leadPhoto: {
+        asset: {_ref: 'lead-asset'},
+        alt: {fr: 'Livre', en: 'Book'},
+        rights: publicationRights,
+      },
+      images: [
+        {
+          asset: {_ref: 'edition-asset'},
+          alt: {fr: 'Livre', en: 'Book'},
+          rights: publicationRights,
+        },
+      ],
+      pageCount: 96,
+      printRun: 250,
+      dimensions: {width: 21, height: 29.7, unit: 'cm'},
+    });
+    const batch = preparePublicationBatch([edition]);
+    expect(batch.ready).toBe(false);
+    expect(batch.actions).toEqual([]);
+    expect(batch.blockedRows[0].reasons.join(' ')).toContain('missing-gallery');
+  });
+});
+
+describe('publication controller', () => {
+  it('publishes every fresh draft in one guarded Actions API call and refreshes timestamps', async () => {
+    const raw = [
+      publicationDocument('homePage', 'homePage', {_rev: 'published-home-rev'}),
+      publicationDocument('drafts.homePage', 'homePage', {
+        intro: {fr: 'Bienvenue', en: 'Welcome'},
+      }),
+      publicationDocument('drafts.gallery-new', 'gallery'),
+    ];
+    const client = {
+      fetch: vi
+        .fn()
+        .mockResolvedValueOnce(raw)
+        .mockResolvedValueOnce(raw)
+        .mockResolvedValueOnce([
+          {_id: 'homePage', _updatedAt: '2026-07-29T09:00:00Z'},
+          {_id: 'gallery-new', _updatedAt: '2026-07-29T09:01:00Z'},
+        ]),
+      action: vi.fn().mockResolvedValue({transactionId: 'tx-1'}),
+    };
+    const onRefresh = vi.fn();
+    const controller = createPublicationController({client, onRefresh});
+
+    const preview = await controller.preflight();
+    expect(preview.ready).toBe(true);
+    expect(controller.state.phase).toBe('confirming');
+    const result = await controller.publish();
+
+    expect(client.action).toHaveBeenCalledTimes(1);
+    expect(client.action).toHaveBeenCalledWith(
+      [
+        {
+          actionType: 'sanity.action.document.publish',
+          draftId: 'drafts.homePage',
+          publishedId: 'homePage',
+          ifPublishedRevisionId: 'published-home-rev',
+        },
+        {
+          actionType: 'sanity.action.document.publish',
+          draftId: 'drafts.gallery-new',
+          publishedId: 'gallery-new',
+        },
+      ],
+      {tag: 'editorial.publish-all'},
+    );
+    expect(result.publishedAt).toBe('2026-07-29T09:01:00Z');
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+    expect(controller.state.phase).toBe('success');
+  });
+
+  it('shares an in-flight publication promise so double confirmation dispatches once', async () => {
+    let resolveAction!: () => void;
+    const actionPromise = new Promise<void>((resolve) => {
+      resolveAction = resolve;
+    });
+    const raw = [
+      publicationDocument('drafts.homePage', 'homePage', {
+        intro: {fr: 'Bienvenue', en: 'Welcome'},
+      }),
+    ];
+    const client = {
+      fetch: vi
+        .fn()
+        .mockResolvedValueOnce(raw)
+        .mockResolvedValueOnce([{_id: 'homePage', _updatedAt: '2026-07-29T09:00:00Z'}]),
+      action: vi.fn().mockReturnValue(actionPromise),
+    };
+    const controller = createPublicationController({client});
+
+    const first = controller.publish();
+    const second = controller.publish();
+    expect(first).toBe(second);
+    expect(client.action).toHaveBeenCalledTimes(1);
+    resolveAction();
+    await first;
+  });
+
+  it('does not dispatch a blocked batch', async () => {
+    const client = {
+      fetch: vi.fn().mockResolvedValue([
+        publicationDocument('drafts.gallery-incomplete', 'gallery', {images: []}),
+      ]),
+      action: vi.fn(),
+    };
+    const controller = createPublicationController({client});
+    await expect(controller.publish()).rejects.toThrow('publication');
+    expect(client.action).not.toHaveBeenCalled();
+    expect(controller.state.phase).toBe('error');
+    expect(controller.state.batch?.blockedRows[0].id).toBe('gallery-incomplete');
+  });
+
+  it('surfaces an atomic rejection and allows a fresh retry', async () => {
+    const raw = [
+      publicationDocument('drafts.homePage', 'homePage', {
+        intro: {fr: 'Bienvenue', en: 'Welcome'},
+      }),
+    ];
+    const client = {
+      fetch: vi
+        .fn()
+        .mockResolvedValueOnce(raw)
+        .mockResolvedValueOnce(raw)
+        .mockResolvedValueOnce([{_id: 'homePage', _updatedAt: '2026-07-29T09:00:00Z'}]),
+      action: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('403 permission denied'))
+        .mockResolvedValueOnce({transactionId: 'tx-2'}),
+    };
+    const controller = createPublicationController({client});
+
+    await expect(controller.publish()).rejects.toThrow('permission');
+    expect(controller.state.phase).toBe('error');
+    await expect(controller.publish()).resolves.toEqual({
+      publishedAt: '2026-07-29T09:00:00Z',
+      publishedIds: ['homePage'],
+    });
+    expect(client.action).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe('pluralize', () => {
