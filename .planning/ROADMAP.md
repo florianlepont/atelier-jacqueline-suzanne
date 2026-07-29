@@ -127,9 +127,19 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
   5. 404 page renders correctly in both French and English (both languages shown together on every load, since this page has no per-locale routing).
 
 **Plans**: 3 plans (2 waves)
+**Wave 1**
+
 - [ ] 16-01-PLAN.md — Pure `pop-rate.ts` proximity→interval math module + unit tests (encodes the D-10 ≈3/sec cap as a tested invariant) [Wave 1]
 - [ ] 16-02-PLAN.md — Static 404 rewrite: full-bleed photo pool + radial scrim + centered bilingual content, base-safe links; realigned not-found/accessibility e2e specs [Wave 1]
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 16-03-PLAN.md — Client pop-rate engine (pointer/touch proximity, rAF cap, reduced-motion drift) + reduced-motion e2e + human-verify checkpoint [Wave 2]
+
+Cross-cutting constraints:
+- D-10 accessibility cap (~3 photo-changes/sec, enforced as `MIN_INTERVAL_MS`): defined and unit-proven in 16-01, imported and relied on without local override in 16-03.
+- D-05 hard-cut mechanic (opacity/z-index toggle, never `display:none`, no CSS transition): established as the static default in 16-02, preserved by the interactive engine layered on top in 16-03.
+
 **UI hint**: yes
 
 ## Progress
