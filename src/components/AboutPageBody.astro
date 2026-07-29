@@ -6,6 +6,7 @@
 // visible strings arrive as props; no i18n/data-fetch logic lives here.
 import { fullSizeUrl, responsiveImageSrcSet } from '../lib/image';
 import type { SanityImage } from '../lib/sanity';
+import PageTitleHeader from './PageTitleHeader.astro';
 
 interface Props {
   heading: string;
@@ -35,25 +36,22 @@ const {
 ---
 
 <article class="about-page">
-  <header class:list={['about-page__hero', {'about-page__hero--with-portrait': portraitImage}]}>
-    <div class="about-page__identity">
-      <p class="about-page__eyebrow">Atelier Jacqueline Suzanne</p>
-      <h1>{heading}</h1>
-    </div>
-    {portraitImage && (
-      <figure class="about-page__portrait">
-        <img
-          src={fullSizeUrl(portraitImage, 480)}
-          srcset={responsiveImageSrcSet(portraitImage, [160, 240, 320, 480])}
-          sizes="(max-width: 767px) 72px, 112px"
-          alt={portraitAlt}
-          loading="lazy"
-          decoding="async"
-        />
-      </figure>
-    )}
-    <p class="about-page__lead">{biography}</p>
-  </header>
+  <PageTitleHeader heading={heading} headingId="about-title" intro="" />
+
+  <p class="about-page__lead">{biography}</p>
+
+  {portraitImage && (
+    <figure class="about-page__portrait">
+      <img
+        src={fullSizeUrl(portraitImage, 480)}
+        srcset={responsiveImageSrcSet(portraitImage, [160, 240, 320, 480])}
+        sizes="(max-width: 767px) 72px, 112px"
+        alt={portraitAlt}
+        loading="lazy"
+        decoding="async"
+      />
+    </figure>
+  )}
 
   {exhibitionImage && (
     <figure class="about-page__exhibition">
@@ -93,55 +91,45 @@ const {
     padding: var(--editorial-page-padding-block) var(--editorial-page-padding-inline);
   }
 
-  .about-page__hero {
-    display: grid;
-    grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr);
-    gap: clamp(var(--space-lg), 3.5vw, 48px);
-    align-items: center;
-    padding-top: var(--space-md);
-    border-top: var(--border-hairline) solid var(--color-ink);
+  /* D-01/D-05 empty-intro-column fix (sketch-014 winner, Variant A: page-
+     scoped suppression). PageTitleHeader is called with intro="" (D-01 —
+     the full biography does not fit its 2-line/46ch teaser slot), which
+     would otherwise leave an empty intro paragraph + orphaned vertical
+     hairline divider in the shared header's second column on >=760px
+     viewports. Hidden entirely here, scoped to this page, without editing
+     PageTitleHeader.astro itself — the giant title then spans the full
+     header width instead of leaving a ghost column. */
+  .about-page :global(.page-title-header__intro),
+  .about-page :global(.page-title-header__divider) {
+    display: none;
+  }
+  @media (min-width: 760px) {
+    .about-page :global(.page-title-header) {
+      grid-template-columns: 1fr;
+    }
   }
 
-  .about-page__hero--with-portrait {
-    grid-template-columns: minmax(240px, 0.75fr) 112px minmax(0, 1.25fr);
-  }
-
-  .about-page__eyebrow,
   .about-page__number {
     margin: 0;
-    font-size: var(--text-label-size);
+    font-size: var(--text-body-size); /* Body role (folds former 14px Label role) */
     font-weight: var(--weight-semibold);
-    line-height: var(--text-label-leading);
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
 
-  .about-page h1 {
-    margin: var(--space-md) 0 0;
-    font-size: var(--editorial-page-title-size);
-    font-weight: var(--weight-semibold);
-    font-family: var(--font-display);
-    line-height: 0.95;
-    letter-spacing: -0.04em;
-  }
-
   .about-page__lead {
-    grid-column: 2;
-    margin: 0;
+    margin: var(--space-md) 0 0;
+    padding-top: var(--space-md);
+    border-top: var(--border-hairline) solid var(--color-ink);
     font-size: var(--editorial-page-lead-size);
     font-weight: var(--weight-regular);
     line-height: var(--editorial-page-lead-leading);
   }
 
-  .about-page__hero--with-portrait .about-page__lead {
-    grid-column: 3;
-  }
-
   .about-page__portrait {
-    grid-column: 2;
     width: 112px;
     height: 112px;
-    margin: 0;
+    margin: var(--space-md) 0 0;
     overflow: hidden;
     border: var(--border-hairline) solid var(--color-ink);
     border-radius: 50%;
@@ -193,32 +181,9 @@ const {
   }
 
   @media (max-width: 767px) {
-    .about-page__hero,
-    .about-page__hero--with-portrait {
-      grid-template-columns: minmax(0, 1fr) auto;
-      column-gap: var(--space-md);
-    }
-
-    .about-page__identity {
-      grid-column: 1;
-      grid-row: 1;
-    }
-
     .about-page__portrait {
-      grid-column: 2;
-      grid-row: 1;
       width: 72px;
       height: 72px;
-    }
-
-    .about-page__lead,
-    .about-page__hero--with-portrait .about-page__lead {
-      grid-column: 1 / -1;
-      grid-row: 2;
-    }
-
-    .about-page__lead {
-      margin-top: var(--space-xl);
     }
 
     .about-page__exhibition {
@@ -235,10 +200,6 @@ const {
     .about-page {
       padding-top: var(--space-xl);
       padding-bottom: var(--space-3xl);
-    }
-
-    .about-page h1 {
-      font-size: clamp(38px, 13vw, 52px);
     }
   }
 </style>
