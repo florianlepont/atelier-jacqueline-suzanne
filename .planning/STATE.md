@@ -5,8 +5,8 @@ milestone_name: Editorial Design Consistency
 current_phase: 15
 current_phase_name: About Page Editorial Redesign
 status: planning
-stopped_at: Phase 15 context gathered
-last_updated: "2026-07-29T05:21:14.576Z"
+stopped_at: Phase 15 UI-SPEC approved
+last_updated: "2026-07-29T05:46:17.900Z"
 last_activity: 2026-07-29
 last_activity_desc: "v1.4 ROADMAP.md created: Phase 15 (About Page Editorial Redesign, ABOUT-03/04) then Phase 16 (404 Page Editorial Redesign, ERR-01)"
 progress:
@@ -244,9 +244,9 @@ Items acknowledged and deferred at v1.3 milestone close on 2026-07-23 (`/gsd-com
 
 ## Session Continuity
 
-Last session: 2026-07-29T05:21:14.569Z
-Stopped at: Phase 15 context gathered
-Resume file: .planning/phases/15-about-page-editorial-redesign/15-CONTEXT.md
+Last session: 2026-07-29T05:46:17.893Z
+Stopped at: Phase 15 UI-SPEC approved
+Resume file: .planning/phases/15-about-page-editorial-redesign/15-UI-SPEC.md
 
 **Next up:** `/gsd-plan-phase 15` (or `/gsd-discuss-phase 15` first, given ABOUT-04's exploratory design-sketch step) to plan About Page Editorial Redesign; Phase 16 (404 Page Editorial Redesign) follows, independent and lower-risk. Phase 5 (Launch & Domain Cutover) remains open and deliberately deferred whenever launch is next prioritized.
 

@@ -95,10 +95,22 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
   5. About page renders correctly in both French and English.
 
 **Plans**: 4 plans, 4 waves (sketch gate → composition → motion → verification)
+**Wave 1**
+
 - [ ] 15-01-PLAN.md — About-page layout sketch exploration (2-3 variants → named winner; resolves D-05/D-07) [Wave 1]
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 15-02-PLAN.md — PageTitleHeader integration + static editorial composition (ABOUT-03 + ABOUT-04 static layer) [Wave 2]
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 15-03-PLAN.md — Pinned scroll-reveal hero motion + reduced-motion/mobile/no-JS fallbacks (ABOUT-04 motion layer) [Wave 3]
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 15-04-PLAN.md — Full-gate + human-verify against all 5 success criteria [Wave 4]
+
 **UI hint**: yes
 
 ### Phase 16: 404 Page Editorial Redesign
