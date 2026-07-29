@@ -334,15 +334,6 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
   body {
     margin: 0;
     padding: 0;
-    /* Site-wide guard against horizontal scroll from decorative bleed
-       elements (e.g. PageTitleHeader's halftone texture, which deliberately
-       extends -700px past its own box on every page that renders it) —
-       confirmed via a live CI failure that About/Contact/Éditions all
-       overflowed document.documentElement.scrollWidth at >=760px before
-       this rule existed. Only clips content that already extends past the
-       viewport (invisible without horizontal scroll anyway); does not
-       affect normal in-viewport layout or vertical scrolling. */
-    overflow-x: hidden;
   }
 
   body {

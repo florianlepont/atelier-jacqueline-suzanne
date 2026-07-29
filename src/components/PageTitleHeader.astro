@@ -9,14 +9,14 @@
 // either one changed.
 //
 // The halftone's -700px bleed (needed for its edge-less fade) is
-// deliberately NOT clipped here vertically — Éditions wants the dot field to
+// deliberately NOT clipped vertically — Éditions wants the dot field to
 // visibly extend past the header box, per its original design. Horizontal
-// bleed IS clipped, but site-wide via `overflow-x: hidden` on html/body in
-// BaseLayout.astro, not per-component — a live CI failure (2026-07-29)
-// showed About/Contact/Éditions all overflowing document.documentElement.
-// scrollWidth at >=760px before that rule existed. Do not re-add a
-// per-page-scoped horizontal fix here; the BaseLayout rule already covers
-// every consumer of this component.
+// bleed IS clipped, scoped to `.page-title-header` itself via
+// `overflow-x: hidden` below (see that rule's own comment for why a
+// site-wide `overflow-x: hidden` on html/body was tried and reverted —
+// 2026-07-29 — it broke `position: sticky` on About's pinned exhibition
+// photo and DetailHero's pinned reveal, both unrelated pages that happen to
+// share the same document). Do not move this fix back up to BaseLayout.
 interface Props {
   eyebrow?: string;
   heading: string;
@@ -38,12 +38,22 @@ const { eyebrow = 'Atelier Jacqueline Suzanne', heading, headingId, intro } = As
 </header>
 
 <style>
-  /* No overflow:hidden here — the halftone's -700px bleed is meant to show
-     past this box (that's how Éditions originally looked: the dot field
-     visibly extends beyond the header itself). Containing that bleed is a
-     Contact-specific need (no-scroll budget), scoped in ContactPageBody's
-     own styles instead of baked in here, so Éditions keeps its full,
-     original coverage. */
+  /* overflow-x: clip (not hidden, not a full overflow: hidden) clips only
+     the halftone's horizontal -700px bleed, which was overflowing every
+     consumer page's document width at >=760px (live CI failure,
+     2026-07-29). overflow-y is left alone (stays `visible`) so Éditions
+     keeps the halftone's full vertical bleed past the header box, per its
+     original design. This is scoped to .page-title-header itself, NOT
+     html/body — .page-title-header is not an ancestor of the unrelated
+     `position: sticky` elements elsewhere on About/DetailHero-based pages,
+     so this can't break their sticky behavior the way a body-level
+     overflow-x rule did when tried here first. `clip`, not `hidden`: axe
+     flags any `overflow-x: hidden` element whose content still exceeds its
+     box as a "scrollable region" needing keyboard focus
+     (scrollable-region-focusable) — a real false-positive for a purely
+     decorative bleed nobody should ever scroll to. `clip` forbids scrolling
+     entirely (not even programmatically), so axe correctly treats it as
+     non-scrollable and doesn't flag it. */
   .page-title-header {
     position: relative;
     isolation: isolate;
@@ -51,6 +61,7 @@ const { eyebrow = 'Atelier Jacqueline Suzanne', heading, headingId, intro } = As
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--space-lg);
+    overflow-x: clip;
   }
   @media (min-width: 760px) {
     .page-title-header {
