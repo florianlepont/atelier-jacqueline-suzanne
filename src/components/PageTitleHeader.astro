@@ -8,11 +8,15 @@
 // (title/eyebrow position, halftone coverage, hairline position) the moment
 // either one changed.
 //
-// overflow:hidden on the header contains the halftone's -700px bleed (needed
-// for its edge-less fade). On a normally-scrolling page like Éditions this
-// bleed was invisible; on a page constrained to fit one viewport height with
-// no scroll it silently added 700px of scrollable area. Baked into the base
-// so both call sites get the correct behavior without a per-page patch.
+// The halftone's -700px bleed (needed for its edge-less fade) is
+// deliberately NOT clipped here vertically — Éditions wants the dot field to
+// visibly extend past the header box, per its original design. Horizontal
+// bleed IS clipped, but site-wide via `overflow-x: hidden` on html/body in
+// BaseLayout.astro, not per-component — a live CI failure (2026-07-29)
+// showed About/Contact/Éditions all overflowing document.documentElement.
+// scrollWidth at >=760px before that rule existed. Do not re-add a
+// per-page-scoped horizontal fix here; the BaseLayout rule already covers
+// every consumer of this component.
 interface Props {
   eyebrow?: string;
   heading: string;
@@ -97,7 +101,12 @@ const { eyebrow = 'Atelier Jacqueline Suzanne', heading, headingId, intro } = As
     font-family: var(--font-display);
     line-height: 1.05;
     letter-spacing: -0.04em;
-    white-space: nowrap;
+    /* No white-space: nowrap — the 64px font-size floor doesn't shrink
+       further on narrow phones, so a nowrap title longer than ~"Contact"
+       (e.g. About's "À propos"/"About") overflowed the viewport
+       horizontally at 320-360px (live CI failure, 2026-07-29). Wrapping to
+       2 lines on narrow viewports is the correct behavior, not the nowrap
+       single-line-at-any-cost that was here before. */
     display: inline-block;
     transition: color 0.35s ease;
   }
