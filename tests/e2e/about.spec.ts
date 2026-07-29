@@ -192,3 +192,65 @@ test.describe('about page content', () => {
     expect(exhibitionMobileBox?.width).toBe(contentBox?.width);
   });
 });
+
+// Phase 15 plan 03 (ABOUT-04, D-04/D-05/D-06): the pin+shrink scroll-driver
+// ported from DetailHero.astro (sketch 005), scoped to About's own
+// .about-page__exhibition-* classes (never .detail-hero*). Desktop viewport
+// is required for the pin-position assertions — same rationale as
+// edition.spec.ts's "editions hero reduced-motion" block: the
+// `min-width: 768px` branch of the script/CSS is what makes the pin
+// genuinely sticky (default) vs relative (reduced-motion settled
+// end-state); the `max-width: 767px` mobile branch overrides position to
+// `relative` regardless of motion preference, which would make the
+// "sticky by default" assertion meaningless on a narrow viewport. D-05
+// resolved to a pure motion "settle" (no text reveal), so there is no
+// reveal-target/overlay-title assertion here, unlike the édition hero.
+test.describe('about hero scroll-reveal (ABOUT-04)', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  for (const [localeLabel, path] of [
+    ['French', '/about/'],
+    ['English', '/en/about/'],
+  ] as const) {
+    test(`${localeLabel} About page: desktop pin is sticky by default (motion enabled)`, async ({
+      page,
+    }) => {
+      await page.goto(path);
+
+      const pin = page.locator('.about-page__exhibition-pin');
+      await expect(pin).toBeVisible();
+      const pinPosition = await pin.evaluate((el) => getComputedStyle(el).position);
+      expect(pinPosition).toBe('sticky');
+    });
+
+    test(`${localeLabel} About page: prefers-reduced-motion: reduce shows the settled end-state immediately, no sticky pin`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.goto(path);
+
+      const pin = page.locator('.about-page__exhibition-pin');
+      await expect(pin).toBeVisible();
+      const pinPosition = await pin.evaluate((el) => getComputedStyle(el).position);
+      expect(pinPosition).not.toBe('sticky');
+
+      const photo = page.locator('.about-page__exhibition-photo');
+      await expect(photo).toBeVisible();
+    });
+  }
+
+  test('mobile viewport renders a static band — no sticky pin, no scroll-linked motion', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/about/');
+
+    const pin = page.locator('.about-page__exhibition-pin');
+    await expect(pin).toBeVisible();
+    const pinPosition = await pin.evaluate((el) => getComputedStyle(el).position);
+    expect(pinPosition).toBe('relative');
+
+    const photo = page.locator('.about-page__exhibition-photo');
+    await expect(photo).toBeVisible();
+  });
+});
