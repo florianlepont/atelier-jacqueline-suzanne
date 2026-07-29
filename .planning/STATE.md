@@ -6,14 +6,14 @@ current_phase: 16
 current_phase_name: 404 Page Editorial Redesign
 status: executing
 stopped_at: Phase 16 UI-SPEC approved
-last_updated: "2026-07-29T13:24:54.711Z"
+last_updated: "2026-07-29T13:31:20.928Z"
 last_activity: 2026-07-29
-last_activity_desc: Phase 15 complete, transitioned to Phase 16
+last_activity_desc: Phase 16 execution started
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 7
+  completed_plans: 6
   percent: 33
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-22)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; v1.3 adds a non-transactional Éditions showcase; checkout still follows in the future v1.x shop milestone.)
-**Current focus:** Phase 15 — about-page-editorial-redesign
+**Current focus:** Phase 16 — 404 Page Editorial Redesign
 
 ## Current Position
 
-Phase: 16 — 404 Page Editorial Redesign
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-07-29 — Phase 15 complete, transitioned to Phase 16
+Phase: 16 (404 Page Editorial Redesign) — EXECUTING
+Plan: 2 of 3 (Wave 1 complete: 16-01, 16-02; Wave 2 pending: 16-03)
+Status: Executing Phase 16
+Last activity: 2026-07-29 — Wave 1 complete (16-01, 16-02 merged)
 
 ## Performance Metrics
 

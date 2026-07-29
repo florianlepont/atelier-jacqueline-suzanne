@@ -129,8 +129,8 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
 **Plans**: 3 plans (2 waves)
 **Wave 1**
 
-- [ ] 16-01-PLAN.md — Pure `pop-rate.ts` proximity→interval math module + unit tests (encodes the D-10 ≈3/sec cap as a tested invariant) [Wave 1]
-- [ ] 16-02-PLAN.md — Static 404 rewrite: full-bleed photo pool + radial scrim + centered bilingual content, base-safe links; realigned not-found/accessibility e2e specs [Wave 1]
+- [x] 16-01-PLAN.md — Pure `pop-rate.ts` proximity→interval math module + unit tests (encodes the D-10 ≈3/sec cap as a tested invariant) [Wave 1]
+- [x] 16-02-PLAN.md — Static 404 rewrite: full-bleed photo pool + radial scrim + centered bilingual content, base-safe links; realigned not-found/accessibility e2e specs [Wave 1]
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
