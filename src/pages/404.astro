@@ -88,14 +88,14 @@ const pool = (await getGalleries())
       <img class="not-found__logo" src={logoWhiteSrc} alt="" width="1024" height="1536" />
       <p class="not-found__marker">404</p>
       <h1 class="not-found__phrase">
-        <span>Page introuvable</span>
+        <span lang="fr">Page introuvable</span>
         <br />
-        <span>Not found</span>
+        <span lang="en">Not found</span>
       </h1>
       <p class="not-found__links">
-        <a href={frHome}>Retourner à l'accueil</a>
+        <a href={frHome} lang="fr">Retourner à l'accueil</a>
         <span aria-hidden="true"> · </span>
-        <a href={enHome}>Return home</a>
+        <a href={enHome} lang="en">Return home</a>
       </p>
     </div>
   </div>

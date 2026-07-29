@@ -59,7 +59,8 @@ test.describe('not-found delivery', () => {
     // interval and confirm at least one swap happened (alive, not frozen --
     // the key D-11 distinction from the rest of the site), but not an
     // implausibly large number (proving this is the slow drift, not the
-    // fast pointer-driven rate capped by MIN_INTERVAL_MS = 350ms).
+    // fast pointer-driven rate capped by MIN_INTERVAL_MS = 150ms per the
+    // D-10 override).
     await page.waitForTimeout(5000)
     const driftSwapCount = await page.evaluate(
       () => (window as unknown as {__popSwapCount: number}).__popSwapCount,
