@@ -16,8 +16,13 @@ import {
   PublishIcon,
   WarningOutlineIcon,
 } from '@sanity/icons'
-import {deploymentLabel, getLatestDeployment, SITE_PREVIEW_URL} from './deployment'
-import type {DeploymentRun} from './deployment'
+import {
+  deploymentState,
+  getRecentDeployments,
+  nextDeploymentPollDelay,
+  SITE_PREVIEW_URL,
+} from './deployment'
+import type {DeploymentRun, DeploymentState} from './deployment'
 import {getDocumentChecks, summarizeChecks} from './checks'
 import {
   attentionPriority,
@@ -64,7 +69,8 @@ export function EditorialDashboard() {
   const userStore = useUserStore()
   const [documents, setDocuments] = useState<DashboardDocument[]>([])
   const [activities, setActivities] = useState<Record<string, DashboardActivity>>({})
-  const [run, setRun] = useState<DeploymentRun | null>(null)
+  const [deploymentRuns, setDeploymentRuns] = useState<DeploymentRun[]>([])
+  const [deploymentError, setDeploymentError] = useState<unknown>()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showAllActivity, setShowAllActivity] = useState(false)
@@ -160,26 +166,6 @@ export function EditorialDashboard() {
     }
   }, [client])
 
-  // The deployment status is polled: it changes server-side (GitHub Actions),
-  // not through Sanity mutations, so listen() cannot see it.
-  useEffect(() => {
-    const controller = new AbortController()
-    let cancelled = false
-    const load = () =>
-      getLatestDeployment(controller.signal)
-        .then((deployment) => {
-          if (!cancelled) setRun(deployment)
-        })
-        .catch(() => undefined)
-    load()
-    const intervalId = setInterval(load, 5 * 60 * 1000)
-    return () => {
-      cancelled = true
-      controller.abort()
-      clearInterval(intervalId)
-    }
-  }, [])
-
   // Minute tick so relative timestamps ("il y a 5 min") age on screen.
   const [, setClock] = useState(0)
   useEffect(() => {
@@ -230,6 +216,67 @@ export function EditorialDashboard() {
   const galleries = rows.filter(({current}) => current._type === 'gallery')
   const onlineGalleryCount = galleries.filter((row) => isGalleryOnline(row.current)).length
   const draftCount = rows.filter((row) => row.hasDraft).length
+  const lastPublishedDocumentAt = documents
+    .filter((document) => !document._id.startsWith('drafts.'))
+    .map((document) => document._updatedAt)
+    .filter((value): value is string => Boolean(value) && Number.isFinite(new Date(value).getTime()))
+    .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0]
+  const publishedReference = publishedAt ?? lastPublishedDocumentAt ?? ''
+  const currentDeploymentState = deploymentState({
+    runs: deploymentRuns,
+    publishedAt: publishedReference,
+    pendingCount: draftCount,
+    error: deploymentError,
+  })
+
+  // GitHub Actions changes independently from Sanity. Poll immediately, then
+  // quickly while a post-publication run is expected and more slowly once the
+  // state is terminal. Cleanup aborts both the request and the pending timer.
+  useEffect(() => {
+    if (!publishedReference) {
+      setDeploymentRuns([])
+      setDeploymentError(new Error('Aucune publication de référence disponible'))
+      return undefined
+    }
+
+    const controller = new AbortController()
+    let cancelled = false
+    let timer: ReturnType<typeof setTimeout> | undefined
+
+    const load = async () => {
+      try {
+        const runs = await getRecentDeployments(controller.signal)
+        if (cancelled) return
+        setDeploymentRuns(runs)
+        setDeploymentError(undefined)
+        const nextState = deploymentState({
+          runs,
+          publishedAt: publishedReference,
+          pendingCount: draftCount,
+        })
+        const elapsedMs = Math.max(0, Date.now() - new Date(publishedReference).getTime())
+        timer = setTimeout(
+          () => void load(),
+          nextDeploymentPollDelay({elapsedMs, terminal: nextState.terminal, firstPoll: false}),
+        )
+      } catch (reason) {
+        if (cancelled || (reason instanceof DOMException && reason.name === 'AbortError')) return
+        setDeploymentError(reason)
+        timer = setTimeout(() => void load(), 5 * 60_000)
+      }
+    }
+
+    timer = setTimeout(
+      () => void load(),
+      nextDeploymentPollDelay({elapsedMs: 0, terminal: false, firstPoll: true}),
+    )
+    return () => {
+      cancelled = true
+      controller.abort()
+      clearTimeout(timer)
+    }
+  }, [draftCount, publishedReference])
+
   const blockingRows = attention.filter((row) => !row.summary.requiredComplete)
   // A single blocked content is fully covered by the banner (named title,
   // missing-info message, direct CTA) — repeating it as a one-row group right
@@ -303,7 +350,7 @@ export function EditorialDashboard() {
               wrap="wrap"
               className="editorial-dashboard__actions editorial-dashboard__header-side"
             >
-              <DeploymentStatus run={run} />
+              <DeploymentStatus state={currentDeploymentState} />
               <Button
                 className="editorial-dashboard__header-control editorial-dashboard__header-link"
                 style={{height: 44}}
@@ -999,14 +1046,8 @@ const deploymentDotColors: Record<DashboardTone, string> = {
   critical: '#ef4444',
 }
 
-function DeploymentStatus({run}: {run: DeploymentRun | null}) {
-  const status = deploymentLabel(run)
-  const tone = status.tone
-  const dateLabel = run ? formatActivityDate(run.updated_at) : 'Date inconnue'
-  const shortStatusLabel =
-    run?.status === 'completed' && run.conclusion === 'success' ? 'À jour' : status.label
-  const siteStatusLabel =
-    shortStatusLabel === 'À jour' ? 'Site à jour' : `Site : ${shortStatusLabel}`
+function DeploymentStatus({state}: {state: DeploymentState}) {
+  const dateLabel = state.run ? formatActivityDate(state.run.updated_at) : ''
 
   const content = (
     <Flex align="center" gap={2} className="editorial-dashboard__deployment-content">
@@ -1017,7 +1058,7 @@ function DeploymentStatus({run}: {run: DeploymentRun | null}) {
           height: 8,
           borderRadius: '50%',
           flex: '0 0 auto',
-          backgroundColor: deploymentDotColors[tone],
+          backgroundColor: deploymentDotColors[state.tone],
         }}
       />
       <Text
@@ -1026,30 +1067,34 @@ function DeploymentStatus({run}: {run: DeploymentRun | null}) {
         style={{
           whiteSpace: 'nowrap',
           fontSize: 13,
-          color: tone === 'critical' ? deploymentDotColors.critical : undefined,
+          color: state.tone === 'critical' ? deploymentDotColors.critical : undefined,
         }}
       >
-        {siteStatusLabel}
+        {state.label}
       </Text>
-      <Text muted size={1} className="editorial-dashboard__deployment-date" style={{fontSize: 13}}>
-        {dateLabel}
-      </Text>
+      {dateLabel && (
+        <Text muted size={1} className="editorial-dashboard__deployment-date" style={{fontSize: 13}}>
+          {dateLabel}
+        </Text>
+      )}
     </Flex>
   )
 
-  return run?.html_url ? (
+  return state.actionLabel ? (
     <a
-      href={run.html_url}
+      href={state.actionUrl}
       target="_blank"
       rel="noreferrer"
-      title="Voir le détail de la dernière mise en ligne"
-      aria-label={`${shortStatusLabel}. ${dateLabel}. Voir le détail de la mise en ligne (nouvel onglet)`}
+      title={`${state.detail} ${state.actionLabel}`}
+      aria-label={`${state.label}. ${state.detail} ${state.actionLabel} (nouvel onglet)`}
       className="editorial-dashboard__deployment-status"
     >
       {content}
     </a>
   ) : (
-    <div className="editorial-dashboard__deployment-status">{content}</div>
+    <div className="editorial-dashboard__deployment-status" title={state.detail}>
+      {content}
+    </div>
   )
 }
 
