@@ -121,6 +121,42 @@
 
 ---
 
+## Milestone: v1.4 — Editorial Design Consistency
+
+**Shipped:** 2026-08-01 (both phases executed 2026-07-29)
+**Phases:** 2 (15-16) | **Plans:** 7 | **Tasks:** 17
+
+### What Was Built
+- About page's title moved onto the shared `PageTitleHeader` component and its supporting layout was rebuilt around a sketch-chosen composition (sketch-014, Variant A): standalone lead paragraph, circular portrait bio-row, a pinned scroll-driven hero-photo reveal (shrinks to ~86% width), and a re-skinned two-column numbered-sections layout, with reduced-motion/mobile/no-JS fallbacks (Phase 15)
+- 404 fallback page fully rebuilt as a custom, interactive concept: a pure `proximityToInterval` math module (unit-tested D-10 photosensitive-safety floor) driving a full-bleed photo pool that hard-cuts at a pointer/touch-proximity rate, AJS logo + "404" marker + bilingual message over a dimming scrim, with a constant-drift `prefers-reduced-motion` branch (Phase 16)
+- A live, explicit user override at Phase 16's human-verify checkpoint raised the photo-pop rate cap from ≈3/sec to ≈6.7/sec — a knowing WCAG 2.3.1 tradeoff, reconciled back into the already-merged 16-01 plan/summary docs rather than left to drift silently out of sync with the shipped code
+- A shared `PageTitleHeader.astro` overflow bug (affecting About, Contact, *and* Éditions, not just About) was caught by CI after the v1.4 PR merged to `main`, root-caused, and fixed site-wide
+
+### What Worked
+- **Sketch-first layout exploration, reused a second time**: the same process validated on the Contact redesign (sketch variants → user picks a named winner → implement) was applied to About with zero friction — the user picked Variant A on first review, no feedback rounds needed.
+- **Pure-module extraction before wiring interactivity**: `pop-rate.ts`'s proximity→interval math was written and unit-tested as a standalone module *before* the pointer-driven engine was layered on top, which made the live D-10 cap override (350ms → 150ms) a one-constant change with instant test re-verification, not a risky live edit to entangled UI code.
+- **CI as a real safety net, not just a formality**: the post-merge PageTitleHeader overflow regression was caught by GitHub Actions blocking `main`'s deploy, not by a human noticing a visual glitch — confirming the value of keeping e2e gates blocking even after a milestone's own phases report green.
+
+### What Was Inefficient
+- **v1.3's own retrospective lesson #1 ("add the milestone's versioned ROADMAP heading at creation time, not close time") was not applied to v1.4 either** — Phase 15/16 were added as bare `### Phase N` headings with no wrapping `### v1.4 ...` section, so `/gsd-complete-milestone`'s phase-scoping regex failed with "no phases found for milestone v1.4" until a heading was retrofitted manually at close time. Second consecutive milestone to hit this exact, already-documented gap.
+- **New, more severe tooling gap**: even after adding the heading, `milestone.complete` still refused to close ("ROADMAP lists 1 unstarted phase(s), e.g. Phase 16") because `gsd-tools`' phase-number lookup mis-tokenizes directory `16-404-page-editorial-redesign` — the leading "404" reads as a digit-prefixed sub-phase segment, hiding the phase entirely from completion detection. This is a stronger case of the general phase-locator digit bug (previously known to affect single lookups) and required manual filesystem verification (reading `16-VERIFICATION.md` directly, which itself documents this exact tokenizer issue) plus `--force` to proceed. Phase 16's own `16-VERIFICATION.md` had already flagged this proactively — a good defensive pattern worth repeating for any future phase whose name starts with a digit.
+- The pre-close audit's 7 open items (`knowledge-base.md` false positive + 6 stale, unexecuted 2026-07-22 quick-task plans) are the *exact same* items already acknowledged at the v1.3 close on 2026-07-23 — acknowledging without ever executing or deleting them means they will keep resurfacing at every future milestone close until someone actually resolves the underlying files.
+
+### Patterns Established
+- For any phase whose numeric directory prefix is followed by a string that itself starts with a digit (e.g. "16-404-page-..."), expect `gsd-tools` phase-lookup commands to misfire; verify phase completion via the filesystem (`*-VERIFICATION.md`, `*-SUMMARY.md` presence, ROADMAP.md checkbox) rather than trusting `init.manager`/`milestone.complete`'s JSON output, and be ready to pass `--force` at milestone close once that manual verification confirms the phase is genuinely done.
+- Live, user-approved departures from a documented accessibility/safety constant (like the D-10 flash-rate cap) get written back into the *original* plan/summary docs as a dated addendum, not just mentioned in the newest plan — keeps the constant's history traceable from whichever doc a future reader opens first.
+
+### Key Lessons
+1. A versioned `## v{X.Y} ... — SHIPPED {date}` (or in-progress) ROADMAP heading needs to exist from the moment a milestone's phases are roadmapped, not retrofitted at close — this is the second milestone in a row to hit the same gap despite it being written up as a lesson after the first.
+2. Phase directory names starting with a digit (dates, page names like "404", version numbers) break more than heading-matching — they break the phase-number lookup used by completion/verification tooling too. Either avoid digit-leading phase-name segments going forward, or budget for a manual-verify + `--force` close every time one occurs.
+3. Acknowledging a stale pre-close audit item without ever acting on it just defers the same conversation to the next milestone close — if an item isn't going to be executed, consider deleting the dead plan file instead of re-acknowledging it indefinitely.
+
+### Cost Observations
+- Model mix / session count: not tracked for this milestone (no telemetry captured in this context).
+- Notable: both phases (15 and 16, 7 plans total) were executed within a single day (2026-07-29) — 67 commits, 45 files changed, +6457/-158 lines — but the milestone wasn't formally closed/archived until 2026-08-01, a 3-day archival lag consistent with the pattern v1.3's retrospective already flagged for v1.1/v1.2.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -132,6 +168,7 @@
 | v1.2 | — | 4 | First case of a phase (8) shipped directly on `main` outside the plan/execute cycle, then retroactively verified via `/gsd-discuss-phase` |
 | v1.3 | — | 4 | First formal `/gsd-complete-milestone` run for this project; introduced explicit `## v{version}` ROADMAP headings and this RETROSPECTIVE.md |
 | *(retroactive)* | — | — | v1.0/v1.1/v1.2 formally closed together on 2026-07-27, seven days after v1.3 — closing the archival-lag gap v1.3's own retrospective flagged |
+| v1.4 | — | 2 | First milestone to hit the phase-locator digit-prefix bug hard enough to block automated close entirely (Phase 16 = "16-404-page-..."), requiring manual filesystem verification + `--force`; also the second consecutive milestone to skip the "add the versioned heading at creation time" lesson from v1.3 |
 
 ### Cumulative Quality
 
@@ -141,7 +178,9 @@
 | v1.1 | not separately measured | not separately measured | not tracked |
 | v1.2 | not separately measured | not separately measured | not tracked |
 | v1.3 | 163 e2e + 126 unit (whole-suite, not v1.3-only) | not separately measured for v1.3 alone | 0 (no new dependencies added across Phases 11-14) |
+| v1.4 | 9/9 `pop-rate.test.ts` (new) + 13/13 targeted 404/a11y e2e green at Phase 16 verification; full-suite counts not separately isolated for v1.4 | not separately measured for v1.4 alone | 0 (no new dependencies — pure Astro component/CSS/vanilla-JS work) |
 
 ### Top Lessons (Verified Across Milestones)
 
 1. Direct-evidence re-verification (re-running commands, reading live data) over trusting prior written claims — first established in Phase 1's post-completion review, reconfirmed repeatedly through v1.3.
+2. Add the milestone's versioned ROADMAP heading at phase-creation time, not close time, and avoid digit-leading phase-name segments — both v1.3 and v1.4 lost time to the same class of phase-locator tooling gap; see v1.4's retrospective above for the sharper digit-prefix variant.
