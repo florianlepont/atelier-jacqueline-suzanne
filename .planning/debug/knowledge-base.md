@@ -35,3 +35,11 @@ Resolved debug sessions. Used by `gsd-debugger` to surface known-pattern hypothe
 - **Fix:** Move `min-height:100svh` from the mobile-only media query to the base `.home-hero__photo` rule, preserving `max-height:100vh` and `object-fit:cover`, and add a Playwright regression at 1280x1320 asserting the photo fills the viewport and the footer begins below the fold.
 - **Files changed:** src/components/HomeCarousel.astro, tests/e2e/homepage.spec.ts
 ---
+
+## spinner-never-clears — Sanity Studio "Tableau de bord" dashboard spinner never cleared
+- **Date:** 2026-08-01
+- **Error patterns:** spinner, Chargement, infinite loading, dashboard, Tableau de bord, never renders, finally, setLoading, historyStore, getTransactions, userStore, getUsers, lastValueFrom, hang, never resolves, never rejects, activity feed, WebSocket connection failed, sanity dev
+- **Root cause:** `setLoading(false)` in the dashboard's main load effect (`sanity/editorial/EditorialDashboard.tsx`) only ran inside a `.finally()` chained onto a promise chain that awaited `historyStore.getTransactions(...)`/`userStore.getUsers(...)` to build the supplementary activity feed. Those SDK calls resolve via `lastValueFrom()`/DataLoader mechanisms that can hang (neither resolve nor reject) without throwing, which silently blocked `.finally()` — and the spinner — forever, even though the primary content query had already succeeded (200 response). Architectural coupling predates the session that surfaced it; unrelated to inventory-generation-guard changes made in that session (verified via git diff against the pre-session base).
+- **Fix:** Decouple `setLoading(false)` from the activity-feed awaits — clear the spinner as soon as the primary content query settles (success or failure), and run the historyStore/userStore work as an independent fire-and-forget `.then().catch()` chain that only updates `activities` state whenever/if it settles, matching the existing `hasDataRef.current` resilience pattern already used elsewhere in the same effect for outright fetch failures.
+- **Files changed:** sanity/editorial/EditorialDashboard.tsx
+---

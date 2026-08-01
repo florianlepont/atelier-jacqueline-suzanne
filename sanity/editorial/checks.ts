@@ -208,10 +208,13 @@ export function getDocumentChecks(schemaType: string, value: EditorialDocument):
   }
 
   if (schemaType === 'editionsPage') {
-    return [
-      {label: 'Introduction française et anglaise', complete: localized(value.intro)},
-      ...seoChecks(value.seo),
-    ]
+    // No ...seoChecks(value.seo) here: editionsPage.ts deliberately has no
+    // `seo` field/group (see its header comment), and the /editions Astro
+    // routes still hardcode their own seoTitle/seoDescription rather than
+    // reading from Sanity. Referencing seoChecks would list checklist
+    // items the editor can never actually find or satisfy anywhere in the
+    // document pane.
+    return [{label: 'Introduction française et anglaise', complete: localized(value.intro)}]
   }
 
   if (schemaType === 'exhibition') {
