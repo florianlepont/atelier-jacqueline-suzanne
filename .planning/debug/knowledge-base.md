@@ -43,3 +43,11 @@ Resolved debug sessions. Used by `gsd-debugger` to surface known-pattern hypothe
 - **Fix:** Decouple `setLoading(false)` from the activity-feed awaits — clear the spinner as soon as the primary content query settles (success or failure), and run the historyStore/userStore work as an independent fire-and-forget `.then().catch()` chain that only updates `activities` state whenever/if it settles, matching the existing `hasDataRef.current` resilience pattern already used elsewhere in the same effect for outright fetch failures.
 - **Files changed:** sanity/editorial/EditorialDashboard.tsx
 ---
+
+## disabled-publish-placeholder — PublicationStatusAction rendered as a permanently-disabled decoy button
+- **Date:** 2026-08-01
+- **Error patterns:** disabled, PublicationStatusAction, passiveDocumentActionLabel, Modifications enregistrées, À jour, document action, disabled: true, decoy button, action bar, publish, unpublish, Publié, Brouillon, Sanity Studio, workflow.tsx, workflowLogic.ts, redundant status, misleading affordance
+- **Root cause:** `PublicationStatusAction` (sanity/editorial/workflow.tsx) was a permanently-`disabled: true` DocumentActionComponent prepended to the action bar for all 7 public-site document types, rendering as a grey pill that looks clickable but isn't. It duplicated status information already surfaced natively (Sanity Studio's own draft/published pill) and by existing custom badges (`CompletenessBadge` for all 7 types, `CollectionStatusBadge` with an even richer 5-state lifecycle for `gallery`), while adding no signal of its own beyond a static "publish elsewhere" tooltip — a constraint already communicated structurally by `filterDocumentActions` removing the real publish/unpublish buttons. Net effect: pure UX clutter with a misleading disabled-button affordance.
+- **Fix:** Removed `PublicationStatusAction` from workflow.tsx and simplified `resolveActions` to return `filterDocumentActions(prev, context.schemaType)` directly (no prepended action) for all schema types. Removed the now-dead `passiveDocumentActionLabel` helper from workflowLogic.ts. Removed its corresponding unit test block and unused import from tests/unit/workflow-logic.test.ts.
+- **Files changed:** sanity/editorial/workflow.tsx, sanity/editorial/workflowLogic.ts, tests/unit/workflow-logic.test.ts
+---
