@@ -5,6 +5,19 @@
 
 > **Note:** This file was reset after the v1.3 "Éditions" milestone closed on 2026-07-23. All v1/v1.1/v1.2/v1.3 requirements shipped except `LAUNCH-01` (carried forward below, unchanged). Full historical requirements (with final status) are archived at `.planning/milestones/v1.3-REQUIREMENTS.md`; accomplishments are in `.planning/MILESTONES.md`. Run `/gsd-new-milestone` to scope the next milestone's requirements.
 
+## v1.4 Requirements (Editorial Design Consistency)
+
+Extend the giant-title editorial identity established on Contact/Éditions (shared `PageTitleHeader` component) to the About and 404 pages.
+
+### About Page
+
+- [x] **ABOUT-03**: About page's title uses the shared `PageTitleHeader` component — same font/size/position, halftone texture, and hairline divider as Contact and Éditions
+- [x] **ABOUT-04**: About page's supporting layout (portrait treatment, hero photo, numbered sections) is redesigned with a modern, editorial-coherent composition — explored via multiple layout proposals before implementation, same process as the Contact page redesign (sketch variants → chosen winner → implement)
+
+### Error Page
+
+- [x] **ERR-01**: 404 page gets a fully custom, interactive redesign — a full-bleed backdrop of Romane's photography popping (hard-cutting) at a pointer/touch-proximity-driven rate, with the AJS logo, a small "404" marker, and the bilingual "Page introuvable / Not found" message centered over a dimming scrim (revised 2026-07-29 from the original `PageTitleHeader`-reuse framing — see `.planning/phases/16-404-page-editorial-redesign/16-CONTEXT.md`)
+
 ## Carried Forward (still open, not part of v1.3)
 
 ### Launch
@@ -86,6 +99,8 @@ Explicitly excluded. Documented to prevent scope creep.
 | "View on your wall" AR feature | High implementation complexity for uncertain gain vs. static room-view mockups |
 | Press/mentions section | Not requested for v1 |
 | Placeholder pricing, "notify me"/waitlist signup, or disabled buy buttons on Éditions pages (v1.3) | Would require rework once real inventory/checkout lands in the future shop milestone; a pure showcase with zero commerce affordance is the deliberate choice until that infrastructure exists |
+| 404 page navigation/content changes (added recovery links, rewritten copy) (v1.4) | Explicit decision: pure visual redesign only, not a navigation-recovery redesign |
+| About page portrait photo replacement (v1.4) | Only the layout/treatment is in scope; the underlying image is Romane's content, not a code concern |
 
 ## Traceability
 
@@ -93,14 +108,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
+| ABOUT-03 | Phase 15 | Complete |
+| ABOUT-04 | Phase 15 | Complete |
+| ERR-01 | Phase 16 | Complete |
 | LAUNCH-01 | Phase 5 | Pending |
 
 **Coverage:**
 
+- v1.4 requirements: 3 total (ABOUT-03, ABOUT-04, ERR-01)
+- Mapped to phases: 3/3 ✓ (Phase 15: ABOUT-03, ABOUT-04; Phase 16: ERR-01 — both complete, v1.4 milestone shipped 2026-07-29)
 - Carried-forward requirements: 1 total (LAUNCH-01)
 - Mapped to phases: 1/1 ✓ (Phase 5, not started)
 - v2 (v1.x fast-follow) requirements: 18 tracked, not yet in roadmap (out of scope for this roadmap by design)
 
 ---
 *Requirements defined: 2026-07-05*
-*Last updated: 2026-07-23 — reset after v1.3 (Éditions) milestone close; full v1/v1.1/v1.2/v1.3 history archived at `.planning/milestones/v1.3-REQUIREMENTS.md`*
+*Last updated: 2026-07-29 — Phase 16 (404 Page Editorial Redesign) complete: ERR-01 marked done. Both v1.4 requirements (ABOUT-03/04 via Phase 15, ERR-01 via Phase 16) now shipped — see 16-03-SUMMARY.md for the D-10 accessibility-cap override (≈3/sec → ≈6.7/sec) approved live at the plan's human-verify checkpoint.*
