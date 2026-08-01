@@ -452,6 +452,18 @@ export function createInventoryGenerationGuard<T>() {
       active = false
       latestGeneration += 1
     },
+    // Undoes invalidate(). React 18 Strict Mode intentionally mounts every
+    // effect, cleans it up once, then mounts it again (to surface effects
+    // that aren't safe to re-run) — an effect that calls invalidate() only
+    // from its cleanup would permanently kill the ONE guard instance the
+    // component ever uses, before its first real fetch could resolve.
+    // Pairing invalidate() in cleanup with reactivate() in the same
+    // effect's setup makes that mount/cleanup/mount cycle a no-op, while a
+    // genuine final unmount (setup never runs again) still leaves the
+    // guard invalidated for good.
+    reactivate() {
+      active = true
+    },
   }
 }
 

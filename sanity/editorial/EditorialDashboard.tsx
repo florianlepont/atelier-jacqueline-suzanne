@@ -178,12 +178,16 @@ export function EditorialDashboard() {
     }
   }, [client, historyStore, userStore, refreshKey, inventoryGenerationGuard])
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    // Undoes the cleanup below on remount, so React Strict Mode's
+    // intentional mount -> cleanup -> mount dev cycle is a no-op instead of
+    // permanently invalidating the only guard instance the component will
+    // ever use (see reactivate()'s doc comment in dashboardLogic.ts).
+    inventoryGenerationGuard.reactivate()
+    return () => {
       inventoryGenerationGuard.invalidate()
-    },
-    [inventoryGenerationGuard],
-  )
+    }
+  }, [inventoryGenerationGuard])
 
   // Re-fetch (silently) whenever any dashboard-relevant document changes, so
   // edits made in another tab — or by another editor — appear without a reload.

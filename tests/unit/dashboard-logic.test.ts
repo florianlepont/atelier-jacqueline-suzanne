@@ -724,6 +724,30 @@ describe('shared inventory request generations', () => {
     guard.invalidate();
     expect(guard.accept(generation, [], () => undefined)).toBe(false);
   });
+
+  it('reactivate() undoes invalidate(), surviving a React Strict Mode phantom mount/cleanup/mount cycle', () => {
+    const guard = createInventoryGenerationGuard<DashboardDocument[]>();
+    // Strict Mode: mount (setup does nothing) -> cleanup (invalidate) -> mount (setup: reactivate).
+    guard.invalidate();
+    guard.reactivate();
+    const generation = guard.start();
+    let accepted: DashboardDocument[] | undefined;
+    expect(
+      guard.accept(generation, [], (value) => {
+        accepted = value;
+      }),
+    ).toBe(true);
+    expect(accepted).toEqual([]);
+  });
+
+  it('a genuine final invalidation (no reactivate) still blocks every later response', () => {
+    const guard = createInventoryGenerationGuard<DashboardDocument[]>();
+    const generation = guard.start();
+    guard.invalidate();
+    // No reactivate() call — this simulates a real unmount, not Strict Mode's phantom cycle.
+    expect(guard.isCurrent(generation)).toBe(false);
+    expect(guard.accept(generation, [], () => undefined)).toBe(false);
+  });
 });
 
 describe('pluralize', () => {
