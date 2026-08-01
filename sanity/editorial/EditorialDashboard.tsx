@@ -3,19 +3,15 @@ import type {ComponentType, SVGProps} from 'react'
 import {Badge, Box, Button, Card, Dialog, Flex, Heading, Spinner, Stack, Text} from '@sanity/ui'
 import {IntentButton, useClient, useHistoryStore, useUserStore} from 'sanity'
 import {IntentLink} from 'sanity/router'
-import {
-  AddIcon,
-  CheckmarkCircleIcon,
-  ChevronRightIcon,
-  CogIcon,
-  DocumentIcon,
-  ErrorOutlineIcon,
-  FolderIcon,
-  ImagesIcon,
-  LaunchIcon,
-  PublishIcon,
-  WarningOutlineIcon,
-} from '@sanity/icons'
+import {AddIcon} from '@sanity/icons/Add'
+import {CheckmarkCircleIcon} from '@sanity/icons/CheckmarkCircle'
+import {ChevronRightIcon} from '@sanity/icons/ChevronRight'
+import {CogIcon} from '@sanity/icons/Cog'
+import {ErrorOutlineIcon} from '@sanity/icons/ErrorOutline'
+import {FolderIcon} from '@sanity/icons/Folder'
+import {ImagesIcon} from '@sanity/icons/Images'
+import {LaunchIcon} from '@sanity/icons/Launch'
+import {PublishIcon} from '@sanity/icons/Publish'
 import {
   deploymentSubtitle,
   deploymentState,
@@ -40,7 +36,6 @@ import {
   editorialStatus,
   formatActivityDate,
   formatRelativeDate,
-  isGalleryOnline,
   pluralize,
   preflightForConfirmation,
   preparePublicationBatch,
@@ -262,8 +257,6 @@ export function EditorialDashboard() {
       return !summary.requiredComplete || !summary.recommendedComplete || row.hasDraft
     })
     .sort((left, right) => attentionPriority(left) - attentionPriority(right))
-  const galleries = rows.filter(({current}) => current._type === 'gallery')
-  const onlineGalleryCount = galleries.filter((row) => isGalleryOnline(row.current)).length
   const draftCount = rows.filter((row) => row.hasDraft).length
   const lastPublishedDocumentAt = documents
     .filter((document) => !document._id.startsWith('drafts.'))
@@ -666,40 +659,6 @@ export function EditorialDashboard() {
 
           {!loading && !error && (
             <>
-              <div className="editorial-dashboard__metrics">
-                <MetricCard
-                  icon={FolderIcon}
-                  label={pluralize(onlineGalleryCount, 'collection', 'collections')}
-                  value={String(onlineGalleryCount)}
-                  detail={pluralize(onlineGalleryCount, 'publiée sur le site', 'publiées sur le site')}
-                  accent="primary"
-                  href="/structure"
-                  activateLabel="Voir les collections dans Contenu du site"
-                />
-                <MetricCard
-                  icon={DocumentIcon}
-                  label={pluralize(draftCount, 'brouillon', 'brouillons')}
-                  value={String(draftCount)}
-                  detail="en cours de rédaction"
-                  accent="neutral"
-                  href="/structure"
-                  activateLabel="Voir le contenu dans Contenu du site"
-                />
-                <MetricCard
-                  icon={WarningOutlineIcon}
-                  label={pluralize(listedAttention.length, 'contenu', 'contenus')}
-                  value={String(listedAttention.length)}
-                  detail="à vérifier avant publication"
-                  accent={listedAttention.length > 0 ? 'caution' : 'positive'}
-                  activateLabel="Aller à la liste « À faire maintenant »"
-                  onActivate={() => {
-                    const heading = document.getElementById('editorial-dashboard-attention-heading')
-                    heading?.scrollIntoView({behavior: 'smooth', block: 'start'})
-                    heading?.focus()
-                  }}
-                />
-              </div>
-
               <div className="editorial-dashboard__columns">
                 <Stack space={3}>
                   <Flex align="flex-end" justify="space-between" gap={2}>
@@ -1000,76 +959,6 @@ function TintChip({
       <Icon style={{display: 'block'}} />
     </div>
   )
-}
-
-function MetricCard({
-  icon: Icon,
-  label,
-  value,
-  detail,
-  accent = 'neutral',
-  onActivate,
-  activateLabel,
-  href,
-}: {
-  icon: ComponentType<SVGProps<SVGSVGElement>>
-  label: string
-  value: string
-  detail: string
-  accent?: MetricAccent
-  onActivate?: () => void
-  activateLabel?: string
-  href?: string
-}) {
-  const accentStyle = metricAccentStyles[accent]
-  const body = (
-    <Card
-      radius={3}
-      shadow={1}
-      padding={3}
-      className="editorial-dashboard__surface editorial-dashboard__metric-card"
-      style={{height: '100%', boxSizing: 'border-box'}}
-    >
-      <Flex align="center" gap={3}>
-        <TintChip icon={Icon} size={38} radius={10} iconSize={21} tint={accentStyle} />
-        <Stack space={2} style={{minWidth: 0}}>
-          <Heading size={2}>{value}</Heading>
-          <Text size={1} style={{fontSize: 12}}>
-            <span style={{fontWeight: 600}}>{label}</span>{' '}
-            <span style={{color: 'var(--card-muted-fg-color)'}}>{detail}</span>
-          </Text>
-        </Stack>
-      </Flex>
-    </Card>
-  )
-
-  if (href) {
-    return (
-      <a
-        href={href}
-        className="editorial-dashboard__metric-cell editorial-dashboard__metric-cell--interactive"
-        style={{color: 'inherit', textDecoration: 'none'}}
-        aria-label={activateLabel}
-      >
-        {body}
-      </a>
-    )
-  }
-
-  if (onActivate) {
-    return (
-      <button
-        type="button"
-        className="editorial-dashboard__metric-cell editorial-dashboard__metric-cell--interactive"
-        onClick={onActivate}
-        aria-label={activateLabel}
-      >
-        {body}
-      </button>
-    )
-  }
-
-  return <div className="editorial-dashboard__metric-cell">{body}</div>
 }
 
 function ShortcutRow({
