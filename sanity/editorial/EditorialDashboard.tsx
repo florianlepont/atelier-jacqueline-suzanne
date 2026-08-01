@@ -122,13 +122,19 @@ export function EditorialDashboard() {
         PUBLIC_DOCUMENTS_QUERY_PARAMS,
         {perspective: 'raw'},
       )
-      .then(async (content) => {
+      .then((content) => {
         if (cancelled) return
         const accepted = inventoryGenerationGuard.accept(generation, content, (inventory) => {
           setDocuments(inventory)
           setError('')
           hasDataRef.current = true
         })
+        // Primary content has arrived (or this fetch is now stale). The
+        // dashboard can render immediately — it must not stay stuck on the
+        // spinner waiting for the supplementary activity feed below, which
+        // has no timeout and can hang (neither resolve nor reject) without
+        // ever tripping a catch block.
+        if (!cancelled && inventoryGenerationGuard.isCurrent(generation)) setLoading(false)
         if (!accepted) return
 
         try {
@@ -140,31 +146,36 @@ export function EditorialDashboard() {
               ]),
             ),
           )
-          const transactions = await historyStore.getTransactions(documentIds)
-          const authorIds = Array.from(new Set(transactions.map(({author}) => author)))
-          const users = authorIds.length > 0 ? await userStore.getUsers(authorIds) : []
-          if (!cancelled && inventoryGenerationGuard.isCurrent(generation)) {
-            setActivities(buildActivities(transactions, users, content))
-          }
+          historyStore
+            .getTransactions(documentIds)
+            .then(async (transactions) => {
+              const authorIds = Array.from(new Set(transactions.map(({author}) => author)))
+              const users = authorIds.length > 0 ? await userStore.getUsers(authorIds) : []
+              if (!cancelled && inventoryGenerationGuard.isCurrent(generation)) {
+                setActivities(buildActivities(transactions, users, content))
+              }
+            })
+            .catch(() => {
+              // History is supplementary and subject to plan retention (or may
+              // simply never settle). The dashboard's primary content already
+              // rendered above and must stay available regardless.
+              if (!cancelled && inventoryGenerationGuard.isCurrent(generation)) {
+                setActivities({})
+              }
+            })
         } catch {
-          // History is supplementary and subject to plan retention. The dashboard's
-          // primary content should remain available if it cannot be retrieved.
           if (!cancelled && inventoryGenerationGuard.isCurrent(generation)) setActivities({})
         }
       })
       .catch((reason: unknown) => {
         // A failed background refresh keeps showing the last good data; only a
         // failed FIRST load has nothing to fall back on and surfaces the error.
-        if (
-          !cancelled &&
-          inventoryGenerationGuard.isCurrent(generation) &&
-          !hasDataRef.current
-        ) {
-          setError(reason instanceof Error ? reason.message : 'Erreur inconnue')
+        if (!cancelled && inventoryGenerationGuard.isCurrent(generation)) {
+          setLoading(false)
+          if (!hasDataRef.current) {
+            setError(reason instanceof Error ? reason.message : 'Erreur inconnue')
+          }
         }
-      })
-      .finally(() => {
-        if (!cancelled && inventoryGenerationGuard.isCurrent(generation)) setLoading(false)
       })
     return () => {
       cancelled = true
