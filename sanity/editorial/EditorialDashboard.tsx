@@ -357,6 +357,12 @@ export function EditorialDashboard() {
     confirmationOpen,
   })
   const confirmationBatch = publicationState.batch ?? publicationSnapshot
+  const publicationPanelHasBody =
+    publicationCard.pairs.length > 0 ||
+    publicationCard.blockedRows.length > 0 ||
+    (publicationState.phase === 'success' && Boolean(publishedAt)) ||
+    publicationState.phase === 'tracking-error' ||
+    publicationState.phase === 'error'
 
   const requestPublication = async () => {
     const batch = await preflightForConfirmation(publicationController)
@@ -474,10 +480,10 @@ export function EditorialDashboard() {
           {!loading && !error && (
             <Card
               radius={3}
-              tone="primary"
-              shadow={2}
-              padding={[3, 4]}
-              style={{border: '1px solid var(--card-border-color)'}}
+              tone="transparent"
+              shadow={1}
+              padding={[4, 4, 5]}
+              className="editorial-dashboard__publish-panel"
             >
               <Stack space={4}>
                 <Flex align="flex-start" justify="space-between" gap={4} wrap="wrap">
@@ -513,6 +519,10 @@ export function EditorialDashboard() {
                     style={{minHeight: 44}}
                   />
                 </Flex>
+
+                {publicationPanelHasBody && (
+                  <Box className="editorial-dashboard__publish-divider" />
+                )}
 
                 {publicationCard.pairs.length > 0 && (
                   <Stack space={2}>

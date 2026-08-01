@@ -45,6 +45,23 @@
   gap: 24px;
 }
 
+.editorial-dashboard__publish-panel {
+  --dashboard-publish-accent: #556bfc;
+  background-color: var(--dashboard-surface-background);
+  border: 1px solid color-mix(in srgb, var(--card-fg-color) 9%, transparent);
+  border-left: 3px solid var(--dashboard-publish-accent);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--card-fg-color) 6%, transparent),
+    0 12px 28px -20px color-mix(in srgb, var(--card-fg-color) 24%, transparent);
+}
+
+.editorial-dashboard__publish-divider {
+  flex: 0 0 auto;
+  height: 1px;
+  width: 100%;
+  background-color: color-mix(in srgb, var(--card-fg-color) 10%, transparent);
+}
+
 .editorial-dashboard__deployment-status {
   display: flex;
   flex: 0 0 auto;
