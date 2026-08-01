@@ -4,6 +4,7 @@ import {Badge, Box, Button, Card, Dialog, Flex, Heading, Spinner, Stack, Text} f
 import {IntentButton, useClient, useHistoryStore, useUserStore} from 'sanity'
 import {IntentLink} from 'sanity/router'
 import {AddIcon} from '@sanity/icons/Add'
+import {BookIcon} from '@sanity/icons/Book'
 import {CheckmarkCircleIcon} from '@sanity/icons/CheckmarkCircle'
 import {ChevronRightIcon} from '@sanity/icons/ChevronRight'
 import {CogIcon} from '@sanity/icons/Cog'
@@ -443,7 +444,18 @@ export function EditorialDashboard() {
                 intent="create"
                 params={{type: 'gallery', template: 'gallery'}}
                 tone="primary"
-                mode="default"
+                mode="ghost"
+                paddingY={3}
+              />
+              <IntentButton
+                className="editorial-dashboard__header-control"
+                style={{height: 44}}
+                icon={BookIcon}
+                text="Nouvelle édition"
+                intent="create"
+                params={{type: 'edition'}}
+                tone="primary"
+                mode="ghost"
                 paddingY={3}
               />
             </Flex>
