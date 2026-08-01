@@ -8,6 +8,7 @@ import {
   buildActivities,
   buildAttentionGroups,
   ConfirmationChangedError,
+  createInventoryGenerationGuard,
   createPublicationController,
   compactCheckLabel,
   contentNoun,
@@ -24,7 +25,7 @@ import {
   pluralize,
   preparePublicationBatch,
   preflightForConfirmation,
-  publicationBatchForDisplay,
+  publicationCardState,
 } from '../../sanity/editorial/dashboardLogic';
 import type {DashboardDocument, DashboardRow} from '../../sanity/editorial/dashboardLogic';
 import {summarizeChecks} from '../../sanity/editorial/checks';
@@ -71,6 +72,14 @@ const publicationRights = {
   copyrightNotice: '© Romane Lepont',
   usage: 'allRightsReserved',
 };
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((next) => {
+    resolve = next;
+  });
+  return {promise, resolve};
+}
 
 function publicationDocument(
   id: string,
@@ -395,7 +404,7 @@ describe('publication controller', () => {
     ]);
   });
 
-  it('closes a changed incomplete batch into the controller-visible blocked card state', async () => {
+  it('hands off a changed blocked snapshot and lets a later A+C inventory supersede A+B', async () => {
     const first = [
       publicationDocument('drafts.homePage', 'homePage', {
         intro: {fr: 'Bienvenue', en: 'Welcome'},
@@ -408,29 +417,148 @@ describe('publication controller', () => {
         images: [],
       }),
     ];
-    const staleSnapshot = preparePublicationBatch(first);
+    const replacement = [
+      ...first,
+      publicationDocument('drafts.gallery-replacement', 'gallery', {
+        title: 'Collection de remplacement',
+      }),
+    ];
+    let inventory = first;
+    const onInventory = vi.fn((documents: DashboardDocument[]) => {
+      inventory = documents;
+    });
     const onRefresh = vi.fn();
     const client = {
       fetch: vi.fn().mockResolvedValueOnce(first).mockResolvedValueOnce(changed),
       action: vi.fn(),
     };
-    const controller = createPublicationController({client, onRefresh});
+    const controller = createPublicationController({client, onInventory, onRefresh});
 
     await controller.preflight();
     await expect(controller.publish()).rejects.toBeInstanceOf(ConfirmationChangedError);
 
-    const visibleBatch = publicationBatchForDisplay(controller.state, staleSnapshot);
+    const blockedCard = publicationCardState(preparePublicationBatch(inventory), {
+      busy: false,
+      trackingFailed: false,
+      confirmationOpen: false,
+    });
     expect(client.action).not.toHaveBeenCalled();
+    expect(onInventory).toHaveBeenNthCalledWith(1, first);
+    expect(onInventory).toHaveBeenNthCalledWith(2, changed);
+    expect(onInventory.mock.calls[0][0]).toBe(first);
+    expect(onInventory.mock.calls[1][0]).toBe(changed);
     expect(onRefresh).toHaveBeenCalledTimes(1);
     expect(controller.state.phase).toBe('confirming');
-    expect(visibleBatch.total).toBe(2);
-    expect(visibleBatch.ready).toBe(false);
-    expect(visibleBatch.blockedRows).toEqual([
+    expect(blockedCard.total).toBe(2);
+    expect(blockedCard.buttonDisabled).toBe(true);
+    expect(blockedCard.dialogOpen).toBe(false);
+    expect(blockedCard.blockedRows).toEqual([
       expect.objectContaining({
         id: 'gallery-incomplete-after-confirmation',
         title: 'Collection incomplète ajoutée',
       }),
     ]);
+
+    inventory = replacement;
+    const replacementCard = publicationCardState(preparePublicationBatch(inventory), {
+      busy: false,
+      trackingFailed: false,
+      confirmationOpen: false,
+    });
+    expect(replacementCard.total).toBe(2);
+    expect(replacementCard.pairs.map(({id}) => id)).toEqual([
+      'homePage',
+      'gallery-replacement',
+    ]);
+    expect(replacementCard.blockedRows).toEqual([]);
+    expect(replacementCard.buttonDisabled).toBe(false);
+    expect(replacementCard.dialogOpen).toBe(false);
+    expect(client.action).not.toHaveBeenCalled();
+  });
+
+  it('hands off an authoritative empty preflight over a stale non-empty inventory', async () => {
+    const stale = [
+      publicationDocument('drafts.homePage', 'homePage', {
+        intro: {fr: 'Bienvenue', en: 'Welcome'},
+      }),
+    ];
+    const empty: DashboardDocument[] = [];
+    let inventory = stale;
+    const onInventory = vi.fn((documents: DashboardDocument[]) => {
+      inventory = documents;
+    });
+    const client = {
+      fetch: vi.fn().mockResolvedValueOnce(empty).mockResolvedValueOnce(empty),
+      action: vi.fn(),
+    };
+    const controller = createPublicationController({client, onInventory});
+
+    await expect(preflightForConfirmation(controller)).resolves.toBeNull();
+    await expect(preflightForConfirmation(controller)).resolves.toBeNull();
+
+    const card = publicationCardState(preparePublicationBatch(inventory), {
+      busy: false,
+      trackingFailed: false,
+      confirmationOpen: false,
+    });
+    expect(onInventory).toHaveBeenNthCalledWith(1, empty);
+    expect(onInventory).toHaveBeenNthCalledWith(2, empty);
+    expect(onInventory.mock.calls[0][0]).toBe(empty);
+    expect(onInventory.mock.calls[1][0]).toBe(empty);
+    expect(controller.state.phase).toBe('idle');
+    expect(card.total).toBe(0);
+    expect(card.pairs).toEqual([]);
+    expect(card.blockedRows).toEqual([]);
+    expect(card.buttonDisabled).toBe(true);
+    expect(card.dialogOpen).toBe(false);
+    expect(client.action).not.toHaveBeenCalled();
+  });
+
+  it('validates its fetched snapshot when a newer normal request rejects the visible handoff', async () => {
+    const controllerSnapshot = [
+      publicationDocument('drafts.gallery-controller', 'gallery', {
+        title: 'Collection du contrôleur',
+      }),
+    ];
+    const visibleNormal = [
+      publicationDocument('drafts.gallery-normal', 'gallery', {
+        title: 'Collection normale',
+      }),
+    ];
+    const response = deferred<DashboardDocument[]>();
+    const guard = createInventoryGenerationGuard<DashboardDocument[]>();
+    let visibleInventory = visibleNormal;
+    const client = {
+      fetch: vi.fn().mockReturnValue(response.promise),
+      action: vi.fn(),
+    };
+    const controller = createPublicationController({
+      client,
+      onInventoryRequestStart: () => guard.start(),
+      onInventory: (documents, generation) => {
+        if (generation === undefined) return;
+        guard.accept(generation, documents, (accepted) => {
+          visibleInventory = accepted;
+        });
+      },
+    });
+
+    const preflight = controller.preflight();
+    guard.start();
+    response.resolve(controllerSnapshot);
+
+    await expect(preflight).resolves.toEqual(
+      expect.objectContaining({
+        pairs: [
+          expect.objectContaining({
+            id: 'gallery-controller',
+          }),
+        ],
+      }),
+    );
+    expect(visibleInventory).toBe(visibleNormal);
+    expect(controller.state.phase).toBe('confirming');
+    expect(controller.state.batch?.pairs[0].id).toBe('gallery-controller');
   });
 
   it.each([
@@ -530,6 +658,71 @@ describe('publication controller', () => {
       preflight: vi.fn().mockRejectedValue(new Error('403 permission denied')),
     };
     await expect(preflightForConfirmation(controller)).resolves.toBeNull();
+  });
+});
+
+describe('shared inventory request generations', () => {
+  it('prevents an older normal query from overwriting a newer empty controller handoff', async () => {
+    const stale = [publicationDocument('drafts.stale', 'gallery')];
+    const empty: DashboardDocument[] = [];
+    let inventory = stale;
+    const guard = createInventoryGenerationGuard<DashboardDocument[]>();
+    const normalResponse = deferred<DashboardDocument[]>();
+    const controllerResponse = deferred<DashboardDocument[]>();
+
+    const normalGeneration = guard.start();
+    const normalRequest = normalResponse.promise.then((documents) =>
+      guard.accept(normalGeneration, documents, (accepted) => {
+        inventory = accepted;
+      }),
+    );
+    const controllerGeneration = guard.start();
+    const controllerRequest = controllerResponse.promise.then((documents) =>
+      guard.accept(controllerGeneration, documents, (accepted) => {
+        inventory = accepted;
+      }),
+    );
+
+    controllerResponse.resolve(empty);
+    await expect(controllerRequest).resolves.toBe(true);
+    normalResponse.resolve(stale);
+    await expect(normalRequest).resolves.toBe(false);
+    expect(inventory).toBe(empty);
+  });
+
+  it('prevents an older controller handoff from overwriting a newer normal query', async () => {
+    const staleController = [publicationDocument('drafts.controller-old', 'gallery')];
+    const currentNormal = [publicationDocument('drafts.normal-new', 'gallery')];
+    let inventory: DashboardDocument[] = [];
+    const guard = createInventoryGenerationGuard<DashboardDocument[]>();
+    const controllerResponse = deferred<DashboardDocument[]>();
+    const normalResponse = deferred<DashboardDocument[]>();
+
+    const controllerGeneration = guard.start();
+    const controllerRequest = controllerResponse.promise.then((documents) =>
+      guard.accept(controllerGeneration, documents, (accepted) => {
+        inventory = accepted;
+      }),
+    );
+    const normalGeneration = guard.start();
+    const normalRequest = normalResponse.promise.then((documents) =>
+      guard.accept(normalGeneration, documents, (accepted) => {
+        inventory = accepted;
+      }),
+    );
+
+    normalResponse.resolve(currentNormal);
+    await expect(normalRequest).resolves.toBe(true);
+    controllerResponse.resolve(staleController);
+    await expect(controllerRequest).resolves.toBe(false);
+    expect(inventory).toBe(currentNormal);
+  });
+
+  it('rejects every outstanding response after lifecycle invalidation', () => {
+    const guard = createInventoryGenerationGuard<DashboardDocument[]>();
+    const generation = guard.start();
+    guard.invalidate();
+    expect(guard.accept(generation, [], () => undefined)).toBe(false);
   });
 });
 
