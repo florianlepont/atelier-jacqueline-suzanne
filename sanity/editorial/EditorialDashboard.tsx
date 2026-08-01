@@ -1,6 +1,6 @@
 import {useEffect, useMemo, useRef, useState} from 'react'
 import type {ComponentType, SVGProps} from 'react'
-import {Badge, Box, Button, Card, Dialog, Flex, Heading, Spinner, Stack, Text} from '@sanity/ui'
+import {Badge, Box, Button, Card, Flex, Heading, Spinner, Stack, Text} from '@sanity/ui'
 import {IntentButton, useClient, useHistoryStore, useUserStore} from 'sanity'
 import {IntentLink} from 'sanity/router'
 import {AddIcon} from '@sanity/icons/Add'
@@ -526,14 +526,57 @@ export function EditorialDashboard() {
                       </Text>
                     </Stack>
                   </Flex>
-                  <Button
-                    tone="primary"
-                    text={publicationBusy ? 'Vérification…' : 'Mettre le site à jour'}
-                    disabled={publicationCard.buttonDisabled}
-                    loading={publicationBusy}
-                    onClick={() => void requestPublication()}
-                    style={{minHeight: 44}}
-                  />
+                  {publicationCard.dialogOpen ? (
+                    <Card padding={3} radius={2} tone="caution" style={{flex: '1 1 320px'}}>
+                      <Stack space={3}>
+                        <Stack space={2}>
+                          <Text size={1} weight="semibold">
+                            Publier maintenant sur le site public ?
+                          </Text>
+                          <Text size={1}>
+                            {confirmationBatch.total}{' '}
+                            {pluralize(
+                              confirmationBatch.total,
+                              'contenu sera visible',
+                              'contenus seront visibles',
+                            )}{' '}
+                            par tout le monde.
+                          </Text>
+                        </Stack>
+                        {publicationState.phase === 'confirming' && publicationState.error && (
+                          <Card padding={3} radius={2} tone="critical">
+                            <Text size={1}>{publicationState.error}</Text>
+                          </Card>
+                        )}
+                        <Flex gap={2} justify="flex-end" wrap="wrap">
+                          <Button
+                            text="Annuler"
+                            mode="bleed"
+                            disabled={publicationBusy}
+                            onClick={() => setConfirmationOpen(false)}
+                            style={{minHeight: 44}}
+                          />
+                          <Button
+                            tone="primary"
+                            text={publicationState.phase === 'publishing' ? 'Publication…' : 'Confirmer'}
+                            loading={publicationBusy}
+                            disabled={publicationBusy}
+                            onClick={() => void confirmPublication()}
+                            style={{minHeight: 44}}
+                          />
+                        </Flex>
+                      </Stack>
+                    </Card>
+                  ) : (
+                    <Button
+                      tone="primary"
+                      text={publicationBusy ? 'Vérification…' : 'Mettre le site à jour'}
+                      disabled={publicationCard.buttonDisabled}
+                      loading={publicationBusy}
+                      onClick={() => void requestPublication()}
+                      style={{minHeight: 44}}
+                    />
+                  )}
                 </Flex>
 
                 {publicationPanelHasBody && (
@@ -818,60 +861,6 @@ export function EditorialDashboard() {
           )}
         </Stack>
       </Box>
-      {publicationCard.dialogOpen && (
-        <Dialog
-          id="editorial-publication-confirmation"
-          header="Confirmer la mise à jour du site"
-          onClose={() => {
-            if (!publicationBusy) setConfirmationOpen(false)
-          }}
-          width={1}
-        >
-          <Box padding={4}>
-            <Stack space={4}>
-              <Text size={1}>
-                {confirmationBatch.total}{' '}
-                {pluralize(confirmationBatch.total, 'contenu', 'contenus')}{' '}
-                seront publiés ensemble. Si un élément échoue, le lot entier est refusé.
-              </Text>
-              <Stack space={2}>
-                {publicationState.phase === 'confirming' && publicationState.error && (
-                  <Card padding={3} radius={2} tone="caution">
-                    <Text size={1}>{publicationState.error}</Text>
-                  </Card>
-                )}
-                {(Object.entries(confirmationBatch.categories) as Array<
-                  [PublicationCategory, number]
-                >)
-                  .filter(([, count]) => count > 0)
-                  .map(([category, count]) => (
-                    <Flex key={category} justify="space-between" gap={3}>
-                      <Text size={1}>{publicationCategoryLabels[category]}</Text>
-                      <Text size={1} weight="semibold">
-                        {count}
-                      </Text>
-                    </Flex>
-                  ))}
-              </Stack>
-              <Flex justify="flex-end" gap={2}>
-                <Button
-                  text="Annuler"
-                  mode="bleed"
-                  disabled={publicationBusy}
-                  onClick={() => setConfirmationOpen(false)}
-                />
-                <Button
-                  tone="primary"
-                  text={publicationState.phase === 'publishing' ? 'Publication…' : 'Confirmer'}
-                  loading={publicationBusy}
-                  disabled={publicationBusy}
-                  onClick={() => void confirmPublication()}
-                />
-              </Flex>
-            </Stack>
-          </Box>
-        </Dialog>
-      )}
     </div>
   )
 }
