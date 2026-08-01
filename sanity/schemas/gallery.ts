@@ -54,7 +54,7 @@ export const gallery = defineType({
   groups: [
     {name: 'publication', title: 'Visibilité', default: true},
     {name: 'content', title: 'Présentation'},
-    {name: 'homepage', title: 'Accueil'},
+    {name: 'homepage', title: 'Couleur'},
     {name: 'photos', title: 'Photos'},
     {name: 'seo', title: 'SEO'},
   ],

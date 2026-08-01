@@ -7,19 +7,23 @@
 // src/pages/en/editions/[slug].astro — only import depth and locale key
 // differ.
 //
-// Three deliberate deviations from the gallery detail page (12-CONTEXT.md):
-// D-05 the hero is clickable (opens the Lightbox at index 0), D-06/D-07 the
-// Lightbox receives the combined [leadPhoto, ...images] array with the grid
-// mapping images with NO .slice(1) (leadPhoto is a separate field, nothing
-// to skip — data-index = i + 1 is the combined-array offset, not a
-// dedup skip), D-08 an in-flow "Retour aux éditions" back-link (the
+// quick-260801-kgh: the cover photo is now derived exactly like a gallery
+// (single `images` array, `pickHeroIndex` prefers the first LANDSCAPE
+// photo, falling back to images[0]) — there is no more dedicated cover
+// field. `lightboxImages` is the single, unreordered `images` array; the
+// grid excludes the hero by its REAL index (not a hardcoded slice/offset),
+// exactly like src/pages/galleries/[slug].astro.
+//
+// Two remaining deliberate deviations from the gallery detail page
+// (12-CONTEXT.md): D-05 the hero is clickable (opens the Lightbox at its
+// real position), D-08 an in-flow "Retour aux éditions" back-link (the
 // deliberate fix for the Phase 10 header-backhome-overlap-logo regression —
 // never position:absolute, never inside the hero).
 //
 // edition has NO seo field/group (confirmed absent from
 // sanity/schemas/edition.ts) — SEO title/description/social image are built
-// directly from edition.title / edition.statement[locale] / edition.leadPhoto.
-// Do not reach for a nonexistent edition.seo.
+// directly from edition.title / edition.statement[locale] / the hero image
+// selected by pickHeroIndex. Do not reach for a nonexistent edition.seo.
 //
 // quick-260727-the: the shared markup + style block live in
 // EditionDetailBody.astro; this file keeps only data-fetch + locale
@@ -31,6 +35,7 @@ import EditionDetailBody from '../../components/EditionDetailBody.astro';
 import type { GalleryGridItem } from '../../components/GalleryGrid.astro';
 import { getEditions } from '../../lib/sanity';
 import { thumbnailUrl, fullSizeUrl, responsiveImageSrcSet, responsiveThumbnailSrcSet } from '../../lib/image';
+import { pickHeroIndex } from '../../lib/image-orientation';
 import { getRelatedGalleryLink } from '../../lib/related-gallery';
 
 export const getStaticPaths = (async () => {
@@ -47,21 +52,31 @@ const locale = 'fr' as const;
 const overviewHref = getRelativeLocaleUrl(locale, 'editions');
 
 const statement = edition.statement?.[locale] ?? '';
-const leadPhotoSrc = fullSizeUrl(edition.leadPhoto, 2000);
-const leadPhotoSrcSet = responsiveImageSrcSet(edition.leadPhoto);
-const leadPhotoAlt = edition.leadPhoto.alt?.[locale] ?? '';
+
+// quick-260801-kgh: mirrors src/pages/galleries/[slug].astro — prefer the
+// first LANDSCAPE image as the hero, falling back to images[0] when no
+// image is landscape. heroIndex is the hero's REAL array position, used
+// below for the aria-label, the DetailHero trigger, and to exclude the
+// hero (by its real index, not position 0) from the grid.
+// D-02: nullish-guarded so a partially-populated édition (images missing)
+// cannot throw during getStaticPaths SSG (mirrors WR-03 in
+// src/pages/galleries/[slug].astro).
+const images = edition.images ?? [];
+const heroIndex = pickHeroIndex(images);
+const heroImage = images[heroIndex];
+const leadPhotoSrc = fullSizeUrl(heroImage, 2000);
+const leadPhotoSrcSet = responsiveImageSrcSet(heroImage);
+const leadPhotoAlt = heroImage.alt?.[locale] ?? '';
 
 // SEO built WITHOUT any seo field (edition has none) — see file-level note.
 const seoTitle = `${edition.title} — Atelier Jacqueline Suzanne`;
 const seoDescription = statement;
-const socialImage = fullSizeUrl(edition.leadPhoto, 1200);
+const socialImage = fullSizeUrl(heroImage, 1200);
 
-// D-06: the Lightbox receives leadPhoto + images as one combined array so
-// the counter total is images.length + 1.
-// D-02: nullish-guarded so a partially-populated édition (images missing)
-// cannot throw during getStaticPaths SSG (mirrors WR-03 in
-// src/pages/galleries/[slug].astro).
-const lightboxImages = [edition.leadPhoto, ...(edition.images ?? [])];
+// quick-260801-kgh: the Lightbox receives the single, unreordered `images`
+// array — no more combined [leadPhoto, ...images] array, so the counter
+// total is simply images.length.
+const lightboxImages = images;
 const total = lightboxImages.length;
 
 // D-09: compact single-line format-details string (informational, not a
@@ -74,7 +89,11 @@ const formatText = `Pages : ${edition.pageCount ?? ''} · Tirage : ${edition.pri
 // computed here (locale-aware) and passed as already-localized props to
 // the shared DetailHero component — see that file's header comment for
 // why it never imports src/lib/image or src/lib/sanity itself.
-const heroAriaLabel = `Voir en taille réelle, image 1 sur ${total}`;
+// quick-260801-kgh: the aria-label now announces the hero's REAL 1-based
+// position (heroIndex + 1), matching the gallery detail page, so a
+// screen-reader user is never told a position that disagrees with the
+// Lightbox counter.
+const heroAriaLabel = `Voir en taille réelle, image ${heroIndex + 1} sur ${total}`;
 const heroCaption = 'Édition imprimée';
 // quick-260724-wdr: locale-aware scroll-hint label passed to DetailHero (see
 // that component's Props doc for why it can't localize this itself).
@@ -85,19 +104,24 @@ const scrollHintLabel = 'Faire défiler';
 // nothing (no placeholder) in that case.
 const relatedLink = getRelatedGalleryLink(edition.relatedGallery, locale);
 
-// D-06/D-07: NO .slice(1) here — leadPhoto is a separate field (rendered as
-// the clickable hero above, data-index 0), so nothing to skip; index = i+1
-// is the combined-array offset matching lightboxImages.
-const gridItems: GalleryGridItem[] = (edition.images ?? []).map((img, i) => {
-  const index = i + 1;
-  return {
+// quick-260801-kgh: the hero image is already shown full-bleed above —
+// exclude it from the grid by its REAL array index (not a hardcoded
+// offset), preserving every other image's own real position so grid
+// clicks open the correct Lightbox slide. Mirrors
+// src/pages/galleries/[slug].astro's own grid derivation, except the
+// édition grid keeps its square thumbnail treatment (thumbnailUrl /
+// responsiveThumbnailSrcSet, no masonry aspectRatio — see plan scope
+// boundaries).
+const gridItems: GalleryGridItem[] = images
+  .map((img, index) => ({ img, index }))
+  .filter((pair) => pair.index !== heroIndex)
+  .map(({ img, index }) => ({
     index,
     src: thumbnailUrl(img, 600),
     srcset: responsiveThumbnailSrcSet(img),
     alt: img.alt?.[locale] ?? '',
-    ariaLabel: `Voir en taille réelle, image ${i + 2} sur ${total}`,
-  };
-});
+    ariaLabel: `Voir en taille réelle, image ${index + 1} sur ${total}`,
+  }));
 ---
 
 <BaseLayout title={seoTitle} description={seoDescription} socialImage={socialImage} headerVariant="transparent">
@@ -109,6 +133,7 @@ const gridItems: GalleryGridItem[] = (edition.images ?? []).map((img, i) => {
     formatText={formatText}
     total={total}
     heroAriaLabel={heroAriaLabel}
+    heroIndex={heroIndex}
     caption={heroCaption}
     statement={statement}
     scrollHintLabel={scrollHintLabel}

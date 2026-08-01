@@ -32,7 +32,6 @@ describe('getEditions', () => {
         title: 'Rebut',
         slug: 'rebut',
         statement: { fr: 'a', en: 'b' },
-        leadPhoto: { asset: { _ref: 'image-abc' }, alt: { fr: 'x', en: 'y' } },
         images: [],
         pageCount: 50,
         printRun: 2,
@@ -94,11 +93,15 @@ describe('getEditions', () => {
     expect(queryArg).not.toContain('seo');
   });
 
-  it('projects leadPhoto', async () => {
+  // quick-260801-kgh: the dedicated cover field no longer exists in the
+  // schema — the cover is now the first (or landscape-preferred) member of
+  // `images`, so the query must never request a `leadPhoto` field.
+  it('does not reference a dedicated cover field (removed — cover is now a position in images)', async () => {
     fetchMock.mockResolvedValueOnce([]);
     const { getEditions } = await import('../../src/lib/sanity');
     await getEditions();
-    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('leadPhoto'));
+    const queryArg = fetchMock.mock.calls[0][0] as string;
+    expect(queryArg).not.toContain('leadPhoto');
   });
 
   it('projects images', async () => {
@@ -146,7 +149,6 @@ describe('getEditions', () => {
         title: 'Rebut',
         slug: 'rebut',
         statement: { fr: 'a', en: 'b' },
-        leadPhoto: { asset: { _ref: 'image-abc' }, alt: { fr: 'x', en: 'y' } },
         images: [],
         pageCount: 50,
         printRun: 2,
@@ -163,13 +165,23 @@ describe('getEditions', () => {
     expect(result[0].relatedGallery).toEqual({ title: 'Rebut', slug: 'rebut' });
   });
 
+  // quick-260801-kgh: editions share the gallery projection so pickHeroIndex
+  // has real geometry to work with (mirrors gallery-query.test.ts).
+  it('projects per-image asset dimensions dereferenced from metadata', async () => {
+    fetchMock.mockResolvedValueOnce([]);
+
+    const { getEditions } = await import('../../src/lib/sanity');
+    await getEditions();
+
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('"dimensions": asset->metadata.dimensions'));
+  });
+
   it('resolves without error when relatedGallery is absent/null (the common empty case)', async () => {
     const editions = [
       {
         title: 'Silos',
         slug: 'silos',
         statement: { fr: 'a', en: 'b' },
-        leadPhoto: { asset: { _ref: 'image-abc' }, alt: { fr: 'x', en: 'y' } },
         images: [],
         pageCount: 40,
         printRun: 1,
@@ -231,5 +243,19 @@ describe('getEdition', () => {
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('relatedGallery'), {
       slug: 'rebut',
     });
+  });
+
+  // quick-260801-kgh: mirrors the getEditions assertion above, two-argument
+  // form used throughout this describe block.
+  it('projects per-image asset dimensions dereferenced from metadata', async () => {
+    fetchMock.mockResolvedValueOnce(null);
+
+    const { getEdition } = await import('../../src/lib/sanity');
+    await getEdition('rebut');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('"dimensions": asset->metadata.dimensions'),
+      { slug: 'rebut' },
+    );
   });
 });
