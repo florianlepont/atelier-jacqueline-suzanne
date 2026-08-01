@@ -126,17 +126,32 @@ describe('Sanity editorial checklist', () => {
     ).toBe(false);
   });
 
-  it('never lists SEO checklist items for editionsPage, which has no seo field to satisfy them', () => {
-    // editionsPage.ts deliberately has no `seo` field/group (the /editions
-    // Astro routes still hardcode their own seoTitle/seoDescription), so
-    // getDocumentChecks must not reference fields the editor can't reach.
-    const checks = getDocumentChecks('editionsPage', {
+  it('lists the SEO checklist items for editionsPage now that the schema exposes an seo field', () => {
+    // quick-260801-id4: editionsPage.ts now exposes the shared `seo`
+    // group/field (mirroring homePage.ts), so these items are reachable
+    // and satisfiable in the Studio's SEO tab. This supersedes the prior
+    // "never lists SEO checklist items" regression test that the
+    // `editionspage-no-title-seo` debug session added when the field did
+    // not yet exist.
+    const introOnly = getDocumentChecks('editionsPage', {
       intro: {fr: 'Les éditions', en: 'Editions'},
     });
 
-    expect(checks).toEqual([{label: 'Introduction française et anglaise', complete: true}]);
-    expect(checks.some((item) => item.recommended)).toBe(false);
-    expect(summarizeChecks(checks).recommendedComplete).toBe(true);
+    expect(introOnly).toHaveLength(4);
+    expect(introOnly.filter((item) => item.recommended)).toHaveLength(3);
+    expect(summarizeChecks(introOnly).requiredComplete).toBe(true);
+    expect(summarizeChecks(introOnly).recommendedComplete).toBe(false);
+
+    const withCompleteSeo = getDocumentChecks('editionsPage', {
+      intro: {fr: 'Les éditions', en: 'Editions'},
+      seo: {
+        title: localized,
+        description: localized,
+        image: {asset: {_ref: 'image-asset'}},
+      },
+    });
+
+    expect(summarizeChecks(withCompleteSeo).recommendedComplete).toBe(true);
   });
 
   it('requires a complete edition including assets, rights, and positive format details', () => {
