@@ -126,6 +126,19 @@ describe('Sanity editorial checklist', () => {
     ).toBe(false);
   });
 
+  it('never lists SEO checklist items for editionsPage, which has no seo field to satisfy them', () => {
+    // editionsPage.ts deliberately has no `seo` field/group (the /editions
+    // Astro routes still hardcode their own seoTitle/seoDescription), so
+    // getDocumentChecks must not reference fields the editor can't reach.
+    const checks = getDocumentChecks('editionsPage', {
+      intro: {fr: 'Les éditions', en: 'Editions'},
+    });
+
+    expect(checks).toEqual([{label: 'Introduction française et anglaise', complete: true}]);
+    expect(checks.some((item) => item.recommended)).toBe(false);
+    expect(summarizeChecks(checks).recommendedComplete).toBe(true);
+  });
+
   it('requires a complete edition including assets, rights, and positive format details', () => {
     const completeEdition = {
       publicationStatus: 'published',
