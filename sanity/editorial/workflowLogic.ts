@@ -64,10 +64,6 @@ export function filterDocumentActions<T extends {action?: string}>(
   return actions.filter((action) => !blockedActions.has(action.action ?? ''))
 }
 
-export function passiveDocumentActionLabel(hasDraft: boolean): string {
-  return hasDraft ? 'Modifications enregistrées' : 'À jour'
-}
-
 export function completenessBadge(
   requiredComplete: boolean,
   recommendedComplete: boolean,

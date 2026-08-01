@@ -7,7 +7,6 @@ import {
   completenessBadge,
   filterDocumentActions,
   isPublicSiteDocumentType,
-  passiveDocumentActionLabel,
 } from '../../sanity/editorial/workflowLogic'
 
 describe('Sanity workflow decision logic', () => {
@@ -65,11 +64,6 @@ describe('Sanity workflow decision logic', () => {
       {action: 'restore'},
     ])
     expect(filterDocumentActions(actions, 'exhibition')).toBe(actions)
-  })
-
-  it('provides passive draft and current labels', () => {
-    expect(passiveDocumentActionLabel(true)).toBe('Modifications enregistrées')
-    expect(passiveDocumentActionLabel(false)).toBe('À jour')
   })
 
   it('reports required, recommended, and ready completeness states', () => {

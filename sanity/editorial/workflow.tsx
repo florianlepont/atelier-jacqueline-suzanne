@@ -1,6 +1,5 @@
 import {useEffect, useRef} from 'react'
 import type {
-  DocumentActionComponent,
   DocumentActionsResolver,
   DocumentBadgeComponent,
   DocumentBadgesResolver,
@@ -12,8 +11,6 @@ import {
   collectionStatusBadge,
   completenessBadge,
   filterDocumentActions,
-  isPublicSiteDocumentType,
-  passiveDocumentActionLabel,
 } from './workflowLogic'
 
 // Invisible side-effect host (not a visible badge): auto-opens the Checklist
@@ -57,15 +54,12 @@ export const resolveBadges: DocumentBadgesResolver = (prev, context) =>
     ? [AutoOpenChecklistBadge, CompletenessBadge, CollectionStatusBadge, ...prev]
     : prev
 
-const PublicationStatusAction: DocumentActionComponent = (props) => ({
-  label: passiveDocumentActionLabel(Boolean(props.draft)),
-  title: 'La mise en ligne se fait depuis le tableau de bord.',
-  disabled: true,
-})
-
-export const resolveActions: DocumentActionsResolver = (prev, context) => {
-  const actions = filterDocumentActions(prev, context.schemaType)
-  return isPublicSiteDocumentType(context.schemaType)
-    ? [PublicationStatusAction, ...actions]
-    : actions
-}
+// Public-site document types never expose a working publish/unpublish
+// action (see filterDocumentActions) — publishing happens from the
+// editorial dashboard's global atomic publish instead. That constraint is
+// communicated by the absence of the buttons themselves; a disabled decoy
+// action here would only duplicate Sanity's own draft/published status
+// pill and the completeness/collection badges above, without adding any
+// signal (see .planning/debug/resolved/disabled-publish-placeholder.md).
+export const resolveActions: DocumentActionsResolver = (prev, context) =>
+  filterDocumentActions(prev, context.schemaType)
