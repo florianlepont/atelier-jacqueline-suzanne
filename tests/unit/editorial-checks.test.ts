@@ -160,7 +160,6 @@ describe('Sanity editorial checklist', () => {
       title: 'Rebut',
       slug: {current: 'rebut'},
       statement: localized,
-      leadPhoto: completeImage,
       images: [completeImage],
       pageCount: 96,
       printRun: 250,
@@ -171,7 +170,7 @@ describe('Sanity editorial checklist', () => {
     ).toBe(true);
 
     for (const invalid of [
-      {...completeEdition, leadPhoto: {...completeImage, asset: undefined}},
+      {...completeEdition, images: [{...completeImage, asset: undefined}]},
       {...completeEdition, images: [{...completeImage, rights: undefined}]},
       {...completeEdition, pageCount: 2.5},
       {...completeEdition, printRun: 0},
@@ -179,6 +178,28 @@ describe('Sanity editorial checklist', () => {
     ]) {
       expect(summarizeChecks(getDocumentChecks('edition', invalid)).requiredComplete).toBe(false);
     }
+  });
+
+  // quick-260801-kgh: regression guard proving the dedicated-cover-photo
+  // checklist item was removed along with the schema field — a missing/
+  // incomplete cover is now covered entirely by the existing `images`
+  // checklist items (there is no longer a separate "cover" concept).
+  it('no longer lists a dedicated cover-photo checklist item for edition', () => {
+    const completeEdition = {
+      publicationStatus: 'published',
+      title: 'Rebut',
+      slug: {current: 'rebut'},
+      statement: localized,
+      images: [completeImage],
+      pageCount: 96,
+      printRun: 250,
+      dimensions: {width: 21, height: 29.7, unit: 'cm'},
+    };
+    expect(
+      getDocumentChecks('edition', completeEdition).some((item) =>
+        item.label.startsWith('Photo principale'),
+      ),
+    ).toBe(false);
   });
 
   it('covers singleton, settings, exhibition, and unknown document types', () => {

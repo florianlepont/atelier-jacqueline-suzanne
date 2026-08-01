@@ -119,20 +119,12 @@ export function getDocumentChecks(schemaType: string, value: EditorialDocument):
       ].filter(Boolean)
       return missing.length ? [`photo ${index + 1} (${missing.join(', ')})`] : []
     })
-    const leadPhoto = record(value.leadPhoto)
     const dimensions = record(value.dimensions)
     return [
       {label: 'Visibilité souhaitée', complete: validVisibility(value.publicationStatus)},
       {label: "Nom de l'édition", complete: text(value.title)},
       {label: 'Adresse de la page', complete: text(record(value.slug).current)},
       {label: 'Présentation en français et en anglais', complete: localized(value.statement)},
-      {
-        label: 'Photo principale avec image, descriptions et droits',
-        complete:
-          assetReference(leadPhoto) &&
-          localized(leadPhoto.alt) &&
-          completeRights(leadPhoto.rights),
-      },
       {label: "Au moins une photo de l'objet", complete: images.length > 0},
       {
         label: invalidImages.length

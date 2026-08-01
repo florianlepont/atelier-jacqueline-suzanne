@@ -106,66 +106,6 @@ export const edition = defineType({
       description:
         'Lien optionnel vers la collection Portfolio qui présente les mêmes photographies, lorsqu\'elle existe. Exemple : l\'édition « Rebut » (le livre imprimé) et la collection photo « Rebut » sont le même sujet — renseigner ce champ affiche un lien vers la collection sur la page de l\'édition. Laisser vide s\'il n\'existe pas de collection correspondante.',
     }),
-    // D-04: dedicated lead photo, separate from the `images` photo-shoot
-    // array -- NOT derived from images[0] (gallery's "first array item is
-    // the cover" convention is explicitly rejected here).
-    defineField({
-      name: 'leadPhoto',
-      title: 'Photo principale',
-      type: 'image',
-      group: 'photos',
-      description:
-        "Photo de couverture affichée dans la liste des éditions, indépendante de l'ordre des photos ci-dessous.",
-      options: {hotspot: true},
-      fields: [
-        defineField({
-          name: 'alt',
-          title: "Description de l'image (accessibilité)",
-          type: 'object',
-          description:
-            "Décrire brièvement ce que montre l'image pour les personnes qui ne peuvent pas la voir.",
-          options: {columns: 2},
-          validation: (rule) => rule.required().error("La description de l'image est obligatoire."),
-          fields: [
-            defineField({
-              name: 'fr',
-              title: 'Français',
-              type: 'string',
-              validation: (rule) =>
-                rule.required().error('La description française est obligatoire.'),
-            }),
-            defineField({
-              name: 'en',
-              title: 'Anglais',
-              type: 'string',
-              validation: (rule) =>
-                rule.required().error('La description anglaise est obligatoire.'),
-            }),
-          ],
-        }),
-        // Review WR-02: leadPhoto is a genuinely published, standalone photo
-        // (used on the Éditions listing) -- give it the same rights/credit
-        // sub-field every other photo in this schema carries.
-        defineField({
-          name: 'rights',
-          title: 'Crédits et droits',
-          type: 'imageRights',
-          description:
-            'Ces informations permettent de tracer les droits et, si souhaité, d’afficher le crédit sur la page.',
-          initialValue: {
-            credit: 'Romane Lepont',
-            copyrightNotice: '© Romane Lepont — Tous droits réservés',
-            usage: 'allRightsReserved',
-            displayCredit: true,
-          },
-          validation: (rule) => rule.required().error('Ajouter les crédits et les droits.'),
-        }),
-      ],
-      // Pitfall B: required() alone can pass even when no actual image asset
-      // was uploaded, only the sub-fields being set -- pair with
-      // assetRequired() to close that gap.
-      validation: (rule) => rule.required().assetRequired().error('Choisir une photo principale.'),
-    }),
     // D-05/D-11: photo shoot of the printed object itself (cover, spreads,
     // binding/print detail) -- not a reuse of the gallery's photographic
     // subject matter. Each image carries bilingual alt + rights, exactly as
@@ -176,7 +116,7 @@ export const edition = defineType({
       type: 'array',
       group: 'photos',
       description:
-        "Photos de l'objet imprimé — couverture, pages intérieures, détail de reliure/impression — avec leurs descriptions, leur ordre et leurs crédits. Glisser-déposer plusieurs images ici. Pour réutiliser une image existante, choisir « Ajouter » puis « Sélectionner ».",
+        "Photos de l'objet imprimé — couverture, pages intérieures, détail de reliure/impression — avec leurs descriptions, leur ordre et leurs crédits. Glisser-déposer plusieurs images ici. La première photo sert de couverture dans la liste des éditions ; réordonner les photos par glisser-déposer. Pour réutiliser une image existante, choisir « Ajouter » puis « Sélectionner ».",
       // D-01/D-02/CMS-01 (same technique as gallery.ts): `alt` fields are
       // attached directly onto an `image`-type array member (rather than
       // nesting `image` inside a separate `object` wrapper type) so Sanity
@@ -186,9 +126,9 @@ export const edition = defineType({
         defineArrayMember({
           type: 'image',
           options: {hotspot: true},
-          // Review WR-01: mirror leadPhoto's Pitfall B fix -- required() alone
-          // can pass on an array item that has alt/rights filled in but no
-          // actual uploaded asset (e.g. an interrupted upload).
+          // Review WR-01: required() alone can pass on an array item that has
+          // alt/rights filled in but no actual uploaded asset (e.g. an
+          // interrupted upload) -- assetRequired() closes that gap.
           validation: (rule) => rule.required().assetRequired(),
           fields: [
             defineField({
@@ -238,7 +178,7 @@ export const edition = defineType({
       validation: (rule) =>
         rule.custom((images) => {
           if (!Array.isArray(images) || images.length === 0) {
-            return 'Ajouter au moins une photo.'
+            return 'Ajouter au moins une photo. La première servira de couverture.'
           }
           const missingAlt = images.flatMap((image, index) => {
             const alt = (image as {alt?: {fr?: string; en?: string}})?.alt
@@ -340,7 +280,7 @@ export const edition = defineType({
     select: {
       id: '_id',
       title: 'title',
-      media: 'leadPhoto',
+      media: 'images.0',
       publicationStatus: 'publicationStatus',
     },
     prepare({id, title, media, publicationStatus}) {

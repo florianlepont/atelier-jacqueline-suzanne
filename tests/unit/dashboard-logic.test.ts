@@ -177,11 +177,6 @@ describe('publication inventory and preflight', () => {
       slug: {current: 'livre'},
       statement: {fr: 'Texte', en: 'Text'},
       relatedGallery: {_type: 'reference', _ref: 'gallery-related'},
-      leadPhoto: {
-        asset: {_ref: 'lead-asset'},
-        alt: {fr: 'Livre', en: 'Book'},
-        rights: publicationRights,
-      },
       images: [
         {
           asset: {_ref: 'edition-asset'},
@@ -210,11 +205,6 @@ describe('publication inventory and preflight', () => {
       slug: {current: 'livre'},
       statement: {fr: 'Texte', en: 'Text'},
       relatedGallery: {_type: 'reference', _ref: 'missing-gallery'},
-      leadPhoto: {
-        asset: {_ref: 'lead-asset'},
-        alt: {fr: 'Livre', en: 'Book'},
-        rights: publicationRights,
-      },
       images: [
         {
           asset: {_ref: 'edition-asset'},
