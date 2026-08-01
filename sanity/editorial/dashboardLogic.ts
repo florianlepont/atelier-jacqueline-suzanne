@@ -406,38 +406,50 @@ export function batchFingerprint(batch: PublicationBatch): string {
   )
 }
 
-function inventoryHasCaughtUp(
+export function publicationCardState(
   inventory: PublicationBatch,
-  controllerBatch: PublicationBatch,
-): boolean {
-  if (inventory.pairs.length !== controllerBatch.pairs.length) return false
-  const inventoryById = new Map(inventory.pairs.map((pair) => [pair.id, pair]))
-  return controllerBatch.pairs.every((controllerPair) => {
-    const inventoryPair = inventoryById.get(controllerPair.id)
-    if (!inventoryPair) return false
-    if (inventoryPair.draft._rev === controllerPair.draft._rev) return true
-    const inventoryUpdatedAt = new Date(inventoryPair.draft._updatedAt).getTime()
-    const controllerUpdatedAt = new Date(controllerPair.draft._updatedAt).getTime()
-    return (
-      Number.isFinite(inventoryUpdatedAt) &&
-      Number.isFinite(controllerUpdatedAt) &&
-      inventoryUpdatedAt > controllerUpdatedAt
-    )
-  })
+  {
+    busy,
+    trackingFailed,
+    confirmationOpen,
+  }: {
+    busy: boolean
+    trackingFailed: boolean
+    confirmationOpen: boolean
+  },
+) {
+  return {
+    total: inventory.total,
+    pairs: inventory.pairs,
+    blockedRows: inventory.blockedRows,
+    buttonDisabled:
+      busy || trackingFailed || inventory.total === 0 || inventory.blockedRows.length > 0,
+    dialogOpen: confirmationOpen,
+  }
 }
 
-export function publicationBatchForDisplay(
-  state: PublicationControllerState,
-  inventory: PublicationBatch,
-): PublicationBatch {
-  if (
-    !state.batch ||
-    !['confirming', 'publishing', 'error'].includes(state.phase) ||
-    inventoryHasCaughtUp(inventory, state.batch)
-  ) {
-    return inventory
+export function createInventoryGenerationGuard<T>() {
+  let latestGeneration = 0
+  let active = true
+
+  return {
+    start() {
+      latestGeneration += 1
+      return latestGeneration
+    },
+    isCurrent(generation: number) {
+      return active && generation === latestGeneration
+    },
+    accept(generation: number, value: T, apply: (accepted: T) => void) {
+      if (!active || generation !== latestGeneration) return false
+      apply(value)
+      return true
+    },
+    invalidate() {
+      active = false
+      latestGeneration += 1
+    },
   }
-  return state.batch
 }
 
 export async function preflightForConfirmation(controller: {
@@ -453,10 +465,14 @@ export async function preflightForConfirmation(controller: {
 
 export function createPublicationController({
   client,
+  onInventoryRequestStart,
+  onInventory,
   onRefresh,
   onStateChange,
 }: {
   client: PublicationClient
+  onInventoryRequestStart?: () => number
+  onInventory?: (documents: DashboardDocument[], generation?: number) => void
   onRefresh?: () => void | Promise<void>
   onStateChange?: (state: PublicationControllerState) => void
 }) {
@@ -471,12 +487,17 @@ export function createPublicationController({
     currentState = state
     onStateChange?.(state)
   }
-  const fetchRaw = () =>
-    client.fetch<DashboardDocument[]>(
+  const fetchRaw = async () => {
+    const generation = onInventoryRequestStart?.()
+    const documents = await client.fetch<DashboardDocument[]>(
       PUBLIC_DOCUMENTS_QUERY,
       PUBLIC_DOCUMENTS_QUERY_PARAMS,
       {perspective: 'raw'},
     )
+    if (generation === undefined) onInventory?.(documents)
+    else onInventory?.(documents, generation)
+    return documents
+  }
 
   const fetchPublishedAt = async (publishedIds: string[]) => {
     const timestamps = await client.fetch<Array<{_id: string; _updatedAt: string}>>(

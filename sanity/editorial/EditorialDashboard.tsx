@@ -34,6 +34,7 @@ import {
   buildActivities,
   buildAttentionGroups,
   contentNoun,
+  createInventoryGenerationGuard,
   createPublicationController,
   documentTitle,
   editorialStatus,
@@ -43,7 +44,7 @@ import {
   pluralize,
   preflightForConfirmation,
   preparePublicationBatch,
-  publicationBatchForDisplay,
+  publicationCardState,
   PUBLIC_DOCUMENTS_QUERY,
   PUBLIC_DOCUMENTS_QUERY_PARAMS,
   rowTypeLabels,
@@ -86,18 +87,35 @@ export function EditorialDashboard() {
   const [confirmationOpen, setConfirmationOpen] = useState(false)
   const [publishedAt, setPublishedAt] = useState<string>()
   const hasDataRef = useRef(false)
+  // A client replacement is a lifecycle boundary: the old client's pending
+  // inventory responses must never update the new client's dashboard.
+  const inventoryGenerationGuard = useMemo(
+    () => createInventoryGenerationGuard<DashboardDocument[]>(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [client],
+  )
   const publicationController = useMemo(
     () =>
       createPublicationController({
         client: client as unknown as PublicationClient,
+        onInventoryRequestStart: () => inventoryGenerationGuard.start(),
+        onInventory: (content, generation) => {
+          if (generation === undefined) return
+          inventoryGenerationGuard.accept(generation, content, (accepted) => {
+            setDocuments(accepted)
+            setError('')
+            hasDataRef.current = true
+          })
+        },
         onRefresh: () => setRefreshKey((key) => key + 1),
         onStateChange: setPublicationState,
       }),
-    [client],
+    [client, inventoryGenerationGuard],
   )
 
   useEffect(() => {
     let cancelled = false
+    const generation = inventoryGenerationGuard.start()
     client
       .fetch<DashboardDocument[]>(
         PUBLIC_DOCUMENTS_QUERY,
@@ -106,9 +124,12 @@ export function EditorialDashboard() {
       )
       .then(async (content) => {
         if (cancelled) return
-        setDocuments(content)
-        setError('')
-        hasDataRef.current = true
+        const accepted = inventoryGenerationGuard.accept(generation, content, (inventory) => {
+          setDocuments(inventory)
+          setError('')
+          hasDataRef.current = true
+        })
+        if (!accepted) return
 
         try {
           const documentIds = Array.from(
@@ -122,27 +143,40 @@ export function EditorialDashboard() {
           const transactions = await historyStore.getTransactions(documentIds)
           const authorIds = Array.from(new Set(transactions.map(({author}) => author)))
           const users = authorIds.length > 0 ? await userStore.getUsers(authorIds) : []
-          if (!cancelled) setActivities(buildActivities(transactions, users, content))
+          if (!cancelled && inventoryGenerationGuard.isCurrent(generation)) {
+            setActivities(buildActivities(transactions, users, content))
+          }
         } catch {
           // History is supplementary and subject to plan retention. The dashboard's
           // primary content should remain available if it cannot be retrieved.
-          if (!cancelled) setActivities({})
+          if (!cancelled && inventoryGenerationGuard.isCurrent(generation)) setActivities({})
         }
       })
       .catch((reason: unknown) => {
         // A failed background refresh keeps showing the last good data; only a
         // failed FIRST load has nothing to fall back on and surfaces the error.
-        if (!cancelled && !hasDataRef.current) {
+        if (
+          !cancelled &&
+          inventoryGenerationGuard.isCurrent(generation) &&
+          !hasDataRef.current
+        ) {
           setError(reason instanceof Error ? reason.message : 'Erreur inconnue')
         }
       })
       .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (!cancelled && inventoryGenerationGuard.isCurrent(generation)) setLoading(false)
       })
     return () => {
       cancelled = true
     }
-  }, [client, historyStore, userStore, refreshKey])
+  }, [client, historyStore, userStore, refreshKey, inventoryGenerationGuard])
+
+  useEffect(
+    () => () => {
+      inventoryGenerationGuard.invalidate()
+    },
+    [inventoryGenerationGuard],
+  )
 
   // Re-fetch (silently) whenever any dashboard-relevant document changes, so
   // edits made in another tab — or by another editor — appear without a reload.
@@ -313,7 +347,12 @@ export function EditorialDashboard() {
     publicationState.phase,
   )
   const publicationTrackingFailed = publicationState.phase === 'tracking-error'
-  const publicationBatch = publicationBatchForDisplay(publicationState, publicationSnapshot)
+  const publicationCard = publicationCardState(publicationSnapshot, {
+    busy: publicationBusy,
+    trackingFailed: publicationTrackingFailed,
+    confirmationOpen,
+  })
+  const confirmationBatch = publicationState.batch ?? publicationSnapshot
 
   const requestPublication = async () => {
     const batch = await preflightForConfirmation(publicationController)
@@ -451,10 +490,10 @@ export function EditorialDashboard() {
                         Mettre le site à jour
                       </Heading>
                       <Text size={1} muted>
-                        {publicationBatch.total === 0
+                        {publicationCard.total === 0
                           ? 'Aucune modification publique en attente.'
-                          : `${publicationBatch.total} ${pluralize(
-                              publicationBatch.total,
+                          : `${publicationCard.total} ${pluralize(
+                              publicationCard.total,
                               'contenu modifié',
                               'contenus modifiés',
                             )} depuis la dernière mise en ligne.`}
@@ -464,21 +503,16 @@ export function EditorialDashboard() {
                   <Button
                     tone="primary"
                     text={publicationBusy ? 'Vérification…' : 'Mettre le site à jour'}
-                    disabled={
-                      publicationBusy ||
-                      publicationTrackingFailed ||
-                      publicationBatch.total === 0 ||
-                      publicationBatch.blockedRows.length > 0
-                    }
+                    disabled={publicationCard.buttonDisabled}
                     loading={publicationBusy}
                     onClick={() => void requestPublication()}
                     style={{minHeight: 44}}
                   />
                 </Flex>
 
-                {publicationBatch.pairs.length > 0 && (
+                {publicationCard.pairs.length > 0 && (
                   <Stack space={2}>
-                    {publicationBatch.pairs.map((pair) => (
+                    {publicationCard.pairs.map((pair) => (
                       <Flex
                         key={pair.id}
                         align="center"
@@ -509,13 +543,13 @@ export function EditorialDashboard() {
                   </Stack>
                 )}
 
-                {publicationBatch.blockedRows.length > 0 && (
+                {publicationCard.blockedRows.length > 0 && (
                   <Card padding={3} radius={2} tone="critical">
                     <Stack space={3}>
                       <Text size={1} weight="semibold">
                         Le lot entier est bloqué par des informations indispensables.
                       </Text>
-                      {publicationBatch.blockedRows.map((blocked) => (
+                      {publicationCard.blockedRows.map((blocked) => (
                         <IntentLink
                           key={blocked.id}
                           intent="edit"
@@ -788,7 +822,7 @@ export function EditorialDashboard() {
           )}
         </Stack>
       </Box>
-      {confirmationOpen && (
+      {publicationCard.dialogOpen && (
         <Dialog
           id="editorial-publication-confirmation"
           header="Confirmer la mise à jour du site"
@@ -800,7 +834,8 @@ export function EditorialDashboard() {
           <Box padding={4}>
             <Stack space={4}>
               <Text size={1}>
-                {publicationBatch.total} {pluralize(publicationBatch.total, 'contenu', 'contenus')}{' '}
+                {confirmationBatch.total}{' '}
+                {pluralize(confirmationBatch.total, 'contenu', 'contenus')}{' '}
                 seront publiés ensemble. Si un élément échoue, le lot entier est refusé.
               </Text>
               <Stack space={2}>
@@ -809,7 +844,7 @@ export function EditorialDashboard() {
                     <Text size={1}>{publicationState.error}</Text>
                   </Card>
                 )}
-                {(Object.entries(publicationBatch.categories) as Array<
+                {(Object.entries(confirmationBatch.categories) as Array<
                   [PublicationCategory, number]
                 >)
                   .filter(([, count]) => count > 0)
