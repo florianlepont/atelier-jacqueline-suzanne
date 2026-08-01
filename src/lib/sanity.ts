@@ -158,10 +158,10 @@ const GALLERY_BY_SLUG_QUERY = /* groq */ `*[_type == "gallery" && slug.current =
 }`
 
 /**
- * A single édition photo (`leadPhoto` or an `images[]` member). Structurally
- * identical to `GalleryImage` — `sanity/schemas/edition.ts`'s `leadPhoto`
- * and `images[]` array members declare the exact same `alt`/`rights`
- * sub-fields as `gallery.ts` does, so a type alias is sufficient.
+ * A single édition photo (an `images[]` member). A member's shape (`alt`/
+ * `rights`) is identical to a `Gallery` image's — `sanity/schemas/edition.ts`
+ * declares the exact same sub-fields as `gallery.ts` does — so a type alias
+ * is sufficient.
  */
 export type EditionImage = GalleryImage
 
@@ -170,8 +170,11 @@ export interface Edition {
   title: string // shared proper noun across fr/en, mirrors Gallery['title']
   slug: string
   statement: LocaleString
-  leadPhoto: EditionImage // D-04: dedicated cover photo, not images[0]
-  images: EditionImage[] // photo shoot of the printed object itself
+  // photo shoot of the printed object itself — images[0] is the cover
+  // (quick-260801-kgh, mirrors Gallery['images']); pickHeroIndex
+  // (src/lib/image-orientation.ts) prefers the first LANDSCAPE photo when
+  // there is one.
+  images: EditionImage[]
   pageCount: number
   printRun: number
   dimensions: {width: number; height: number; unit: 'cm' | 'in'}
@@ -184,7 +187,8 @@ export interface Edition {
   // NOTE: edition has NO `seo` field/group (confirmed absent from Phase 11's
   // sanity/schemas/edition.ts) — do not add a `seo` field here. Any code
   // reading page metadata for an edition must construct it from
-  // `title`/`statement`/`leadPhoto` directly instead.
+  // `title`/`statement`/the hero photo selected by pickHeroIndex directly
+  // instead.
 }
 
 // edition has no `isVisible` field, so the gallery filter's
@@ -193,11 +197,11 @@ export interface Edition {
 const PUBLISHED_EDITION_FILTER = /* groq */ `publicationStatus == "published"`
 
 const EDITIONS_QUERY = /* groq */ `*[_type == "edition" && ${PUBLISHED_EDITION_FILTER}] | order(orderRank) {
-  title, "slug": slug.current, statement, leadPhoto, ${IMAGES_WITH_DIMENSIONS_PROJECTION}, pageCount, printRun, dimensions, publicationStatus, relatedGallery->{title, "slug": slug.current}
+  title, "slug": slug.current, statement, ${IMAGES_WITH_DIMENSIONS_PROJECTION}, pageCount, printRun, dimensions, publicationStatus, relatedGallery->{title, "slug": slug.current}
 }`
 
 const EDITION_BY_SLUG_QUERY = /* groq */ `*[_type == "edition" && slug.current == $slug && ${PUBLISHED_EDITION_FILTER}][0]{
-  title, "slug": slug.current, statement, leadPhoto, ${IMAGES_WITH_DIMENSIONS_PROJECTION}, pageCount, printRun, dimensions, publicationStatus, relatedGallery->{title, "slug": slug.current}
+  title, "slug": slug.current, statement, ${IMAGES_WITH_DIMENSIONS_PROJECTION}, pageCount, printRun, dimensions, publicationStatus, relatedGallery->{title, "slug": slug.current}
 }`
 
 export interface AboutPage {

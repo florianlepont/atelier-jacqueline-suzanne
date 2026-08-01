@@ -32,7 +32,6 @@ describe('getEditions', () => {
         title: 'Rebut',
         slug: 'rebut',
         statement: { fr: 'a', en: 'b' },
-        leadPhoto: { asset: { _ref: 'image-abc' }, alt: { fr: 'x', en: 'y' } },
         images: [],
         pageCount: 50,
         printRun: 2,
@@ -94,11 +93,15 @@ describe('getEditions', () => {
     expect(queryArg).not.toContain('seo');
   });
 
-  it('projects leadPhoto', async () => {
+  // quick-260801-kgh: the dedicated cover field no longer exists in the
+  // schema — the cover is now the first (or landscape-preferred) member of
+  // `images`, so the query must never request a `leadPhoto` field.
+  it('does not reference a dedicated cover field (removed — cover is now a position in images)', async () => {
     fetchMock.mockResolvedValueOnce([]);
     const { getEditions } = await import('../../src/lib/sanity');
     await getEditions();
-    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('leadPhoto'));
+    const queryArg = fetchMock.mock.calls[0][0] as string;
+    expect(queryArg).not.toContain('leadPhoto');
   });
 
   it('projects images', async () => {
@@ -146,7 +149,6 @@ describe('getEditions', () => {
         title: 'Rebut',
         slug: 'rebut',
         statement: { fr: 'a', en: 'b' },
-        leadPhoto: { asset: { _ref: 'image-abc' }, alt: { fr: 'x', en: 'y' } },
         images: [],
         pageCount: 50,
         printRun: 2,
@@ -180,7 +182,6 @@ describe('getEditions', () => {
         title: 'Silos',
         slug: 'silos',
         statement: { fr: 'a', en: 'b' },
-        leadPhoto: { asset: { _ref: 'image-abc' }, alt: { fr: 'x', en: 'y' } },
         images: [],
         pageCount: 40,
         printRun: 1,
