@@ -1,5 +1,6 @@
 import {defineArrayMember, defineField, defineType} from 'sanity'
 import {orderRankField} from '@sanity/orderable-document-list'
+import {PrimaryPhotoItem} from './PrimaryPhotoItem'
 
 /**
  * Locale-aware text pair, copied verbatim from `gallery.ts`'s
@@ -115,6 +116,7 @@ export const edition = defineType({
       title: "Photos de l'objet imprimé",
       type: 'array',
       group: 'photos',
+      components: {item: PrimaryPhotoItem},
       description:
         "Photos de l'objet imprimé — couverture, pages intérieures, détail de reliure/impression — avec leurs descriptions, leur ordre et leurs crédits. Glisser-déposer plusieurs images ici. La première photo sert de couverture dans la liste des éditions ; réordonner les photos par glisser-déposer. Pour réutiliser une image existante, choisir « Ajouter » puis « Sélectionner ».",
       // D-01/D-02/CMS-01 (same technique as gallery.ts): `alt` fields are
