@@ -1,5 +1,5 @@
 import {Box, Button, Stack, Text} from '@sanity/ui'
-import {LaunchIcon} from '@sanity/icons'
+import {LaunchIcon} from '@sanity/icons/Launch'
 import {useEditState} from 'sanity'
 import type {DocumentInspector, DocumentInspectorComponent} from 'sanity'
 import {SITE_PREVIEW_URL} from './deployment'

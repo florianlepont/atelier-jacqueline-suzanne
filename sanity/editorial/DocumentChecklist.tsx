@@ -1,5 +1,5 @@
 import {useState} from 'react'
-import {TaskIcon} from '@sanity/icons'
+import {TaskIcon} from '@sanity/icons/Task'
 import {useEditState} from 'sanity'
 import type {DocumentInspector, DocumentInspectorComponent} from 'sanity'
 import {getDocumentChecks, summarizeChecks} from './checks'

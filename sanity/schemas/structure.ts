@@ -1,15 +1,13 @@
 import type {StructureResolver} from 'sanity/structure'
 import {orderableDocumentListDeskItem} from '@sanity/orderable-document-list'
-import {
-  BookIcon,
-  CalendarIcon,
-  CogIcon,
-  EnvelopeIcon,
-  HomeIcon,
-  ImagesIcon,
-  TagsIcon,
-  UserIcon,
-} from '@sanity/icons'
+import {BookIcon} from '@sanity/icons/Book'
+import {CalendarIcon} from '@sanity/icons/Calendar'
+import {CogIcon} from '@sanity/icons/Cog'
+import {EnvelopeIcon} from '@sanity/icons/Envelope'
+import {HomeIcon} from '@sanity/icons/Home'
+import {ImagesIcon} from '@sanity/icons/Images'
+import {TagsIcon} from '@sanity/icons/Tags'
+import {UserIcon} from '@sanity/icons/User'
 import {CreditsManager} from '../editorial/CreditsManager'
 
 /**
