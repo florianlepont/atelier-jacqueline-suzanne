@@ -1,5 +1,21 @@
 # Milestones
 
+## v1.4 Editorial Design Consistency (Shipped: 2026-08-01)
+
+**Phases completed:** 2 phases, 7 plans, 17 tasks
+
+**Key accomplishments:**
+
+- Sketch 014 presents 3 About-page layout variants resolving D-05 (hero-photo reveal) and D-07 (sections structure); user picked Variant A — pure settle hero + re-skinned two-column grid — on first review with no feedback rounds.
+- About's giant title now renders via the shared PageTitleHeader component (retiring the local eyebrow/h1), and the resting layout below it matches the sketch-014 Variant A winner: standalone lead paragraph + circular portrait bio-row, static hero band, re-skinned two-column numbered sections.
+- Ported DetailHero.astro's dependency-free scroll-driver into a smaller, About-scoped instance that pins and shrinks the exhibition photo to ~86% width (sketch-014's pure-settle D-05), with matching reduced-motion and mobile CSS fallbacks and new Playwright motion-state coverage.
+- About page adopts PageTitleHeader with sketch-014 Variant A composition and scroll-scrubbed hero reveal; UAT caught and fixed a title-position regression before sign-off.
+- Pure `proximityToInterval` module (350/2200/4000ms constants) proving the WCAG-adjacent ≈3/sec photosensitive-safety cap as a unit-tested invariant, ready for plan 16-03's client engine to import.
+- Full-bleed 404 page with a build-time-sourced photo pool, opacity/z-index hard-cut background stack, radial scrim, and centered bilingual content — the no-JS-safe static shell the plan 16-03 pop-rate engine will animate.
+- Pointer/touch-proximity-driven pop-rate engine layered onto the static 404 shell, hard-capped at a finite floor that the user explicitly raised live at the checkpoint from ~2.86/sec to ~6.7/sec (a knowing WCAG 2.3.1 tradeoff), with a reduced-motion branch that deliberately drifts instead of freezing.
+
+---
+
 ## v1.0 MVP (Shipped: 2026-07-12)
 
 **Delivered:** A custom Astro + Sanity bilingual (FR/EN) replacement for the old Myportfolio site — portfolio galleries with self-serve editing, an About page, a spam-protected contact form, baseline French/EU legal pages, and (via three inserted phases) the imported design-system rebrand and a real hero-carousel/grid-toggle homepage — deployed to GitHub Pages staging on every push.

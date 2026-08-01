@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Editorial Design Consistency
-current_phase: 16
-current_phase_name: 404 Page Editorial Redesign
-status: v1.4 milestone complete
+current_phase: 4
+status: Awaiting next milestone
 stopped_at: Phase 16 complete (16-01/16-02/16-03 all merged); v1.4 milestone complete
-last_updated: "2026-08-01T00:00:00.000Z"
+last_updated: "2026-08-01T20:35:00.763Z"
 last_activity: 2026-08-01
-last_activity_desc: Completed quick task 260801-pn7 (gallery Photos-tab reorder shipped; primary-photo badge attempted, confirmed infeasible under grid layout, reverted per user's explicit choice)
+last_activity_desc: Milestone v1.4 completed and archived
 progress:
-  total_phases: 3
+  total_phases: 2
   completed_phases: 2
   total_plans: 7
   completed_plans: 7
   percent: 100
+current_phase_name: 404 Page Editorial Redesign
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-07-22)
 
 ## Current Position
 
-Phase: 16 (404 Page Editorial Redesign) — COMPLETE
-Plan: 3 of 3 (all merged: 16-01, 16-02, 16-03)
-Status: v1.4 milestone complete
-Last activity: 2026-08-01 — Completed quick task 260801-pn7: two follow-up Sanity Studio UX requests on top of 260801-kgh's edition cover-photo unification. (1) Reordered `gallery.ts`'s tab groups so Photos is first and default-selected on document open — live-verified on a real Collection. (2) Attempted a shared "Couverture" badge overlay on the first `images[]` item on both `gallery.ts` and `edition.ts`, implemented correctly against the installed `sanity@6.6.0` `components.item` API (verified against the package's own `.d.ts` files) — but live DOM inspection against a real edition confirmed the badge never rendered. Root-caused to a genuine Studio limitation: `options: {layout: 'grid'}` array inputs never invoke `components.item` at all. Presented the user the tradeoff (switch to list layout to make the badge work, vs. keep the compact grid and drop it) rather than deciding unilaterally, since it affects Romane's daily photo-editing ergonomics; user explicitly chose "Garder la grille, annuler le badge" — fully reverted (component file deleted, both schema wirings removed), re-verified live that both grids render identically to their pre-task state. Tab reorder shipped, unaffected by the revert. Previous: 2026-08-01 — Completed quick task 260801-d6m: dashboard visual tweaks (removed metric tiles, restyled the "Mettre le site à jour" panel, de-emphasized header buttons, added "Nouvelle édition") plus 4 real bugs found via live UAT of PR #12's studio publication workflow and fixed as separate debug sessions on the same branch: dashboard spinner hanging on a `historyStore` stall (`resolved/spinner-never-clears.md`), a dead disabled document action (`resolved/disabled-publish-placeholder.md`), 3 unreachable SEO checklist items on `editionsPage` — discovering along the way that the `editionsPage` singleton has never actually been saved server-side, a pre-existing gap already tracked from the prior Éditions session below (`resolved/editionspage-no-title-seo.md`), and a React Strict Mode phantom-cleanup bug that permanently disabled the inventory generation guard before its first fetch could resolve, fixed via a symmetric `reactivate()` (`resolved/dashboard-guard-strict-mode-invalidate.md`). All fixes verified live against a running `sanity dev` session (React fiber inspection, accessibility snapshots, full-page screenshot) and via the full automated gate suite (unit, lint, typecheck, Sanity Studio build). Also completed quick tasks 260801-fxe (inline publish confirmation, replacing the modal `Dialog` at the user's request) and 260801-id4 (restored a real SEO tab on the `editionsPage` schema, reversing the same-day debug fix once the field was re-added at the user's request) — see the Quick Tasks Completed table below for both. Previous (concurrent, from `main`): 2026-07-29 — Phase 16 complete (16-03 merged, including a live D-10 cap override approved at the human-verify checkpoint and reconciled back into plan 16-01's docs); v1.4 milestone (Phase 15 About Page + Phase 16 404 Page) shipped independently on `main` while this branch's Sanity/editorial-workflow work was ongoing on `codex/studio-publication-workflow` — no file overlap between the two efforts except this STATE.md diary. Previous: 2026-07-28 — Completed quick task 260728-ek0: implemented sketch-013's confirmed winner (variant A3 — "Grand titre, sans scroll") in the real ContactPageBody.astro, replacing the two-column layout with a hard offset-shadow form panel. Giant `--font-display` title (self-scaling via `min(15vw,20vh)`), desktop composition centered as one flex group with a bounded `clamp()` header-to-grid gap (not `justify-content: space-between`, which was tried first and pooled all leftover space into a single disconnected void on short/wide viewports), hairline-bordered form panel with tinted/boxed `ContactForm` fields replacing the drop-shadow Romane had already rejected elsewhere (sketch 009). Real `<ContactForm>` island (script/markup/validation/honeypot) left untouched — only its `<style>` block adapted. Independent orchestrator verification (this worktree had no `.env`, so the executor could not build) found the composition overflowed the real desktop viewport by 239px at 1440×900 once the actual SiteHeader+footer were accounted for — invisible from the sketch, which had no equivalent chrome. Root-caused (Textarea's `rows=5` default, an always-margined empty status paragraph, a wrong `--contact-chrome-reserve` guess) and fixed. Built both a footer-visible and footer-hidden variant, showed the user a live side-by-side comparison; they chose footer-hidden (matches the existing gallery/edition-detail-page pattern) after initially comparing against the English route by mistake, which caught that `hideFooter` had only been applied to the French page — fixed for both locales. Final: 0px overflow at 900–1080px height, 6px at 768px (imperceptible), both locales. Additionally restyled the Contact title/eyebrow to match the Éditions title's new typographic treatment (pulsing accent dot, ink-colored eyebrow text, `-0.04em` h1 tracking) at the user's request, deliberately keeping Contact's own `min(vw,vh)`/0.82-line-height size formula rather than Éditions' pure-vw one, since that formula is what keeps the no-scroll guarantee. Full gate green: typecheck 0 errors, 207/207 unit, 252/252 e2e (chromium + webkit-mobile), mobile tap targets still 44px. Also surfaced and corrected a process risk: an overly broad `pkill -f "astro preview"` briefly risked killing a concurrent agent's dev server sharing the same machine — subsequent servers pinned to dedicated ports, killed only by exact PID from then on. Worked entirely in an isolated worktree (`sketch-012-contact-finalize`) per explicit user instruction, since another agent was active on `main` concurrently; caught and resolved a sketch-numbering collision on merge (both this branch and the concurrent Éditions-header work had independently claimed "sketch 012" — this branch's Contact sketch renumbered to 013, the free slot on `main`, before merging). Previous (from `main`, concurrent session): completed quick task 260728-ok5, fixed a third, distinct live-reported gap on the sketch-012 F1 Éditions header (site-nav-to-title gap above the eyebrow/title block) by capping `.editions-list`'s `padding-top` at an Éditions-scoped `clamp(48px, 7vw, 56px)` instead of the shared `--editorial-page-padding-block` token, leaving About/Contact's shared token untouched. This closed out the entire Éditions-overview design arc from that session (sketch 010's B2 layout → 260728-dbf/el6/fjl/g76/hxv corrections → sketch 012's header personality exploration → 260728-lbh shipping it → 260728-nj7 and 260728-ok5 polishing it). Still outstanding from that arc (not blocking): seed/publish the live `editionsPage` Sanity document with the placeholder intro copy via a temporary write token.
+Phase: Milestone v1.4 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-08-01 — Milestone v1.4 completed and archived
 
 ## Performance Metrics
 
@@ -253,6 +253,18 @@ Items acknowledged and deferred at v1.3 milestone close on 2026-07-23 (`/gsd-com
 | quick_task | 260722-refine-contact-details | missing (same as above) |
 | quick_task | 260722-remove-redundant-sanity-fieldsets | missing (same as above) |
 
+Items acknowledged and deferred at v1.4 milestone close on 2026-08-01 (`/gsd-complete-milestone` pre-close audit, 7 open items re-surfaced from the v1.3 close — none resolved in the interim, none blocking; user chose "Acknowledge all, proceed"):
+
+| Category | Item | Status |
+|----------|------|--------|
+| debug | knowledge-base | unknown (same persistent false positive as the v1.3 close note above — the resolved-sessions index file itself, not a live investigation; all 14 entries in it are mirrored as resolved in `.planning/debug/resolved/`) |
+| quick_task | 260722-compact-sanity-document-layout | missing (still unexecuted; the Sanity Studio document layout it targeted has since been substantially reworked by the Phase 260801 studio-publication-workflow effort — superseded, not worth resurrecting) |
+| quick_task | 260722-improve-contact-page | missing (still unexecuted; the Contact page it targeted was fully rebuilt in the 260728-ek0 sketch-013 redesign — superseded) |
+| quick_task | 260722-normalize-sanity-form-spacing | missing (still unexecuted; overlaps the same Studio rework as compact-sanity-document-layout above — superseded) |
+| quick_task | 260722-rebalance-contact-typography | missing (still unexecuted; Contact page typography was redone in the sketch-013 redesign — superseded) |
+| quick_task | 260722-refine-contact-details | missing (still unexecuted; Contact page contact-details block was rebuilt in the sketch-013 redesign — superseded) |
+| quick_task | 260722-remove-redundant-sanity-fieldsets | missing (still unexecuted; overlaps the same Studio rework — superseded) |
+
 ## Session Continuity
 
 Last session: 2026-07-29T15:19:54.000Z
@@ -263,6 +275,4 @@ Resume file: .planning/phases/16-404-page-editorial-redesign/16-03-SUMMARY.md
 
 ## Operator Next Steps
 
-- Consider `/gsd-complete-milestone` to close out v1.4 and prepare for the next milestone
-- Optionally address the deferred `/about/` mobile-header overflow regression (see deferred-items.md) as a quick task
-- Phase 5 (Launch & Domain Cutover) remains the only open v1 phase whenever domain cutover is next prioritized
+- Start the next milestone with /gsd-new-milestone
