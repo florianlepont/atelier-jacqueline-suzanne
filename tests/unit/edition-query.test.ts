@@ -163,6 +163,17 @@ describe('getEditions', () => {
     expect(result[0].relatedGallery).toEqual({ title: 'Rebut', slug: 'rebut' });
   });
 
+  // quick-260801-kgh: editions share the gallery projection so pickHeroIndex
+  // has real geometry to work with (mirrors gallery-query.test.ts).
+  it('projects per-image asset dimensions dereferenced from metadata', async () => {
+    fetchMock.mockResolvedValueOnce([]);
+
+    const { getEditions } = await import('../../src/lib/sanity');
+    await getEditions();
+
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('"dimensions": asset->metadata.dimensions'));
+  });
+
   it('resolves without error when relatedGallery is absent/null (the common empty case)', async () => {
     const editions = [
       {
@@ -231,5 +242,19 @@ describe('getEdition', () => {
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('relatedGallery'), {
       slug: 'rebut',
     });
+  });
+
+  // quick-260801-kgh: mirrors the getEditions assertion above, two-argument
+  // form used throughout this describe block.
+  it('projects per-image asset dimensions dereferenced from metadata', async () => {
+    fetchMock.mockResolvedValueOnce(null);
+
+    const { getEdition } = await import('../../src/lib/sanity');
+    await getEdition('rebut');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('"dimensions": asset->metadata.dimensions'),
+      { slug: 'rebut' },
+    );
   });
 });
