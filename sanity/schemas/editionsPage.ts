@@ -1,9 +1,10 @@
 import {defineField, defineType} from 'sanity'
 
-// quick-260728-el6: mirrors homePage.ts's intro-only shape EXACTLY (same
-// locale-text-field pattern), minus the seo field/group — Florian only
-// asked for the intro text on the Éditions overview; the route files keep
-// hardcoding their own seoTitle/seoDescription (out of scope here).
+// quick-260801-id4: mirrors homePage.ts's shape (same locale-text-field
+// pattern for the intro, same shared `seo` field for search/share
+// metadata). The /editions and /en/editions Astro routes still hardcode
+// their own seoTitle/seoDescription, so this field is not yet consumed by
+// the public site — see src/lib/sanity.ts's EDITIONS_PAGE_QUERY.
 //
 // This copy MUST stay byte-identical to DEFAULT_EDITIONS_INTRO in
 // src/lib/site-config.ts so Studio and the code fallback read the same
@@ -19,7 +20,10 @@ export const editionsPage = defineType({
   title: 'Page Éditions',
   type: 'document',
   initialValue: {intro: defaultIntro},
-  groups: [{name: 'content', title: 'Contenu', default: true}],
+  groups: [
+    {name: 'content', title: 'Contenu', default: true},
+    {name: 'seo', title: 'SEO'},
+  ],
   fields: [
     defineField({
       name: 'intro',
@@ -46,10 +50,17 @@ export const editionsPage = defineType({
         }),
       ],
     }),
+    defineField({
+      name: 'seo',
+      title: 'SEO de la page Éditions',
+      type: 'seo',
+      group: 'seo',
+      description: 'Facultatif : les réglages SEO globaux sont utilisés si ces champs sont vides.',
+    }),
   ],
   preview: {
     prepare() {
-      return {title: 'Page Éditions', subtitle: 'Introduction'}
+      return {title: 'Page Éditions', subtitle: 'Introduction et référencement'}
     },
   },
 })
