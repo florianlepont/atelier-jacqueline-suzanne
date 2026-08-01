@@ -84,9 +84,10 @@ export async function getSiteSettings(): Promise<SiteSettings | null> {
  * Real per-image geometry, dereferenced from the Sanity asset's own
  * metadata.dimensions (quick-260724-oep). Used to pick a landscape hero
  * (src/lib/image-orientation.ts) and to size masonry grid tiles
- * (GalleryGrid.astro's aspectRatio item field). Only projected for gallery
- * queries — the asset reference shape itself is unchanged, so
- * builder.image(img) in src/lib/image.ts keeps working unmodified.
+ * (GalleryGrid.astro's aspectRatio item field). Projected by both the
+ * gallery AND the edition queries (quick-260801-kgh) — the asset reference
+ * shape itself is unchanged, so builder.image(img) in src/lib/image.ts
+ * keeps working unmodified.
  */
 export interface ImageDimensions {
   width: number
@@ -111,9 +112,11 @@ export interface GalleryImage extends SanityImage {
     licenseDetails?: string
     displayCredit?: boolean
   }
-  // quick-260724-oep: optional so EditionImage (a type alias of GalleryImage)
-  // stays correct — edition queries are unchanged by this plan and never
-  // project this field.
+  // Optional because a freshly-uploaded asset can reach the query before
+  // Sanity has finished computing its metadata — pickHeroIndex already
+  // treats a missing dimensions object as "not landscape" for that case.
+  // Both the gallery AND the edition queries project this field now
+  // (quick-260801-kgh).
   dimensions?: ImageDimensions
 }
 
@@ -132,30 +135,33 @@ export interface Gallery {
 
 const PUBLISHED_GALLERY_FILTER = /* groq */ `coalesce(publicationStatus, select(isVisible == false => "preparation", "published")) == "published"`
 
-// quick-260724-oep: each image is projected as a spread of all its existing
-// fields (asset/hotspot/alt/rights preserved exactly, asset reference shape
-// untouched) plus a sibling `dimensions` object dereferenced from the
-// asset's own metadata.dimensions — real width/height/aspectRatio, used by
-// pickHeroIndex (src/lib/image-orientation.ts) and the masonry grid's
-// per-tile aspectRatio.
-const GALLERY_IMAGES_WITH_DIMENSIONS_PROJECTION = /* groq */ `images[]{
+// quick-260724-oep, shared with editions since quick-260801-kgh: each image
+// is projected as a spread of all its existing fields (asset/hotspot/alt/
+// rights preserved exactly, asset reference shape untouched) plus a sibling
+// `dimensions` object dereferenced from the asset's own metadata.dimensions
+// — real width/height/aspectRatio, used by pickHeroIndex
+// (src/lib/image-orientation.ts) and the masonry grid's per-tile
+// aspectRatio. Interpolated into all 4 queries below (2 gallery + 2
+// edition) — editions need it for the same reason galleries do: pickHeroIndex
+// prefers the first landscape photo.
+const IMAGES_WITH_DIMENSIONS_PROJECTION = /* groq */ `images[]{
     ...,
     "dimensions": asset->metadata.dimensions
   }`
 
 const GALLERIES_QUERY = /* groq */ `*[_type == "gallery" && ${PUBLISHED_GALLERY_FILTER}] | order(orderRank) {
-  title, "slug": slug.current, statement, heroColor, publicationStatus, "showOnHomePage": coalesce(showOnHomePage, true), "isVisible": coalesce(isVisible, true), seo, ${GALLERY_IMAGES_WITH_DIMENSIONS_PROJECTION}
+  title, "slug": slug.current, statement, heroColor, publicationStatus, "showOnHomePage": coalesce(showOnHomePage, true), "isVisible": coalesce(isVisible, true), seo, ${IMAGES_WITH_DIMENSIONS_PROJECTION}
 }`
 
 const GALLERY_BY_SLUG_QUERY = /* groq */ `*[_type == "gallery" && slug.current == $slug && ${PUBLISHED_GALLERY_FILTER}][0]{
-  title, "slug": slug.current, statement, heroColor, publicationStatus, "showOnHomePage": coalesce(showOnHomePage, true), "isVisible": coalesce(isVisible, true), seo, ${GALLERY_IMAGES_WITH_DIMENSIONS_PROJECTION}
+  title, "slug": slug.current, statement, heroColor, publicationStatus, "showOnHomePage": coalesce(showOnHomePage, true), "isVisible": coalesce(isVisible, true), seo, ${IMAGES_WITH_DIMENSIONS_PROJECTION}
 }`
 
 /**
- * A single édition photo (`leadPhoto` or an `images[]` member). Structurally
- * identical to `GalleryImage` — `sanity/schemas/edition.ts`'s `leadPhoto`
- * and `images[]` array members declare the exact same `alt`/`rights`
- * sub-fields as `gallery.ts` does, so a type alias is sufficient.
+ * A single édition photo (an `images[]` member). A member's shape (`alt`/
+ * `rights`) is identical to a `Gallery` image's — `sanity/schemas/edition.ts`
+ * declares the exact same sub-fields as `gallery.ts` does — so a type alias
+ * is sufficient.
  */
 export type EditionImage = GalleryImage
 
@@ -164,8 +170,11 @@ export interface Edition {
   title: string // shared proper noun across fr/en, mirrors Gallery['title']
   slug: string
   statement: LocaleString
-  leadPhoto: EditionImage // D-04: dedicated cover photo, not images[0]
-  images: EditionImage[] // photo shoot of the printed object itself
+  // photo shoot of the printed object itself — images[0] is the cover
+  // (quick-260801-kgh, mirrors Gallery['images']); pickHeroIndex
+  // (src/lib/image-orientation.ts) prefers the first LANDSCAPE photo when
+  // there is one.
+  images: EditionImage[]
   pageCount: number
   printRun: number
   dimensions: {width: number; height: number; unit: 'cm' | 'in'}
@@ -178,7 +187,8 @@ export interface Edition {
   // NOTE: edition has NO `seo` field/group (confirmed absent from Phase 11's
   // sanity/schemas/edition.ts) — do not add a `seo` field here. Any code
   // reading page metadata for an edition must construct it from
-  // `title`/`statement`/`leadPhoto` directly instead.
+  // `title`/`statement`/the hero photo selected by pickHeroIndex directly
+  // instead.
 }
 
 // edition has no `isVisible` field, so the gallery filter's
@@ -187,11 +197,11 @@ export interface Edition {
 const PUBLISHED_EDITION_FILTER = /* groq */ `publicationStatus == "published"`
 
 const EDITIONS_QUERY = /* groq */ `*[_type == "edition" && ${PUBLISHED_EDITION_FILTER}] | order(orderRank) {
-  title, "slug": slug.current, statement, leadPhoto, images, pageCount, printRun, dimensions, publicationStatus, relatedGallery->{title, "slug": slug.current}
+  title, "slug": slug.current, statement, ${IMAGES_WITH_DIMENSIONS_PROJECTION}, pageCount, printRun, dimensions, publicationStatus, relatedGallery->{title, "slug": slug.current}
 }`
 
 const EDITION_BY_SLUG_QUERY = /* groq */ `*[_type == "edition" && slug.current == $slug && ${PUBLISHED_EDITION_FILTER}][0]{
-  title, "slug": slug.current, statement, leadPhoto, images, pageCount, printRun, dimensions, publicationStatus, relatedGallery->{title, "slug": slug.current}
+  title, "slug": slug.current, statement, ${IMAGES_WITH_DIMENSIONS_PROJECTION}, pageCount, printRun, dimensions, publicationStatus, relatedGallery->{title, "slug": slug.current}
 }`
 
 export interface AboutPage {

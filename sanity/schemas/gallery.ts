@@ -52,10 +52,10 @@ export const gallery = defineType({
   type: 'document',
   initialValue: {publicationStatus: 'published', showOnHomePage: true},
   groups: [
-    {name: 'publication', title: 'Visibilité', default: true},
+    {name: 'photos', title: 'Photos', default: true},
+    {name: 'publication', title: 'Visibilité'},
     {name: 'content', title: 'Présentation'},
-    {name: 'homepage', title: 'Accueil'},
-    {name: 'photos', title: 'Photos'},
+    {name: 'homepage', title: 'Couleur'},
     {name: 'seo', title: 'SEO'},
   ],
   fields: [

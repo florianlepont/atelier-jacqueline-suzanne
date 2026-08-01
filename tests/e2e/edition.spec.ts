@@ -209,7 +209,13 @@ test.describe('editions related-gallery cross-link (EDN-08)', () => {
 });
 
 test.describe('editions lightbox', () => {
-  test('the hero opens the lightbox at 1/N; the first grid thumbnail opens it at 2/N (combined leadPhoto+images array, EDN-03)', async ({
+  // quick-260801-kgh: the hero is now drawn from the single `images` array
+  // via pickHeroIndex (landscape-preferred, not always index 0) — mirrors
+  // gallery.spec.ts's "gallery hero landscape-preference" test. The hero
+  // must be located structurally (.detail-hero [data-gallery-thumb]),
+  // never by an index-0 attribute selector, and the expected aria-label/
+  // counter position is read from the hero's own data-index.
+  test('the hero opens the lightbox at its real position (EDN-03); the first grid thumbnail opens it at its own real, differing position', async ({
     page,
   }) => {
     await page.goto('/editions/');
@@ -218,8 +224,14 @@ test.describe('editions lightbox', () => {
 
     await page.goto(rowHref!);
 
-    const heroTrigger = page.locator('[data-gallery-thumb][data-index="0"]');
+    const heroTrigger = page.locator('.detail-hero [data-gallery-thumb]');
     await expect(heroTrigger).toBeVisible();
+    const heroIndexAttr = await heroTrigger.getAttribute('data-index');
+    expect(heroIndexAttr).toBeTruthy();
+    const heroIndex = Number(heroIndexAttr);
+    const heroAriaLabel = await heroTrigger.getAttribute('aria-label');
+    expect(heroAriaLabel?.trim().length ?? 0).toBeGreaterThan(0);
+    expect(heroAriaLabel).toContain(String(heroIndex + 1));
 
     await heroTrigger.click();
     const dialog = page.locator('dialog[open]');
@@ -227,19 +239,20 @@ test.describe('editions lightbox', () => {
 
     const counter = dialog.locator('[data-role="counter"]');
     const counterText = await counter.innerText();
-    const match = counterText.match(/^1 \/ (\d+)$/);
-    expect(match).not.toBeNull();
-    const total = match![1];
+    const total = counterText.split('/')[1]?.trim();
+    expect(total).toBeTruthy();
+    await expect(counter).toHaveText(`${heroIndex + 1} / ${total}`);
 
     await page.keyboard.press('Escape');
     await expect(dialog).not.toBeVisible();
     await expect(heroTrigger).toBeFocused();
 
     const firstGridThumb = page.locator('.gallery-grid [data-gallery-thumb]').first();
-    await expect(firstGridThumb).toHaveAttribute('data-index', '1');
+    const firstGridIndex = Number(await firstGridThumb.getAttribute('data-index'));
+    expect(firstGridIndex).not.toBe(heroIndex);
     await firstGridThumb.click();
     await expect(dialog).toBeVisible();
-    await expect(counter).toHaveText(`2 / ${total}`);
+    await expect(counter).toHaveText(`${firstGridIndex + 1} / ${total}`);
 
     const heroImg = heroTrigger.locator('img');
     await expect(heroImg).toHaveAttribute('srcset', /\d+w/);
@@ -351,13 +364,15 @@ test.describe('editions hero reduced-motion (sketch 005)', () => {
     expect(overlayState.display === 'none' || overlayState.opacity === '0').toBe(true);
 
     // Reduced motion must not break the click-to-open lightbox behavior.
-    const heroTrigger = page.locator('[data-gallery-thumb][data-index="0"]');
+    // quick-260801-kgh: the hero may be any real index now, so this asserts
+    // a generic "{digits} / {digits}" counter shape rather than assuming 1/N.
+    const heroTrigger = page.locator('.detail-hero [data-gallery-thumb]');
     await expect(heroTrigger).toBeVisible();
     await heroTrigger.click();
     const dialog = page.locator('dialog[open]');
     await expect(dialog).toBeVisible();
     const counter = dialog.locator('[data-role="counter"]');
-    await expect(counter).toHaveText(/^1 \/ \d+$/);
+    await expect(counter).toHaveText(/^\d+ \/ \d+$/);
   });
 
   test('without reduced motion, the desktop hero pin is sticky by default', async ({ page }) => {
