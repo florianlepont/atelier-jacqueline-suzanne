@@ -21,6 +21,8 @@ tech-stack:
     - Atomic multi-document publication through one Sanity Actions API call
     - Fail-closed deployment freshness derived from authoritative publication timestamps
     - Confirmation fingerprint binding membership and both draft/published revisions
+    - Explicit raw-inventory handoff from controller fetches to React state
+    - Shared monotonic request generations for competing dashboard inventory writers
 
 key-files:
   created:
@@ -42,6 +44,8 @@ key-decisions:
   - "Public document panes save drafts only; the dashboard publishes every ready draft in one guarded Actions API call."
   - "Site freshness is proven only by a successful GitHub run created at or after the authoritative Sanity publication timestamp."
   - "Same-second Sanity/GitHub timestamps are treated as ambiguous and resolve to unknown."
+  - "Successful raw fetches, including empty results, immediately replace dashboard inventory without membership heuristics."
+  - "Normal and controller inventory requests share one generation guard; only the latest lifecycle-valid response may update React state."
   - "Real editor permissions and webhook fan-out remain unknown until separately authorized manual UAT."
 
 patterns-established:
@@ -97,7 +101,7 @@ coverage:
     human_judgment: true
     rationale: "Requires a deployed Studio, the real Editor account and separately authorized mutations on the live dataset."
 
-duration: 41min
+duration: 61min
 completed: 2026-07-29
 status: complete
 ---
@@ -108,9 +112,9 @@ status: complete
 
 ## Performance
 
-- **Duration:** 41 min
+- **Duration:** 61 min
 - **Started:** 2026-07-29T09:21:58Z
-- **Completed:** 2026-07-29T10:03:18Z
+- **Completed:** 2026-07-29T10:23:13Z
 - **Tasks:** 3 plus deep-review remediation
 - **Files modified:** 18
 
@@ -121,6 +125,8 @@ status: complete
 - Added post-publication GitHub state tracking with qualified runs, honest waiting/failure/unknown states, adaptive polling and an editor-facing French operating guide.
 - Closed all four critical and five warning findings from deep review with revision-bound confirmation, explicit committed/tracking states, cross-tab timestamps and complete inspector coverage.
 - Resolved independent re-review WR-06 so a newly blocked batch immediately replaces the stale ready card and stays actionable while inventory refreshes.
+- Replaced WR-06’s display heuristic with WR-07’s explicit snapshot handoff, including authoritative empty preflights and later changed-membership generations.
+- Closed WR-08 with a lifecycle-scoped generation guard shared by normal dashboard queries and controller inventory fetches, preventing stale responses in either order.
 
 ## Task Commits
 
@@ -141,6 +147,12 @@ Each TDD task was committed as a RED test gate followed by its GREEN implementat
 5. **Independent re-review remediation**
    - `196e9f7` — RED regression for a newly added incomplete draft
    - `a4adf30` — controller-visible blocked card and best-effort inventory refresh
+6. **Final re-review remediation (pending orchestrator commits)**
+   - RED — `tests/unit/dashboard-logic.test.ts`: A+B→A+C and stale non-empty→empty regressions
+   - GREEN — `sanity/editorial/dashboardLogic.ts`, `sanity/editorial/EditorialDashboard.tsx`: exact raw snapshot handoff and pure card contract
+7. **Working-tree re-review remediation (pending orchestrator commits)**
+   - RED — `tests/unit/dashboard-logic.test.ts`: deferred normal/controller response-order, authoritative-empty and lifecycle invalidation regressions
+   - GREEN — `sanity/editorial/dashboardLogic.ts`, `sanity/editorial/EditorialDashboard.tsx`: shared generation ownership, token-aware controller handoff and lifecycle invalidation
 
 ## Files Created/Modified
 
@@ -153,7 +165,7 @@ Each TDD task was committed as a RED test gate followed by its GREEN implementat
 - `sanity/editorial/EditorialDashboard.tsx` — global publication card, confirmation, retry, refresh and deployment status integration.
 - `sanity/editorial/deployment.ts` — bounded public GitHub run query, freshness state machine and polling cadence.
 - `sanity/README.md` — French editor workflow and troubleshooting guide.
-- `tests/unit/*.test.ts` — 252 passing tests across 14 suites, including publication-race, cross-tab, blocked-card and freshness invariants.
+- `tests/unit/*.test.ts` — 257 passing tests across 14 suites, including publication-race, cross-tab, authoritative-inventory, request-generation and freshness invariants.
 
 ## Decisions Made
 
@@ -221,15 +233,35 @@ Each TDD task was committed as a RED test gate followed by its GREEN implementat
 - **Verification:** A newly added incomplete draft produces a disabled two-item card naming its blocker, requests refresh and makes zero Actions API calls.
 - **Committed in:** `196e9f7`, `a4adf30`
 
+**7. [Rule 1 - Bug] Replaced frozen display arbitration with exact inventory handoff**
+
+- **Found during:** Final independent deep re-review (WR-07)
+- **Issue:** The WR-06 membership heuristic could freeze A+B after A+C became authoritative and could ignore an authoritative empty preflight.
+- **Fix:** Every successful controller raw fetch hands its exact snapshot to React; the main card derives only from that inventory while confirmation state remains separate.
+- **Files modified:** `sanity/editorial/dashboardLogic.ts`, `sanity/editorial/EditorialDashboard.tsx`, `tests/unit/dashboard-logic.test.ts`
+- **Verification:** A+B→A+C and stale non-empty→empty pure card regressions both make zero Actions API calls.
+- **Commit:** Pending orchestrator handoff because git escalation became unavailable after RED verification.
+
+**8. [Rule 1 - Bug] Serialized competing inventory writers with shared generations**
+
+- **Found during:** Working-tree independent re-review (WR-08)
+- **Issue:** A slower normal query could overwrite a newer controller snapshot, or a stale controller from a prior client lifecycle could overwrite a newer normal result.
+- **Fix:** Added a pure monotonic generation guard, reserved tokens at both request sources, routed token-aware controller snapshots through the guard, and invalidated outstanding tokens on client replacement/unmount. Controller preflight still validates its own fetched snapshot when visible acceptance is rejected.
+- **Files modified:** `sanity/editorial/dashboardLogic.ts`, `sanity/editorial/EditorialDashboard.tsx`, `tests/unit/dashboard-logic.test.ts`
+- **Verification:** Deferred regressions cover both response orders, authoritative empty results, lifecycle invalidation and controller validation of a stale-for-display snapshot.
+- **Commit:** Pending orchestrator handoff with the WR-07 working-tree changes.
+
 ---
 
-**Total deviations:** 6 auto-fixed groups (4 Rule 1, 1 Rule 1/2, 1 Rule 3).
+**Total deviations:** 8 auto-fixed groups (6 Rule 1, 1 Rule 1/2, 1 Rule 3).
 
 **Impact on plan:** Every correction is bounded to correctness, editor safety or the required seven-type contract; no package, secret, server, workflow or public-site behavior was added.
 
 ## Issues Encountered
 
-- The sandbox could not resolve `sanity-cdn.com`; the same build passed with approved network access.
+- The final sandbox-only Studio build could not resolve `sanity-cdn.com`; the same uncommitted WR-07
+  tree built successfully immediately before WR-08. WR-08 changes are covered by clean type-check,
+  lint and unit gates without requesting external access.
 - Sanity reported a non-blocking version notice: local `sanity` 6.4.0 versus auto-update runtime 6.7.0. No dependency was changed by this plan.
 
 ## Verification
@@ -239,10 +271,11 @@ Each TDD task was committed as a RED test gate followed by its GREEN implementat
 - `npm run test:unit -- tests/unit/dashboard-logic.test.ts tests/unit/deployment.test.ts tests/unit/workflow-logic.test.ts tests/unit/editorial-checks.test.ts` — 130 passed.
 - `npm run lint` — passed.
 - `npm run typecheck` — passed with zero errors.
-- `npm run test:unit -- tests/unit/dashboard-logic.test.ts` — 94 passed.
-- `npm run test:unit` — 14 suites and 252 tests passed.
+- `npm run test:unit -- tests/unit/dashboard-logic.test.ts` — 99 passed.
+- `npm run test:unit` — 14 suites and 257 tests passed.
 - `npm --prefix sanity run lint` — passed.
-- `npm --prefix sanity run build` — passed.
+- `npm --prefix sanity run build` — passed on the WR-07 working tree; the final WR-08 rerun was
+  blocked before bundling by restricted DNS resolution for `sanity-cdn.com`.
 
 No live Sanity dataset, deployed Studio, webhook or GitHub workflow was mutated by these checks.
 
@@ -272,15 +305,17 @@ deployment and live/staging content exercise.
 
 ## Next Phase Readiness
 
-- The branch is locally deliverable and the publication flow is fully covered by unit tests and a
-  production Studio build.
+- The working tree is locally deliverable: the publication flow is fully covered by unit tests,
+  type-check and clean linters; the final Studio build rerun requires network access for Sanity's
+  remote version lookup.
 - External acceptance remains limited to the real Editor permission and webhook fan-out checks
   listed above.
 
 ## Self-Check: PASSED
 
-All key implementation files, the original six RED/GREEN commits, both deep-review remediation
-commits and the WR-06 RED/GREEN commits were found. The summary also passes `git diff --check`.
+All key implementation files and every commit through WR-06 were found. WR-07/WR-08 RED, GREEN and
+documentation file groups are verified in the working tree pending orchestrator commits. The
+summary also passes `git diff --check`.
 
 ---
 

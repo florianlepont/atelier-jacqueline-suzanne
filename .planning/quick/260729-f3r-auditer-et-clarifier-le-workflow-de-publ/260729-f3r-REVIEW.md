@@ -2,6 +2,9 @@
 phase: quick-260729-f3r
 reviewed: 2026-07-29T09:44:12Z
 re_reviewed: 2026-07-29T09:59:03Z
+final_re_reviewed: 2026-07-29T10:07:16Z
+working_tree_re_reviewed: 2026-07-29T10:17:50Z
+wr08_resolved_at: 2026-07-29T10:23:13Z
 depth: deep
 files_reviewed: 17
 files_reviewed_list:
@@ -32,11 +35,13 @@ original_findings:
   warning: 5
   info: 0
   total: 9
-resolved_findings: 10
+resolved_findings: 12
 remaining_findings: 0
-resolved_at: 2026-07-29T10:03:18Z
+resolved_at: 2026-07-29T10:23:13Z
 resolution_commits: [2f769a6, ee93b6e, 196e9f7, a4adf30]
-status: resolved
+wr07_resolution_status: verified_pending_orchestrator_commit
+wr08_resolution_status: verified_pending_orchestrator_commit
+status: resolved_pending_commit
 ---
 
 # Phase quick-260729-f3r: Code Review Report
@@ -44,7 +49,7 @@ status: resolved
 **Reviewed:** 2026-07-29T09:44:12Z
 **Depth:** deep
 **Files Reviewed:** 17
-**Status:** resolved after WR-06 remediation
+**Status:** all findings resolved in the verified working tree; commits pending orchestrator handoff
 
 ## Summary
 
@@ -344,13 +349,14 @@ dialog closes into a disabled card naming the new blocker.
 
 **Resolution:** RESOLVED in `196e9f7` (RED) and `a4adf30` (GREEN).
 
-- The controller’s latest confirmation batch now drives the main card until the queried inventory
-  contains the same or newer draft revisions.
+- A changed batch with newly-added draft membership now drives the main card until the queried
+  inventory contains the same or newer draft revisions.
 - Count, rows, blocking reasons and button eligibility all use that visible batch.
 - A changed blocked batch requests a best-effort inventory refresh while remaining visible if the
   refresh fails.
-- The regression proves the dialog closes into a two-item, disabled, blocker-naming card state with
-  zero Actions API calls.
+- The pure controller/helper regression proves a two-item blocker batch is selected with zero
+  Actions API calls; the dialog and rendered button lifecycle remain source-traced rather than
+  component-tested.
 
 ### Final verification after WR-06
 
@@ -361,5 +367,172 @@ dialog closes into a disabled card naming the new blocker.
 - `npm --prefix sanity run lint` — passed.
 - `npm --prefix sanity run build` — passed.
 
-All ten findings across the original review and independent re-review are resolved. Remaining code
-review findings: **0**. Pending Manual UAT is unchanged and no external action was performed.
+WR-06 is resolved for the submitted regression, but the final independent re-review below found
+that the new display-arbitration heuristic can freeze a superseded blocked batch and still discards
+an authoritative empty preflight. Pending Manual UAT is unchanged and no external action was
+performed.
+
+## Final Independent Re-review
+
+**Re-reviewed:** 2026-07-29T10:07:16Z
+**Commits:** `196e9f7`, `a4adf30`
+**Status:** resolved in verified working tree (original final re-review status: issues_found)
+
+The remediation correctly wires the chosen `publicationBatch` through the main card’s count, rows,
+blocking reasons, and disabled state. It also closes the dialog when the refreshed batch is blocked,
+keeps it open for a changed ready batch, and requests a best-effort refresh for the newly-added
+blocked-draft case covered by the regression.
+
+Verification passed: the three focused suites ran 121 tests, the full unit suite ran 252 tests,
+`npm run typecheck` reported zero errors, and the Sanity Studio build completed. Those tests do not
+cover a newer inventory with changed membership or the empty-preflight path below.
+
+### WR-07: Display arbitration can freeze a superseded blocked batch
+
+**Classification:** WARNING
+
+**Files:** `sanity/editorial/dashboardLogic.ts:409-440`,
+`sanity/editorial/dashboardLogic.ts:562-568`,
+`sanity/editorial/EditorialDashboard.tsx:318-321`,
+`sanity/editorial/EditorialDashboard.tsx:453-475`
+
+**Issue:** `inventoryHasCaughtUp()` requires inventory and controller batches to have exactly the
+same pair count before it will consider the queried inventory current. Once a changed blocked batch
+puts the controller in `confirming`, there is no transition that clears that batch after the
+best-effort refresh.
+
+For example, confirmation A can discover a new incomplete draft B and correctly close into the
+blocked A+B card. If B is then discarded while another draft C is created, the refreshed inventory
+is A+C—the newer truth—but its membership count/IDs differ from A+B, so
+`publicationBatchForDisplay()` keeps returning the old controller batch. The same happens for any
+new draft added while the blocked state is visible. Realtime and explicit refreshes can continue
+updating `publicationSnapshot`, but the helper rejects every changed-membership result. Because the
+button is disabled from the old blocked batch, the editor cannot trigger another preflight to escape
+the state; only remounting the dashboard clears it.
+
+The opposite direction is also stale: if the card shows a draft that another editor already
+published or discarded, a fresh preflight stores an authoritative empty batch in phase `idle`.
+`publicationBatchForDisplay()` excludes `idle`, so it keeps the stale non-empty inventory and enabled
+button. Repeated clicks perform invisible empty preflights and open no dialog, while this path
+requests no refresh.
+
+Neither path can dispatch an invalid action, so atomic publication remains safe. The main card’s
+visible state, button eligibility, and recovery behavior are nevertheless incorrect.
+
+**Fix:** Replace the equality heuristic with an explicit handoff. One bounded approach is to expose
+the raw documents returned by successful controller fetches to the component, update `documents`
+from that exact snapshot, and clear the controller display override once the inventory acknowledges
+it; subsequent inventory generations must then be authoritative even when membership changes.
+Handle an empty successful preflight through the same handoff. Add regressions for (1) A+B blocked
+being superseded by A+C after refresh and (2) stale non-empty inventory followed by an empty
+preflight, asserting the final count, blocker list, button state, dialog state, and zero Actions API
+calls.
+
+**Resolution:** RESOLVED in the verified working tree; RED/GREEN commits are pending orchestrator
+handoff because git escalation became unavailable.
+
+- Every successful raw controller fetch invokes `onInventory` with the exact returned array,
+  including `[]`.
+- `EditorialDashboard` immediately hands that array to `setDocuments`; the main card is derived
+  only from the resulting `publicationSnapshot`.
+- The membership/revision display heuristic was removed. Realtime and explicit query generations
+  now remain authoritative regardless of changed membership.
+- Confirmation data remains separate from card inventory, preserving confirmation fingerprints and
+  the single guarded Actions API call.
+- Pure regressions prove A+B blocked can be superseded by A+C, and a stale non-empty inventory can
+  become authoritative empty state with a disabled button, closed dialog and zero action calls.
+
+### Final verification after WR-07
+
+- `npm run test:unit -- tests/unit/dashboard-logic.test.ts` — 95 passed.
+- `npm run test:unit` — 14 suites, 253 tests passed.
+- `npm run lint` — passed.
+- `npm run typecheck` — passed with zero errors.
+- `npm --prefix sanity run lint` — passed.
+- `npm --prefix sanity run build` — passed.
+
+WR-07 itself is resolved in the working tree. The independent re-review below found one remaining
+inventory-generation race. Pending Manual UAT is unchanged and no external action was performed.
+
+## Working-tree Independent Re-review
+
+**Re-reviewed:** 2026-07-29T10:17:50Z
+**Scope:** Uncommitted `dashboardLogic.ts`, `EditorialDashboard.tsx`, and dashboard regression tests
+**Status:** resolved in the verified working tree; commits pending orchestrator handoff
+
+The explicit `onInventory` handoff fixes the deterministic WR-07 scenarios: a controller fetch now
+updates the card from its exact raw array, `[]` disables the action without opening a dialog, later
+React inventory updates can replace the blocked snapshot, and confirmation content remains bound to
+`publicationState.batch` rather than the card inventory. The action guards and single-dispatch path
+are unchanged.
+
+Verification passed: the three focused suites ran 122 tests, the full unit suite ran 253 tests,
+`npm run typecheck` reported zero errors, and the Sanity Studio build completed.
+
+### WR-08: Independent inventory writers can restore an older response after `onInventory`
+
+**Classification:** WARNING
+
+**Files:** `sanity/editorial/EditorialDashboard.tsx:89-116`,
+`sanity/editorial/EditorialDashboard.tsx:137-150`,
+`sanity/editorial/dashboardLogic.ts:442-471`,
+`tests/unit/dashboard-logic.test.ts:398-506`
+
+**Issue:** The controller callback and the dashboard query effect both write directly to
+`documents`, but they do not share a request generation, cancellation token, or acceptance guard.
+The effect’s `cancelled` flag only protects it when its own dependencies change; a controller
+`onInventory` handoff does not cancel or supersede an already-running effect request.
+
+A normal race is therefore:
+
+1. A realtime-triggered background query starts with inventory A.
+2. The editor starts preflight; its later controller query returns authoritative B (or `[]`) and
+   `onInventory` updates the card.
+3. The older background query resolves afterward while its `cancelled` flag is still false and
+   writes A back into `documents`.
+
+The card can again show an obsolete blocker, omit a new blocker, or re-enable a stale non-empty lot
+after an empty preflight. Confirmation remains safe because it uses the controller batch, and every
+publish still re-fetches before dispatch, but the visible/card recovery guarantee is not stable.
+An old controller created for a previous `client` can likewise invoke its setter callback after the
+component has switched clients because the controller has no lifecycle invalidation.
+
+The new A+B → A+C test does not exercise this handoff: it assigns `inventory = replacement`
+directly. The empty test only invokes controller fetches. Neither uses deferred competing requests
+or the component effect, so both pass while the response-order race remains.
+
+**Fix:** Give every inventory request—effect and controller—a generation at request start and accept
+its result only if that generation is still current, or consolidate raw inventory fetching behind
+one cancellable owner. Invalidate outstanding controller callbacks when the client changes or the
+component unmounts. Add a deferred-response component/integration regression where an older effect
+request resolves after a newer controller handoff and prove it cannot replace B/`[]`; also cover the
+inverse start order and unmount/client replacement.
+
+**Resolution:** RESOLVED in the verified working tree; RED/GREEN commits are pending orchestrator
+handoff.
+
+- A shared monotonic generation guard now owns acceptance for both the normal dashboard query and
+  every controller raw-inventory fetch. Each request reserves its generation before fetching.
+- The controller exposes `onInventoryRequestStart` and passes the reserved token with the exact
+  successful snapshot to token-aware `onInventory`; stale snapshots never reach React state.
+- Controller validation remains independent of visible-state acceptance: it always prepares and
+  validates its own fetched snapshot, even when a newer normal request makes its UI handoff stale.
+- Guard cleanup invalidates every outstanding generation when the Sanity client changes or the
+  dashboard unmounts, while the existing per-effect cancellation remains intact.
+- Deferred regressions cover both response orders, an authoritative empty controller result,
+  lifecycle invalidation, and controller validation after a rejected visible handoff.
+
+### Final verification after WR-08
+
+- `npm run test:unit -- tests/unit/dashboard-logic.test.ts` — 99 passed.
+- `npm run test:unit` — 14 suites, 257 tests passed.
+- `npm run lint` — passed.
+- `npm run typecheck` — passed with zero errors.
+- `npm --prefix sanity run lint` — passed with zero warnings.
+- `npm --prefix sanity run build` — code bundling could not be re-run in the restricted sandbox
+  because `sanity build` could not resolve `sanity-cdn.com`; the same uncommitted WR-07 tree built
+  successfully immediately before WR-08, and WR-08 type-check/lint/unit gates are green.
+
+All twelve review findings are resolved in the current working tree. Pending Manual UAT is
+unchanged, no external mutation was performed, and the review-remediation commits remain the
+orchestrator's responsibility.
