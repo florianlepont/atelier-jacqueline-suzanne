@@ -208,7 +208,13 @@ export interface HomePage {
   seo?: SeoSettings
 }
 
-/** The published `editionsPage` singleton, intro-only (no seo field/group). */
+/**
+ * The published `editionsPage` singleton, projected intro-only. The Studio
+ * schema does expose a `seo` field/group (see sanity/schemas/editionsPage.ts),
+ * but the public site doesn't read it yet — the /editions routes still
+ * hardcode their own seoTitle/seoDescription — so the projection stays
+ * deliberately narrow until that route wiring is a separately-scoped change.
+ */
 export interface EditionsPage {
   intro?: Partial<LocaleString>
 }

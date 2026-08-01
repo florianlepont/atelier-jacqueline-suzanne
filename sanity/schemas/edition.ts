@@ -42,7 +42,7 @@ export const edition = defineType({
   // homepage carousel/grid.
   initialValue: {publicationStatus: 'published'},
   groups: [
-    {name: 'publication', title: 'Publication', default: true},
+    {name: 'publication', title: 'Visibilité', default: true},
     {name: 'content', title: 'Présentation'},
     {name: 'photos', title: 'Photos'},
     // No 'seo' group this phase -- omitted by Claude's Discretion (no
@@ -54,11 +54,11 @@ export const edition = defineType({
     // D-07: same three-state editorial workflow as gallery.
     defineField({
       name: 'publicationStatus',
-      title: "Statut de l'édition",
+      title: 'Visibilité souhaitée',
       type: 'string',
       group: 'publication',
       description:
-        '« En préparation » reste dans Sanity, « Publiée » apparaît sur le site, « Archivée » est conservée mais retirée du site.',
+        'Ce choix prendra effet lors de la prochaine mise à jour du site depuis le tableau de bord. « En préparation » et « Archivée » gardent l’édition hors ligne.',
       initialValue: 'published',
       options: {
         layout: 'radio',

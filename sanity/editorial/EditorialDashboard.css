@@ -45,42 +45,21 @@
   gap: 24px;
 }
 
-.editorial-dashboard__metrics {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
+.editorial-dashboard__publish-panel {
+  --dashboard-publish-accent: #556bfc;
+  background-color: var(--dashboard-surface-background);
+  border: 1px solid color-mix(in srgb, var(--card-fg-color) 9%, transparent);
+  border-left: 3px solid var(--dashboard-publish-accent);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--card-fg-color) 6%, transparent),
+    0 12px 28px -20px color-mix(in srgb, var(--card-fg-color) 24%, transparent);
 }
 
-.editorial-dashboard__metric-cell {
-  min-width: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-.editorial-dashboard__metric-card {
-  transition: background-color 120ms ease;
-}
-
-.editorial-dashboard__metric-cell--interactive {
-  display: block;
+.editorial-dashboard__publish-divider {
+  flex: 0 0 auto;
+  height: 1px;
   width: 100%;
-  min-height: 44px;
-  border: none;
-  background: transparent;
-  font: inherit;
-  color: inherit;
-  text-align: inherit;
-  cursor: pointer;
-  border-radius: 6px;
-  outline: none;
-}
-
-.editorial-dashboard__metric-cell--interactive:hover .editorial-dashboard__metric-card {
-  background-color: var(--dashboard-page-background);
-}
-
-.editorial-dashboard__metric-cell--interactive:focus-visible {
-  box-shadow: var(--card-focus-ring-box-shadow, 0 0 0 2px var(--card-focus-ring-color));
+  background-color: color-mix(in srgb, var(--card-fg-color) 10%, transparent);
 }
 
 .editorial-dashboard__deployment-status {
@@ -267,12 +246,6 @@ a.editorial-dashboard__deployment-status:hover {
     width: auto;
     flex: 0 0 auto;
     text-align: left;
-  }
-}
-
-@media (min-width: 40em) {
-  .editorial-dashboard__metrics {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

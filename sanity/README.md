@@ -1,61 +1,138 @@
 # Guide d’édition — Atelier Jacqueline Suzanne
 
-Ce Studio permet de gérer les collections, leurs photos et les textes communs du site sans modifier le code.
+Le Studio est l’unique espace où préparer et publier le contenu du site. Il enregistre
+automatiquement chaque modification comme brouillon : aucune action « Enregistrer » n’est
+nécessaire.
 
-Le **Tableau de bord** résume les brouillons, les contenus à vérifier et l’état du dernier déploiement. Cliquer sur une ligne ouvre directement le document concerné.
+## Le parcours quotidien
 
-## Première connexion
+1. Depuis le **Tableau de bord**, ouvrir le contenu à modifier.
+2. Modifier les champs. Le Studio sauvegarde le brouillon automatiquement.
+3. Consulter la **Checklist** du document.
+4. Revenir au Tableau de bord : le contenu apparaît dans le lot **Mettre le site à jour**.
+5. Vérifier le récapitulatif, puis publier tout le lot avec ce bouton.
+6. Suivre l’état de la reconstruction du site dans l’en-tête.
 
-Dans le menu utilisateur en haut à droite, choisir **Français** comme langue d’interface. Ce choix est ensuite mémorisé par Sanity.
+Les fiches de contenu n’ont volontairement pas de bouton de publication. Un brouillon ne
+devient public qu’avec l’action globale **Mettre le site à jour** du Tableau de bord.
 
-## Modifier une collection
+## Comprendre la checklist
+
+- **Indispensable** : l’information doit être complétée. Un seul élément indispensable
+  manquant bloque le lot entier.
+- **Recommandé** : améliore la qualité éditoriale, le partage ou le référencement, mais ne
+  bloque pas la publication.
+
+Le Tableau de bord donne un lien direct vers chaque document bloqué. Après correction, revenir
+au Tableau de bord pour relancer la vérification.
+
+## Comprendre le lot de publication
+
+Le nombre affiché à côté de **Mettre le site à jour** correspond aux documents publics dont un
+brouillon existe. Le récapitulatif distingue :
+
+- **Modifié** : remplace une version déjà publique ;
+- **Nouveau** : ajoute un nouveau contenu visible ;
+- **Sera retiré du site** : publie une version archivée ou masquée ;
+- **Nouveau, gardé hors ligne** : conserve le contenu hors du site public.
+
+La publication est globale et atomique : toutes les modifications sont envoyées dans une seule
+transaction Sanity. Si une vérification ou la transaction échoue, le Tableau de bord n’annonce
+jamais un succès partiel. Actualiser les données, corriger l’erreur signalée, puis réessayer.
+
+## Visibilité d’une collection ou d’une édition
+
+Le champ **Visibilité** prépare ce qui se passera lors de la prochaine mise à jour globale. Le
+changer n’a aucun effet immédiat sur le site :
+
+- un contenu visible devient public après **Mettre le site à jour** ;
+- un contenu masqué ou archivé est retiré après cette même action ;
+- son document et ses médias restent conservés dans Sanity.
+
+## État de la mise à jour du site
+
+Après la publication Sanity, GitHub reconstruit le site statique. Le statut compare la date de
+publication avec les exécutions GitHub suivantes :
+
+- **Modifications en attente** : des brouillons restent à publier ;
+- **Mise à jour en attente** : la nouvelle exécution GitHub n’est pas encore visible ;
+- **Mise à jour en cours** : le site est en reconstruction ;
+- **Site à jour** : une exécution créée après la publication a réussi ;
+- **Échec de la mise à jour** : Sanity est publié, mais le site peut encore afficher l’ancienne
+  version ;
+- **Mise à jour non démarrée** : aucune exécution n’est apparue après trois minutes ;
+- **État temporairement indisponible** : le Tableau de bord ne peut pas prouver la fraîcheur du
+  site.
+
+En cas d’échec ou de délai anormal, ouvrir le lien du statut pour consulter GitHub Actions et
+prévenir le mainteneur. Ne pas republier plusieurs fois sans avoir identifié la cause.
+
+## Collections photo
 
 1. Ouvrir **Collections photo**, puis choisir une collection.
 2. Utiliser les onglets **Présentation**, **Page d’accueil** et **Photos**.
 3. Renseigner les textes français et anglais.
-4. Dans **Photos**, glisser-déposer les images et les réordonner. La première image est la couverture.
+4. Dans **Photos**, glisser-déposer les images et les réordonner. La première image est la
+   couverture.
 5. Ajouter une courte description française et anglaise à chaque image.
-6. Cliquer sur **Publier**. Une modification enregistrée mais non publiée reste un brouillon invisible sur le site.
+6. Vérifier la Checklist, puis revenir au Tableau de bord.
 
-L’onglet **Checklist** indique ce qui est obligatoire et ce qui est simplement recommandé. Les badges « À compléter », « SEO à compléter », « Prêt » et « Masquée » rendent l’état du document visible immédiatement.
+Pour une nouvelle collection, saisir d’abord son nom puis utiliser **Générer** sous « Adresse de
+la page ». Dans la liste des collections, le glisser-déposer définit l’ordre affiché sur la page
+d’accueil.
 
-L’onglet **Aperçu du brouillon** montre le contenu avant publication. Le lien **Ouvrir le site** du tableau de bord permet de consulter rapidement la version publique.
+## Pages et réglages communs
 
-Pour une nouvelle collection, saisir d’abord son nom puis cliquer sur **Générer** sous « Adresse de la page ».
+- **Page d’accueil** : introduction et référencement de l’accueil ;
+- **Réglages du site** : nom du site, libellés du menu, copyright et référencement par défaut ;
+- **Page À propos** : biographie, pratique et informations de technique ;
+- **Page Contact** : textes et coordonnées publiques ;
+- **Page Éditions** : introduction de la rubrique et contenus associés.
 
-## Modifier les textes communs
+Les aperçus permettent de relire le brouillon en français ou en anglais. Ils ne publient rien.
 
-Ouvrir **Page d’accueil** pour modifier son introduction et son référencement.
+## Référencement, crédits et droits
 
-Ouvrir **Réglages du site** pour changer le nom du site, les libellés du menu, le copyright et le référencement utilisé par défaut.
+Les onglets **SEO & partage** permettent de personnaliser le titre Google, sa description et
+l’image de partage. Ces champs sont recommandés ; les valeurs éditoriales principales servent
+de repli lorsqu’ils sont vides.
 
-La rubrique **Page À propos** permet de modifier la biographie, la présentation de la pratique et les informations de technique. L’onglet **Aperçu** montre le brouillon courant en français ou en anglais avant sa publication.
-
-## Masquer temporairement une collection
-
-Dans l’onglet **Page d’accueil** d’une collection, désactiver « Afficher cette collection sur le site ». La collection et ses photos restent dans Sanity mais sa page publique ne sera plus générée au prochain déploiement.
-
-## Référencement
-
-Les onglets **SEO & partage** permettent de personnaliser le titre Google, sa description et l’image affichée sur les réseaux sociaux. Ces champs sont facultatifs : le site utilise automatiquement le titre, le texte de présentation et la couverture lorsqu’ils sont vides.
-
-L’aperçu Google affiche le nombre de caractères. L’option « Masquer cette page dans Google » doit rester désactivée sauf besoin précis. Le site génère automatiquement les URL canoniques, les alternatives FR/EN, le sitemap, le fichier robots et les données structurées.
-
-## Crédits et droits des photographies
-
-Chaque photo possède une rubrique **Crédits et droits**. Le crédit « Romane Lepont » et la mention « Tous droits réservés » sont préremplis. Ils peuvent être adaptés image par image, notamment pour une licence particulière ou une utilisation éditoriale. Le crédit est affiché dans la visionneuse lorsque l’option correspondante est activée.
+Chaque photo possède une rubrique **Crédits et droits**. Le crédit « Romane Lepont » et la
+mention « Tous droits réservés » peuvent être adaptés image par image. Les informations de
+format, de technique et de droits demandées par la Checklist sont indispensables avant la
+publication des collections et éditions concernées.
 
 ## Agenda / Expositions
 
-Cette rubrique peut déjà accueillir les expositions et événements à venir. Ces données sont préparées dans Sanity mais ne sont pas encore affichées sur le site public.
+Cette rubrique accueille les événements à venir. Elle est indépendante du lot public actuel :
+les expositions restent gérées et publiées avec leur propre flux tant que leur affichage sur le
+site n’est pas livré.
 
-## Ordre des collections
+## Dépannage
 
-Dans **Collections photo**, déplacer les lignes par glisser-déposer. Cet ordre est repris sur la page d’accueil.
+- **Le bouton global est désactivé** : ouvrir les contenus signalés en rouge et compléter les
+  informations indispensables.
+- **Une modification n’apparaît pas dans le lot** : attendre la sauvegarde automatique, puis
+  actualiser le Tableau de bord.
+- **La publication échoue** : utiliser **Actualiser et réessayer**. Si l’erreur persiste,
+  transmettre son détail technique au mainteneur.
+- **Le site semble ancien après un succès Sanity** : attendre le statut GitHub. Seul **Site à
+  jour** confirme une exécution postérieure à la publication.
+- **Le statut GitHub est indisponible** : ouvrir GitHub Actions depuis le statut et prévenir le
+  mainteneur ; le Tableau de bord ne suppose pas que le site est à jour.
 
-## Mise en ligne
+## PENDING MANUAL UAT
 
-La publication dans Sanity met le contenu à disposition du site. Le site étant généré statiquement, sa mise à jour visible intervient après le prochain déploiement automatique déclenché par le webhook Sanity/GitHub.
+Ces vérifications réelles ne sont pas couvertes par les tests locaux de ce plan :
+
+- [ ] Avec le rôle **Editor**, confirmer que l’utilisatrice peut modifier les sept types publics
+  et exécuter la transaction globale, sans accès inutile aux réglages d’administration.
+- [ ] Après une publication globale réelle, confirmer que les mutations déclenchent bien le
+  webhook Sanity vers GitHub et qu’une exécution qualifiée apparaît.
+- [ ] Confirmer le fan-out attendu du webhook pour la transaction multi-documents et l’absence de
+  déploiements manquants ou dupliqués problématiques.
+
+Ce plan ne déploie pas le Studio, ne publie aucun contenu réel et n’observe aucun webhook réel.
 
 ## Développement local
 
@@ -66,4 +143,5 @@ npm run dev
 
 Le Studio est généralement disponible sur `http://localhost:3333`.
 
-Pour changer la destination du lien **Ouvrir le site**, copier `.env.example` vers `.env.local` et adapter `SANITY_STUDIO_PREVIEW_URL` avant de construire ou déployer le Studio.
+Pour changer la destination du lien **Ouvrir le site**, copier `.env.example` vers `.env.local`
+et adapter `SANITY_STUDIO_PREVIEW_URL` avant de construire ou déployer le Studio.

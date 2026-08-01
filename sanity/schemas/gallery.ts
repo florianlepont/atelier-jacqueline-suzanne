@@ -52,7 +52,7 @@ export const gallery = defineType({
   type: 'document',
   initialValue: {publicationStatus: 'published', showOnHomePage: true},
   groups: [
-    {name: 'publication', title: 'Publication', default: true},
+    {name: 'publication', title: 'Visibilité', default: true},
     {name: 'content', title: 'Présentation'},
     {name: 'homepage', title: 'Accueil'},
     {name: 'photos', title: 'Photos'},
@@ -61,11 +61,11 @@ export const gallery = defineType({
   fields: [
     defineField({
       name: 'publicationStatus',
-      title: 'Statut de la collection',
+      title: 'Visibilité souhaitée',
       type: 'string',
       group: 'publication',
       description:
-        '« En préparation » reste dans Sanity, « Publiée » apparaît sur le site, « Archivée » est conservée mais retirée du site.',
+        'Ce choix prendra effet lors de la prochaine mise à jour du site depuis le tableau de bord. « En préparation » et « Archivée » gardent la collection hors ligne.',
       initialValue: 'published',
       options: {
         layout: 'radio',

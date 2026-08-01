@@ -1,6 +1,5 @@
 import {useEffect, useRef} from 'react'
 import type {
-  DocumentActionComponent,
   DocumentActionsResolver,
   DocumentBadgeComponent,
   DocumentBadgesResolver,
@@ -11,8 +10,7 @@ import {checklistEnabledTypes} from './DocumentChecklist'
 import {
   collectionStatusBadge,
   completenessBadge,
-  filterUnsafeSingletonActions,
-  shouldRenamePublishAction,
+  filterDocumentActions,
 } from './workflowLogic'
 
 // Invisible side-effect host (not a visible badge): auto-opens the Checklist
@@ -56,23 +54,12 @@ export const resolveBadges: DocumentBadgesResolver = (prev, context) =>
     ? [AutoOpenChecklistBadge, CompletenessBadge, CollectionStatusBadge, ...prev]
     : prev
 
-function renamePublishAction(action: DocumentActionComponent): DocumentActionComponent {
-  const PublishAndDeploy: DocumentActionComponent = (props) => {
-    const result = action(props)
-    if (!result) return null
-    return {
-      ...result,
-      label: 'Publier et mettre à jour le site',
-      title: 'Publie le contenu puis déclenche automatiquement la reconstruction du site.',
-    }
-  }
-  PublishAndDeploy.action = action.action
-  return PublishAndDeploy
-}
-
-export const resolveActions: DocumentActionsResolver = (prev, context) => {
-  const withoutUnsafeSingletonActions = filterUnsafeSingletonActions(prev, context.schemaType)
-  return withoutUnsafeSingletonActions.map((action) =>
-    shouldRenamePublishAction(context.schemaType, action.action) ? renamePublishAction(action) : action,
-  )
-}
+// Public-site document types never expose a working publish/unpublish
+// action (see filterDocumentActions) — publishing happens from the
+// editorial dashboard's global atomic publish instead. That constraint is
+// communicated by the absence of the buttons themselves; a disabled decoy
+// action here would only duplicate Sanity's own draft/published status
+// pill and the completeness/collection badges above, without adding any
+// signal (see .planning/debug/resolved/disabled-publish-placeholder.md).
+export const resolveActions: DocumentActionsResolver = (prev, context) =>
+  filterDocumentActions(prev, context.schemaType)

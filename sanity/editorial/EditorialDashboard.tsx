@@ -4,17 +4,24 @@ import {Badge, Box, Button, Card, Flex, Heading, Spinner, Stack, Text} from '@sa
 import {IntentButton, useClient, useHistoryStore, useUserStore} from 'sanity'
 import {IntentLink} from 'sanity/router'
 import {AddIcon} from '@sanity/icons/Add'
+import {BookIcon} from '@sanity/icons/Book'
 import {CheckmarkCircleIcon} from '@sanity/icons/CheckmarkCircle'
 import {ChevronRightIcon} from '@sanity/icons/ChevronRight'
 import {CogIcon} from '@sanity/icons/Cog'
-import {DocumentIcon} from '@sanity/icons/Document'
 import {ErrorOutlineIcon} from '@sanity/icons/ErrorOutline'
 import {FolderIcon} from '@sanity/icons/Folder'
 import {ImagesIcon} from '@sanity/icons/Images'
 import {LaunchIcon} from '@sanity/icons/Launch'
-import {WarningOutlineIcon} from '@sanity/icons/WarningOutline'
-import {deploymentLabel, getLatestDeployment, SITE_PREVIEW_URL} from './deployment'
-import type {DeploymentRun} from './deployment'
+import {PublishIcon} from '@sanity/icons/Publish'
+import {
+  deploymentSubtitle,
+  deploymentState,
+  getRecentDeployments,
+  latestValidTimestamp,
+  nextDeploymentPollDelay,
+  SITE_PREVIEW_URL,
+} from './deployment'
+import type {DeploymentRun, DeploymentState} from './deployment'
 import {getDocumentChecks, summarizeChecks} from './checks'
 import {
   attentionPriority,
@@ -24,12 +31,18 @@ import {
   buildActivities,
   buildAttentionGroups,
   contentNoun,
+  createInventoryGenerationGuard,
+  createPublicationController,
   documentTitle,
   editorialStatus,
   formatActivityDate,
   formatRelativeDate,
-  isGalleryOnline,
   pluralize,
+  preflightForConfirmation,
+  preparePublicationBatch,
+  publicationCardState,
+  PUBLIC_DOCUMENTS_QUERY,
+  PUBLIC_DOCUMENTS_QUERY_PARAMS,
   rowTypeLabels,
 } from './dashboardLogic'
 import type {
@@ -38,14 +51,18 @@ import type {
   DashboardDocument,
   DashboardRow,
   DashboardTone,
+  PublicationCategory,
+  PublicationClient,
+  PublicationControllerState,
 } from './dashboardLogic'
 import './EditorialDashboard.css'
 
-const query = `*[_type in ["gallery", "homePage", "aboutPage", "contactPage", "siteSettings", "exhibition"]] | order(_updatedAt desc) {
-  _id, _type, _updatedAt, title, slug, isVisible, publicationStatus, statement, images, seo,
-  intro, biography, practice, medium, siteTitle, navLabels, footerText, defaultSeo,
-  publicEmail, professionalLinks, startDate, venue, city, description, image
-}`
+const publicationCategoryLabels: Record<PublicationCategory, string> = {
+  modified: 'Modifié',
+  new: 'Nouveau',
+  withdrawal: 'Sera retiré du site',
+  'new-hidden': 'Nouveau, gardé hors ligne',
+}
 
 export function EditorialDashboard() {
   const client = useClient({apiVersion: '2025-08-15'})
@@ -53,23 +70,68 @@ export function EditorialDashboard() {
   const userStore = useUserStore()
   const [documents, setDocuments] = useState<DashboardDocument[]>([])
   const [activities, setActivities] = useState<Record<string, DashboardActivity>>({})
-  const [run, setRun] = useState<DeploymentRun | null>(null)
+  const [deploymentRuns, setDeploymentRuns] = useState<DeploymentRun[]>([])
+  const [deploymentError, setDeploymentError] = useState<unknown>()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showAllActivity, setShowAllActivity] = useState(false)
   const [showAllAttention, setShowAllAttention] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [publicationState, setPublicationState] = useState<PublicationControllerState>({
+    phase: 'idle',
+  })
+  const [confirmationOpen, setConfirmationOpen] = useState(false)
+  const [publishedAt, setPublishedAt] = useState<string>()
   const hasDataRef = useRef(false)
+  // A client replacement is a lifecycle boundary: the old client's pending
+  // inventory responses must never update the new client's dashboard.
+  const inventoryGenerationGuard = useMemo(
+    () => createInventoryGenerationGuard<DashboardDocument[]>(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [client],
+  )
+  const publicationController = useMemo(
+    () =>
+      createPublicationController({
+        client: client as unknown as PublicationClient,
+        onInventoryRequestStart: () => inventoryGenerationGuard.start(),
+        onInventory: (content, generation) => {
+          if (generation === undefined) return
+          inventoryGenerationGuard.accept(generation, content, (accepted) => {
+            setDocuments(accepted)
+            setError('')
+            hasDataRef.current = true
+          })
+        },
+        onRefresh: () => setRefreshKey((key) => key + 1),
+        onStateChange: setPublicationState,
+      }),
+    [client, inventoryGenerationGuard],
+  )
 
   useEffect(() => {
     let cancelled = false
+    const generation = inventoryGenerationGuard.start()
     client
-      .fetch<DashboardDocument[]>(query, {}, {perspective: 'raw'})
-      .then(async (content) => {
+      .fetch<DashboardDocument[]>(
+        PUBLIC_DOCUMENTS_QUERY,
+        PUBLIC_DOCUMENTS_QUERY_PARAMS,
+        {perspective: 'raw'},
+      )
+      .then((content) => {
         if (cancelled) return
-        setDocuments(content)
-        setError('')
-        hasDataRef.current = true
+        const accepted = inventoryGenerationGuard.accept(generation, content, (inventory) => {
+          setDocuments(inventory)
+          setError('')
+          hasDataRef.current = true
+        })
+        // Primary content has arrived (or this fetch is now stale). The
+        // dashboard can render immediately — it must not stay stuck on the
+        // spinner waiting for the supplementary activity feed below, which
+        // has no timeout and can hang (neither resolve nor reject) without
+        // ever tripping a catch block.
+        if (!cancelled && inventoryGenerationGuard.isCurrent(generation)) setLoading(false)
+        if (!accepted) return
 
         try {
           const documentIds = Array.from(
@@ -80,37 +142,63 @@ export function EditorialDashboard() {
               ]),
             ),
           )
-          const transactions = await historyStore.getTransactions(documentIds)
-          const authorIds = Array.from(new Set(transactions.map(({author}) => author)))
-          const users = authorIds.length > 0 ? await userStore.getUsers(authorIds) : []
-          if (!cancelled) setActivities(buildActivities(transactions, users, content))
+          historyStore
+            .getTransactions(documentIds)
+            .then(async (transactions) => {
+              const authorIds = Array.from(new Set(transactions.map(({author}) => author)))
+              const users = authorIds.length > 0 ? await userStore.getUsers(authorIds) : []
+              if (!cancelled && inventoryGenerationGuard.isCurrent(generation)) {
+                setActivities(buildActivities(transactions, users, content))
+              }
+            })
+            .catch(() => {
+              // History is supplementary and subject to plan retention (or may
+              // simply never settle). The dashboard's primary content already
+              // rendered above and must stay available regardless.
+              if (!cancelled && inventoryGenerationGuard.isCurrent(generation)) {
+                setActivities({})
+              }
+            })
         } catch {
-          // History is supplementary and subject to plan retention. The dashboard's
-          // primary content should remain available if it cannot be retrieved.
-          if (!cancelled) setActivities({})
+          if (!cancelled && inventoryGenerationGuard.isCurrent(generation)) setActivities({})
         }
       })
       .catch((reason: unknown) => {
         // A failed background refresh keeps showing the last good data; only a
         // failed FIRST load has nothing to fall back on and surfaces the error.
-        if (!cancelled && !hasDataRef.current) {
-          setError(reason instanceof Error ? reason.message : 'Erreur inconnue')
+        if (!cancelled && inventoryGenerationGuard.isCurrent(generation)) {
+          setLoading(false)
+          if (!hasDataRef.current) {
+            setError(reason instanceof Error ? reason.message : 'Erreur inconnue')
+          }
         }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
       })
     return () => {
       cancelled = true
     }
-  }, [client, historyStore, userStore, refreshKey])
+  }, [client, historyStore, userStore, refreshKey, inventoryGenerationGuard])
+
+  useEffect(() => {
+    // Undoes the cleanup below on remount, so React Strict Mode's
+    // intentional mount -> cleanup -> mount dev cycle is a no-op instead of
+    // permanently invalidating the only guard instance the component will
+    // ever use (see reactivate()'s doc comment in dashboardLogic.ts).
+    inventoryGenerationGuard.reactivate()
+    return () => {
+      inventoryGenerationGuard.invalidate()
+    }
+  }, [inventoryGenerationGuard])
 
   // Re-fetch (silently) whenever any dashboard-relevant document changes, so
   // edits made in another tab — or by another editor — appear without a reload.
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined
     const subscription = client
-      .listen(query, {}, {visibility: 'query', includeResult: false, events: ['mutation']})
+      .listen(PUBLIC_DOCUMENTS_QUERY, PUBLIC_DOCUMENTS_QUERY_PARAMS, {
+        visibility: 'query',
+        includeResult: false,
+        events: ['mutation'],
+      })
       .subscribe({
         next: () => {
           clearTimeout(timer)
@@ -126,26 +214,6 @@ export function EditorialDashboard() {
       subscription.unsubscribe()
     }
   }, [client])
-
-  // The deployment status is polled: it changes server-side (GitHub Actions),
-  // not through Sanity mutations, so listen() cannot see it.
-  useEffect(() => {
-    const controller = new AbortController()
-    let cancelled = false
-    const load = () =>
-      getLatestDeployment(controller.signal)
-        .then((deployment) => {
-          if (!cancelled) setRun(deployment)
-        })
-        .catch(() => undefined)
-    load()
-    const intervalId = setInterval(load, 5 * 60 * 1000)
-    return () => {
-      cancelled = true
-      controller.abort()
-      clearInterval(intervalId)
-    }
-  }, [])
 
   // Minute tick so relative timestamps ("il y a 5 min") age on screen.
   const [, setClock] = useState(0)
@@ -182,6 +250,7 @@ export function EditorialDashboard() {
       })
       .sort((a, b) => new Date(b.lastUpdatedAt).getTime() - new Date(a.lastUpdatedAt).getTime())
   }, [documents])
+  const publicationSnapshot = useMemo(() => preparePublicationBatch(documents), [documents])
 
   const attention = rows
     .filter((row) => {
@@ -193,9 +262,68 @@ export function EditorialDashboard() {
       return !summary.requiredComplete || !summary.recommendedComplete || row.hasDraft
     })
     .sort((left, right) => attentionPriority(left) - attentionPriority(right))
-  const galleries = rows.filter(({current}) => current._type === 'gallery')
-  const onlineGalleryCount = galleries.filter((row) => isGalleryOnline(row.current)).length
   const draftCount = rows.filter((row) => row.hasDraft).length
+  const lastPublishedDocumentAt = documents
+    .filter((document) => !document._id.startsWith('drafts.'))
+    .map((document) => document._updatedAt)
+    .filter((value): value is string => Boolean(value) && Number.isFinite(new Date(value).getTime()))
+    .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0]
+  const publishedReference = latestValidTimestamp(publishedAt, lastPublishedDocumentAt)
+  const currentDeploymentState = deploymentState({
+    runs: deploymentRuns,
+    publishedAt: publishedReference,
+    pendingCount: draftCount,
+    error: deploymentError,
+  })
+
+  // GitHub Actions changes independently from Sanity. Poll immediately, then
+  // quickly while a post-publication run is expected and more slowly once the
+  // state is terminal. Cleanup aborts both the request and the pending timer.
+  useEffect(() => {
+    if (!publishedReference) {
+      setDeploymentRuns([])
+      setDeploymentError(new Error('Aucune publication de référence disponible'))
+      return undefined
+    }
+
+    const controller = new AbortController()
+    let cancelled = false
+    let timer: ReturnType<typeof setTimeout> | undefined
+
+    const load = async () => {
+      try {
+        const runs = await getRecentDeployments(controller.signal)
+        if (cancelled) return
+        setDeploymentRuns(runs)
+        setDeploymentError(undefined)
+        const nextState = deploymentState({
+          runs,
+          publishedAt: publishedReference,
+          pendingCount: draftCount,
+        })
+        const elapsedMs = Math.max(0, Date.now() - new Date(publishedReference).getTime())
+        timer = setTimeout(
+          () => void load(),
+          nextDeploymentPollDelay({elapsedMs, terminal: nextState.terminal, firstPoll: false}),
+        )
+      } catch (reason) {
+        if (cancelled || (reason instanceof DOMException && reason.name === 'AbortError')) return
+        setDeploymentError(reason)
+        timer = setTimeout(() => void load(), 5 * 60_000)
+      }
+    }
+
+    timer = setTimeout(
+      () => void load(),
+      nextDeploymentPollDelay({elapsedMs: 0, terminal: false, firstPoll: true}),
+    )
+    return () => {
+      cancelled = true
+      controller.abort()
+      clearTimeout(timer)
+    }
+  }, [draftCount, publishedReference])
+
   const blockingRows = attention.filter((row) => !row.summary.requiredComplete)
   // A single blocked content is fully covered by the banner (named title,
   // missing-info message, direct CTA) — repeating it as a one-row group right
@@ -223,7 +351,55 @@ export function EditorialDashboard() {
       ? 'L’essentiel du contenu et de la mise en ligne.'
       : subtitleParts.length > 0
         ? subtitleParts.join(' · ')
-        : 'Tout est publié et à jour.'
+        : deploymentSubtitle(currentDeploymentState)
+  const publicationBusy = ['preflighting', 'publishing', 'committed', 'refreshing'].includes(
+    publicationState.phase,
+  )
+  const publicationTrackingFailed = publicationState.phase === 'tracking-error'
+  const publicationCard = publicationCardState(publicationSnapshot, {
+    busy: publicationBusy,
+    trackingFailed: publicationTrackingFailed,
+    confirmationOpen,
+  })
+  const confirmationBatch = publicationState.batch ?? publicationSnapshot
+  const publicationPanelHasBody =
+    publicationCard.pairs.length > 0 ||
+    publicationCard.blockedRows.length > 0 ||
+    (publicationState.phase === 'success' && Boolean(publishedAt)) ||
+    publicationState.phase === 'tracking-error' ||
+    publicationState.phase === 'error'
+
+  const requestPublication = async () => {
+    const batch = await preflightForConfirmation(publicationController)
+    if (batch) setConfirmationOpen(true)
+  }
+
+  const confirmPublication = async () => {
+    try {
+      const result = await publicationController.publish()
+      if (result.publishedAt) {
+        setPublishedAt((current) => latestValidTimestamp(current, result.publishedAt))
+      }
+      setConfirmationOpen(false)
+    } catch {
+      setConfirmationOpen(
+        publicationController.state.phase === 'confirming' &&
+          Boolean(publicationController.state.batch?.ready),
+      )
+    }
+  }
+
+  const refreshPublicationTracking = async () => {
+    try {
+      const result = await publicationController.refreshTracking()
+      if (result.publishedAt) {
+        setPublishedAt((current) => latestValidTimestamp(current, result.publishedAt))
+      }
+    } catch {
+      // The controller owns the user-facing state. This catch prevents a
+      // tracking refresh failure from escaping as an unhandled rejection.
+    }
+  }
 
   return (
     <div className="editorial-dashboard__page">
@@ -250,7 +426,7 @@ export function EditorialDashboard() {
               wrap="wrap"
               className="editorial-dashboard__actions editorial-dashboard__header-side"
             >
-              <DeploymentStatus run={run} />
+              <DeploymentStatus state={currentDeploymentState} />
               <Button
                 className="editorial-dashboard__header-control editorial-dashboard__header-link"
                 style={{height: 44}}
@@ -272,7 +448,18 @@ export function EditorialDashboard() {
                 intent="create"
                 params={{type: 'gallery', template: 'gallery'}}
                 tone="primary"
-                mode="default"
+                mode="ghost"
+                paddingY={3}
+              />
+              <IntentButton
+                className="editorial-dashboard__header-control"
+                style={{height: 44}}
+                icon={BookIcon}
+                text="Nouvelle édition"
+                intent="create"
+                params={{type: 'edition'}}
+                tone="primary"
+                mode="ghost"
                 paddingY={3}
               />
             </Flex>
@@ -302,6 +489,197 @@ export function EditorialDashboard() {
                     {error}
                   </Text>
                 </details>
+              </Stack>
+            </Card>
+          )}
+
+          {!loading && !error && (
+            <Card
+              radius={3}
+              tone="transparent"
+              shadow={1}
+              padding={[4, 4, 5]}
+              className="editorial-dashboard__publish-panel"
+            >
+              <Stack space={4}>
+                <Flex align="flex-start" justify="space-between" gap={4} wrap="wrap">
+                  <Flex align="center" gap={3} style={{minWidth: 0, flex: '1 1 360px'}}>
+                    <TintChip
+                      icon={PublishIcon}
+                      size={44}
+                      radius={12}
+                      iconSize={24}
+                      tint={metricAccentStyles.primary}
+                    />
+                    <Stack space={2}>
+                      <Heading as="h2" size={2}>
+                        Mettre le site à jour
+                      </Heading>
+                      <Text size={1} muted>
+                        {publicationCard.total === 0
+                          ? 'Aucune modification publique en attente.'
+                          : `${publicationCard.total} ${pluralize(
+                              publicationCard.total,
+                              'contenu modifié',
+                              'contenus modifiés',
+                            )} depuis la dernière mise en ligne.`}
+                      </Text>
+                    </Stack>
+                  </Flex>
+                  {publicationCard.dialogOpen ? (
+                    <Card padding={3} radius={2} tone="caution" style={{flex: '1 1 320px'}}>
+                      <Stack space={3}>
+                        <Stack space={2}>
+                          <Text size={1} weight="semibold">
+                            Publier maintenant sur le site public ?
+                          </Text>
+                          <Text size={1}>
+                            {confirmationBatch.total}{' '}
+                            {pluralize(
+                              confirmationBatch.total,
+                              'contenu sera visible',
+                              'contenus seront visibles',
+                            )}{' '}
+                            par tout le monde.
+                          </Text>
+                        </Stack>
+                        {publicationState.phase === 'confirming' && publicationState.error && (
+                          <Card padding={3} radius={2} tone="critical">
+                            <Text size={1}>{publicationState.error}</Text>
+                          </Card>
+                        )}
+                        <Flex gap={2} justify="flex-end" wrap="wrap">
+                          <Button
+                            text="Annuler"
+                            mode="bleed"
+                            disabled={publicationBusy}
+                            onClick={() => setConfirmationOpen(false)}
+                            style={{minHeight: 44}}
+                          />
+                          <Button
+                            tone="primary"
+                            text={publicationState.phase === 'publishing' ? 'Publication…' : 'Confirmer'}
+                            loading={publicationBusy}
+                            disabled={publicationBusy}
+                            onClick={() => void confirmPublication()}
+                            style={{minHeight: 44}}
+                          />
+                        </Flex>
+                      </Stack>
+                    </Card>
+                  ) : (
+                    <Button
+                      tone="primary"
+                      text={publicationBusy ? 'Vérification…' : 'Mettre le site à jour'}
+                      disabled={publicationCard.buttonDisabled}
+                      loading={publicationBusy}
+                      onClick={() => void requestPublication()}
+                      style={{minHeight: 44}}
+                    />
+                  )}
+                </Flex>
+
+                {publicationPanelHasBody && (
+                  <Box className="editorial-dashboard__publish-divider" />
+                )}
+
+                {publicationCard.pairs.length > 0 && (
+                  <Stack space={2}>
+                    {publicationCard.pairs.map((pair) => (
+                      <Flex
+                        key={pair.id}
+                        align="center"
+                        justify="space-between"
+                        gap={3}
+                        wrap="wrap"
+                      >
+                        <IntentLink
+                          intent="edit"
+                          params={{id: pair.id, type: pair.draft._type}}
+                          style={{color: 'inherit', textDecoration: 'none'}}
+                        >
+                          <Text size={1} weight="semibold">
+                            {pair.title}
+                          </Text>
+                        </IntentLink>
+                        <Badge
+                          tone={
+                            pair.category === 'withdrawal' || pair.category === 'new-hidden'
+                              ? 'caution'
+                              : 'primary'
+                          }
+                        >
+                          {publicationCategoryLabels[pair.category]}
+                        </Badge>
+                      </Flex>
+                    ))}
+                  </Stack>
+                )}
+
+                {publicationCard.blockedRows.length > 0 && (
+                  <Card padding={3} radius={2} tone="critical">
+                    <Stack space={3}>
+                      <Text size={1} weight="semibold">
+                        Le lot entier est bloqué par des informations indispensables.
+                      </Text>
+                      {publicationCard.blockedRows.map((blocked) => (
+                        <IntentLink
+                          key={blocked.id}
+                          intent="edit"
+                          params={{id: blocked.id, type: blocked.type}}
+                          style={{color: 'inherit'}}
+                        >
+                          <Text size={1}>
+                            {blocked.title} — {blocked.reasons.join(' · ')}
+                          </Text>
+                        </IntentLink>
+                      ))}
+                    </Stack>
+                  </Card>
+                )}
+
+                {publicationState.phase === 'success' && publishedAt && (
+                  <Text size={1} weight="semibold">
+                    Contenus publiés dans Sanity. La mise à jour du site est maintenant suivie
+                    séparément.
+                  </Text>
+                )}
+
+                {publicationState.phase === 'tracking-error' && (
+                  <Card padding={3} radius={2} tone="caution">
+                    <Flex align="center" justify="space-between" gap={3} wrap="wrap">
+                      <Stack space={2} style={{minWidth: 0}}>
+                        <Text size={1} weight="semibold">
+                          Contenus publiés dans Sanity; fraîcheur du site non vérifiable.
+                        </Text>
+                        <Text size={1}>{publicationState.error}</Text>
+                      </Stack>
+                      <Button
+                        text="Actualiser le suivi"
+                        onClick={() => void refreshPublicationTracking()}
+                        disabled={publicationBusy}
+                      />
+                    </Flex>
+                  </Card>
+                )}
+
+                {publicationState.phase === 'error' && (
+                  <Card padding={3} radius={2} tone="critical">
+                    <Flex align="center" justify="space-between" gap={3} wrap="wrap">
+                      <Stack space={2} style={{minWidth: 0}}>
+                        <Text size={1} weight="semibold">
+                          La mise en ligne n’a pas abouti. Aucun succès partiel n’est annoncé.
+                        </Text>
+                        <Text size={1}>{publicationState.error}</Text>
+                      </Stack>
+                      <Button
+                        text="Actualiser et réessayer"
+                        onClick={() => void requestPublication()}
+                        disabled={publicationBusy}
+                      />
+                    </Flex>
+                  </Card>
+                )}
               </Stack>
             </Card>
           )}
@@ -350,40 +728,6 @@ export function EditorialDashboard() {
 
           {!loading && !error && (
             <>
-              <div className="editorial-dashboard__metrics">
-                <MetricCard
-                  icon={FolderIcon}
-                  label={pluralize(onlineGalleryCount, 'collection', 'collections')}
-                  value={String(onlineGalleryCount)}
-                  detail={pluralize(onlineGalleryCount, 'publiée sur le site', 'publiées sur le site')}
-                  accent="primary"
-                  href="/structure"
-                  activateLabel="Voir les collections dans Contenu du site"
-                />
-                <MetricCard
-                  icon={DocumentIcon}
-                  label={pluralize(draftCount, 'brouillon', 'brouillons')}
-                  value={String(draftCount)}
-                  detail="en cours de rédaction"
-                  accent="neutral"
-                  href="/structure"
-                  activateLabel="Voir le contenu dans Contenu du site"
-                />
-                <MetricCard
-                  icon={WarningOutlineIcon}
-                  label={pluralize(listedAttention.length, 'contenu', 'contenus')}
-                  value={String(listedAttention.length)}
-                  detail="à vérifier avant publication"
-                  accent={listedAttention.length > 0 ? 'caution' : 'positive'}
-                  activateLabel="Aller à la liste « À faire maintenant »"
-                  onActivate={() => {
-                    const heading = document.getElementById('editorial-dashboard-attention-heading')
-                    heading?.scrollIntoView({behavior: 'smooth', block: 'start'})
-                    heading?.focus()
-                  }}
-                />
-              </div>
-
               <div className="editorial-dashboard__columns">
                 <Stack space={3}>
                   <Flex align="flex-end" justify="space-between" gap={2}>
@@ -632,76 +976,6 @@ function TintChip({
   )
 }
 
-function MetricCard({
-  icon: Icon,
-  label,
-  value,
-  detail,
-  accent = 'neutral',
-  onActivate,
-  activateLabel,
-  href,
-}: {
-  icon: ComponentType<SVGProps<SVGSVGElement>>
-  label: string
-  value: string
-  detail: string
-  accent?: MetricAccent
-  onActivate?: () => void
-  activateLabel?: string
-  href?: string
-}) {
-  const accentStyle = metricAccentStyles[accent]
-  const body = (
-    <Card
-      radius={3}
-      shadow={1}
-      padding={3}
-      className="editorial-dashboard__surface editorial-dashboard__metric-card"
-      style={{height: '100%', boxSizing: 'border-box'}}
-    >
-      <Flex align="center" gap={3}>
-        <TintChip icon={Icon} size={38} radius={10} iconSize={21} tint={accentStyle} />
-        <Stack space={2} style={{minWidth: 0}}>
-          <Heading size={2}>{value}</Heading>
-          <Text size={1} style={{fontSize: 12}}>
-            <span style={{fontWeight: 600}}>{label}</span>{' '}
-            <span style={{color: 'var(--card-muted-fg-color)'}}>{detail}</span>
-          </Text>
-        </Stack>
-      </Flex>
-    </Card>
-  )
-
-  if (href) {
-    return (
-      <a
-        href={href}
-        className="editorial-dashboard__metric-cell editorial-dashboard__metric-cell--interactive"
-        style={{color: 'inherit', textDecoration: 'none'}}
-        aria-label={activateLabel}
-      >
-        {body}
-      </a>
-    )
-  }
-
-  if (onActivate) {
-    return (
-      <button
-        type="button"
-        className="editorial-dashboard__metric-cell editorial-dashboard__metric-cell--interactive"
-        onClick={onActivate}
-        aria-label={activateLabel}
-      >
-        {body}
-      </button>
-    )
-  }
-
-  return <div className="editorial-dashboard__metric-cell">{body}</div>
-}
-
 function ShortcutRow({
   icon: Icon,
   label,
@@ -768,14 +1042,8 @@ const deploymentDotColors: Record<DashboardTone, string> = {
   critical: '#ef4444',
 }
 
-function DeploymentStatus({run}: {run: DeploymentRun | null}) {
-  const status = deploymentLabel(run)
-  const tone = status.tone
-  const dateLabel = run ? formatActivityDate(run.updated_at) : 'Date inconnue'
-  const shortStatusLabel =
-    run?.status === 'completed' && run.conclusion === 'success' ? 'À jour' : status.label
-  const siteStatusLabel =
-    shortStatusLabel === 'À jour' ? 'Site à jour' : `Site : ${shortStatusLabel}`
+function DeploymentStatus({state}: {state: DeploymentState}) {
+  const dateLabel = state.run ? formatActivityDate(state.run.updated_at) : ''
 
   const content = (
     <Flex align="center" gap={2} className="editorial-dashboard__deployment-content">
@@ -786,7 +1054,7 @@ function DeploymentStatus({run}: {run: DeploymentRun | null}) {
           height: 8,
           borderRadius: '50%',
           flex: '0 0 auto',
-          backgroundColor: deploymentDotColors[tone],
+          backgroundColor: deploymentDotColors[state.tone],
         }}
       />
       <Text
@@ -795,30 +1063,34 @@ function DeploymentStatus({run}: {run: DeploymentRun | null}) {
         style={{
           whiteSpace: 'nowrap',
           fontSize: 13,
-          color: tone === 'critical' ? deploymentDotColors.critical : undefined,
+          color: state.tone === 'critical' ? deploymentDotColors.critical : undefined,
         }}
       >
-        {siteStatusLabel}
+        {state.label}
       </Text>
-      <Text muted size={1} className="editorial-dashboard__deployment-date" style={{fontSize: 13}}>
-        {dateLabel}
-      </Text>
+      {dateLabel && (
+        <Text muted size={1} className="editorial-dashboard__deployment-date" style={{fontSize: 13}}>
+          {dateLabel}
+        </Text>
+      )}
     </Flex>
   )
 
-  return run?.html_url ? (
+  return state.actionLabel ? (
     <a
-      href={run.html_url}
+      href={state.actionUrl}
       target="_blank"
       rel="noreferrer"
-      title="Voir le détail de la dernière mise en ligne"
-      aria-label={`${shortStatusLabel}. ${dateLabel}. Voir le détail de la mise en ligne (nouvel onglet)`}
+      title={`${state.detail} ${state.actionLabel}`}
+      aria-label={`${state.label}. ${state.detail} ${state.actionLabel} (nouvel onglet)`}
       className="editorial-dashboard__deployment-status"
     >
       {content}
     </a>
   ) : (
-    <div className="editorial-dashboard__deployment-status">{content}</div>
+    <div className="editorial-dashboard__deployment-status" title={state.detail}>
+      {content}
+    </div>
   )
 }
 
