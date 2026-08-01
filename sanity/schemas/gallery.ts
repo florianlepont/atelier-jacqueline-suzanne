@@ -1,7 +1,6 @@
 import {defineArrayMember, defineField, defineType} from 'sanity'
 import {orderRankField} from '@sanity/orderable-document-list'
 import {HERO_COLOR_OPTIONS, HeroColorInput} from './HeroColorInput'
-import {PrimaryPhotoItem} from './PrimaryPhotoItem'
 import {PublishedPageLinks} from './PublishedPageLinks'
 
 // Sanity list previews intentionally expose only selected array positions,
@@ -138,7 +137,6 @@ export const gallery = defineType({
       title: 'Photos de la collection',
       type: 'array',
       group: 'photos',
-      components: {item: PrimaryPhotoItem},
       description:
         "Photos de la collection avec leurs descriptions, leur ordre et leurs crédits. Glisser-déposer plusieurs images ici. La première photo sert de couverture sur la page d'accueil ; réordonner les photos par glisser-déposer. Pour réutiliser une image existante, choisir « Ajouter » puis « Sélectionner ».",
       // D-01/D-02/CMS-01: `alt` fields are attached directly onto an `image`-
