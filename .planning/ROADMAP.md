@@ -51,7 +51,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 14: Verification & UAT** - The Éditions feature closes with no omission-class gaps (locale, sitemap, nav call sites) and the "no commerce" boundary confirmed to hold (completed 2026-07-23)
 - [x] **Phase 15: About Page Editorial Redesign** - About page's title and broader layout adopt the shared PageTitleHeader editorial identity, via a sketch-explored layout redesign (completed 2026-07-29)
 - [x] **Phase 16: 404 Page Editorial Redesign** - The 404 fallback page gets a fully custom, interactive redesign: full-bleed photo backdrop popping at a pointer/touch-proximity-driven rate (capped ≈6.7/sec at dead-center, raised from the original ≈3/sec per an explicit, knowing user override at the plan 16-03 checkpoint), centered AJS logo/404 marker/bilingual message (revised from the original PageTitleHeader-reuse plan, per user direction 2026-07-29 — see `16-CONTEXT.md`) (completed 2026-07-29)
-- [ ] **Phase 17: Homepage Carousel & Intro Fixes** - Auto-advance keeps running while the pointer hovers the page, and the grid-mode intro paragraph shows in full
+- [x] **Phase 17: Homepage Carousel & Intro Fixes** - Auto-advance keeps running while the pointer hovers the page, and the grid-mode intro paragraph shows in full (completed 2026-08-02)
 - [ ] **Phase 18: Gallery & Éditions Display Fixes** - Gallery descriptions show in full, thumbnail grids lose their black border frame, and gallery pages show the site footer again
 - [ ] **Phase 19: Site-Wide Visual Polish** - Éditions row-hover color applies to the title/description too, the halftone texture bleeds to the true browser edge again without reintroducing horizontal scroll, and Contact's hover-fill text gets breathing room
 
@@ -104,10 +104,10 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
   2. The explicit pause/play toggle button still pauses and resumes auto-advance exactly as before.
   3. In grid mode, the homepage's intro paragraph displays its full text, not truncated after 2 lines.
 
-**Plans**: 1 plan (1 wave)
+**Plans**: 1/1 plans complete
 **Wave 1**
 
-- [ ] 17-01-PLAN.md — Remove the pointer-hover auto-advance pause (keeping the keyboard-focus pause and the explicit toggle) and the `.home-grid__intro-body` 2-line clamp, with inverted/new Playwright regression coverage and a full-suite sweep [Wave 1]
+- [x] 17-01-PLAN.md — Remove the pointer-hover auto-advance pause (keeping the keyboard-focus pause and the explicit toggle) and the `.home-grid__intro-body` 2-line clamp, with inverted/new Playwright regression coverage and a full-suite sweep [Wave 1]
 
 **UI hint**: yes
 
@@ -166,7 +166,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 14. Verification & UAT | 4/4 | Complete    | 2026-07-23 |
 | 15. About Page Editorial Redesign | 4/4 | Complete    | 2026-07-29 |
 | 16. 404 Page Editorial Redesign | 3/3 | Complete    | 2026-07-29 |
-| 17. Homepage Carousel & Intro Fixes | 0/TBD | Not started | - |
+| 17. Homepage Carousel & Intro Fixes | 1/1 | Complete   | 2026-08-02 |
 | 18. Gallery & Éditions Display Fixes | 0/TBD | Not started | - |
 | 19. Site-Wide Visual Polish | 0/TBD | Not started | - |
 

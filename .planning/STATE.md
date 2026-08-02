@@ -4,15 +4,15 @@ milestone: v1.5
 milestone_name: Global Improvements & Bug Fixes
 current_phase: 17
 current_phase_name: Homepage Carousel & Intro Fixes
-status: planning
+status: executing
 stopped_at: Phase 17 context gathered
-last_updated: "2026-08-02T11:31:03.139Z"
+last_updated: "2026-08-02T11:59:17.207Z"
 last_activity: 2026-08-02
-last_activity_desc: "ROADMAP.md created: 8 v1.5 requirements mapped to 3 phases (17 Homepage Carousel & Intro Fixes, 18 Gallery & Éditions Display Fixes, 19 Site-Wide Visual Polish), 100% coverage confirmed"
+last_activity_desc: Phase 17 execution started
 progress:
   total_phases: 4
   completed_phases: 0
-  total_plans: 0
+  total_plans: 1
   completed_plans: 0
   percent: 0
 ---
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-22)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; v1.3 adds a non-transactional Éditions showcase; checkout still follows in the future v1.x shop milestone.)
-**Current focus:** v1.5 milestone "Global Improvements & Bug Fixes" roadmapped (Phases 17-19) — ready to plan Phase 17 (Homepage Carousel & Intro Fixes).
+**Current focus:** Phase 17 — Homepage Carousel & Intro Fixes
 
 ## Current Position
 
-Phase: 17 of 19 (Homepage Carousel & Intro Fixes) — first phase of the v1.5 milestone
-Plan: — (not yet planned)
-Status: Roadmapped — ready to plan Phase 17
-Last activity: 2026-08-02 — ROADMAP.md created: 8 v1.5 requirements mapped to 3 phases (17 Homepage Carousel & Intro Fixes, 18 Gallery & Éditions Display Fixes, 19 Site-Wide Visual Polish), 100% coverage confirmed
+Phase: 17 (Homepage Carousel & Intro Fixes) — EXECUTING
+Plan: 1 of 1
+Status: Executing Phase 17
+Last activity: 2026-08-02 — Phase 17 execution started
 
 ## Performance Metrics
 
