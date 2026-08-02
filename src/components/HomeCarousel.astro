@@ -759,8 +759,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           setFillPaused(true);
         }
 
-        // D-09: auto-advance every 6000ms, paused on hover/focus, resumed on
-        // mouseleave/focusout — never paused permanently.
+        // D-09: auto-advance every 6000ms, paused on keyboard focus, resumed
+        // on focusout — never paused permanently. HOME-11: the pointer
+        // merely hovering the carousel no longer pauses it (mouseenter/
+        // mouseleave listeners removed).
         function startAutoAdvance() {
           stopAutoAdvance();
           if (autoAdvancePausedByUser || root!.dataset.displayMode !== 'carousel') return;
@@ -820,16 +822,14 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           if (hoverCapable) resetPeek();
         }
 
-        hero.addEventListener('mouseenter', stopAutoAdvance);
-        hero.addEventListener('mouseleave', startAutoAdvance);
         hero.addEventListener('focusin', stopAutoAdvance);
         hero.addEventListener('focusout', startAutoAdvance);
 
         // quick-260725-dcg (Fix 3): resets the 6000ms countdown (and, via
         // startAutoAdvance()'s own setFillPaused/restartFill calls, re-syncs
         // the fill) on manual navigation — but only when auto-advance is
-        // currently running (timer !== null). This preserves hover/focus
-        // pause (the timer is null during hover, so manual nav won't
+        // currently running (timer !== null). This preserves keyboard-focus
+        // pause (the timer is null while focused, so manual nav won't
         // secretly restart auto-advance) and the explicit-pause state; when
         // paused, render()'s own restartFill() call still relocates the fill
         // to the new dash, but is-autoplay-paused keeps it frozen.

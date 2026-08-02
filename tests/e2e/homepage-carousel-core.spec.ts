@@ -65,7 +65,7 @@ test.describe('carousel/grid display mode toggle (D-08)', () => {
 });
 
 test.describe('auto-advance + pause (D-09)', () => {
-  test('carousel index advances every 6000ms and pauses on hover, using a mocked clock', async ({ page }) => {
+  test('carousel index keeps advancing every 6000ms while the pointer hovers it (HOME-11)', async ({ page }) => {
     await page.clock.install();
     await page.goto('/');
 
@@ -77,13 +77,36 @@ test.describe('auto-advance + pause (D-09)', () => {
     await page.clock.fastForward(6000);
     await expect(indexLabel).not.toHaveText(initialLabel);
 
-    // Pause on hover/focus: capture the label right after the auto-advance,
-    // hover the carousel root, advance the mocked clock again, and confirm
-    // the label did NOT change while hovered.
+    // HOME-11: the pointer merely resting on the carousel no longer stops
+    // the auto-advance timer — capture the label right after the first
+    // advance, hover the carousel root, advance the mocked clock again, and
+    // confirm the label DID change while hovered (it used to freeze here).
     const labelAfterFirstAdvance = await indexLabel.innerText();
     await carousel.hover();
     await page.clock.fastForward(6000);
-    await expect(indexLabel).toHaveText(labelAfterFirstAdvance);
+    await expect(indexLabel).not.toHaveText(labelAfterFirstAdvance);
+  });
+
+  test('keyboard focus on the autoplay toggle still pauses auto-advance; blurring resumes it (D-02)', async ({ page }) => {
+    await page.clock.install();
+    await page.goto('/');
+
+    const indexLabel = page.locator('[data-role="index-label"]');
+    // [data-role="autoplay-toggle"] is a descendant of
+    // [data-role="home-carousel"], so focusing it triggers the carousel
+    // root's `focusin` listener (stopAutoAdvance) — this is the mechanism
+    // D-02 requires to survive HOME-11's hover-listener removal.
+    const autoplayToggle = page.locator('[data-role="autoplay-toggle"]');
+    await expect(indexLabel).toBeVisible();
+
+    const labelBeforeFocus = await indexLabel.innerText();
+    await autoplayToggle.focus();
+    await page.clock.fastForward(6000);
+    await expect(indexLabel).toHaveText(labelBeforeFocus);
+
+    await autoplayToggle.blur();
+    await page.clock.fastForward(6000);
+    await expect(indexLabel).not.toHaveText(labelBeforeFocus);
   });
 
   test('the explicit pause control persists after pointer movement and can resume playback', async ({ page }) => {
