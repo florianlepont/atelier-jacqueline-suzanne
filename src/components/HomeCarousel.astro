@@ -856,6 +856,15 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           dash.addEventListener('click', () => {
             const i = Number(dash.dataset.index);
             if (!Number.isNaN(i)) goToIndex(i);
+            // HOME-11 fallout fix: a mouse click on this <button> leaves it
+            // holding DOM focus in Chromium, which — now that hover no
+            // longer pauses/resumes (D-01) — would permanently freeze
+            // auto-advance via the focusin/focusout pair (D-02) until the
+            // user tabs elsewhere. `:focus-visible` distinguishes a real
+            // keyboard-driven focus (kept, so D-02's Tab-in pause still
+            // works) from this mouse-click focus (blurred immediately, so
+            // the timer resumes via `focusout`).
+            if (!dash.matches(':focus-visible')) dash.blur();
           });
         });
 
