@@ -11,8 +11,8 @@ A batch of 8 live-reported visual/interaction bugs and regressions across the ho
 
 ### Homepage
 
-- [ ] **HOME-11**: Visitor can keep the homepage carousel auto-advancing while hovering the pointer over the page — hovering no longer pauses it (the explicit pause/play toggle button is unaffected and still works)
-- [ ] **HOME-12**: Visitor sees the homepage's grid-mode intro paragraph in full, not truncated after 2 lines
+- [x] **HOME-11**: Visitor can keep the homepage carousel auto-advancing while hovering the pointer over the page — hovering no longer pauses it (the explicit pause/play toggle button is unaffected and still works)
+- [x] **HOME-12**: Visitor sees the homepage's grid-mode intro paragraph in full, not truncated after 2 lines
 
 ### Portfolio Galleries
 
@@ -122,8 +122,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| HOME-11 | Phase 17 | Pending |
-| HOME-12 | Phase 17 | Pending |
+| HOME-11 | Phase 17 | Complete |
+| HOME-12 | Phase 17 | Complete |
 | PORT-04 | Phase 18 | Pending |
 | PORT-05 | Phase 18 | Pending |
 | PORT-06 | Phase 18 | Pending |
