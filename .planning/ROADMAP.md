@@ -52,7 +52,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 15: About Page Editorial Redesign** - About page's title and broader layout adopt the shared PageTitleHeader editorial identity, via a sketch-explored layout redesign (completed 2026-07-29)
 - [x] **Phase 16: 404 Page Editorial Redesign** - The 404 fallback page gets a fully custom, interactive redesign: full-bleed photo backdrop popping at a pointer/touch-proximity-driven rate (capped ≈6.7/sec at dead-center, raised from the original ≈3/sec per an explicit, knowing user override at the plan 16-03 checkpoint), centered AJS logo/404 marker/bilingual message (revised from the original PageTitleHeader-reuse plan, per user direction 2026-07-29 — see `16-CONTEXT.md`) (completed 2026-07-29)
 - [x] **Phase 17: Homepage Carousel & Intro Fixes** - Auto-advance keeps running while the pointer hovers the page, and the grid-mode intro paragraph shows in full (completed 2026-08-02)
-- [ ] **Phase 18: Gallery & Éditions Display Fixes** - Gallery descriptions show in full, thumbnail grids lose their black border frame, and gallery pages show the site footer again
+- [x] **Phase 18: Gallery & Éditions Display Fixes** - Gallery descriptions show in full, thumbnail grids lose their black border frame, and gallery pages show the site footer again (completed 2026-08-02)
 - [ ] **Phase 19: Site-Wide Visual Polish** - Éditions row-hover color applies to the title/description too, the halftone texture bleeds to the true browser edge again without reintroducing horizontal scroll, and Contact's hover-fill text gets breathing room
 
 ## Phase Details
@@ -123,7 +123,7 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
   3. Éditions thumbnail tiles (sharing the same grid component) also display their photos without a black border/letterbox frame.
   4. Gallery detail pages show the site footer at the bottom of the page, in both French and English.
 
-**Plans**: 1/2 plans executed
+**Plans**: 2/2 plans complete
 
 Plans:
 **Wave 1**
@@ -132,7 +132,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 18-02-PLAN.md — Remove the 4-line clamp from the detail hero statement (PORT-04, D-01) and bound statement length at the source via an empirically-calibrated max-length rule in both duplicated Sanity localeTextField helpers (D-02/D-03)
+- [x] 18-02-PLAN.md — Remove the 4-line clamp from the detail hero statement (PORT-04, D-01) and bound statement length at the source via an empirically-calibrated max-length rule in both duplicated Sanity localeTextField helpers (D-02/D-03)
 
 **UI hint**: yes
 
@@ -177,7 +177,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 15. About Page Editorial Redesign | 4/4 | Complete    | 2026-07-29 |
 | 16. 404 Page Editorial Redesign | 3/3 | Complete    | 2026-07-29 |
 | 17. Homepage Carousel & Intro Fixes | 1/1 | Complete    | 2026-08-02 |
-| 18. Gallery & Éditions Display Fixes | 1/2 | In Progress|  |
+| 18. Gallery & Éditions Display Fixes | 2/2 | Complete   | 2026-08-02 |
 | 19. Site-Wide Visual Polish | 0/TBD | Not started | - |
 
 ## Milestone Scope Note
