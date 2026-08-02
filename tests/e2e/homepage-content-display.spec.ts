@@ -329,6 +329,64 @@ test.describe('homepage hero photo matches the gallery detail hero (landscape-pr
   });
 });
 
+test.describe('grid intro paragraph is not truncated (HOME-12)', () => {
+  // The intro copy is Sanity-authored (siteCopy.homepageIntro) and can
+  // change without a code deploy, so these assertions are structural only:
+  // no clamp, no overflow, and the paragraph must not spill past its
+  // .home-grid__tile--hero ancestor (which is aspect-ratio: 1/1 + overflow:
+  // hidden and can still clip an un-clamped paragraph even with the CSS
+  // clamp removed).
+  test('desktop (1280x800): full paragraph, no clamp, no clipping by the hero tile', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+
+    const intro = page.locator('.home-grid__intro-body');
+    await expect(intro).toHaveText(/.+/);
+
+    const geometry = await intro.evaluate((el) => {
+      const tile = el.closest('.home-grid__tile--hero');
+      return {
+        lineClamp: getComputedStyle(el).webkitLineClamp,
+        scrollHeight: el.scrollHeight,
+        clientHeight: el.clientHeight,
+        introBottom: el.getBoundingClientRect().bottom,
+        tileBottom: tile ? tile.getBoundingClientRect().bottom : null,
+      };
+    });
+
+    expect(geometry.lineClamp).toBe('none');
+    expect(geometry.scrollHeight).toBeLessThanOrEqual(geometry.clientHeight + 1);
+    expect(geometry.tileBottom).not.toBeNull();
+    expect(geometry.introBottom).toBeLessThanOrEqual(geometry.tileBottom! + 0.5);
+  });
+
+  test('mobile (375x812): full paragraph, no clamp, no clipping by the hero tile', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+
+    const intro = page.locator('.home-grid__intro-body');
+    await expect(intro).toHaveText(/.+/);
+
+    const geometry = await intro.evaluate((el) => {
+      const tile = el.closest('.home-grid__tile--hero');
+      return {
+        lineClamp: getComputedStyle(el).webkitLineClamp,
+        scrollHeight: el.scrollHeight,
+        clientHeight: el.clientHeight,
+        introBottom: el.getBoundingClientRect().bottom,
+        tileBottom: tile ? tile.getBoundingClientRect().bottom : null,
+      };
+    });
+
+    expect(geometry.lineClamp).toBe('none');
+    expect(geometry.scrollHeight).toBeLessThanOrEqual(geometry.clientHeight + 1);
+    expect(geometry.tileBottom).not.toBeNull();
+    expect(geometry.introBottom).toBeLessThanOrEqual(geometry.tileBottom! + 0.5);
+  });
+});
+
 test.describe('cross-document morph — click-time source name assignment (sketch 006)', () => {
   test('clicking the carousel title assigns hero-photo to the current slide\'s sharp photo', async ({ page }) => {
     await page.goto('/');
