@@ -229,3 +229,13 @@ None - no external service configuration required.
 ---
 *Phase: 18-gallery-ditions-display-fixes*
 *Completed: 2026-08-02*
+
+## Self-Check: PASSED
+
+- FOUND: src/components/DetailHero.astro
+- FOUND: sanity/schemas/gallery.ts
+- FOUND: sanity/schemas/edition.ts
+- FOUND: tests/e2e/gallery.spec.ts
+- FOUND: tests/unit/statement-length-limit.test.ts
+- FOUND: .planning/phases/18-gallery-ditions-display-fixes/18-02-SUMMARY.md
+- FOUND commits: e723606, e87fcc2, bd194d3, 59a48c7, 232bf73
