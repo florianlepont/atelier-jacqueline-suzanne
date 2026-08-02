@@ -123,7 +123,12 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
   3. Éditions thumbnail tiles (sharing the same grid component) also display their photos without a black border/letterbox frame.
   4. Gallery detail pages show the site footer at the bottom of the page, in both French and English.
 
-**Plans**: TBD
+**Plans**: 2 plans, 2 waves
+
+Plans:
+- [ ] 18-01-PLAN.md — Remove the thumbnail tile frame (PORT-05) and restore the site footer on both gallery detail routes (PORT-06), inverting the three e2e tests that locked footer absence
+- [ ] 18-02-PLAN.md — Remove the 4-line clamp from the detail hero statement (PORT-04, D-01) and bound statement length at the source via an empirically-calibrated max-length rule in both duplicated Sanity localeTextField helpers (D-02/D-03)
+
 **UI hint**: yes
 
 ### Phase 19: Site-Wide Visual Polish
