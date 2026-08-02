@@ -17,8 +17,8 @@ A batch of 8 live-reported visual/interaction bugs and regressions across the ho
 ### Portfolio Galleries
 
 - [ ] **PORT-04**: Visitor sees a gallery's full description/statement on its detail page, not cut off mid-sentence (currently clamped to 4 lines in `DetailHero`)
-- [ ] **PORT-05**: Visitor sees gallery and Éditions thumbnail images without a black border frame around them
-- [ ] **PORT-06**: Visitor sees the site footer on gallery pages (currently hidden via `hideFooter`; Éditions detail pages already show it correctly — no change needed there)
+- [x] **PORT-05**: Visitor sees gallery and Éditions thumbnail images without a black border frame around them
+- [x] **PORT-06**: Visitor sees the site footer on gallery pages (currently hidden via `hideFooter`; Éditions detail pages already show it correctly — no change needed there)
 
 ### Éditions
 
@@ -125,8 +125,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HOME-11 | Phase 17 | Complete |
 | HOME-12 | Phase 17 | Complete |
 | PORT-04 | Phase 18 | Pending |
-| PORT-05 | Phase 18 | Pending |
-| PORT-06 | Phase 18 | Pending |
+| PORT-05 | Phase 18 | Complete |
+| PORT-06 | Phase 18 | Complete |
 | EDN-09 | Phase 19 | Pending |
 | UI-01 | Phase 19 | Pending |
 | CONT-03 | Phase 19 | Pending |
