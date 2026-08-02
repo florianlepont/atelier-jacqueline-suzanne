@@ -21,14 +21,22 @@ function localeTextField(name: string, title: string, group?: string) {
         title: 'Français',
         type: 'text',
         rows: 5,
-        validation: (rule) => rule.required().error('Le texte français est obligatoire.'),
+        validation: (rule) =>
+          rule
+            .required()
+            .max(700)
+            .error('Le texte français est obligatoire et ne doit pas dépasser 700 caractères.'),
       }),
       defineField({
         name: 'en',
         title: 'Anglais',
         type: 'text',
         rows: 5,
-        validation: (rule) => rule.required().error('Le texte anglais est obligatoire.'),
+        validation: (rule) =>
+          rule
+            .required()
+            .max(700)
+            .error('Le texte anglais est obligatoire et ne doit pas dépasser 700 caractères.'),
       }),
     ],
   })
