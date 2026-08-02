@@ -204,7 +204,19 @@ if (layout === 'bento') {
     cursor: zoom-in;
     width: 100%;
     padding: 0;
-    border: var(--border-hairline) solid var(--color-ink);
+    /* PORT-05 (D-04): the frame declaration that used to live here
+       (`border: var(--border-hairline) solid var(--color-ink)`) is
+       deleted, not replaced with a visible frame. But `.tile` renders as a
+       native <button>, and every browser's UA stylesheet applies its own
+       default border (Chromium: 2px outset) to <button> elements absent
+       any author `border` declaration — verified empirically during this
+       task. `border: none;` is required to zero THAT native chrome, not to
+       reintroduce a frame; it matches the same reset already applied to
+       every other interactive button-styled element in this codebase
+       (DetailHero.astro, HomeCarousel.astro, BaseLayout.astro,
+       Lightbox.astro all declare `border: none;`/`border: 0;` for the
+       identical reason). */
+    border: none;
     background: var(--color-ink);
     /* Staggered scroll-reveal base state (sketch A2). Note: this transform
        is on `.tile` while the hover scale below is on `.tile img` — two

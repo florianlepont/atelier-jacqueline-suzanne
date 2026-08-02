@@ -761,16 +761,19 @@ test.describe('gallery detail scroll-up-to-return (Item 6, quick-260725-tqs)', (
   });
 });
 
-// quick-260726-ltr (Item 1): footer hidden on gallery detail pages only,
-// plus the safety_investigation's executable proof that the tqs
-// scroll-up-to-return hasEngaged gate (ENGAGE_DISTANCE = 300) stays
-// reachable regardless — the hero's own footer-independent
-// calc(100svh + 900px) desktop track is the source of that scroll room, not
-// the footer or the grid below it.
-test.describe('gallery detail footer-hidden scoping + scroll-track safety (quick-260726-ltr, Item 1)', () => {
+// PORT-06 (D-06) REVERSES quick-260726-ltr Item 1 (2026-07-26) on direct
+// user instruction: the footer that block deliberately hid on gallery
+// detail pages now renders again, exactly as it always has on édition
+// detail pages. Do not "fix" this back — the reversal is intentional. The
+// >= 300px desktop scroll-track assertion is retained because DetailHero's
+// ENGAGE_DISTANCE=300 scroll-up-to-return gate still depends on that room
+// being reachable; restoring the footer only ADDS page height below the
+// hero's own footer-independent calc(100svh + 900px) track, so this
+// assertion can only get safer, never worse.
+test.describe('gallery detail footer restored + scroll-track safety (PORT-06, reverses quick-260726-ltr Item 1)', () => {
   test.use({ viewport: { width: 1280, height: 900 } });
 
-  test('fr: footer is absent on the gallery detail page, and the desktop scroll track is still >= 300px', async ({
+  test('fr: footer is present on the gallery detail page, and the desktop scroll track is still >= 300px', async ({
     page,
   }) => {
     await page.goto('/');
@@ -780,13 +783,13 @@ test.describe('gallery detail footer-hidden scoping + scroll-track safety (quick
 
     await page.goto(firstTileHref!);
 
-    await expect(page.locator('footer.chrome-band')).toHaveCount(0);
+    await expect(page.locator('footer.chrome-band')).toHaveCount(1);
 
     const track = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
     expect(track).toBeGreaterThanOrEqual(300);
   });
 
-  test('en: footer is absent on the gallery detail page', async ({ page }) => {
+  test('en: footer is present on the gallery detail page', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
     const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
@@ -797,10 +800,10 @@ test.describe('gallery detail footer-hidden scoping + scroll-track safety (quick
     expect(slug).toBeTruthy();
 
     await page.goto(`/en/galleries/${slug}/`);
-    await expect(page.locator('footer.chrome-band')).toHaveCount(0);
+    await expect(page.locator('footer.chrome-band')).toHaveCount(1);
   });
 
-  test('scoping: footer is still present on an édition detail page', async ({ page }) => {
+  test('no regression: footer is still present on an édition detail page', async ({ page }) => {
     await page.goto('/editions/');
     const tileHref = await page.locator('.editions-index__row').first().getAttribute('href');
     expect(tileHref).toBeTruthy();
@@ -907,5 +910,94 @@ test.describe('cross-document view-transition name gating — mobile (sketch 006
     await expect(heroImg).toBeVisible();
     const heroName = await heroImg.evaluate((el) => getComputedStyle(el).viewTransitionName);
     expect(heroName).toBe('none');
+  });
+});
+
+// PORT-05 / D-04 / D-05: the shared `.tile` base rule in GalleryGrid.astro
+// previously carried a visible frame declaration. CONTEXT.md D-04's original
+// analysis wrongly assumed only the bento layout is live; verified during
+// planning, gallery detail pages actually render GalleryGrid in MASONRY mode
+// (`object-fit: contain`) while édition detail pages render it in the
+// default BENTO mode (`object-fit: cover`) — both modes share the same
+// `.tile` base rule, but apply different `object-fit` treatments to
+// `.tile img`, so both must be verified independently.
+test.describe('gallery + édition thumbnail tiles render with no frame (PORT-05, D-04/D-05)', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test('gallery detail (masonry): every tile has 0px borders, keeps the ink loading background, and never letterboxes', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    expect(firstTileHref).toBeTruthy();
+
+    await page.goto(firstTileHref!);
+
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    const tiles = page.locator('.gallery-grid .tile');
+    await expect(tiles.first()).toBeVisible();
+
+    const tileCount = await tiles.count();
+    expect(tileCount).toBeGreaterThan(0);
+
+    const borderWidths = await tiles.evaluateAll((els) =>
+      els.map((el) => {
+        const style = getComputedStyle(el);
+        return [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth];
+      }),
+    );
+    for (const widths of borderWidths) {
+      for (const width of widths) {
+        expect(width).toBe('0px');
+      }
+    }
+
+    const firstTileBackground = await tiles.first().evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(firstTileBackground).toBe('rgb(26, 26, 26)');
+
+    const firstTileImg = tiles.first().locator('img');
+    const objectFit = await firstTileImg.evaluate((el) => getComputedStyle(el).objectFit);
+    expect(objectFit).toBe('contain');
+
+    const ratios = await firstTileImg.evaluate((el) => {
+      const img = el as HTMLImageElement;
+      return {
+        clientRatio: img.clientWidth / img.clientHeight,
+        naturalRatio: img.naturalWidth / img.naturalHeight,
+      };
+    });
+    expect(Math.abs(ratios.clientRatio - ratios.naturalRatio) / ratios.naturalRatio).toBeLessThan(0.01);
+  });
+
+  test('édition detail (bento): every tile has 0px borders and object-fit: cover', async ({ page }) => {
+    await page.goto('/editions/');
+    const tileHref = await page.locator('.editions-index__row').first().getAttribute('href');
+    expect(tileHref).toBeTruthy();
+
+    await page.goto(tileHref!);
+
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    const tiles = page.locator('.gallery-grid .tile');
+    await expect(tiles.first()).toBeVisible();
+
+    const tileCount = await tiles.count();
+    expect(tileCount).toBeGreaterThan(0);
+
+    const borderWidths = await tiles.evaluateAll((els) =>
+      els.map((el) => {
+        const style = getComputedStyle(el);
+        return [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth];
+      }),
+    );
+    for (const widths of borderWidths) {
+      for (const width of widths) {
+        expect(width).toBe('0px');
+      }
+    }
+
+    const firstTileImg = tiles.first().locator('img');
+    const objectFit = await firstTileImg.evaluate((el) => getComputedStyle(el).objectFit);
+    expect(objectFit).toBe('cover');
   });
 });
