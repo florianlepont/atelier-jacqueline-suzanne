@@ -107,11 +107,13 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 **v1.4 (404 Page Editorial Redesign — Phase 16, shipped 2026-07-29):**
 - [x] 404 page gets a fully custom, interactive redesign — full-bleed photo backdrop hard-cutting at a pointer/touch-proximity-driven rate (capped, finite ceiling), AJS logo + "404" marker + bilingual message over a dimming scrim, `prefers-reduced-motion` drift fallback — ERR-01, Phase 16
 
+**v1.5 (Homepage Carousel & Intro Fixes — Phase 17, shipped 2026-08-02):**
+- [x] Visitor can keep the homepage carousel auto-advancing while hovering over the page — pointer-hover pause removed, keyboard-focus pause and the manual toggle preserved unchanged — HOME-11, Phase 17
+- [x] Visitor sees the homepage's grid-mode intro paragraph in full, not cut off after 2 lines — line-clamp removed entirely, no substitute cap — HOME-12, Phase 17
+
 ### Active
 
 **v1.5 (Global Improvements & Bug Fixes, this milestone):**
-- [ ] Visitor can keep the homepage carousel auto-advancing while hovering over the page (manual pause/play toggle unaffected) — HOME-11
-- [ ] Visitor sees the homepage's grid-mode intro paragraph in full, not cut off after 2 lines — HOME-12
 - [ ] Visitor sees a gallery's full description on its detail page, not cut off mid-sentence — PORT-04
 - [ ] Visitor sees gallery and Éditions thumbnail images without a black border frame — PORT-05
 - [ ] Visitor sees the site footer on gallery pages — PORT-06
@@ -205,4 +207,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-02 — v1.5 "Global Improvements & Bug Fixes" started: 8 live-reported bugs/regressions scoped (HOME-11/12, PORT-04/05/06, EDN-09, UI-01, CONT-03).*
+*Last updated: 2026-08-02 — Phase 17 (Homepage Carousel & Intro Fixes) complete: HOME-11/HOME-12 validated and moved out of Active. 6 of 8 v1.5 requirements remain: PORT-04/05/06, EDN-09, UI-01, CONT-03.*
