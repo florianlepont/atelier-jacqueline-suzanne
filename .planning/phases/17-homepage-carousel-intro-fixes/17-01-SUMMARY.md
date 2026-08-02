@@ -203,3 +203,14 @@ All 5 checks (4 listed steps, with step 2 split into pause+resume sub-checks rep
 ---
 *Phase: 17-homepage-carousel-intro-fixes*
 *Completed: 2026-08-02*
+
+## Self-Check: PASSED
+
+- FOUND: `src/components/HomeCarousel.astro`
+- FOUND: `tests/e2e/homepage-carousel-core.spec.ts`
+- FOUND: `tests/e2e/homepage-content-display.spec.ts`
+- FOUND: `.planning/phases/17-homepage-carousel-intro-fixes/17-01-SUMMARY.md`
+- FOUND commit `c52b90c` (Task 1)
+- FOUND commit `8732c97` (Task 2)
+- FOUND commit `ce788d5` (Task 3)
+- FOUND commit `d98136d` (SUMMARY)
