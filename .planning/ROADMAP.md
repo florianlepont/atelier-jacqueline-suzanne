@@ -126,7 +126,12 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
 **Plans**: 2 plans, 2 waves
 
 Plans:
+**Wave 1**
+
 - [ ] 18-01-PLAN.md — Remove the thumbnail tile frame (PORT-05) and restore the site footer on both gallery detail routes (PORT-06), inverting the three e2e tests that locked footer absence
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 18-02-PLAN.md — Remove the 4-line clamp from the detail hero statement (PORT-04, D-01) and bound statement length at the source via an empirically-calibrated max-length rule in both duplicated Sanity localeTextField helpers (D-02/D-03)
 
 **UI hint**: yes
