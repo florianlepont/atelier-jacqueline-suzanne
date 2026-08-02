@@ -761,16 +761,19 @@ test.describe('gallery detail scroll-up-to-return (Item 6, quick-260725-tqs)', (
   });
 });
 
-// quick-260726-ltr (Item 1): footer hidden on gallery detail pages only,
-// plus the safety_investigation's executable proof that the tqs
-// scroll-up-to-return hasEngaged gate (ENGAGE_DISTANCE = 300) stays
-// reachable regardless — the hero's own footer-independent
-// calc(100svh + 900px) desktop track is the source of that scroll room, not
-// the footer or the grid below it.
-test.describe('gallery detail footer-hidden scoping + scroll-track safety (quick-260726-ltr, Item 1)', () => {
+// PORT-06 (D-06) REVERSES quick-260726-ltr Item 1 (2026-07-26) on direct
+// user instruction: the footer that block deliberately hid on gallery
+// detail pages now renders again, exactly as it always has on édition
+// detail pages. Do not "fix" this back — the reversal is intentional. The
+// >= 300px desktop scroll-track assertion is retained because DetailHero's
+// ENGAGE_DISTANCE=300 scroll-up-to-return gate still depends on that room
+// being reachable; restoring the footer only ADDS page height below the
+// hero's own footer-independent calc(100svh + 900px) track, so this
+// assertion can only get safer, never worse.
+test.describe('gallery detail footer restored + scroll-track safety (PORT-06, reverses quick-260726-ltr Item 1)', () => {
   test.use({ viewport: { width: 1280, height: 900 } });
 
-  test('fr: footer is absent on the gallery detail page, and the desktop scroll track is still >= 300px', async ({
+  test('fr: footer is present on the gallery detail page, and the desktop scroll track is still >= 300px', async ({
     page,
   }) => {
     await page.goto('/');
@@ -780,13 +783,13 @@ test.describe('gallery detail footer-hidden scoping + scroll-track safety (quick
 
     await page.goto(firstTileHref!);
 
-    await expect(page.locator('footer.chrome-band')).toHaveCount(0);
+    await expect(page.locator('footer.chrome-band')).toHaveCount(1);
 
     const track = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
     expect(track).toBeGreaterThanOrEqual(300);
   });
 
-  test('en: footer is absent on the gallery detail page', async ({ page }) => {
+  test('en: footer is present on the gallery detail page', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
     const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
@@ -797,10 +800,10 @@ test.describe('gallery detail footer-hidden scoping + scroll-track safety (quick
     expect(slug).toBeTruthy();
 
     await page.goto(`/en/galleries/${slug}/`);
-    await expect(page.locator('footer.chrome-band')).toHaveCount(0);
+    await expect(page.locator('footer.chrome-band')).toHaveCount(1);
   });
 
-  test('scoping: footer is still present on an édition detail page', async ({ page }) => {
+  test('no regression: footer is still present on an édition detail page', async ({ page }) => {
     await page.goto('/editions/');
     const tileHref = await page.locator('.editions-index__row').first().getAttribute('href');
     expect(tileHref).toBeTruthy();
