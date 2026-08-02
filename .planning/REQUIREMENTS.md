@@ -122,24 +122,24 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| HOME-11 | TBD | Pending |
-| HOME-12 | TBD | Pending |
-| PORT-04 | TBD | Pending |
-| PORT-05 | TBD | Pending |
-| PORT-06 | TBD | Pending |
-| EDN-09 | TBD | Pending |
-| UI-01 | TBD | Pending |
-| CONT-03 | TBD | Pending |
+| HOME-11 | Phase 17 | Pending |
+| HOME-12 | Phase 17 | Pending |
+| PORT-04 | Phase 18 | Pending |
+| PORT-05 | Phase 18 | Pending |
+| PORT-06 | Phase 18 | Pending |
+| EDN-09 | Phase 19 | Pending |
+| UI-01 | Phase 19 | Pending |
+| CONT-03 | Phase 19 | Pending |
 | LAUNCH-01 | Phase 5 | Pending |
 
 **Coverage:**
 
 - v1.5 requirements: 8 total (HOME-11, HOME-12, PORT-04, PORT-05, PORT-06, EDN-09, UI-01, CONT-03)
-- Mapped to phases: 0/8 — filled in by roadmap creation
+- Mapped to phases: 8/8 ✓ (Phase 17: HOME-11, HOME-12 — Phase 18: PORT-04, PORT-05, PORT-06 — Phase 19: EDN-09, UI-01, CONT-03)
 - Carried-forward requirements: 1 total (LAUNCH-01)
 - Mapped to phases: 1/1 ✓ (Phase 5, not started)
 - v2 (v1.x fast-follow) requirements: 18 tracked, not yet in roadmap (out of scope for this roadmap by design)
 
 ---
 *Requirements defined: 2026-08-02*
-*Last updated: 2026-08-02 — initial v1.5 definition, 8 requirements scoped from a live user bug report with screenshots.*
+*Last updated: 2026-08-02 — ROADMAP.md created: 8 v1.5 requirements mapped to 3 phases (17-19), 100% coverage confirmed.*
