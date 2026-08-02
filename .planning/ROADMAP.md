@@ -123,12 +123,12 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
   3. Éditions thumbnail tiles (sharing the same grid component) also display their photos without a black border/letterbox frame.
   4. Gallery detail pages show the site footer at the bottom of the page, in both French and English.
 
-**Plans**: 2 plans, 2 waves
+**Plans**: 1/2 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 18-01-PLAN.md — Remove the thumbnail tile frame (PORT-05) and restore the site footer on both gallery detail routes (PORT-06), inverting the three e2e tests that locked footer absence
+- [x] 18-01-PLAN.md — Remove the thumbnail tile frame (PORT-05) and restore the site footer on both gallery detail routes (PORT-06), inverting the three e2e tests that locked footer absence
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -177,7 +177,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 15. About Page Editorial Redesign | 4/4 | Complete    | 2026-07-29 |
 | 16. 404 Page Editorial Redesign | 3/3 | Complete    | 2026-07-29 |
 | 17. Homepage Carousel & Intro Fixes | 1/1 | Complete    | 2026-08-02 |
-| 18. Gallery & Éditions Display Fixes | 0/TBD | Not started | - |
+| 18. Gallery & Éditions Display Fixes | 1/2 | In Progress|  |
 | 19. Site-Wide Visual Polish | 0/TBD | Not started | - |
 
 ## Milestone Scope Note
