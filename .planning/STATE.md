@@ -2,11 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Global Improvements & Bug Fixes
+current_phase: 17
+current_phase_name: Homepage Carousel & Intro Fixes
 status: planning
-last_updated: "2026-08-02T12:00:00.000Z"
+stopped_at: Phase 17 context gathered
+last_updated: "2026-08-02T11:31:03.139Z"
 last_activity: 2026-08-02
+last_activity_desc: "ROADMAP.md created: 8 v1.5 requirements mapped to 3 phases (17 Homepage Carousel & Intro Fixes, 18 Gallery & Éditions Display Fixes, 19 Site-Wide Visual Polish), 100% coverage confirmed"
 progress:
-  total_phases: 3
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -265,9 +269,9 @@ Items acknowledged and deferred at v1.4 milestone close on 2026-08-01 (`/gsd-com
 
 ## Session Continuity
 
-Last session: 2026-07-29T15:19:54.000Z
-Stopped at: Phase 16 complete (16-01/16-02/16-03 all merged); v1.4 milestone complete
-Resume file: .planning/phases/16-404-page-editorial-redesign/16-03-SUMMARY.md
+Last session: 2026-08-02T11:31:03.123Z
+Stopped at: Phase 17 context gathered
+Resume file: .planning/phases/17-homepage-carousel-intro-fixes/17-CONTEXT.md
 
 **Next up:** v1.4 milestone (Editorial Design Consistency — Phase 15 About + Phase 16 404) is fully shipped. Phase 5 (Launch & Domain Cutover) remains open and deliberately deferred whenever launch is next prioritized. The pre-existing `/about/` mobile-header overflow regression (Phase 15, logged in `.planning/phases/16-404-page-editorial-redesign/deferred-items.md`) is still open and recommended as a follow-up quick task before or alongside launch.
 
