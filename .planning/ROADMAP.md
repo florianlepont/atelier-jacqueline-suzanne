@@ -166,7 +166,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 14. Verification & UAT | 4/4 | Complete    | 2026-07-23 |
 | 15. About Page Editorial Redesign | 4/4 | Complete    | 2026-07-29 |
 | 16. 404 Page Editorial Redesign | 3/3 | Complete    | 2026-07-29 |
-| 17. Homepage Carousel & Intro Fixes | 1/1 | Complete   | 2026-08-02 |
+| 17. Homepage Carousel & Intro Fixes | 1/1 | Complete    | 2026-08-02 |
 | 18. Gallery & Éditions Display Fixes | 0/TBD | Not started | - |
 | 19. Site-Wide Visual Polish | 0/TBD | Not started | - |
 

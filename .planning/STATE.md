@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Global Improvements & Bug Fixes
-current_phase: 17
-current_phase_name: Homepage Carousel & Intro Fixes
+current_phase: 18
+current_phase_name: Gallery & Éditions Display Fixes
 status: executing
 stopped_at: Phase 17 context gathered
-last_updated: "2026-08-02T11:59:17.207Z"
+last_updated: "2026-08-02T16:24:00.946Z"
 last_activity: 2026-08-02
-last_activity_desc: Phase 17 execution started
+last_activity_desc: Phase 17 complete, transitioned to Phase 18
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 1
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 25
 ---
 
 # Project State
@@ -28,16 +28,16 @@ See: .planning/PROJECT.md (updated 2026-07-22)
 
 ## Current Position
 
-Phase: 17 (Homepage Carousel & Intro Fixes) — EXECUTING
-Plan: 1 of 1
+Phase: 18 — Gallery & Éditions Display Fixes
+Plan: Not started
 Status: Executing Phase 17
-Last activity: 2026-08-02 — Phase 17 execution started
+Last activity: 2026-08-02 — Phase 17 complete, transitioned to Phase 18
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 36
+- Total plans completed: 37
 - Average duration: - min
 - Total execution time: 0 hours
 
@@ -57,6 +57,7 @@ Last activity: 2026-08-02 — Phase 17 execution started
 | 13 | 2 | - | - |
 | 14 | 4 | - | - |
 | 15 | 4 | - | - |
+| 17 | 1 | - | - |
 
 **Recent Trend:**
 
