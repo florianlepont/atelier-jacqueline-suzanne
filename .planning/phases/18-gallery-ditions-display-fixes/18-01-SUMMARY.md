@@ -166,3 +166,13 @@ None - no external service configuration required.
 ---
 *Phase: 18-gallery-ditions-display-fixes*
 *Completed: 2026-08-02*
+
+## Self-Check: PASSED
+
+- FOUND: src/components/GalleryGrid.astro
+- FOUND: src/pages/galleries/[slug].astro
+- FOUND: src/pages/en/galleries/[slug].astro
+- FOUND: tests/e2e/gallery.spec.ts
+- FOUND: .planning/phases/18-gallery-ditions-display-fixes/18-01-SUMMARY.md
+- FOUND: .planning/phases/18-gallery-ditions-display-fixes/deferred-items.md
+- FOUND commits: f5dc96d, 8005dc9, 131eb12, c593afb, 0a219de
