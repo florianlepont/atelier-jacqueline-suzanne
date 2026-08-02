@@ -909,3 +909,92 @@ test.describe('cross-document view-transition name gating — mobile (sketch 006
     expect(heroName).toBe('none');
   });
 });
+
+// PORT-05 / D-04 / D-05: the shared `.tile` base rule in GalleryGrid.astro
+// previously carried a visible frame declaration. CONTEXT.md D-04's original
+// analysis wrongly assumed only the bento layout is live; verified during
+// planning, gallery detail pages actually render GalleryGrid in MASONRY mode
+// (`object-fit: contain`) while édition detail pages render it in the
+// default BENTO mode (`object-fit: cover`) — both modes share the same
+// `.tile` base rule, but apply different `object-fit` treatments to
+// `.tile img`, so both must be verified independently.
+test.describe('gallery + édition thumbnail tiles render with no frame (PORT-05, D-04/D-05)', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test('gallery detail (masonry): every tile has 0px borders, keeps the ink loading background, and never letterboxes', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    expect(firstTileHref).toBeTruthy();
+
+    await page.goto(firstTileHref!);
+
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    const tiles = page.locator('.gallery-grid .tile');
+    await expect(tiles.first()).toBeVisible();
+
+    const tileCount = await tiles.count();
+    expect(tileCount).toBeGreaterThan(0);
+
+    const borderWidths = await tiles.evaluateAll((els) =>
+      els.map((el) => {
+        const style = getComputedStyle(el);
+        return [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth];
+      }),
+    );
+    for (const widths of borderWidths) {
+      for (const width of widths) {
+        expect(width).toBe('0px');
+      }
+    }
+
+    const firstTileBackground = await tiles.first().evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(firstTileBackground).toBe('rgb(26, 26, 26)');
+
+    const firstTileImg = tiles.first().locator('img');
+    const objectFit = await firstTileImg.evaluate((el) => getComputedStyle(el).objectFit);
+    expect(objectFit).toBe('contain');
+
+    const ratios = await firstTileImg.evaluate((el) => {
+      const img = el as HTMLImageElement;
+      return {
+        clientRatio: img.clientWidth / img.clientHeight,
+        naturalRatio: img.naturalWidth / img.naturalHeight,
+      };
+    });
+    expect(Math.abs(ratios.clientRatio - ratios.naturalRatio) / ratios.naturalRatio).toBeLessThan(0.01);
+  });
+
+  test('édition detail (bento): every tile has 0px borders and object-fit: cover', async ({ page }) => {
+    await page.goto('/editions/');
+    const tileHref = await page.locator('.editions-index__row').first().getAttribute('href');
+    expect(tileHref).toBeTruthy();
+
+    await page.goto(tileHref!);
+
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    const tiles = page.locator('.gallery-grid .tile');
+    await expect(tiles.first()).toBeVisible();
+
+    const tileCount = await tiles.count();
+    expect(tileCount).toBeGreaterThan(0);
+
+    const borderWidths = await tiles.evaluateAll((els) =>
+      els.map((el) => {
+        const style = getComputedStyle(el);
+        return [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth];
+      }),
+    );
+    for (const widths of borderWidths) {
+      for (const width of widths) {
+        expect(width).toBe('0px');
+      }
+    }
+
+    const firstTileImg = tiles.first().locator('img');
+    const objectFit = await firstTileImg.evaluate((el) => getComputedStyle(el).objectFit);
+    expect(objectFit).toBe('cover');
+  });
+});
