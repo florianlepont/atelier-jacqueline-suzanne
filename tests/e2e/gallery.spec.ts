@@ -1001,3 +1001,142 @@ test.describe('gallery + édition thumbnail tiles render with no frame (PORT-05,
     expect(objectFit).toBe('cover');
   });
 });
+
+// PORT-04 (D-01): the 4-line CSS clamp on `.detail-hero__statement` is
+// removed entirely, with no substitute cap (following Phase 17 HOME-12's
+// precedent). Because DetailHero is a fixed-height, `overflow: hidden`
+// sticky panel (unlike HOME-12's freely-growing grid tile), the un-clamped
+// statement must be proven to neither self-clip NOR escape
+// `.detail-hero__pin`'s clipped bounds, across EVERY published gallery, at
+// both the project's tested desktop and mobile viewports. Looping every
+// gallery (not just the first) is deliberate: the clamp only visibly bit on
+// the longest statement, and hardcoding today's longest slug would silently
+// stop testing anything the moment content changes. The real overflow
+// defence is now the Sanity `.max(N)` schema validation (Task 3 of this
+// plan), not a CSS cap.
+test.describe('gallery detail hero statement renders in full, no clamp, no clipping (PORT-04, D-01)', () => {
+  async function discoverGalleryHrefs(page: import('@playwright/test').Page) {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const hrefs = await page.locator('a.home-grid__tile').evaluateAll((els) =>
+      els.map((el) => el.getAttribute('href')).filter((href): href is string => Boolean(href)),
+    );
+    expect(hrefs.length).toBeGreaterThan(0);
+    return hrefs;
+  }
+
+  async function measureStatement(page: import('@playwright/test').Page) {
+    const statement = page.locator('.detail-hero__statement');
+    if ((await statement.count()) === 0) return null;
+    await statement.waitFor({ state: 'attached' });
+
+    let measurement = await page.evaluate(() => {
+      const statementEl = document.querySelector('.detail-hero__statement');
+      const revealEl = document.querySelector('.detail-hero__reveal');
+      const pinEl = document.querySelector('.detail-hero__pin');
+      if (!statementEl || !revealEl || !pinEl) return null;
+      const statementStyle = getComputedStyle(statementEl);
+      const revealRect = revealEl.getBoundingClientRect();
+      const pinRect = pinEl.getBoundingClientRect();
+      return {
+        webkitLineClamp: statementStyle.webkitLineClamp,
+        scrollHeight: statementEl.scrollHeight,
+        clientHeight: statementEl.clientHeight,
+        textContent: statementEl.textContent ?? '',
+        revealTop: revealRect.top,
+        revealBottom: revealRect.bottom,
+        revealHeight: revealRect.height,
+        pinTop: pinRect.top,
+        pinBottom: pinRect.bottom,
+      };
+    });
+
+    // Desktop: the reveal starts at opacity: 0 and is animated in by the
+    // scroll-driven reveal script. Opacity doesn't affect
+    // getBoundingClientRect()/scrollHeight, but if the reveal measures as a
+    // zero-size rect (not yet laid out/visible), scroll down and re-measure
+    // rather than forcing styles.
+    if (measurement && measurement.revealHeight === 0) {
+      await page.evaluate(() => window.scrollTo(0, 400));
+      await page.waitForTimeout(150);
+      measurement = await page.evaluate(() => {
+        const statementEl = document.querySelector('.detail-hero__statement');
+        const revealEl = document.querySelector('.detail-hero__reveal');
+        const pinEl = document.querySelector('.detail-hero__pin');
+        if (!statementEl || !revealEl || !pinEl) return null;
+        const statementStyle = getComputedStyle(statementEl);
+        const revealRect = revealEl.getBoundingClientRect();
+        const pinRect = pinEl.getBoundingClientRect();
+        return {
+          webkitLineClamp: statementStyle.webkitLineClamp,
+          scrollHeight: statementEl.scrollHeight,
+          clientHeight: statementEl.clientHeight,
+          textContent: statementEl.textContent ?? '',
+          revealTop: revealRect.top,
+          revealBottom: revealRect.bottom,
+          revealHeight: revealRect.height,
+          pinTop: pinRect.top,
+          pinBottom: pinRect.bottom,
+        };
+      });
+    }
+
+    return measurement;
+  }
+
+  test('desktop (1280x900): no clamp, no self-clip, reveal stays inside the pin, for every published gallery', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const hrefs = await discoverGalleryHrefs(page);
+
+    for (const href of hrefs) {
+      await page.goto(href);
+      const measurement = await measureStatement(page);
+      if (!measurement) continue; // statement element is conditionally rendered
+
+      expect(measurement.webkitLineClamp, `${href}: webkitLineClamp`).toBe('none');
+      expect(
+        measurement.scrollHeight <= measurement.clientHeight,
+        `${href}: scrollHeight (${measurement.scrollHeight}) <= clientHeight (${measurement.clientHeight})`,
+      ).toBe(true);
+      expect(
+        measurement.revealTop >= measurement.pinTop - 1,
+        `${href}: reveal top (${measurement.revealTop}) >= pin top (${measurement.pinTop}) - 1`,
+      ).toBe(true);
+      expect(
+        measurement.revealBottom <= measurement.pinBottom + 1,
+        `${href}: reveal bottom (${measurement.revealBottom}) <= pin bottom (${measurement.pinBottom}) + 1`,
+      ).toBe(true);
+      expect(measurement.textContent, `${href}: no ellipsis character`).not.toContain('…');
+    }
+  });
+
+  test('mobile (390x844): no clamp, no self-clip, reveal stays inside the pin, for every published gallery', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const hrefs = await discoverGalleryHrefs(page);
+
+    for (const href of hrefs) {
+      await page.goto(href);
+      const measurement = await measureStatement(page);
+      if (!measurement) continue; // statement element is conditionally rendered
+
+      expect(measurement.webkitLineClamp, `${href}: webkitLineClamp`).toBe('none');
+      expect(
+        measurement.scrollHeight <= measurement.clientHeight,
+        `${href}: scrollHeight (${measurement.scrollHeight}) <= clientHeight (${measurement.clientHeight})`,
+      ).toBe(true);
+      expect(
+        measurement.revealTop >= measurement.pinTop - 1,
+        `${href}: reveal top (${measurement.revealTop}) >= pin top (${measurement.pinTop}) - 1`,
+      ).toBe(true);
+      expect(
+        measurement.revealBottom <= measurement.pinBottom + 1,
+        `${href}: reveal bottom (${measurement.revealBottom}) <= pin bottom (${measurement.pinBottom}) + 1`,
+      ).toBe(true);
+      expect(measurement.textContent, `${href}: no ellipsis character`).not.toContain('…');
+    }
+  });
+});
