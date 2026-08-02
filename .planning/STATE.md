@@ -5,8 +5,8 @@ milestone_name: Global Improvements & Bug Fixes
 current_phase: 18
 current_phase_name: Gallery & Éditions Display Fixes
 status: executing
-stopped_at: Phase 17 context gathered
-last_updated: "2026-08-02T16:24:00.946Z"
+stopped_at: Phase 18 context gathered
+last_updated: "2026-08-02T16:43:12.025Z"
 last_activity: 2026-08-02
 last_activity_desc: Phase 17 complete, transitioned to Phase 18
 progress:
@@ -270,9 +270,9 @@ Items acknowledged and deferred at v1.4 milestone close on 2026-08-01 (`/gsd-com
 
 ## Session Continuity
 
-Last session: 2026-08-02T11:31:03.123Z
-Stopped at: Phase 17 context gathered
-Resume file: .planning/phases/17-homepage-carousel-intro-fixes/17-CONTEXT.md
+Last session: 2026-08-02T16:43:12.011Z
+Stopped at: Phase 18 context gathered
+Resume file: .planning/phases/18-gallery-ditions-display-fixes/18-CONTEXT.md
 
 **Next up:** v1.4 milestone (Editorial Design Consistency — Phase 15 About + Phase 16 404) is fully shipped. Phase 5 (Launch & Domain Cutover) remains open and deliberately deferred whenever launch is next prioritized. The pre-existing `/about/` mobile-header overflow regression (Phase 15, logged in `.planning/phases/16-404-page-editorial-redesign/deferred-items.md`) is still open and recommended as a follow-up quick task before or alongside launch.
 
