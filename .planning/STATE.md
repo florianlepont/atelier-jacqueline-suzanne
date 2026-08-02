@@ -1,20 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.4
-milestone_name: Editorial Design Consistency
-current_phase: 4
-status: Awaiting next milestone
-stopped_at: Phase 16 complete (16-01/16-02/16-03 all merged); v1.4 milestone complete
-last_updated: "2026-08-01T20:35:00.763Z"
-last_activity: 2026-08-01
-last_activity_desc: Milestone v1.4 completed and archived
+milestone: v1.5
+milestone_name: Global Improvements & Bug Fixes
+status: planning
+last_updated: "2026-08-02T09:53:31.718Z"
+last_activity: 2026-08-02
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 7
-  completed_plans: 7
-  percent: 100
-current_phase_name: 404 Page Editorial Redesign
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -28,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-07-22)
 
 ## Current Position
 
-Phase: Milestone v1.4 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-08-01 — Milestone v1.4 completed and archived
+Status: Defining requirements
+Last activity: 2026-08-02 — Milestone v1.5 started
 
 ## Performance Metrics
 

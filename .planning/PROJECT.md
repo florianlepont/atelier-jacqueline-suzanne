@@ -8,13 +8,21 @@ A bilingual (French/English) website for Romane Lepont's photography and artisti
 
 Visitors can browse Romane's photographic work and buy a piece (print, original, book, or merch) through a real, working checkout — everything else supports that. **Delivered in two milestones**: v1 replaces the current site fast with portfolio/about/contact so the old Myportfolio site can be retired sooner; v1.x adds exhibitions, the shop, and checkout on top of that foundation.
 
-## Current Milestone: Awaiting next milestone
+## Current Milestone: v1.5 Global Improvements & Bug Fixes
 
-v1.4 Editorial Design Consistency shipped 2026-08-01 (see `.planning/MILESTONES.md`). No milestone is currently active — run `/gsd-new-milestone` to scope the next one.
+**Goal:** Clear a batch of 8 live-reported visual/interaction bugs and regressions across the homepage, gallery pages, the Éditions page, and Contact — most surfaced directly by Romane/Florian using the shipped v1.4 site, one a direct regression from Phase 16's post-merge overflow fix.
 
-**Open, not part of any shipped or active milestone:**
-- Phase 5 (Launch & Domain Cutover) — LAUNCH-01, deliberately deferred since 2026-07-27, the only remaining v1.0 MVP phase.
-- v1.x candidates (Exhibitions, Shop, Checkout, Shipping, commerce Legal, Éditions↔Portfolio cross-link) — tracked in REQUIREMENTS.md's v2 section, not yet roadmapped.
+**Target features:**
+- Homepage carousel no longer pauses its auto-advance when the pointer merely hovers the page (manual pause/play toggle unaffected)
+- Homepage grid-mode intro paragraph displays in full, not truncated to 2 lines
+- Gallery detail page's description text is no longer awkwardly truncated mid-sentence
+- Gallery and Éditions thumbnail grids show photos without a black border frame
+- Gallery pages show the site footer again (Éditions detail pages already do — no change needed there)
+- Éditions overview page's title/description text follow the same row-hover accent color as the eyebrow/divider (currently don't — a real regression)
+- Halftone dot-texture on Contact/About/Éditions bleeds to the true browser edge again, without reintroducing the horizontal-scroll bug the Phase 16 fix was containing
+- Contact page's E-mail/Instagram link rows get horizontal margin so text doesn't touch the edges during the hover black-fill effect
+
+**Note:** Phase 5 (Launch & Domain Cutover) and the v1.x wave (Exhibitions, Shop, Checkout, Shipping, commerce Legal, Éditions↔Portfolio cross-link) remain open and deliberately deferred, not part of this milestone.
 
 <details>
 <summary>Archived: v1.4 Editorial Design Consistency milestone brief (shipped 2026-08-01)</summary>
@@ -100,6 +108,16 @@ v1.4 Editorial Design Consistency shipped 2026-08-01 (see `.planning/MILESTONES.
 - [x] 404 page gets a fully custom, interactive redesign — full-bleed photo backdrop hard-cutting at a pointer/touch-proximity-driven rate (capped, finite ceiling), AJS logo + "404" marker + bilingual message over a dimming scrim, `prefers-reduced-motion` drift fallback — ERR-01, Phase 16
 
 ### Active
+
+**v1.5 (Global Improvements & Bug Fixes, this milestone):**
+- [ ] Visitor can keep the homepage carousel auto-advancing while hovering over the page (manual pause/play toggle unaffected) — HOME-11
+- [ ] Visitor sees the homepage's grid-mode intro paragraph in full, not cut off after 2 lines — HOME-12
+- [ ] Visitor sees a gallery's full description on its detail page, not cut off mid-sentence — PORT-04
+- [ ] Visitor sees gallery and Éditions thumbnail images without a black border frame — PORT-05
+- [ ] Visitor sees the site footer on gallery pages — PORT-06
+- [ ] Visitor sees the Éditions page title/description change color together with the eyebrow/divider when hovering a row — EDN-09
+- [ ] Visitor sees the halftone dot texture extend to the true browser edges on Contact/About/Éditions again, with no horizontal scrollbar — UI-01
+- [ ] Visitor sees breathing room around the E-mail/Instagram text when the black hover-fill effect appears on Contact — CONT-03
 
 **v1.0 (Phase 5, deliberately deferred — not part of any shipped milestone):**
 - [ ] Site is reachable at the existing domain, atelierjacquelinesuzanne.fr, via a rehearsed DNS cutover from the current Myportfolio site — LAUNCH-01, Phase 5: Launch & Domain Cutover. Explicit user decision (2026-07-27), reconfirmed at v1.0's retroactive close: *"cancel the initial plan to deliver and publish the website officially... we'll do it later."* Not abandoned — the site has kept shipping on GitHub Pages staging through v1.1/v1.2/v1.3 instead, and this stays open for whenever launch is next prioritized.
@@ -187,4 +205,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-01 after v1.4 milestone close — ABOUT-03, ABOUT-04, and ERR-01 all validated and shipped. No milestone currently active; Phase 5 (Launch & Domain Cutover) remains the only open v1 phase.*
+*Last updated: 2026-08-02 — v1.5 "Global Improvements & Bug Fixes" started: 8 live-reported bugs/regressions scoped (HOME-11/12, PORT-04/05/06, EDN-09, UI-01, CONT-03).*
