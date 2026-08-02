@@ -104,7 +104,11 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
   2. The explicit pause/play toggle button still pauses and resumes auto-advance exactly as before.
   3. In grid mode, the homepage's intro paragraph displays its full text, not truncated after 2 lines.
 
-**Plans**: TBD
+**Plans**: 1 plan (1 wave)
+**Wave 1**
+
+- [ ] 17-01-PLAN.md — Remove the pointer-hover auto-advance pause (keeping the keyboard-focus pause and the explicit toggle) and the `.home-grid__intro-body` 2-line clamp, with inverted/new Playwright regression coverage and a full-suite sweep [Wave 1]
+
 **UI hint**: yes
 
 ### Phase 18: Gallery & Éditions Display Fixes
