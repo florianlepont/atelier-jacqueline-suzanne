@@ -8,9 +8,22 @@ A bilingual (French/English) website for Romane Lepont's photography and artisti
 
 Visitors can browse Romane's photographic work and buy a piece (print, original, book, or merch) through a real, working checkout — everything else supports that. **Delivered in two milestones**: v1 replaces the current site fast with portfolio/about/contact so the old Myportfolio site can be retired sooner; v1.x adds exhibitions, the shop, and checkout on top of that foundation.
 
-## Current Milestone: Planning Next
+## Current Milestone: v1.6 Mobile Experience Redesign
 
-v1.5 shipped 2026-08-03 (see archived brief below). No milestone is currently active — next milestone not yet scoped via `/gsd-new-milestone`. Candidates: Phase 5 (Launch & Domain Cutover, deliberately deferred) or the v1.x wave (Exhibitions, Shop, Checkout, Shipping, commerce Legal — see REQUIREMENTS.md v2 section).
+**Goal:** Redesign the mobile (phone) experience only — desktop/tablet stays byte-for-byte unchanged — replacing the carousel/grid toggle and click-to-open lightbox with scroll-driven navigation across the Homepage, Gallery detail, and Édition detail pages.
+
+**Target features:**
+- Homepage (mobile): a mobile nav menu (hamburger or similar) replaces the header bar; the language switcher moves inside it
+- Homepage (mobile): the carousel/grid toggle is removed; a single scroll-driven view (grid-mode style) replaces it, with each item's description text revealing on scroll-arrival via a new transition
+- Homepage (mobile): the first screen (wordmark) goes full-screen; scrolling zooms through the letterform into the first gallery's photo — explored via sketch before implementation
+- Homepage (mobile): the accent color is randomly picked per visit from the existing per-gallery `heroColor` field (the same mechanism the desktop carousel already uses) — homepage-only, no new palette
+- Gallery detail (mobile): the click-to-open Lightbox is retired; scroll-driven navigation between full, uncropped photos replaces it
+- Édition detail (mobile): the same scroll-driven navigation replaces the Lightbox; the intro/statement text gets a legible solid background instead of sitting over a photo; the primary photo is shown among the others rather than as a full-bleed backdrop
+- About (mobile): the portrait photo's placement is improved — explored via sketch before implementation
+
+**Process:** sketch-first for the riskiest/most subjective pieces (homepage letterform-zoom transition, Édition intro-text legibility redesign, About portrait placement) before real implementation, per user preference (2026-08-03). Desktop/tablet must remain unchanged throughout — every phase in this milestone needs an explicit no-desktop-regression guard.
+
+v1.5 shipped 2026-08-03 (see archived brief below). Phase 5 (Launch & Domain Cutover) and the v1.x wave (Exhibitions, Shop, Checkout, Shipping, commerce Legal) remain open and deliberately deferred behind this milestone, per explicit user choice (2026-08-03) — see REQUIREMENTS.md v2 section.
 
 <details>
 <summary>Archived: v1.5 Global Improvements & Bug Fixes milestone brief (shipped 2026-08-03)</summary>
@@ -132,7 +145,15 @@ v1.5 "Global Improvements & Bug Fixes" is now feature-complete: all 8 requiremen
 
 ### Active
 
-_None — all v1.5 requirements validated above. Next active work starts with a new milestone or Phase 5._
+**v1.6 (Mobile Experience Redesign) — requirements being defined, see REQUIREMENTS.md:**
+- [ ] Mobile nav menu replacing the header bar, language switcher included
+- [ ] Homepage carousel/grid toggle removed on mobile; single scroll-driven view with on-arrival description reveal
+- [ ] Homepage full-screen wordmark with a letterform-zoom transition into the first gallery photo on mobile
+- [ ] Homepage per-visit random accent color (reusing existing per-gallery `heroColor`) on mobile
+- [ ] Gallery detail: Lightbox retired on mobile, replaced by scroll-driven full-photo navigation
+- [ ] Édition detail: Lightbox retired on mobile, replaced by scroll-driven full-photo navigation; legible intro-text treatment
+- [ ] About: improved mobile portrait placement
+- [ ] Desktop/tablet behavior unchanged throughout
 
 **v1.0 (Phase 5, deliberately deferred — not part of any shipped milestone):**
 - [ ] Site is reachable at the existing domain, atelierjacquelinesuzanne.fr, via a rehearsed DNS cutover from the current Myportfolio site — LAUNCH-01, Phase 5: Launch & Domain Cutover. Explicit user decision (2026-07-27), reconfirmed at v1.0's retroactive close: *"cancel the initial plan to deliver and publish the website officially... we'll do it later."* Not abandoned — the site has kept shipping on GitHub Pages staging through v1.1/v1.2/v1.3 instead, and this stays open for whenever launch is next prioritized.
@@ -163,7 +184,7 @@ _None — all v1.5 requirements validated above. Next active work starts with a 
 - Research (`.planning/research/`) recommended Astro + Cloudflare Pages + Sanity CMS + custom Stripe Checkout. Florian already has OVH Web Hosting in place (sunk cost, not incremental budget) and wants to use it instead of Cloudflare Pages — the site (Astro, static output for v1) deploys to OVH hosting instead. Sanity's CMS/image CDN is host-agnostic and still applies regardless of where the static site is served. Key risk (for the future v1.x checkout milestone, not v1): Stripe doesn't manage inventory, so stock must be tracked and atomically re-validated server-side to avoid overselling one-of-a-kind originals — OVH's mutualized hosting may not support the serverless functions this needs, so the hosting approach for server-side logic will need re-evaluating when v1.x is planned.
 - French e-commerce legal requirements (mentions légales, CGV incl. 14-day droit de rétractation, GDPR/cookie consent) are mandatory before any live transaction. Separately, Stripe payouts require Romane to have a registered business (SIRET) in France — this has its own lead time and should be tracked as an early, parallel administrative task, not a blocker gating development.
 - As of v1.4's close (2026-08-01), every page's title treatment (Contact, Éditions, About) and the 404 fallback now share the same editorial identity (`PageTitleHeader` giant-title + halftone + hairline divider, or the 404's own custom photo-backdrop concept). All shipped work lives on `main`; no other branches remain, local or on GitHub. The only open v1 phase is Phase 5 (Launch & Domain Cutover); the v1.x shop/checkout/exhibitions wave remains unscoped in REQUIREMENTS.md's v2 section.
-- As of v1.5's close (2026-08-03), all 8 live-reported bugs/regressions from the shipped v1.4 site are fixed and verified: homepage carousel/intro (Phase 17), gallery/Éditions display (Phase 18), and the shared-component visual polish batch — Éditions row-hover, halftone bleed, Contact spacing (Phase 19). One known, documented, non-blocking residual from UI-01: on platforms with space-taking (non-overlay) scrollbars, viewport units used for the halftone's full-bleed geometry can theoretically extend ~half a scrollbar-width past the client edge — flagged in `PageTitleHeader.astro`'s own comment with a documented guard-term remedy, not exercised by this repo's headless/overlay-scrollbar CI environment. Two unrelated, unmerged worktrees (`fix/homepage-editions-contact-ux`, `sketch-012-contact-finalize`) were noticed sitting in `.claude/worktrees/` during this milestone's close — left untouched pending Florian's review, not part of v1.5.
+- As of v1.5's close (2026-08-03), all 8 live-reported bugs/regressions from the shipped v1.4 site are fixed and verified: homepage carousel/intro (Phase 17), gallery/Éditions display (Phase 18), and the shared-component visual polish batch — Éditions row-hover, halftone bleed, Contact spacing (Phase 19). One known, documented, non-blocking residual from UI-01: on platforms with space-taking (non-overlay) scrollbars, viewport units used for the halftone's full-bleed geometry can theoretically extend ~half a scrollbar-width past the client edge — flagged in `PageTitleHeader.astro`'s own comment with a documented guard-term remedy, not exercised by this repo's headless/overlay-scrollbar CI environment. `fix/homepage-editions-contact-ux` (noticed as an unmerged worktree during v1.5's close) was reviewed, iterated on live (4 rounds of follow-up correction — homepage carousel/cursor/grid-title, then three successive corrections to the Éditions photo-crop treatment), rebased onto `main`, and merged via PR #14 on 2026-08-03. `sketch-012-contact-finalize` remains an unrelated, unmerged worktree still pending Florian's review.
 
 ## Constraints
 
@@ -226,4 +247,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-03 — v1.5 "Global Improvements & Bug Fixes" milestone formally closed. All 8 requirements (HOME-11, HOME-12, PORT-04/05/06, EDN-09, UI-01, CONT-03) validated across Phases 17-19. Next milestone not yet scoped.*
+*Last updated: 2026-08-03 — Milestone v1.6 "Mobile Experience Redesign" started via `/gsd-new-milestone`. Scope: mobile-only nav/scroll/lightbox redesign across Homepage, Gallery, and Édition detail pages, plus an About portrait-placement fix; desktop/tablet unchanged. Requirements and roadmap in progress.*

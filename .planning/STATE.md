@@ -1,20 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.5
-milestone_name: Global Improvements & Bug Fixes
-current_phase: 5
-status: Awaiting next milestone
-stopped_at: Phase 19 context gathered
-last_updated: "2026-08-03T12:57:06.781Z"
+milestone: v1.6
+milestone_name: Mobile Experience Redesign
+status: planning
+last_updated: "2026-08-03T14:07:49.895Z"
 last_activity: 2026-08-03
-last_activity_desc: Milestone v1.5 completed and archived
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 5
-  completed_plans: 5
-  percent: 100
-current_phase_name: Site-Wide Visual Polish
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -24,14 +20,14 @@ current_phase_name: Site-Wide Visual Polish
 See: .planning/PROJECT.md (updated 2026-08-03)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; v1.3 adds a non-transactional Éditions showcase; checkout still follows in the future v1.x shop milestone.)
-**Current focus:** Planning next milestone — v1.5 shipped 2026-08-03. Candidates: Phase 5 (Launch & Domain Cutover, deliberately deferred) or the v1.x wave (Exhibitions, Shop, Checkout, Shipping, commerce Legal — see REQUIREMENTS.md v2 section once a fresh REQUIREMENTS.md exists).
+**Current focus:** Milestone v1.6 "Mobile Experience Redesign" — defining requirements. Mobile-only nav/scroll/lightbox redesign across Homepage, Gallery, and Édition detail pages, plus an About portrait-placement fix; desktop/tablet unchanged throughout. Phase 5 (Launch & Domain Cutover) and the v1.x shop wave remain deliberately deferred behind this milestone.
 
 ## Current Position
 
-Phase: Milestone v1.5 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-08-03 — Milestone v1.5 completed and archived
+Status: Defining requirements
+Last activity: 2026-08-03 — Milestone v1.6 started
 
 ## Performance Metrics
 
