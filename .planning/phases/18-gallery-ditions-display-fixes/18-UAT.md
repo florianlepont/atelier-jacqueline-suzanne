@@ -1,18 +1,14 @@
 ---
-status: testing
+status: complete
 phase: 18-gallery-ditions-display-fixes
 source: [18-VERIFICATION.md]
 started: 2026-08-03T08:00:00Z
-updated: 2026-08-03T08:35:00Z
+updated: 2026-08-03T08:45:00Z
 ---
 
 ## Current Test
 
-number: 4
-name: Longest published document opens with no validation error
-expected: |
-  In the same Studio session, open the longest currently-published document (édition `entasse`, 453 fr chars) and confirm it opens with NO validation error.
-awaiting: user response
+[testing complete]
 
 ## Tests
 
@@ -53,7 +49,7 @@ result: pass
 
 ### 4. Longest published document opens with no validation error
 expected: In the same Studio session, open the longest currently-published document (édition `entasse`, 453 fr chars) and confirm it opens with NO validation error.
-result: [pending]
+result: pass
 
 ### 5. Full statement reads to the end with no clipping, longest gallery, desktop + phone
 expected: Run `npm run build && npm run preview`, open the gallery with the longest description (`the-victorian-tea-room`) at desktop width and at a phone width, and confirm the whole description reads to its end with no cut-off and no text spilling outside the hero panel.
@@ -64,9 +60,9 @@ notes: Verified via Playwright MCP screenshots at 1280x900 and 390x844 for `/gal
 ## Summary
 
 total: 5
-passed: 4
+passed: 5
 issues: 0
-pending: 1
+pending: 0
 skipped: 0
 blocked: 0
 
