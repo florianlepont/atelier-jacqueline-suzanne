@@ -32,6 +32,15 @@ test.describe('mobile hero visibility (D-08)', () => {
 });
 
 test.describe('narrow-phone header regression', () => {
+  // HOME-13 (Phase 20): the trailing assertion used to be an UNSCOPED
+  // getByRole locator matching the switcher's sr-only "switch to English"
+  // hint text. After plan 20-03 the mobile nav panel renders a SECOND
+  // <LanguageSwitcher>, so that unscoped locator would resolve to two
+  // elements and trip Playwright strict mode regardless of visibility.
+  // Replaced with a locator scoped to [data-role="site-header"] asserted
+  // via toHaveCount(1) — a count that stays 1 both today and after plan
+  // 20-03, because the panel's own switcher renders OUTSIDE the
+  // <header data-role="site-header"> element.
   test('the full header stays on one row without horizontal overflow at 320px', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 700 });
     await page.goto('/');
@@ -44,7 +53,22 @@ test.describe('narrow-phone header regression', () => {
 
     expect(measurements.scrollWidth).toBeLessThanOrEqual(measurements.clientWidth);
     expect(measurements.headerHeight).toBeLessThanOrEqual(80);
-    await expect(page.getByRole('link', { name: /Passer en anglais/ })).toBeVisible();
+    await expect(
+      page.locator('[data-role="site-header"] .language-switcher .switcher-link')
+    ).toHaveCount(1);
+  });
+
+  // HOME-13 (Phase 20): preserves the switcher-reachability-at-320px
+  // contract on pages that keep the inline nav at every viewport — /about/
+  // never grows a second panel-owned switcher, so its scoped locator stays
+  // both count-1 and visible, unlike the homepage's after plan 20-03.
+  test('the inline-nav language switcher is visible on /about/ at 320px', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 700 });
+    await page.goto('/about/');
+
+    await expect(
+      page.locator('[data-role="site-header"] .language-switcher .switcher-link')
+    ).toBeVisible();
   });
 });
 

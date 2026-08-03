@@ -92,41 +92,69 @@ test.describe('Shared SiteHeader — mobile fit at 320px with 4 nav links (EDN-0
 // at 360/374/375px (switcher center drops ~68px below the nav center per
 // 13-VERIFICATION.md's own measurement); expected to stay GREEN at
 // 320/390/767px.
+// HOME-13 (Phase 20): this block used to sweep the SAME phone-range widths
+// across both /about/ (solid) and / (transparent). Below 768px the homepage
+// no longer has an inline nav row to fit once plan 20-03 lands its opt-in
+// mobile-nav mode — that phone-width header contract moves to
+// tests/e2e/mobile-nav.spec.ts. The matrix is split: the phone-range widths
+// stay scoped to /about/ (a page that keeps the inline nav at every
+// viewport, unaffected by Phase 20), and the homepage is re-measured only
+// at >=768px, where it keeps its inline single-row header permanently, both
+// before and after Phase 20.
+//
+// Non-vacuity guard (T-20-04): the original `evaluate` returned ONLY
+// center-Y values — if the nav and switcher ever became `display: none`,
+// both rects would collapse to all-zeros, both centers would read 0, and
+// the `<= 5` same-row assertion would pass VACUOUSLY. `navHeight` and
+// `switcherHeight` are now asserted greater than 0 before the same-row
+// check, so this block fails loudly instead of silently agreeing that
+// `0 === 0`.
 test.describe('Shared SiteHeader — single-row fit across the mobile range (EDN-01, D-02, SC #5, gap-closure)', () => {
-  const widths = [320, 360, 374, 375, 390, 767];
-  const pages: Array<{ path: string; label: string }> = [
-    { path: '/about/', label: 'solid' },
-    { path: '/', label: 'transparent' },
-  ];
+  async function assertSingleRowFit(page: import('@playwright/test').Page) {
+    const measurements = await page.evaluate(() => {
+      const headerEl = document.querySelector('[data-role="site-header"]');
+      const nav = headerEl?.querySelector('.site-nav a.nav-link');
+      const switcher = headerEl?.querySelector('.language-switcher');
+      const navRect = nav?.getBoundingClientRect();
+      const switcherRect = switcher?.getBoundingClientRect();
+      return {
+        navCenterY: navRect ? navRect.top + navRect.height / 2 : null,
+        switcherCenterY: switcherRect ? switcherRect.top + switcherRect.height / 2 : null,
+        navHeight: navRect ? navRect.height : 0,
+        switcherHeight: switcherRect ? switcherRect.height : 0,
+        scrollWidth: document.documentElement.scrollWidth,
+        innerWidth: window.innerWidth,
+      };
+    });
 
-  for (const { path, label } of pages) {
-    for (const width of widths) {
-      test(`${path} (${label}) at ${width}px: nav and language switcher share one row, no horizontal overflow`, async ({
-        page,
-      }) => {
-        await page.setViewportSize({ width, height: 800 });
-        await page.goto(path);
+    expect(measurements.navCenterY).not.toBeNull();
+    expect(measurements.switcherCenterY).not.toBeNull();
+    expect(measurements.navHeight).toBeGreaterThan(0);
+    expect(measurements.switcherHeight).toBeGreaterThan(0);
+    expect(Math.abs(measurements.navCenterY! - measurements.switcherCenterY!)).toBeLessThanOrEqual(5);
+    expect(measurements.scrollWidth).toBeLessThanOrEqual(measurements.innerWidth);
+  }
 
-        const measurements = await page.evaluate(() => {
-          const headerEl = document.querySelector('[data-role="site-header"]');
-          const nav = headerEl?.querySelector('.site-nav a.nav-link');
-          const switcher = headerEl?.querySelector('.language-switcher');
-          const navRect = nav?.getBoundingClientRect();
-          const switcherRect = switcher?.getBoundingClientRect();
-          return {
-            navCenterY: navRect ? navRect.top + navRect.height / 2 : null,
-            switcherCenterY: switcherRect ? switcherRect.top + switcherRect.height / 2 : null,
-            scrollWidth: document.documentElement.scrollWidth,
-            innerWidth: window.innerWidth,
-          };
-        });
+  const phoneWidths = [320, 360, 374, 375, 390, 767];
+  for (const width of phoneWidths) {
+    test(`/about/ (solid) at ${width}px: nav and language switcher share one row, no horizontal overflow`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto('/about/');
+      await assertSingleRowFit(page);
+    });
+  }
 
-        expect(measurements.navCenterY).not.toBeNull();
-        expect(measurements.switcherCenterY).not.toBeNull();
-        expect(Math.abs(measurements.navCenterY! - measurements.switcherCenterY!)).toBeLessThanOrEqual(5);
-        expect(measurements.scrollWidth).toBeLessThanOrEqual(measurements.innerWidth);
-      });
-    }
+  const desktopWidths = [768, 834, 1024, 1280];
+  for (const width of desktopWidths) {
+    test(`/ (transparent) at ${width}px: nav and language switcher share one row, no horizontal overflow`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto('/');
+      await assertSingleRowFit(page);
+    });
   }
 });
 
