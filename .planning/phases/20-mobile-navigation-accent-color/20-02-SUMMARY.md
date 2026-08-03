@@ -121,6 +121,14 @@ None - no external service configuration required.
 - The three realigned specs no longer block plan 20-03: nothing in the current suite asserts the phone-width inline homepage nav row that plan 20-03 will replace.
 - No blockers for plan 20-03/20-04. One local-environment note for future sessions in this same worktree tree: verify which process is bound to `localhost:4321` before trusting default `npm run test:e2e` output whenever multiple concurrent sessions are active on this repo (per project memory: this is the norm, not the exception, on this repo).
 
+## Self-Check: PASSED
+
+- FOUND: `tests/e2e/mobile-nav.spec.ts`
+- FOUND: `.planning/phases/20-mobile-navigation-accent-color/20-02-SUMMARY.md`
+- FOUND: commit `2e2b749`
+- FOUND: commit `8dd624a`
+- FOUND: commit `401b076`
+
 ---
 *Phase: 20-mobile-navigation-accent-color*
 *Completed: 2026-08-03*
