@@ -11,12 +11,16 @@
 // The halftone's -700px bleed (needed for its edge-less fade) is
 // deliberately NOT clipped vertically — Éditions wants the dot field to
 // visibly extend past the header box, per its original design. Horizontal
-// bleed IS clipped, scoped to `.page-title-header` itself via
-// `overflow-x: hidden` below (see that rule's own comment for why a
-// site-wide `overflow-x: hidden` on html/body was tried and reverted —
-// 2026-07-29 — it broke `position: sticky` on About's pinned exhibition
-// photo and DetailHero's pinned reveal, both unrelated pages that happen to
-// share the same document). Do not move this fix back up to BaseLayout.
+// bleed used to be clipped at `.page-title-header`'s own box edge via
+// `overflow-x: clip` (see that rule's own comment for why a site-wide
+// `overflow-x: hidden` on html/body was tried and reverted — 2026-07-29 —
+// it broke `position: sticky` on About's pinned exhibition photo and
+// DetailHero's pinned reveal, both unrelated pages that happen to share the
+// same document). As of Phase 19 (UI-01) the clip is gone and the halftone
+// instead reaches the TRUE viewport edge via viewport-relative geometry —
+// see that rule's own comment for the new containment model. Do not move
+// any overflow containment for this component back up to BaseLayout, and
+// never add an `overflow-x` rule targeting `html` or `body`.
 interface Props {
   eyebrow?: string;
   heading: string;
@@ -38,22 +42,45 @@ const { eyebrow = 'Atelier Jacqueline Suzanne', heading, headingId, intro } = As
 </header>
 
 <style>
-  /* overflow-x: clip (not hidden, not a full overflow: hidden) clips only
-     the halftone's horizontal -700px bleed, which was overflowing every
-     consumer page's document width at >=760px (live CI failure,
-     2026-07-29). overflow-y is left alone (stays `visible`) so Éditions
-     keeps the halftone's full vertical bleed past the header box, per its
-     original design. This is scoped to .page-title-header itself, NOT
-     html/body — .page-title-header is not an ancestor of the unrelated
-     `position: sticky` elements elsewhere on About/DetailHero-based pages,
-     so this can't break their sticky behavior the way a body-level
-     overflow-x rule did when tried here first. `clip`, not `hidden`: axe
-     flags any `overflow-x: hidden` element whose content still exceeds its
-     box as a "scrollable region" needing keyboard focus
-     (scrollable-region-focusable) — a real false-positive for a purely
-     decorative bleed nobody should ever scroll to. `clip` forbids scrolling
-     entirely (not even programmatically), so axe correctly treats it as
-     non-scrollable and doesn't flag it. */
+  /* History: this rule used to carry `overflow-x: clip`, which clipped the
+     halftone's horizontal -700px bleed at .page-title-header's own box
+     edge — that was overflowing every consumer page's document width at
+     >=760px (live CI failure, 2026-07-29). A site-wide `overflow-x: hidden`
+     on html/body was tried FIRST and reverted the same day because it
+     broke `position: sticky` on About's pinned exhibition photo and
+     DetailHero's pinned reveal, both unrelated pages that happen to share
+     the same document — never move overflow containment for this
+     component back up to html/body or BaseLayout.
+
+     Phase 19 (UI-01): the component-level `overflow-x: clip` was REMOVED.
+     It fixed the overflow bug but hard-cut the halftone at the content
+     column's edge instead of letting it bleed to the true browser edge —
+     that hard cut was itself the visual defect UI-01 reports. Measured at
+     planning time: a clipping ancestor and a child full-bleed are mutually
+     exclusive (a clipped .page-title-header suppressed the halftone's
+     bleed entirely, even though the halftone's own box measured full
+     viewport width) — so "keep the clip as a safety net" is not viable.
+     Containment is now geometric instead of clip-based: the halftone's own
+     box (see .page-title-header__halftone below) is sized to exactly one
+     viewport width via a viewport-relative centering formula, so it has no
+     horizontal overflow to propagate to the document in the first place. Known
+     residual: viewport units are scrollbar-inclusive, so on a platform
+     that draws space-taking scrollbars (Windows/Linux Chrome, or macOS
+     with "Show scroll bars: Always") the halftone's right edge can land up
+     to ~half a scrollbar width (7-8px) past the client edge and produce a
+     small horizontal scrollbar; headless CI (overlay scrollbars) cannot
+     observe this, so it's checked during end-of-phase human verification
+     — if seen, add a guard term to the halftone's RIGHT inset (e.g.
+     `right: calc(50% - 50vw + 8px)`). The axe `scrollable-region-focusable`
+     concern that motivated `clip` over `hidden` no longer applies, because
+     nothing on this element is clipped anymore.
+
+     `position: relative` + `isolation: isolate` stay: `position: relative`
+     makes this element the halftone's containing block (required for the
+     viewport-relative centering trick below to resolve against the
+     viewport rather than some further ancestor), and `isolation: isolate`
+     keeps the halftone's `z-index: -1` layer contained to this component's
+     own stacking context. */
   .page-title-header {
     position: relative;
     isolation: isolate;
@@ -61,7 +88,6 @@ const { eyebrow = 'Atelier Jacqueline Suzanne', heading, headingId, intro } = As
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--space-lg);
-    overflow-x: clip;
   }
   @media (min-width: 760px) {
     .page-title-header {
@@ -75,6 +101,17 @@ const { eyebrow = 'Atelier Jacqueline Suzanne', heading, headingId, intro } = As
     position: relative;
     grid-column: 1;
     grid-row: 1;
+    /* min-width: 0 overrides the CSS Grid default (min-width: auto), which
+       otherwise refuses to let a grid item shrink below its content's
+       min-content size. A single unbreakable word (e.g. "Contact",
+       "Éditions") at the h1's 64px font-size floor has a min-content width
+       wider than the 320px viewport's content column — without this, the
+       grid track (and with it .page-title-header itself) was forced to
+       grow past the viewport instead of letting the h1 wrap, which is what
+       .page-title-header's old overflow-x: clip was silently masking.
+       Found and fixed while removing that clip for UI-01 (Rule 1: the bug
+       was pre-existing, only ever hidden by the clip this plan removes). */
+    min-width: 0;
   }
 
   .page-title-header__eyebrow {
@@ -119,6 +156,17 @@ const { eyebrow = 'Atelier Jacqueline Suzanne', heading, headingId, intro } = As
        2 lines on narrow viewports is the correct behavior, not the nowrap
        single-line-at-any-cost that was here before. */
     display: inline-block;
+    max-width: 100%;
+    /* Multi-word titles (About's "À propos") wrap fine on their own word
+       boundary. Single-word titles ("Contact", "Éditions") have no
+       break-point to wrap on, so their min-content width can still exceed
+       the 320px viewport's content column even after the fix above — this
+       break-word safety net lets a single overlong word wrap mid-word as a
+       last resort, only if it would otherwise overflow. Same discovery as
+       the .page-title-header__titleblock min-width fix above: this was
+       always a latent bug, only ever masked by .page-title-header's old
+       overflow-x: clip. */
+    overflow-wrap: break-word;
     transition: color 0.35s ease;
   }
 
@@ -167,12 +215,35 @@ const { eyebrow = 'Atelier Jacqueline Suzanne', heading, headingId, intro } = As
     position: absolute;
     top: -700px;
     bottom: -700px;
-    left: -700px;
-    right: -700px;
+    /* The left/right inset below centers this box on the viewport and
+       sizes it to exactly one viewport width (measured: rect exactly
+       0 -> document.documentElement.clientWidth, zero horizontal overflow,
+       in both Chromium and WebKit at 1280 and 1920px) — geometrically
+       correct containment, replacing the -700px fixed offset the
+       overflow-x: clip on .page-title-header used to have to cut off. The
+       `50%` term resolves against .page-title-header's own box (its
+       containing block, via position: relative above), not the viewport,
+       which is why that rule must keep position: relative. */
+    left: calc(50% - 50vw);
+    right: calc(50% - 50vw);
     background-image: radial-gradient(rgba(26, 26, 26, 0.16) 1.4px, transparent 1.6px);
     background-size: 9px 9px;
-    -webkit-mask-image: radial-gradient(circle 640px at right 700px top 700px, black 0%, rgba(0, 0, 0, 0.72) 18%, rgba(0, 0, 0, 0.42) 40%, rgba(0, 0, 0, 0.18) 65%, rgba(0, 0, 0, 0.05) 85%, transparent 100%);
-    mask-image: radial-gradient(circle 640px at right 700px top 700px, black 0%, rgba(0, 0, 0, 0.72) 18%, rgba(0, 0, 0, 0.42) 40%, rgba(0, 0, 0, 0.18) 65%, rgba(0, 0, 0, 0.05) 85%, transparent 100%);
+    /* Mask focal-point offset: the dot cloud must keep emanating from
+       .page-title-header's own top-right corner, not slide toward the
+       middle of the window now that the halftone's own right edge is the
+       viewport's right edge. The offset below is the real distance from
+       the viewport's right edge to this header's right edge — half the
+       viewport width, minus half of whichever is narrower (the viewport or
+       the editorial content max-width), plus the editorial page's inline
+       padding. Depends on the three consumer containers (.contact-page,
+       .about-page, .editions-list) all sharing
+       --editorial-page-max/--editorial-page-padding-inline
+       (BaseLayout.astro). Verified arithmetically at planning time: at
+       1280px, 640 - 590 + 48 = 98px, matching the header box's measured
+       right edge (x=1182, 98px from the viewport edge); at 1920px,
+       960 - 590 + 48 = 418px, matching x=1502. */
+    -webkit-mask-image: radial-gradient(circle 640px at right calc(50vw - min(100vw, var(--editorial-page-max)) / 2 + var(--editorial-page-padding-inline)) top 700px, black 0%, rgba(0, 0, 0, 0.72) 18%, rgba(0, 0, 0, 0.42) 40%, rgba(0, 0, 0, 0.18) 65%, rgba(0, 0, 0, 0.05) 85%, transparent 100%);
+    mask-image: radial-gradient(circle 640px at right calc(50vw - min(100vw, var(--editorial-page-max)) / 2 + var(--editorial-page-padding-inline)) top 700px, black 0%, rgba(0, 0, 0, 0.72) 18%, rgba(0, 0, 0, 0.42) 40%, rgba(0, 0, 0, 0.18) 65%, rgba(0, 0, 0, 0.05) 85%, transparent 100%);
     z-index: -1;
     pointer-events: none;
     display: none;
