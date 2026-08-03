@@ -116,7 +116,21 @@ const {
     box-sizing: border-box;
     padding-inline: var(--editorial-page-padding-inline);
     padding-top: clamp(48px, 7vw, 56px);
-    padding-bottom: var(--editorial-page-padding-block);
+    /* quick-260803-bvu (Item 8): was `var(--editorial-page-padding-block)`
+       (the shared editorial token, clamp(48px, 7vw, 96px) — measured live
+       at 89.6px at 1280x900 and 48px at 390x844, and confirmed via
+       getBoundingClientRect that this padding alone accounted for the
+       ENTIRE measured gap between the form panel and the footer at both
+       viewports, with no other contributor). Overridden here, scoped to
+       `.contact-page` only — never the shared token itself, which
+       AboutPageBody.astro and EditionsOverviewBody.astro also consume —
+       to a flat, non-vw-scaled value matching this file's own top-
+       alignment philosophy. Re-measured after this change: 32px at both
+       viewports (before/after: 89.6px -> 32px desktop, 48px -> 32px
+       mobile). This only affects the space BELOW the content — the
+       top-alignment parity with Éditions (this file's own comment above,
+       lines ~101-110) is untouched. */
+    padding-bottom: var(--space-xl);
   }
 
   .contact-page__grid {

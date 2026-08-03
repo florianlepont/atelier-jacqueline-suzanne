@@ -170,9 +170,13 @@ test.describe('lightbox', () => {
 
 // quick-260724-oep: galleries no longer use the bento layout — the grid now
 // renders as an uncropped native-aspect-ratio masonry (CSS multi-column),
-// driven by real per-image dimensions. This is the masonry-appropriate
-// replacement for the old bento geometry assertion (editions still use
-// bento and are unaffected — see edition.spec.ts).
+// driven by real per-image dimensions. quick-260803-jby later moved
+// édition detail pages onto this same masonry mode too (see
+// edition.spec.ts's own masonry describe block), so gallery and édition
+// detail pages now render the identical masonry contract — each is still
+// verified independently here and there because they are two different
+// pages sharing one component, not because their layout mode still
+// differs.
 test.describe('gallery grid masonry layout', () => {
   test.use({ viewport: { width: 1280, height: 900 } });
 
@@ -735,14 +739,31 @@ test.describe('gallery detail scroll-up-to-return (Item 6, quick-260725-tqs)', (
     });
   });
 
-  test.describe('feature scoping — inert on edition heroes', () => {
-    test('the carousel-return attribute is absent on an edition detail page', async ({ page }) => {
+  // quick-260803-bvu (Item 6): REWRITTEN — this used to assert the
+  // gesture stayed entirely inert on édition heroes (they never supplied
+  // carouselReturnHref). Item 6 now activates the SAME gesture for
+  // éditions too, passing their `overviewHref` (the éditions list)
+  // instead of a gallery's `?carousel=<slug>` homepage URL — see
+  // DetailHero.astro's updated Props doc and
+  // edition.spec.ts's own 'edition detail scroll-up-to-return' describe
+  // block for the full positive-path/regression-guard coverage. This test
+  // now proves the two callers stay distinguishable by DESTINATION shape
+  // rather than by the attribute's mere presence.
+  test.describe('feature scoping — edition heroes get a DIFFERENT return destination, not an absent one', () => {
+    test('an edition detail page carries the carousel-return attribute pointing at the editions overview, not a ?carousel= URL', async ({
+      page,
+    }) => {
       await page.goto('/editions/');
       const tileHref = await page.locator('.editions-index__row').first().getAttribute('href');
       expect(tileHref).toBeTruthy();
 
       await page.goto(tileHref!);
-      await expect(page.locator('.detail-hero[data-carousel-return-href]')).toHaveCount(0);
+      const returnHref = await page
+        .locator('.detail-hero[data-carousel-return-href]')
+        .getAttribute('data-carousel-return-href');
+      expect(returnHref).toBeTruthy();
+      expect(returnHref).toMatch(/\/editions\/?$/);
+      expect(returnHref).not.toContain('?carousel=');
     });
   });
 
@@ -917,10 +938,18 @@ test.describe('cross-document view-transition name gating — mobile (sketch 006
 // previously carried a visible frame declaration. CONTEXT.md D-04's original
 // analysis wrongly assumed only the bento layout is live; verified during
 // planning, gallery detail pages actually render GalleryGrid in MASONRY mode
-// (`object-fit: contain`) while édition detail pages render it in the
-// default BENTO mode (`object-fit: cover`) — both modes share the same
-// `.tile` base rule, but apply different `object-fit` treatments to
-// `.tile img`, so both must be verified independently.
+// while édition detail pages, at the time, rendered it in the default BENTO
+// mode — both modes shared the same `.tile` base rule, so both were
+// verified independently. quick-260803-ira changed that shared base rule's
+// `object-fit` from crop to contain, so bento (éditions) tile photos also
+// rendered uncropped, matching masonry's pre-existing never-crop treatment.
+// quick-260803-jby then moved éditions onto masonry too (letterboxing
+// against the tile's ink background was still visible with bento's fixed
+// cell size, even once the crop was gone) — gallery AND édition detail
+// pages now render the SAME masonry mode. Each is still verified
+// independently below because they are two different pages sharing one
+// component, not because their layout mode still differs. The bento
+// branch retains no caller after this change.
 test.describe('gallery + édition thumbnail tiles render with no frame (PORT-05, D-04/D-05)', () => {
   test.use({ viewport: { width: 1280, height: 900 } });
 
@@ -992,7 +1021,9 @@ test.describe('gallery + édition thumbnail tiles render with no frame (PORT-05,
     }
   });
 
-  test('édition detail (bento): every tile has 0px borders and object-fit: cover', async ({ page }) => {
+  test('édition detail (masonry, quick-260803-jby): every tile has 0px borders and shows the photo whole, uncropped, flush with no exposed background', async ({
+    page,
+  }) => {
     await page.goto('/editions/');
     const tileHref = await page.locator('.editions-index__row').first().getAttribute('href');
     expect(tileHref).toBeTruthy();
@@ -1020,7 +1051,26 @@ test.describe('gallery + édition thumbnail tiles render with no frame (PORT-05,
 
     const firstTileImg = tiles.first().locator('img');
     const objectFit = await firstTileImg.evaluate((el) => getComputedStyle(el).objectFit);
-    expect(objectFit).toBe('cover');
+    expect(objectFit).toBe('contain');
+
+    // Same img-vs-tile flush check the gallery masonry sub-test above
+    // performs: this is precisely what the owner reported (a visible dark
+    // strip/band around édition grid photos) and now applies to éditions
+    // too, since both pages share the identical masonry mechanism.
+    const gaps = await tiles.evaluateAll((els) =>
+      els.map((el) => {
+        const tileRect = el.getBoundingClientRect();
+        const imgRect = el.querySelector('img')!.getBoundingClientRect();
+        return {
+          top: imgRect.top - tileRect.top,
+          bottom: tileRect.bottom - imgRect.bottom,
+        };
+      }),
+    );
+    for (const gap of gaps) {
+      expect(Math.abs(gap.top)).toBeLessThan(0.5);
+      expect(Math.abs(gap.bottom)).toBeLessThan(0.5);
+    }
   });
 });
 

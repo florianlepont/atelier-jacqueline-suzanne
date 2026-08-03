@@ -216,6 +216,114 @@ test.describe('grid-tile title alignment (260718-rhv)', () => {
   });
 });
 
+// quick-260803-bvu (Item 3): 260718-rhv's original fix clamped
+// .home-grid__tile-title to a SINGLE line with ellipsis truncation to
+// reserve a constant height — confirmed live that this cut long titles
+// mid-word ("The Victorian Tea room" reported scrollWidth 478 vs
+// clientWidth 395 with white-space: nowrap). Now clamped to two lines
+// instead, with the reserved height widened to match — this block is
+// additive, placed next to (not replacing) the 260718-rhv alignment block
+// above, which must keep passing unchanged.
+test.describe('grid-tile title two-line clamp (quick-260803-bvu, Item 3)', () => {
+  test('the longest gallery title wraps across whole words on up to two lines, no mid-word ellipsis cut', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+
+    const title = page.locator('.home-grid__tile-title', { hasText: 'Victorian' });
+    await expect(title).toBeVisible();
+
+    const info = await title.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return {
+        text: el.textContent,
+        scrollHeight: el.scrollHeight,
+        clientHeight: el.clientHeight,
+        lineClamp: cs.getPropertyValue('-webkit-line-clamp'),
+        whiteSpace: cs.whiteSpace,
+      };
+    });
+
+    expect(info.text).toBe('The Victorian Tea room');
+    // Wrapping is allowed (not forced onto a single nowrap line) and the
+    // 2-line clamp reserves enough height that nothing overflows/clips.
+    expect(info.whiteSpace).not.toBe('nowrap');
+    expect(info.lineClamp).toBe('2');
+    expect(info.scrollHeight).toBeLessThanOrEqual(info.clientHeight + 1);
+  });
+
+  test('every tile title still starts at the same offset from its own tile bottom edge (260718-rhv invariant preserved)', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+
+    await page.waitForFunction(() => {
+      const titles = document.querySelectorAll<HTMLElement>('a.home-grid__tile .home-grid__tile-title');
+      return titles.length > 0 && Array.from(titles).every((title) => title.getBoundingClientRect().height > 0);
+    });
+
+    const tiles = page.locator('a.home-grid__tile');
+    const count = await tiles.count();
+    expect(count).toBeGreaterThan(0);
+
+    const offsets: number[] = [];
+    for (let index = 0; index < count; index += 1) {
+      const tile = tiles.nth(index);
+      const offset = await tile.evaluate((el) => {
+        const title = el.querySelector<HTMLElement>('.home-grid__tile-title')!;
+        const tileRect = el.getBoundingClientRect();
+        const titleRect = title.getBoundingClientRect();
+        return tileRect.bottom - titleRect.top;
+      });
+      offsets.push(offset);
+    }
+
+    expect(Math.max(...offsets) - Math.min(...offsets)).toBeLessThanOrEqual(1);
+  });
+});
+
+// quick-260803-bvu (Item 2): the progress dashes and pause/play toggle live
+// inside .home-hero__caption, anchored bottom-left — which falls inside the
+// left EDGE_ZONE_FRACTION (22%) band of the hero photo, so the accent
+// directional pill (.home-hero__cursor-ring) was painting directly over
+// them. Confirmed live (getComputedStyle) that the native cursor was
+// already `pointer` on both controls — only the custom cursor overlay
+// itself needed to hide.
+test.describe('carousel pause-toggle cursor affordance (quick-260803-bvu, Item 2)', () => {
+  test('the custom cursor hides over the caption controls but still shows in a plain edge zone', async ({ page }) => {
+    await page.goto('/');
+
+    const toggle = page.locator('[data-role="autoplay-toggle"]');
+    const box = await toggle.boundingBox();
+    if (!box) throw new Error('autoplay toggle has no bounding box');
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+
+    const cursor = page.locator('[data-role="hero-cursor"]');
+    await expect(cursor).toHaveCSS('opacity', '0');
+    // The toggle itself keeps its own normal pointer affordance underneath.
+    await expect(toggle).toHaveCSS('cursor', 'pointer');
+
+    const photoBox = await page.locator('.home-hero__photo').boundingBox();
+    if (!photoBox) throw new Error('hero photo has no bounding box');
+    // Move to an edge-zone point clearly away from the caption (mid-height,
+    // left edge) — the pill must still appear there.
+    await page.mouse.move(photoBox.x + photoBox.width * 0.1, photoBox.y + photoBox.height * 0.5);
+    await expect(cursor).toHaveCSS('opacity', '1');
+    await expect(cursor).toHaveAttribute('data-zone', 'left');
+  });
+
+  test('the pause/play toggle is still reachable and clickable while the cursor is hidden over it', async ({ page }) => {
+    await page.goto('/');
+
+    const toggle = page.locator('[data-role="autoplay-toggle"]');
+    const box = await toggle.boundingBox();
+    if (!box) throw new Error('autoplay toggle has no bounding box');
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  });
+});
+
 test.describe('grid-tile hover polish (260718-rhv)', () => {
   test('each non-hero tile carries its own --tile-accent custom property', async ({ page }) => {
     await page.goto('/');

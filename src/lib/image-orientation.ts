@@ -2,10 +2,10 @@ import type { GalleryImage } from './sanity';
 
 /**
  * quick-260724-oep: pure landscape-hero-selection helper. The gallery hero
- * (DetailHero.astro) renders `object-fit: contain`, never cropping — a
- * portrait first photo looks small/heavily letterboxed in the wide hero
- * box, so this prefers the first LANDSCAPE image in the gallery's real
- * array order over the hardcoded `images[0]` cover.
+ * (DetailHero.astro) crops to fill its wide hero box, so a portrait first
+ * photo would be heavily cropped there, losing much of its content — this
+ * prefers the first LANDSCAPE image in the gallery's real array order over
+ * the hardcoded `images[0]` cover.
  *
  * Mirrors src/lib/related-gallery.ts's style: pure, defensive, never
  * throws on partially-populated Sanity documents (WR-03 null-safety

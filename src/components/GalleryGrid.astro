@@ -1,10 +1,16 @@
 ---
 // Shared thumbnail grid used by BOTH Portfolio gallery detail pages and
-// Éditions detail pages (in both locales) — sketch 004 variant A2 (approved
-// winner, quick task 260724-dlc): an asymmetric bento layout with a
-// staggered scroll-reveal, ported from the Éditions overview's shipped
-// `editionGroups` chunk-by-3/alternate-side pattern (src/pages/editions/
-// index.astro).
+// Éditions detail pages (in both locales). Originally shipped (sketch 004
+// variant A2, approved winner, quick task 260724-dlc) as an asymmetric
+// bento layout with a staggered scroll-reveal, ported from the Éditions
+// overview's shipped `editionGroups` chunk-by-3/alternate-side pattern
+// (src/pages/editions/index.astro). quick-260724-oep later added an opt-in
+// masonry mode for galleries; quick-260803-jby moved éditions onto that
+// same masonry mode too (the owner's explicit instruction: éditions should
+// display photos entirely, the same way Galleries pages already do). Both
+// real callers now select masonry explicitly — see the `layout` prop's
+// comment below — so the bento branch and its geometry rules are retained
+// in this file but have no live caller (separately cleanable).
 //
 // Design-philosophy change (deliberate): this component moved from a
 // content-agnostic `<slot/>` wrapper to a **props-based** component. The
@@ -39,8 +45,12 @@ interface Props {
   // quick-260724-oep: opt-in masonry mode (sketch 004 Variant B), added
   // alongside the existing bento layout without changing its default
   // output — mirrors DetailHero.astro's `objectFit` per-caller-behavior
-  // pattern (quick-260724-mjp). Editions pass no `layout` prop and keep
-  // rendering bento, byte-identical to before this plan.
+  // pattern (quick-260724-mjp). quick-260803-jby: éditions now pass
+  // `layout="masonry"` explicitly too (EditionDetailBody.astro), matching
+  // GalleryDetailBody.astro's existing call site — both real callers select
+  // masonry explicitly, so the `bento` default is no longer the mechanism
+  // either caller relies on; it is kept only so a hypothetical future
+  // caller does not crash if it ever forgets the prop.
   layout?: 'bento' | 'masonry';
 }
 
@@ -231,12 +241,25 @@ if (layout === 'bento') {
     transform: translateY(0);
   }
 
+  /* quick-260803-ira set this base rule's object-fit from crop to contain,
+     reasoning that bento mode was reached ONLY by éditions (the sole
+     caller then omitting `layout`, defaulting to bento) — true at the
+     time. quick-260803-jby moved éditions onto masonry too (see the file
+     header and the `layout` prop's comment above), so the bento branch
+     this rule still applies to now has no live caller; the rule stays as
+     written (still correct for a hypothetical future bento caller) and is
+     NOT dead for masonry — masonry's own override rule
+     (`.gallery-grid--masonry .tile img` further down) redeclares
+     position/inset/height/object-fit but still inherits this base rule's
+     `transition: transform 0.3s ease`, which is what drives the hover-zoom
+     on both galleries' and éditions' masonry tiles. Do not delete or gut
+     this rule. */
   .tile img {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     transition: transform 0.3s ease;
   }
 
