@@ -307,6 +307,101 @@ test.describe('editions overview layout', () => {
   });
 });
 
+// EDN-09: the 5 :global(html.editions-row-active .page-title-header__*)
+// rules in EditionsOverviewBody.astro's <style> shipped with a partial
+// :global() wrap that could never match the header's real elements — a
+// regression that went unnoticed because no test read these computed
+// colors. The toPass()/expect.poll() retries below exist because the
+// affected properties transition over 0.35s (color/background-color) —
+// reading getComputedStyle immediately after the hover/mouseleave event
+// would read a mid-transition value, not the settled one.
+//
+// Deviation from the plan's literal "hover the first row" instruction:
+// the row-hover ACCENTS cycle's first entry (index 0) sets
+// --editions-row-accent-text to var(--color-on-accent), which resolves to
+// the exact same value as the header's own default ink color — hovering
+// row 0 therefore produces zero measurable color delta even though the
+// underlying CSS fix correctly applies (confirmed live: the toPass() block
+// above resolves immediately for row 0 too). Using the second row
+// (ACCENTS[1], #FFFFFF text) instead guarantees a real, assertable color
+// change, which is what the "differs from pre-hover" assertions exist to
+// prove per the plan's own behavior spec.
+test.describe('editions row-hover header color sync (EDN-09)', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test('hovering a row recolors the shared header eyebrow, eyebrow dot, h1, intro, and divider to the row\'s own accent color', async ({
+    page,
+  }) => {
+    await page.goto('/editions/');
+
+    const eyebrow = page.locator('.page-title-header__eyebrow');
+    const heading = page.locator('.page-title-header h1');
+    const intro = page.locator('.page-title-header__intro');
+    const divider = page.locator('.page-title-header__divider');
+
+    const preHoverEyebrowColor = await eyebrow.evaluate((el) => getComputedStyle(el).color);
+    const preHoverHeadingColor = await heading.evaluate((el) => getComputedStyle(el).color);
+    const preHoverIntroColor = await intro.evaluate((el) => getComputedStyle(el).color);
+    const preHoverDividerColor = await divider.evaluate(
+      (el) => getComputedStyle(el).backgroundColor,
+    );
+    const preHoverDotColor = await eyebrow.evaluate(
+      (el) => getComputedStyle(el, '::before').backgroundColor,
+    );
+
+    const targetRow = page.locator('.editions-index__row').nth(1);
+    await targetRow.hover();
+
+    // .editions-index__row itself also has `transition: color 0.35s ease`
+    // (its own hover-accent rule already worked pre-fix), so the reference
+    // value must be re-read fresh on every retry too — reading it once
+    // immediately after hover() risks capturing a mid-transition value,
+    // which the toPass() retry below can't compensate for since it only
+    // reads the *header* elements, not the row itself.
+    let rowColor = '';
+    await expect(async () => {
+      rowColor = await targetRow.evaluate((el) => getComputedStyle(el).color);
+      expect(await eyebrow.evaluate((el) => getComputedStyle(el).color)).toBe(rowColor);
+      expect(await heading.evaluate((el) => getComputedStyle(el).color)).toBe(rowColor);
+      expect(await intro.evaluate((el) => getComputedStyle(el).color)).toBe(rowColor);
+      expect(await divider.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(rowColor);
+      expect(await eyebrow.evaluate((el) => getComputedStyle(el, '::before').backgroundColor)).toBe(
+        rowColor,
+      );
+    }).toPass();
+
+    expect(rowColor).not.toBe(preHoverEyebrowColor);
+    expect(rowColor).not.toBe(preHoverHeadingColor);
+    expect(rowColor).not.toBe(preHoverIntroColor);
+    expect(rowColor).not.toBe(preHoverDividerColor);
+    expect(rowColor).not.toBe(preHoverDotColor);
+  });
+
+  test('moving off the row (mouseleave) restores the eyebrow to its pre-hover color', async ({
+    page,
+  }) => {
+    await page.goto('/editions/');
+
+    const eyebrow = page.locator('.page-title-header__eyebrow');
+    const preHoverEyebrowColor = await eyebrow.evaluate((el) => getComputedStyle(el).color);
+
+    const targetRow = page.locator('.editions-index__row').nth(1);
+    await targetRow.hover();
+
+    await expect(async () => {
+      expect(await eyebrow.evaluate((el) => getComputedStyle(el).color)).not.toBe(
+        preHoverEyebrowColor,
+      );
+    }).toPass();
+
+    await page.mouse.move(0, 0);
+
+    await expect(async () => {
+      expect(await eyebrow.evaluate((el) => getComputedStyle(el).color)).toBe(preHoverEyebrowColor);
+    }).toPass();
+  });
+});
+
 test.describe('no commerce affordances (detail)', () => {
   test('shows no price, availability, or purchase affordance (EDN-06)', async ({ page }) => {
     await page.goto('/editions/');
