@@ -3,15 +3,15 @@ status: testing
 phase: 18-gallery-ditions-display-fixes
 source: [18-VERIFICATION.md]
 started: 2026-08-03T08:00:00Z
-updated: 2026-08-03T08:30:00Z
+updated: 2026-08-03T08:35:00Z
 ---
 
 ## Current Test
 
-number: 3
-name: Sanity Studio blocks over-length statement input
+number: 4
+name: Longest published document opens with no validation error
 expected: |
-  Run `npm --prefix sanity run dev`, open a gallery or édition's Texte de présentation field, paste text longer than 700 characters, and confirm the French error message appears naming the character limit, and that Publier is blocked.
+  In the same Studio session, open the longest currently-published document (édition `entasse`, 453 fr chars) and confirm it opens with NO validation error.
 awaiting: user response
 
 ## Tests
@@ -49,7 +49,7 @@ notes: |
 
 ### 3. Sanity Studio blocks over-length statement input
 expected: Run `npm --prefix sanity run dev`, open a gallery or édition's Texte de présentation field, paste text longer than 700 characters, and confirm the French error message appears naming the character limit, and that Publier is blocked.
-result: [pending]
+result: pass
 
 ### 4. Longest published document opens with no validation error
 expected: In the same Studio session, open the longest currently-published document (édition `entasse`, 453 fr chars) and confirm it opens with NO validation error.
@@ -64,9 +64,9 @@ notes: Verified via Playwright MCP screenshots at 1280x900 and 390x844 for `/gal
 ## Summary
 
 total: 5
-passed: 3
+passed: 4
 issues: 0
-pending: 2
+pending: 1
 skipped: 0
 blocked: 0
 
