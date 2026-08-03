@@ -5,10 +5,10 @@ milestone_name: Global Improvements & Bug Fixes
 current_phase: 19
 current_phase_name: Site-Wide Visual Polish
 status: executing
-stopped_at: Phase 18 context gathered
-last_updated: "2026-08-03T07:03:35.017Z"
+stopped_at: Phase 19 context gathered
+last_updated: "2026-08-03T07:21:36.823Z"
 last_activity: 2026-08-03
-last_activity_desc: Phase 18 complete, transitioned to Phase 19
+last_activity_desc: Phase 18 complete (PORT-04/05/06 shipped, incl. a live-caught masonry tile bottom-gap fix), transitioned to Phase 19
 progress:
   total_phases: 4
   completed_phases: 2
@@ -276,9 +276,9 @@ Items acknowledged and deferred at v1.4 milestone close on 2026-08-01 (`/gsd-com
 
 ## Session Continuity
 
-Last session: 2026-08-03T08:50:00.000Z
-Stopped at: Phase 18 complete, ready to plan Phase 19
-Resume file: None
+Last session: 2026-08-03T07:21:36.806Z
+Stopped at: Phase 19 context gathered
+Resume file: .planning/phases/19-site-wide-visual-polish/19-CONTEXT.md
 
 **Next up:** Phase 19 (Site-Wide Visual Polish — EDN-09, UI-01, CONT-03) is the last phase of v1.5. Phase 5 (Launch & Domain Cutover) remains open and deliberately deferred whenever launch is next prioritized. The pre-existing `/about/` mobile-header overflow regression (Phase 15) was root-caused and fixed post-merge during Phase 16 (see `.planning/milestones/v1.4-phases/16-404-page-editorial-redesign/deferred-items.md`) — no longer open.
 
