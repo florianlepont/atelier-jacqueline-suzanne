@@ -93,7 +93,11 @@ const {
         {relatedLink.text}
       </a>
     )}
-    {gridItems.length > 0 && <GalleryGrid items={gridItems} />}
+    {/* quick-260803-jby: masonry now selected explicitly here, matching
+        GalleryDetailBody.astro's own call site — see GalleryGrid.astro's
+        `layout` prop comment for why its bento default is no longer the
+        mechanism either real caller relies on. */}
+    {gridItems.length > 0 && <GalleryGrid items={gridItems} layout="masonry" />}
   </div>
 </div>
 <Lightbox images={lightboxImages} locale={locale} />

@@ -170,9 +170,13 @@ test.describe('lightbox', () => {
 
 // quick-260724-oep: galleries no longer use the bento layout — the grid now
 // renders as an uncropped native-aspect-ratio masonry (CSS multi-column),
-// driven by real per-image dimensions. This is the masonry-appropriate
-// replacement for the old bento geometry assertion (editions still use
-// bento and are unaffected — see edition.spec.ts).
+// driven by real per-image dimensions. quick-260803-jby later moved
+// édition detail pages onto this same masonry mode too (see
+// edition.spec.ts's own masonry describe block), so gallery and édition
+// detail pages now render the identical masonry contract — each is still
+// verified independently here and there because they are two different
+// pages sharing one component, not because their layout mode still
+// differs.
 test.describe('gallery grid masonry layout', () => {
   test.use({ viewport: { width: 1280, height: 900 } });
 
@@ -934,15 +938,18 @@ test.describe('cross-document view-transition name gating — mobile (sketch 006
 // previously carried a visible frame declaration. CONTEXT.md D-04's original
 // analysis wrongly assumed only the bento layout is live; verified during
 // planning, gallery detail pages actually render GalleryGrid in MASONRY mode
-// while édition detail pages render it in the default BENTO mode — both
-// modes share the same `.tile` base rule, so both must be verified
-// independently. quick-260803-ira: the shared base rule's `object-fit`
-// changed from crop to contain, so bento (éditions) tile photos now ALSO
-// render uncropped, matching masonry's (galleries') pre-existing never-crop
-// treatment — both modes now compute the SAME `object-fit: contain`, though
-// for different underlying reasons (masonry's own override rule vs. this
-// shared base rule), which is why each is still verified independently
-// below.
+// while édition detail pages, at the time, rendered it in the default BENTO
+// mode — both modes shared the same `.tile` base rule, so both were
+// verified independently. quick-260803-ira changed that shared base rule's
+// `object-fit` from crop to contain, so bento (éditions) tile photos also
+// rendered uncropped, matching masonry's pre-existing never-crop treatment.
+// quick-260803-jby then moved éditions onto masonry too (letterboxing
+// against the tile's ink background was still visible with bento's fixed
+// cell size, even once the crop was gone) — gallery AND édition detail
+// pages now render the SAME masonry mode. Each is still verified
+// independently below because they are two different pages sharing one
+// component, not because their layout mode still differs. The bento
+// branch retains no caller after this change.
 test.describe('gallery + édition thumbnail tiles render with no frame (PORT-05, D-04/D-05)', () => {
   test.use({ viewport: { width: 1280, height: 900 } });
 
@@ -1014,7 +1021,9 @@ test.describe('gallery + édition thumbnail tiles render with no frame (PORT-05,
     }
   });
 
-  test('édition detail (bento): every tile has 0px borders and shows the photo whole, uncropped (quick-260803-ira)', async ({ page }) => {
+  test('édition detail (masonry, quick-260803-jby): every tile has 0px borders and shows the photo whole, uncropped, flush with no exposed background', async ({
+    page,
+  }) => {
     await page.goto('/editions/');
     const tileHref = await page.locator('.editions-index__row').first().getAttribute('href');
     expect(tileHref).toBeTruthy();
@@ -1043,6 +1052,25 @@ test.describe('gallery + édition thumbnail tiles render with no frame (PORT-05,
     const firstTileImg = tiles.first().locator('img');
     const objectFit = await firstTileImg.evaluate((el) => getComputedStyle(el).objectFit);
     expect(objectFit).toBe('contain');
+
+    // Same img-vs-tile flush check the gallery masonry sub-test above
+    // performs: this is precisely what the owner reported (a visible dark
+    // strip/band around édition grid photos) and now applies to éditions
+    // too, since both pages share the identical masonry mechanism.
+    const gaps = await tiles.evaluateAll((els) =>
+      els.map((el) => {
+        const tileRect = el.getBoundingClientRect();
+        const imgRect = el.querySelector('img')!.getBoundingClientRect();
+        return {
+          top: imgRect.top - tileRect.top,
+          bottom: tileRect.bottom - imgRect.bottom,
+        };
+      }),
+    );
+    for (const gap of gaps) {
+      expect(Math.abs(gap.top)).toBeLessThan(0.5);
+      expect(Math.abs(gap.bottom)).toBeLessThan(0.5);
+    }
   });
 });
 

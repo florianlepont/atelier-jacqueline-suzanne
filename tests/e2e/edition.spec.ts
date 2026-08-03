@@ -248,14 +248,18 @@ test.describe('editions hero uncropped photo (Item 7, quick-260803-bvu)', () => 
   });
 });
 
-// quick-260803-ira: 260803-bvu's Item 7 fixed the édition hero photo
-// (DetailHero.astro) but missed the OTHER photos in the bento grid below it
-// — GalleryGrid.astro's shared `.tile img` base rule still cropped them
-// (see the describe block just above). This closes that gap: the base
-// rule's `object-fit` now matches the never-crop treatment the hero and the
-// gallery-detail masonry tiles already had, while the bento composition
-// (asymmetric grouping, cell sizes, gaps) and the hover/focus zoom stay
-// provably unchanged.
+// quick-260803-ira fixed the édition hero photo (DetailHero.astro, see the
+// describe block just above) but missed the OTHER photos in the bento grid
+// below it — GalleryGrid.astro's shared `.tile img` base rule still cropped
+// them, so that task changed the rule's `object-fit` from crop to contain.
+// That stopped the crop but, because bento's cells have a fixed size
+// independent of each photo's real ratio, the photo now letterboxed against
+// the tile's own ink background — confirmed live on review. quick-260803-jby
+// replaces the mechanism instead of patching it again: éditions now render
+// the same masonry layout gallery detail pages already use, where each
+// tile's box IS the photo's own shape (driven by a real per-photo
+// aspectRatio), so `object-fit: contain` fits edge to edge with nothing left
+// over to expose a background on any side.
 async function pollHoverZoomScale(img: import('@playwright/test').Locator) {
   await expect
     .poll(async () => {
@@ -268,64 +272,132 @@ async function pollHoverZoomScale(img: import('@playwright/test').Locator) {
     .not.toBeNull();
 }
 
-test.describe('editions bento grid photos uncropped (quick-260803-ira)', () => {
+// Measures every tile in the currently-loaded page's `.gallery-grid` and
+// asserts the full masonry contract: masonry class present, zero bento
+// groups, multi-column flow, and — for every tile — a static-positioned,
+// uncropped img whose rendered ratio matches the photo's own natural ratio
+// and whose bounding box is flush with its tile's on all four edges (the
+// assertion that literally encodes the owner's complaint: no tile
+// background can be visible around any photo). Returns the number of tiles
+// actually measured so callers can prove the loop was never vacuous.
+async function assertGridIsFlushMasonry(page: import('@playwright/test').Page): Promise<number> {
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+  const grid = page.locator('.gallery-grid');
+  const tiles = page.locator('.gallery-grid .tile');
+  await expect(tiles.first()).toHaveClass(/revealed/);
+
+  await expect(grid).toHaveClass(/gallery-grid--masonry/);
+  expect(await page.locator('.gallery-grid__group').count()).toBe(0);
+  const columnCount = await grid.evaluate((el) => getComputedStyle(el).columnCount);
+  expect(Number(columnCount)).toBeGreaterThan(1);
+
+  const tileCount = await tiles.count();
+  expect(tileCount).toBeGreaterThan(0);
+
+  // Tiles are lazily loaded — poll until every img has actually decoded a
+  // real image before measuring, or the ratio/flush checks below would race
+  // a still-loading <img> into a false NaN/0 measurement.
+  await expect
+    .poll(async () =>
+      page
+        .locator('.gallery-grid .tile img')
+        .evaluateAll(
+          (els) =>
+            els.filter((el) => (el as HTMLImageElement).complete && (el as HTMLImageElement).naturalWidth > 0)
+              .length,
+        ),
+    )
+    .toBe(tileCount);
+
+  const measurements = await tiles.evaluateAll((tileEls) =>
+    tileEls.map((tileEl) => {
+      const img = tileEl.querySelector('img') as HTMLImageElement;
+      const tileRect = tileEl.getBoundingClientRect();
+      const imgRect = img.getBoundingClientRect();
+      const style = getComputedStyle(img);
+      return {
+        position: style.position,
+        objectFit: style.objectFit,
+        aspectRatio: style.aspectRatio,
+        clientRatio: img.clientWidth / img.clientHeight,
+        naturalRatio: img.naturalWidth / img.naturalHeight,
+        top: imgRect.top - tileRect.top,
+        right: tileRect.right - imgRect.right,
+        bottom: tileRect.bottom - imgRect.bottom,
+        left: imgRect.left - tileRect.left,
+      };
+    }),
+  );
+
+  for (const m of measurements) {
+    expect(m.position).toBe('static');
+    expect(m.objectFit).not.toBe('cover');
+    expect(m.aspectRatio).not.toBe('auto');
+    expect(Math.abs(m.clientRatio - m.naturalRatio) / m.naturalRatio).toBeLessThan(0.01);
+    expect(Math.abs(m.top)).toBeLessThan(0.5);
+    expect(Math.abs(m.right)).toBeLessThan(0.5);
+    expect(Math.abs(m.bottom)).toBeLessThan(0.5);
+    expect(Math.abs(m.left)).toBeLessThan(0.5);
+  }
+
+  return measurements.length;
+}
+
+test.describe('editions masonry grid photos uncropped and flush (quick-260803-jby)', () => {
   test.use({ viewport: { width: 1280, height: 900 } });
 
-  test('every édition bento tile photo is uncropped, with the bento structure and absolute-positioned imgs intact', async ({
+  test('every published édition (fr): masonry grid, no bento groups, every tile flush and uncropped at its own natural ratio', async ({
     page,
   }) => {
     await page.goto('/editions/');
-    const rowHref = await page.locator('.editions-index__row').first().getAttribute('href');
-    expect(rowHref).toBeTruthy();
+    const hrefs = await page
+      .locator('.editions-index__row')
+      .evaluateAll((els) => els.map((el) => el.getAttribute('href')).filter((href): href is string => Boolean(href)));
+    expect(hrefs.length).toBeGreaterThan(0);
 
-    await page.goto(rowHref!);
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-
-    const tiles = page.locator('.gallery-grid .tile');
-    await expect(tiles.first()).toHaveClass(/revealed/);
-
-    const tileImgs = page.locator('.gallery-grid .tile img');
-    const tileCount = await tileImgs.count();
-    expect(tileCount).toBeGreaterThan(0);
-
-    const fits = await tileImgs.evaluateAll((els) => els.map((el) => getComputedStyle(el).objectFit));
-    for (const fit of fits) {
-      expect(fit).toBe('contain');
+    let totalTilesMeasured = 0;
+    for (const href of hrefs) {
+      await page.goto(href);
+      const tileCount = await page.locator('.gallery-grid .tile').count();
+      if (tileCount === 0) continue;
+      totalTilesMeasured += await assertGridIsFlushMasonry(page);
     }
 
-    // Proves the fixed bento cell (not the image's own ratio) still drives
-    // the layout — the base rule's absolute-fill positioning is unchanged,
-    // only its object-fit changed.
-    const positions = await tileImgs.evaluateAll((els) => els.map((el) => getComputedStyle(el).position));
-    for (const position of positions) {
-      expect(position).toBe('absolute');
-    }
-
-    const groups = page.locator('.gallery-grid__group');
-    await expect(groups.first()).toHaveAttribute('data-size', /\d/);
-    await expect(groups.first()).toHaveAttribute('data-side', /left|right/);
-    await expect(page.locator('.gallery-grid .tile--hero').first()).toBeVisible();
-
-    // Guards against a silent collapse of the asymmetric composition: the
-    // hero tile must stay visibly wider than a small tile in the same
-    // group. Skipped (not failed) if the first group has fewer than two
-    // tiles — mirrors homepage-loading-progress.spec.ts:78's convention.
-    const firstGroup = groups.first();
-    const firstGroupTileCount = await firstGroup.locator('.tile').count();
-    test.skip(firstGroupTileCount < 2, 'first bento group has fewer than two tiles — no hero/small size comparison possible');
-
-    const heroBox = await firstGroup.locator('.tile--hero').first().boundingBox();
-    const smallBox = await firstGroup.locator('.tile--small').first().boundingBox();
-    expect(heroBox).toBeTruthy();
-    expect(smallBox).toBeTruthy();
-    expect(heroBox!.width).toBeGreaterThan(smallBox!.width);
+    // Guards against a vacuous pass: at least one édition must have had at
+    // least one grid tile actually measured above.
+    expect(totalTilesMeasured).toBeGreaterThan(0);
   });
 
-  test('the gallery masonry path is untouched: static position, natural-ratio tiles (exhaustive proof lives in gallery.spec.ts PORT-05)', async ({
+  // Proves both locale route files were actually edited, not just the fr
+  // one — the fr and en édition detail pages are separate source files, and
+  // silent drift between them is the realistic failure mode here.
+  test('the EN twin renders the identical masonry contract', async ({ page }) => {
+    await page.goto('/editions/');
+    const frHref = await page.locator('.editions-index__row').first().getAttribute('href');
+    expect(frHref).toBeTruthy();
+    const slugMatch = frHref!.match(/\/editions\/([^/]+)\/?$/);
+    const slug = slugMatch?.[1];
+    expect(slug).toBeTruthy();
+
+    await page.goto(`/en/editions/${slug}/`);
+    const tileCount = await page.locator('.gallery-grid .tile').count();
+    test.skip(tileCount === 0, 'this édition has no secondary grid photos');
+
+    const measured = await assertGridIsFlushMasonry(page);
+    expect(measured).toBeGreaterThan(0);
+  });
+
+  // Scoping guard: proves the gallery masonry path still behaves identically
+  // now that éditions share the same mechanism (the exhaustive img-vs-tile
+  // flush proof for BOTH pages lives in gallery.spec.ts's PORT-05 block, not
+  // duplicated here).
+  test('galleries unaffected: the gallery masonry path renders identically now that éditions share it', async ({
     page,
   }) => {
     // No standalone galleries overview page — discover a real gallery
-    // detail href from the homepage grid, mirroring edition.spec.ts:239-243.
+    // detail href from the homepage grid, mirroring this file's own
+    // discovery pattern above.
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
     const galleryHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
@@ -352,7 +424,7 @@ test.describe('editions bento grid photos uncropped (quick-260803-ira)', () => {
     expect(Math.abs(ratios.clientRatio - ratios.naturalRatio) / ratios.naturalRatio).toBeLessThan(0.01);
   });
 
-  test('the hover/focus zoom still applies on both a bento hero tile and a bento small tile', async ({ page }) => {
+  test('the hover/focus zoom still applies on édition grid tiles after the masonry swap', async ({ page }) => {
     await page.goto('/editions/');
     const rowHref = await page.locator('.editions-index__row').first().getAttribute('href');
     expect(rowHref).toBeTruthy();
@@ -360,23 +432,24 @@ test.describe('editions bento grid photos uncropped (quick-260803-ira)', () => {
     await page.goto(rowHref!);
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
 
-    const heroTile = page.locator('.gallery-grid .tile--hero').first();
-    await expect(heroTile).toHaveClass(/revealed/);
-    const heroImg = heroTile.locator('img');
+    const tiles = page.locator('.gallery-grid .tile');
+    await expect(tiles.first()).toHaveClass(/revealed/);
 
-    const restTransform = await heroImg.evaluate((el) => getComputedStyle(el).transform);
+    const firstTile = tiles.first();
+    const firstImg = firstTile.locator('img');
+    const restTransform = await firstImg.evaluate((el) => getComputedStyle(el).transform);
     expect(restTransform).toBe('none');
 
-    await heroTile.hover();
-    await pollHoverZoomScale(heroImg);
+    await firstTile.hover();
+    await pollHoverZoomScale(firstImg);
 
-    const smallTileCount = await page.locator('.gallery-grid .tile--small').count();
-    test.skip(smallTileCount === 0, 'this édition renders no small tile');
+    const tileCount = await tiles.count();
+    test.skip(tileCount < 2, 'this édition renders only one grid tile');
 
-    const smallTile = page.locator('.gallery-grid .tile--small').first();
-    const smallImg = smallTile.locator('img');
-    await smallTile.hover();
-    await pollHoverZoomScale(smallImg);
+    const secondTile = tiles.nth(1);
+    const secondImg = secondTile.locator('img');
+    await secondTile.hover();
+    await pollHoverZoomScale(secondImg);
   });
 });
 

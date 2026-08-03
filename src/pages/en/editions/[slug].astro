@@ -14,7 +14,7 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
 import EditionDetailBody from '../../../components/EditionDetailBody.astro';
 import type { GalleryGridItem } from '../../../components/GalleryGrid.astro';
 import { getEditions } from '../../../lib/sanity';
-import { thumbnailUrl, fullSizeUrl, responsiveImageSrcSet, responsiveThumbnailSrcSet } from '../../../lib/image';
+import { fullSizeUrl, responsiveImageSrcSet } from '../../../lib/image';
 import { pickHeroIndex } from '../../../lib/image-orientation';
 import { getRelatedGalleryLink } from '../../../lib/related-gallery';
 
@@ -87,21 +87,31 @@ const relatedLink = getRelatedGalleryLink(edition.relatedGallery, locale);
 // quick-260801-kgh: the hero image is already shown full-bleed above —
 // exclude it from the grid by its REAL array index (not a hardcoded
 // offset), preserving every other image's own real position so grid
-// clicks open the correct Lightbox slide. Mirrors
-// src/pages/en/galleries/[slug].astro's own grid derivation, except the
-// édition grid keeps its square thumbnail treatment (thumbnailUrl /
-// responsiveThumbnailSrcSet, no masonry aspectRatio — see plan scope
-// boundaries).
+// clicks open the correct Lightbox slide.
+// quick-260803-jby: the grid derivation now mirrors
+// src/pages/en/galleries/[slug].astro's own derivation completely — a real
+// per-photo aspectRatio computed from the Sanity image dimensions, plus the
+// uncropped fullSizeUrl/responsiveImageSrcSet helpers in place of the
+// square-crop treatment this derivation used before — so each masonry
+// tile's box is the photo's own shape and no tile background is ever
+// exposed around a photo. Per the owner's direct feedback: éditions should
+// display photos entirely, the same way Galleries pages already do. The
+// localized alt and locale-specific ariaLabel stay exactly as they were.
 const gridItems: GalleryGridItem[] = images
   .map((img, index) => ({ img, index }))
   .filter((pair) => pair.index !== heroIndex)
-  .map(({ img, index }) => ({
-    index,
-    src: thumbnailUrl(img, 600),
-    srcset: responsiveThumbnailSrcSet(img),
-    alt: img.alt?.[locale] ?? '',
-    ariaLabel: `View full size, image ${index + 1} of ${total}`,
-  }));
+  .map(({ img, index }) => {
+    const { width, height } = img.dimensions ?? {};
+    const aspectRatio = width && height && height > 0 ? width / height : 1;
+    return {
+      index,
+      src: fullSizeUrl(img, 600),
+      srcset: responsiveImageSrcSet(img, [320, 480, 600, 900]),
+      alt: img.alt?.[locale] ?? '',
+      ariaLabel: `View full size, image ${index + 1} of ${total}`,
+      aspectRatio,
+    };
+  });
 ---
 
 <BaseLayout title={seoTitle} description={seoDescription} socialImage={socialImage} headerVariant="transparent">
