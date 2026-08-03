@@ -275,6 +275,18 @@ Items acknowledged and deferred at v1.4 milestone close on 2026-08-01 (`/gsd-com
 | quick_task | 260722-refine-contact-details | missing (still unexecuted; Contact page contact-details block was rebuilt in the sketch-013 redesign — superseded) |
 | quick_task | 260722-remove-redundant-sanity-fieldsets | missing (still unexecuted; overlaps the same Studio rework — superseded) |
 
+Items acknowledged and deferred at v1.5 milestone close on 2026-08-03 (`/gsd-complete-milestone` pre-close audit, the same 7 open items re-surfaced unchanged from the v1.4 close — none resolved in the interim, none blocking; user chose "Acquitter tout, proceed"):
+
+| Category | Item | Status |
+|----------|------|--------|
+| debug | knowledge-base | unknown (same persistent false positive noted at both the v1.3 and v1.4 close — the resolved-sessions index file itself, not a live investigation) |
+| quick_task | 260722-compact-sanity-document-layout | missing (still unexecuted, still superseded by the Studio rework — see v1.4 note above) |
+| quick_task | 260722-improve-contact-page | missing (still unexecuted, still superseded by the sketch-013 Contact redesign — see v1.4 note above) |
+| quick_task | 260722-normalize-sanity-form-spacing | missing (still unexecuted, still superseded by the Studio rework — see v1.4 note above) |
+| quick_task | 260722-rebalance-contact-typography | missing (still unexecuted, still superseded by the sketch-013 Contact redesign — see v1.4 note above) |
+| quick_task | 260722-refine-contact-details | missing (still unexecuted, still superseded by the sketch-013 Contact redesign — see v1.4 note above) |
+| quick_task | 260722-remove-redundant-sanity-fieldsets | missing (still unexecuted, still superseded by the Studio rework — see v1.4 note above) |
+
 ## Session Continuity
 
 Last session: 2026-08-03T07:21:36.806Z

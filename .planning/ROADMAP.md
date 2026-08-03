@@ -93,6 +93,8 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
 
 **UI hint**: yes
 
+### v1.5 Global Improvements & Bug Fixes (Phases 17-19) — SHIPPED 2026-08-03
+
 ### Phase 17: Homepage Carousel & Intro Fixes
 
 **Goal**: Visitors browsing the homepage hero see uninterrupted carousel auto-advance and the full grid-mode intro text, matching the intended always-on hero experience.
