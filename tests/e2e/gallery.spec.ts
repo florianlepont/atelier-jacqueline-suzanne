@@ -968,6 +968,28 @@ test.describe('gallery + édition thumbnail tiles render with no frame (PORT-05,
       };
     });
     expect(Math.abs(ratios.clientRatio - ratios.naturalRatio) / ratios.naturalRatio).toBeLessThan(0.01);
+
+    // Regression guard: a masonry `.tile img` left at its default `display:
+    // inline` leaves a ~3-4px baseline/descender gap below the image, where
+    // the shared `background: var(--color-ink)` (D-05's loading fallback)
+    // shows through as a visible dark strip along the tile's bottom edge —
+    // reported live post-merge, root-caused to the missing `display: block`
+    // on `.gallery-grid--masonry .tile img`. No border-width check catches
+    // this; only a direct img-vs-tile bounding-box comparison does.
+    const gaps = await tiles.evaluateAll((els) =>
+      els.map((el) => {
+        const tileRect = el.getBoundingClientRect();
+        const imgRect = el.querySelector('img')!.getBoundingClientRect();
+        return {
+          top: imgRect.top - tileRect.top,
+          bottom: tileRect.bottom - imgRect.bottom,
+        };
+      }),
+    );
+    for (const gap of gaps) {
+      expect(Math.abs(gap.top)).toBeLessThan(0.5);
+      expect(Math.abs(gap.bottom)).toBeLessThan(0.5);
+    }
   });
 
   test('édition detail (bento): every tile has 0px borders and object-fit: cover', async ({ page }) => {
