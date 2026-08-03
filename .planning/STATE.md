@@ -24,7 +24,7 @@ current_phase_name: Site-Wide Visual Polish
 See: .planning/PROJECT.md (updated 2026-08-03)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; v1.3 adds a non-transactional Éditions showcase; checkout still follows in the future v1.x shop milestone.)
-**Current focus:** Phase 19 — Site-Wide Visual Polish
+**Current focus:** Planning next milestone — v1.5 shipped 2026-08-03. Candidates: Phase 5 (Launch & Domain Cutover, deliberately deferred) or the v1.x wave (Exhibitions, Shop, Checkout, Shipping, commerce Legal — see REQUIREMENTS.md v2 section once a fresh REQUIREMENTS.md exists).
 
 ## Current Position
 
