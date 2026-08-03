@@ -1,23 +1,28 @@
 ---
 phase: 18-gallery-ditions-display-fixes
 verified: 2026-08-03T08:00:00Z
-status: human_needed
+status: passed
 score: 7/7 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
 human_verification:
+
   - test: "Run `npm run build && npm run preview`, open a gallery detail page in FR and in EN, scroll to the bottom, and confirm the footer (site text plus the two legal nav links) is visible and correctly styled against the page background."
     expected: "The footer renders with correct visual styling (spacing, color, legal links) on both locales."
     why_human: "Playwright proves the footer element exists and is counted once, and proves the desktop scroll track is >= 300px, but not its subjective visual styling/appearance."
+
   - test: "On the same pages, confirm the thumbnail photos below the hero show no dark outline at their edges, on both a gallery page and an edition page, at desktop width and at a phone width."
     expected: "No visible border/frame around any thumbnail, at desktop and phone widths."
     why_human: "Playwright proves computed border-width is 0px and background-color/object-fit are correct at 1280x900, but full cross-viewport (including phone-width rendering) visual confirmation was deferred to this project's `workflow.human_verify_mode: end-of-phase` checkpoint."
+
   - test: "Run `npm --prefix sanity run dev`, open a gallery or édition's Texte de présentation field, paste text longer than 700 characters, and confirm the French error message appears naming the character limit, and that Publier is blocked."
     expected: "Studio blocks publish and shows a French error message stating the 700-character limit."
     why_human: "Requires typing into the live interactive Studio UI — not observable via source/grep. `npm --prefix sanity run build` (verified below) proves the schema compiles correctly, but not the interactive validation UX."
+
   - test: "In the same Studio session, open the longest currently-published document (édition `entasse`, 453 fr chars) and confirm it opens with NO validation error."
     expected: "No validation error on the longest existing published statement (453 chars, well under the 700 cap)."
     why_human: "Interactive Studio confirmation, not visible to static analysis."
+
   - test: "Run `npm run build && npm run preview`, open the gallery with the longest description (`the-victorian-tea-room`) at desktop width and at a phone width, and confirm the whole description reads to its end with no cut-off and no text spilling outside the hero panel."
     expected: "Full statement text visible, no clipping, no overflow past the hero panel, at both widths."
     why_human: "Playwright already proves this via computed CSS (clamp=none, scrollHeight<=clientHeight, reveal-inside-pin) for every published gallery at 1280x900 and 390x844 — this item is the final subjective visual read-through, explicitly deferred per `workflow.human_verify_mode: end-of-phase`."
