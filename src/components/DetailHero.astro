@@ -20,12 +20,17 @@
 // homepage carousel/grid crop exactly, and the opt-in prop was removed
 // entirely rather than kept as speculative flexibility.
 //
-// quick-260803-bvu (Items 4 & 7): re-opens that reversal for ÉDITIONS ONLY
-// — a fresh, explicit request scoped to this one caller, not a blanket
-// reintroduction. `editionVariant` is the single opt-in flag (see Props
-// below): both édition [slug].astro twins pass it; galleries never do, so
-// their object-fit: cover crop and their shared cross-document
-// view-transition name are completely unaffected — see
+// quick-260803-bvu (Item 4) / quick-260803-jwl: `editionVariant` (see Props
+// below) now scopes exactly ONE thing — suppressing the shared
+// cross-document `hero-photo` view-transition name for éditions at desktop
+// widths, fixing a real édition-to-édition navigation shake. Item 4's
+// sibling, Item 7 (briefly rendering the édition hero uncropped, at its
+// natural aspect ratio, diverging from the gallery hero's crop), was
+// reverted by quick-260803-jwl at the owner's explicit request
+// ("remets la primary en zoomée comme avant") — édition and gallery hero
+// photos are rendered identically again, both cropping via the base
+// `.detail-hero__img` rule below. Both édition [slug].astro twins still
+// pass `editionVariant`; galleries never do — see
 // tests/e2e/gallery.spec.ts's hero-photo desktop/mobile assertions, which
 // must keep passing byte-unchanged.
 //
@@ -83,12 +88,14 @@ interface Props {
   // for the churn it would cause across GalleryDetailBody.astro and both
   // gallery [slug].astro twins.
   carouselReturnHref?: string;
-  // quick-260803-bvu (Items 4 & 7): single opt-in scoping flag for the
-  // édition-only hero treatment (see the file-header comment above).
-  // Defaults to false — today's gallery behavior (cropped photo via
-  // object-fit: cover, shared `hero-photo` cross-document view-transition
-  // name at desktop). Both édition [slug].astro twins pass true; gallery
-  // pages never set it.
+  // quick-260803-bvu (Item 4) / quick-260803-jwl: single opt-in scoping flag
+  // controlling ONLY whether the shared cross-document `hero-photo`
+  // view-transition name is suppressed at desktop widths (see the
+  // file-header comment above). Defaults to false — today's gallery
+  // behavior of keeping that shared name at desktop. Both édition heroes
+  // and gallery heroes crop their photo the same way regardless of this
+  // flag; it is no longer a per-caller behavior at all. Both édition
+  // [slug].astro twins pass true; gallery pages never set it.
   editionVariant?: boolean;
 }
 
@@ -500,16 +507,6 @@ const {
     transform: scale(1.02);
   }
 
-  /* quick-260803-bvu (Item 7): édition-only — show the whole photo at its
-     natural aspect ratio instead of cropping it to fill the box, so
-     nothing of the photographer's framing is lost. `.detail-hero__pin`'s
-     own ink background (above) shows through as letterboxing rather than
-     a gap. Gallery heroes never carry `.detail-hero--edition` and keep
-     their existing object-fit: cover crop untouched. */
-  .detail-hero--edition .detail-hero__img {
-    object-fit: contain;
-  }
-
   /* Cross-document View Transition destination name (quick-260724-uf5,
      sketch 006) — DESKTOP ONLY, NEVER unconditional / NEVER on mobile. This
      is a direct precaution against the HOME-06/D-10/D-12 bug class: a
@@ -543,9 +540,12 @@ const {
        (measured: 1280px, scrollY 0). Two documents sharing the same
        `hero-photo` name with that large a size delta forces the browser
        to MORPH between the two box sizes as part of the crossfade —
-       exactly the visible shake/jump the client reported, made worse by
-       Item 7 also making the two photos' letterboxed content diverge more
-       than a uniform `cover` crop ever did. The fix: stop naming the
+       exactly the visible shake/jump the client reported. Item 7 briefly
+       made the two photos' fitted content diverge more than a uniform crop
+       did, but that divergence was reverted by quick-260803-jwl at the
+       owner's explicit request, so this size-delta morph is now the SOLE
+       cause of the shake — and this suppression is required on its own
+       merits regardless of that other change. The fix: stop naming the
        édition hero for view transitions, so an édition-to-édition
        navigation falls back to the site-wide root crossfade
        (`@view-transition { navigation: auto }` in BaseLayout.astro) —

@@ -212,14 +212,16 @@ test.describe('editions detail', () => {
   });
 });
 
-// quick-260803-bvu (Item 7): the hero photo shows the whole image at its
-// natural aspect ratio on éditions (object-fit: contain, letterboxed on
-// the pin's own ink background) while gallery detail heroes keep their
-// existing cropped, homepage-matching treatment (object-fit: cover)
-// untouched — mirrors gallery.spec.ts's own hero-photo assertions so this
-// scoping guard lives next to its counterpart.
-test.describe('editions hero uncropped photo (Item 7, quick-260803-bvu)', () => {
-  test('an édition hero photo reports object-fit: contain, unlike a gallery hero which still crops', async ({
+// quick-260803-jwl: an édition hero photo and a gallery detail hero photo
+// crop to fill their box identically — quick-260803-bvu Item 7 briefly made
+// the édition hero render its whole photo uncropped instead (letterboxed on
+// the pin's own ink background), diverging from the gallery treatment, but
+// that was reverted at the owner's explicit request ("remets la primary en
+// zoomée comme avant") so both heroes are the same crop treatment again —
+// mirrors gallery.spec.ts's own hero-photo assertions so this guard lives
+// next to its counterpart.
+test.describe('editions hero crops identically to a gallery hero (quick-260803-jwl)', () => {
+  test('an édition hero photo reports the same object-fit as a gallery hero, both cropped', async ({
     page,
   }) => {
     await page.goto('/editions/');
@@ -230,7 +232,7 @@ test.describe('editions hero uncropped photo (Item 7, quick-260803-bvu)', () => 
     const editionObjectFit = await page
       .locator('.detail-hero__img')
       .evaluate((el) => getComputedStyle(el).objectFit);
-    expect(editionObjectFit).toBe('contain');
+    expect(editionObjectFit).toBe('cover');
 
     // There is no standalone galleries overview page (the homepage grid is
     // the sole browse entry point — see PROJECT.md) — discover a real
@@ -248,13 +250,12 @@ test.describe('editions hero uncropped photo (Item 7, quick-260803-bvu)', () => 
   });
 });
 
-// quick-260803-ira fixed the édition hero photo (DetailHero.astro, see the
-// describe block just above) but missed the OTHER photos in the bento grid
-// below it — GalleryGrid.astro's shared `.tile img` base rule still cropped
-// them, so that task changed the rule's `object-fit` from crop to contain.
-// That stopped the crop but, because bento's cells have a fixed size
-// independent of each photo's real ratio, the photo now letterboxed against
-// the tile's own ink background — confirmed live on review. quick-260803-jby
+// quick-260803-ira changed GalleryGrid.astro's shared `.tile img` base rule
+// so the secondary photos in the bento grid below the hero stopped being
+// cropped, switching the rule's `object-fit` from crop to contain. That
+// stopped the crop but, because bento's cells have a fixed size independent
+// of each photo's real ratio, the photo then letterboxed against the tile's
+// own ink background — confirmed live on review. quick-260803-jby
 // replaces the mechanism instead of patching it again: éditions now render
 // the same masonry layout gallery detail pages already use, where each
 // tile's box IS the photo's own shape (driven by a real per-photo
