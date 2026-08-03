@@ -142,7 +142,16 @@ const {
   .contact-page__detail {
     position: relative;
     display: block;
-    padding: clamp(6px, 1.1vh, 12px) 0;
+    /* Horizontal padding (CONT-03) so the E-mail/Instagram label/value text
+       has breathing room from the row edges during the black hover-fill
+       below — was flush at `0` before. ::before intentionally keeps
+       `inset: 0` unchanged: it's absolutely positioned inside this
+       position: relative row, so `inset: 0` resolves against the row's
+       PADDING box (which now includes this padding), not its content box —
+       the fill still spans the row's full border-box edge to edge, only
+       the text (.contact-page__detail-inner / .contact-page__value, both
+       position: relative; z-index: 1) sits inset from it. */
+    padding: clamp(6px, 1.1vh, 12px) var(--space-md);
     border-bottom: var(--border-hairline) solid var(--color-border);
     color: var(--color-ink);
     text-decoration: none;

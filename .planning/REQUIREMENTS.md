@@ -22,7 +22,7 @@ A batch of 8 live-reported visual/interaction bugs and regressions across the ho
 
 ### Éditions
 
-- [ ] **EDN-09**: Visitor sees the Éditions overview page's title and description text change color together with the eyebrow and divider when hovering a row (currently only the eyebrow/divider follow the row's accent color — a real regression)
+- [x] **EDN-09**: Visitor sees the Éditions overview page's title and description text change color together with the eyebrow and divider when hovering a row (currently only the eyebrow/divider follow the row's accent color — a real regression)
 
 ### Site-Wide Visual
 
@@ -30,7 +30,7 @@ A batch of 8 live-reported visual/interaction bugs and regressions across the ho
 
 ### Contact
 
-- [ ] **CONT-03**: Visitor sees horizontal breathing room around the E-mail/Instagram link text when the black hover-fill effect appears on the Contact page (currently flush against the container edges)
+- [x] **CONT-03**: Visitor sees horizontal breathing room around the E-mail/Instagram link text when the black hover-fill effect appears on the Contact page (currently flush against the container edges)
 
 ## Carried Forward (still open, not part of v1.5)
 
@@ -127,9 +127,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PORT-04 | Phase 18 | Complete |
 | PORT-05 | Phase 18 | Complete |
 | PORT-06 | Phase 18 | Complete |
-| EDN-09 | Phase 19 | Pending |
+| EDN-09 | Phase 19 | Complete |
 | UI-01 | Phase 19 | Pending |
-| CONT-03 | Phase 19 | Pending |
+| CONT-03 | Phase 19 | Complete |
 | LAUNCH-01 | Phase 5 | Pending |
 
 **Coverage:**

@@ -84,20 +84,29 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
 
   /* PageTitleHeader.astro owns the header/eyebrow/h1/intro/halftone markup
      and base styling now (shared with the Contact page). These :global()
-     rules only add the row-hover color sync that's Éditions-specific. */
-  :global(html.editions-row-active) .page-title-header__eyebrow {
+     rules only add the row-hover color sync that's Éditions-specific.
+     EDN-09: the ENTIRE selector must sit inside :global(...), not just the
+     `html.editions-row-active` prefix. Astro's :global() only exempts the
+     portion inside the parentheses from this component's scope-hash — a
+     trailing selector left outside still gets EditionsOverviewBody.astro's
+     own data-astro-cid attribute appended at compile time. The real
+     .page-title-header__* elements are rendered by PageTitleHeader.astro
+     and only ever carry ITS scope attribute, never this component's, so a
+     partially-wrapped selector can structurally never match them (confirmed
+     live, root-caused during Phase 19 discussion). */
+  :global(html.editions-row-active .page-title-header__eyebrow) {
     color: var(--editions-row-accent-text);
   }
-  :global(html.editions-row-active) .page-title-header__eyebrow::before {
+  :global(html.editions-row-active .page-title-header__eyebrow::before) {
     background-color: var(--editions-row-accent-text);
   }
-  :global(html.editions-row-active) .page-title-header h1 {
+  :global(html.editions-row-active .page-title-header h1) {
     color: var(--editions-row-accent-text);
   }
-  :global(html.editions-row-active) .page-title-header__intro {
+  :global(html.editions-row-active .page-title-header__intro) {
     color: var(--editions-row-accent-text);
   }
-  :global(html.editions-row-active) .page-title-header__divider {
+  :global(html.editions-row-active .page-title-header__divider) {
     background-color: var(--editions-row-accent-text);
   }
 
