@@ -21,17 +21,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-07-22)
+See: .planning/PROJECT.md (updated 2026-08-03)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; v1.3 adds a non-transactional Éditions showcase; checkout still follows in the future v1.x shop milestone.)
-**Current focus:** Phase 18 — Gallery & Éditions Display Fixes
+**Current focus:** Phase 19 — Site-Wide Visual Polish
 
 ## Current Position
 
 Phase: 19 — Site-Wide Visual Polish
 Plan: Not started
-Status: Executing Phase 18
-Last activity: 2026-08-03 — Phase 18 complete, transitioned to Phase 19
+Status: Ready to plan
+Last activity: 2026-08-03 — Phase 18 complete (PORT-04/05/06 shipped, incl. a live-caught masonry tile bottom-gap fix), transitioned to Phase 19
 
 ## Performance Metrics
 
@@ -139,6 +139,11 @@ Recent decisions affecting current work:
 - [Phase 16]: D-10 cap override (2026-07-29, live at plan 16-03's human-verify checkpoint): after testing the original WCAG-adjacent-capped build (`MIN_INTERVAL_MS = 350`, ≈2.86/sec), the user explicitly asked for a faster rate and knowingly accepted the WCAG 2.3.1 flash-rate tradeoff ("tant pis pour les flash effect"). Presented with the risk and three concrete options, they chose to raise the cap significantly while keeping a finite ceiling: `MIN_INTERVAL_MS` moved from 350ms to 150ms (≈6.7/sec at dead-center); `MAX_INTERVAL_MS`/`DRIFT_INTERVAL_MS` unchanged. This is a knowing, user-confirmed departure from WCAG general-flash guidance for this one page, not an oversight — do not revert without the user raising the cap again. Reconciled back into plan 16-01's already-merged `16-01-PLAN.md`/`16-01-SUMMARY.md` via a dated post-completion addendum (mirroring the Phase 6 `06-01-SUMMARY.md` precedent for live post-checkpoint follow-ons), rather than left to silently drift out of sync with the shipped code. See `16-CONTEXT.md` D-10 override and `16-03-SUMMARY.md`.
 - [Phase 16]: Post-completion code review (`16-REVIEW.md`) found 0 Critical + 3 Warnings + 2 Info; fixed WR-01 (bilingual `<span>`/`<a>` elements on the 404 page lacked `lang="fr"`/`lang="en"`, a real WCAG 3.1.2 gap invisible to the existing axe-core suite) and WR-02 (stale `MIN_INTERVAL_MS = 350ms` comment in `not-found.spec.ts`, left over from the D-10 override above). WR-03 (the D-10 cap itself, ≈6.7/sec) was flagged by design, not fixed — it's the same accepted tradeoff, not a new issue. IN-01/IN-02 (missing default-engine e2e coverage; all pool photos `loading="eager"`) deferred as Info-level, matching this project's established review-triage convention (see Phase 01's review note above).
 - [Phase 16]: Post-merge/regression testing surfaced a pre-existing, out-of-scope regression from Phase 15 (`tests/e2e/site-header.spec.ts`, 4 failures on `/about/` at 320/360/767px, horizontal `scrollWidth` overflow) — deferred at the time as out of scope for ERR-01. **RESOLVED 2026-07-29, post-merge to `main`**: GitHub Actions caught the same failure blocking `main`'s deploy (run `30467173706`) after the v1.4 PR merged. Root-caused to a **shared `PageTitleHeader.astro` bug affecting About, Contact, AND Éditions** (not About-specific as first suspected): (1) the giant title's `white-space: nowrap` + a 64px font-size floor overflowed on any heading longer than ~"Contact" at narrow widths, and (2) the halftone texture's intentional `-700px` bleed was never actually contained horizontally on any page (the component's own comment claiming Contact had a scoped fix was stale/false — no such rule existed). Fixed by removing the `nowrap` (titles now wrap to 2 lines instead of overflowing) and adding a site-wide `overflow-x: hidden` to `html, body` in `BaseLayout.astro` (contains any bleed element's horizontal overflow site-wide, without touching Éditions' intentional *vertical* bleed). Verified zero overflow across all 3 consumer pages + homepage + 404, both locales, at 320/360/767px. See `.planning/phases/16-404-page-editorial-redesign/deferred-items.md` for full root-cause writeup.
+- [Phase 17]: Homepage carousel hover-pause removed for mouse only (`mouseenter`/`mouseleave` deleted); keyboard-focus pause (`focusin`/`focusout`) explicitly kept — a deliberate mouse-vs-keyboard behavioral split, per user decision during discuss-phase, to avoid regressing keyboard accessibility while satisfying the literal "stop pausing on hover" request. Do not remove the focus-pause without the user asking again.
+- [Phase 17]: Grid-mode intro paragraph's `-webkit-line-clamp: 2` removed entirely with no substitute cap — user chose simplicity/fidelity to real content over a defensive higher line limit.
+- [Phase 18]: PORT-04's overflow defence deliberately moved from a CSS clamp to a Sanity Studio field-level max-length validation (not a higher CSS line-clamp) — user's explicit choice, since `DetailHero` is a fixed-height sticky panel (unlike Phase 17's freely-growing tile) and content-authoring-time prevention is more robust than display-time truncation. N=700, empirically derived against the real component (8 candidate lengths × 3 viewports) and floor-checked against the longest published statement (453 chars) — see `18-02-SUMMARY.md`'s calibration table.
+- [Phase 18]: Planner corrected two factual errors in `18-CONTEXT.md` before planning: (1) masonry grid layout IS live on gallery detail pages via `GalleryDetailBody.astro` (CONTEXT.md wrongly claimed no page used it), and (2) the CONTEXT.md's "250-320 char" starting estimate for PORT-04's N would have invalidated 4 of 8 published statements — both caught via live GROQ queries against the actual dataset before locking the plan, not discovered post-ship.
+- [Phase 18]: Live UAT (human verification pass, post-merge) caught a real regression automated Playwright screenshots missed: a ~3.5px gap below every gallery-detail thumbnail image (masonry mode), from `.gallery-grid--masonry .tile img` being left at its default `display: inline` — the `.tile`'s intentional `background: var(--color-ink)` loading fallback (D-05) bled through the gap as a visible dark strip, only noticeable once the border removal (PORT-05) stopped visually dominating the tile edge. Fixed with `display: block;` on the img (verified 3.5px → 0px empirically); a new regression assertion (img-vs-tile bounding-box comparison) was added to the existing PORT-05 masonry e2e test, since a border-width check cannot catch a non-border layout gap. Commit `e4bdf16`.
 
 ### Pending Todos
 
@@ -271,12 +276,13 @@ Items acknowledged and deferred at v1.4 milestone close on 2026-08-01 (`/gsd-com
 
 ## Session Continuity
 
-Last session: 2026-08-02T16:43:12.011Z
-Stopped at: Phase 18 context gathered
-Resume file: .planning/phases/18-gallery-ditions-display-fixes/18-CONTEXT.md
+Last session: 2026-08-03T08:50:00.000Z
+Stopped at: Phase 18 complete, ready to plan Phase 19
+Resume file: None
 
-**Next up:** v1.4 milestone (Editorial Design Consistency — Phase 15 About + Phase 16 404) is fully shipped. Phase 5 (Launch & Domain Cutover) remains open and deliberately deferred whenever launch is next prioritized. The pre-existing `/about/` mobile-header overflow regression (Phase 15, logged in `.planning/phases/16-404-page-editorial-redesign/deferred-items.md`) is still open and recommended as a follow-up quick task before or alongside launch.
+**Next up:** Phase 19 (Site-Wide Visual Polish — EDN-09, UI-01, CONT-03) is the last phase of v1.5. Phase 5 (Launch & Domain Cutover) remains open and deliberately deferred whenever launch is next prioritized. The pre-existing `/about/` mobile-header overflow regression (Phase 15) was root-caused and fixed post-merge during Phase 16 (see `.planning/milestones/v1.4-phases/16-404-page-editorial-redesign/deferred-items.md`) — no longer open.
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- `/gsd-discuss-phase 19` — gather context for the last v1.5 phase before planning
+- `/gsd-plan-phase 19` — plan directly (skip discussion)

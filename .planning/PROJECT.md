@@ -111,12 +111,14 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 - [x] Visitor can keep the homepage carousel auto-advancing while hovering over the page — pointer-hover pause removed, keyboard-focus pause and the manual toggle preserved unchanged — HOME-11, Phase 17
 - [x] Visitor sees the homepage's grid-mode intro paragraph in full, not cut off after 2 lines — line-clamp removed entirely, no substitute cap — HOME-12, Phase 17
 
+**v1.5 (Gallery & Éditions Display Fixes — Phase 18, shipped 2026-08-03):**
+- [x] Visitor sees a gallery's full description on its detail page, not cut off mid-sentence — CSS clamp removed, bounded instead by an empirically-calibrated Sanity Studio max-length (700 chars, floor-checked against the longest published statement) — PORT-04, Phase 18
+- [x] Visitor sees gallery and Éditions thumbnail images without a black border frame — border removed from the shared `.tile` rule (loading-state background kept); a live-caught follow-up (a ~3.5px bottom gap from an unset `display: block` on masonry-mode tile images) was diagnosed and fixed in the same UAT pass — PORT-05, Phase 18
+- [x] Visitor sees the site footer on gallery pages — `hideFooter` prop removed from both locale routes, mirroring the already-working Éditions detail pages — PORT-06, Phase 18
+
 ### Active
 
 **v1.5 (Global Improvements & Bug Fixes, this milestone):**
-- [ ] Visitor sees a gallery's full description on its detail page, not cut off mid-sentence — PORT-04
-- [ ] Visitor sees gallery and Éditions thumbnail images without a black border frame — PORT-05
-- [ ] Visitor sees the site footer on gallery pages — PORT-06
 - [ ] Visitor sees the Éditions page title/description change color together with the eyebrow/divider when hovering a row — EDN-09
 - [ ] Visitor sees the halftone dot texture extend to the true browser edges on Contact/About/Éditions again, with no horizontal scrollbar — UI-01
 - [ ] Visitor sees breathing room around the E-mail/Instagram text when the black hover-fill effect appears on Contact — CONT-03
@@ -188,6 +190,8 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 | 404 page redesigned as a fully custom, interactive concept (photo pool hard-cutting at a pointer/touch-proximity-driven rate) rather than reusing `PageTitleHeader` as originally scoped | User rejected the PageTitleHeader-reuse framing during `/gsd-discuss-phase 16` (2026-07-29) for a more distinctive, interactive treatment — see `16-CONTEXT.md` | Confirmed — shipped Phase 16, 2026-07-29 |
 | 404 photo-pop rate cap raised from ≈3/sec to ≈6.7/sec (`MIN_INTERVAL_MS` 350ms→150ms), a knowing departure from WCAG 2.3.1 general-flash guidance for this one page | Live, user-requested override at plan 16-03's human-verify checkpoint after testing the original cap ("tant pis pour les flash effect"); presented with the risk and three concrete options, user chose the faster rate while keeping a finite ceiling | Confirmed — user override 2026-07-29, do not revert without the user raising the cap again (see `16-CONTEXT.md` D-10) |
 | Shared `PageTitleHeader.astro` overflow bug (affecting About, Contact, and Éditions — not About-specific as first suspected) fixed post-merge: removed `white-space: nowrap` on the giant title and added site-wide `overflow-x: hidden` to `html, body` | GitHub Actions caught a real `main`-blocking regression (4 e2e failures on `/about/` at narrow widths) after the v1.4 PR merged; root-caused to a stale/false claim in the component's own comment that Contact already had a scoped overflow fix | Confirmed — fixed and verified zero-overflow across all 3 consumer pages + homepage + 404, both locales, 2026-07-29 |
+| PORT-04's overflow defence moved from CSS clamp to a Sanity Studio field-level max-length (700 chars) instead of a higher CSS line-clamp | User's explicit choice during Phase 18 discuss ("retirer sans filet mais mettre un nombre de caractère max dans le champ sur le studio") — prevention at the content-authoring source rather than truncation at display time, since `DetailHero` is a fixed-height sticky panel (unlike Phase 17's freely-growing homepage tile) | Confirmed — N=700 empirically derived (8 candidate lengths × 3 viewports against the real component), floor-checked against the longest published statement (453 chars, édition `entasse`) with 247 chars of margin, Phase 18 |
+| Gallery/édition thumbnail `.tile` keeps its `background: var(--color-ink)` loading-state fallback while only the visible border declaration is removed | User's explicit choice during Phase 18 discuss — avoids a white/blank flash during lazy-image loading while scrolling; the border (unwanted frame) and the background (wanted fallback) are separate concerns | Confirmed — Phase 18; a live-caught follow-up bug (masonry-mode `.tile img` left at default `display: inline`, leaving a ~3.5px gap where the background bled through as a bottom-edge dark strip) was diagnosed and fixed in the same UAT session, with a new regression test added since the existing border-width check could not have caught a layout gap |
 
 ## Evolution
 
@@ -207,4 +211,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-02 — Phase 17 (Homepage Carousel & Intro Fixes) complete: HOME-11/HOME-12 validated and moved out of Active. 6 of 8 v1.5 requirements remain: PORT-04/05/06, EDN-09, UI-01, CONT-03.*
+*Last updated: 2026-08-03 — Phase 18 (Gallery & Éditions Display Fixes) complete: PORT-04/05/06 validated and moved out of Active. 3 of 8 v1.5 requirements remain: EDN-09, UI-01, CONT-03.*
