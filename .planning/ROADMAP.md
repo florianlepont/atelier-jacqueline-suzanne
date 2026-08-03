@@ -115,7 +115,15 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
   3. Revisiting the homepage on a phone across multiple visits shows different accent colors, each one of the existing per-gallery `heroColor` values (no new palette introduced).
   4. On tablet/desktop viewports, the homepage header bar, language switcher placement, and accent-color behavior are pixel-for-pixel and behaviorally unchanged from the pre-milestone (Phase 19) state.
 
-**Plans**: TBD
+**Plans:** 5 plans (waves: 1 = 20-01 + 20-02 in parallel, 2 = 20-03, 3 = 20-04, 4 = 20-05)
+
+Plans:
+- [ ] 20-01-PLAN.md — HOME-16: per-visit random starting accent colour (`pickRandomGalleryIndex()`, accent-only override, deterministic e2e)
+- [ ] 20-02-PLAN.md — HOME-13: shared-header regression net proven green BEFORE any source change, plus retirement of three pre-existing assertions the phase intentionally changes
+- [ ] 20-03-PLAN.md — HOME-13: `SiteHeader`'s opt-in `mobileNav` prop, the hamburger, the full-screen `MobileNavPanel` dialog, and its structural CSS
+- [ ] 20-04-PLAN.md — HOME-13/D-03: open/close behaviour and motion (CSS `@starting-style` open, JS-orchestrated close, hamburger↔X morph) with cross-engine smoke coverage
+- [ ] 20-05-PLAN.md — HOME-13/HOME-16: halftone accent, mobile-viewport axe coverage for the open panel, and the CI-order phase gate
+
 **UI hint**: yes
 
 ### Phase 21: Homepage Scroll Experience
