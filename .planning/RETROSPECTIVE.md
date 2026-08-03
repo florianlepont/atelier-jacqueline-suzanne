@@ -157,6 +157,40 @@
 
 ---
 
+## Milestone: v1.5 — Global Improvements & Bug Fixes
+
+**Shipped:** 2026-08-03 (all 3 phases executed 2026-08-02 to 2026-08-03)
+**Phases:** 3 (17-19) | **Plans:** 5 | **Tasks:** 13
+
+### What Was Built
+- Homepage carousel no longer pauses auto-advance on mere pointer hover (keyboard-focus pause and the manual toggle untouched), and the grid-mode intro paragraph shows in full with no substitute clamp (Phase 17, HOME-11/HOME-12)
+- Gallery/Éditions thumbnail tiles lost their black border frame while keeping the loading-state background fallback, the site footer returned to gallery pages, and the detail-hero description clamp was replaced by an empirically-derived 700-character Sanity Studio limit locked against schema drift by a new unit test (Phase 18, PORT-04/05/06)
+- A genuine, silently-shipped Astro `:global()` scoping bug that prevented Éditions row-hover from ever recoloring the shared header was root-caused and fixed, Contact's link rows gained breathing room without shrinking their hover-fill, and the halftone texture's true edge-to-edge bleed was restored via geometry-based containment instead of clipping — proven safe against Phase 16's prior `position: sticky` regression by an 18-test regression net written and proven green *before* the risky CSS was touched (Phase 19, EDN-09/UI-01/CONT-03)
+
+### What Worked
+- **Live empirical browser investigation during discuss-phase, before planning even started**: EDN-09's original CONTEXT-gathering assumption ("eyebrow/divider already work, only h1/intro don't") was wrong. Rather than plan around a guess, live Playwright MCP testing against a running preview server found the real root cause (a partial `:global()` wrap leaving a trailing selector permanently unmatchable) and confirmed the fix direction live before the planner ever ran — this is the single biggest de-risking move of the milestone, applied to the phase carrying the most regression history (UI-01/PageTitleHeader).
+- **Regression-net-first for the highest-risk change**: Plan 19-02 wrote the full D-05 overflow/sticky-pin regression suite and proved it green on the *unmodified* tree first, then made the risky `overflow-x: clip` → geometry-containment swap, then proved the same suite green again including the previously-failing bleed-geometry block. This directly answered Phase 16's documented production-breaking history rather than hoping the same mistake wouldn't repeat.
+- **Course-correction caught at discuss-phase, not execution**: the initial milestone-scoping read of the HOME-11 bug report ("pause on hover") was inverted from the user's actual intent; a single clarifying question during `/gsd-discuss-phase 17` caught it before CONTEXT.md was written, avoiding a wasted planning/execution cycle.
+- **Proactively applying the v1.4 postmortem's own lesson**: the missing-`### v{X.Y}` ROADMAP heading bug (documented as a 2-milestones-in-a-row gap in v1.4's retrospective) was fixed *before* running `milestone.complete` this time, by inserting the heading pre-emptively based on the known pattern — `milestone.complete` succeeded on the first attempt, no digit-prefix or missing-heading failure at all (none of Phases 17/18/19 have digit-leading name segments either, so that half of the prior bug class didn't apply here).
+
+### What Was Inefficient
+- **Two transient infrastructure failures mid-execution**: a `gsd-verifier` agent hit a session/API rate limit during Phase 17, and a Wave 1 executor for Phase 19 (plan 19-01) hit the same "session limit" error on its first dispatch with zero commits made. Both were correctly identified as transient (not real task failures) and resolved by waiting/retrying, but cost real wall-clock time across the session.
+- **The pre-close audit's 7 open items are, for the THIRD consecutive milestone, the exact same unresolved items** (the `knowledge-base.md` debug-index false positive, and 6 unexecuted 2026-07-22 Contact/Sanity-form quick-task plans) — first surfaced at the v1.3 close (2026-07-23), re-acknowledged at v1.4 (2026-08-01), and now re-acknowledged again at v1.5 (2026-08-03) with no change in status. Acknowledging without ever resolving has now visibly stopped working as a strategy — see Key Lessons.
+
+### Patterns Established
+- When a phase's own CONTEXT-gathering investigation contradicts its starting assumption about a bug's root cause, use live browser tooling (Playwright MCP against a running dev/preview server) to empirically confirm the real mechanism *before* handing off to the planner — a confirmed root cause and confirmed fix direction going into planning is worth the extra discuss-phase time, especially on a component with prior production-breaking history.
+- For any plan touching a component/CSS area that has already caused a production regression once, write the regression-net test file FIRST, prove it passes on the pre-change tree (validating the net is real, not a tautology), and only then make the risky change — do not skip the "prove it was green before" step even under time pressure.
+
+### Key Lessons
+1. **Proactive tool-bug mitigation works and should become the default first move at milestone close**: checking for and inserting the `### v{X.Y} ... — SHIPPED {date}` ROADMAP heading *before* invoking `milestone.complete` (rather than waiting for the tool to fail and fixing it reactively) avoided the exact failure both v1.3 and v1.4 hit. Do this preemptively at every future milestone close, not just after seeing the error.
+2. **A pre-close audit item acknowledged three milestones running without ever being executed or deleted is not being "deferred" — it is dead weight that should be resolved or removed.** The `knowledge-base.md` false positive and the 6 stale 2026-07-22 quick-task plans should be addressed directly (delete the superseded quick-task plan files; investigate whether `knowledge-base.md`'s debug-index format can be made auditor-recognizable) rather than acknowledged a fourth time at the next close.
+
+### Cost Observations
+- Model mix / session count: not tracked for this milestone (no telemetry captured in this context).
+- Notable: all 3 phases (17-19, 5 plans, 13 tasks) executed within roughly 24 hours (2026-08-02 to 2026-08-03) in a single continuous session — 69 commits, 47 files changed, +5437/-132 lines — with same-day milestone close, the shortest phase-ship-to-milestone-close lag of any milestone to date.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -169,6 +203,7 @@
 | v1.3 | — | 4 | First formal `/gsd-complete-milestone` run for this project; introduced explicit `## v{version}` ROADMAP headings and this RETROSPECTIVE.md |
 | *(retroactive)* | — | — | v1.0/v1.1/v1.2 formally closed together on 2026-07-27, seven days after v1.3 — closing the archival-lag gap v1.3's own retrospective flagged |
 | v1.4 | — | 2 | First milestone to hit the phase-locator digit-prefix bug hard enough to block automated close entirely (Phase 16 = "16-404-page-..."), requiring manual filesystem verification + `--force`; also the second consecutive milestone to skip the "add the versioned heading at creation time" lesson from v1.3 |
+| v1.5 | — | 3 | First milestone to proactively fix the missing-ROADMAP-heading bug *before* running `milestone.complete` (based on v1.4's own postmortem) instead of hitting it and recovering — zero tool failures at close. Also the first milestone where a discuss-phase used live Playwright MCP browser investigation to empirically confirm a bug's root cause before planning began. Third consecutive milestone with the same 7 unresolved pre-close audit items — see Key Lessons above. |
 
 ### Cumulative Quality
 
@@ -179,8 +214,10 @@
 | v1.2 | not separately measured | not separately measured | not tracked |
 | v1.3 | 163 e2e + 126 unit (whole-suite, not v1.3-only) | not separately measured for v1.3 alone | 0 (no new dependencies added across Phases 11-14) |
 | v1.4 | 9/9 `pop-rate.test.ts` (new) + 13/13 targeted 404/a11y e2e green at Phase 16 verification; full-suite counts not separately isolated for v1.4 | not separately measured for v1.4 alone | 0 (no new dependencies — pure Astro component/CSS/vanilla-JS work) |
+| v1.5 | 289 e2e + 276 unit (full whole-suite, post-Phase-19 merge) — up from 267 e2e at Phase 18; 18 new regression tests in `page-title-header-bleed.spec.ts` alone (Phase 19) | not separately measured for v1.5 alone | 0 (no new dependencies across Phases 17-19 — pure Astro/CSS/vanilla-JS + Sanity schema validation work) |
 
 ### Top Lessons (Verified Across Milestones)
 
-1. Direct-evidence re-verification (re-running commands, reading live data) over trusting prior written claims — first established in Phase 1's post-completion review, reconfirmed repeatedly through v1.3.
-2. Add the milestone's versioned ROADMAP heading at phase-creation time, not close time, and avoid digit-leading phase-name segments — both v1.3 and v1.4 lost time to the same class of phase-locator tooling gap; see v1.4's retrospective above for the sharper digit-prefix variant.
+1. Direct-evidence re-verification (re-running commands, reading live data) over trusting prior written claims — first established in Phase 1's post-completion review, reconfirmed repeatedly through v1.3, and reconfirmed again in v1.5 via live Playwright MCP root-causing of EDN-09 before planning.
+2. Add the milestone's versioned ROADMAP heading at phase-creation time, not close time, and avoid digit-leading phase-name segments — both v1.3 and v1.4 lost time to the same class of phase-locator tooling gap; v1.5 broke the streak by fixing the heading proactively at close time instead, based on the documented lesson — see each milestone's retrospective above.
+3. A pre-close audit item re-acknowledged at three consecutive milestone closes without resolution stops counting as "deferred" — v1.5's retrospective flags this explicitly; the next milestone close should resolve or delete these 7 items rather than acknowledge them a fourth time.
