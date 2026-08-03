@@ -148,12 +148,12 @@ Plans:
   3. None of Contact, About, or Éditions shows a horizontal scrollbar or horizontal overflow at any tested viewport width.
   4. On the Contact page, the E-mail and Instagram label/value text keeps visible horizontal margin from the row edges when the black hover-fill effect is showing.
 
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 19-01-PLAN.md — Éditions row-hover header color sync (EDN-09) + Contact link-row hover-fill padding (CONT-03), each with new e2e coverage
+- [x] 19-01-PLAN.md — Éditions row-hover header color sync (EDN-09) + Contact link-row hover-fill padding (CONT-03), each with new e2e coverage
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -188,7 +188,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 16. 404 Page Editorial Redesign | 3/3 | Complete    | 2026-07-29 |
 | 17. Homepage Carousel & Intro Fixes | 1/1 | Complete    | 2026-08-02 |
 | 18. Gallery & Éditions Display Fixes | 2/2 | Complete    | 2026-08-02 |
-| 19. Site-Wide Visual Polish | 0/TBD | Not started | - |
+| 19. Site-Wide Visual Polish | 1/2 | In Progress|  |
 
 ## Milestone Scope Note
 
