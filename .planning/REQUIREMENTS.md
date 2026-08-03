@@ -26,7 +26,7 @@ A batch of 8 live-reported visual/interaction bugs and regressions across the ho
 
 ### Site-Wide Visual
 
-- [ ] **UI-01**: Visitor sees the halftone dot-texture on Contact, About, and Éditions bleed to the true edges of the browser window again — restored without reintroducing the horizontal-scroll overflow bug the Phase 16 post-merge fix was containing
+- [x] **UI-01**: Visitor sees the halftone dot-texture on Contact, About, and Éditions bleed to the true edges of the browser window again — restored without reintroducing the horizontal-scroll overflow bug the Phase 16 post-merge fix was containing
 
 ### Contact
 
@@ -128,7 +128,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PORT-05 | Phase 18 | Complete |
 | PORT-06 | Phase 18 | Complete |
 | EDN-09 | Phase 19 | Complete |
-| UI-01 | Phase 19 | Pending |
+| UI-01 | Phase 19 | Complete |
 | CONT-03 | Phase 19 | Complete |
 | LAUNCH-01 | Phase 5 | Pending |
 
