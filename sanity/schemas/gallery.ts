@@ -157,6 +157,11 @@ export const gallery = defineType({
         defineArrayMember({
           type: 'image',
           options: {hotspot: true},
+          // Review CR-01 (mirrors edition.ts's Review WR-01 fix): required()
+          // alone can pass on an array item that has alt/rights filled in
+          // but no actual uploaded asset (e.g. an interrupted upload) --
+          // assetRequired() closes that gap.
+          validation: (rule) => rule.required().assetRequired(),
           fields: [
             defineField({
               name: 'alt',
