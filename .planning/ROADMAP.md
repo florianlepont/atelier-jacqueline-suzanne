@@ -151,7 +151,12 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 19-01-PLAN.md — Éditions row-hover header color sync (EDN-09) + Contact link-row hover-fill padding (CONT-03), each with new e2e coverage
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 19-02-PLAN.md — Halftone full-bleed restoration in PageTitleHeader (UI-01): D-05 regression net first, then clip→geometry containment, then full gate + baseline reconciliation
 
 **UI hint**: yes
