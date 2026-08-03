@@ -248,6 +248,138 @@ test.describe('editions hero uncropped photo (Item 7, quick-260803-bvu)', () => 
   });
 });
 
+// quick-260803-ira: 260803-bvu's Item 7 fixed the édition hero photo
+// (DetailHero.astro) but missed the OTHER photos in the bento grid below it
+// — GalleryGrid.astro's shared `.tile img` base rule still cropped them
+// (see the describe block just above). This closes that gap: the base
+// rule's `object-fit` now matches the never-crop treatment the hero and the
+// gallery-detail masonry tiles already had, while the bento composition
+// (asymmetric grouping, cell sizes, gaps) and the hover/focus zoom stay
+// provably unchanged.
+async function pollHoverZoomScale(img: import('@playwright/test').Locator) {
+  await expect
+    .poll(async () => {
+      const transform = await img.evaluate((el) => getComputedStyle(el).transform);
+      const match = transform.match(/^matrix\(([^,]+),/);
+      if (!match) return null;
+      const scale = Number(match[1]);
+      return scale > 1.02 && scale < 1.04 ? scale : null;
+    })
+    .not.toBeNull();
+}
+
+test.describe('editions bento grid photos uncropped (quick-260803-ira)', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test('every édition bento tile photo is uncropped, with the bento structure and absolute-positioned imgs intact', async ({
+    page,
+  }) => {
+    await page.goto('/editions/');
+    const rowHref = await page.locator('.editions-index__row').first().getAttribute('href');
+    expect(rowHref).toBeTruthy();
+
+    await page.goto(rowHref!);
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+    const tiles = page.locator('.gallery-grid .tile');
+    await expect(tiles.first()).toHaveClass(/revealed/);
+
+    const tileImgs = page.locator('.gallery-grid .tile img');
+    const tileCount = await tileImgs.count();
+    expect(tileCount).toBeGreaterThan(0);
+
+    const fits = await tileImgs.evaluateAll((els) => els.map((el) => getComputedStyle(el).objectFit));
+    for (const fit of fits) {
+      expect(fit).toBe('contain');
+    }
+
+    // Proves the fixed bento cell (not the image's own ratio) still drives
+    // the layout — the base rule's absolute-fill positioning is unchanged,
+    // only its object-fit changed.
+    const positions = await tileImgs.evaluateAll((els) => els.map((el) => getComputedStyle(el).position));
+    for (const position of positions) {
+      expect(position).toBe('absolute');
+    }
+
+    const groups = page.locator('.gallery-grid__group');
+    await expect(groups.first()).toHaveAttribute('data-size', /\d/);
+    await expect(groups.first()).toHaveAttribute('data-side', /left|right/);
+    await expect(page.locator('.gallery-grid .tile--hero').first()).toBeVisible();
+
+    // Guards against a silent collapse of the asymmetric composition: the
+    // hero tile must stay visibly wider than a small tile in the same
+    // group. Skipped (not failed) if the first group has fewer than two
+    // tiles — mirrors homepage-loading-progress.spec.ts:78's convention.
+    const firstGroup = groups.first();
+    const firstGroupTileCount = await firstGroup.locator('.tile').count();
+    test.skip(firstGroupTileCount < 2, 'first bento group has fewer than two tiles — no hero/small size comparison possible');
+
+    const heroBox = await firstGroup.locator('.tile--hero').first().boundingBox();
+    const smallBox = await firstGroup.locator('.tile--small').first().boundingBox();
+    expect(heroBox).toBeTruthy();
+    expect(smallBox).toBeTruthy();
+    expect(heroBox!.width).toBeGreaterThan(smallBox!.width);
+  });
+
+  test('the gallery masonry path is untouched: static position, natural-ratio tiles (exhaustive proof lives in gallery.spec.ts PORT-05)', async ({
+    page,
+  }) => {
+    // No standalone galleries overview page — discover a real gallery
+    // detail href from the homepage grid, mirroring edition.spec.ts:239-243.
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const galleryHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    expect(galleryHref).toBeTruthy();
+
+    await page.goto(galleryHref!);
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+    const grid = page.locator('.gallery-grid');
+    await expect(grid).toHaveClass(/gallery-grid--masonry/);
+
+    const firstTileImg = grid.locator('.tile img').first();
+    await expect(firstTileImg).toBeVisible();
+    const position = await firstTileImg.evaluate((el) => getComputedStyle(el).position);
+    expect(position).toBe('static');
+
+    const ratios = await firstTileImg.evaluate((el) => {
+      const img = el as HTMLImageElement;
+      return {
+        clientRatio: img.clientWidth / img.clientHeight,
+        naturalRatio: img.naturalWidth / img.naturalHeight,
+      };
+    });
+    expect(Math.abs(ratios.clientRatio - ratios.naturalRatio) / ratios.naturalRatio).toBeLessThan(0.01);
+  });
+
+  test('the hover/focus zoom still applies on both a bento hero tile and a bento small tile', async ({ page }) => {
+    await page.goto('/editions/');
+    const rowHref = await page.locator('.editions-index__row').first().getAttribute('href');
+    expect(rowHref).toBeTruthy();
+
+    await page.goto(rowHref!);
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+    const heroTile = page.locator('.gallery-grid .tile--hero').first();
+    await expect(heroTile).toHaveClass(/revealed/);
+    const heroImg = heroTile.locator('img');
+
+    const restTransform = await heroImg.evaluate((el) => getComputedStyle(el).transform);
+    expect(restTransform).toBe('none');
+
+    await heroTile.hover();
+    await pollHoverZoomScale(heroImg);
+
+    const smallTileCount = await page.locator('.gallery-grid .tile--small').count();
+    test.skip(smallTileCount === 0, 'this édition renders no small tile');
+
+    const smallTile = page.locator('.gallery-grid .tile--small').first();
+    const smallImg = smallTile.locator('img');
+    await smallTile.hover();
+    await pollHoverZoomScale(smallImg);
+  });
+});
+
 // quick-260803-bvu (Item 4): CONFIRMED live that navigating away from an
 // édition detail page after scrolling down (ordinary visitor behavior —
 // the whole point of the reveal) leaves `.detail-hero__photo` shrunk

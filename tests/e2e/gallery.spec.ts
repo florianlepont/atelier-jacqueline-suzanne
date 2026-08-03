@@ -934,10 +934,15 @@ test.describe('cross-document view-transition name gating — mobile (sketch 006
 // previously carried a visible frame declaration. CONTEXT.md D-04's original
 // analysis wrongly assumed only the bento layout is live; verified during
 // planning, gallery detail pages actually render GalleryGrid in MASONRY mode
-// (`object-fit: contain`) while édition detail pages render it in the
-// default BENTO mode (`object-fit: cover`) — both modes share the same
-// `.tile` base rule, but apply different `object-fit` treatments to
-// `.tile img`, so both must be verified independently.
+// while édition detail pages render it in the default BENTO mode — both
+// modes share the same `.tile` base rule, so both must be verified
+// independently. quick-260803-ira: the shared base rule's `object-fit`
+// changed from crop to contain, so bento (éditions) tile photos now ALSO
+// render uncropped, matching masonry's (galleries') pre-existing never-crop
+// treatment — both modes now compute the SAME `object-fit: contain`, though
+// for different underlying reasons (masonry's own override rule vs. this
+// shared base rule), which is why each is still verified independently
+// below.
 test.describe('gallery + édition thumbnail tiles render with no frame (PORT-05, D-04/D-05)', () => {
   test.use({ viewport: { width: 1280, height: 900 } });
 
@@ -1009,7 +1014,7 @@ test.describe('gallery + édition thumbnail tiles render with no frame (PORT-05,
     }
   });
 
-  test('édition detail (bento): every tile has 0px borders and object-fit: cover', async ({ page }) => {
+  test('édition detail (bento): every tile has 0px borders and shows the photo whole, uncropped (quick-260803-ira)', async ({ page }) => {
     await page.goto('/editions/');
     const tileHref = await page.locator('.editions-index__row').first().getAttribute('href');
     expect(tileHref).toBeTruthy();
@@ -1037,7 +1042,7 @@ test.describe('gallery + édition thumbnail tiles render with no frame (PORT-05,
 
     const firstTileImg = tiles.first().locator('img');
     const objectFit = await firstTileImg.evaluate((el) => getComputedStyle(el).objectFit);
-    expect(objectFit).toBe('cover');
+    expect(objectFit).toBe('contain');
   });
 });
 

@@ -231,12 +231,22 @@ if (layout === 'bento') {
     transform: translateY(0);
   }
 
+  /* quick-260803-ira: bento mode is reached ONLY by éditions (the sole
+     caller, EditionDetailBody.astro, omits `layout` and this component's
+     own default supplies bento — see the frontmatter comment above), so in
+     practice this base declaration IS the éditions' treatment. The photo
+     is now fitted whole inside its fixed bento cell and letterboxes on
+     `.tile`'s own ink background (rather than filling the cell and
+     cropping to it), matching the treatment DetailHero.astro gives the
+     édition hero photo since quick-260803-bvu. The masonry rule further
+     down (`.gallery-grid--masonry .tile img`) redeclares this same fit for
+     galleries, so this base change is a computed-value no-op there. */
   .tile img {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     transition: transform 0.3s ease;
   }
 
