@@ -634,7 +634,14 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           }
         }
 
-        function render() {
+        // quick-260803-bvu (Item 1): `forceCrossfade` is opt-in, defaulting
+        // to false so every existing caller (dash click, keyboard, swipe)
+        // keeps today's exact behavior. Only the auto-advance tick below
+        // passes true. See the sync-branch comment for the full diagnosis
+        // of why a genuine short delay (not just a forced reflow) is
+        // needed for the crossfade to actually play once the next photo
+        // is already cached.
+        function render(forceCrossfade = false) {
           const gallery = galleries[carouselIndex];
           if (!gallery) return;
           // The clipped wordmark has no visible glyph fill until its photo
@@ -660,9 +667,36 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             // never-fired { once: true } listeners on heroImg indefinitely.
             pendingHeroLoadCtrl?.abort();
             if (heroImg.complete) {
-              showSharp(heroImg);
-              if (heroImg.naturalWidth > 0) {
-                revealWordmarkPhoto();
+              if (forceCrossfade) {
+                // quick-260803-bvu (Item 1): once the next photo is already
+                // cached (the common case, thanks to the D-05 preload
+                // below), `is-loaded` gets removed then re-added within the
+                // very same synchronous call — confirmed live (via
+                // getComputedStyle sampling every 15-40ms across a real
+                // swap, and via isolated remove/re-add experiments) that
+                // NEITHER a forced layout read (`offsetWidth`) NOR even a
+                // double-rAF wait gives the browser enough genuine elapsed
+                // time to register the "unloaded" (opacity: 0) state before
+                // the re-add retargets it back to 1 — the two writes
+                // collapse into a no-op and the 260ms crossfade never
+                // visibly plays. Only a real, if brief, elapsed-time delay
+                // reliably retriggers it (confirmed: 60ms reliably produces
+                // a full, visible fade across repeated runs). The blurred
+                // placeholder (already reassigned above) is on screen for
+                // this whole window, so the delay is invisible — it only
+                // defers the SHARP layer's own fade-in, which is exactly
+                // the situation the blur-up mechanic (HOME-09) exists for.
+                window.setTimeout(() => {
+                  showSharp(heroImg);
+                  if (heroImg.naturalWidth > 0) {
+                    revealWordmarkPhoto();
+                  }
+                }, 60);
+              } else {
+                showSharp(heroImg);
+                if (heroImg.naturalWidth > 0) {
+                  revealWordmarkPhoto();
+                }
               }
             } else {
               pendingHeroLoadCtrl = new AbortController();
@@ -768,7 +802,39 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           if (autoAdvancePausedByUser || root!.dataset.displayMode !== 'carousel') return;
           timer = setInterval(() => {
             carouselIndex = (carouselIndex + 1) % galleries.length;
-            render();
+            // quick-260803-bvu (Item 1): auto-advance must always look like
+            // a plain crossfade, never the manual peek/drag slide — see the
+            // `is-auto-snap` CSS comment and render()'s `forceCrossfade`
+            // comment for the full diagnosis. `heroPhoto` is declared later
+            // in this script but this callback only ever runs after the
+            // whole script (including that declaration) has executed once,
+            // via startAutoAdvance()'s own first call at the bottom.
+            if (heroPhoto) {
+              heroPhoto.classList.add('is-auto-snap');
+              render(true);
+              // Forces the un-eased transform reset to commit before
+              // transitions are re-enabled below (same forced-reflow
+              // pattern as .is-opening elsewhere in this file).
+              void heroPhoto.offsetWidth;
+              // quick-260803-bvu (Item 1): is-auto-snap must stay present
+              // past render()'s own deferred crossfade (a 60ms delay, then
+              // the 260ms opacity transition itself — see the
+              // forceCrossfade branch inside render()). If it were removed
+              // synchronously here instead, and the pointer is still
+              // hovering, is-tracking would immediately reclaim the sharp
+              // image's transition rule (it also sets `transition: none`)
+              // and silently re-swallow the crossfade partway through.
+              // Tradeoff, accepted: if the pointer happens to leave the
+              // photo (a genuine mouseleave recede) within this ~400ms
+              // window, that recede's own eased transform is forced
+              // instant instead — a narrow, low-impact edge case, and only
+              // for a single auto-advance tick's window.
+              window.setTimeout(() => {
+                heroPhoto!.classList.remove('is-auto-snap');
+              }, 400);
+            } else {
+              render(true);
+            }
           }, 6000);
           setFillPaused(false);
           restartFill();
@@ -1171,6 +1237,29 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             if (cursorEl) {
               cursorEl.style.transform = `translate(${x}px, ${y}px)`;
             }
+            // quick-260803-bvu (Item 2): the progress dashes and the
+            // pause/play toggle live inside .home-hero__caption, which sits
+            // inside the left EDGE_ZONE_FRACTION band — so the accent
+            // directional pill (.home-hero__cursor-ring, z-index 4) was
+            // painting directly over them. is-over-controls (CSS below)
+            // hides the custom cursor whenever the pointer is over the
+            // caption and this skips the peek push entirely, restoring an
+            // unobstructed hit area with the controls' own native pointer
+            // cursor (.home-hero__progress-dash/.home-hero__autoplay-toggle
+            // already set `cursor: pointer` explicitly, confirmed live —
+            // that part was never broken, only the visual overlap was).
+            const target = event.target as HTMLElement | null;
+            const overControls = !!target?.closest('.home-hero__caption');
+            heroPhoto.classList.toggle('is-over-controls', overControls);
+            if (overControls) {
+              currentZone = 'center';
+              currentProximity = 0;
+              if (cursorEl) {
+                cursorEl.dataset.zone = 'center';
+              }
+              resetPeek();
+              return;
+            }
             const { zone, proximity } = computeHoverZone(x / rect.width, EDGE_ZONE_FRACTION);
             currentZone = zone;
             currentProximity = proximity;
@@ -1192,6 +1281,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
           heroPhoto.addEventListener('mouseleave', () => {
             heroPhoto.classList.remove('is-cursor-active');
+            // quick-260803-bvu (Item 2): belt-and-braces — a mouseleave that
+            // fires while the pointer was last over the caption (a fast
+            // exit can skip an intermediate mousemove) must not leave the
+            // cursor permanently hidden for the next hover session.
+            heroPhoto.classList.remove('is-over-controls');
             currentZone = 'center';
             currentProximity = 0;
             if (cursorEl) {
@@ -1793,6 +1887,43 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     transition: none;
   }
 
+  /* quick-260803-bvu (Item 1 — auto-advance must always read as a plain
+     crossfade, never a slide): confirmed live via getComputedStyle
+     sampling (every 15-40ms across a real swap) that when the pointer is
+     resting in an edge zone at the moment the 6000ms timer fires,
+     .is-tracking's blanket `transition: none` above already makes the
+     --peek-shift reset instantaneous — but it ALSO silences
+     .home-hero__img--sharp's own opacity crossfade (same selector matches
+     both classes), so the swap was an abrupt content-and-position POP with
+     no visible fade at all, not the "slide" a static read of the code
+     would suggest. Separately (confirmed the same way, pointer off the
+     carousel entirely) the crossfade never played even without any hover
+     involved: render()'s `classList.remove('is-loaded')` immediately
+     followed by a synchronous re-add (once the next photo is already
+     cached via the D-05 preload, the common case) never commits an
+     intermediate frame, so the browser coalesces the two writes into a
+     no-op and the opacity transition never triggers.
+     .is-auto-snap — added around the auto-advance tick's render() call,
+     and held for ~400ms (see the <script> below) so it outlives render()'s
+     own deferred crossfade retrigger — fixes both: it forces the TRANSFORM
+     half of the transition to be instant (so there is truly never a
+     slide, regardless of hover state) while leaving
+     .home-hero__img--sharp's OPACITY transition intact so the crossfade
+     can actually play once render()'s forceCrossfade branch retriggers
+     it. Specificity ties .is-tracking's rule above (also 3 classes) —
+     declared after it here so it wins the cascade whether or not the
+     pointer also happens to be hovering. Every other render() caller
+     (dash click, keyboard, swipe,
+     commitEdge) never sets this class, so their behavior is unchanged. */
+  .home-hero__photo.is-auto-snap .home-hero__img,
+  .home-hero__photo.is-auto-snap .home-hero__peek {
+    transition: transform 0s;
+  }
+
+  .home-hero__photo.is-auto-snap .home-hero__img--sharp {
+    transition: opacity 260ms ease, transform 0s;
+  }
+
   .home-hero__scrim {
     position: absolute;
     inset: 0;
@@ -2141,6 +2272,19 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
     .home-hero__photo.is-cursor-active .home-hero__cursor-ring {
       transform: scale(1);
+    }
+
+    /* quick-260803-bvu (Item 2): the pause/play toggle and progress dashes
+       live inside .home-hero__caption, which falls inside the left edge
+       zone, so the accent-tinted directional pill was painting directly
+       over them (confirmed live: cursor opacity 1, data-zone "left" while
+       hovering the toggle). Declared AFTER is-cursor-active's own
+       opacity: 1 rule above so this wins the tie (same 2-class
+       specificity) whenever both classes are present at once — the
+       common case, since the pointer is still over .home-hero__photo
+       while it's over the caption nested inside it. */
+    .home-hero__photo.is-over-controls .home-hero__cursor {
+      opacity: 0;
     }
 
     /* Edge zones: the ring morphs into an accent-tinted directional pill —
@@ -2533,7 +2677,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
   }
 
   .home-grid__tile-title {
-    display: block;
+    display: -webkit-box;
     font-family: var(--font-display);
     font-size: 32px; /* Display role, fixed */
     font-weight: var(--weight-semibold);
@@ -2543,15 +2687,22 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        font-size while short titles ("Silos", "Brume") stay on 1 — that
        height difference shifts the title's own top position exactly like
        the description-height bug this task fixes, since both sit inside
-       the same bottom-anchored .home-grid__tile-copy block. Clamped to a
-       single line with ellipsis truncation so every title reserves the
-       same height regardless of name length, matching the short-name
-       design intent (full titles remain available via the tile's visible
-       link destination/alt text).
-       */
-    white-space: nowrap;
+       the same bottom-anchored .home-grid__tile-copy block.
+       quick-260803-bvu (Item 3): the original fix clamped to a SINGLE line
+       with ellipsis truncation, which reserved a constant height but cut
+       long titles mid-word (confirmed live: "The Victorian Tea room"
+       reported scrollWidth 478 vs clientWidth 395 with white-space:
+       nowrap). Now clamped to TWO lines instead, following the exact
+       min-height-reservation pattern .home-grid__tile-description already
+       uses one rule below — min-height reserves 2 full line-boxes
+       regardless of whether a given title actually wraps, so the
+       alignment invariant this comment describes still holds (every
+       tile's title starts at the same offset from its own tile's bottom
+       edge), just measured against a taller reserved box than before. */
+    min-height: calc(1.2em * 2);
     overflow: hidden;
-    text-overflow: ellipsis;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
     /* 260718-rhv: title lifts a few px on hover/focus, in sync with the
        description's existing 180ms translateY reveal below. */
     transition: transform 180ms ease;

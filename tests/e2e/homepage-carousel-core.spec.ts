@@ -142,6 +142,77 @@ test.describe('auto-advance + pause (D-09)', () => {
     await page.clock.fastForward(12000);
     await expect(indexLabel).toHaveText(initialLabel);
   });
+
+  // quick-260803-bvu (Item 1): confirmed live (getComputedStyle sampling
+  // every 15-40ms across a real swap) that when the pointer rests in an
+  // edge zone at the moment the 6000ms timer fires, the auto-advance swap
+  // used to look identical to a manual peek/drag: the photo's transform
+  // stayed pushed at its peeked offset for the whole hover, then jumped to
+  // the new photo mid-push. This test deliberately does NOT use
+  // page.clock: a mocked-clock fastForward resolves any in-flight CSS
+  // transition (eased or not) synchronously before the next read, so it
+  // cannot distinguish an eased slide from an instant snap — only real
+  // elapsed time can. A real timer plus a tight (default 'raf'-polled)
+  // waitForFunction on the index label is used instead so the transform
+  // read lands as close as possible to the actual swap frame.
+  test('auto-advance never shows an eased slide even while the pointer rests in an edge zone', async ({ page }) => {
+    await page.goto('/');
+
+    const heroPhoto = page.locator('.home-hero__photo');
+    await expect(heroPhoto).toBeVisible();
+    const photoBox = await heroPhoto.boundingBox();
+    if (!photoBox) throw new Error('hero photo has no bounding box');
+
+    // Park the pointer well inside the left edge zone (EDGE_ZONE_FRACTION
+    // is 22% of the photo's width) so the peek push actually engages.
+    await page.mouse.move(photoBox.x + photoBox.width * 0.1, photoBox.y + photoBox.height * 0.5);
+
+    const heroImg = page.locator('[data-role="hero-image"]');
+    // Sanity check: the peek push must have actually engaged (a non-
+    // neutral transform) before asserting anything about the swap —
+    // otherwise this test would trivially pass against a broken peek
+    // mechanism too.
+    await expect
+      .poll(() => heroImg.evaluate((el) => getComputedStyle(el).transform))
+      .not.toBe('matrix(1, 0, 0, 1, 0, 0)');
+
+    const indexLabel = page.locator('[data-role="index-label"]');
+    const initialLabel = await indexLabel.innerText();
+
+    await page.waitForFunction((label) => {
+      return document.querySelector('[data-role="index-label"]')?.textContent !== label;
+    }, initialLabel, { timeout: 8000 });
+
+    const [transformAtSwap, newLabel] = await Promise.all([
+      heroImg.evaluate((el) => getComputedStyle(el).transform),
+      indexLabel.innerText(),
+    ]);
+
+    expect(newLabel).not.toBe(initialLabel);
+    // No in-flight eased translate: the transform is already back to
+    // neutral by the time the swap is observable, not mid-recede.
+    expect(transformAtSwap).toBe('matrix(1, 0, 0, 1, 0, 0)');
+  });
+
+  // quick-260803-bvu (Item 1 guard): an edge-zone CLICK is a deliberately
+  // DIFFERENT, unaffected code path (commitEdge) — it must still produce
+  // its own full eased slide-then-swap, unchanged by the auto-advance fix.
+  test('an edge-zone click still commits the full eased slide (commitEdge unaffected)', async ({ page }) => {
+    await page.goto('/');
+
+    const heroPhoto = page.locator('.home-hero__photo');
+    const photoBox = await heroPhoto.boundingBox();
+    if (!photoBox) throw new Error('hero photo has no bounding box');
+    await page.mouse.move(photoBox.x + photoBox.width * 0.1, photoBox.y + photoBox.height * 0.5);
+
+    const indexLabel = page.locator('[data-role="index-label"]');
+    const initialLabel = await indexLabel.innerText();
+
+    await page.mouse.down();
+    await page.mouse.up();
+
+    await expect(indexLabel).not.toHaveText(initialLabel);
+  });
 });
 
 test.describe('i18n non-regression guard', () => {
