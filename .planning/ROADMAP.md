@@ -53,7 +53,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 16: 404 Page Editorial Redesign** - The 404 fallback page gets a fully custom, interactive redesign: full-bleed photo backdrop popping at a pointer/touch-proximity-driven rate (capped ≈6.7/sec at dead-center, raised from the original ≈3/sec per an explicit, knowing user override at the plan 16-03 checkpoint), centered AJS logo/404 marker/bilingual message (revised from the original PageTitleHeader-reuse plan, per user direction 2026-07-29 — see `16-CONTEXT.md`) (completed 2026-07-29)
 - [x] **Phase 17: Homepage Carousel & Intro Fixes** - Auto-advance keeps running while the pointer hovers the page, and the grid-mode intro paragraph shows in full (completed 2026-08-02)
 - [x] **Phase 18: Gallery & Éditions Display Fixes** - Gallery descriptions show in full, thumbnail grids lose their black border frame, and gallery pages show the site footer again (completed 2026-08-02)
-- [ ] **Phase 19: Site-Wide Visual Polish** - Éditions row-hover color applies to the title/description too, the halftone texture bleeds to the true browser edge again without reintroducing horizontal scroll, and Contact's hover-fill text gets breathing room
+- [x] **Phase 19: Site-Wide Visual Polish** - Éditions row-hover color applies to the title/description too, the halftone texture bleeds to the true browser edge again without reintroducing horizontal scroll, and Contact's hover-fill text gets breathing room (completed 2026-08-03)
 
 ## Phase Details
 
@@ -148,7 +148,7 @@ Plans:
   3. None of Contact, About, or Éditions shows a horizontal scrollbar or horizontal overflow at any tested viewport width.
   4. On the Contact page, the E-mail and Instagram label/value text keeps visible horizontal margin from the row edges when the black hover-fill effect is showing.
 
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 **Wave 1**
@@ -157,7 +157,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 19-02-PLAN.md — Halftone full-bleed restoration in PageTitleHeader (UI-01): D-05 regression net first, then clip→geometry containment, then full gate + baseline reconciliation
+- [x] 19-02-PLAN.md — Halftone full-bleed restoration in PageTitleHeader (UI-01): D-05 regression net first, then clip→geometry containment, then full gate + baseline reconciliation
 
 **UI hint**: yes
 
@@ -188,7 +188,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 16. 404 Page Editorial Redesign | 3/3 | Complete    | 2026-07-29 |
 | 17. Homepage Carousel & Intro Fixes | 1/1 | Complete    | 2026-08-02 |
 | 18. Gallery & Éditions Display Fixes | 2/2 | Complete    | 2026-08-02 |
-| 19. Site-Wide Visual Polish | 1/2 | In Progress|  |
+| 19. Site-Wide Visual Polish | 2/2 | Complete   | 2026-08-03 |
 
 ## Milestone Scope Note
 
