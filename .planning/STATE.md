@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Global Improvements & Bug Fixes
-current_phase: 19
-status: executing
+current_phase: 5
+status: Awaiting next milestone
 stopped_at: Phase 19 context gathered
-last_updated: "2026-08-03T12:18:15.100Z"
+last_updated: "2026-08-03T12:57:06.781Z"
 last_activity: 2026-08-03
-last_activity_desc: Phase 19 complete
+last_activity_desc: Milestone v1.5 completed and archived
 progress:
-  total_phases: 4
+  total_phases: 3
   completed_phases: 3
   total_plans: 5
   completed_plans: 5
-  percent: 75
+  percent: 100
 current_phase_name: Site-Wide Visual Polish
 ---
 
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-08-03)
 
 ## Current Position
 
-Phase: 19
-Plan: Not started
-Status: Executing Phase 19
-Last activity: 2026-08-03 — Phase 19 complete
+Phase: Milestone v1.5 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-08-03 — Milestone v1.5 completed and archived
 
 ## Performance Metrics
 
@@ -297,5 +297,4 @@ Resume file: .planning/phases/19-site-wide-visual-polish/19-CONTEXT.md
 
 ## Operator Next Steps
 
-- `/gsd-discuss-phase 19` — gather context for the last v1.5 phase before planning
-- `/gsd-plan-phase 19` — plan directly (skip discussion)
+- Start the next milestone with /gsd-new-milestone

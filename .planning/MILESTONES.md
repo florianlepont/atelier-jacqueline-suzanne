@@ -1,5 +1,19 @@
 # Milestones
 
+## v1.5 Global Improvements & Bug Fixes (Shipped: 2026-08-03)
+
+**Phases completed:** 3 phases, 5 plans, 13 tasks
+
+**Key accomplishments:**
+
+- Removed pointer-hover auto-advance pause and the 2-line intro-paragraph clamp in `HomeCarousel.astro`, plus a `:focus-visible`-gated blur fix for a dash-click focus-lock regression the hover removal exposed.
+- Removed the native-button UA-stylesheet border bleeding through GalleryGrid.astro's `.tile` rule after deleting the frame declaration, and restored the site footer on both gallery detail routes by omitting the now-unused `hideFooter` prop — both changes locked by inverted/new Playwright assertions covering masonry and bento grid modes.
+- Removed `.detail-hero__statement`'s 4-line CSS clamp with no substitute cap, replacing it with an empirically-calibrated 700-character Sanity Studio validation applied in lockstep to both `gallery.ts` and `edition.ts`, proven by Playwright across every published gallery at two viewports and by a source-text unit test guarding the two duplicated schema helpers against divergence.
+- Fixed a broken Astro `:global()` selector scope that silently prevented Éditions row-hover from ever recoloring the shared header (EDN-09), and added 16px horizontal padding to Contact's link rows without shrinking the black hover-fill (CONT-03) — both proven by new, transition-aware e2e coverage.
+- Replaced PageTitleHeader's `overflow-x: clip` with viewport-relative geometry (`calc(50% - 50vw)`) so the halftone dot-texture bleeds to the true browser edge on Contact/About/Éditions again, proven safe by a 18-test regression net written before the change and a pre-existing single-word-heading overflow bug found and fixed along the way.
+
+---
+
 ## v1.4 Editorial Design Consistency (Shipped: 2026-08-01)
 
 **Phases completed:** 2 phases, 7 plans, 17 tasks
