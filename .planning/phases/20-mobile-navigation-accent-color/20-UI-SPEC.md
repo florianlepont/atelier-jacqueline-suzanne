@@ -1,10 +1,11 @@
 ---
 phase: 20
 slug: mobile-navigation-accent-color
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2026-08-03
+reviewed_at: 2026-08-03
 ---
 
 # Phase 20 — UI Design Contract
