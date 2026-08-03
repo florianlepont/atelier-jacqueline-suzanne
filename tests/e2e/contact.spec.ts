@@ -318,3 +318,43 @@ test.describe('contact reachability', () => {
     await expect(page).toHaveURL(/\/contact\/?$/);
   });
 });
+
+// quick-260803-bvu (Item 8): the space between the form panel and the
+// footer was entirely governed by .contact-page's own bottom padding
+// (`var(--editorial-page-padding-block)`, the shared editorial token) —
+// measured live via getBoundingClientRect at 89.6px at 1280x900 and 48px
+// at 390x844, with no other contributor. Scoped override reduces it to a
+// flat 32px at both viewports. Threshold below has generous headroom
+// above the post-fix measurement while still catching a regression back
+// toward the old, materially larger gap.
+test.describe('contact page footer spacing (Item 8, quick-260803-bvu)', () => {
+  test('the form-panel-to-footer gap stays tight at a desktop viewport', async ({ page }) => {
+    // setViewportSize() BEFORE navigating (18-02-SUMMARY.md's own
+    // documented discipline) so nothing reads stale geometry from a
+    // previous viewport.
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/contact/');
+
+    const gap = await page.evaluate(() => {
+      const formPanel = document.querySelector('.contact-page__form-panel')!;
+      const footer = document.querySelector('footer.chrome-band')!;
+      return footer.getBoundingClientRect().top - formPanel.getBoundingClientRect().bottom;
+    });
+
+    expect(gap).toBeGreaterThan(0);
+    expect(gap).toBeLessThan(60);
+  });
+
+  test('the footer is not disproportionately tall at a desktop viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/contact/');
+
+    const footerHeight = await page
+      .locator('footer.chrome-band')
+      .evaluate((el) => el.getBoundingClientRect().height);
+
+    // Measured live at 93px after the fix (was 109px before, with the
+    // header's own untouched desktop padding still at 32px top/bottom).
+    expect(footerHeight).toBeLessThan(100);
+  });
+});

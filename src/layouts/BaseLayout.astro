@@ -441,6 +441,29 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
     transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease;
   }
 
+  /* quick-260803-bvu (Item 8): the footer reused the SAME generous desktop
+     vertical padding as the header (`.chrome-band`'s own `@media
+     (min-width: 768px)` rule in SiteHeader.astro, var(--space-xl) = 32px
+     top/bottom) even though the footer's own content is only a single
+     line of copyright text plus a couple of legal links — measured live
+     at 32px top/bottom (109px total footer height) at 1280x900,
+     contributing to the footer band reading as disproportionately tall.
+     Targeted at this footer-specific selector (this rule's own scoped
+     `footer.chrome-band` is more specific than the shared, is:global
+     `.chrome-band` rule it overrides) rather than the shared selector
+     itself, per <scope_boundaries> — the header's own padding is
+     completely untouched; only the footer's vertical padding shrinks,
+     horizontal stays at the shared var(--space-md). Below 768px the
+     footer already has tight padding (8px/24px depending on width) via
+     that same shared rule and its own narrow-phone override in
+     SiteHeader.astro — not the target of this fix, left alone. */
+  @media (min-width: 768px) {
+    footer.chrome-band {
+      padding-top: var(--space-lg);
+      padding-bottom: var(--space-lg);
+    }
+  }
+
   .footer-text {
     margin: 0;
     font-size: 14px; /* Label role */
