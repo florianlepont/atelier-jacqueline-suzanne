@@ -15,11 +15,19 @@
 // gallery hero previously accepted a no-crop opt-in prop (quick-260724-mjp)
 // so the photographer's framing was never cropped, but per an explicit user
 // reversal after seeing it live ("je veux pas de flou, je veux que la photo
-// aie le meme format que sur la homepage") the hero now ALWAYS renders
-// object-fit: cover on both éditions and galleries, matching the homepage
-// carousel/grid crop exactly. Galleries were the only consumer of that prop,
-// so it has been removed entirely rather than kept as speculative
-// flexibility.
+// aie le meme format que sur la homepage") the hero was changed to ALWAYS
+// render object-fit: cover on both éditions and galleries, matching the
+// homepage carousel/grid crop exactly, and the opt-in prop was removed
+// entirely rather than kept as speculative flexibility.
+//
+// quick-260803-bvu (Items 4 & 7): re-opens that reversal for ÉDITIONS ONLY
+// — a fresh, explicit request scoped to this one caller, not a blanket
+// reintroduction. `editionVariant` is the single opt-in flag (see Props
+// below): both édition [slug].astro twins pass it; galleries never do, so
+// their object-fit: cover crop and their shared cross-document
+// view-transition name are completely unaffected — see
+// tests/e2e/gallery.spec.ts's hero-photo desktop/mobile assertions, which
+// must keep passing byte-unchanged.
 //
 // quick-260724-rhq: the reveal panel also accepts an optional real (i.e.
 // non-decorative, non-aria-hidden) `statement` paragraph, rendered after the
@@ -64,11 +72,24 @@ interface Props {
   // localize the label itself; the calling page must supply it.
   scrollHintLabel: string;
   // quick-260725-tqs (Item 6): optional — its PRESENCE is the scroll-up-to-
-  // return gesture's on/off switch (opt-in scoping). Only gallery detail
-  // pages pass this; édition detail pages omit it entirely, keeping the
-  // gesture inert there. When set, it's the homepage carousel URL
-  // (`?carousel=<slug>`) that returns to THIS same gallery.
+  // return gesture's on/off switch (opt-in scoping). Originally gallery-
+  // only; quick-260803-bvu (Item 6) also threads this through from édition
+  // detail pages, passing their `overviewHref` (the éditions list) instead
+  // of a gallery's `?carousel=<slug>` homepage URL — same gesture, same
+  // prop, two different destinations depending on which caller supplies
+  // it. Kept as `carouselReturnHref` rather than renamed (would be a
+  // slightly inaccurate name for the édition case) per
+  // <scope_boundaries> — deliberately deferred, zero user-visible benefit
+  // for the churn it would cause across GalleryDetailBody.astro and both
+  // gallery [slug].astro twins.
   carouselReturnHref?: string;
+  // quick-260803-bvu (Items 4 & 7): single opt-in scoping flag for the
+  // édition-only hero treatment (see the file-header comment above).
+  // Defaults to false — today's gallery behavior (cropped photo via
+  // object-fit: cover, shared `hero-photo` cross-document view-transition
+  // name at desktop). Both édition [slug].astro twins pass true; gallery
+  // pages never set it.
+  editionVariant?: boolean;
 }
 
 const {
@@ -83,10 +104,14 @@ const {
   heroIndex = 0,
   scrollHintLabel,
   carouselReturnHref,
+  editionVariant = false,
 } = Astro.props;
 ---
 
-<div class="detail-hero" data-carousel-return-href={carouselReturnHref}>
+<div
+  class={`detail-hero${editionVariant ? ' detail-hero--edition' : ''}`}
+  data-carousel-return-href={carouselReturnHref}
+>
   <div class="detail-hero__pin">
     <div class="detail-hero__photo">
       <button
@@ -128,7 +153,14 @@ const {
       {caption && <p class="detail-hero__caption" aria-hidden="true">{caption}</p>}
       <h1 class="detail-hero__reveal-title">{title}</h1>
       {statement && <p class="detail-hero__statement">{statement}</p>}
-      {formatText && <span class="detail-hero__format" aria-hidden="true">{formatText}</span>}
+      {/* quick-260803-bvu (Item 5): this reveal-panel copy is now the ONLY
+          instance of the format-details line — EditionDetailBody.astro no
+          longer renders a second `.edition-detail__format` paragraph below
+          the hero, so this is real content, not a decorative duplicate.
+          aria-hidden removed accordingly so screen-reader users still get
+          it (safe for galleries: they never pass formatText, so this
+          element doesn't render there at all). */}
+      {formatText && <span class="detail-hero__format">{formatText}</span>}
     </div>
     <div class="detail-hero__scroll-hint" aria-hidden="true">
       <span class="detail-hero__scroll-hint-label">{scrollHintLabel}</span>
@@ -286,13 +318,18 @@ const {
 <script>
   // quick-260725-tqs (Item 6): the mirror image of the homepage carousel's
   // own scroll-to-open gesture (HomeCarousel.astro's registerDownwardIntent/
-  // atBottom() accumulator) — on a GALLERY detail page (never édition, see
-  // the Props doc above), a sustained upward push while genuinely at the
-  // TOP of the page returns to the homepage carousel showing the SAME
-  // gallery. A NEW, independent top-level script — deliberately NOT nested
-  // inside the reveal-driver `if (track && photo && scrim && overlayTitle &&
-  // reveal)` guard above, so the gesture also works on mobile, where the
-  // reveal driver is inactive.
+  // atBottom() accumulator) — a sustained upward push while genuinely at
+  // the TOP of the page navigates back to wherever `carouselReturnHref`
+  // points. Originally gallery-only (returns to the homepage carousel
+  // showing the SAME gallery); quick-260803-bvu (Item 6) also activates it
+  // for édition detail pages, which pass their `overviewHref` (the
+  // éditions list) instead — same gesture, same engage/reset/threshold
+  // logic below, two different destinations depending on which caller
+  // supplied the prop (see the Props doc above). A NEW, independent
+  // top-level script — deliberately NOT nested inside the reveal-driver
+  // `if (track && photo && scrim && overlayTitle && reveal)` guard above,
+  // so the gesture also works on mobile, where the reveal driver is
+  // inactive.
   const track = document.querySelector<HTMLElement>('.detail-hero');
   const returnHref = track?.dataset.carouselReturnHref;
 
@@ -463,6 +500,16 @@ const {
     transform: scale(1.02);
   }
 
+  /* quick-260803-bvu (Item 7): édition-only — show the whole photo at its
+     natural aspect ratio instead of cropping it to fill the box, so
+     nothing of the photographer's framing is lost. `.detail-hero__pin`'s
+     own ink background (above) shows through as letterboxing rather than
+     a gap. Gallery heroes never carry `.detail-hero--edition` and keep
+     their existing object-fit: cover crop untouched. */
+  .detail-hero--edition .detail-hero__img {
+    object-fit: contain;
+  }
+
   /* Cross-document View Transition destination name (quick-260724-uf5,
      sketch 006) — DESKTOP ONLY, NEVER unconditional / NEVER on mobile. This
      is a direct precaution against the HOME-06/D-10/D-12 bug class: a
@@ -483,6 +530,32 @@ const {
   @media (min-width: 768px) {
     .detail-hero__img {
       view-transition-name: hero-photo;
+    }
+
+    /* quick-260803-bvu (Item 4): CONFIRMED live (getBoundingClientRect
+       sampling) that navigating away from an édition detail page AFTER
+       scrolling down to read the reveal panel — the whole point of the
+       reveal, and completely ordinary visitor behavior — leaves
+       `.detail-hero__photo` shrunk toward the reveal's 55%-width settled
+       state (measured: 960px vs the full 1280px) at the exact moment the
+       outgoing page's View Transition snapshot is captured, while the
+       freshly-loaded incoming édition page always starts full-bleed
+       (measured: 1280px, scrollY 0). Two documents sharing the same
+       `hero-photo` name with that large a size delta forces the browser
+       to MORPH between the two box sizes as part of the crossfade —
+       exactly the visible shake/jump the client reported, made worse by
+       Item 7 also making the two photos' letterboxed content diverge more
+       than a uniform `cover` crop ever did. The fix: stop naming the
+       édition hero for view transitions, so an édition-to-édition
+       navigation falls back to the site-wide root crossfade
+       (`@view-transition { navigation: auto }` in BaseLayout.astro) —
+       consistent with the caution already documented in the comment above
+       about always-on names on 100svh-sized elements. Galleries never
+       carry `.detail-hero--edition` and keep their own shared name
+       (proof: tests/e2e/gallery.spec.ts's desktop-present/mobile-absent
+       assertions, unchanged). */
+    .detail-hero--edition .detail-hero__img {
+      view-transition-name: none;
     }
   }
 
@@ -729,8 +802,16 @@ const {
       font-size: var(--text-display-size);
     }
 
+    /* quick-260803-bvu (Item 5): was `display: none` — now that
+       EditionDetailBody.astro no longer renders its own duplicate
+       `.edition-detail__format` paragraph, this reveal-panel copy is the
+       ONLY instance and must be visible on mobile too. The desktop reveal
+       driver never runs on mobile (setup()'s `!desktop.matches` branch
+       calls clearInlineStyles(), which removes any inline opacity so CSS
+       takes over) — settled opacity: 1 here mirrors the sibling
+       `.detail-hero__reveal`'s own mobile override immediately above. */
     .detail-hero__format {
-      display: none;
+      opacity: 1;
     }
 
     /* Mobile shows the reveal panel already settled (no scroll-jacking/pin)

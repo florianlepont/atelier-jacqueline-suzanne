@@ -113,7 +113,13 @@ test.describe('editions overview', () => {
 // wiring is Phase 13).
 
 test.describe('editions detail', () => {
-  test('shows a bilingual statement, a format-details line, and a back-link to the overview', async ({
+  // quick-260803-bvu (Item 5 & 6): rewritten for the new contract — the
+  // format-details line now appears EXACTLY ONCE (inside DetailHero's
+  // reveal panel, accessible, visible on mobile too — the old
+  // `.edition-detail__format` duplicate paragraph is gone), and the old
+  // in-flow back-link is gone entirely (replaced by the scroll-up-to-
+  // return gesture, covered in its own describe block below).
+  test('shows a bilingual statement and a format-details line that appears exactly once, in the hero reveal panel; no back-link', async ({
     page,
   }) => {
     await page.goto('/editions/');
@@ -129,35 +135,54 @@ test.describe('editions detail', () => {
     const frStatement = (await page.locator('.detail-hero__statement').innerText()).trim();
     expect(frStatement.length).toBeGreaterThan(0);
 
-    const frFormat = page.locator('.edition-detail__format');
+    // Exactly one instance, and it lives inside the hero reveal panel.
+    await expect(page.locator('.edition-detail__format')).toHaveCount(0);
+    const frFormat = page.locator('.detail-hero__format');
+    await expect(frFormat).toHaveCount(1);
     await expect(frFormat).toBeVisible();
     const frFormatText = await frFormat.innerText();
     expect(frFormatText).toMatch(/\d/);
-    // Case-insensitive: .edition-detail__format now renders
-    // text-transform: uppercase, and Playwright's innerText() reflects the
-    // rendered (CSS-transformed) text, not the underlying DOM string case.
+    // Case-insensitive: .detail-hero__format renders text-transform:
+    // uppercase, and Playwright's innerText() reflects the rendered
+    // (CSS-transformed) text, not the underlying DOM string case.
     expect(frFormatText).toMatch(/Tirage/i);
     expect(frFormatText).toMatch(/cm|in/i);
+    // Real content, not decorative — reachable by assistive technology.
+    await expect(frFormat).not.toHaveAttribute('aria-hidden', 'true');
 
-    const frBackLink = page.locator('.edition-detail__back-link');
-    await expect(frBackLink).toBeVisible();
-    await expect(frBackLink).toHaveAttribute('href', /\/editions\/$/);
+    await expect(page.locator('.edition-detail__back-link')).toHaveCount(0);
 
     await page.goto(enHref);
     const enStatement = (await page.locator('.detail-hero__statement').innerText()).trim();
     expect(enStatement.length).toBeGreaterThan(0);
     expect(enStatement).not.toBe(frStatement);
 
-    const enFormat = page.locator('.edition-detail__format');
+    await expect(page.locator('.edition-detail__format')).toHaveCount(0);
+    const enFormat = page.locator('.detail-hero__format');
+    await expect(enFormat).toHaveCount(1);
     await expect(enFormat).toBeVisible();
     const enFormatText = await enFormat.innerText();
     expect(enFormatText).toMatch(/\d/);
     expect(enFormatText).toMatch(/Print run/i);
     expect(enFormatText).toMatch(/cm|in/i);
+    await expect(enFormat).not.toHaveAttribute('aria-hidden', 'true');
 
-    const enBackLink = page.locator('.edition-detail__back-link');
-    await expect(enBackLink).toBeVisible();
-    await expect(enBackLink).toHaveAttribute('href', /\/en\/editions\/$/);
+    await expect(page.locator('.edition-detail__back-link')).toHaveCount(0);
+  });
+
+  // quick-260803-bvu (Item 5): the format line must remain visible on
+  // mobile too — DetailHero.astro's mobile media query used to force
+  // `display: none` on it (back when a second, real copy existed below the
+  // hero); now that this reveal-panel copy is the ONLY instance, it must
+  // render there.
+  test('the format-details line is visible on mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/editions/');
+    const href = await page.locator('.editions-index__row').first().getAttribute('href');
+    expect(href).toBeTruthy();
+
+    await page.goto(href!);
+    await expect(page.locator('.detail-hero__format')).toBeVisible();
   });
 
   // quick-260724-rhq: proves the full, untruncated statement is present in
@@ -184,6 +209,176 @@ test.describe('editions detail', () => {
     expect(statementText).toBeTruthy();
     expect(metaDescription).toBeTruthy();
     expect(statementText).toBe(metaDescription);
+  });
+});
+
+// quick-260803-bvu (Item 7): the hero photo shows the whole image at its
+// natural aspect ratio on éditions (object-fit: contain, letterboxed on
+// the pin's own ink background) while gallery detail heroes keep their
+// existing cropped, homepage-matching treatment (object-fit: cover)
+// untouched — mirrors gallery.spec.ts's own hero-photo assertions so this
+// scoping guard lives next to its counterpart.
+test.describe('editions hero uncropped photo (Item 7, quick-260803-bvu)', () => {
+  test('an édition hero photo reports object-fit: contain, unlike a gallery hero which still crops', async ({
+    page,
+  }) => {
+    await page.goto('/editions/');
+    const rowHref = await page.locator('.editions-index__row').first().getAttribute('href');
+    expect(rowHref).toBeTruthy();
+
+    await page.goto(rowHref!);
+    const editionObjectFit = await page
+      .locator('.detail-hero__img')
+      .evaluate((el) => getComputedStyle(el).objectFit);
+    expect(editionObjectFit).toBe('contain');
+
+    // There is no standalone galleries overview page (the homepage grid is
+    // the sole browse entry point — see PROJECT.md) — discover a real
+    // gallery detail href from the homepage grid instead, mirroring
+    // gallery.spec.ts's own discovery pattern.
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+    const galleryHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    expect(galleryHref).toBeTruthy();
+    await page.goto(galleryHref!);
+    const galleryObjectFit = await page
+      .locator('.detail-hero__img')
+      .evaluate((el) => getComputedStyle(el).objectFit);
+    expect(galleryObjectFit).toBe('cover');
+  });
+});
+
+// quick-260803-bvu (Item 4): CONFIRMED live that navigating away from an
+// édition detail page after scrolling down (ordinary visitor behavior —
+// the whole point of the reveal) leaves `.detail-hero__photo` shrunk
+// toward its 55%-width settled state at the exact moment the outgoing
+// page's View Transition snapshot is captured, while the freshly-loaded
+// incoming édition page always starts full-bleed — a large size delta
+// that forced a visible morph/shake between the two shared-name hero
+// photos. The fix removes the shared `hero-photo` view-transition name
+// for éditions specifically, so those navigations fall back to the
+// site-wide root crossfade. Mirrors gallery.spec.ts's own desktop-
+// present/mobile-absent proof, inverted for éditions.
+test.describe('editions hero cross-document transition scoping (Item 4, quick-260803-bvu)', () => {
+  test('the édition hero photo carries no shared view-transition-name at desktop, unlike a gallery hero which still does', async ({
+    page,
+  }) => {
+    await page.goto('/editions/');
+    const rowHref = await page.locator('.editions-index__row').first().getAttribute('href');
+    expect(rowHref).toBeTruthy();
+
+    await page.goto(rowHref!);
+    const editionName = await page
+      .locator('.detail-hero__img')
+      .evaluate((el) => getComputedStyle(el).viewTransitionName);
+    expect(editionName).toBe('none');
+
+    await page.goto('/galleries/silos/');
+    const galleryName = await page
+      .locator('.detail-hero__img')
+      .evaluate((el) => getComputedStyle(el).viewTransitionName);
+    expect(galleryName).toBe('hero-photo');
+  });
+
+  test('the édition hero photo carries no view-transition-name at mobile widths either', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/editions/');
+    const rowHref = await page.locator('.editions-index__row').first().getAttribute('href');
+    expect(rowHref).toBeTruthy();
+
+    await page.goto(rowHref!);
+    const editionName = await page
+      .locator('.detail-hero__img')
+      .evaluate((el) => getComputedStyle(el).viewTransitionName);
+    expect(editionName).toBe('none');
+  });
+});
+
+// quick-260803-bvu (Item 6): mirrors tests/e2e/gallery.spec.ts's own
+// 'gallery detail scroll-up-to-return' describe block (~lines 572-670),
+// activated here for éditions — same gesture, same engage/reset/threshold
+// logic in DetailHero.astro, but the destination is the éditions overview
+// (`overviewHref`) rather than the homepage carousel.
+test.describe('edition detail scroll-up-to-return (Item 6, quick-260803-bvu)', () => {
+  async function discoverEdition(page: import('@playwright/test').Page) {
+    await page.goto('/editions/');
+    const href = await page.locator('.editions-index__row').first().getAttribute('href');
+    expect(href).toBeTruthy();
+    return href!;
+  }
+
+  test.describe('positive path (must navigate)', () => {
+    test.use({ viewport: { width: 1280, height: 900 } });
+
+    test('fr: genuine engagement + return-to-top + sustained upward push returns to the éditions overview', async ({
+      page,
+    }) => {
+      const href = await discoverEdition(page);
+      await page.goto(href);
+
+      await page.evaluate(() => window.scrollTo(0, 500));
+      await page.waitForTimeout(150);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.waitForTimeout(150);
+
+      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, bubbles: true })));
+
+      await page.waitForURL('**/editions/');
+    });
+
+    test('en: genuine engagement + return-to-top + sustained upward push returns to the éditions overview', async ({
+      page,
+    }) => {
+      const href = await discoverEdition(page);
+      const slugMatch = href.match(/\/editions\/([^/]+)\/?$/);
+      const slug = slugMatch?.[1];
+      expect(slug).toBeTruthy();
+
+      await page.goto(`/en/editions/${slug}/`);
+
+      await page.evaluate(() => window.scrollTo(0, 500));
+      await page.waitForTimeout(150);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.waitForTimeout(150);
+
+      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, bubbles: true })));
+
+      await page.waitForURL('**/en/editions/');
+    });
+  });
+
+  // Mirrors gallery.spec.ts's own quick-260725-sj4 fresh-load synthetic-
+  // event regression pattern: an accumulator armed from a fresh scrollY-0
+  // load (hasEngaged still false) must never misfire on ordinary small
+  // upward scroll corrections.
+  test.describe('accidental-trigger regression guard (must NOT navigate)', () => {
+    test.use({ viewport: { width: 1280, height: 900 } });
+
+    test('fr: fresh load, two upward wheel ticks do NOT navigate', async ({ page }) => {
+      const href = await discoverEdition(page);
+      await page.goto(href);
+
+      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -80, bubbles: true })));
+      await page.waitForTimeout(80);
+      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -80, bubbles: true })));
+      await page.waitForTimeout(300);
+
+      expect(page.url()).toBe(new URL(href, page.url()).href);
+    });
+
+    test('fr: a small down-then-up correction (below ENGAGE_DISTANCE) does NOT navigate', async ({ page }) => {
+      const href = await discoverEdition(page);
+      await page.goto(href);
+
+      await page.evaluate(() => window.scrollTo(0, 60));
+      await page.waitForTimeout(80);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.waitForTimeout(80);
+      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, bubbles: true })));
+      await page.waitForTimeout(300);
+
+      expect(page.url()).toBe(new URL(href, page.url()).href);
+    });
   });
 });
 

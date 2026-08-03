@@ -735,14 +735,31 @@ test.describe('gallery detail scroll-up-to-return (Item 6, quick-260725-tqs)', (
     });
   });
 
-  test.describe('feature scoping — inert on edition heroes', () => {
-    test('the carousel-return attribute is absent on an edition detail page', async ({ page }) => {
+  // quick-260803-bvu (Item 6): REWRITTEN — this used to assert the
+  // gesture stayed entirely inert on édition heroes (they never supplied
+  // carouselReturnHref). Item 6 now activates the SAME gesture for
+  // éditions too, passing their `overviewHref` (the éditions list)
+  // instead of a gallery's `?carousel=<slug>` homepage URL — see
+  // DetailHero.astro's updated Props doc and
+  // edition.spec.ts's own 'edition detail scroll-up-to-return' describe
+  // block for the full positive-path/regression-guard coverage. This test
+  // now proves the two callers stay distinguishable by DESTINATION shape
+  // rather than by the attribute's mere presence.
+  test.describe('feature scoping — edition heroes get a DIFFERENT return destination, not an absent one', () => {
+    test('an edition detail page carries the carousel-return attribute pointing at the editions overview, not a ?carousel= URL', async ({
+      page,
+    }) => {
       await page.goto('/editions/');
       const tileHref = await page.locator('.editions-index__row').first().getAttribute('href');
       expect(tileHref).toBeTruthy();
 
       await page.goto(tileHref!);
-      await expect(page.locator('.detail-hero[data-carousel-return-href]')).toHaveCount(0);
+      const returnHref = await page
+        .locator('.detail-hero[data-carousel-return-href]')
+        .getAttribute('data-carousel-return-href');
+      expect(returnHref).toBeTruthy();
+      expect(returnHref).toMatch(/\/editions\/?$/);
+      expect(returnHref).not.toContain('?carousel=');
     });
   });
 
