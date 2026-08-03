@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Mobile Experience Redesign
 status: planning
-last_updated: "2026-08-03T14:07:49.895Z"
+last_updated: "2026-08-03T15:30:00.000Z"
 last_activity: 2026-08-03
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-03)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; v1.3 adds a non-transactional Éditions showcase; checkout still follows in the future v1.x shop milestone.)
-**Current focus:** Milestone v1.6 "Mobile Experience Redesign" — defining requirements. Mobile-only nav/scroll/lightbox redesign across Homepage, Gallery, and Édition detail pages, plus an About portrait-placement fix; desktop/tablet unchanged throughout. Phase 5 (Launch & Domain Cutover) and the v1.x shop wave remain deliberately deferred behind this milestone.
+**Current focus:** Milestone v1.6 "Mobile Experience Redesign" — ROADMAP.md created, ready to plan Phase 20. Mobile-only nav/scroll/lightbox redesign across Homepage, Gallery, and Édition detail pages, plus an About portrait-placement fix; desktop/tablet unchanged throughout. Phase 5 (Launch & Domain Cutover) and the v1.x shop wave remain deliberately deferred behind this milestone.
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-08-03 — Milestone v1.6 started
+Phase: 20 of 23 (Mobile Navigation & Accent Color)
+Plan: — (not yet planned)
+Status: Ready to plan
+Last activity: 2026-08-03 — ROADMAP.md created: 4 phases (20-23) mapped to all 9 v1.6 requirements, 100% coverage
 
 ## Performance Metrics
 
@@ -92,6 +92,7 @@ Last activity: 2026-08-03 — Milestone v1.6 started
 - v1.4 milestone "Editorial Design Consistency" roadmapped 2026-07-29: two new integer phases (15–16, continuing numbering from Phase 14; Phase 5 stays untouched/separately tracked and out of this milestone) cover all three v1.4 requirements (ABOUT-03, ABOUT-04, ERR-01). Phase 15 (About Page Editorial Redesign — ABOUT-03, ABOUT-04): both requirements touch the same file (`AboutPageBody.astro`) and are sequential steps toward one end state, so kept as a single phase rather than split — the mechanical `PageTitleHeader` title swap (ABOUT-03) done first, then the broader layout rework (ABOUT-04) via a sketch-explored design process mirroring the Contact page redesign (multiple layout proposals sketched, a winner picked, then implemented). Phase 16 (404 Page Editorial Redesign — ERR-01): kept separate from Phase 15 despite reusing the identical `PageTitleHeader` component, because it targets a different page/user surface and needs no design exploration (the treatment is already fully specified by Contact/Éditions/About) — a small, independent, visual-only phase.
 - Phase 16 edited: Goal/Success Criteria/Depends-on rewritten during /gsd-discuss-phase 16 (2026-07-29): user rejected the PageTitleHeader-reuse approach for a fully custom, interactive concept (full-bleed photo backdrop popping at pointer/touch-proximity-driven rate, AJS logo + 404 marker + bilingual phrase over a dimming scrim). See 16-CONTEXT.md.
 - v1.5 milestone "Global Improvements & Bug Fixes" roadmapped 2026-08-02: three new integer phases (17–19, continuing numbering from Phase 16; Phase 5 stays untouched/separately tracked and out of this milestone) cover all eight v1.5 requirements (HOME-11, HOME-12, PORT-04, PORT-05, PORT-06, EDN-09, UI-01, CONT-03) — all small, independent, single-or-few-component CSS/Astro/vanilla-JS bug fixes with no shared data model, so grouped by area/blast-radius into 3 phases rather than one giant phase or 8 thin ones. Phase 17 (Homepage Carousel & Intro Fixes — HOME-11, HOME-12): both bugs live in `HomeCarousel.astro` alone, no shared-component risk, done first. Phase 18 (Gallery & Éditions Display Fixes — PORT-04, PORT-05, PORT-06): `DetailHero.astro`, the shared `GalleryGrid.astro` thumbnail component, and the two gallery detail-page route files — contained to the Portfolio/Éditions display surface, done second. Phase 19 (Site-Wide Visual Polish — EDN-09, UI-01, CONT-03): `EditionsOverviewBody.astro`, the shared `PageTitleHeader.astro` consumed by Contact/About/Éditions, and `ContactPageBody.astro` — sequenced last because UI-01 touches the one component shared by three pages and must not reintroduce the horizontal-scroll bug Phase 16 fixed.
+- v1.6 milestone "Mobile Experience Redesign" roadmapped 2026-08-03: four new integer phases (20–23, continuing numbering from Phase 19; Phase 5 stays untouched/separately tracked and out of this milestone) cover all nine v1.6 requirements (HOME-13, HOME-14, HOME-15, HOME-16, PORT-07, EDN-10, EDN-11, ABOUT-05, UI-02). Sequenced by blast radius/dependency rather than one phase per requirement or per page: Phase 20 (Mobile Navigation & Accent Color — HOME-13, HOME-16): the homepage's mechanical, lower-risk pieces (mobile nav menu, per-visit random accent color reusing the existing `heroColor` field), done first with no sketch exploration needed, and the accent-color mechanism the next phase's scroll view will consume. Phase 21 (Homepage Scroll Experience — HOME-14, HOME-15): the milestone's biggest, riskiest, sketch-explored centerpiece — the scroll-driven single view replacing the carousel/grid toggle, plus the full-screen wordmark-to-letterform-zoom entry transition into it (HOME-15 is literally the entry transition into HOME-14's view, so kept in the same phase) — depends on Phase 20. Phase 22 (Gallery & Édition Scroll Navigation — PORT-07, EDN-10, EDN-11): PORT-07 and EDN-10 grouped because Gallery and Édition detail pages already share the `GalleryGrid`/`Lightbox` component surface (same Lightbox-retirement pattern applied to both); EDN-11 (sketch-explored intro-text legibility + primary-photo placement) folded into the same phase rather than split into a thin single-requirement phase, since it's a dependent next step on the same Édition detail page once EDN-10's scroll layout exists (the primary photo can only sit "among the others" once the others are shown in that new layout). Phase 23 (About Portrait Placement & Milestone Regression Close — ABOUT-05, UI-02): the isolated, single-component, sketch-explored About fix, kept standalone since it shares no surface with the other three phases (matching the Phase 15/16 precedent of keeping unrelated single-page fixes separate rather than force-merging them); UI-02 (the desktop/tablet-unchanged regression guard) is formally mapped here for traceability as the milestone's closing combined regression sweep, but per explicit user framing is also checked as a running local success criterion within Phases 20, 21, and 22 individually — not deferred to Phase 23 alone, since each earlier phase touches shared components also rendered on desktop.
 
 ### Decisions
 
@@ -106,6 +107,7 @@ Recent decisions affecting current work:
 - [Roadmap]: v1.3 milestone "Éditions" mapped to four new phases (11–14), continuing integer numbering from Phase 10 — Phase 5 (Launch & Domain Cutover) is untouched and remains separately tracked, not part of this milestone. Phase order follows dependency + blast-radius reasoning from research/SUMMARY.md: schema/content model must exist and be seeded before the data-fetch layer can be verified against anything real; routes come before nav wiring since nav is the only part touching shared chrome used by every existing page; verification is its own explicit final phase because this milestone's pitfalls are dominated by omission-class bugs.
 - [Roadmap]: v1.4 milestone "Editorial Design Consistency" mapped to two new phases (15–16), continuing integer numbering from Phase 14 — Phase 5 (Launch & Domain Cutover) remains untouched and separately tracked. ABOUT-03 and ABOUT-04 grouped into one phase (15) rather than split, since both touch the same file and are sequential steps of the same About-page deliverable (mechanical title swap first, then a sketch-explored layout rework) — splitting would have created a thin, single-requirement phase for ABOUT-03 alone. ERR-01 kept as its own phase (16), independent of Phase 15, since it's a different page/user surface needing no design exploration.
 - [Roadmap]: v1.5 milestone "Global Improvements & Bug Fixes" mapped to three new phases (17–19), continuing integer numbering from Phase 16 — Phase 5 (Launch & Domain Cutover) remains untouched and separately tracked, not part of this milestone. Grouped by blast radius rather than one phase per bug: Phase 17 (HOME-11, HOME-12, both in `HomeCarousel.astro`), Phase 18 (PORT-04/05/06, Portfolio/Éditions display surface), Phase 19 (EDN-09, UI-01, CONT-03, sequenced last since UI-01 touches the `PageTitleHeader.astro` component shared by Contact/About/Éditions and carries the milestone's highest regression risk).
+- [Roadmap]: v1.6 milestone "Mobile Experience Redesign" mapped to four new phases (20–23), continuing integer numbering from Phase 19 — Phase 5 (Launch & Domain Cutover) remains untouched and separately tracked, not part of this milestone. PORT-07 and EDN-10 grouped into Phase 22 (shared `GalleryGrid`/`Lightbox` component surface); EDN-11 folded into the same phase rather than kept as its own thin single-requirement phase, since it's a dependent next step on EDN-10's layout. UI-02 mapped to the closing Phase 23 for formal traceability, but is also carried as a local success criterion in every earlier phase (20–22) per explicit user direction — a cross-cutting regression guard, not a standalone final-phase-only check.
 - [Phase 01]: No SSR adapter installed for Astro (output: 'static' framework default) per OVH static-hosting constraint — OVH Web Hosting is a zero-compute Apache file server; @astrojs/cloudflare/wrangler are explicitly excluded
 - [Phase 01]: Phase 1 staging deploys to GitHub Pages (repo now public) instead of an OVH subdomain; OVH SFTP facts recorded for Phase 5 — OVH Free hosting tier cannot attach any subdomain (multisite requires paid tier); GitHub Pages reuses existing repo with zero new signup and automatic HTTPS
 - [Phase 01]: Sanity read-only + one-time write tokens created and revoked entirely via CLI (sanity tokens add/delete), no dashboard visit needed — sanity tokens add/list/delete supports full non-interactive token lifecycle management
@@ -289,12 +291,12 @@ Items acknowledged and deferred at v1.5 milestone close on 2026-08-03 (`/gsd-com
 
 ## Session Continuity
 
-Last session: 2026-08-03T07:21:36.806Z
-Stopped at: Phase 19 context gathered
-Resume file: .planning/phases/19-site-wide-visual-polish/19-CONTEXT.md
+Last session: 2026-08-03T15:30:00.000Z
+Stopped at: v1.6 ROADMAP.md created (Phases 20-23 mapped to all 9 requirements, 100% coverage; STATE.md and REQUIREMENTS.md traceability updated)
+Resume file: .planning/ROADMAP.md
 
-**Next up:** Phase 19 (Site-Wide Visual Polish — EDN-09, UI-01, CONT-03) is the last phase of v1.5. Phase 5 (Launch & Domain Cutover) remains open and deliberately deferred whenever launch is next prioritized. The pre-existing `/about/` mobile-header overflow regression (Phase 15) was root-caused and fixed post-merge during Phase 16 (see `.planning/milestones/v1.4-phases/16-404-page-editorial-redesign/deferred-items.md`) — no longer open.
+**Next up:** Phase 20 (Mobile Navigation & Accent Color — HOME-13, HOME-16) is ready to plan via `/gsd-plan-phase 20`. Phase 5 (Launch & Domain Cutover) remains open and deliberately deferred whenever launch is next prioritized. The pre-existing `/about/` mobile-header overflow regression (Phase 15) was root-caused and fixed post-merge during Phase 16 (see `.planning/milestones/v1.4-phases/16-404-page-editorial-redesign/deferred-items.md`) — no longer open.
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Plan Phase 20 with /gsd-plan-phase 20

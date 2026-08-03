@@ -8,6 +8,7 @@
 - ✅ **v1.3 Éditions** — Phases 11-14 (shipped 2026-07-23, archived — see `.planning/milestones/v1.3-ROADMAP.md`)
 - ✅ **v1.4 Editorial Design Consistency** — Phases 15-16 (shipped 2026-08-01, archived — see `.planning/milestones/v1.4-ROADMAP.md`)
 - ✅ **v1.5 Global Improvements & Bug Fixes** — Phases 17-19 (shipped 2026-08-03, archived — see `.planning/milestones/v1.5-ROADMAP.md`)
+- 🚧 **v1.6 Mobile Experience Redesign** — Phases 20-23 (roadmapped 2026-08-03 — mobile-only nav/scroll/lightbox redesign across Homepage, Gallery, and Édition detail pages, plus an About portrait-placement fix; desktop/tablet unchanged throughout)
 
 ## Overview
 
@@ -22,6 +23,7 @@ It also covers the **v1.3 milestone "Éditions"** (Phases 11–14): a dedicated,
 It also covered the **v1.4 milestone "Editorial Design Consistency"** (Phases 15–16, shipped 2026-08-01): extending the giant-title `PageTitleHeader` identity already established on Contact and Éditions to the two remaining pages still showing the old treatment. Full phase details archived at `.planning/milestones/v1.4-ROADMAP.md`.
 
 It also covers the **v1.5 milestone "Global Improvements & Bug Fixes"** (Phases 17–19): a batch of 8 live-reported visual/interaction bugs and regressions across the homepage, gallery pages, the Éditions page, and Contact — most surfaced directly by Romane/Florian using the shipped v1.4 site, one (EDN-09) a direct regression from Phase 16's post-merge overflow fix. All 8 fixes are small, independent, single-or-few-component Astro/CSS/vanilla-JS changes with no shared data model or backend work, so the three phases are sequenced by blast radius rather than by feature area alone: self-contained homepage fixes first (Phase 17 — `HomeCarousel.astro` only), gallery/Éditions display fixes next (Phase 18 — `DetailHero.astro`, `GalleryGrid.astro`, and the gallery detail pages, contained to the Portfolio/Éditions display surface), and the higher-risk, shared-component visual polish last (Phase 19 — `EditionsOverviewBody.astro` plus the `PageTitleHeader.astro` component shared by Contact, About, and Éditions, plus `ContactPageBody.astro`), since UI-01's halftone-bleed fix must not reintroduce the horizontal-scroll bug Phase 16's post-merge fix was containing.
+It also covers the **v1.6 milestone "Mobile Experience Redesign"** (Phases 20–23): a phone-viewport-only redesign replacing the carousel/grid toggle and click-to-open Lightbox with scroll-driven navigation across the Homepage, Gallery detail, and Édition detail pages, plus an About portrait-placement fix — desktop/tablet must stay byte-for-byte unchanged throughout (UI-02), so rather than gating that check behind one standalone phase at the end, every phase in this milestone carries its own explicit desktop/tablet-unchanged success criterion. The four phases are sequenced by blast radius and dependency: the homepage's more mechanical, lower-risk pieces come first (Phase 20 — a mobile-only nav menu replacing the header bar, and the per-visit random accent color the scroll view in the next phase will consume), then the homepage's biggest, riskiest, sketch-explored centerpiece (Phase 21 — the scroll-driven single view and its full-screen wordmark-to-letterform-zoom entry transition, depending on Phase 20's accent-color mechanism), then the Portfolio/Éditions Lightbox retirement, grouped as one phase rather than split because Gallery and Édition detail pages already share the `GalleryGrid`/`Lightbox` component surface and the Édition-specific intro-text/primary-photo redesign is a dependent next step once that shared scroll pattern exists (Phase 22), and finally the isolated, single-component About portrait fix, which also closes the milestone with a combined final regression sweep across every page touched (Phase 23).
 
 ## Phases
 
@@ -54,6 +56,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 17: Homepage Carousel & Intro Fixes** - Auto-advance keeps running while the pointer hovers the page, and the grid-mode intro paragraph shows in full (completed 2026-08-02)
 - [x] **Phase 18: Gallery & Éditions Display Fixes** - Gallery descriptions show in full, thumbnail grids lose their black border frame, and gallery pages show the site footer again (completed 2026-08-02)
 - [x] **Phase 19: Site-Wide Visual Polish** - Éditions row-hover color applies to the title/description too, the halftone texture bleeds to the true browser edge again without reintroducing horizontal scroll, and Contact's hover-fill text gets breathing room (completed 2026-08-03)
+- [ ] **Phase 20: Mobile Navigation & Accent Color** - On phone-width viewports, the homepage header becomes a self-contained nav menu with the language switcher folded in, and each visit gets a randomly-picked accent color from existing gallery data; desktop/tablet unchanged
+- [ ] **Phase 21: Homepage Scroll Experience** - On phone-width viewports, the carousel/grid toggle is replaced by one continuous scroll-driven view opening on a full-screen wordmark that zooms through its letterforms into the first gallery photo, with on-arrival description reveals; desktop/tablet unchanged
+- [ ] **Phase 22: Gallery & Édition Scroll Navigation** - On phone-width viewports, Gallery and Édition detail pages retire the click-to-open Lightbox for scroll-driven full-photo navigation, and the Édition intro text/primary photo get a legible, non-backdrop treatment; desktop/tablet unchanged
+- [ ] **Phase 23: About Portrait Placement & Milestone Regression Close** - On phone-width viewports, the About page's portrait photo moves to an improved position, and the milestone closes with a confirmed desktop/tablet regression sweep across every page touched
 
 ## Phase Details
 
@@ -97,12 +103,74 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
 
 Full phase details (goals, dependencies, requirements, success criteria, wave/plan breakdowns) archived at `.planning/milestones/v1.5-ROADMAP.md`. Summary: a batch of 8 live-reported visual/interaction bugs and regressions across the homepage, gallery pages, the Éditions page, and Contact — homepage carousel/intro fixes (Phase 17: removed pointer-hover auto-advance pause, removed the grid-mode intro 2-line clamp), gallery/Éditions display fixes (Phase 18: removed the thumbnail black border frame, restored the gallery-page footer, removed the detail-hero description clamp in favor of an empirically-calibrated Sanity max-length), and the higher-risk shared-component visual polish (Phase 19: fixed a broken Astro `:global()` selector that silently blocked the Éditions row-hover color sync, added Contact link-row breathing room, and restored the halftone texture's true viewport-edge bleed via geometry-based containment without reintroducing Phase 16's `position: sticky` regression). All 8 requirements (HOME-11, HOME-12, PORT-04, PORT-05, PORT-06, EDN-09, UI-01, CONT-03) shipped; see `.planning/MILESTONES.md` for accomplishments.
 
+### Phase 20: Mobile Navigation & Accent Color
+
+**Goal**: On phone-width viewports, the homepage header becomes a self-contained nav menu (hamburger or similar) with the language switcher folded inside it, and each visit shows a randomly-picked accent color drawn from the existing per-gallery `heroColor` values — desktop/tablet header and accent-color behavior stay completely unchanged.
+**Depends on**: Phase 19 (continues after the v1.5 milestone; first phase of v1.6)
+**Requirements**: HOME-13, HOME-16
+**Success Criteria** (what must be TRUE):
+
+  1. On a phone-width viewport, the homepage's desktop header bar is replaced by a hamburger/menu control that opens to reveal the nav links.
+  2. The language switcher is reachable from inside that mobile menu on the homepage at phone widths, not shown inline as it is on desktop.
+  3. Revisiting the homepage on a phone across multiple visits shows different accent colors, each one of the existing per-gallery `heroColor` values (no new palette introduced).
+  4. On tablet/desktop viewports, the homepage header bar, language switcher placement, and accent-color behavior are pixel-for-pixel and behaviorally unchanged from the pre-milestone (Phase 19) state.
+
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 21: Homepage Scroll Experience
+
+**Goal**: On phone-width viewports, the homepage replaces the carousel/grid toggle with one continuous scroll-driven view that opens on a full-screen wordmark, zooms through the letterforms into the first gallery's photo as the visitor scrolls, and reveals each item's description as it arrives on screen — the riskiest, most subjective piece explored via sketch before implementation.
+**Depends on**: Phase 20 (the scroll view consumes Phase 20's per-visit accent-color mechanism)
+**Requirements**: HOME-14, HOME-15
+**Success Criteria** (what must be TRUE):
+
+  1. On a phone-width viewport, the carousel/grid toggle control no longer appears on the homepage.
+  2. Scrolling the homepage on a phone moves through every gallery as a single continuous sequence, with no separate carousel or grid mode to switch between.
+  3. Each gallery's description text is hidden until that gallery arrives on screen during scroll, then reveals via the sketched-and-approved transition.
+  4. On first load, a phone visitor sees the "Atelier Jacqueline Suzanne" wordmark filling the screen; scrolling visibly transitions through the wordmark's letterforms into the first gallery's photo, matching the approved sketch direction.
+  5. On tablet/desktop viewports, the carousel/grid toggle and both view modes behave exactly as they did before this milestone.
+
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 22: Gallery & Édition Scroll Navigation
+
+**Goal**: On phone-width viewports, both Gallery detail and Édition detail pages retire the click-to-open Lightbox in favor of scrolling directly through full-size, uncropped photos in the page flow; the Édition detail page additionally gives its intro/statement text a legible solid background and shows its primary photo among the others instead of as a full-bleed backdrop — the intro-text/photo treatment explored via sketch before implementation.
+**Depends on**: Nothing new (independent of Phases 20-21; shares the `GalleryGrid`/`Lightbox` component surface used by both Gallery and Édition detail routes)
+**Requirements**: PORT-07, EDN-10, EDN-11
+**Success Criteria** (what must be TRUE):
+
+  1. On a phone-width viewport, tapping a photo on a Gallery detail page no longer opens a separate Lightbox/picture-mode view.
+  2. On a phone-width viewport, a visitor can scroll through a gallery's full photo set at full size, uncropped, directly in the page.
+  3. The same scroll-driven, no-Lightbox behavior holds on Édition detail pages at phone widths.
+  4. On a phone-width Édition detail page, the intro/statement text sits on a legible solid background rather than over a photo, and the primary photo appears among the other photos rather than as a full-bleed backdrop — matching the approved sketch direction.
+  5. On tablet/desktop viewports, both Gallery detail and Édition detail pages keep their existing click-to-open Lightbox and full-bleed primary-photo treatment exactly as before this milestone.
+
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 23: About Portrait Placement & Milestone Regression Close
+
+**Goal**: On phone-width viewports, the About page's portrait photo moves to an improved position relative to the surrounding text — explored via sketch before implementation — and the milestone closes with a confirmed, combined desktop/tablet regression check across every page touched this milestone (Homepage, Gallery detail, Édition detail, About).
+**Depends on**: Phase 20, Phase 21, Phase 22 (final phase; closes the milestone-wide UI-02 regression guard carried through every prior phase's own success criteria)
+**Requirements**: ABOUT-05, UI-02
+**Success Criteria** (what must be TRUE):
+
+  1. On a phone-width viewport, the About page's portrait photo appears in a new position relative to the bio text, matching the approved sketch direction, not its pre-milestone placement.
+  2. The new portrait placement doesn't crowd, overlap, or push the surrounding text sections awkwardly at common phone widths.
+  3. On tablet/desktop viewports, the About page's portrait placement is unchanged from before this milestone.
+  4. A combined final pass across Homepage, Gallery detail, Édition detail, and About confirms every desktop/tablet layout, nav, and interaction behavior verified locally in Phases 20-22 still holds unchanged.
+
+**Plans**: TBD
+**UI hint**: yes
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 18 → 19
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23
 
-Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per PROJECT.md — see the Note under Phase 6 above. Phases 7–10 (v1.2) are likewise intended to execute before Phase 5, per PROJECT.md's current-milestone note. Phases 11–14 (v1.3 "Éditions") are new work continuing after Phase 10; Phase 5 (Launch & Domain Cutover) remains separately tracked, not started, and not part of this milestone. Phase numbering reflects milestone-arrival order, not strict execution sequence. Phases 15–16 (v1.4 "Editorial Design Consistency") are new work continuing after Phase 14; Phase 5 (Launch & Domain Cutover) remains separately tracked, not started, and not part of this milestone. Phases 17–19 (v1.5 "Global Improvements & Bug Fixes") are new work continuing after Phase 16; Phase 5 (Launch & Domain Cutover) remains separately tracked, not started, and not part of this milestone.
+Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per PROJECT.md — see the Note under Phase 6 above. Phases 7–10 (v1.2) are likewise intended to execute before Phase 5, per PROJECT.md's current-milestone note. Phases 11–14 (v1.3 "Éditions") are new work continuing after Phase 10; Phase 5 (Launch & Domain Cutover) remains separately tracked, not started, and not part of this milestone. Phase numbering reflects milestone-arrival order, not strict execution sequence. Phases 15–16 (v1.4 "Editorial Design Consistency") are new work continuing after Phase 14; Phase 5 (Launch & Domain Cutover) remains separately tracked, not started, and not part of this milestone. Phases 17–19 (v1.5 "Global Improvements & Bug Fixes") are new work continuing after Phase 16; Phase 5 (Launch & Domain Cutover) remains separately tracked, not started, and not part of this milestone. Phases 20–23 (v1.6 "Mobile Experience Redesign") are new work continuing after Phase 19; Phase 5 (Launch & Domain Cutover) remains separately tracked, not started, and not part of this milestone. UI-02 (the desktop/tablet-unchanged regression guard) is formally closed in Phase 23 but is checked as a running local success criterion within Phases 20, 21, and 22 as well, not deferred to Phase 23 alone.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -125,7 +193,11 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 17. Homepage Carousel & Intro Fixes | 1/1 | Complete    | 2026-08-02 |
 | 18. Gallery & Éditions Display Fixes | 2/2 | Complete    | 2026-08-02 |
 | 19. Site-Wide Visual Polish | 2/2 | Complete    | 2026-08-03 |
+| 20. Mobile Navigation & Accent Color | 0/TBD | Not started | - |
+| 21. Homepage Scroll Experience | 0/TBD | Not started | - |
+| 22. Gallery & Édition Scroll Navigation | 0/TBD | Not started | - |
+| 23. About Portrait Placement & Milestone Regression Close | 0/TBD | Not started | - |
 
 ## Milestone Scope Note
 
-This roadmap covers the **v1 milestone "MVP"** (Phases 1–5 — Phases 1-4/04.1/04.2/04.3 shipped and formally closed 2026-07-12; Phase 5 launch/domain cutover deliberately deferred, not started — see `.planning/MILESTONES.md`), the **v1.1 milestone** (homepage refinements, Phase 6 — HOME-01, HOME-02, HOME-03 — shipped and archived 2026-07-13), the **v1.2 milestone** (homepage polish/pre-launch, Phases 7–10 — HOME-04..HOME-10, I18N-04 — shipped and archived 2026-07-20), and the **v1.3 milestone "Éditions"** (Phases 11–14 — EDN-01..EDN-07, CMS-04 — shipped and archived 2026-07-23; full detail at `.planning/milestones/v1.3-ROADMAP.md`). It also covers the **v1.4 milestone "Editorial Design Consistency"** (Phases 15–16 — ABOUT-03, ABOUT-04, ERR-01 — shipped and formally closed/archived 2026-08-01; full detail at `.planning/milestones/v1.4-ROADMAP.md`). v1.0/v1.1/v1.2 were formally closed retroactively on 2026-07-27 (full accomplishments in `.planning/MILESTONES.md`); their phase detail lives in the `.planning/milestones/v1.3-ROADMAP.md` full-project snapshot since no earlier snapshot existed. It also covers the **v1.5 milestone "Global Improvements & Bug Fixes"** (Phases 17–19 — HOME-11, HOME-12, PORT-04, PORT-05, PORT-06, EDN-09, UI-01, CONT-03 — shipped and formally closed/archived 2026-08-03; full detail at `.planning/milestones/v1.5-ROADMAP.md`). Phase 5 (Launch & Domain Cutover, LAUNCH-01) remains the only open v1 phase, deliberately deferred, not part of any shipped milestone. The v1.x wave — exhibitions/agenda (EXHB-01, EXHB-02, CMS-02), shop (SHOP-01..04, building on the v1.3 `edition` content model), checkout (CHK-01..05), shipping (SHIP-01, SHIP-02), commerce-specific legal (LEGAL-02, LEGAL-04), the Éditions cross-link differentiator (EDN-08), and related bilingual/CMS extensions (I18N-02b, I18N-03, CMS-03) — is tracked in `.planning/REQUIREMENTS.md`'s v2 section and will get its own roadmap phases once scoped via `/gsd-new-milestone`.
+This roadmap covers the **v1 milestone "MVP"** (Phases 1–5 — Phases 1-4/04.1/04.2/04.3 shipped and formally closed 2026-07-12; Phase 5 launch/domain cutover deliberately deferred, not started — see `.planning/MILESTONES.md`), the **v1.1 milestone** (homepage refinements, Phase 6 — HOME-01, HOME-02, HOME-03 — shipped and archived 2026-07-13), the **v1.2 milestone** (homepage polish/pre-launch, Phases 7–10 — HOME-04..HOME-10, I18N-04 — shipped and archived 2026-07-20), and the **v1.3 milestone "Éditions"** (Phases 11–14 — EDN-01..EDN-07, CMS-04 — shipped and archived 2026-07-23; full detail at `.planning/milestones/v1.3-ROADMAP.md`). It also covers the **v1.4 milestone "Editorial Design Consistency"** (Phases 15–16 — ABOUT-03, ABOUT-04, ERR-01 — shipped and formally closed/archived 2026-08-01; full detail at `.planning/milestones/v1.4-ROADMAP.md`). v1.0/v1.1/v1.2 were formally closed retroactively on 2026-07-27 (full accomplishments in `.planning/MILESTONES.md`); their phase detail lives in the `.planning/milestones/v1.3-ROADMAP.md` full-project snapshot since no earlier snapshot existed. It also covers the **v1.5 milestone "Global Improvements & Bug Fixes"** (Phases 17–19 — HOME-11, HOME-12, PORT-04, PORT-05, PORT-06, EDN-09, UI-01, CONT-03 — shipped and formally closed/archived 2026-08-03; full detail at `.planning/milestones/v1.5-ROADMAP.md`). Phase 5 (Launch & Domain Cutover, LAUNCH-01) remains the only open v1 phase, deliberately deferred, not part of any shipped milestone. It also covers the **v1.6 milestone "Mobile Experience Redesign"** (Phases 20–23 — HOME-13, HOME-14, HOME-15, HOME-16, PORT-07, EDN-10, EDN-11, ABOUT-05, UI-02 — roadmapped 2026-08-03, not yet started; full detail above under Phase Details). The v1.x wave — exhibitions/agenda (EXHB-01, EXHB-02, CMS-02), shop (SHOP-01..04, building on the v1.3 `edition` content model), checkout (CHK-01..05), shipping (SHIP-01, SHIP-02), commerce-specific legal (LEGAL-02, LEGAL-04), the Éditions cross-link differentiator (EDN-08), and related bilingual/CMS extensions (I18N-02b, I18N-03, CMS-03) — is tracked in `.planning/REQUIREMENTS.md`'s v2 section and will get its own roadmap phases once scoped via `/gsd-new-milestone`.
