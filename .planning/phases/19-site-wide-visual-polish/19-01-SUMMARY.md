@@ -131,6 +131,16 @@ None - no external service configuration required.
 - EDN-09 and CONT-03 are both closed; 2 of the milestone's remaining 3 requirements (EDN-09, CONT-03) are now done, leaving only UI-01 (halftone bleed restoration), tracked in Plan 02 of this phase.
 - No blockers for Plan 02 — it touches a different component (`PageTitleHeader.astro`'s halftone/overflow rules) with no file overlap against this plan's edits.
 
+## Self-Check: PASSED
+
+- FOUND: `src/components/EditionsOverviewBody.astro`
+- FOUND: `src/components/ContactPageBody.astro`
+- FOUND: `tests/e2e/edition.spec.ts`
+- FOUND: `tests/e2e/contact.spec.ts`
+- FOUND: `.planning/phases/19-site-wide-visual-polish/19-01-SUMMARY.md`
+- FOUND commit `8086dfe` (Task 1) in `git log --oneline`
+- FOUND commit `7c250be` (Task 2) in `git log --oneline`
+
 ---
 *Phase: 19-site-wide-visual-polish*
 *Completed: 2026-08-03*
