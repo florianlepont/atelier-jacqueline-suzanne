@@ -199,6 +199,78 @@ test.describe('contact form submission failures', () => {
   });
 });
 
+// CONT-03: .contact-page__detail had zero horizontal padding, so the
+// E-mail/Instagram label/value text sat flush against the row edges when
+// the black hover-fill (::before) appeared. This describe block proves two
+// facts together: (1) the text now has real breathing room, and (2) the
+// hover-fill still reaches the row's true edges — ::before's `inset: 0`
+// resolves against the row's padding box (not content box), so adding
+// horizontal padding to the row does not shrink the fill.
+test.describe('contact link-row hover-fill spacing (CONT-03)', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test('E-mail/Instagram rows have 16px horizontal padding with breathing room around the text, in both locales', async ({
+    page,
+  }) => {
+    for (const path of ['/contact/', '/en/contact/']) {
+      await page.goto(path);
+
+      const rows = page.locator('.contact-page__detail');
+      const count = await rows.count();
+      expect(count).toBeGreaterThanOrEqual(2);
+
+      for (let i = 0; i < count; i += 1) {
+        const row = rows.nth(i);
+        const padding = await row.evaluate((el) => {
+          const style = getComputedStyle(el);
+          return { left: style.paddingLeft, right: style.paddingRight };
+        });
+        expect(padding.left).toBe('16px');
+        expect(padding.right).toBe('16px');
+
+        const rowBox = await row.boundingBox();
+        const innerBox = await row.locator('.contact-page__detail-inner').boundingBox();
+        expect(rowBox).toBeTruthy();
+        expect(innerBox).toBeTruthy();
+        expect(innerBox!.x).toBeGreaterThanOrEqual(rowBox!.x + 15);
+        expect(innerBox!.x + innerBox!.width).toBeLessThanOrEqual(rowBox!.x + rowBox!.width - 15);
+      }
+    }
+  });
+
+  test('the hover-fill still spans the row edge-to-edge after the padding is added', async ({
+    page,
+  }) => {
+    await page.goto('/contact/');
+
+    const row = page.locator('.contact-page__detail').first();
+    const rowBox = await row.boundingBox();
+    expect(rowBox).toBeTruthy();
+
+    const beforeWidth = await row.evaluate(
+      (el) => parseFloat(getComputedStyle(el, '::before').width),
+    );
+    expect(Math.abs(beforeWidth - rowBox!.width)).toBeLessThanOrEqual(0.5);
+
+    const preHoverTransform = await row.evaluate(
+      (el) => getComputedStyle(el, '::before').transform,
+    );
+
+    await row.hover();
+
+    await expect(async () => {
+      const transform = await row.evaluate((el) => getComputedStyle(el, '::before').transform);
+      // translateX(-101%) pre-hover vs translateX(0) (identity matrix or
+      // 'none') post-hover — matrix(1, 0, 0, 1, 0, 0) is the identity
+      // matrix Chromium reports for `transform: translateX(0)`.
+      expect(transform === 'none' || /matrix\(1,\s*0,\s*0,\s*1,\s*0,\s*0\)/.test(transform)).toBe(
+        true,
+      );
+      expect(transform).not.toBe(preHoverTransform);
+    }).toPass();
+  });
+});
+
 test.describe('contact reachability', () => {
   // sketch-012 / variant A3 (quick-260728-ek0): the numbered editorial
   // sequence (.contact-page__number "02"/"03") was dropped along with the
