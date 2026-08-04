@@ -21,6 +21,7 @@
 // and 10-UI-SPEC.md "<SiteHeader> component contract".
 import { getRelativeLocaleUrl } from 'astro:i18n';
 import SiteHeader from './SiteHeader.astro';
+import { wordmarkPhotoFilter } from '../lib/home-carousel';
 
 interface GalleryEntry {
   slug: string;
@@ -93,10 +94,6 @@ const introBody = siteCopy.homepageIntro;
 
 const totalLabel = String(galleries.length).padStart(2, '0');
 const firstGallery = galleries[0];
-const wordmarkPhotoFilter = (textColor?: string) =>
-  textColor?.toUpperCase() === '#FFFFFF'
-    ? 'brightness(1.38) contrast(0.92)'
-    : 'brightness(0.65) contrast(1.12)';
 
 // Base-aware logo paths (matches BaseLayout.astro's assetBase pattern) — a
 // bare root-relative "/logos/..." src 404s under the GitHub Pages deploy's
@@ -118,6 +115,15 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       '--wordmark-photo-filter': wordmarkPhotoFilter(firstGallery.heroTextColor),
       '--current-accent': firstGallery.heroColor ?? 'var(--color-accent)',
       '--current-accent-text': firstGallery.heroTextColor ?? 'var(--color-on-accent)',
+      /* Phase 21 (HOME-14/HOME-15): the phone-width scroll deck's own
+         full-screen zoom wordmark/photo-crossfade layer (below) reads these
+         two custom properties. Deliberately sourced from firstGallery, the
+         SAME gallery whose heroSrc the deck's first slide (Task 2 below)
+         also uses, so the wordmark zoom lands on the exact photo the first
+         slide then shows — no seam between the intro transition and the
+         first real slide. */
+      '--zoom-photo': `url(${firstGallery.heroSrc})`,
+      '--zoom-photo-filter': wordmarkPhotoFilter(firstGallery.heroTextColor),
     }}
   >
     <SiteHeader
@@ -329,6 +335,68 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       </div>
     </div>
 
+    {/* Phase 21 (HOME-14/HOME-15): the phone-width scroll deck. NEW, parallel
+        markup, sibling to .home-hero/.home-grid above — shown ONLY below
+        767px by a pure CSS media query (Task 3), never a JS markup swap
+        (21-RESEARCH.md Anti-Patterns). This is deliberately NOT a reuse of
+        the carousel's own DOM: that subtree carries progress dashes, an
+        autoplay toggle, peek layers and a hover cursor this mobile view
+        explicitly does not want (D-01/D-16). No motion is wired yet — this
+        task only builds the structure/CSS end-state; plans 21-05/21-06 layer
+        the scroll driver and arrival observer on top.
+        - D-16: the wordmark is intro-only. It lives ONLY in the zoom stage
+          below, once, and no .home-slide repeats it — regular slides show
+          just title + description.
+        - D-10: each slide is a real anchor with a build-time-rendered href,
+          so tapping it opens the gallery via the browser's own click
+          semantics. There is no synthesized openCurrent()/coordinate
+          heuristic here, and therefore no exclusion guard to get wrong —
+          precisely the tap-hijack bug class CR-01 was (fixed separately, in
+          the EXISTING carousel's touchend handler, by plan 21-02).
+        - D-07: exactly one photo per gallery (its own hero/cover photo) —
+          not a multi-photo-per-gallery preview. */}
+    <div class="home-scroll-deck" data-role="scroll-deck">
+      <div class="home-scroll-deck__track" data-role="zoom-track">
+        <div class="home-scroll-deck__stage" data-role="zoom-stage">
+          <div class="home-scroll-deck__photo" data-role="zoom-photo" aria-hidden="true"></div>
+          <h1 class="home-scroll-deck__wordmark" data-role="zoom-wordmark">
+            <span class="home-scroll-deck__focus-letter" data-role="zoom-focus-letter">A</span>telier<br />Jacqueline<br />Suzanne
+          </h1>
+        </div>
+      </div>
+      <div class="home-scroll-deck__slides" data-role="deck-slides">
+        {galleries.map((gallery, i) => (
+          <a
+            href={getRelativeLocaleUrl(locale, `galleries/${gallery.slug}`)}
+            class="home-slide"
+            data-role="deck-slide"
+            data-index={i}
+            data-hero-color={gallery.heroColor}
+            data-hero-text-color={gallery.heroTextColor}
+            style={{
+              '--slide-accent': gallery.heroColor ?? 'var(--color-accent)',
+              '--slide-accent-text': gallery.heroTextColor ?? 'var(--color-on-accent)',
+            }}
+          >
+            <img
+              src={gallery.heroSrc}
+              srcset={gallery.heroSrcSet}
+              sizes="100vw"
+              alt={gallery.alt}
+              loading={i === 0 ? 'eager' : 'lazy'}
+              decoding="async"
+              fetchpriority={i === 0 ? 'high' : undefined}
+              class="home-slide__img"
+            />
+            <div class="home-slide__accent">
+              <span class="home-slide__title">{gallery.title}</span>
+              <p class="home-slide__description">{gallery.statement}</p>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+
     {/* Build-time data for the runtime script to read (Lightbox.astro
         precedent) — the script never imports src/lib/sanity, it only reads
         this already-fetched, already-filtered (D-12) static markup. */}
@@ -350,7 +418,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     </ul>
 
     <script>
-      import { computeHoverZone, computeWordmarkBackgroundPosition, computeWordmarkSeamFraction, detectSwipeDirection, pickRandomGalleryIndex } from '../lib/home-carousel';
+      import { computeHoverZone, computeWordmarkBackgroundPosition, computeWordmarkSeamFraction, detectSwipeDirection, pickRandomGalleryIndex, wordmarkPhotoFilter } from '../lib/home-carousel';
 
       interface GalleryEntry {
         slug: string;
@@ -395,11 +463,6 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           { bg: 'var(--palette-lime)', text: 'var(--color-ink)' },
           { bg: 'var(--palette-plum)', text: '#FFFFFF' },
         ];
-        const wordmarkPhotoFilter = (textColor: string) =>
-          textColor.toUpperCase() === '#FFFFFF'
-            ? 'brightness(1.38) contrast(0.92)'
-            : 'brightness(0.65) contrast(1.12)';
-
         const heroImg = hero.querySelector<HTMLImageElement>('[data-role="hero-image"]');
         const heroPlaceholderImg = hero.querySelector<HTMLImageElement>('[data-role="hero-image-placeholder"]');
         const indexLabel = hero.querySelector<HTMLElement>('[data-role="index-label"]');
