@@ -183,6 +183,94 @@ export function pickRandomGalleryIndex(count: number, randomSource: () => number
   return Math.floor(randomSource() * count);
 }
 
+/**
+ * Private clamp helper — matches DetailHero.astro's existing
+ * `Math.max(0, Math.min(1, v))` shape. Not exported: this module's
+ * pre-existing functions each inline their own clamp expression at their
+ * own call sites (e.g. computeWordmarkSeamFraction) and are left untouched
+ * here, per this plan's scope (extend, don't refactor).
+ */
+function clamp01(v: number): number {
+  return Math.max(0, Math.min(1, v));
+}
+
+/**
+ * Phase 21 (HOME-14/HOME-15), sketch 015 "Scale Through": the confirmed
+ * scroll distance (in px) over which the mobile wordmark-zoom transition
+ * plays out, from t=0 (zoom not started) to t=1 (fully zoomed into the
+ * photo). 900px is the "Cinematic" pace, the slowest/most generous of three
+ * candidates tested on a real phone (420px "Quick", 650px "Balanced", 900px
+ * "Cinematic") — D-02/D-04 in `21-CONTEXT.md` record Cinematic as the
+ * winner, a quicker pace read as abrupt. The PACE CATEGORY ("give the
+ * effect room to breathe") is the locked design decision, not this exact
+ * pixel count — a later real-device tuning pass may adjust the number
+ * without reopening that decision.
+ */
+export const ZOOM_REVEAL_DISTANCE = 900;
+
+/**
+ * Converts the pinned scroll track's own `getBoundingClientRect().top`
+ * (per D-02, mirroring `DetailHero.astro`'s existing scroll-scrubbed pin
+ * driver — NOT a bounded div's `scrollTop`, which was sketch-only
+ * scaffolding for side-by-side variant comparison) into a 0..1 zoom
+ * progress fraction.
+ *
+ * `trackTop` is 0 or positive while the track's top edge hasn't yet
+ * scrolled past the viewport's top edge (zoom not started, clamped to 0);
+ * it becomes increasingly negative as the page scrolls down, reaching
+ * `-revealDistance` at the fully-zoomed end-state (clamped to 1 beyond
+ * that). A `revealDistance <= 0` is a degenerate caller error — resolved to
+ * the completed end-state (1) rather than dividing by zero/a negative
+ * number and producing Infinity or NaN.
+ */
+export function computeZoomProgress(trackTop: number, revealDistance: number = ZOOM_REVEAL_DISTANCE): number {
+  if (revealDistance <= 0) return 1;
+  return clamp01(-trackTop / revealDistance);
+}
+
+export interface WordmarkZoomState {
+  scale: number;
+  wordmarkOpacity: number;
+  photoOpacity: number;
+}
+
+/**
+ * Phase 21 (HOME-14/HOME-15), sketch 015 "Scale Through": the wordmark's
+ * scale/opacity/crossfade curve, driven by a single 0..1 zoom-progress
+ * number (see `computeZoomProgress`). D-01/D-04 in `21-CONTEXT.md` confirm
+ * this exact curve shape (an accelerating ease-in-cubic scale, not linear)
+ * as the chosen "Scale Through" treatment.
+ *
+ * `t` is clamped to [0,1] first (scroll can overshoot either end). `scale`
+ * runs 1 -> 8.5 along an ease-in-cubic (`ct * ct * ct`) of the clamped
+ * input, so it accelerates rather than moves at a constant rate.
+ * `wordmarkOpacity`/`photoOpacity` are driven by the same clamped input
+ * directly (not the eased curve) over their own late-arriving thresholds:
+ * the wordmark only starts fading past t=0.92, and the photo crossfade
+ * starts even earlier, at t=0.85. That early photoOpacity ramp is a
+ * deliberate end-state safety net (not a bug to "optimize away") — it hides
+ * rasterization/seam artifacts that would otherwise be visible at the
+ * extreme ~8.5x scale by having a plain full-bleed photo already partially
+ * visible underneath before the wordmark itself has fully vanished.
+ *
+ * The two endpoints (`ct <= 0`, `ct >= 1`) are returned as exact literals
+ * rather than run through the threshold formulas below: `(1 - 0.92) / 0.08`
+ * does not land on an exact binary floating-point 1, so the general
+ * formula alone would leak a ~5.5e-16 float-noise residual into
+ * `wordmarkOpacity` at t=1 instead of a clean `0`.
+ */
+export function computeWordmarkZoomState(t: number): WordmarkZoomState {
+  const ct = clamp01(t);
+  if (ct <= 0) return { scale: 1, wordmarkOpacity: 1, photoOpacity: 0 };
+  if (ct >= 1) return { scale: 8.5, wordmarkOpacity: 0, photoOpacity: 1 };
+  const eased = ct * ct * ct;
+  return {
+    scale: 1 + 7.5 * eased,
+    wordmarkOpacity: 1 - clamp01((ct - 0.92) / 0.08),
+    photoOpacity: clamp01((ct - 0.85) / 0.15),
+  };
+}
+
 export interface HoverZone {
   zone: 'center' | 'left' | 'right';
   proximity: number;
