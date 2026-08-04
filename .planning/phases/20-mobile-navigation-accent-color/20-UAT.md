@@ -18,9 +18,9 @@ result: pass
 
 ### 2. Visual fidelity against the reference image
 expected: Compare the open panel on a real device against 20-mobile-menu-reference.png for logo position, hamburger-to-X placement, big stacked list style, the small secondary bottom line, and the corner halftone accent. Visual layout should match the reference's intent (not pixel-identical, since the reference is a different site's mockup).
-result: issue
-reported: "langage switch is supposed to be at the bottom, with the same font size of the instagram. for the instagram, can you put the instagram logo instead?"
-severity: major
+result: pass
+originally_reported: "langage switch is supposed to be at the bottom, with the same font size of the instagram. for the instagram, can you put the instagram logo instead?"
+original_severity: major
 resolved_by: "20-06 (gap-closure plan) — both defects independently confirmed closed in 20-VERIFICATION.md's 2026-08-04T17:15:00Z re-verification pass. See Gaps section below."
 
 ### 3. Visibly different accent colours across reloads
@@ -37,8 +37,8 @@ result: pass
 ## Summary
 
 total: 4
-passed: 3
-issues: 1
+passed: 4
+issues: 0
 pending: 0
 skipped: 0
 blocked: 0

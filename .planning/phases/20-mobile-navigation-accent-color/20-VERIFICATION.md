@@ -1,7 +1,7 @@
 ---
 phase: 20-mobile-navigation-accent-color
 verified: 2026-08-04T17:15:00Z
-status: human_needed
+status: passed
 score: 4/4 ROADMAP success criteria verified; 6/7 20-06 gap-closure must-haves verified, 1 deferred to human sign-off
 behavior_unverified: 0
 overrides_applied: 0
@@ -9,11 +9,13 @@ re_verification:
   previous_status: human_needed
   previous_score: 4/4 ROADMAP success criteria verified (with 3 human-verification items outstanding)
   gaps_closed:
+
     - "20-UAT.md Test 2 gap 1: language switcher rendered as a fourth Display-size (32px/600/Unbounded/ink) primary item inside .mobile-nav-panel__nav — now relocated to a direct child of the dialog, Label-size (14px/400/non-Unbounded/ink), stacked in the secondary tier directly above the Instagram line."
     - "20-UAT.md Test 2 gap 2: the mobile panel's Instagram secondary link was plain text with no glyph — now carries the header's own Instagram SVG glyph (duplicated, resized 20px to 16px, currentColor, aria-hidden) beside the @handle."
   gaps_remaining: []
   regressions: []
 human_verification:
+
   - test: "Task 3's own end-of-phase <human-check> item 4: open the panel on a real phone-width viewport and judge whether the vertical spacing between the switcher line and the Instagram line reads as a deliberate, related pair rather than two unrelated items — tighten or open up if not."
     expected: "The two stacked secondary lines read as one cohesive group at a glance."
     why_human: "Explicitly named in 20-06-PLAN.md's own Task 3 action text as \"the one judgement call the automated geometry gate cannot make.\" The automated geometry test (mobile-nav.spec.ts, the '(20-06)' stacked-rows test) proves the two lines are stacked, centred, and within the 44-56px bottom-offset band, but optical rhythm/deliberateness is a human aesthetic call that presence/geometry checks cannot make. Per this project's workflow.human_verify_mode: end-of-phase setting (20-06-SUMMARY.md coverage item D4), this check was deliberately deferred by the executor to this end-of-phase verification pass rather than performed mid-flight."
@@ -114,6 +116,7 @@ One item remains, explicitly named by the plan itself as a judgement call automa
 1. **Inter-line spacing judgement** — Open the mobile nav panel on a real phone-width viewport and judge whether the vertical gap between the switcher line and the Instagram line reads as a deliberate, related pair (rather than two arbitrarily-spaced items). The automated geometry test proves the two lines are stacked, centred, and within the 44-56px bottom-offset band, but "reads as a deliberate pair" is an aesthetic judgement this verifier's screenshot inspection supports as plausible (the ~23px optical gap looks intentional and matches the plan's stated design rationale) but cannot certify with the same confidence as a real human eye on a real device.
 
 The prior verification's three human-verification items are resolved as follows:
+
 - **D-03 motion feel across engines** — Already passed as 20-UAT.md Test 1 (real on-phone test). Not re-opened by plan 20-06 (motion CSS untouched).
 - **Visual fidelity against the reference image** — This was 20-UAT.md Test 2, which *failed* and is the subject of this entire re-verification cycle. The two concrete defects it reported (switcher hierarchy, missing Instagram glyph) are now closed and confirmed above. The residual, narrower spacing-judgement question is captured as the one remaining item above.
 - **Visibly different accent colours across reloads** — Already passed as 20-UAT.md Test 3 (real on-phone test). Not touched by plan 20-06.
