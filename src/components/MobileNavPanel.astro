@@ -98,3 +98,114 @@ const {
     <span class="sr-only">{instagramNewTabHint}</span>
   </a>
 </dialog>
+
+<script>
+  // Phase 20 Plan 04 (HOME-13, D-03): open/close orchestration for the
+  // panel plan 20-03 left structural. The native dialog-modal API (see the
+  // call below) supplies focus containment, Escape-to-close, and
+  // return-focus for free (Lightbox.astro, RESEARCH.md "Don't Hand-Roll") —
+  // this script must never add a keydown listener or a hand-rolled
+  // focus-cycling loop; neither exists anywhere else in this codebase, by
+  // design.
+  const panel = document.getElementById('mobile-nav') as HTMLDialogElement | null;
+  const toggle = document.querySelector<HTMLButtonElement>('[data-role="mobile-nav-toggle"]');
+  const closeBtn = panel?.querySelector<HTMLButtonElement>('[data-role="mobile-nav-close"]');
+
+  // Total no-op if the markup this script depends on is ever absent.
+  if (panel && toggle) {
+    // Persistent media-query objects (HomeCarousel.astro's
+    // `reduceMotionQuery` convention, not a one-shot `matchMedia().matches`
+    // call) — both are read repeatedly below, and phoneQuery also needs its
+    // own 'change' listener.
+    const phoneQuery = window.matchMedia('(max-width: 767px)');
+    const reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    let closing = false;
+    let closeTimer: ReturnType<typeof setTimeout> | null = null;
+
+    // Filtered on purpose: the close button's three morphing bars (see
+    // SiteHeader.astro's motion CSS) also transition and bubble
+    // transitionend up to the dialog — an unfiltered handler would tear the
+    // panel down the moment the FIRST bar's transition ends, not the
+    // panel's own opacity/transform transition.
+    function onPanelTransitionEnd(event: TransitionEvent) {
+      if (event.target === panel) finishClose();
+    }
+
+    function finishClose() {
+      if (closeTimer !== null) {
+        clearTimeout(closeTimer);
+        closeTimer = null;
+      }
+      panel!.removeEventListener('transitionend', onPanelTransitionEnd);
+      panel!.classList.remove('is-closing');
+      closing = false;
+      panel!.close();
+    }
+
+    function openNav() {
+      if (!phoneQuery.matches || panel!.open) return;
+      toggle!.setAttribute('aria-expanded', 'true');
+      // The call below is what supplies focus containment, Escape-to-close
+      // and focus restoration for free — none of the three may be
+      // hand-rolled (no focus-trap implementation exists anywhere in this
+      // codebase, by design).
+      panel!.showModal();
+    }
+
+    function closeNav() {
+      if (!panel!.open || closing) return;
+      closing = true;
+      panel!.classList.add('is-closing');
+
+      if (reduceMotionQuery.matches) {
+        finishClose();
+        return;
+      }
+
+      panel!.addEventListener('transitionend', onPanelTransitionEnd);
+      // Not belt-and-braces decoration: if no transition ever runs (an
+      // engine quirk, a print stylesheet, a future CSS edit that drops the
+      // transition), transitionend never fires and the visitor would be
+      // locked inside a focus-trapped modal with no way out (T-20-03).
+      closeTimer = setTimeout(finishClose, 400);
+    }
+
+    toggle.addEventListener('click', openNav);
+    closeBtn?.addEventListener('click', closeNav);
+
+    // The native `cancel` event fires on Escape and is cancelable —
+    // preventing it stops <dialog>'s native instant close so closeNav()'s
+    // transition can run before the real panel.close() (this is the Escape
+    // path; do not add a keydown listener).
+    panel.addEventListener('cancel', (event) => {
+      event.preventDefault();
+      closeNav();
+    });
+
+    // The panel is opaque and fills the viewport, so in practice there is no
+    // clickable ::backdrop region to hit — this handler is retained as a
+    // cheap safety valve matching Lightbox.astro's own backdrop-click
+    // handler, not as a primary dismiss route.
+    panel.addEventListener('click', (event) => {
+      if (event.target === panel) closeNav();
+    });
+
+    panel.addEventListener('close', () => {
+      toggle!.setAttribute('aria-expanded', 'false');
+      panel!.classList.remove('is-closing');
+      closing = false;
+      toggle!.focus();
+    });
+
+    // A visitor who rotates a tablet or resizes past 768px must not be left
+    // inside a modal whose only dismiss affordance is a phone-only control.
+    phoneQuery.addEventListener('change', () => {
+      if (!phoneQuery.matches && panel!.open) finishClose();
+    });
+
+    // Do NOT add a close-on-nav-link-click handler: every primary link
+    // performs a real navigation, so the panel is discarded with the
+    // document.
+  }
+</script>

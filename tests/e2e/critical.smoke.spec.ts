@@ -52,4 +52,24 @@ test.describe('critical cross-browser smoke', () => {
     await expect(dialog).toBeHidden()
     await expect(trigger).toBeFocused()
   })
+
+  // Phase 20 (HOME-13, D-03): this test exists specifically because Safari/
+  // WebKit does not animate a top-layer element out, so the JS-orchestrated
+  // close (MobileNavPanel.astro's client script) is the only thing that
+  // keeps the close path working there — and this file is the only place
+  // webkit-mobile coverage happens (playwright.config.ts scopes that
+  // project to **/*.smoke.spec.ts only).
+  test('mobile nav opens and closes via Escape, restoring focus, on every tested engine', async ({page}) => {
+    await page.goto('/')
+    // Explicit even though the webkit-mobile project already uses an
+    // iPhone 15 Pro viewport — keeps this test honest under the chromium
+    // project too, which defaults to a desktop viewport.
+    await page.setViewportSize({width: 393, height: 852})
+    await page.locator('[data-role="mobile-nav-toggle"]').click()
+    const dialog = page.locator('dialog#mobile-nav')
+    await expect(dialog).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeHidden()
+    await expect(page.locator('[data-role="mobile-nav-toggle"]')).toBeFocused()
+  })
 })
