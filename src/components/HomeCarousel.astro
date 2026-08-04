@@ -135,7 +135,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       instagramNewTabHint={instagramNewTabHint}
       logoBlackSrc={logoBlackSrc}
       logoWhiteSrc={logoWhiteSrc}
+      mobileNav={true}
     >
+      {/* HOME-13/D-01 (Phase 20 Plan 03): the only opt-in call site in the
+          codebase — every other <SiteHeader> consumer (BaseLayout.astro)
+          keeps omitting this prop entirely. */}
       {/* D-04: the ONLY content ever passed through SiteHeader's named
           `extra` slot — inherently homepage-only functionality (no "mode"
           concept exists on About/Contact/gallery-detail). Markup/behavior
