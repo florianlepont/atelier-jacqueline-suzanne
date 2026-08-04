@@ -554,4 +554,120 @@ test.describe('Phase 20 — homepage mobile nav behaviour (HOME-13, D-03)', () =
       expect(bar3Transform).toBe('none');
     }).toPass();
   });
+
+  // Plan 20-05 (D-02, T-20-10): the decorative halftone corner texture --
+  // must be tap-transparent, geometrically contained inside the dialog's own
+  // box (the entire containment strategy, since no overflow rule is added
+  // anywhere), and must never intercept a tap meant for the primary list.
+  test('the halftone texture is tap-transparent and fully contained inside the panel', async ({ page }) => {
+    await openPanel(page);
+
+    const halftone = page.locator('dialog#mobile-nav .mobile-nav-panel__halftone');
+    await expect(halftone).toHaveCSS('pointer-events', 'none');
+
+    const [halftoneBox, dialogBox] = await Promise.all([
+      halftone.boundingBox(),
+      page.locator('dialog#mobile-nav').boundingBox(),
+    ]);
+    expect(halftoneBox).toBeTruthy();
+    expect(dialogBox).toBeTruthy();
+
+    // Fully inside on all four edges -- the element cannot overflow a box
+    // it is inset within.
+    expect(halftoneBox!.x).toBeGreaterThanOrEqual(dialogBox!.x);
+    expect(halftoneBox!.y).toBeGreaterThanOrEqual(dialogBox!.y);
+    expect(halftoneBox!.x + halftoneBox!.width).toBeLessThanOrEqual(dialogBox!.x + dialogBox!.width);
+    expect(halftoneBox!.y + halftoneBox!.height).toBeLessThanOrEqual(dialogBox!.y + dialogBox!.height);
+
+    const overflow = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }));
+    expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth);
+
+    // A tap at the first primary link's coordinates must still activate
+    // that link -- the halftone sits in the SAME top-right corner region as
+    // the panel, but must never swallow taps meant for the content above it.
+    const firstLink = page.locator('dialog#mobile-nav .mobile-nav-panel__link').first();
+    await firstLink.click();
+    await expect(page).toHaveURL(/editions/);
+  });
+});
+
+// Plan 20-05 Task 3 (T-20-11): the in-test companion to the workflow's own
+// base-path grep guard (.github/workflows/deploy.yml) — the panel introduces
+// six new anchors (logo, Éditions, About, Contact, LanguageSwitcher,
+// Instagram) that all must resolve through an already-base-aware value, never
+// a hardcoded literal. A hardcoded literal would 404 on GitHub Pages while
+// passing every local root-base test, which is exactly why the grep guard
+// exists at deploy time too -- this test exists so the same bug class fails a
+// test in future, not only a deploy. The header's own logo/nav/switcher
+// anchors are the known-good baseline (covered by their own pre-existing
+// specs elsewhere in this suite): the primary-list links share the EXACT
+// same prop-derived href as their header counterpart, so they must match
+// byte-for-byte; the panel's switcher independently computes ITS OWN
+// other-locale target, so it is compared against the header's own inline
+// switcher rather than the logo (comparing it against the logo's
+// SAME-locale href would be a false positive on every run, since switching
+// locale is the whole point of that link).
+test.describe('Phase 20 — phase gate cross-checks', () => {
+  for (const path of ['/', '/en/']) {
+    test(`${path} at 393x852: every dialog#mobile-nav anchor matches its already-base-aware header counterpart, or is absolute`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 393, height: 852 });
+      await page.goto(path);
+
+      const header = page.locator('[data-role="site-header"]');
+      const [headerLogoHref, headerSwitcherHref, headerNavLinkHrefs] = await Promise.all([
+        header.locator('.logo-mark').getAttribute('href'),
+        header.locator('.language-switcher .switcher-link').getAttribute('href'),
+        header.locator('.site-nav > a.nav-link').evaluateAll((anchors) =>
+          anchors.map((a) => a.getAttribute('href') ?? ''),
+        ),
+      ]);
+      expect(headerLogoHref).toBeTruthy();
+      expect(headerSwitcherHref).toBeTruthy();
+      // Éditions, About, Contact, Instagram, in that DOM order (site-header.spec.ts's
+      // own "nav structure" test already pins this order).
+      expect(headerNavLinkHrefs.length).toBe(4);
+      const [editionsHref, aboutHref, contactHref, instagramHref] = headerNavLinkHrefs;
+
+      await page.locator('[data-role="mobile-nav-toggle"]').click();
+      await page.locator('dialog#mobile-nav').waitFor({ state: 'visible' });
+      const dialog = page.locator('dialog#mobile-nav');
+
+      await expect(dialog.locator('.mobile-nav-panel__logo')).toHaveAttribute('href', headerLogoHref!);
+      const panelLinks = dialog.locator('.mobile-nav-panel__link');
+      await expect(panelLinks.nth(0)).toHaveAttribute('href', editionsHref);
+      await expect(panelLinks.nth(1)).toHaveAttribute('href', aboutHref);
+      await expect(panelLinks.nth(2)).toHaveAttribute('href', contactHref);
+      await expect(dialog.locator('.switcher-link')).toHaveAttribute('href', headerSwitcherHref!);
+      const secondaryHref = await dialog.locator('.mobile-nav-panel__secondary').getAttribute('href');
+      expect(secondaryHref).toBe(instagramHref);
+      expect(secondaryHref!.startsWith('https://')).toBe(true);
+    });
+  }
+
+  // Ties HOME-13 and HOME-16 together in a single homepage state -- a future
+  // phase regressing either would trip this one assertion.
+  test('/ at 393x852: hamburger visible, --current-accent is a real hero color, mode-toggle visible', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 393, height: 852 });
+    await page.goto('/');
+
+    await expect(page.locator('[data-role="mobile-nav-toggle"]')).toBeVisible();
+    await expect(page.locator('[data-role="mode-toggle"]')).toBeVisible();
+
+    const heroColors = await page
+      .locator('ul[data-role="home-carousel-data"] li')
+      .evaluateAll((lis) => lis.map((li) => (li as HTMLElement).dataset.heroColor ?? ''));
+    expect(heroColors.length).toBeGreaterThan(0);
+
+    const currentAccent = await page.evaluate(() =>
+      getComputedStyle(document.querySelector('.home') as HTMLElement).getPropertyValue('--current-accent').trim(),
+    );
+    expect(heroColors).toContain(currentAccent);
+  });
 });

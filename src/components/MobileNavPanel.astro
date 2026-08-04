@@ -60,6 +60,12 @@ const {
 ---
 
 <dialog id="mobile-nav" class="mobile-nav-panel" data-role="mobile-nav-panel" aria-label={menuLabel}>
+  {/* Plan 20-05 (D-02): purely decorative dot texture, first child so it
+      paints behind every other panel child in source order -- the explicit
+      z-index layering in SiteHeader.astro's motion CSS is what actually
+      guarantees that; this ordering is just belt-and-braces. Must stay
+      empty and aria-hidden; never add pointer-handling here. */}
+  <div class="mobile-nav-panel__halftone" aria-hidden="true"></div>
   <div class="mobile-nav-panel__bar">
     {/* Black logo only — the panel is a white surface, so the header's
         two-image hover-swap chip mechanic is deliberately NOT reused here. */}
