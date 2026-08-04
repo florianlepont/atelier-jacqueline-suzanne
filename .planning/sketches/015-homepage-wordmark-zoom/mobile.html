@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Sketch 015 — Wordmark Zoom (phone preview)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../themes/default.css" />
+<style>
+  :root {
+    --photo-silos: url('https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=1200&auto=format');
+  }
+
+  html, body { height: 100%; overflow-x: hidden; }
+  body { padding-top: 84px; }
+
+  #variant-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9998;
+    background: var(--color-ink); padding: 8px 10px 6px;
+    font-family: var(--font-sans);
+  }
+  #variant-nav .tabs { display: flex; gap: 6px; margin-bottom: 6px; }
+  #variant-nav .variant-tab {
+    flex: 1; font-size: 11px; text-transform: uppercase; letter-spacing: .03em;
+    padding: 9px 4px; border: 1px solid rgba(255,255,255,.3); background: transparent;
+    color: rgba(255,255,255,.7); font-family: var(--font-sans);
+  }
+  #variant-nav .variant-tab.active { background: var(--color-dominant); color: var(--color-ink); border-color: var(--color-dominant); }
+  #variant-nav .pace-row { display: flex; gap: 6px; align-items: center; }
+  #variant-nav .pace-row button {
+    flex: 1; font-size: 10px; text-transform: uppercase; letter-spacing: .03em;
+    padding: 6px 4px; border: 1px solid rgba(255,255,255,.25); background: transparent;
+    color: rgba(255,255,255,.55); font-family: var(--font-sans);
+  }
+  #variant-nav .pace-row button.active { background: rgba(255,255,255,.9); color: var(--color-ink); }
+  #variant-nav .pace-row .reset-btn { flex: 0 0 auto; padding: 6px 10px; color: var(--color-accent); border-color: var(--color-accent); }
+  #variant-nav .progress-readout { font-family: var(--font-mono, monospace); font-size: 10px; color: rgba(255,255,255,.4); text-align: center; margin-top: 4px; }
+  #back-link { position: fixed; bottom: 10px; left: 10px; z-index: 9998; font-size: 11px; background: rgba(0,0,0,.6); color: #fff; padding: 6px 10px; border-radius: 6px; font-family: var(--font-sans); }
+
+  .variant { display: none; }
+  .variant.active { display: block; }
+
+  .scroll-track { position: relative; height: calc(100dvh + var(--reveal-distance, 650px)); }
+  .pinned-stage {
+    position: sticky; top: 0; height: 100dvh; overflow: visible;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--slide-accent, var(--palette-plum));
+  }
+
+  .zoom-wordmark {
+    font-family: var(--font-display); font-weight: var(--weight-semibold);
+    text-transform: uppercase; text-align: center; line-height: .92;
+    letter-spacing: -0.01em; font-size: 15.5vw; margin: 0; padding: 0 5vw;
+    background-image: var(--photo-silos); background-repeat: no-repeat;
+    background-position: center; background-size: cover;
+    color: #fff; position: relative; z-index: 2;
+    will-change: transform, opacity, filter;
+  }
+  .has-photo-cutout .zoom-wordmark {
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent; -webkit-text-fill-color: transparent;
+    filter: var(--wm-filter, brightness(.72) contrast(1.15));
+  }
+
+  .zoom-photo-layer {
+    position: absolute; inset: 0; background-image: var(--photo-silos);
+    background-size: cover; background-position: center; opacity: 0; z-index: 1;
+  }
+  .zoom-panel-backdrop { position: absolute; inset: 0; background: var(--slide-accent, var(--palette-plum)); z-index: 0; }
+
+  .arrival-slide {
+    position: relative; height: 100dvh; background-image: var(--photo-silos);
+    background-size: cover; background-position: center;
+    display: flex; align-items: flex-end;
+  }
+  .arrival-panel { width: 100%; padding: 22px 20px 40px; background: var(--slide-accent, var(--palette-plum)); color: #fff; }
+  .arrival-title { font-family: var(--font-display); font-weight: var(--weight-semibold); text-transform: uppercase; font-size: 28px; margin: 0 0 6px; letter-spacing: .01em; }
+  .arrival-desc {
+    font-size: 14px; line-height: 1.55; margin: 0; max-width: 320px;
+    opacity: 0; transform: translateY(8px); transition: opacity .18s ease, transform .18s ease;
+  }
+  .arrival-slide.is-revealed .arrival-desc { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<div id="variant-nav">
+  <div class="tabs">
+    <button class="variant-tab active" onclick="showVariant('a')">A ★</button>
+    <button class="variant-tab" onclick="showVariant('b')">B: Dissolve</button>
+    <button class="variant-tab" onclick="showVariant('c')">C: Open</button>
+  </div>
+  <div class="pace-row" id="pace-row">
+    <button data-pace="420" onclick="setPace(420, this)">Quick</button>
+    <button data-pace="650" onclick="setPace(650, this)">Balanced</button>
+    <button data-pace="900" class="active" onclick="setPace(900, this)">Cinema</button>
+    <button class="reset-btn" onclick="resetScroll()">↺</button>
+  </div>
+  <div class="progress-readout">t = <span id="progress-readout">0.00</span></div>
+</div>
+
+<a id="back-link" href="index.html">‹ side-by-side compare</a>
+
+<!-- ============================= VARIANT A ============================= -->
+<div id="variant-a" class="variant active">
+  <div class="has-photo-cutout" style="--reveal-distance:900px; --slide-accent:var(--palette-plum);">
+    <div class="scroll-track" data-role="a-track">
+      <div class="pinned-stage">
+        <div class="zoom-photo-layer" data-role="a-cover"></div>
+        <h1 class="zoom-wordmark" data-role="a-wordmark"><span class="focus-letter" data-role="a-focus">A</span>telier<br>Jacqueline<br>Suzanne</h1>
+      </div>
+    </div>
+    <section class="arrival-slide" data-role="a-arrival">
+      <div class="arrival-panel">
+        <h2 class="arrival-title">Silos</h2>
+        <p class="arrival-desc">Une série sur les silhouettes industrielles du Nord, entre lumière rasante et matière brute.</p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ============================= VARIANT B ============================= -->
+<div id="variant-b" class="variant">
+  <div class="has-photo-cutout" style="--reveal-distance:650px; --slide-accent:var(--palette-plum);">
+    <div class="scroll-track" data-role="b-track">
+      <div class="pinned-stage">
+        <div class="zoom-photo-layer" data-role="b-photo"></div>
+        <h1 class="zoom-wordmark" data-role="b-wordmark">Atelier<br>Jacqueline<br>Suzanne</h1>
+      </div>
+    </div>
+    <section class="arrival-slide" data-role="b-arrival">
+      <div class="arrival-panel">
+        <h2 class="arrival-title">Silos</h2>
+        <p class="arrival-desc">Une série sur les silhouettes industrielles du Nord, entre lumière rasante et matière brute.</p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ============================= VARIANT C ============================= -->
+<div id="variant-c" class="variant">
+  <div class="has-photo-cutout" style="--reveal-distance:650px; --slide-accent:var(--palette-plum);">
+    <div class="scroll-track" data-role="c-track">
+      <div class="pinned-stage">
+        <div class="zoom-panel-backdrop" data-role="c-backdrop"></div>
+        <h1 class="zoom-wordmark" data-role="c-wordmark">Atelier<br>Jacqueline<br>Suzanne</h1>
+        <div class="zoom-photo-layer" data-role="c-reveal"></div>
+      </div>
+    </div>
+    <section class="arrival-slide" data-role="c-arrival">
+      <div class="arrival-panel">
+        <h2 class="arrival-title">Silos</h2>
+        <p class="arrival-desc">Une série sur les silhouettes industrielles du Nord, entre lumière rasante et matière brute.</p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+  function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function easeInCubic(t) { return t * t * t; }
+
+  let activeId = 'a';
+  let revealDistance = 900;
+
+  function showVariant(id) {
+    document.querySelectorAll('.variant').forEach((v) => v.classList.remove('active'));
+    document.querySelectorAll('.variant-tab').forEach((t) => t.classList.remove('active'));
+    document.getElementById('variant-' + id).classList.add('active');
+    event.target.classList.add('active');
+    activeId = id;
+    window.scrollTo(0, 0);
+    runners[activeId](0);
+  }
+
+  function resetScroll() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function setPace(distance, btn) {
+    revealDistance = distance;
+    document.querySelectorAll('.has-photo-cutout').forEach((el) => el.style.setProperty('--reveal-distance', distance + 'px'));
+    btn.parentElement.querySelectorAll('button[data-pace]').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function setupArrivalReveal(arrivalEl) {
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((e) => arrivalEl.classList.toggle('is-revealed', e.intersectionRatio > 0.6)),
+      { threshold: [0, 0.6, 1] },
+    );
+    io.observe(arrivalEl);
+  }
+
+  function computeProgress(trackEl) {
+    return clamp01(-trackEl.getBoundingClientRect().top / revealDistance);
+  }
+
+  const runners = {};
+
+  // ---------------- Variant A: Scale Through ----------------
+  (function () {
+    const trackEl = document.querySelector('[data-role="a-track"]');
+    const wordmarkEl = document.querySelector('[data-role="a-wordmark"]');
+    const focusEl = document.querySelector('[data-role="a-focus"]');
+    const coverEl = document.querySelector('[data-role="a-cover"]');
+    const arrivalEl = document.querySelector('[data-role="a-arrival"]');
+
+    // Anchor the scale's transform-origin on the actual rendered "A" glyph
+    // (first letter of "Atelier"), measured live so it stays correct across
+    // font-load timing and real device viewport width.
+    function syncFocusOrigin() {
+      const wmRect = wordmarkEl.getBoundingClientRect();
+      const focusRect = focusEl.getBoundingClientRect();
+      if (!wmRect.width || !wmRect.height) return;
+      const originX = ((focusRect.left + focusRect.width / 2 - wmRect.left) / wmRect.width) * 100;
+      const originY = ((focusRect.top + focusRect.height / 2 - wmRect.top) / wmRect.height) * 100;
+      wordmarkEl.style.transformOrigin = originX + '% ' + originY + '%';
+    }
+
+    function onProgress(t) {
+      const scaleT = easeInCubic(t);
+      wordmarkEl.style.transform = 'scale(' + lerp(1, 8.5, scaleT) + ')';
+      wordmarkEl.style.opacity = String(1 - clamp01((t - 0.92) / 0.08));
+      coverEl.style.opacity = String(clamp01((t - 0.85) / 0.15));
+      document.getElementById('progress-readout').textContent = t.toFixed(2);
+    }
+    setupArrivalReveal(arrivalEl);
+    syncFocusOrigin();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(syncFocusOrigin);
+    window.addEventListener('resize', syncFocusOrigin);
+    window.addEventListener('orientationchange', syncFocusOrigin);
+    runners.a = (t) => onProgress(t !== undefined ? t : computeProgress(trackEl));
+  })();
+
+  // ---------------- Variant B: Cross Dissolve ----------------
+  (function () {
+    const trackEl = document.querySelector('[data-role="b-track"]');
+    const wordmarkEl = document.querySelector('[data-role="b-wordmark"]');
+    const photoEl = document.querySelector('[data-role="b-photo"]');
+    const arrivalEl = document.querySelector('[data-role="b-arrival"]');
+
+    function onProgress(t) {
+      wordmarkEl.style.opacity = String(lerp(1, 0, t));
+      wordmarkEl.style.transform = 'scale(' + lerp(1, 1.12, t) + ')';
+      photoEl.style.opacity = String(lerp(0, 1, t));
+      photoEl.style.transform = 'scale(' + lerp(1.18, 1, t) + ')';
+      document.getElementById('progress-readout').textContent = t.toFixed(2);
+    }
+    setupArrivalReveal(arrivalEl);
+    runners.b = (t) => onProgress(t !== undefined ? t : computeProgress(trackEl));
+  })();
+
+  // ---------------- Variant C: Letters Open (no scale) ----------------
+  (function () {
+    const trackEl = document.querySelector('[data-role="c-track"]');
+    const wordmarkEl = document.querySelector('[data-role="c-wordmark"]');
+    const backdropEl = document.querySelector('[data-role="c-backdrop"]');
+    const revealEl = document.querySelector('[data-role="c-reveal"]');
+    const arrivalEl = document.querySelector('[data-role="c-arrival"]');
+
+    function onProgress(t) {
+      backdropEl.style.opacity = String(lerp(1, 0, t));
+      revealEl.style.opacity = String(lerp(0, 1, t));
+      wordmarkEl.style.setProperty('--wm-filter', 'brightness(' + lerp(0.72, 1, t) + ') contrast(' + lerp(1.15, 1, t) + ')');
+      document.getElementById('progress-readout').textContent = t.toFixed(2);
+    }
+    setupArrivalReveal(arrivalEl);
+    runners.c = (t) => onProgress(t !== undefined ? t : computeProgress(trackEl));
+  })();
+
+  let rafId = null;
+  window.addEventListener(
+    'scroll',
+    () => {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        runners[activeId]();
+      });
+    },
+    { passive: true },
+  );
+
+  runners.a(0);
+</script>
+
+</body>
+</html>
