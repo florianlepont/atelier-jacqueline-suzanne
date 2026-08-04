@@ -2,42 +2,42 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Mobile Experience Redesign
-current_phase: 20
-current_phase_name: mobile-navigation-accent-color
-status: executing
-stopped_at: Phase 20 UI-SPEC approved
-last_updated: "2026-08-04T13:10:38.626Z"
+current_phase: 21
+current_phase_name: Homepage Scroll Experience
+status: planning
+stopped_at: Phase 20 complete, ready to plan Phase 21
+last_updated: "2026-08-04T17:45:00.000Z"
 last_activity: 2026-08-04
-last_activity_desc: Phase 20 execution resumed (wave continue)
+last_activity_desc: Phase 20 complete, transitioned to Phase 21
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 6
-  completed_plans: 5
-  percent: 0
+  completed_plans: 6
+  percent: 20
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-08-03)
+See: .planning/PROJECT.md (updated 2026-08-04)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; v1.3 adds a non-transactional Éditions showcase; checkout still follows in the future v1.x shop milestone.)
-**Current focus:** Phase 20 — mobile-navigation-accent-color
+**Current focus:** Phase 21 — Homepage Scroll Experience
 
 ## Current Position
 
-Phase: 20 (mobile-navigation-accent-color) — EXECUTING
-Plan: 1 of 5
+Phase: 21 — Homepage Scroll Experience
+Plan: Not started
 Status: Executing Phase 20
-Last activity: 2026-08-04 — Phase 20 execution resumed (wave continue)
+Last activity: 2026-08-04 — Phase 20 complete, transitioned to Phase 21
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 41
+- Total plans completed: 47
 - Average duration: - min
 - Total execution time: 0 hours
 
@@ -60,6 +60,7 @@ Last activity: 2026-08-04 — Phase 20 execution resumed (wave continue)
 | 17 | 1 | - | - |
 | 18 | 2 | - | - |
 | 19 | 2 | - | - |
+| 20 | 6 | - | - |
 
 **Recent Trend:**
 
@@ -147,6 +148,7 @@ Recent decisions affecting current work:
 - [Phase 18]: PORT-04's overflow defence deliberately moved from a CSS clamp to a Sanity Studio field-level max-length validation (not a higher CSS line-clamp) — user's explicit choice, since `DetailHero` is a fixed-height sticky panel (unlike Phase 17's freely-growing tile) and content-authoring-time prevention is more robust than display-time truncation. N=700, empirically derived against the real component (8 candidate lengths × 3 viewports) and floor-checked against the longest published statement (453 chars) — see `18-02-SUMMARY.md`'s calibration table.
 - [Phase 18]: Planner corrected two factual errors in `18-CONTEXT.md` before planning: (1) masonry grid layout IS live on gallery detail pages via `GalleryDetailBody.astro` (CONTEXT.md wrongly claimed no page used it), and (2) the CONTEXT.md's "250-320 char" starting estimate for PORT-04's N would have invalidated 4 of 8 published statements — both caught via live GROQ queries against the actual dataset before locking the plan, not discovered post-ship.
 - [Phase 18]: Live UAT (human verification pass, post-merge) caught a real regression automated Playwright screenshots missed: a ~3.5px gap below every gallery-detail thumbnail image (masonry mode), from `.gallery-grid--masonry .tile img` being left at its default `display: inline` — the `.tile`'s intentional `background: var(--color-ink)` loading fallback (D-05) bled through the gap as a visible dark strip, only noticeable once the border removal (PORT-05) stopped visually dominating the tile edge. Fixed with `display: block;` on the img (verified 3.5px → 0px empirically); a new regression assertion (img-vs-tile bounding-box comparison) was added to the existing PORT-05 masonry e2e test, since a border-width check cannot catch a non-border layout gap. Commit `e4bdf16`.
+- [Phase 20]: Delivered HOME-13 (mobile nav menu + switcher) and HOME-16 (per-visit random accent color) across 6 plans, 5 waves. Live on-phone UAT (20-UAT.md Test 2) reversed D-04's switcher clause post-ship: the language switcher moved from a fourth equal-weight primary link to a small secondary-tier line above the Instagram link (same size/color), and the Instagram link gained the header's own SVG glyph — closed by gap-closure plan 20-06, independently re-verified (54/54 mobile-nav e2e including 7 new tests, own screenshots, live coverage re-run matching baseline exactly) before phase close. Security audit (retroactive, first SECURITY.md for this phase) closed all 19 registered threats, 4 of them high-severity (transitionend-gated close funnel DoS, shared-header-edit blast radius, halftone-containment DoS, base-path bypass) — see `20-SECURITY.md`. Code review flagged 1 unrelated Critical (pre-existing `HomeCarousel.astro` touch-handler can misfire on progress-dash/autoplay controls on real touchscreens) — not fixed in this phase, tracked in `20-REVIEW.md`.
 
 ### Pending Todos
 
@@ -154,7 +156,9 @@ None yet.
 
 ### Blockers/Concerns
 
-None currently open. Both prior research-carryover items were resolved during Phase 1 execution:
+- ⚠️ [Phase 20] `HomeCarousel.astro`'s touchstart/touchend handler (~lines 970-1002) doesn't exclude `.home-hero__caption` the way the equivalent desktop click handler does — a tap on the progress-dash buttons or the autoplay toggle on a real touchscreen can satisfy the tap-detection threshold and trigger `openCurrent()` (navigation) before the button's own handler runs, effectively breaking those controls on touch devices. Pre-existing, unrelated to Phase 20's own changes; found by `20-REVIEW.md`'s code review, not yet fixed. Fix via `/gsd-code-review 20 --fix` or a dedicated quick-task.
+
+Both prior research-carryover items were resolved during Phase 1 execution:
 
 - Domain email service: confirmed active (MX Plan + Zimbra mailbox) via the OVH panel — Phase 5's DNS cutover must preserve these records, not wipe the zone.
 - OVH deployment method: confirmed via the OVH panel — "Free hosting" tier, SFTP enabled on port 22, host `ftp.cluster129.hosting.ovh.net`, user `atelihu`, home dir `/home/atelihu` (see 01-02-SUMMARY.md). Note: this same Free tier cannot attach any subdomain (multisite requires a paid tier) — Phase 1 staging used GitHub Pages instead; Phase 5's production cutover plan should account for the single-domain limitation.
@@ -295,12 +299,12 @@ Items acknowledged and deferred at v1.5 milestone close on 2026-08-03 (`/gsd-com
 
 ## Session Continuity
 
-Last session: 2026-08-03T15:14:31.124Z
-Stopped at: Phase 20 UI-SPEC approved
-Resume file: .planning/phases/20-mobile-navigation-accent-color/20-UI-SPEC.md
+Last session: 2026-08-04T17:45:00.000Z
+Stopped at: Phase 20 complete, ready to plan Phase 21
+Resume file: None
 
-**Next up:** Phase 20 (Mobile Navigation & Accent Color — HOME-13, HOME-16) is ready to plan via `/gsd-plan-phase 20`. Phase 5 (Launch & Domain Cutover) remains open and deliberately deferred whenever launch is next prioritized. The pre-existing `/about/` mobile-header overflow regression (Phase 15) was root-caused and fixed post-merge during Phase 16 (see `.planning/milestones/v1.4-phases/16-404-page-editorial-redesign/deferred-items.md`) — no longer open.
+**Next up:** Phase 21 (Homepage Scroll Experience — HOME-14, HOME-15) is ready to plan via `/gsd-plan-phase 21` — the milestone's biggest, riskiest, sketch-explored centerpiece, depending on Phase 20's now-shipped accent-color mechanism. Phase 5 (Launch & Domain Cutover) remains open and deliberately deferred whenever launch is next prioritized. One non-blocking carryover: `20-REVIEW.md`'s unfixed Critical finding on `HomeCarousel.astro`'s touch handler (see Blockers/Concerns).
 
 ## Operator Next Steps
 
-- Plan Phase 20 with /gsd-plan-phase 20
+- Plan Phase 21 with /gsd-plan-phase 21
