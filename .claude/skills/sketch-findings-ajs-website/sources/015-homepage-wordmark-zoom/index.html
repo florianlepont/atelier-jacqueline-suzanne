@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sketch 015 — Homepage Wordmark Zoom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../themes/default.css" />
+<style>
+  :root {
+    --photo-silos: url('https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=1200&auto=format');
+    --photo-silos-src: 'https://cdn.sanity.io/images/gwz8iug4/production/001567ec8f79c09b1ee22e6861f82dcd76ff30a6-2857x1806.jpg?w=1200&auto=format';
+  }
+
+  body { padding-top: 52px; }
+
+  /* ---------- variant tabs ---------- */
+  #variant-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9998;
+    background: var(--color-ink); border-bottom: 1px solid var(--color-border);
+    padding: 10px 16px; display: flex; gap: 8px; align-items: center;
+    font-family: var(--font-sans);
+  }
+  #variant-nav .variant-tab {
+    font-size: 12px; text-transform: uppercase; letter-spacing: .05em;
+    padding: 8px 14px; border: 1px solid rgba(255,255,255,.3); background: transparent;
+    color: rgba(255,255,255,.7); cursor: pointer; font-family: var(--font-sans);
+  }
+  #variant-nav .variant-tab.active { background: var(--color-dominant); color: var(--color-ink); border-color: var(--color-dominant); }
+  #variant-nav .nav-label { color: rgba(255,255,255,.5); font-size: 11px; margin-right: 4px; }
+
+  .variant { display: none; padding: 28px 16px 100px; }
+  .variant.active { display: block; }
+
+  .variant-intro { max-width: 620px; margin: 0 auto 20px; text-align: center; }
+  .variant-intro h2 { font-family: var(--font-display); font-weight: var(--weight-semibold); font-size: 21px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .01em; }
+  .variant-intro p { font-size: 13.5px; line-height: 1.5; color: var(--color-ink); opacity: .72; margin: 0; }
+
+  .controls { display: flex; gap: 8px; justify-content: center; align-items: center; margin: 18px 0 6px; flex-wrap: wrap; }
+  .controls .group-label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; opacity: .5; margin-right: 4px; }
+  .controls button { font-family: var(--font-sans); font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; padding: 7px 13px; border: 1px solid var(--color-ink); background: var(--color-dominant); color: var(--color-ink); cursor: pointer; transition: all .15s ease; }
+  .controls button:hover { opacity: .7; }
+  .controls button.active { background: var(--color-ink); color: var(--color-dominant); }
+  .controls button.reset-btn { border-color: var(--color-accent); color: var(--color-accent); }
+
+  .progress-readout { text-align: center; font-family: var(--font-mono, monospace); font-size: 11px; opacity: .55; margin-bottom: 14px; letter-spacing: .02em; }
+
+  .phone-frame-wrap { display: flex; justify-content: center; }
+  .phone-frame {
+    width: 375px; height: 812px; border: 7px solid var(--color-ink); border-radius: 30px;
+    overflow: hidden; position: relative; background: #000;
+    box-shadow: 0 20px 40px rgba(0,0,0,.28);
+    container-type: inline-size; container-name: phone;
+  }
+  .phone-notch {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 22px; background: var(--color-ink); border-radius: 0 0 14px 14px; z-index: 20;
+  }
+  .phone-screen {
+    width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden;
+    -webkit-overflow-scrolling: touch; position: relative; scrollbar-width: none;
+  }
+  .phone-screen::-webkit-scrollbar { display: none; }
+
+  .scroll-track { position: relative; height: calc(812px + var(--reveal-distance, 650px)); }
+  .pinned-stage {
+    position: sticky; top: 0; height: 812px; overflow: visible;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--slide-accent, var(--palette-plum));
+  }
+
+  .zoom-wordmark {
+    font-family: var(--font-display); font-weight: var(--weight-semibold);
+    text-transform: uppercase; text-align: center; line-height: .92;
+    letter-spacing: -0.01em; font-size: 15.5cqw; margin: 0; padding: 0 5cqw;
+    background-image: var(--photo-silos); background-repeat: no-repeat;
+    background-position: center; background-size: cover;
+    color: #fff; position: relative; z-index: 2;
+    will-change: transform, opacity, filter;
+  }
+  .has-photo-cutout .zoom-wordmark {
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent; -webkit-text-fill-color: transparent;
+    filter: var(--wm-filter, brightness(.72) contrast(1.15));
+  }
+
+  .zoom-photo-layer {
+    position: absolute; inset: 0; background-image: var(--photo-silos);
+    background-size: cover; background-position: center; opacity: 0; z-index: 1;
+  }
+  .zoom-panel-backdrop { position: absolute; inset: 0; background: var(--slide-accent, var(--palette-plum)); z-index: 0; }
+
+  .arrival-slide {
+    position: relative; height: 812px; background-image: var(--photo-silos);
+    background-size: cover; background-position: center;
+    display: flex; align-items: flex-end;
+  }
+  .arrival-panel {
+    width: 100%; padding: 22px 20px 34px; background: var(--slide-accent, var(--palette-plum)); color: #fff;
+  }
+  .arrival-title { font-family: var(--font-display); font-weight: var(--weight-semibold); text-transform: uppercase; font-size: 26px; margin: 0 0 6px; letter-spacing: .01em; }
+  .arrival-desc {
+    font-size: 13px; line-height: 1.55; margin: 0; max-width: 300px;
+    opacity: 0; transform: translateY(8px); transition: opacity .18s ease, transform .18s ease;
+  }
+  .arrival-slide.is-revealed .arrival-desc { opacity: 1; transform: translateY(0); }
+
+  .variant-note { max-width: 620px; margin: 22px auto 0; text-align: center; font-size: 12px; opacity: .55; line-height: 1.5; }
+  .variant-note strong { opacity: .85; }
+
+  /* ---------- sketch toolbar ---------- */
+  #sketch-tools {
+    position: fixed; bottom: 12px; right: 12px; z-index: 9999; font-family: var(--font-sans);
+    font-size: 12px; background: rgba(0,0,0,0.75); color: white; padding: 8px 12px;
+    border-radius: 8px; opacity: 0.45; transition: opacity 0.2s;
+  }
+  #sketch-tools:hover { opacity: 1; }
+  #sketch-tools select { font-size: 11px; margin-left: 6px; }
+</style>
+</head>
+<body>
+
+<div id="variant-nav">
+  <span class="nav-label">Sketch 015 —</span>
+  <button class="variant-tab active" onclick="showVariant('a')">A: Scale Through ★ Selected</button>
+  <button class="variant-tab" onclick="showVariant('b')">B: Cross Dissolve</button>
+  <button class="variant-tab" onclick="showVariant('c')">C: Letters Open</button>
+</div>
+
+<!-- ============================= VARIANT A ============================= -->
+<div id="variant-a" class="variant active">
+  <div class="variant-intro">
+    <h2>A — Scale Through</h2>
+    <p>The wordmark itself grows enormous as you scroll — you fly straight into the letterforms until only the photo remains. Most literal reading of "zoom through the letterforms."</p>
+  </div>
+
+  <div class="progress-readout">t = <span id="progress-a">0.00</span></div>
+  <div class="controls">
+    <span class="group-label">Pace</span>
+    <button data-pace="420" onclick="setPace('a', 420, this)">Quick</button>
+    <button data-pace="650" onclick="setPace('a', 650, this)">Balanced</button>
+    <button data-pace="900" class="active" onclick="setPace('a', 900, this)">Cinematic</button>
+    <button class="reset-btn" onclick="resetScroll('a')">↺ Reset</button>
+  </div>
+
+  <div class="phone-frame-wrap">
+    <div class="phone-frame">
+      <div class="phone-notch"></div>
+      <div class="phone-screen has-photo-cutout" id="screen-a" style="--reveal-distance:900px; --slide-accent:var(--palette-plum);">
+        <div class="scroll-track" id="track-a">
+          <div class="pinned-stage">
+            <div class="zoom-photo-layer" data-role="a-cover"></div>
+            <h1 class="zoom-wordmark" data-role="a-wordmark"><span class="focus-letter" data-role="a-focus">A</span>telier<br>Jacqueline<br>Suzanne</h1>
+          </div>
+        </div>
+        <section class="arrival-slide" data-role="a-arrival">
+          <div class="arrival-panel">
+            <h2 class="arrival-title">Silos</h2>
+            <p class="arrival-desc">Une série sur les silhouettes industrielles du Nord, entre lumière rasante et matière brute.</p>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <p class="variant-note"><strong>What to look for:</strong> does the accelerating scale read as "flying into" the letters, or just as a photo getting blurry/pixelated? The crossfade in the last 15% hides the extreme-scale seam — is it noticeable?</p>
+</div>
+
+<!-- ============================= VARIANT B ============================= -->
+<div id="variant-b" class="variant">
+  <div class="variant-intro">
+    <h2>B — Cross Dissolve</h2>
+    <p>The wordmark fades out (with a slight Ken Burns drift) while the full photo fades in underneath. Calm, classic, technically the safest — the exact same math idiom already shipped in DetailHero.astro.</p>
+  </div>
+
+  <div class="progress-readout">t = <span id="progress-b">0.00</span></div>
+  <div class="controls">
+    <span class="group-label">Pace</span>
+    <button data-pace="420" onclick="setPace('b', 420, this)">Quick</button>
+    <button data-pace="650" class="active" onclick="setPace('b', 650, this)">Balanced</button>
+    <button data-pace="900" onclick="setPace('b', 900, this)">Cinematic</button>
+    <button class="reset-btn" onclick="resetScroll('b')">↺ Reset</button>
+  </div>
+
+  <div class="phone-frame-wrap">
+    <div class="phone-frame">
+      <div class="phone-notch"></div>
+      <div class="phone-screen has-photo-cutout" id="screen-b" style="--reveal-distance:650px; --slide-accent:var(--palette-plum);">
+        <div class="scroll-track" id="track-b">
+          <div class="pinned-stage">
+            <div class="zoom-photo-layer" data-role="b-photo"></div>
+            <h1 class="zoom-wordmark" data-role="b-wordmark">Atelier<br>Jacqueline<br>Suzanne</h1>
+          </div>
+        </div>
+        <section class="arrival-slide" data-role="b-arrival">
+          <div class="arrival-panel">
+            <h2 class="arrival-title">Silos</h2>
+            <p class="arrival-desc">Une série sur les silhouettes industrielles du Nord, entre lumière rasante et matière brute.</p>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <p class="variant-note"><strong>What to look for:</strong> does watching the letter <em>shapes</em> visibly fade out (rather than grow) feel like a downgrade from "zoom," or does the Ken Burns drift make it feel intentional and cinematic rather than a plain crossfade?</p>
+</div>
+
+<!-- ============================= VARIANT C ============================= -->
+<div id="variant-c" class="variant">
+  <div class="variant-intro">
+    <h2>C — Letters Open (no scale)</h2>
+    <p>Deliberately <strong>not</strong> a zoom: the wordmark never moves or fades. Only the solid panel around the letters dissolves to reveal the same photo already showing through them — the letters stop reading as "text" because their surroundings catch up, not because they move.</p>
+  </div>
+
+  <div class="progress-readout">t = <span id="progress-c">0.00</span></div>
+  <div class="controls">
+    <span class="group-label">Pace</span>
+    <button data-pace="420" onclick="setPace('c', 420, this)">Quick</button>
+    <button data-pace="650" class="active" onclick="setPace('c', 650, this)">Balanced</button>
+    <button data-pace="900" onclick="setPace('c', 900, this)">Cinematic</button>
+    <button class="reset-btn" onclick="resetScroll('c')">↺ Reset</button>
+  </div>
+
+  <div class="phone-frame-wrap">
+    <div class="phone-frame">
+      <div class="phone-notch"></div>
+      <div class="phone-screen has-photo-cutout" id="screen-c" style="--reveal-distance:650px; --slide-accent:var(--palette-plum);">
+        <div class="scroll-track" id="track-c">
+          <div class="pinned-stage">
+            <div class="zoom-panel-backdrop" data-role="c-backdrop"></div>
+            <h1 class="zoom-wordmark" data-role="c-wordmark">Atelier<br>Jacqueline<br>Suzanne</h1>
+            <div class="zoom-photo-layer" data-role="c-reveal"></div>
+          </div>
+        </div>
+        <section class="arrival-slide" data-role="c-arrival">
+          <div class="arrival-panel">
+            <h2 class="arrival-title">Silos</h2>
+            <p class="arrival-desc">Une série sur les silhouettes industrielles du Nord, entre lumière rasante et matière brute.</p>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <p class="variant-note"><strong>What to look for:</strong> is "nothing moves, the background just catches up" too subtle to read as intentional on a real phone, or does its stillness feel more premium/restrained than A/B's motion? Does it still satisfy "zooms through the letterforms" (roadmap wording), or does it read as a different (and weaker) effect entirely?</p>
+</div>
+
+<div id="sketch-tools">
+  Theme
+  <select onchange="document.querySelector('link[href*=themes]').href='../themes/'+this.value+'.css'">
+    <option value="default">Default</option>
+  </select>
+</div>
+
+<script>
+  function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function easeInCubic(t) { return t * t * t; }
+
+  function showVariant(id) {
+    document.querySelectorAll('.variant').forEach((v) => v.classList.remove('active'));
+    document.querySelectorAll('.variant-tab').forEach((t) => t.classList.remove('active'));
+    document.getElementById('variant-' + id).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function resetScroll(id) {
+    document.getElementById('screen-' + id).scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  const revealDistances = { a: 900, b: 650, c: 650 };
+  const rerun = { a: null, b: null, c: null };
+
+  function setPace(id, distance, btn) {
+    revealDistances[id] = distance;
+    const screenEl = document.getElementById('screen-' + id);
+    screenEl.style.setProperty('--reveal-distance', distance + 'px');
+    btn.parentElement.querySelectorAll('button[data-pace]').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (rerun[id]) rerun[id]();
+  }
+
+  function setupArrivalReveal(screenEl, arrivalEl) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          arrivalEl.classList.toggle('is-revealed', entry.intersectionRatio > 0.6);
+        });
+      },
+      { root: screenEl, threshold: [0, 0.6, 1] },
+    );
+    io.observe(arrivalEl);
+  }
+
+  // ---------------- Variant A: Scale Through ----------------
+  (function () {
+    const screenEl = document.getElementById('screen-a');
+    const wordmarkEl = screenEl.querySelector('[data-role="a-wordmark"]');
+    const focusEl = screenEl.querySelector('[data-role="a-focus"]');
+    const coverEl = screenEl.querySelector('[data-role="a-cover"]');
+    const arrivalEl = screenEl.querySelector('[data-role="a-arrival"]');
+    const readout = document.getElementById('progress-a');
+    let rafId = null;
+
+    // Anchor the scale's transform-origin on the actual rendered "A" glyph
+    // (first letter of "Atelier"), not a guessed percentage — measured live
+    // so it stays correct across font-load timing and viewport width.
+    function syncFocusOrigin() {
+      const wmRect = wordmarkEl.getBoundingClientRect();
+      const focusRect = focusEl.getBoundingClientRect();
+      if (!wmRect.width || !wmRect.height) return;
+      const originX = ((focusRect.left + focusRect.width / 2 - wmRect.left) / wmRect.width) * 100;
+      const originY = ((focusRect.top + focusRect.height / 2 - wmRect.top) / wmRect.height) * 100;
+      wordmarkEl.style.transformOrigin = originX + '% ' + originY + '%';
+    }
+
+    function onProgress(t) {
+      const scaleT = easeInCubic(t);
+      wordmarkEl.style.transform = 'scale(' + lerp(1, 8.5, scaleT) + ')';
+      wordmarkEl.style.opacity = String(1 - clamp01((t - 0.92) / 0.08));
+      coverEl.style.opacity = String(clamp01((t - 0.85) / 0.15));
+      readout.textContent = t.toFixed(2);
+    }
+
+    function onScroll() {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        onProgress(clamp01(screenEl.scrollTop / revealDistances.a));
+      });
+    }
+
+    screenEl.addEventListener('scroll', onScroll, { passive: true });
+    setupArrivalReveal(screenEl, arrivalEl);
+    syncFocusOrigin();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(syncFocusOrigin);
+    window.addEventListener('resize', syncFocusOrigin);
+    onProgress(0);
+    rerun.a = () => onProgress(clamp01(screenEl.scrollTop / revealDistances.a));
+  })();
+
+  // ---------------- Variant B: Cross Dissolve ----------------
+  (function () {
+    const screenEl = document.getElementById('screen-b');
+    const wordmarkEl = screenEl.querySelector('[data-role="b-wordmark"]');
+    const photoEl = screenEl.querySelector('[data-role="b-photo"]');
+    const arrivalEl = screenEl.querySelector('[data-role="b-arrival"]');
+    const readout = document.getElementById('progress-b');
+    let rafId = null;
+
+    function onProgress(t) {
+      wordmarkEl.style.opacity = String(lerp(1, 0, t));
+      wordmarkEl.style.transform = 'scale(' + lerp(1, 1.12, t) + ')';
+      photoEl.style.opacity = String(lerp(0, 1, t));
+      photoEl.style.transform = 'scale(' + lerp(1.18, 1, t) + ')';
+      readout.textContent = t.toFixed(2);
+    }
+
+    function onScroll() {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        onProgress(clamp01(screenEl.scrollTop / revealDistances.b));
+      });
+    }
+
+    screenEl.addEventListener('scroll', onScroll, { passive: true });
+    setupArrivalReveal(screenEl, arrivalEl);
+    onProgress(0);
+    rerun.b = () => onProgress(clamp01(screenEl.scrollTop / revealDistances.b));
+  })();
+
+  // ---------------- Variant C: Letters Open (no scale) ----------------
+  (function () {
+    const screenEl = document.getElementById('screen-c');
+    const wordmarkEl = screenEl.querySelector('[data-role="c-wordmark"]');
+    const backdropEl = screenEl.querySelector('[data-role="c-backdrop"]');
+    const revealEl = screenEl.querySelector('[data-role="c-reveal"]');
+    const arrivalEl = screenEl.querySelector('[data-role="c-arrival"]');
+    const readout = document.getElementById('progress-c');
+    let rafId = null;
+
+    function onProgress(t) {
+      backdropEl.style.opacity = String(lerp(1, 0, t));
+      revealEl.style.opacity = String(lerp(0, 1, t));
+      wordmarkEl.style.setProperty('--wm-filter', 'brightness(' + lerp(0.72, 1, t) + ') contrast(' + lerp(1.15, 1, t) + ')');
+      readout.textContent = t.toFixed(2);
+    }
+
+    function onScroll() {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        onProgress(clamp01(screenEl.scrollTop / revealDistances.c));
+      });
+    }
+
+    screenEl.addEventListener('scroll', onScroll, { passive: true });
+    setupArrivalReveal(screenEl, arrivalEl);
+    onProgress(0);
+    rerun.c = () => onProgress(clamp01(screenEl.scrollTop / revealDistances.c));
+  })();
+</script>
+
+</body>
+</html>
