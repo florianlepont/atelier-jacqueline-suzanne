@@ -143,13 +143,15 @@ v1.5 shipped 2026-08-03 (see archived brief below). Phase 5 (Launch & Domain Cut
 
 v1.5 "Global Improvements & Bug Fixes" is now feature-complete: all 8 requirements (HOME-11, HOME-12, PORT-04, PORT-05, PORT-06, EDN-09, UI-01, CONT-03) shipped across Phases 17–19. Formal milestone close (`/gsd-complete-milestone v1.5`) not yet run.
 
+**v1.6 (Mobile Experience Redesign — in progress):**
+- [x] Mobile nav menu replacing the header bar, language switcher included — HOME-13, Phase 20 (a gap-closure plan, 20-06, was needed after live on-phone UAT: the switcher initially shipped as a fourth equal-weight primary link per D-04, then reversed to a small secondary-tier line above the Instagram link, which also gained the header's Instagram glyph; both re-verified independently before phase close)
+- [x] Homepage per-visit random accent color (reusing existing per-gallery `heroColor`) on mobile — HOME-16, Phase 20
+
 ### Active
 
 **v1.6 (Mobile Experience Redesign) — requirements being defined, see REQUIREMENTS.md:**
-- [ ] Mobile nav menu replacing the header bar, language switcher included
 - [ ] Homepage carousel/grid toggle removed on mobile; single scroll-driven view with on-arrival description reveal
 - [ ] Homepage full-screen wordmark with a letterform-zoom transition into the first gallery photo on mobile
-- [ ] Homepage per-visit random accent color (reusing existing per-gallery `heroColor`) on mobile
 - [ ] Gallery detail: Lightbox retired on mobile, replaced by scroll-driven full-photo navigation
 - [ ] Édition detail: Lightbox retired on mobile, replaced by scroll-driven full-photo navigation; legible intro-text treatment
 - [ ] About: improved mobile portrait placement
@@ -228,6 +230,7 @@ v1.5 "Global Improvements & Bug Fixes" is now feature-complete: all 8 requiremen
 | Gallery/édition thumbnail `.tile` keeps its `background: var(--color-ink)` loading-state fallback while only the visible border declaration is removed | User's explicit choice during Phase 18 discuss — avoids a white/blank flash during lazy-image loading while scrolling; the border (unwanted frame) and the background (wanted fallback) are separate concerns | Confirmed — Phase 18; a live-caught follow-up bug (masonry-mode `.tile img` left at default `display: inline`, leaving a ~3.5px gap where the background bled through as a bottom-edge dark strip) was diagnosed and fixed in the same UAT session, with a new regression test added since the existing border-width check could not have caught a layout gap |
 | `PageTitleHeader.astro`'s halftone bleed uses geometry-based containment (`calc(50% - 50vw)`) instead of the component-level `overflow-x: clip` that shipped in Phase 16 | Phase 19 planning measured that a clipping ancestor and a full-bleed child are mutually exclusive — the clip suppressed the bleed entirely rather than coexisting with it. `position: relative` + `isolation: isolate` kept on the header so it stays the halftone's containing block; a D-05 regression net (7-page × 5-width overflow matrix, positive `position: sticky` assertions for About's hero and DetailHero's pin) was written and proven green against the pre-change tree first, given this exact component broke production once before (Phase 16, 2026-07-29) | Confirmed — Phase 19, 18/18 new regression tests pass, full local CI gate green including both Playwright projects |
 | Contact/Éditions single-word `<h1>` headings ("Contact", "Éditions") get `min-width: 0` on their CSS Grid titleblock item plus `overflow-wrap: break-word` on the h1 | Removing `PageTitleHeader`'s clip (Phase 19, UI-01) unmasked a latent, pre-existing bug: CSS Grid's default `min-width: auto` plus the h1's shrink-to-fit sizing overflowed 320px viewports by ~26px. Auto-fixed by the Phase 19 executor as an in-scope Rule 1 correction, not a separate requirement | Confirmed — Phase 19, verified via the same overflow-matrix regression net |
+| Mobile nav panel's language switcher moved from a fourth equal-weight primary link (D-04 as originally decided) to a small secondary-tier line stacked above the Instagram link, at the same size/color; Instagram link gained the header's own SVG glyph | Live on-phone UAT (20-UAT.md Test 2) reversed D-04's switcher clause: "langage switch is supposed to be at the bottom, with the same font size of the instagram... for the instagram, can you put the instagram logo instead?" Closed by gap-closure plan 20-06; the underlying implementation of D-04's other clauses (primary tier styling, Instagram position/size, D-06 accent-pink elsewhere) was correct and untouched | Confirmed — Phase 20, re-verified 2026-08-04 (54/54 mobile-nav e2e including 7 new (20-06) tests, own screenshots, live coverage re-run) |
 
 ## Evolution
 
@@ -247,4 +250,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-03 — Milestone v1.6 "Mobile Experience Redesign" started via `/gsd-new-milestone`. Scope: mobile-only nav/scroll/lightbox redesign across Homepage, Gallery, and Édition detail pages, plus an About portrait-placement fix; desktop/tablet unchanged. Requirements and roadmap in progress.*
+*Last updated: 2026-08-04 after Phase 20 (Mobile Navigation & Accent Color) — HOME-13 and HOME-16 validated. Includes gap-closure plan 20-06 (switcher hierarchy + Instagram glyph, per live UAT), independently re-verified and security-audited (19/19 threats closed) before close. Next: Phase 21 (Homepage Scroll Experience).*
