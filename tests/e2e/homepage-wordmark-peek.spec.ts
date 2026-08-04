@@ -904,6 +904,73 @@ test.describe('carousel hover-click navigation (sketch 008 Variant C)', () => {
       expect(prevTransform).toMatch(/^matrix\(1, 0, 0, 1, -/);
       expect(nextTransform).toMatch(/^matrix\(1, 0, 0, 1, \d/);
     });
+
+    // CR-01 (D-11, 20-REVIEW.md): a tap on a caption control — a progress
+    // dash or the autoplay toggle — bubbles up to this SAME touchend
+    // listener (the controls are DOM descendants of .home-hero__photo).
+    // Before the guard, the listener sees "negligible movement" and calls
+    // openCurrent(), silently hijacking the control tap into a gallery
+    // navigation. These two cases dispatch a real-coordinate tap with the
+    // control element as the event target (reusing the file's existing
+    // synthesized-Touch/TouchEvent pattern verbatim) and assert neither
+    // navigation nor the synchronous opening-state class occurs.
+    test('a tap on a progress dash does not navigate away or enter the opening state', async ({ page }) => {
+      await page.goto('/');
+      const startUrl = page.url();
+
+      await page.evaluate(() => {
+        const target = document.querySelector('[data-action="go-to"]')!;
+        const rect = target.getBoundingClientRect();
+        const clientX = rect.x + rect.width / 2;
+        const clientY = rect.y + rect.height / 2;
+        const makeTouchEvent = (type: string) => {
+          const touch = new Touch({ identifier: 1, target, clientX, clientY });
+          return new TouchEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            touches: type === 'touchend' ? [] : [touch],
+            changedTouches: [touch],
+          });
+        };
+        target.dispatchEvent(makeTouchEvent('touchstart'));
+        target.dispatchEvent(makeTouchEvent('touchend'));
+      });
+
+      // Give any (incorrect) navigation a chance to happen before asserting
+      // it didn't — there is no href to waitForURL against here.
+      await page.waitForTimeout(300);
+      expect(page.url()).toBe(startUrl);
+      const isOpening = await page.locator('.home-hero__photo').evaluate((el) => el.classList.contains('is-opening'));
+      expect(isOpening).toBe(false);
+    });
+
+    test('a tap on the autoplay toggle does not navigate away or enter the opening state', async ({ page }) => {
+      await page.goto('/');
+      const startUrl = page.url();
+
+      await page.evaluate(() => {
+        const target = document.querySelector('[data-role="autoplay-toggle"]')!;
+        const rect = target.getBoundingClientRect();
+        const clientX = rect.x + rect.width / 2;
+        const clientY = rect.y + rect.height / 2;
+        const makeTouchEvent = (type: string) => {
+          const touch = new Touch({ identifier: 1, target, clientX, clientY });
+          return new TouchEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            touches: type === 'touchend' ? [] : [touch],
+            changedTouches: [touch],
+          });
+        };
+        target.dispatchEvent(makeTouchEvent('touchstart'));
+        target.dispatchEvent(makeTouchEvent('touchend'));
+      });
+
+      await page.waitForTimeout(300);
+      expect(page.url()).toBe(startUrl);
+      const isOpening = await page.locator('.home-hero__photo').evaluate((el) => el.classList.contains('is-opening'));
+      expect(isOpening).toBe(false);
+    });
   });
 });
 
