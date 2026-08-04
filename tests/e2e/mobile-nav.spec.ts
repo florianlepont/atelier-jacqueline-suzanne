@@ -554,4 +554,42 @@ test.describe('Phase 20 — homepage mobile nav behaviour (HOME-13, D-03)', () =
       expect(bar3Transform).toBe('none');
     }).toPass();
   });
+
+  // Plan 20-05 (D-02, T-20-10): the decorative halftone corner texture --
+  // must be tap-transparent, geometrically contained inside the dialog's own
+  // box (the entire containment strategy, since no overflow rule is added
+  // anywhere), and must never intercept a tap meant for the primary list.
+  test('the halftone texture is tap-transparent and fully contained inside the panel', async ({ page }) => {
+    await openPanel(page);
+
+    const halftone = page.locator('dialog#mobile-nav .mobile-nav-panel__halftone');
+    await expect(halftone).toHaveCSS('pointer-events', 'none');
+
+    const [halftoneBox, dialogBox] = await Promise.all([
+      halftone.boundingBox(),
+      page.locator('dialog#mobile-nav').boundingBox(),
+    ]);
+    expect(halftoneBox).toBeTruthy();
+    expect(dialogBox).toBeTruthy();
+
+    // Fully inside on all four edges -- the element cannot overflow a box
+    // it is inset within.
+    expect(halftoneBox!.x).toBeGreaterThanOrEqual(dialogBox!.x);
+    expect(halftoneBox!.y).toBeGreaterThanOrEqual(dialogBox!.y);
+    expect(halftoneBox!.x + halftoneBox!.width).toBeLessThanOrEqual(dialogBox!.x + dialogBox!.width);
+    expect(halftoneBox!.y + halftoneBox!.height).toBeLessThanOrEqual(dialogBox!.y + dialogBox!.height);
+
+    const overflow = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }));
+    expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth);
+
+    // A tap at the first primary link's coordinates must still activate
+    // that link -- the halftone sits in the SAME top-right corner region as
+    // the panel, but must never swallow taps meant for the content above it.
+    const firstLink = page.locator('dialog#mobile-nav .mobile-nav-panel__link').first();
+    await firstLink.click();
+    await expect(page).toHaveURL(/editions/);
+  });
 });

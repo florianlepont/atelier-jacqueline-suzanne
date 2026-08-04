@@ -581,10 +581,67 @@ const menuLabel = 'Menu';
     background: var(--color-dominant);
   }
 
+  /* Plan 20-05 (D-02, T-20-10): the panel's decorative halftone texture,
+     reusing PageTitleHeader.astro's exact `.page-title-header__halftone`
+     radial-gradient/background-size dot values verbatim for visual
+     consistency, but with FRESH containment geometry re-derived for this
+     dialog's own 100vw/100vh box (RESEARCH.md Open Question 1) rather than
+     porting that component's viewport-relative centering constants, which
+     are tuned for a content-column-relative element, not a full-viewport
+     dialog. Bounded `min()` sizing anchored at the dialog's own top-right
+     corner is the ENTIRE containment strategy, deliberately not paired
+     with any clipping rule of any kind (see PageTitleHeader.astro's own
+     history comment for why this codebase treats that class of fix as
+     unsafe against unrelated sticky-positioned elements sharing the same
+     document). A box inset this way has nowhere to spill outside itself. */
+  .mobile-nav-panel__halftone {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 0;
+    pointer-events: none;
+    width: min(100vw, 320px);
+    height: min(100vh, 320px);
+    background-image: radial-gradient(rgba(26, 26, 26, 0.16) 1.4px, transparent 1.6px);
+    background-size: 9px 9px;
+    /* Fades the dot field out toward the panel's interior from its own
+       top-right corner — same multi-stop opacity ramp shape as
+       PageTitleHeader.astro's mask, expressed in THIS element's own
+       coordinates (no `--editorial-page-*` term, no `50vw` centering term:
+       this box is already anchored at the dialog's corner, not resolving
+       against the viewport). */
+    -webkit-mask-image: radial-gradient(circle 300px at top right, black 0%, rgba(0, 0, 0, 0.72) 18%, rgba(0, 0, 0, 0.42) 40%, rgba(0, 0, 0, 0.18) 65%, rgba(0, 0, 0, 0.05) 85%, transparent 100%);
+    mask-image: radial-gradient(circle 300px at top right, black 0%, rgba(0, 0, 0, 0.72) 18%, rgba(0, 0, 0, 0.42) 40%, rgba(0, 0, 0, 0.18) 65%, rgba(0, 0, 0, 0.05) 85%, transparent 100%);
+    opacity: 0;
+    /* Deliberately distinct keyframe names from PageTitleHeader's own
+       equivalent pair — both rule sets live in the same global stylesheet,
+       and a name collision there would silently rebind one component's
+       animation to the other's timing. */
+    animation:
+      mobile-nav-halftone-fade-in 0.6s ease 0.15s forwards,
+      mobile-nav-halftone-drift 10s linear infinite;
+  }
+
+  @keyframes mobile-nav-halftone-fade-in {
+    to { opacity: 1; }
+  }
+
+  @keyframes mobile-nav-halftone-drift {
+    from { background-position: 0 0; }
+    to { background-position: 90px 45px; }
+  }
+
   /* The logo must land in the SAME screen position as the closed header's
      logo, which means matching .chrome-band's own padding at both phone
-     breakpoints (see the @media (max-width: 400px) override below). */
+     breakpoints (see the @media (max-width: 400px) override below). Explicit
+     stacking (position: relative + z-index: 1, mirrored on .mobile-nav-panel__nav
+     and .mobile-nav-panel__secondary below) keeps the content above the
+     absolutely-positioned halftone: without it, a positioned element with
+     z-index: auto still paints AFTER non-positioned in-flow content in the
+     same stacking context, putting the dot field over 32px Unbounded text. */
   .mobile-nav-panel__bar {
+    position: relative;
+    z-index: 1;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -680,6 +737,8 @@ const menuLabel = 'Menu';
      rendered in ink (not accent), so all four items (three links + the
      language switcher) read as equal weight. */
   .mobile-nav-panel__nav {
+    position: relative;
+    z-index: 1;
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -736,6 +795,8 @@ const menuLabel = 'Menu';
   /* D-04, UI-SPEC "Label" role: the small secondary Instagram line near the
      panel's bottom edge. */
   .mobile-nav-panel__secondary {
+    position: relative;
+    z-index: 1;
     align-self: center;
     margin-bottom: var(--space-2xl);
     display: inline-flex;
@@ -778,6 +839,13 @@ const menuLabel = 'Menu';
 
     .mobile-nav-panel__close .mobile-nav__bar {
       transition: none;
+    }
+
+    /* Mirrors PageTitleHeader.astro's own reduced-motion handling for its
+       halftone: the texture stays present but static, not animated. */
+    .mobile-nav-panel__halftone {
+      animation: none;
+      opacity: 1;
     }
   }
 </style>
