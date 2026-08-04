@@ -1,14 +1,22 @@
 ---
-status: diagnosed
+status: testing
 phase: 20-mobile-navigation-accent-color
 source: [20-VERIFICATION.md]
 started: 2026-08-04T12:56:00Z
-updated: 2026-08-04T15:05:00Z
+updated: 2026-08-04T17:15:00Z
 ---
 
 ## Current Test
 
-[testing complete]
+number: 4
+name: Gap-closure inter-line spacing judgement (post 20-06)
+expected: |
+  Open the mobile nav panel on a real phone-width viewport and judge whether the vertical gap
+  between the switcher line and the Instagram line reads as a deliberate, related pair (rather
+  than two arbitrarily-spaced items). The automated geometry test proves the two lines are
+  stacked, centred, and within the 44-56px bottom-offset band; this check is the one remaining
+  aesthetic judgement automation cannot make (per 20-06-PLAN.md Task 3 and 20-VERIFICATION.md).
+awaiting: user response
 
 ## Tests
 
@@ -21,24 +29,33 @@ expected: Compare the open panel on a real device against 20-mobile-menu-referen
 result: issue
 reported: "langage switch is supposed to be at the bottom, with the same font size of the instagram. for the instagram, can you put the instagram logo instead?"
 severity: major
+resolved_by: "20-06 (gap-closure plan) — both defects independently confirmed closed in 20-VERIFICATION.md's 2026-08-04T17:15:00Z re-verification pass. See Gaps section below."
 
 ### 3. Visibly different accent colours across reloads
 expected: Reload the homepage several times on a phone-width viewport and confirm the starting accent colour visibly differs across reloads, each drawn from the site's existing 5-value HERO_COLORS palette.
 result: pass
 
+### 4. Gap-closure inter-line spacing judgement (post 20-06)
+expected: |
+  Open the mobile nav panel on a real phone-width viewport and judge whether the vertical gap
+  between the switcher line and the Instagram line reads as a deliberate, related pair (rather
+  than two arbitrarily-spaced items). Tighten or open up the gap if it does not.
+result: [pending]
+
 ## Summary
 
-total: 3
+total: 4
 passed: 2
 issues: 1
-pending: 0
+pending: 1
 skipped: 0
 blocked: 0
 
 ## Gaps
 
 - truth: "Within the full-screen menu, the language switcher renders as a big, equal-weight stacked primary item alongside Éditions/About/Contact (D-04 as originally decided)."
-  status: failed
+  status: resolved
+  resolution: "Closed by gap-closure plan 20-06: <LanguageSwitcher /> moved out of .mobile-nav-panel__nav to a direct child of the dialog, restyled to 14px/400/non-Unbounded/ink in the secondary tier. Independently confirmed against the live codebase (code read + own screenshots + live test re-run) in 20-VERIFICATION.md's 2026-08-04T17:15:00Z re-verification."
   reason: "User reported (live phone test): the language switcher is supposed to be at the bottom, at the same (small) font size as the Instagram link — i.e. grouped with Instagram as a secondary element, not as a fourth big primary item. This reverses D-04's original hierarchy decision for the switcher now that it's been seen live."
   severity: major
   test: 2
@@ -59,7 +76,8 @@ blocked: 0
   debug_session: ".planning/debug/mobile-nav-switcher-hierarchy.md"
   user_decision: "Stacked, two lines (not same row) — confirmed via follow-up question during diagnosis."
 - truth: "The panel's secondary Instagram element is a plain text link (`{instagramLabel}`), per D-04/20-03's SUMMARY — no icon."
-  status: failed
+  status: resolved
+  resolution: "Closed by gap-closure plan 20-06: the header's Instagram SVG glyph duplicated verbatim into MobileNavPanel.astro's secondary anchor, resized 20px to 16px, currentColor-driven. Independently confirmed against the live codebase (code read + own screenshots + live test re-run) in 20-VERIFICATION.md's 2026-08-04T17:15:00Z re-verification."
   reason: "User reported (live phone test): wants the Instagram logo/icon shown instead of (or alongside) the text. The desktop SiteHeader.astro already has a reusable inline SVG Instagram glyph (rounded-square outline + circle + dot, ~SiteHeader.astro line 106-118) that MobileNavPanel.astro currently does not reuse."
   severity: major
   test: 2

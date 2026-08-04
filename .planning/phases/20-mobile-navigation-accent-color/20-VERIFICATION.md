@@ -1,28 +1,30 @@
 ---
 phase: 20-mobile-navigation-accent-color
-verified: 2026-08-04T12:55:00Z
+verified: 2026-08-04T17:15:00Z
 status: human_needed
-score: 4/4 must-haves verified
+score: 4/4 ROADMAP success criteria verified; 6/7 20-06 gap-closure must-haves verified, 1 deferred to human sign-off
 behavior_unverified: 0
 overrides_applied: 0
+re_verification:
+  previous_status: human_needed
+  previous_score: 4/4 ROADMAP success criteria verified (with 3 human-verification items outstanding)
+  gaps_closed:
+    - "20-UAT.md Test 2 gap 1: language switcher rendered as a fourth Display-size (32px/600/Unbounded/ink) primary item inside .mobile-nav-panel__nav — now relocated to a direct child of the dialog, Label-size (14px/400/non-Unbounded/ink), stacked in the secondary tier directly above the Instagram line."
+    - "20-UAT.md Test 2 gap 2: the mobile panel's Instagram secondary link was plain text with no glyph — now carries the header's own Instagram SVG glyph (duplicated, resized 20px to 16px, currentColor, aria-hidden) beside the @handle."
+  gaps_remaining: []
+  regressions: []
 human_verification:
-  - test: "Open and close the mobile nav panel on a real phone-width viewport in both Chromium and Safari/WebKit and judge whether the 220ms open/close transition reads as deliberate rather than instant in both engines, and confirm it is instant (no rotation/fade) under prefers-reduced-motion: reduce."
-    expected: "The panel fades/slides in and the hamburger morphs to an X at matching timing in both engines; under reduced motion it opens/closes instantly with no animation."
-    why_human: "Subjective motion-feel judgment. Automated coverage (tests/e2e/mobile-nav.spec.ts's 11-test behaviour block plus the cross-engine tests/e2e/critical.smoke.spec.ts test, independently re-run during this verification and green under both chromium and webkit-mobile) proves the mechanism fires correctly and CSS/timing values are present, but cannot judge whether the motion 'reads as deliberate' the way a human eye would. 20-VALIDATION.md scopes this explicitly as Manual-Only."
-  - test: "Compare the open panel on a real device against .planning/phases/20-mobile-navigation-accent-color/20-mobile-menu-reference.png for logo position, hamburger-to-X placement, big stacked list style, the small secondary bottom line, and the corner halftone accent."
-    expected: "Visual layout matches the reference's intent (not pixel-identical, since the reference is a different site's mockup)."
-    why_human: "Subjective visual-fidelity judgment against a design reference image. This verifier captured screenshots of the closed (hamburger, logo, mode-toggle) and open (logo top-left, X top-right, centered stacked Éditions/À propos/Contact/EN list, Instagram secondary line bottom-center, halftone dot texture top-right) states at 393x852 and confirmed a close structural match to the reference's composition, but final aesthetic sign-off is a human call."
-  - test: "Reload the homepage several times on a phone-width viewport and confirm the starting accent colour visibly differs across reloads."
-    expected: "Different reloads show visibly different accent colours, each drawn from the site's existing 5-value HERO_COLORS palette."
-    why_human: "20-VALIDATION.md's Manual-Only table scopes the visible/subjective version of this check as human-only, even though this verifier independently re-ran tests/e2e/homepage-accent-random.spec.ts (forced-lowest/forced-highest Math.random stubs proving both palette endpoints are reachable, plus an unstubbed multi-reload membership check) and it passed, deterministically proving the underlying mechanism without relying on human visual sampling."
+  - test: "Task 3's own end-of-phase <human-check> item 4: open the panel on a real phone-width viewport and judge whether the vertical spacing between the switcher line and the Instagram line reads as a deliberate, related pair rather than two unrelated items — tighten or open up if not."
+    expected: "The two stacked secondary lines read as one cohesive group at a glance."
+    why_human: "Explicitly named in 20-06-PLAN.md's own Task 3 action text as \"the one judgement call the automated geometry gate cannot make.\" The automated geometry test (mobile-nav.spec.ts, the '(20-06)' stacked-rows test) proves the two lines are stacked, centred, and within the 44-56px bottom-offset band, but optical rhythm/deliberateness is a human aesthetic call that presence/geometry checks cannot make. Per this project's workflow.human_verify_mode: end-of-phase setting (20-06-SUMMARY.md coverage item D4), this check was deliberately deferred by the executor to this end-of-phase verification pass rather than performed mid-flight."
 ---
 
-# Phase 20: Mobile Navigation & Accent Color Verification Report
+# Phase 20: Mobile Navigation & Accent Color Verification Report (Re-verification after gap-closure plan 20-06)
 
 **Phase Goal:** On phone-width viewports, the homepage header becomes a self-contained nav menu (hamburger or similar) with the language switcher folded inside it, and each visit shows a randomly-picked accent color drawn from the existing per-gallery `heroColor` values — desktop/tablet header and accent-color behavior stay completely unchanged.
-**Verified:** 2026-08-04T12:55:00Z
+**Verified:** 2026-08-04T17:15:00Z
 **Status:** human_needed
-**Re-verification:** No — initial verification
+**Re-verification:** Yes — after gap-closure plan 20-06, which closed the two major gaps 20-UAT.md Test 2 recorded (switcher hierarchy, Instagram glyph).
 
 ## Goal Achievement
 
@@ -30,91 +32,97 @@ human_verification:
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | At phone width, the homepage's desktop header bar is replaced by a hamburger/menu control that opens to reveal the nav links | ✓ VERIFIED | Re-ran `tests/e2e/mobile-nav.spec.ts` (49 tests) live against a fresh build on an isolated port — all pass. Code-read confirms `SiteHeader.astro`'s `mobileNav` prop renders a `>=44x44` hamburger (`data-role="mobile-nav-toggle"`) that hides `.site-nav`/inline switcher and reveals only the toggle below 768px. Captured screenshots at 393x852: closed state shows logo + mode-toggle + hamburger only; clicking the hamburger opens a full-screen `dialog#mobile-nav` with the 3 primary links, switcher, and Instagram line — visually matching the reference composition. Behaviour (open, focus containment, Escape/X/dialog-click close, viewport-crossing auto-close, glyph morph) independently re-verified live: 11/11 behaviour tests + the dedicated cross-engine smoke test pass under both `chromium` and `webkit-mobile`. |
-| 2 | The language switcher is reachable from inside that mobile menu on the homepage at phone widths, not shown inline as it is on desktop | ✓ VERIFIED | `SiteHeader.astro`'s `@media (max-width: 767px) { .site-header[data-mobile-nav='true'] > .language-switcher { display: none; } }` hides the inline instance; `MobileNavPanel.astro` renders a second `<LanguageSwitcher />` as the 4th equal-weight primary item, restyled to Display role (32px/600/Unbounded/ink) per D-04. Live-verified: `.mobile-nav-panel .switcher-link` count 1, navigates and sets the `ajs_locale` cookie (test "the panel's language switcher navigates and sets the locale cookie", passing). Screenshot of the open panel confirms the switcher (`⊕ EN`) renders as a full-size stacked item below Contact. |
-| 3 | Revisiting the homepage on a phone across multiple visits shows different accent colors, each one of the existing per-gallery `heroColor` values (no new palette introduced) | ✓ VERIFIED | `pickRandomGalleryIndex()` (pure, DOM-free, unit-tested at both boundaries and `count<=0`/`count=1`) drives a one-time post-`render()` override in `HomeCarousel.astro` of `--current-accent`/`--current-accent-text`/`accentPanel.style.color`, sourced only from `galleries[randomIndex].heroColor`/`heroTextColor` (already-normalised via `normalizeHeroColor()`) with an `ACCENTS[]` fallback — no second, unvalidated colour path. Re-ran `tests/e2e/homepage-accent-random.spec.ts` live: forced-lowest (`Math.random=0`) starts on gallery 0's own colour, forced-highest (`Math.random=0.999`) starts on the last gallery's colour and differs from gallery 0's, an unstubbed reload proves every observed `--current-accent` is a member of the page's own `data-hero-color` set, gallery 0's photo/title/index/dashes still lead regardless of the random pick (D-05), and per-gallery accent tracking after the first carousel advance is unchanged. Built `dist/index.html` confirms the SSR value matches gallery 0's own `heroColor` (`#A6FD29`), i.e. the random pick is client-side only, never baked at build time. |
-| 4 | On tablet/desktop viewports, the homepage header bar, language switcher placement, and accent-color behavior are pixel-for-pixel and behaviorally unchanged from the pre-milestone (Phase 19) state | ✓ VERIFIED | `src/layouts/BaseLayout.astro`'s `<SiteHeader>` call site never passes `mobileNav` (`grep -c 'mobileNav' src/layouts/BaseLayout.astro` = 0); the prop resolves `false` and `data-mobile-nav` is entirely omitted from the DOM (Astro drops `undefined` attributes) on every non-homepage page and at every homepage width >=768px. Re-ran the plan-02 regression net (17 tests: inertness sweep across About/Contact both locales, a gallery detail page, Éditions overview, a dynamically-discovered édition detail page, plus a homepage-desktop-unchanged block using `toBeHidden()`) — all pass. `tests/e2e/visual.spec.ts`'s `shared-site-header.png` snapshot (taken on `/about/`) re-ran and passed with `git status --porcelain tests/e2e/visual.spec.ts-snapshots/` empty — the shared header is pixel-identical, not merely structurally similar. `site-header.spec.ts`'s realigned single-row-fit sweep (phone widths scoped to `/about/`, `>=768px` scoped to the homepage, with non-zero-height guards closing a prior vacuous-pass hole) also passes. |
+| 1 | At phone width, the homepage's desktop header bar is replaced by a hamburger/menu control that opens to reveal the nav links | ✓ VERIFIED | Live re-run of `tests/e2e/mobile-nav.spec.ts` (54 tests, this verification, isolated port to avoid a stale concurrent-session dev server on 4321) — all pass. Own screenshots at 393x852 (closed: logo + mode-toggle + hamburger only; open: full-screen dialog with the three primary links + secondary tier) confirm the structural claim directly, not via SUMMARY narration. |
+| 2 | The language switcher is reachable from inside that mobile menu on the homepage at phone widths, not shown inline as it is on desktop | ✓ VERIFIED — **and now in the corrected tier per the gap-closure**. | Code read of `src/components/MobileNavPanel.astro` confirms `<LanguageSwitcher />` is a direct child of `<dialog>`, positioned between `</nav>` and `.mobile-nav-panel__secondary`, no longer inside `.mobile-nav-panel__nav`. Own screenshot confirms the panel shows "⊕ EN" as a small line above "@ajs_romanelepont", both at the same small size — matching the user's UAT request exactly ("language switch is supposed to be at the bottom, with the same font size of the instagram"). Live-verified test "the panel's language switcher navigates and sets the locale cookie" passes from the new position. |
+| 3 | Revisiting the homepage on a phone across multiple visits shows different accent colors, each one of the existing per-gallery `heroColor` values (no new palette introduced) | ✓ VERIFIED | Re-ran `tests/e2e/homepage-accent-random.spec.ts` live (this verification): 6/6 passing, including forced-lowest/forced-highest boundary checks and the unstubbed multi-reload palette-membership check. This mechanism was untouched by gap-closure plan 20-06 (`git diff --stat src/lib/home-carousel.ts src/components/HomeCarousel.astro` shows no changes from this plan), and 20-UAT.md's own Test 3 already passed on real-device human testing. |
+| 4 | On tablet/desktop viewports, the homepage header bar, language switcher placement, and accent-color behavior are pixel-for-pixel and behaviorally unchanged from the pre-milestone (Phase 19) state | ✓ VERIFIED | Re-ran `tests/e2e/visual.spec.ts` live: 2/2 passing, `git status --porcelain tests/e2e/visual.spec.ts-snapshots/` empty — the `/about/` shared-header baseline was not touched or re-recorded, proving the gap-closure plan (which only edits `.mobile-nav-panel`-scoped selectors) did not leak onto the shared desktop header. `src/components/LanguageSwitcher.astro` confirmed unmodified (`git log` shows no phase-20 commits touching it; the file provides D-06's accent-pink default everywhere else on the site). `tests/e2e/site-header.spec.ts` (18 tests) and `tests/e2e/i18n.spec.ts` re-run live and pass. |
 
 **Score:** 4/4 ROADMAP success criteria verified (0 present-but-behavior-unverified)
 
-### Requirements Coverage
+### 20-06 Gap-Closure Must-Haves (plan frontmatter)
 
-| Requirement | Source Plan | Description | Status | Evidence |
-|---|---|---|---|---|
-| HOME-13 | 20-02, 20-03, 20-04, 20-05 | Visitor sees a mobile nav menu (hamburger or similar) on the homepage instead of the desktop header bar, with the language switcher inside it, on phone-width viewports only | ✓ SATISFIED | REQUIREMENTS.md marks HOME-13 complete under Phase 20. SC #1/#2 evidence above; markup+behaviour+halftone+mobile-viewport axe coverage (4 new tests in `accessibility.spec.ts`, re-run live: closed header and open panel both axe-clean, serious/critical severity, both locales, no rule exclusions). |
-| HOME-16 | 20-01, 20-05 | Visitor on a phone sees a different accent color each visit, randomly picked from the existing per-gallery `heroColor` values | ✓ SATISFIED | REQUIREMENTS.md marks HOME-16 complete under Phase 20. SC #3 evidence above; a combined cross-check test ties HOME-13 (hamburger visible) and HOME-16 (`--current-accent` is a real hero colour) together in one homepage state (re-run live, passing). |
+| # | Must-have truth | Status | Evidence |
+|---|---|---|---|
+| 1 | Exactly THREE big Display-size links in the centred primary stack; switcher no longer one of them | ✓ VERIFIED | `dialog#mobile-nav .mobile-nav-panel__nav > *` count 3 in code (`MobileNavPanel.astro` lines 93-97); own screenshot shows only Éditions/À propos/Contact in the big stack. |
+| 2 | Switcher renders at 14px/400/non-Unbounded/ink in the secondary tier | ✓ VERIFIED | `SiteHeader.astro`'s Display-role override block (former lines 767-793) is deleted; the new `.mobile-nav-panel > .language-switcher .switcher-link { color: var(--color-ink) }` rule is the only override, letting `LanguageSwitcher.astro`'s own 14px/400 defaults apply. Live-run typography test (`mobile-nav.spec.ts`, "the primary list renders at Display size and the switcher renders at Label size in ink (20-06)") passes for both `/` and `/en/`. |
+| 3 | Switcher and Instagram occupy two separate stacked rows, switcher above, both centred | ✓ VERIFIED | Own screenshot shows the stacked order (switcher above Instagram). Live geometry test ("the switcher and Instagram lines are two stacked rows near the panel's bottom edge (20-06)") passes. |
+| 4 | Instagram line carries the same glyph the desktop header uses, sized to match the switcher's globe | ✓ VERIFIED | Code read of `MobileNavPanel.astro` lines 120-132: SVG duplicated verbatim from `SiteHeader.astro` lines 106-118 at 16x16 instead of 20x20, `currentColor`-driven. Own screenshot shows the glyph rendered beside the @handle. Live structural test asserts svg count 1, `aria-hidden="true"`, and both the switcher's globe and the Instagram svg computed width equal 16px. |
+| 5 | Both secondary lines keep a >=44px tap target; switcher still navigates and sets the cookie from inside the focus-trapped panel | ✓ VERIFIED | `SiteHeader.astro`'s override deletion explicitly removes the old `padding: 0` that would have collapsed `LanguageSwitcher.astro`'s own `padding: 8px`/`min-height: 44px`. Live geometry test asserts both boxes report height >= 44 (rounded); live behaviour test "the panel's language switcher navigates and sets the locale cookie" passes from the new DOM position. |
+| 6 | Instagram line stays bottom-most, 48px clear of the panel edge; href/target/rel unchanged | ✓ VERIFIED | `.mobile-nav-panel__secondary`'s `margin-bottom: var(--space-2xl)` is untouched (only a `gap` declaration was added for the icon/label pair). Live-run "the secondary line renders at Label size" test (unedited, still asserts `marginBottom`) passes; `target="_blank" rel="noopener noreferrer"` confirmed unchanged in the code read. |
+| 7 | Every other page's header, desktop homepage header, panel motion/halftone/focus-containment, script-count tripwire unchanged | ✓ VERIFIED | Full re-run this verification: `npm run typecheck` 0 errors; `npm run build` succeeds; `mobile-nav.spec.ts` 54/54 (isolated port); `accessibility.spec.ts`+`site-header.spec.ts`+`i18n.spec.ts`+`homepage-carousel-core.spec.ts`+`homepage-mobile-responsive.spec.ts`+`visual.spec.ts` 87/87; `critical.smoke.spec.ts` 10/10 across `chromium` and `webkit-mobile`; `npx vitest run --coverage` 284/284 unit tests, 95.04%/90.01%/96.73%/95.9% (matches the SUMMARY's claimed baseline exactly, not merely trusted). `EXPECTED_SCRIPT_COUNT = 4` grep confirms 1 occurrence, unchanged. |
 
-No orphaned requirements: REQUIREMENTS.md maps only HOME-13/HOME-16 to Phase 20, and both are claimed across the 5 plans' frontmatter.
+**Note on test-environment discrepancy caught during this verification:** the first attempt to run `mobile-nav.spec.ts`'s script-count net tests against the default `playwright.config.ts` (port 4321) reported failures (14/18 scripts instead of 4) on `/about/` and `/contact/`. Investigation traced this to a stale, unrelated `astro dev` process from a separate concurrent session already squatting on port 4321 (a known environment quirk this project's memory explicitly documents and that 20-06-SUMMARY.md's own Deviation #2 also hit and worked around). Re-running against a freshly built, isolated-port `astro preview` server (the same workaround the executor used, reverted afterward with an empty `git diff --stat playwright.config.ts`) produced the clean 54/54 pass recorded above. This is not a code gap — it is confirmed to be test-infrastructure noise from a concurrent session, consistent with this project's own "concurrent sessions are the norm" operating note.
+
+### Deferred Items
+
+None — no gap identified in this phase required deferral to a later phase. (The two pre-existing `NaN` image-loading-timing flakes in `edition.spec.ts`/`gallery.spec.ts`, logged in `deferred-items.md`, are confirmed unrelated to this phase's files and out of scope, consistent with the prior verification's finding.)
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 |---|---|---|---|
-| `src/lib/home-carousel.ts` — `pickRandomGalleryIndex()` | Pure, DOM-free helper | ✓ VERIFIED | Present, exported, zero imports, unit-tested (8 cases, re-run live: 47/47 across both unit files). |
-| `src/components/HomeCarousel.astro` — accent override | Post-`render()` override of `--current-accent`/text/panel colour only | ✓ VERIFIED | Present at the documented location; `carouselIndex`/`heroImg`/`titleEl`/`indexLabel`/`progressDashes` untouched (confirmed via the D-05 e2e assertion). |
-| `src/components/MobileNavPanel.astro` | Full-screen `<dialog>` panel, sibling of `<header>` | ✓ VERIFIED | Present; zero `nav-link` class occurrences, zero nested `<header>`, zero own `<style>` block; client script owns open/close via native `showModal()`/`cancel` event, one filtered `transitionend` close funnel, a 400ms safety-net timer, a viewport-crossing auto-close guard (with the post-review `offsetParent` focus guard applied). |
-| `src/components/SiteHeader.astro` — `mobileNav` prop + CSS | Opt-in, inert when omitted | ✓ VERIFIED | `mobileNav?: boolean` defaults `false`; `data-mobile-nav` omitted entirely when absent; all new CSS lives inside the pre-existing single `is:global` block (no second style block, no `:global()` wrapper); halftone/motion/structural CSS all present and wired. |
-| `tests/e2e/mobile-nav.spec.ts` | Regression net + structural/behaviour/halftone/phase-gate blocks | ✓ VERIFIED | 49 tests, all re-run live and passing. |
-| `tests/e2e/homepage-accent-random.spec.ts` | Deterministic accent e2e | ✓ VERIFIED | 6 tests, re-run live and passing (the flaky real-RNG distinctness assertion was removed per the post-merge WR-03 fix — the remaining membership/D-05/post-advance assertions are deterministic). |
-| `tests/e2e/accessibility.spec.ts` | Mobile-viewport axe coverage | ✓ VERIFIED | 4 new tests (2 paths x 2 states) re-run live and passing, no rule exclusions. |
-| `tests/e2e/critical.smoke.spec.ts` | Cross-engine close-path smoke test | ✓ VERIFIED | Re-run live under both `chromium` and `webkit-mobile` — 10/10 passing. |
+| `src/components/MobileNavPanel.astro` | Switcher relocated to secondary tier; Instagram glyph inlined | ✓ VERIFIED | Read directly: `<LanguageSwitcher />` is a direct dialog child (not inside `.mobile-nav-panel__nav`); 16x16 SVG glyph present inside `.mobile-nav-panel__secondary` before `{instagramLabel}`. `grep -c 'LanguageSwitcher'` = 3 (header comment + import + single usage — no duplication). |
+| `src/components/SiteHeader.astro` | Display-role override deleted; secondary-tier layout + ink colour rule added | ✓ VERIFIED | Read directly: the three-rule override block is gone; `.mobile-nav-panel > .language-switcher` (position/z-index/align-self) and `.mobile-nav-panel > .language-switcher .switcher-link` (`color: var(--color-ink)`) present; `gap: var(--space-xs)` added to `.mobile-nav-panel__secondary`; `margin-bottom: var(--space-2xl)` untouched. |
+| `src/components/LanguageSwitcher.astro` | NOT modified (D-06 accent-pink stays site-wide) | ✓ VERIFIED | `git status --porcelain` clean; no phase-20 commit touches this file (git log shows only Phase 1/4/10 commits). |
+| `tests/e2e/mobile-nav.spec.ts` | 7 new `(20-06)`-tagged tests encoding the reversed hierarchy | ✓ VERIFIED | `--list -g "20-06"` enumerates exactly 7 tests (2 structural, 2 typography, 1 geometry, 2 durable href guards), all passing live. Four pre-existing net describe blocks (lines 1-154) and `EXPECTED_SCRIPT_COUNT = 4` confirmed untouched. |
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 |---|---|---|---|---|
-| `HomeCarousel.astro`'s `<SiteHeader>` call site | `mobileNav={true}` | opt-in prop | ✓ WIRED | Confirmed by grep and live render. |
-| `BaseLayout.astro`'s `<SiteHeader>` call site | (no `mobileNav`) | omission | ✓ WIRED (correctly inert) | `grep -c 'mobileNav' src/layouts/BaseLayout.astro` = 0. |
-| Hidden `data-hero-color`/`data-hero-text-color` attributes | `pickRandomGalleryIndex()` → `style.setProperty('--current-accent', ...)` | the one accent-writing path | ✓ WIRED | No second/unvalidated colour source found in `HomeCarousel.astro` or `site-config.ts`. |
-| `SiteHeader.astro`'s hamburger (`aria-controls="mobile-nav"`) | `MobileNavPanel.astro`'s `dialog#mobile-nav` | `data-role` hooks + native dialog API | ✓ WIRED | Open/close/focus-restore/viewport-guard all exercised live. |
+| `SiteHeader.astro`'s hamburger | `MobileNavPanel.astro`'s dialog | `data-role` hooks + native dialog API | ✓ WIRED | Open/close/focus-restore/viewport-guard all exercised live (unchanged from prior verification; not touched by 20-06). |
+| `dialog#mobile-nav > .language-switcher` | `.mobile-nav-panel > .language-switcher .switcher-link` CSS | direct-child selector | ✓ WIRED | The markup move (direct child of dialog) and the CSS selector shape match — confirmed by the live-passing typography/structural tests, which would fail silently if the selector shape and DOM nesting diverged (the exact failure class 20-RESEARCH.md's Pitfall 2 and this plan's own key_links entry warn about). |
+| `MobileNavPanel.astro`'s duplicated Instagram SVG | `SiteHeader.astro`'s source-of-truth glyph (lines 106-118) | verbatim duplication, resized 20→16 | ✓ WIRED | Visual + structural match confirmed (own screenshot, live svg-count/aria-hidden/width assertions). |
 
-### Post-Merge Fixes (independently re-verified, not merely trusted from SUMMARY/REVIEW claims)
+### Data-Flow Trace (Level 4)
 
-| Fix | Verification performed | Result |
-|---|---|---|
-| WCAG contrast nudge, `HERO_COLORS.purple` `#AF3DFF` → `#A73AF4` (commit `e52765b`) | Independently recomputed WCAG relative-luminance contrast in Node for both hex values against white. Confirmed `#A73AF4` in `src/lib/site-config.ts`, `src/layouts/BaseLayout.astro`, `sanity/schemas/HeroColorInput.tsx`, and `tests/unit/site-config.test.ts`; no stray `#AF3DFF` in the source tree. | `#AF3DFF` vs white = 4.256:1 (fails 4.5:1 AA); `#A73AF4` vs white = 4.611:1 (passes). Fix is real and correctly propagated everywhere. |
-| WR-01 — `normalizeHeroColor` `in` → `hasOwnProperty` (commit `424c071`) | Read `src/lib/site-config.ts:56` directly. | `Object.prototype.hasOwnProperty.call(HERO_COLORS, value)` confirmed in source — inherited-key false-positive class closed. |
-| WR-02 — focus-on-hidden-toggle guard in `MobileNavPanel.astro`'s `close` handler | Read the `close` event handler directly; re-ran the "crossing to a desktop viewport closes an open panel" test live (passes). | `if (toggle!.offsetParent !== null) toggle!.focus();` confirmed present. |
-| WR-03 — removed flaky real-RNG distinctness assertion from `homepage-accent-random.spec.ts` | Grepped the file for the removed assertion pattern; re-ran the spec live 1x (deterministic pass, no flake risk from the removed assertion). | Confirmed absent; remaining assertions are deterministic. |
-| IN-01 — distinct `aria-label` on the dialog vs. its child `<nav>` | Read `MobileNavPanel.astro`'s markup directly. | Dialog now labeled `siteTitle`, `<nav>` still labeled `menuLabel` ("Menu") — no duplicate landmark name. |
+Not applicable in the dynamic-data sense (this is a 100% static-build, author-literal markup change — no DB/API/store data source to trace). The one relevant "flow" is the switcher's href/cookie logic, confirmed unchanged and functioning from its new DOM position by the live-passing "navigates and sets the locale cookie" test and the two new durable href-guard tests.
 
 ### Behavioral Spot-Checks / Live Re-Execution (this verification, not SUMMARY claims)
 
 | Check | Command | Result |
 |---|---|---|
-| Typecheck | `npm run typecheck` | 0 errors |
-| Unit tests | `npx vitest run` | 284/284 passing |
-| Coverage | `npx vitest run --coverage` | 95.04% stmts / 90.01% branch / 96.73% funcs / 95.9% lines — well above the 70/65/70/70 gate |
-| Build | `npm run build` | Succeeds; SSR `--current-accent` in `dist/index.html` matches gallery 0's own `heroColor` (`#A6FD29`), confirming the random pick is client-side only |
-| `tests/e2e/mobile-nav.spec.ts` | `npx playwright test ... --project=chromium` (isolated port, fresh worktree build) | 49/49 passing |
-| `tests/e2e/homepage-accent-random.spec.ts` + `tests/e2e/accessibility.spec.ts` | same | 21/21 passing |
-| `tests/e2e/visual.spec.ts` | same | 2/2 passing; snapshot directory git-clean (not re-baselined) |
-| `tests/e2e/critical.smoke.spec.ts` | both `chromium` and `webkit-mobile` projects | 10/10 passing |
-| Realigned/pre-existing specs (`site-header`, `homepage-chrome-nav`, `homepage-mobile-responsive`, `i18n`, `homepage-carousel-core`, `page-title-header-bleed`) | chromium | 97/97 passing |
-| Full local e2e suite, both Playwright projects | `npx playwright test` (isolated port) | 370/370 passing in this run — the previously-documented pre-existing `tests/e2e/edition.spec.ts` image-loading-timing flake (unrelated file, out of this phase's scope, per `deferred-items.md`) did not reproduce in this run; consistent with its documented intermittent nature under concurrent-session load |
-| Homepage screenshots at 393x852 | Playwright screenshot, closed and open states | Closed: logo + mode-toggle + hamburger only, no inline nav/switcher. Open: logo top-left, X top-right, halftone dot texture top-right, centered stacked Éditions/À propos/Contact/⊕EN list, Instagram handle secondary line near bottom — structurally matches `20-mobile-menu-reference.png`'s composition |
+| Typecheck | `npm run typecheck` | 0 errors, 0 warnings, 2 pre-existing hints (unrelated files) |
+| Build | `npm run build` | Succeeds, 29 pages |
+| Unit tests + coverage | `npx vitest run --coverage` | 284/284 passing; 95.04% stmts / 90.01% branch / 96.73% funcs / 95.9% lines — matches SUMMARY's claimed baseline exactly |
+| `tests/e2e/mobile-nav.spec.ts` | `npx playwright test ... --project=chromium` (isolated port, fresh preview build) | 54/54 passing |
+| `tests/e2e/mobile-nav.spec.ts` `-g "20-06"` | `--list` | 7 tests enumerated, matching the plan's claimed 5 (Task 1) + 2 (Task 3) |
+| `tests/e2e/accessibility.spec.ts`, `site-header.spec.ts`, `i18n.spec.ts`, `homepage-carousel-core.spec.ts`, `homepage-mobile-responsive.spec.ts`, `visual.spec.ts` | same | 87/87 passing |
+| `tests/e2e/homepage-accent-random.spec.ts` | same | 6/6 passing |
+| `tests/e2e/critical.smoke.spec.ts` | both `chromium` and `webkit-mobile` | 10/10 passing |
+| Visual snapshot dir | `git status --porcelain tests/e2e/visual.spec.ts-snapshots/` | empty (no re-baseline) |
+| Own screenshots at 393x852 | Playwright screenshot, closed and open states | Closed: logo + mode-toggle + hamburger only. Open: three big primary links, then a small "⊕ EN" line, then a small "@ajs_romanelepont" line with the Instagram glyph — directly confirms both UAT-requested fixes, not merely code-read inference. |
+| `playwright.config.ts` port workaround | `git diff --stat playwright.config.ts` | empty after revert — verification left no tracked-file residue |
 
 ### Anti-Patterns Found
 
-None found in the phase's modified files (`src/components/SiteHeader.astro`, `src/components/MobileNavPanel.astro`, `src/components/HomeCarousel.astro`, `src/lib/home-carousel.ts`, `src/lib/site-config.ts`) — no `TBD`/`FIXME`/`XXX`/`TODO`/`HACK`/`PLACEHOLDER` markers, no stub returns, no hardcoded-empty props feeding user-visible output.
+None in the phase's modified files (`src/components/MobileNavPanel.astro`, `src/components/SiteHeader.astro`, `tests/e2e/mobile-nav.spec.ts`) — no `TBD`/`FIXME`/`XXX`/`TODO`/`HACK`/`PLACEHOLDER` markers, no stub returns, no hardcoded-empty props feeding user-visible output.
 
-### Deferred Items
+### Requirements Coverage
 
-None — no gap identified in this phase required deferral to a later phase.
+| Requirement | Source Plan | Description | Status | Evidence |
+|---|---|---|---|---|
+| HOME-13 | 20-02, 20-03, 20-04, 20-05, 20-06 | Visitor sees a mobile nav menu (hamburger or similar) on the homepage instead of the desktop header bar, with the language switcher inside it, on phone-width viewports only | ✓ SATISFIED | REQUIREMENTS.md marks HOME-13 complete under Phase 20. SC #1/#2 evidence above, now including the corrected switcher-tier placement from plan 20-06. |
+| HOME-16 | 20-01, 20-05 | Visitor on a phone sees a different accent color each visit, randomly picked from the existing per-gallery `heroColor` values | ✓ SATISFIED | REQUIREMENTS.md marks HOME-16 complete under Phase 20. SC #3 evidence above; untouched by plan 20-06. |
+
+No orphaned requirements: REQUIREMENTS.md maps only HOME-13/HOME-16 to Phase 20 (confirmed again this pass), and both remain claimed across the 6 plans' frontmatter (20-06's frontmatter claims `[HOME-13]`, consistent with it being a HOME-13-scoped gap closure).
 
 ### Human Verification Required
 
-Three items, all explicitly scoped as Manual-Only in `20-VALIDATION.md` and deferred to end-of-phase per this project's `workflow.human_verify_mode: end-of-phase` setting (visible in 20-05-PLAN.md's Task 3 `<human-check>` block). Automated re-execution during this verification independently confirms the underlying mechanisms are correct and wired; what remains is subjective human sign-off on feel/fidelity:
+One item remains, explicitly named by the plan itself as a judgement call automation cannot make, and deliberately deferred by the executor to this end-of-phase verification per this project's `workflow.human_verify_mode: end-of-phase` setting (20-06-SUMMARY.md coverage item D4):
 
-1. **D-03 motion feel across engines** — Open/close the mobile nav on a real phone-width viewport in both Chromium and Safari/WebKit; confirm the 220ms transition reads as deliberate (not instant/jarring) in both, and confirm it's instant under `prefers-reduced-motion: reduce`.
-2. **Visual fidelity against the reference image** — Compare the open panel against `20-mobile-menu-reference.png` for logo position, hamburger-to-X placement, list style, secondary line, and halftone accent.
-3. **Visibly different accent colours across reloads** — Reload the homepage several times on a phone-width viewport and confirm a human can see the starting accent colour differ.
+1. **Inter-line spacing judgement** — Open the mobile nav panel on a real phone-width viewport and judge whether the vertical gap between the switcher line and the Instagram line reads as a deliberate, related pair (rather than two arbitrarily-spaced items). The automated geometry test proves the two lines are stacked, centred, and within the 44-56px bottom-offset band, but "reads as a deliberate pair" is an aesthetic judgement this verifier's screenshot inspection supports as plausible (the ~23px optical gap looks intentional and matches the plan's stated design rationale) but cannot certify with the same confidence as a real human eye on a real device.
+
+The prior verification's three human-verification items are resolved as follows:
+- **D-03 motion feel across engines** — Already passed as 20-UAT.md Test 1 (real on-phone test). Not re-opened by plan 20-06 (motion CSS untouched).
+- **Visual fidelity against the reference image** — This was 20-UAT.md Test 2, which *failed* and is the subject of this entire re-verification cycle. The two concrete defects it reported (switcher hierarchy, missing Instagram glyph) are now closed and confirmed above. The residual, narrower spacing-judgement question is captured as the one remaining item above.
+- **Visibly different accent colours across reloads** — Already passed as 20-UAT.md Test 3 (real on-phone test). Not touched by plan 20-06.
 
 ### Gaps Summary
 
-No gaps. All 4 ROADMAP success criteria are independently re-verified against the live codebase (not merely SUMMARY.md claims), both requirement IDs (HOME-13, HOME-16) are satisfied with supporting evidence, all 5 code-review findings from the post-merge review (the WCAG contrast fix plus WR-01/WR-02/WR-03/IN-01) are confirmed landed in source, the full local test suite (unit + e2e across both Playwright projects) passes, and coverage exceeds every threshold. The only open items are the three subjective, explicitly-deferred human-judgment checks the phase's own plans scoped as Manual-Only — these route to `human_needed` per the verification decision tree, not to any code gap.
+No gaps. Both major defects 20-UAT.md Test 2 diagnosed (the language switcher rendering as a fourth Display-size primary item, and the Instagram link missing its glyph) are independently confirmed closed against the live codebase in this verification — via direct code reads of `MobileNavPanel.astro`/`SiteHeader.astro`, live re-execution of the full `mobile-nav.spec.ts` suite (54/54, including all 7 `(20-06)`-tagged tests) plus the surrounding regression net (87/87), and this verifier's own screenshots of the open panel, which visually match the user's UAT-reported request exactly. `LanguageSwitcher.astro` has a confirmed-empty diff, so D-06's accent-pink default is intact everywhere else on the site. All four ROADMAP success criteria hold, both requirement IDs (HOME-13, HOME-16) are satisfied, unit coverage matches the previously-claimed baseline exactly, and no anti-patterns or orphaned requirements were found. The only open item is a single, narrowly-scoped aesthetic judgement call (inter-line spacing) that the phase's own plan explicitly named as outside automation's reach and deliberately deferred to this end-of-phase pass — this routes the phase to `human_needed`, not to any code gap.
 
 ---
 
-_Verified: 2026-08-04T12:55:00Z_
+_Verified: 2026-08-04T17:15:00Z_
 _Verifier: Claude (gsd-verifier)_
