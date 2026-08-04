@@ -157,12 +157,27 @@ Plans:
 **Plans**: 6 plans, 4 waves
 
 Plans:
+**Wave 1**
+
 - [ ] 21-01-PLAN.md — Extract the wordmark-zoom math (progress, scale/opacity curve, focus origin) and the shared photo-cutout filter into `src/lib/home-carousel.ts`, with unit tests
 - [ ] 21-02-PLAN.md — Fix Phase 20's carryover CR-01 touch bug in the carousel handler (D-11) and re-scope this spec's touch coverage to a tablet-width touch device
 - [ ] 21-03-PLAN.md — Pre-emptively reconcile the existing e2e suite with the mobile rewrite, so it stays green at every commit of the phase
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 21-04-PLAN.md — Build the phone-width scroll deck's structure: failing structural spec, then the parallel markup, then the CSS that retires the carousel/grid/toggle below 767px
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 21-05-PLAN.md — Wire the pinned, reversible wordmark-to-photo zoom driver and the header hide/fade (HOME-15)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 21-06-PLAN.md — Wire arrival-complete description reveal and live per-slide accent colour, then close the phase gate (HOME-14)
+
+**Cross-cutting constraints:**
+
+- Tapping a slide opens that gallery's detail page.
 
 **UI hint**: yes
 
