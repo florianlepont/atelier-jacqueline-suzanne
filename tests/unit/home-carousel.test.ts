@@ -4,6 +4,7 @@ import {
   computeWordmarkBackgroundPosition,
   computeWordmarkSeamFraction,
   detectSwipeDirection,
+  pickRandomGalleryIndex,
 } from '../../src/lib/home-carousel';
 
 // RED: src/lib/home-carousel.ts does not exist yet — this import failure is
@@ -237,5 +238,50 @@ describe('computeHoverZone', () => {
     const result = computeHoverZone(1, EDGE_ZONE_FRACTION);
     expect(result.zone).toBe('right');
     expect(result.proximity).toBeCloseTo(1, 5);
+  });
+});
+
+// HOME-16/D-05: pure, DOM-free random-gallery-index picker used ONLY to
+// resolve the homepage's STARTING accent colour on load — it deliberately
+// never influences carouselIndex (RESEARCH.md Pattern 4/Pitfall 4).
+// RED: pickRandomGalleryIndex does not exist yet — this import/usage is the
+// intended failing state before this task's implementation lands.
+describe('pickRandomGalleryIndex', () => {
+  it('returns 0 for count = 0 (guard branch, no division/NaN)', () => {
+    expect(pickRandomGalleryIndex(0)).toBe(0);
+  });
+
+  it('returns 0 for a negative count (proves the guard is <= 0, not === 0)', () => {
+    expect(pickRandomGalleryIndex(-3)).toBe(0);
+  });
+
+  it('returns 0 for count = 1 regardless of the random source (single-gallery site)', () => {
+    expect(pickRandomGalleryIndex(1, () => 0.999)).toBe(0);
+  });
+
+  it('returns 0 at the lower bound of the random source', () => {
+    expect(pickRandomGalleryIndex(5, () => 0)).toBe(0);
+  });
+
+  it('returns count - 1 (never count) at the upper bound of a half-open [0,1) source', () => {
+    expect(pickRandomGalleryIndex(5, () => 0.999)).toBe(4);
+  });
+
+  it('returns the midpoint index for a mid-range random value', () => {
+    expect(pickRandomGalleryIndex(5, () => 0.5)).toBe(2);
+  });
+
+  it('multiplies then floors rather than rounding', () => {
+    expect(pickRandomGalleryIndex(5, () => 0.2)).toBe(1);
+  });
+
+  it('uses Math.random by default, resolved at call time rather than captured at module load', () => {
+    const originalRandom = Math.random;
+    try {
+      Math.random = () => 0.6;
+      expect(pickRandomGalleryIndex(5)).toBe(3);
+    } finally {
+      Math.random = originalRandom;
+    }
   });
 });
