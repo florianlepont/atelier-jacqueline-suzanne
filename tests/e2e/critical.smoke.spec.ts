@@ -60,11 +60,18 @@ test.describe('critical cross-browser smoke', () => {
   // webkit-mobile coverage happens (playwright.config.ts scopes that
   // project to **/*.smoke.spec.ts only).
   test('mobile nav opens and closes via Escape, restoring focus, on every tested engine', async ({page}) => {
-    await page.goto('/')
     // Explicit even though the webkit-mobile project already uses an
     // iPhone 15 Pro viewport — keeps this test honest under the chromium
     // project too, which defaults to a desktop viewport.
     await page.setViewportSize({width: 393, height: 852})
+    // Phase 21 (D-12/D-15): forces reduced motion so the header/toggle is
+    // deterministically interactive at scroll position 0 once the
+    // full-screen wordmark zoom lands — D-12 hides the header while the
+    // zoom is scrubbing, D-15 makes reduced-motion visitors skip the scroll
+    // driver entirely. The motion-on path is covered by the new
+    // homepage-scroll-deck spec instead.
+    await page.emulateMedia({reducedMotion: 'reduce'})
+    await page.goto('/')
     await page.locator('[data-role="mobile-nav-toggle"]').click()
     const dialog = page.locator('dialog#mobile-nav')
     await expect(dialog).toBeVisible()

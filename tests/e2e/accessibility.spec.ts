@@ -65,6 +65,13 @@ for (const path of ['/', '/en/']) {
     page,
   }) => {
     await page.setViewportSize({width: 393, height: 852})
+    // Phase 21 (D-12/D-15): forces reduced motion so the header/toggle is
+    // deterministically interactive at scroll position 0 once the
+    // full-screen wordmark zoom lands — D-12 hides the header while the
+    // zoom is scrubbing, D-15 makes reduced-motion visitors skip the scroll
+    // driver entirely. The motion-on path is covered by the new
+    // homepage-scroll-deck spec instead.
+    await page.emulateMedia({reducedMotion: 'reduce'})
     await page.goto(path)
     const results = await new AxeBuilder({page}).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
     const blocking = results.violations.filter(
@@ -82,6 +89,10 @@ for (const path of ['/', '/en/']) {
     page,
   }) => {
     await page.setViewportSize({width: 393, height: 852})
+    // Phase 21 (D-12/D-15): see the closed-header test above for the full
+    // rationale — reduced motion keeps the header/toggle reachable at
+    // scroll position 0 once the wordmark zoom lands.
+    await page.emulateMedia({reducedMotion: 'reduce'})
     await page.goto(path)
     await page.locator('[data-role="mobile-nav-toggle"]').click()
     await page.locator('dialog#mobile-nav').waitFor({state: 'visible'})
