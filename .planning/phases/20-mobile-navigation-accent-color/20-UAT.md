@@ -1,22 +1,14 @@
 ---
-status: testing
+status: complete
 phase: 20-mobile-navigation-accent-color
 source: [20-VERIFICATION.md]
 started: 2026-08-04T12:56:00Z
-updated: 2026-08-04T17:15:00Z
+updated: 2026-08-04T17:35:00Z
 ---
 
 ## Current Test
 
-number: 4
-name: Gap-closure inter-line spacing judgement (post 20-06)
-expected: |
-  Open the mobile nav panel on a real phone-width viewport and judge whether the vertical gap
-  between the switcher line and the Instagram line reads as a deliberate, related pair (rather
-  than two arbitrarily-spaced items). The automated geometry test proves the two lines are
-  stacked, centred, and within the 44-56px bottom-offset band; this check is the one remaining
-  aesthetic judgement automation cannot make (per 20-06-PLAN.md Task 3 and 20-VERIFICATION.md).
-awaiting: user response
+[testing complete]
 
 ## Tests
 
@@ -40,14 +32,14 @@ expected: |
   Open the mobile nav panel on a real phone-width viewport and judge whether the vertical gap
   between the switcher line and the Instagram line reads as a deliberate, related pair (rather
   than two arbitrarily-spaced items). Tighten or open up the gap if it does not.
-result: [pending]
+result: pass
 
 ## Summary
 
 total: 4
-passed: 2
+passed: 3
 issues: 1
-pending: 1
+pending: 0
 skipped: 0
 blocked: 0
 
