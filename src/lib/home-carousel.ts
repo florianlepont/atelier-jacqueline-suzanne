@@ -271,6 +271,55 @@ export function computeWordmarkZoomState(t: number): WordmarkZoomState {
   };
 }
 
+export interface FocusOrigin {
+  originX: number;
+  originY: number;
+}
+
+/**
+ * Phase 21 (HOME-15), sketch 015's `syncFocusOrigin()`: derives the zoom's
+ * CSS `transform-origin` (as percentages of the wordmark box) from the
+ * measured position of a specific focus target (the "A" of "Atelier" glyph
+ * span) inside the wordmark box — never a hardcoded percentage guess. Font
+ * metrics, viewport width, and font-load timing all shift where a specific
+ * glyph actually renders, so a hardcoded percentage would silently drift
+ * out of alignment; measuring both rects live keeps the anchor correct
+ * across all of those. The caller is responsible for re-measuring after
+ * `document.fonts.ready` resolves and on resize/orientationchange, since
+ * this function itself is DOM-free and only does the arithmetic once given
+ * two already-measured rects.
+ *
+ * Returns `null` for a degenerate wordmark box (zero width or height) —
+ * dividing by zero there would produce Infinity/NaN, not a usable origin.
+ * A focus box that extends outside the wordmark box is deliberately NOT
+ * clamped: the raw (possibly <0% or >100%) percentage is returned as-is,
+ * since `transform-origin` itself accepts out-of-range percentages and the
+ * caller feeds this value straight through.
+ */
+export function computeFocusOrigin(wordmarkRect: Rect, focusRect: Rect): FocusOrigin | null {
+  if (wordmarkRect.width <= 0 || wordmarkRect.height <= 0) return null;
+  const originX = ((focusRect.left + focusRect.width / 2 - wordmarkRect.left) / wordmarkRect.width) * 100;
+  const originY = ((focusRect.top + focusRect.height / 2 - wordmarkRect.top) / wordmarkRect.height) * 100;
+  return { originX, originY };
+}
+
+/**
+ * Phase 21, plan 21-01: single importable home for the wordmark's
+ * photo-cutout brightness/contrast heuristic, a byte-faithful transcription
+ * of the logic currently duplicated in `HomeCarousel.astro`'s frontmatter
+ * and client `<script>` (flagged in `20-REVIEW.md` IN-01). A naturally-dark
+ * photo needs its filter lifted (brighter, lower contrast) rather than
+ * darkened to stay legible behind white accent text; every other accent
+ * text color in this site's design system is paired with the darkened
+ * variant instead. `HomeCarousel.astro` is NOT modified by this plan —
+ * plan 21-04 owns deleting both duplicates there and importing this export.
+ */
+export function wordmarkPhotoFilter(textColor?: string): string {
+  return textColor?.toUpperCase() === '#FFFFFF'
+    ? 'brightness(1.38) contrast(0.92)'
+    : 'brightness(0.65) contrast(1.12)';
+}
+
 export interface HoverZone {
   zone: 'center' | 'left' | 'right';
   proximity: number;

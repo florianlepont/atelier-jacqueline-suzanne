@@ -426,12 +426,13 @@ describe('computeFocusOrigin', () => {
   });
 
   it('does not clamp a focus box outside the wordmark box — raw percentage passes through', () => {
-    expect(
-      computeFocusOrigin(
-        { left: 0, top: 0, width: 200, height: 100 },
-        { left: 220, top: 0, width: 20, height: 50 },
-      ),
-    ).toEqual({ originX: 115, originY: 25 });
+    const result = computeFocusOrigin(
+      { left: 0, top: 0, width: 200, height: 100 },
+      { left: 220, top: 0, width: 20, height: 50 },
+    );
+    expect(result).not.toBeNull();
+    expect(result?.originX).toBeCloseTo(115, 5);
+    expect(result?.originY).toBe(25);
   });
 });
 
