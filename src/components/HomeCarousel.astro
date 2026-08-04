@@ -983,6 +983,15 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         // fires mid-swipe and never hijacks a vertical scroll.
         const TAP_MAX_MOVEMENT = 10;
         heroPhoto?.addEventListener('touchend', (event) => {
+          // D-11 (20-REVIEW.md CR-01): a tap that bubbles up from a caption
+          // control — a progress dash or the autoplay toggle — must not be
+          // reinterpreted as a tap-to-open. Mirrors the existing desktop
+          // click handler's own .home-hero__caption exclusion below. This
+          // guard belongs HERE (not in the new mobile scroll deck) because
+          // this handler stays live for touchscreen tablets at 768px and
+          // wider (phase success criterion 5).
+          const target = event.target as HTMLElement | null;
+          if (target?.closest('.home-hero__caption')) return;
           const touch = event.changedTouches[0];
           if (!touch) return;
           const deltaX = touch.clientX - touchStartX;
