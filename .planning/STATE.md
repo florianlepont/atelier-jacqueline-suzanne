@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Mobile Experience Redesign
 current_phase: 20
-current_phase_name: Mobile Navigation & Accent Color
+current_phase_name: mobile-navigation-accent-color
 status: executing
 stopped_at: Phase 20 UI-SPEC approved
-last_updated: "2026-08-03T19:01:06.389Z"
+last_updated: "2026-08-03T19:51:18.544Z"
 last_activity: 2026-08-03
-last_activity_desc: "ROADMAP.md created: 4 phases (20-23) mapped to all 9 v1.6 requirements, 100% coverage"
+last_activity_desc: Phase 20 execution started
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 0
+  total_plans: 5
   completed_plans: 0
   percent: 0
 ---
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-03)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; v1.3 adds a non-transactional Éditions showcase; checkout still follows in the future v1.x shop milestone.)
-**Current focus:** Milestone v1.6 "Mobile Experience Redesign" — ROADMAP.md created, ready to plan Phase 20. Mobile-only nav/scroll/lightbox redesign across Homepage, Gallery, and Édition detail pages, plus an About portrait-placement fix; desktop/tablet unchanged throughout. Phase 5 (Launch & Domain Cutover) and the v1.x shop wave remain deliberately deferred behind this milestone.
+**Current focus:** Phase 20 — mobile-navigation-accent-color
 
 ## Current Position
 
-Phase: 20 of 23 (Mobile Navigation & Accent Color)
-Plan: — (not yet planned)
-Status: Ready to execute
-Last activity: 2026-08-03 — ROADMAP.md created: 4 phases (20-23) mapped to all 9 v1.6 requirements, 100% coverage
+Phase: 20 (mobile-navigation-accent-color) — EXECUTING
+Plan: 1 of 5
+Status: Executing Phase 20
+Last activity: 2026-08-03 — Phase 20 execution started
 
 ## Performance Metrics
 

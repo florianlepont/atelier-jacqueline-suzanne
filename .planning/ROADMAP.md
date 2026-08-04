@@ -115,13 +115,13 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
   3. Revisiting the homepage on a phone across multiple visits shows different accent colors, each one of the existing per-gallery `heroColor` values (no new palette introduced).
   4. On tablet/desktop viewports, the homepage header bar, language switcher placement, and accent-color behavior are pixel-for-pixel and behaviorally unchanged from the pre-milestone (Phase 19) state.
 
-**Plans:** 5 plans (waves: 1 = 20-01 + 20-02 in parallel, 2 = 20-03, 3 = 20-04, 4 = 20-05)
+**Plans:** 2/5 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 20-01-PLAN.md — HOME-16: per-visit random starting accent colour (`pickRandomGalleryIndex()`, accent-only override, deterministic e2e)
-- [ ] 20-02-PLAN.md — HOME-13: shared-header regression net proven green BEFORE any source change, plus retirement of three pre-existing assertions the phase intentionally changes
+- [x] 20-01-PLAN.md — HOME-16: per-visit random starting accent colour (`pickRandomGalleryIndex()`, accent-only override, deterministic e2e)
+- [x] 20-02-PLAN.md — HOME-13: shared-header regression net proven green BEFORE any source change, plus retirement of three pre-existing assertions the phase intentionally changes
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -212,7 +212,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 17. Homepage Carousel & Intro Fixes | 1/1 | Complete    | 2026-08-02 |
 | 18. Gallery & Éditions Display Fixes | 2/2 | Complete    | 2026-08-02 |
 | 19. Site-Wide Visual Polish | 2/2 | Complete    | 2026-08-03 |
-| 20. Mobile Navigation & Accent Color | 0/TBD | Not started | - |
+| 20. Mobile Navigation & Accent Color | 2/5 | In Progress|  |
 | 21. Homepage Scroll Experience | 0/TBD | Not started | - |
 | 22. Gallery & Édition Scroll Navigation | 0/TBD | Not started | - |
 | 23. About Portrait Placement & Milestone Regression Close | 0/TBD | Not started | - |
