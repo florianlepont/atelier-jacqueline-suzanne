@@ -154,7 +154,16 @@ Plans:
   4. On first load, a phone visitor sees the "Atelier Jacqueline Suzanne" wordmark filling the screen; scrolling visibly transitions through the wordmark's letterforms into the first gallery's photo, matching the approved sketch direction.
   5. On tablet/desktop viewports, the carousel/grid toggle and both view modes behave exactly as they did before this milestone.
 
-**Plans**: TBD
+**Plans**: 6 plans, 4 waves
+
+Plans:
+- [ ] 21-01-PLAN.md — Extract the wordmark-zoom math (progress, scale/opacity curve, focus origin) and the shared photo-cutout filter into `src/lib/home-carousel.ts`, with unit tests
+- [ ] 21-02-PLAN.md — Fix Phase 20's carryover CR-01 touch bug in the carousel handler (D-11) and re-scope this spec's touch coverage to a tablet-width touch device
+- [ ] 21-03-PLAN.md — Pre-emptively reconcile the existing e2e suite with the mobile rewrite, so it stays green at every commit of the phase
+- [ ] 21-04-PLAN.md — Build the phone-width scroll deck's structure: failing structural spec, then the parallel markup, then the CSS that retires the carousel/grid/toggle below 767px
+- [ ] 21-05-PLAN.md — Wire the pinned, reversible wordmark-to-photo zoom driver and the header hide/fade (HOME-15)
+- [ ] 21-06-PLAN.md — Wire arrival-complete description reveal and live per-slide accent colour, then close the phase gate (HOME-14)
+
 **UI hint**: yes
 
 ### Phase 22: Gallery & Édition Scroll Navigation
@@ -216,7 +225,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 17. Homepage Carousel & Intro Fixes | 1/1 | Complete    | 2026-08-02 |
 | 18. Gallery & Éditions Display Fixes | 2/2 | Complete    | 2026-08-02 |
 | 19. Site-Wide Visual Polish | 2/2 | Complete    | 2026-08-03 |
-| 20. Mobile Navigation & Accent Color | 6/6 | Complete   | 2026-08-04 |
+| 20. Mobile Navigation & Accent Color | 6/6 | Complete    | 2026-08-04 |
 | 21. Homepage Scroll Experience | 0/TBD | Not started | - |
 | 22. Gallery & Édition Scroll Navigation | 0/TBD | Not started | - |
 | 23. About Portrait Placement & Milestone Regression Close | 0/TBD | Not started | - |
