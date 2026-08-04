@@ -115,7 +115,7 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
   3. Revisiting the homepage on a phone across multiple visits shows different accent colors, each one of the existing per-gallery `heroColor` values (no new palette introduced).
   4. On tablet/desktop viewports, the homepage header bar, language switcher placement, and accent-color behavior are pixel-for-pixel and behaviorally unchanged from the pre-milestone (Phase 19) state.
 
-**Plans:** 3/5 plans executed
+**Plans:** 4/5 plans executed
 
 Plans:
 **Wave 1**
@@ -129,7 +129,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 20-04-PLAN.md — HOME-13/D-03: open/close behaviour and motion (CSS `@starting-style` open, JS-orchestrated close, hamburger↔X morph) with cross-engine smoke coverage
+- [x] 20-04-PLAN.md — HOME-13/D-03: open/close behaviour and motion (CSS `@starting-style` open, JS-orchestrated close, hamburger↔X morph) with cross-engine smoke coverage
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -212,7 +212,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 17. Homepage Carousel & Intro Fixes | 1/1 | Complete    | 2026-08-02 |
 | 18. Gallery & Éditions Display Fixes | 2/2 | Complete    | 2026-08-02 |
 | 19. Site-Wide Visual Polish | 2/2 | Complete    | 2026-08-03 |
-| 20. Mobile Navigation & Accent Color | 3/5 | In Progress|  |
+| 20. Mobile Navigation & Accent Color | 4/5 | In Progress|  |
 | 21. Homepage Scroll Experience | 0/TBD | Not started | - |
 | 22. Gallery & Édition Scroll Navigation | 0/TBD | Not started | - |
 | 23. About Portrait Placement & Milestone Regression Close | 0/TBD | Not started | - |
