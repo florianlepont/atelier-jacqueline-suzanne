@@ -518,8 +518,12 @@ const menuLabel = 'Menu';
      this codebase to already defeat the UA's default centered/
      intrinsically-sized <dialog> box model). All four sizing declarations
      below are required: the two max-* values are what defeat that default
-     regardless of the dialog's own content size. No motion/transition rule
-     is added here — that's plan 20-04. */
+     regardless of the dialog's own content size.
+     Phase 20 Plan 04 (D-03): the open/close motion. `display`/`overlay`
+     with `allow-discrete` are what let a top-layer element animate in at
+     all rather than appearing instantly — this is the whole open
+     animation, driven by CSS alone via the entry-state at-rule block
+     below, no JS involved. */
   .mobile-nav-panel {
     padding: 0;
     border: none;
@@ -529,6 +533,9 @@ const menuLabel = 'Menu';
     max-height: 100vh;
     background: var(--color-dominant);
     color: var(--color-ink);
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity 220ms ease, transform 220ms ease, display 220ms allow-discrete, overlay 220ms allow-discrete;
   }
 
   /* An unconditional `display` on the base rule would beat the UA's own
@@ -538,14 +545,38 @@ const menuLabel = 'Menu';
   .mobile-nav-panel[open] {
     display: flex;
     flex-direction: column;
+    opacity: 1;
+    transform: translateY(0);
   }
 
   .mobile-nav-panel:not([open]) {
     display: none;
   }
 
+  /* This is the entire open animation — no JS drives it. Safari/WebKit
+     ships this entry-state at-rule but not the paired overlay allow-discrete
+     behaviour needed to animate a top-layer element OUT, so the close
+     direction is driven from JS (MobileNavPanel.astro's client script) on
+     every engine instead, to keep behaviour uniform rather than silently
+     engine-dependent. */
+  @starting-style {
+    .mobile-nav-panel[open] {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+  }
+
+  /* The reverse state the client script's close funnel waits on
+     (transitionend) before calling panel.close(). */
+  .mobile-nav-panel[open].is-closing {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
   /* The panel is opaque and fills the viewport, so the backdrop only ever
-     shows through during the plan 20-04 open/close transition. */
+     shows through during the open/close transition above — safe against a
+     visible seam because it is the same --color-dominant white as the
+     panel itself. */
   .mobile-nav-panel::backdrop {
     background: var(--color-dominant);
   }
@@ -586,6 +617,63 @@ const menuLabel = 'Menu';
     border: none;
     color: inherit;
     cursor: pointer;
+  }
+
+  /* Phase 20 Plan 04 (D-03): the in-panel close button's 3-bar glyph morphs
+     into an X at the same 220ms timing as the panel's own fade, so both
+     read as one coordinated motion. The header hamburger itself is never
+     animated — per RESEARCH.md Pattern 3 the two glyphs are necessarily two
+     DOM nodes (a top-layer dialog paints above every normal-DOM element
+     regardless of z-index); the coordinated illusion comes from this
+     in-panel button animating while the header behind it fades out. */
+  .mobile-nav-panel__close .mobile-nav__bar {
+    transition: transform 220ms ease, opacity 220ms ease;
+  }
+
+  /* The 7px offsets converge the outer bars on the middle bar's centre
+     given the 0/7/14px geometry the base .mobile-nav__bar rules set above
+     — if that geometry ever changes, these offsets must change with it. */
+  .mobile-nav-panel[open] .mobile-nav-panel__close .mobile-nav__bar:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+  }
+
+  .mobile-nav-panel[open] .mobile-nav-panel__close .mobile-nav__bar:nth-child(2) {
+    opacity: 0;
+  }
+
+  .mobile-nav-panel[open] .mobile-nav-panel__close .mobile-nav__bar:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+  }
+
+  /* The un-morphed entry state, so the X visibly rotates into place as the
+     panel opens. */
+  @starting-style {
+    .mobile-nav-panel[open] .mobile-nav-panel__close .mobile-nav__bar:nth-child(1) {
+      transform: none;
+    }
+
+    .mobile-nav-panel[open] .mobile-nav-panel__close .mobile-nav__bar:nth-child(2) {
+      opacity: 1;
+    }
+
+    .mobile-nav-panel[open] .mobile-nav-panel__close .mobile-nav__bar:nth-child(3) {
+      transform: none;
+    }
+  }
+
+  /* Restores the un-morphed hamburger shape during the close funnel, in
+     step with the panel's own fade (.mobile-nav-panel[open].is-closing
+     above). */
+  .mobile-nav-panel[open].is-closing .mobile-nav-panel__close .mobile-nav__bar:nth-child(1) {
+    transform: none;
+  }
+
+  .mobile-nav-panel[open].is-closing .mobile-nav-panel__close .mobile-nav__bar:nth-child(2) {
+    opacity: 1;
+  }
+
+  .mobile-nav-panel[open].is-closing .mobile-nav-panel__close .mobile-nav__bar:nth-child(3) {
+    transform: none;
   }
 
   /* D-04, UI-SPEC Typography "Display" role: the primary stacked nav list,
@@ -676,6 +764,20 @@ const menuLabel = 'Menu';
 
     .mobile-nav-panel__logo-img {
       width: 40px;
+    }
+  }
+
+  /* Phase 20 Plan 04 (D-03): under this preference the panel opens and
+     closes instantly and the glyph swaps with no rotation — and
+     MobileNavPanel.astro's client script already skips its transitionend
+     wait in the same condition, so the two halves cannot disagree. */
+  @media (prefers-reduced-motion: reduce) {
+    .mobile-nav-panel {
+      transition: none;
+    }
+
+    .mobile-nav-panel__close .mobile-nav__bar {
+      transition: none;
     }
   }
 </style>
