@@ -10,6 +10,7 @@
 // so it stays a pure, build-time-only, zero-hydration presentational
 // component (T-10-01: no secret/token path reaches the client).
 import LanguageSwitcher from './LanguageSwitcher.astro';
+import MobileNavPanel from './MobileNavPanel.astro';
 
 interface Props {
   // 2-value union, not BaseLayout's 3-value headerVariant — 'none'
@@ -30,6 +31,15 @@ interface Props {
   instagramNewTabHint: string;
   logoBlackSrc: string;
   logoWhiteSrc: string;
+  // D-01 (Phase 20, HOME-13): opt-in mobile-nav mode. Default false, so every
+  // existing/future caller that omits it renders byte-for-byte the same
+  // header as today — no attribute, no extra element, no extra CSS match, no
+  // extra client script. This component is the project's documented
+  // per-page-regression hotspot (Phase 16's site-wide `overflow-x` revert;
+  // Phase 19's `:global()` scope-hash bug), so this new responsibility must
+  // stay fully inert unless a caller explicitly opts in. Only
+  // HomeCarousel.astro's single homepage call site passes `true`.
+  mobileNav?: boolean;
 }
 
 const {
@@ -47,10 +57,31 @@ const {
   instagramNewTabHint,
   logoBlackSrc,
   logoWhiteSrc,
+  mobileNav = false,
 } = Astro.props;
+
+// D-01: three new copy strings, resolved with the same
+// `Astro.currentLocale === 'en'` locale derivation LanguageSwitcher.astro
+// already uses for its own copy. Deliberate departure from this component's
+// "every label is passed in by the caller" convention (see header comment
+// above): threading three more required props would force an edit at every
+// existing call site, which is exactly the blast radius D-01's inertness
+// requirement exists to avoid — and LanguageSwitcher.astro, already a child
+// of this component, is the in-repo precedent for a nested component
+// deriving its own locale-conditional copy rather than receiving it as a
+// prop. Resolved unconditionally (cheap, no DOM/IO) but only ever rendered
+// below when `mobileNav` is true.
+const isEnLocale = Astro.currentLocale === 'en';
+const openMenuLabel = isEnLocale ? 'Open menu' : 'Ouvrir le menu';
+const closeMenuLabel = isEnLocale ? 'Close menu' : 'Fermer le menu';
+const menuLabel = 'Menu';
 ---
 
-<header class:list={['chrome-band', 'site-header', `site-header--${variant}`]} data-role="site-header">
+<header
+  class:list={['chrome-band', 'site-header', `site-header--${variant}`]}
+  data-role="site-header"
+  data-mobile-nav={mobileNav ? 'true' : undefined}
+>
   <a href={homeHref} class="logo-mark" aria-label={siteTitle}>
     <span class="logo-mark__chip" aria-hidden="true"></span>
     <img src={logoBlackSrc} alt="" class="logo-mark__img logo-mark__img--default" />
@@ -92,7 +123,50 @@ const {
       empty on every other page. */}
   <slot name="extra" />
   <LanguageSwitcher />
+  {mobileNav && (
+    /* D-01/HOME-13 (Phase 20 Plan 03): the hamburger toggle, last child so
+       it lands at the far right of the flex row, matching the reference
+       image. Rendered ONLY when mobileNav is true — inert everywhere else.
+       No id, no inline styles: `aria-controls`/CSS both key off `#mobile-nav`
+       and the `.mobile-nav__toggle` class defined below. */
+    <button
+      type="button"
+      class="mobile-nav__toggle"
+      data-role="mobile-nav-toggle"
+      aria-controls="mobile-nav"
+      aria-expanded="false"
+      aria-label={openMenuLabel}
+    >
+      <span class="mobile-nav__bars" aria-hidden="true">
+        <span class="mobile-nav__bar"></span>
+        <span class="mobile-nav__bar"></span>
+        <span class="mobile-nav__bar"></span>
+      </span>
+    </button>
+  )}
 </header>
+{mobileNav && (
+  /* D-01/T-20-06: rendered as a SIBLING of <header>, never a descendant —
+     i18n.spec.ts, homepage-carousel-core.spec.ts and site-header.spec.ts all
+     assert header-scoped counts of exactly 1 switcher link and exactly 1
+     Éditions link; nesting the dialog inside <header> would break those. */
+  <MobileNavPanel
+    homeHref={homeHref}
+    siteTitle={siteTitle}
+    editionsLabel={editionsLabel}
+    editionsHref={editionsHref}
+    aboutLabel={aboutLabel}
+    aboutHref={aboutHref}
+    contactLabel={contactLabel}
+    contactHref={contactHref}
+    instagramUrl={instagramUrl}
+    instagramLabel={instagramLabel}
+    instagramNewTabHint={instagramNewTabHint}
+    logoBlackSrc={logoBlackSrc}
+    closeMenuLabel={closeMenuLabel}
+    menuLabel={menuLabel}
+  />
+)}
 
 <style is:global>
   /* Relocated from BaseLayout.astro (RESEARCH.md Pattern 3 / this plan's

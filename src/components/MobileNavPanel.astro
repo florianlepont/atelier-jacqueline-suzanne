@@ -1,0 +1,100 @@
+---
+// Full-screen mobile-nav dialog panel (D-01/D-02/D-04, Phase 20 Plan 03,
+// HOME-13). Rendered only when SiteHeader.astro's opt-in `mobileNav` prop is
+// true, and rendered as a SIBLING of that <header>, never as its
+// descendant. Imports only LanguageSwitcher — no getRelativeLocaleUrl/
+// siteSettings/sanity — mirroring SiteHeader.astro's own
+// build-time-only, zero-hydration presentational contract.
+//
+// Hard structural constraints, each protecting a specific pre-existing spec:
+// - This <dialog> must stay a SIBLING of <header data-role="site-header">,
+//   never a descendant: i18n.spec.ts, homepage-carousel-core.spec.ts and
+//   site-header.spec.ts all assert header-scoped counts of exactly 1
+//   switcher link and exactly 1 Éditions link.
+// - No element in here may reuse the header's primary-link class (the one
+//   scoped to `.site-nav >` in site-header.spec.ts): that cross-page
+//   structural-identity test counts those header-scoped links and expects
+//   exactly 4 — a class collision here would inflate that count.
+// - No <header> element may appear in here: i18n.spec.ts clicks through
+//   `page.locator('header')` and would trip Playwright strict mode on a
+//   second match.
+// - This component carries no styles of its own (all CSS lives in
+//   SiteHeader.astro's existing `is:global` sheet — see its Task 2 rules)
+//   and, in this plan, no client script (open/close wiring lands in plan
+//   20-04).
+import LanguageSwitcher from './LanguageSwitcher.astro';
+
+interface Props {
+  homeHref: string;
+  siteTitle: string;
+  editionsLabel: string;
+  editionsHref: string;
+  aboutLabel: string;
+  aboutHref: string;
+  contactLabel: string;
+  contactHref: string;
+  instagramUrl: string;
+  instagramLabel: string;
+  instagramNewTabHint: string;
+  logoBlackSrc: string;
+  closeMenuLabel: string;
+  menuLabel: string;
+}
+
+const {
+  homeHref,
+  siteTitle,
+  editionsLabel,
+  editionsHref,
+  aboutLabel,
+  aboutHref,
+  contactLabel,
+  contactHref,
+  instagramUrl,
+  instagramLabel,
+  instagramNewTabHint,
+  logoBlackSrc,
+  closeMenuLabel,
+  menuLabel,
+} = Astro.props;
+---
+
+<dialog id="mobile-nav" class="mobile-nav-panel" data-role="mobile-nav-panel" aria-label={menuLabel}>
+  <div class="mobile-nav-panel__bar">
+    {/* Black logo only — the panel is a white surface, so the header's
+        two-image hover-swap chip mechanic is deliberately NOT reused here. */}
+    <a href={homeHref} class="mobile-nav-panel__logo" aria-label={siteTitle}>
+      <img src={logoBlackSrc} alt="" class="mobile-nav-panel__logo-img" />
+    </a>
+    {/* Pattern 3 (top-layer stacking): the same bar-glyph structure as the
+        header hamburger, so one CSS definition drives both glyphs and plan
+        20-04 can transform this instance into an X. */}
+    <button type="button" class="mobile-nav-panel__close" data-role="mobile-nav-close" aria-label={closeMenuLabel}>
+      <span class="mobile-nav__bars" aria-hidden="true">
+        <span class="mobile-nav__bar"></span>
+        <span class="mobile-nav__bar"></span>
+        <span class="mobile-nav__bar"></span>
+      </span>
+    </button>
+  </div>
+  <nav class="mobile-nav-panel__nav" aria-label={menuLabel}>
+    <a href={editionsHref} class="mobile-nav-panel__link">{editionsLabel}</a>
+    <a href={aboutHref} class="mobile-nav-panel__link">{aboutLabel}</a>
+    <a href={contactHref} class="mobile-nav-panel__link">{contactLabel}</a>
+    {/* D-04: the language switcher is a fourth, equal-weight primary item —
+        LanguageSwitcher's own logic/copy/cookie-script is unchanged; only
+        its visual size/color context changes (Task 2's :global() override in
+        SiteHeader.astro). */}
+    <LanguageSwitcher />
+  </nav>
+  <a
+    href={instagramUrl}
+    target="_blank"
+    rel="noopener noreferrer"
+    class="mobile-nav-panel__secondary"
+    aria-label={`Instagram ${instagramLabel}`}
+  >
+    {instagramLabel}
+    <span class="sr-only">{instagramNewTabHint}</span>
+  </a>
+</dialog>
