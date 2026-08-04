@@ -161,6 +161,28 @@ export function computeWordmarkSeamFraction(
   return Math.min(1, Math.max(0, raw));
 }
 
+/**
+ * HOME-16/D-05: picks a gallery index used ONLY to resolve the homepage's
+ * STARTING accent colour pair on page load — a random visit-to-visit accent
+ * drawn from the existing per-gallery `heroColor` values, replacing the
+ * previous always-gallery-0 default. Deliberately does NOT influence
+ * `carouselIndex` — the photo, title, and index label still start on
+ * gallery 0 (RESEARCH.md Pattern 4/Pitfall 4); this function's return value
+ * feeds a separate, narrower accent-only override in HomeCarousel.astro's
+ * inline script, applied AFTER the existing initial render() call so it
+ * isn't clobbered.
+ *
+ * `randomSource` is injectable purely for deterministic unit testing — the
+ * runtime always uses the default `Math.random`, resolved at CALL time (a
+ * default parameter, not a captured module-load-time reference), so a test
+ * stubbing `Math.random` on `globalThis` still takes effect when the caller
+ * omits the second argument entirely.
+ */
+export function pickRandomGalleryIndex(count: number, randomSource: () => number = Math.random): number {
+  if (count <= 0) return 0;
+  return Math.floor(randomSource() * count);
+}
+
 export interface HoverZone {
   zone: 'center' | 'left' | 'right';
   proximity: number;
