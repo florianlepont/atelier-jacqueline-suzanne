@@ -3,8 +3,11 @@ import {
   computeHoverZone,
   computeWordmarkBackgroundPosition,
   computeWordmarkSeamFraction,
+  computeWordmarkZoomState,
+  computeZoomProgress,
   detectSwipeDirection,
   pickRandomGalleryIndex,
+  ZOOM_REVEAL_DISTANCE,
 } from '../../src/lib/home-carousel';
 
 // RED: src/lib/home-carousel.ts does not exist yet — this import failure is
@@ -285,3 +288,89 @@ describe('pickRandomGalleryIndex', () => {
     }
   });
 });
+
+// Phase 21 (HOME-14/HOME-15), plan 21-01: pure zoom-progress math for the
+// mobile wordmark->photo scroll-zoom transition (sketch 015 "Scale Through",
+// Cinematic pace). RED: ZOOM_REVEAL_DISTANCE/computeZoomProgress do not exist
+// yet — this import/usage is the intended failing state before Task 1's
+// implementation lands.
+describe('computeZoomProgress', () => {
+  it('ZOOM_REVEAL_DISTANCE is the sketch-015 Cinematic pace winner (900px)', () => {
+    expect(ZOOM_REVEAL_DISTANCE).toBe(900);
+  });
+
+  it('returns 0 when the track top is flush with the viewport top (zoom not started)', () => {
+    expect(computeZoomProgress(0)).toBe(0);
+  });
+
+  it('returns 0.5 halfway through the default reveal distance', () => {
+    expect(computeZoomProgress(-450)).toBe(0.5);
+  });
+
+  it('returns 1 at the full default reveal distance', () => {
+    expect(computeZoomProgress(-900)).toBe(1);
+  });
+
+  it('clamps to 1 well past the reveal distance', () => {
+    expect(computeZoomProgress(-5000)).toBe(1);
+  });
+
+  it('clamps to 0 while the track is still below the fold (positive top)', () => {
+    expect(computeZoomProgress(120)).toBe(0);
+  });
+
+  it('honors an explicit reveal distance', () => {
+    expect(computeZoomProgress(-300, 600)).toBe(0.5);
+  });
+
+  it('resolves a degenerate (zero) reveal distance to the completed end-state, not Infinity/NaN', () => {
+    expect(computeZoomProgress(-300, 0)).toBe(1);
+  });
+});
+
+describe('computeWordmarkZoomState', () => {
+  it('t = 0 gives the start state: scale 1, wordmark fully visible, photo fully hidden', () => {
+    expect(computeWordmarkZoomState(0)).toEqual({ scale: 1, wordmarkOpacity: 1, photoOpacity: 0 });
+  });
+
+  it('t = 1 gives the end state: scale 8.5, wordmark fully hidden, photo fully visible', () => {
+    expect(computeWordmarkZoomState(1)).toEqual({ scale: 8.5, wordmarkOpacity: 0, photoOpacity: 1 });
+  });
+
+  it('t = 0.5 gives the ease-in-cubic midpoint scale, with neither fade started', () => {
+    const result = computeWordmarkZoomState(0.5);
+    expect(result.scale).toBeCloseTo(1.9375, 5);
+    expect(result.wordmarkOpacity).toBe(1);
+    expect(result.photoOpacity).toBe(0);
+  });
+
+  it('t = 0.9: photo crossfade has started (~0.3333), wordmark fade has not (below 0.92)', () => {
+    const result = computeWordmarkZoomState(0.9);
+    expect(result.photoOpacity).toBeCloseTo(0.3333, 3);
+    expect(result.wordmarkOpacity).toBe(1);
+  });
+
+  it('t = 0.96: wordmark fade is at its own midpoint (~0.5)', () => {
+    const result = computeWordmarkZoomState(0.96);
+    expect(result.wordmarkOpacity).toBeCloseTo(0.5, 5);
+  });
+
+  it('clamps input below 0 to behave as t = 0', () => {
+    expect(computeWordmarkZoomState(-2)).toEqual({ scale: 1, wordmarkOpacity: 1, photoOpacity: 0 });
+  });
+
+  it('clamps input above 1 to behave as t = 1', () => {
+    expect(computeWordmarkZoomState(4)).toEqual({ scale: 8.5, wordmarkOpacity: 0, photoOpacity: 1 });
+  });
+
+  it('scale is strictly non-decreasing across an ascending sweep of t', () => {
+    const sweep = [0, 0.1, 0.25, 0.5, 0.75, 0.9, 1];
+    let previous = -Infinity;
+    for (const t of sweep) {
+      const { scale } = computeWordmarkZoomState(t);
+      expect(scale).toBeGreaterThanOrEqual(previous);
+      previous = scale;
+    }
+  });
+});
+
