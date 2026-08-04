@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
+  computeFocusOrigin,
   computeHoverZone,
   computeWordmarkBackgroundPosition,
   computeWordmarkSeamFraction,
+  computeWordmarkZoomState,
+  computeZoomProgress,
   detectSwipeDirection,
   pickRandomGalleryIndex,
+  wordmarkPhotoFilter,
+  ZOOM_REVEAL_DISTANCE,
 } from '../../src/lib/home-carousel';
 
 // RED: src/lib/home-carousel.ts does not exist yet — this import failure is
@@ -283,5 +288,172 @@ describe('pickRandomGalleryIndex', () => {
     } finally {
       Math.random = originalRandom;
     }
+  });
+});
+
+// Phase 21 (HOME-14/HOME-15), plan 21-01: pure zoom-progress math for the
+// mobile wordmark->photo scroll-zoom transition (sketch 015 "Scale Through",
+// Cinematic pace). RED: ZOOM_REVEAL_DISTANCE/computeZoomProgress do not exist
+// yet — this import/usage is the intended failing state before Task 1's
+// implementation lands.
+describe('computeZoomProgress', () => {
+  it('ZOOM_REVEAL_DISTANCE is the sketch-015 Cinematic pace winner (900px)', () => {
+    expect(ZOOM_REVEAL_DISTANCE).toBe(900);
+  });
+
+  it('returns 0 when the track top is flush with the viewport top (zoom not started)', () => {
+    expect(computeZoomProgress(0)).toBe(0);
+  });
+
+  it('returns 0.5 halfway through the default reveal distance', () => {
+    expect(computeZoomProgress(-450)).toBe(0.5);
+  });
+
+  it('returns 1 at the full default reveal distance', () => {
+    expect(computeZoomProgress(-900)).toBe(1);
+  });
+
+  it('clamps to 1 well past the reveal distance', () => {
+    expect(computeZoomProgress(-5000)).toBe(1);
+  });
+
+  it('clamps to 0 while the track is still below the fold (positive top)', () => {
+    expect(computeZoomProgress(120)).toBe(0);
+  });
+
+  it('honors an explicit reveal distance', () => {
+    expect(computeZoomProgress(-300, 600)).toBe(0.5);
+  });
+
+  it('resolves a degenerate (zero) reveal distance to the completed end-state, not Infinity/NaN', () => {
+    expect(computeZoomProgress(-300, 0)).toBe(1);
+  });
+});
+
+describe('computeWordmarkZoomState', () => {
+  it('t = 0 gives the start state: scale 1, wordmark fully visible, photo fully hidden', () => {
+    expect(computeWordmarkZoomState(0)).toEqual({ scale: 1, wordmarkOpacity: 1, photoOpacity: 0 });
+  });
+
+  it('t = 1 gives the end state: scale 8.5, wordmark fully hidden, photo fully visible', () => {
+    expect(computeWordmarkZoomState(1)).toEqual({ scale: 8.5, wordmarkOpacity: 0, photoOpacity: 1 });
+  });
+
+  it('t = 0.5 gives the ease-in-cubic midpoint scale, with neither fade started', () => {
+    const result = computeWordmarkZoomState(0.5);
+    expect(result.scale).toBeCloseTo(1.9375, 5);
+    expect(result.wordmarkOpacity).toBe(1);
+    expect(result.photoOpacity).toBe(0);
+  });
+
+  it('t = 0.9: photo crossfade has started (~0.3333), wordmark fade has not (below 0.92)', () => {
+    const result = computeWordmarkZoomState(0.9);
+    expect(result.photoOpacity).toBeCloseTo(0.3333, 3);
+    expect(result.wordmarkOpacity).toBe(1);
+  });
+
+  it('t = 0.96: wordmark fade is at its own midpoint (~0.5)', () => {
+    const result = computeWordmarkZoomState(0.96);
+    expect(result.wordmarkOpacity).toBeCloseTo(0.5, 5);
+  });
+
+  it('clamps input below 0 to behave as t = 0', () => {
+    expect(computeWordmarkZoomState(-2)).toEqual({ scale: 1, wordmarkOpacity: 1, photoOpacity: 0 });
+  });
+
+  it('clamps input above 1 to behave as t = 1', () => {
+    expect(computeWordmarkZoomState(4)).toEqual({ scale: 8.5, wordmarkOpacity: 0, photoOpacity: 1 });
+  });
+
+  it('scale is strictly non-decreasing across an ascending sweep of t', () => {
+    const sweep = [0, 0.1, 0.25, 0.5, 0.75, 0.9, 1];
+    let previous = -Infinity;
+    for (const t of sweep) {
+      const { scale } = computeWordmarkZoomState(t);
+      expect(scale).toBeGreaterThanOrEqual(previous);
+      previous = scale;
+    }
+  });
+});
+
+// Phase 21 (HOME-15), plan 21-01: measured (not guessed) transform-origin for
+// the zoom's focus anchor (sketch 015's syncFocusOrigin()). RED:
+// computeFocusOrigin does not exist yet.
+describe('computeFocusOrigin', () => {
+  it('computes the focus box center as a percentage of the wordmark box (top-left aligned)', () => {
+    expect(
+      computeFocusOrigin(
+        { left: 0, top: 0, width: 200, height: 100 },
+        { left: 0, top: 0, width: 20, height: 50 },
+      ),
+    ).toEqual({ originX: 5, originY: 25 });
+  });
+
+  it('computes the focus box center as a percentage of the wordmark box (offset origin)', () => {
+    expect(
+      computeFocusOrigin(
+        { left: 100, top: 50, width: 400, height: 200 },
+        { left: 100, top: 50, width: 40, height: 40 },
+      ),
+    ).toEqual({ originX: 5, originY: 10 });
+  });
+
+  it('returns 50/50 when the focus box is centered in the wordmark box', () => {
+    expect(
+      computeFocusOrigin(
+        { left: 0, top: 0, width: 200, height: 100 },
+        { left: 90, top: 40, width: 20, height: 20 },
+      ),
+    ).toEqual({ originX: 50, originY: 50 });
+  });
+
+  it('returns null for a zero-width wordmark box', () => {
+    expect(
+      computeFocusOrigin(
+        { left: 0, top: 0, width: 0, height: 100 },
+        { left: 0, top: 0, width: 20, height: 50 },
+      ),
+    ).toBeNull();
+  });
+
+  it('returns null for a zero-height wordmark box', () => {
+    expect(
+      computeFocusOrigin(
+        { left: 0, top: 0, width: 200, height: 0 },
+        { left: 0, top: 0, width: 20, height: 50 },
+      ),
+    ).toBeNull();
+  });
+
+  it('does not clamp a focus box outside the wordmark box — raw percentage passes through', () => {
+    const result = computeFocusOrigin(
+      { left: 0, top: 0, width: 200, height: 100 },
+      { left: 220, top: 0, width: 20, height: 50 },
+    );
+    expect(result).not.toBeNull();
+    expect(result?.originX).toBeCloseTo(115, 5);
+    expect(result?.originY).toBe(25);
+  });
+});
+
+// Phase 21, plan 21-01: single importable home for the photo-cutout
+// brightness/contrast heuristic, duplicated today in HomeCarousel.astro's
+// frontmatter and client <script> (20-REVIEW.md IN-01). RED:
+// wordmarkPhotoFilter does not exist yet.
+describe('wordmarkPhotoFilter', () => {
+  it('returns the lifted (brighter) variant for white text', () => {
+    expect(wordmarkPhotoFilter('#FFFFFF')).toBe('brightness(1.38) contrast(0.92)');
+  });
+
+  it('is case-insensitive for the white hex value', () => {
+    expect(wordmarkPhotoFilter('#ffffff')).toBe('brightness(1.38) contrast(0.92)');
+  });
+
+  it('returns the darkened variant for a non-white text color', () => {
+    expect(wordmarkPhotoFilter('#37013A')).toBe('brightness(0.65) contrast(1.12)');
+  });
+
+  it('returns the darkened variant when textColor is undefined', () => {
+    expect(wordmarkPhotoFilter(undefined)).toBe('brightness(0.65) contrast(1.12)');
   });
 });
