@@ -2,7 +2,7 @@ import {set, unset, type StringInputProps} from 'sanity'
 
 export const HERO_COLOR_OPTIONS = [
   {title: 'Rose', value: 'pink', hex: '#FF3B94', text: '#1A1A1A'},
-  {title: 'Violet', value: 'purple', hex: '#AF3DFF', text: '#FFFFFF'},
+  {title: 'Violet', value: 'purple', hex: '#A73AF4', text: '#FFFFFF'}, // nudged from #AF3DFF, a11y fix — see src/lib/site-config.ts HERO_COLORS.purple
   {title: 'Turquoise', value: 'teal', hex: '#55FFE1', text: '#1A1A1A'},
   {title: 'Citron vert', value: 'lime', hex: '#A6FD29', text: '#1A1A1A'},
   {title: 'Plum', value: 'plum', hex: '#37013A', text: '#FFFFFF'},

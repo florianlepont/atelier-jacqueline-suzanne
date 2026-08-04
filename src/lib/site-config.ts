@@ -7,7 +7,13 @@ export const DEFAULT_INSTAGRAM_LABEL = '@ajs_romanelepont'
 
 export const HERO_COLORS = {
   pink: '#FF3B94',
-  purple: '#AF3DFF',
+  // Nudged from #AF3DFF (a11y fix, Phase 20): the original never reached
+  // 4.5:1 contrast with either white or ink text (best case ~4.25:1 with
+  // white) — dormant before HOME-16's random starting accent made this
+  // hue reachable on initial homepage load, not just via manual carousel
+  // navigation. This value clears 4.5:1 with white with a small margin
+  // while keeping the same hue/chroma (uniform luminance scale-down).
+  purple: '#A73AF4',
   teal: '#55FFE1',
   lime: '#A6FD29',
   plum: '#37013A',

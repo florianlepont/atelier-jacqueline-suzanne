@@ -82,9 +82,9 @@ describe('resolveEditionsIntro', () => {
 
 describe('homepage hero colors', () => {
   it('accepts only named colors from the design-system palette', () => {
-    expect(normalizeHeroColor('purple')).toBe('#AF3DFF');
+    expect(normalizeHeroColor('purple')).toBe('#A73AF4');
     expect(normalizeHeroColor('red')).toBeUndefined();
-    expect(normalizeHeroColor('#AF3DFF')).toBeUndefined();
+    expect(normalizeHeroColor('#A73AF4')).toBeUndefined();
   });
 
   it('chooses readable ink on light colors and white on dark colors', () => {
