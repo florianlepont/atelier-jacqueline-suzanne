@@ -346,7 +346,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     </ul>
 
     <script>
-      import { computeHoverZone, computeWordmarkBackgroundPosition, computeWordmarkSeamFraction, detectSwipeDirection } from '../lib/home-carousel';
+      import { computeHoverZone, computeWordmarkBackgroundPosition, computeWordmarkSeamFraction, detectSwipeDirection, pickRandomGalleryIndex } from '../lib/home-carousel';
 
       interface GalleryEntry {
         slug: string;
@@ -1456,6 +1456,49 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         syncAutoplayControl();
         startAutoAdvance();
 
+        // HOME-16/D-05: a random-per-visit STARTING accent, layered on top
+        // of the render() call above rather than folded into it — only the
+        // panel-level accent custom properties + accentPanel.style.color
+        // change here; carouselIndex/heroImg/titleEl/indexLabel/
+        // progressDashes stay exactly as render() already left them
+        // (gallery 0, or the ?carousel=<slug> target above). Every
+        // subsequent render() call (auto-advance/dash/keyboard/swipe)
+        // continues to derive the accent from galleries[carouselIndex]
+        // exactly as before — this override only ever runs once, here, for
+        // the initial paint.
+        //
+        // Deliberately excludes --wordmark-photo-filter: that property is
+        // NOT part of "the accent" this randomizes — it's a brightness/
+        // contrast heuristic tuned to the PHOTO currently revealed through
+        // the wordmark's letter-shaped cutout (still gallery 0's own photo,
+        // untouched by this override) and correlated with THAT SAME
+        // gallery's own heroTextColor (a naturally-dark photo is paired with
+        // a white-text accent site-wide, and needs its filter "lifted"
+        // rather than darkened — see the render()/wordmarkPhotoFilter
+        // comment). render()'s initial call above already set it correctly
+        // from gallery 0's own data; overriding it from the randomly-picked
+        // gallery's (different) text color would apply the wrong photo's
+        // brightness heuristic to gallery 0's actual photo.
+        root!.classList.add('is-accent-init');
+        const randomIndex = pickRandomGalleryIndex(galleries.length);
+        const randomGallery = galleries[randomIndex];
+        const randomFallback = ACCENTS[randomIndex % ACCENTS.length];
+        const randomAccent = randomGallery?.heroColor
+          ? { bg: randomGallery.heroColor, text: randomGallery.heroTextColor ?? 'var(--color-on-accent)' }
+          : randomFallback;
+        root!.style.setProperty('--current-accent', randomAccent.bg);
+        root!.style.setProperty('--current-accent-text', randomAccent.text);
+        if (accentPanel) accentPanel.style.color = randomAccent.text;
+        // Releases the transition suppression only after the new colour has
+        // actually been painted — a single rAF can still land before paint,
+        // so a double rAF is used (the first schedules the frame the browser
+        // paints the override in, the second runs after that paint).
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            root!.classList.remove('is-accent-init');
+          });
+        });
+
         // Re-align the wordmark cutout on resize — both the hero photo's
         // rendered size and the wordmark's own position within it change
         // at different viewport widths (see the mobile-width overrides
@@ -2385,11 +2428,26 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        instead — a duration in the same ~250-350ms band as the sharp-photo
        opacity crossfade above so both read as part of the same swap. Safe
        unconditionally: .is-opening only disables the .home-hero__img/
-       .home-hero__peek transform transitions, never this one; the section's
-       inline style + render()'s own on-load call both pre-set
-       --current-accent to the real first-gallery value before this rule can
-       ever transition, so no distracting fade fires on initial paint. */
+       .home-hero__peek transform transitions, never this one.
+
+       HOME-16/D-05: the section's inline style + render()'s own initial call
+       pre-set --current-accent to gallery 0's real value, but the <script>
+       below deliberately re-writes it again immediately afterward to a
+       randomly-picked gallery's colour (the random STARTING accent) — this
+       rule WOULD therefore fire a visible fade on every single page load if
+       left unguarded. .is-accent-init (added/removed by that same script,
+       right below) suppresses this transition for exactly that one
+       synchronous override, so the random colour appears already-in-place
+       at first paint instead of visibly sweeping in. */
     transition: background-color 300ms ease;
+  }
+
+  /* HOME-16/D-05: suppresses the transition above for the one-time initial
+     random-accent override only — removed (via a double
+     requestAnimationFrame in the <script> below) once that colour has
+     painted, so every subsequent real navigation still crossfades normally. */
+  .home.is-accent-init .home-hero__accent {
+    transition: none;
   }
 
   /* D-07/D-08/D-09: carousel-mode wordmark cutout — the letters themselves
