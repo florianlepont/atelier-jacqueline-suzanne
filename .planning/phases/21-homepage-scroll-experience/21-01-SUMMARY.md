@@ -161,3 +161,10 @@ None - no external service configuration required.
 ---
 *Phase: 21-homepage-scroll-experience*
 *Completed: 2026-08-04*
+
+## Self-Check: PASSED
+
+- FOUND: src/lib/home-carousel.ts
+- FOUND: tests/unit/home-carousel.test.ts
+- FOUND: .planning/phases/21-homepage-scroll-experience/21-01-SUMMARY.md
+- FOUND: all 6 commits (160da00, 8f42ef1, ac104ec, 3e0cdaf, 66c8f6d, df01ed9)
