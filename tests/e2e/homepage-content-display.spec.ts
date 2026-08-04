@@ -112,14 +112,12 @@ test.describe('carousel intro paragraph resize + reposition (Item 5)', () => {
     expect(layout.introWidth).toBeGreaterThan(layout.accentInnerWidth * 0.55);
   });
 
-  test('mobile: the intro is not squeezed to half-width (max-width: none)', async ({ page }) => {
-    await page.setViewportSize({ width: 393, height: 852 });
-    await page.goto('/');
-
-    const intro = page.locator('.home-hero__intro');
-    const maxWidth = await intro.evaluate((el) => getComputedStyle(el).maxWidth);
-    expect(maxWidth === 'none' || maxWidth === '').toBe(true);
-  });
+  // Phase 21 (21-03): this test used to assert the carousel intro
+  // paragraph (.home-hero__intro) was not squeezed to half-width at 393px.
+  // That element only renders inside the carousel's accent panel, which
+  // Phase 21 hides below 767px — the assertion no longer has a subject at
+  // this width. Equivalent phone-width coverage lives in
+  // tests/e2e/homepage-scroll-deck.spec.ts (plan 21-04).
 });
 
 test.describe('grid hero tile text color tracks accent (260718-r2o)', () => {
@@ -469,30 +467,13 @@ test.describe('grid intro paragraph is not truncated (HOME-12)', () => {
     expect(geometry.introBottom).toBeLessThanOrEqual(geometry.tileBottom! + 0.5);
   });
 
-  test('mobile (375x812): full paragraph, no clamp, no clipping by the hero tile', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Grille' }).click();
-
-    const intro = page.locator('.home-grid__intro-body');
-    await expect(intro).toHaveText(/.+/);
-
-    const geometry = await intro.evaluate((el) => {
-      const tile = el.closest('.home-grid__tile--hero');
-      return {
-        lineClamp: getComputedStyle(el).webkitLineClamp,
-        scrollHeight: el.scrollHeight,
-        clientHeight: el.clientHeight,
-        introBottom: el.getBoundingClientRect().bottom,
-        tileBottom: tile ? tile.getBoundingClientRect().bottom : null,
-      };
-    });
-
-    expect(geometry.lineClamp).toBe('none');
-    expect(geometry.scrollHeight).toBeLessThanOrEqual(geometry.clientHeight + 1);
-    expect(geometry.tileBottom).not.toBeNull();
-    expect(geometry.introBottom).toBeLessThanOrEqual(geometry.tileBottom! + 0.5);
-  });
+  // Phase 21 (21-03): this test used to click the carousel/grid mode-toggle
+  // at a 375x812 viewport to reach the grid intro paragraph, then assert
+  // the same clamp/clipping claim as the desktop test above. Phase 21
+  // retires the mode-toggle below 767px (success criterion 1), so this
+  // viewport can no longer reach that path — the desktop twin immediately
+  // above already covers the same clamp/clipping claim at a viewport where
+  // the grid still exists, so no replacement coverage is owed here.
 });
 
 test.describe('cross-document morph — click-time source name assignment (sketch 006)', () => {

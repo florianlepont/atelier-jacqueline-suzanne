@@ -164,8 +164,17 @@ test.describe('Phase 20 — homepage mobile nav structure (HOME-13, D-01/D-02/D-
     const isEn = path === '/en/';
     const openMenuLabel = isEn ? 'Open menu' : 'Ouvrir le menu';
 
+    // Phase 21 (D-12/D-15): every homepage-path test below that reaches the
+    // header/toggle/dialog at phone width forces reduced motion. D-12 hides
+    // the homepage header while the full-screen wordmark zoom is scrubbing;
+    // D-15 makes reduced-motion visitors skip the scroll driver entirely, so
+    // this is the deterministic route to an interactive header at scroll
+    // position 0 once the zoom lands. The motion-on path (header fading in
+    // once the zoom completes) is covered by the new homepage-scroll-deck
+    // spec instead.
     test(`${path}: the header swaps its inline nav for a hamburger`, async ({ page }) => {
       await page.setViewportSize({ width: 393, height: 852 });
+      await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.goto(path);
 
       const header = page.locator('[data-role="site-header"]');
@@ -189,6 +198,7 @@ test.describe('Phase 20 — homepage mobile nav structure (HOME-13, D-01/D-02/D-
 
     test(`${path}: the closed panel exists once, outside the header`, async ({ page }) => {
       await page.setViewportSize({ width: 393, height: 852 });
+      await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.goto(path);
 
       const dialog = page.locator('dialog#mobile-nav');
@@ -207,6 +217,7 @@ test.describe('Phase 20 — homepage mobile nav structure (HOME-13, D-01/D-02/D-
 
     test(`${path}: the panel holds the D-04 two-tier contents`, async ({ page }) => {
       await page.setViewportSize({ width: 393, height: 852 });
+      await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.goto(path);
 
       // The closed dialog is display:none — assert counts/attributes here,
@@ -235,6 +246,7 @@ test.describe('Phase 20 — homepage mobile nav structure (HOME-13, D-01/D-02/D-
 
     test(`${path}: the panel introduces no selector collisions`, async ({ page }) => {
       await page.setViewportSize({ width: 393, height: 852 });
+      await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.goto(path);
 
       // Protects site-header.spec.ts's cross-page structural-identity test,
@@ -262,6 +274,7 @@ test.describe('Phase 20 — homepage mobile nav structure (HOME-13, D-01/D-02/D-
       page,
     }) => {
       await page.setViewportSize({ width: 393, height: 852 });
+      await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.goto(path);
 
       const dialog = page.locator('dialog#mobile-nav');
@@ -291,6 +304,7 @@ test.describe('Phase 20 — homepage mobile nav structure (HOME-13, D-01/D-02/D-
       page,
     }) => {
       await page.setViewportSize({ width: 393, height: 852 });
+      await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.goto(path);
 
       // The dialog is closed (display:none); force a read of the resolved
@@ -351,6 +365,7 @@ test.describe('Phase 20 — homepage mobile nav structure (HOME-13, D-01/D-02/D-
 
     test(`${path}: the secondary line renders at Label size`, async ({ page }) => {
       await page.setViewportSize({ width: 393, height: 852 });
+      await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.goto(path);
 
       const styles = await page.evaluate(() => {
@@ -378,18 +393,17 @@ test.describe('Phase 20 — homepage mobile nav structure (HOME-13, D-01/D-02/D-
       expect(styles!.marginBottom).toBe('48px');
     });
 
-    test(`${path}: the mode-toggle still ships on mobile`, async ({ page }) => {
-      // Removing the carousel/grid mode-toggle is Phase 21's scope, not this
-      // phase's — a regression here would be silent scope creep.
-      await page.setViewportSize({ width: 393, height: 852 });
-      await page.goto(path);
-
-      const modeToggle = page.locator('[data-role="mode-toggle"]');
-      await expect(modeToggle).toHaveCount(1);
-      await expect(modeToggle).toBeVisible();
-    });
+    // Phase 21 (21-03): this test used to assert the carousel/grid
+    // mode-toggle ships on mobile, as a Phase 20 anti-scope-creep guard.
+    // Phase 21 success criterion 1 retires that control below 767px, so the
+    // old assertion would go red the moment plan 21-04 lands — reversing
+    // this guard's own stated intent. Retired here rather than left to break
+    // mid-phase; its positive replacement (asserting the mode-toggle's
+    // absence below 767px) lives in the new homepage-scroll-deck spec
+    // (plan 21-04).
 
     test(`${path}: no horizontal overflow with the hamburger present`, async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
       for (const width of [393, 320]) {
         await page.setViewportSize({ width, height: 852 });
         await page.goto(path);
@@ -427,7 +441,15 @@ test.describe('Phase 20 — homepage mobile nav structure (HOME-13, D-01/D-02/D-
 // French homepage at a 393x852 viewport unless a test says otherwise.
 test.describe('Phase 20 — homepage mobile nav behaviour (HOME-13, D-03)', () => {
   async function openPanel(page: Page) {
+    // Phase 21 (D-12/D-15): reduced motion here (once, in the shared
+    // helper) is what keeps every caller below deterministically able to
+    // reach an interactive header/toggle at scroll position 0 once the
+    // full-screen wordmark zoom lands — D-12 hides the header while the
+    // zoom is scrubbing, D-15 makes reduced-motion visitors skip the scroll
+    // driver entirely. The motion-on path is covered by the new
+    // homepage-scroll-deck spec instead.
     await page.setViewportSize({ width: 393, height: 852 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
     await page.locator('[data-role="mobile-nav-toggle"]').click();
     await expect(page.locator('dialog#mobile-nav')).toBeVisible();
@@ -707,7 +729,11 @@ test.describe('Phase 20 — phase gate cross-checks', () => {
     test(`${path} at 393x852: every dialog#mobile-nav anchor matches its already-base-aware header counterpart, or is absolute`, async ({
       page,
     }) => {
+      // Phase 21 (D-12/D-15): see the openPanel() helper above for the full
+      // rationale — reduced motion keeps the header/toggle interactive at
+      // scroll position 0 once the wordmark zoom lands.
       await page.setViewportSize({ width: 393, height: 852 });
+      await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.goto(path);
 
       const header = page.locator('[data-role="site-header"]');
@@ -753,6 +779,7 @@ test.describe('Phase 20 — phase gate cross-checks', () => {
       page,
     }) => {
       await page.setViewportSize({ width: 393, height: 852 });
+      await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.goto(path);
 
       const headerSwitcherHref = await page
@@ -770,14 +797,21 @@ test.describe('Phase 20 — phase gate cross-checks', () => {
 
   // Ties HOME-13 and HOME-16 together in a single homepage state -- a future
   // phase regressing either would trip this one assertion.
-  test('/ at 393x852: hamburger visible, --current-accent is a real hero color, mode-toggle visible', async ({
+  test('/ at 393x852: hamburger visible, --current-accent is a real hero color', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 393, height: 852 });
+    // Phase 21 (D-12/D-15): see the openPanel() helper above for the full
+    // rationale.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
 
     await expect(page.locator('[data-role="mobile-nav-toggle"]')).toBeVisible();
-    await expect(page.locator('[data-role="mode-toggle"]')).toBeVisible();
+    // Phase 21 success criterion 1 retires the carousel/grid mode-toggle
+    // below 767px; its absence is asserted positively by the new
+    // homepage-scroll-deck spec (plan 21-04). Deliberately NOT asserting
+    // "hidden" here — that would be red against current production code,
+    // which this plan (21-03) must not be.
 
     const heroColors = await page
       .locator('ul[data-role="home-carousel-data"] li')
