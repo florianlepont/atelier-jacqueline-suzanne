@@ -37,20 +37,31 @@ test.describe('Instagram nav link (HOME-04)', () => {
     expect(instagramIndex).toBeGreaterThan(contactIndex);
   });
 
-  test('at a 393px mobile viewport the Instagram link is visible with no horizontal page overflow', async ({ page }) => {
+  // HOME-13 (Phase 20): at phone widths the homepage's Instagram affordance
+  // moves out of .site-nav into the mobile nav panel's secondary line — that
+  // new affordance is asserted in tests/e2e/mobile-nav.spec.ts once plans
+  // 20-03/20-04 land it. The homepage keeps only its overflow-guard
+  // obligation here; the inline-nav Instagram visibility claim moves to
+  // /about/, a page that keeps the inline nav at every viewport.
+  test('at a 393px mobile viewport the homepage has no horizontal page overflow', async ({ page }) => {
     await page.setViewportSize({ width: 393, height: 800 });
     await page.goto('/');
-
-    // Scoped to .site-nav — the pre-existing footer Instagram link also
-    // matches this href but is not the subject of this mobile-fit assertion.
-    const instagramLink = page.locator('.site-nav a[href="https://www.instagram.com/ajs_romanelepont/"]');
-    await expect(instagramLink).toBeVisible();
 
     const overflow = await page.evaluate(() => ({
       scrollWidth: document.documentElement.scrollWidth,
       innerWidth: window.innerWidth,
     }));
     expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.innerWidth);
+  });
+
+  test('at a 393px mobile viewport the inline-nav Instagram link is visible on /about/', async ({ page }) => {
+    await page.setViewportSize({ width: 393, height: 800 });
+    await page.goto('/about/');
+
+    // Scoped to .site-nav — the pre-existing footer Instagram link also
+    // matches this href but is not the subject of this mobile-fit assertion.
+    const instagramLink = page.locator('.site-nav a[href="https://www.instagram.com/ajs_romanelepont/"]');
+    await expect(instagramLink).toBeVisible();
   });
 
   test('the sr-only new-tab hint is locale-conditional (FR vs EN)', async ({ page }) => {
