@@ -741,6 +741,33 @@ test.describe('Phase 20 — phase gate cross-checks', () => {
     });
   }
 
+  // (20-06) A named, standalone durable guard -- the generic anchor-parity
+  // test above already covers this href equality as one assertion among
+  // many, but this test exists on its own so a future edit that relocates
+  // the switcher again (as this very plan just did once) and accidentally
+  // re-renders it with a stale or non-base-aware href fails loudly and
+  // specifically, rather than being lost inside a large multi-assertion
+  // test's failure output.
+  for (const path of ['/', '/en/']) {
+    test(`${path} at 393x852: the relocated switcher's href still matches the header's own switcher href (20-06 durable guard)`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 393, height: 852 });
+      await page.goto(path);
+
+      const headerSwitcherHref = await page
+        .locator('[data-role="site-header"] .language-switcher .switcher-link')
+        .getAttribute('href');
+      expect(headerSwitcherHref).toBeTruthy();
+
+      await page.locator('[data-role="mobile-nav-toggle"]').click();
+      await page.locator('dialog#mobile-nav').waitFor({ state: 'visible' });
+
+      const panelSwitcherHref = await page.locator('dialog#mobile-nav > .language-switcher .switcher-link').getAttribute('href');
+      expect(panelSwitcherHref).toBe(headerSwitcherHref);
+    });
+  }
+
   // Ties HOME-13 and HOME-16 together in a single homepage state -- a future
   // phase regressing either would trip this one assertion.
   test('/ at 393x852: hamburger visible, --current-accent is a real hero color, mode-toggle visible', async ({
