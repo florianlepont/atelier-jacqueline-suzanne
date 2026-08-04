@@ -634,8 +634,9 @@ const menuLabel = 'Menu';
   /* The logo must land in the SAME screen position as the closed header's
      logo, which means matching .chrome-band's own padding at both phone
      breakpoints (see the @media (max-width: 400px) override below). Explicit
-     stacking (position: relative + z-index: 1, mirrored on .mobile-nav-panel__nav
-     and .mobile-nav-panel__secondary below) keeps the content above the
+     stacking (position: relative + z-index: 1, mirrored on .mobile-nav-panel__nav,
+     .mobile-nav-panel > .language-switcher (20-06) and
+     .mobile-nav-panel__secondary below) keeps the content above the
      absolutely-positioned halftone: without it, a positioned element with
      z-index: auto still paints AFTER non-positioned in-flow content in the
      same stacking context, putting the dot field over 32px Unbounded text. */
@@ -734,8 +735,10 @@ const menuLabel = 'Menu';
   }
 
   /* D-04, UI-SPEC Typography "Display" role: the primary stacked nav list,
-     rendered in ink (not accent), so all four items (three links + the
-     language switcher) read as equal weight. */
+     rendered in ink (not accent). 20-06 (20-UAT.md Test 2) reversed D-04's
+     switcher clause: this list now holds exactly the three equal-weight
+     links (Éditions/About/Contact) — the language switcher moved to the
+     secondary tier below. */
   .mobile-nav-panel__nav {
     position: relative;
     z-index: 1;
@@ -764,36 +767,38 @@ const menuLabel = 'Menu';
     outline-offset: 2px;
   }
 
-  /* D-04 "equal weight" requirement — a deliberate, scoped reversal of
-     LanguageSwitcher.astro's own accent-pink default. No global-selector
-     wrapper is needed here, unlike the RESEARCH.md Pitfall 2 / 19-PATTERNS.md
-     writeup this shape is drawn from: THIS style block is already declared
-     `is:global` on its opening tag, so Astro never appends a scope-hash to
-     any rule inside it in the first place — the two pre-existing
-     `.switcher-link` overrides above (`.site-header.site-header--solid
-     .switcher-link` etc.) already prove this exact cross-component reach
-     works with a plain selector, no extra wrapper. Adding one here would be
-     a redundant no-op. */
-  .mobile-nav-panel .language-switcher {
-    font-size: inherit;
+  /* 20-06 (20-UAT.md Test 2): replaces the deleted Display-role override
+     block. The switcher is now a positioned-content-layer child of the
+     dialog in its own right (a direct child, not nested inside
+     .mobile-nav-panel__nav), so it needs the same explicit stacking pattern
+     documented above (.mobile-nav-panel__bar) — a positioned element with
+     z-index: auto still paints after non-positioned in-flow content in the
+     same stacking context. `align-self: center` matches
+     .mobile-nav-panel__secondary below so the two secondary lines share one
+     centre axis. No margin/gap is added between the two lines: each is a
+     44px-tall box holding centred 14px text, which already yields roughly
+     23px of optical separation, and any margin here would change the
+     Instagram anchor's 48px bottom-offset relationship. */
+  .mobile-nav-panel > .language-switcher {
+    position: relative;
+    z-index: 1;
+    align-self: center;
   }
 
-  .mobile-nav-panel .switcher-link {
-    font-family: var(--text-display-family);
-    font-size: var(--text-display-size);
-    font-weight: var(--text-display-weight);
-    line-height: var(--text-display-leading);
+  /* This chain is three classes deep so it beats LanguageSwitcher.astro's
+     own scoped `.switcher-link` accent-pink rule (D-06) on specificity
+     alone, rather than relying on stylesheet order between an `is:global`
+     block and another component's scoped block. This ink override is
+     20-UI-SPEC.md's Colour requirement for the panel (every panel item
+     renders in ink) and is NOT part of the 20-06 reversal — only the
+     switcher's typographic SIZE reverses; its colour was already ink. */
+  .mobile-nav-panel > .language-switcher .switcher-link {
     color: var(--color-ink);
-    padding: 0; /* keeps the inherited min-height: 44px tap target */
   }
 
-  .mobile-nav-panel .switcher-link svg {
-    width: 22px;
-    height: 22px; /* proportionate beside 32px Unbounded */
-  }
-
-  /* D-04, UI-SPEC "Label" role: the small secondary Instagram line near the
-     panel's bottom edge. */
+  /* D-04, UI-SPEC "Label" role: the bottom-most of two stacked secondary
+     lines near the panel's bottom edge (the switcher above, per 20-06's
+     reversal of D-04, is the other). */
   .mobile-nav-panel__secondary {
     position: relative;
     z-index: 1;
@@ -801,6 +806,7 @@ const menuLabel = 'Menu';
     margin-bottom: var(--space-2xl);
     display: inline-flex;
     align-items: center;
+    gap: var(--space-xs);
     min-height: var(--tap-target-min);
     font-family: var(--font-sans);
     font-size: var(--text-label-size);
