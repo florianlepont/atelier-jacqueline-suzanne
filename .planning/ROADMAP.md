@@ -56,7 +56,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 17: Homepage Carousel & Intro Fixes** - Auto-advance keeps running while the pointer hovers the page, and the grid-mode intro paragraph shows in full (completed 2026-08-02)
 - [x] **Phase 18: Gallery & Éditions Display Fixes** - Gallery descriptions show in full, thumbnail grids lose their black border frame, and gallery pages show the site footer again (completed 2026-08-02)
 - [x] **Phase 19: Site-Wide Visual Polish** - Éditions row-hover color applies to the title/description too, the halftone texture bleeds to the true browser edge again without reintroducing horizontal scroll, and Contact's hover-fill text gets breathing room (completed 2026-08-03)
-- [x] **Phase 20: Mobile Navigation & Accent Color** - On phone-width viewports, the homepage header becomes a self-contained nav menu with the language switcher folded in, and each visit gets a randomly-picked accent color from existing gallery data; desktop/tablet unchanged (completed 2026-08-04)
+- [ ] **Phase 20: Mobile Navigation & Accent Color** - On phone-width viewports, the homepage header becomes a self-contained nav menu with the language switcher folded in, and each visit gets a randomly-picked accent color from existing gallery data; desktop/tablet unchanged (reopened 2026-08-04 — UAT Test 2 found two major visual gaps on a live phone test: the language switcher must drop from the big primary list to a small secondary line stacked above the Instagram link, reversing D-04's switcher clause, and the Instagram link needs the header's glyph; gap-closure plan 20-06 added)
 - [ ] **Phase 21: Homepage Scroll Experience** - On phone-width viewports, the carousel/grid toggle is replaced by one continuous scroll-driven view opening on a full-screen wordmark that zooms through its letterforms into the first gallery photo, with on-arrival description reveals; desktop/tablet unchanged
 - [ ] **Phase 22: Gallery & Édition Scroll Navigation** - On phone-width viewports, Gallery and Édition detail pages retire the click-to-open Lightbox for scroll-driven full-photo navigation, and the Édition intro text/primary photo get a legible, non-backdrop treatment; desktop/tablet unchanged
 - [ ] **Phase 23: About Portrait Placement & Milestone Regression Close** - On phone-width viewports, the About page's portrait photo moves to an improved position, and the milestone closes with a confirmed desktop/tablet regression sweep across every page touched
@@ -115,7 +115,7 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
   3. Revisiting the homepage on a phone across multiple visits shows different accent colors, each one of the existing per-gallery `heroColor` values (no new palette introduced).
   4. On tablet/desktop viewports, the homepage header bar, language switcher placement, and accent-color behavior are pixel-for-pixel and behaviorally unchanged from the pre-milestone (Phase 19) state.
 
-**Plans:** 5/5 plans complete
+**Plans:** 5/6 plans complete
 
 Plans:
 **Wave 1**
@@ -134,6 +134,10 @@ Plans:
 **Wave 4** *(blocked on Wave 3 completion)*
 
 - [x] 20-05-PLAN.md — HOME-13/HOME-16: halftone accent, mobile-viewport axe coverage for the open panel, and the CI-order phase gate
+
+**Wave 5** *(gap closure — blocked on Wave 4 completion)*
+
+- [ ] 20-06-PLAN.md — HOME-13 gap closure (20-UAT.md Test 2): reverse D-04's switcher clause (language switcher moves from the big primary list to a Label-size ink line stacked above Instagram) and give the Instagram line the header's inline glyph
 
 **UI hint**: yes
 
