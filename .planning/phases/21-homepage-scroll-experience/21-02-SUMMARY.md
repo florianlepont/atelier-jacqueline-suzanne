@@ -119,3 +119,11 @@ None - no external service configuration required.
 ---
 *Phase: 21-homepage-scroll-experience*
 *Completed: 2026-08-04*
+
+## Self-Check: PASSED
+
+- FOUND: `.planning/phases/21-homepage-scroll-experience/21-02-SUMMARY.md`
+- FOUND: `b054594` (test: re-scope touch coverage)
+- FOUND: `9d0a443` (test: RED — failing CR-01 regression)
+- FOUND: `8f58128` (fix: GREEN — touchend guard)
+- FOUND: `e18a883` (docs: plan summary)
