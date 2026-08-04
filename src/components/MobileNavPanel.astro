@@ -6,6 +6,13 @@
 // siteSettings/sanity — mirroring SiteHeader.astro's own
 // build-time-only, zero-hydration presentational contract.
 //
+// 20-06 (20-UAT.md Test 2, severity major, user's live on-phone test):
+// D-04's switcher clause reverses here. The language switcher is no longer
+// a fourth equal-weight primary item alongside Éditions/About/Contact — it
+// is now a small, ink-coloured secondary-tier line, stacked directly above
+// the Instagram link near the panel's bottom edge. The primary <nav> below
+// holds exactly the three equal-weight links.
+//
 // Hard structural constraints, each protecting a specific pre-existing spec:
 // - This <dialog> must stay a SIBLING of <header data-role="site-header">,
 //   never a descendant: i18n.spec.ts, homepage-carousel-core.spec.ts and
@@ -87,12 +94,16 @@ const {
     <a href={editionsHref} class="mobile-nav-panel__link">{editionsLabel}</a>
     <a href={aboutHref} class="mobile-nav-panel__link">{aboutLabel}</a>
     <a href={contactHref} class="mobile-nav-panel__link">{contactLabel}</a>
-    {/* D-04: the language switcher is a fourth, equal-weight primary item —
-        LanguageSwitcher's own logic/copy/cookie-script is unchanged; only
-        its visual size/color context changes (Task 2's :global() override in
-        SiteHeader.astro). */}
-    <LanguageSwitcher />
   </nav>
+  {/* 20-06 (20-UAT.md Test 2): the switcher is now the upper of two stacked
+      secondary lines, a direct child of the dialog rather than a primary
+      <nav> item. It sits ABOVE the Instagram anchor below so the Instagram
+      anchor stays the bottom-most element and keeps owning the panel's 48px
+      bottom offset. The switcher component's own import, copy, href logic
+      and cookie script are all untouched — only its size/position context
+      changes (SiteHeader.astro's `.mobile-nav-panel > .language-switcher`
+      rules). */}
+  <LanguageSwitcher />
   <a
     href={instagramUrl}
     target="_blank"
@@ -100,6 +111,25 @@ const {
     class="mobile-nav-panel__secondary"
     aria-label={`Instagram ${instagramLabel}`}
   >
+    {/* 20-06: duplicated verbatim from SiteHeader.astro's desktop Instagram
+        glyph, at 16x16 instead of 20x20 — matching the sibling switcher
+        line's 16x16 globe at the same 14px Label size. This codebase has no
+        shared icon component (see the mobile-nav-instagram-icon debug
+        session), so inlining the same glyph per component is the existing
+        convention, not a refactor debt. */}
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.8"
+      aria-hidden="true"
+    >
+      <rect x="2.5" y="2.5" width="19" height="19" rx="5.5" />
+      <circle cx="12" cy="12" r="4.6" />
+      <circle cx="17.4" cy="6.6" r="1.1" fill="currentColor" stroke="none" />
+    </svg>
     {instagramLabel}
     <span class="sr-only">{instagramNewTabHint}</span>
   </a>

@@ -10,3 +10,12 @@
 - **Verification it's pre-existing, not a regression from this plan's changes:** re-ran the single test 3 times consecutively (no retries between, then with `--retries=2`) — deterministic `NaN` failure every time, in a file this plan never edits.
 - **Recommended fix (not applied here):** add a `waitForFunction` (mirroring `assertGridIsFlushMasonry()`'s existing image-load guard) before reading `naturalWidth`/`naturalHeight` in this one test.
 - **Owner/next step:** flag for the phase verifier / a future quick-task; do not silently re-run builds hoping it self-resolves.
+
+### Second occurrence observed during plan 20-06's Task 3 CI sweep (same root cause, different test)
+
+- **File:** `tests/e2e/gallery.spec.ts`
+- **Test:** `gallery + édition thumbnail tiles render with no frame (PORT-05, D-04/D-05) › gallery detail (masonry): every tile has 0px borders, keeps the ink loading background, and never letterboxes`
+- **Symptom:** identical `NaN` failure on the identical `Math.abs(ratios.clientRatio - ratios.naturalRatio) / ratios.naturalRatio` assertion shape, same unguarded `naturalWidth`/`naturalHeight` read pattern.
+- **Why out of scope for plan 20-06:** `tests/e2e/gallery.spec.ts` is not in this plan's `files_modified` (`src/components/MobileNavPanel.astro`, `src/components/SiteHeader.astro`, `tests/e2e/mobile-nav.spec.ts`), and neither this plan's CSS nor its markup touches `.gallery-grid`/`.tile`/masonry/image-loading code.
+- **Verification it's pre-existing, not a regression from this plan's changes:** with `npm run test:e2e -- --workers=2` (reduced from the default 5 to rule out resource-contention timeouts), only these 2 tests failed, both the same documented NaN image-timing race; a 5-worker run of the same suite additionally showed transient `accessibility.spec.ts`/`mobile-nav.spec.ts`/`homepage-wordmark-peek.spec.ts` timeouts that all passed cleanly when re-run in isolation or with fewer workers — confirmed as local-machine contention, not code regressions.
+- **Owner/next step:** same fix as above (add the missing image-load wait) would likely resolve both occurrences in one pass; still flagged for the phase verifier / a future quick-task, not fixed here.

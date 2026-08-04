@@ -249,7 +249,47 @@ test.describe('Phase 20 — homepage mobile nav structure (HOME-13, D-01/D-02/D-
       await expect(page.locator('[data-role="site-header"] a[href*="editions"]')).toHaveCount(1);
     });
 
-    test(`${path}: the primary list and switcher render at Display size in ink`, async ({ page }) => {
+    // (20-06) 20-UAT.md Test 2 (severity: major, user's live on-phone test)
+    // reversed D-04's switcher clause after this phase shipped: the switcher
+    // is no longer a fourth equal-weight primary item inside
+    // .mobile-nav-panel__nav -- it moves to the panel's bottom secondary
+    // tier, as a direct child of the dialog, stacked directly ABOVE the
+    // Instagram line (the stacked, switcher-above-Instagram order is the
+    // user-confirmed shape from the mobile-nav-switcher-hierarchy debug
+    // session). These structural assertions guard the exact DOM shape the
+    // new `.mobile-nav-panel > .language-switcher` CSS selector depends on.
+    test(`${path}: the switcher sits in the panel's bottom secondary tier, stacked above an icon-bearing Instagram line (20-06)`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 393, height: 852 });
+      await page.goto(path);
+
+      const dialog = page.locator('dialog#mobile-nav');
+
+      await expect(dialog.locator('.mobile-nav-panel__nav .switcher-link')).toHaveCount(0);
+      await expect(page.locator('dialog#mobile-nav > .language-switcher')).toHaveCount(1);
+
+      const nextSiblingIsSecondary = await page
+        .locator('dialog#mobile-nav > .language-switcher')
+        .evaluate((el) => el.nextElementSibling?.classList.contains('mobile-nav-panel__secondary') ?? false);
+      expect(nextSiblingIsSecondary).toBe(true);
+
+      const secondarySvg = dialog.locator('.mobile-nav-panel__secondary svg');
+      await expect(secondarySvg).toHaveCount(1);
+      await expect(secondarySvg).toHaveAttribute('aria-hidden', 'true');
+
+      await expect(dialog.locator('.mobile-nav-panel__nav > *')).toHaveCount(3);
+    });
+
+    // (20-06) Rewritten from "the primary list and switcher render at
+    // Display size in ink" -- the .mobile-nav-panel__link half is unchanged
+    // (still Display size/weight/family/ink); the switcher half INVERTS to
+    // Label size in ink, per 20-UAT.md Test 2's reversal of D-04's switcher
+    // clause. Also asserts the two stacked secondary lines carry same-size
+    // (16px) icons, per the mobile-nav-instagram-icon debug session.
+    test(`${path}: the primary list renders at Display size and the switcher renders at Label size in ink (20-06)`, async ({
+      page,
+    }) => {
       await page.setViewportSize({ width: 393, height: 852 });
       await page.goto(path);
 
@@ -263,6 +303,8 @@ test.describe('Phase 20 — homepage mobile nav structure (HOME-13, D-01/D-02/D-
 
         const link = dialog.querySelector('.mobile-nav-panel__link');
         const switcherLink = dialog.querySelector('.switcher-link');
+        const switcherSvg = switcherLink ? switcherLink.querySelector('svg') : null;
+        const secondarySvg = dialog.querySelector('.mobile-nav-panel__secondary svg');
         const linkStyle = link ? getComputedStyle(link) : null;
         const switcherStyle = switcherLink ? getComputedStyle(switcherLink) : null;
 
@@ -283,6 +325,8 @@ test.describe('Phase 20 — homepage mobile nav structure (HOME-13, D-01/D-02/D-
                 color: switcherStyle.color,
               }
             : null,
+          switcherSvgWidth: switcherSvg ? getComputedStyle(switcherSvg).width : null,
+          secondarySvgWidth: secondarySvg ? getComputedStyle(secondarySvg).width : null,
         };
 
         dialog.style.display = previousDisplay;
@@ -296,10 +340,13 @@ test.describe('Phase 20 — homepage mobile nav structure (HOME-13, D-01/D-02/D-
       expect(styles.link!.color).toBe('rgb(26, 26, 26)');
 
       expect(styles.switcher).not.toBeNull();
-      expect(styles.switcher!.fontSize).toBe('32px');
-      expect(styles.switcher!.fontWeight).toBe('600');
-      expect(styles.switcher!.fontFamily).toContain('Unbounded');
+      expect(styles.switcher!.fontSize).toBe('14px');
+      expect(styles.switcher!.fontWeight).toBe('400');
+      expect(styles.switcher!.fontFamily).not.toContain('Unbounded');
       expect(styles.switcher!.color).toBe('rgb(26, 26, 26)');
+
+      expect(styles.switcherSvgWidth).toBe('16px');
+      expect(styles.secondarySvgWidth).toBe('16px');
     });
 
     test(`${path}: the secondary line renders at Label size`, async ({ page }) => {
@@ -525,6 +572,51 @@ test.describe('Phase 20 — homepage mobile nav behaviour (HOME-13, D-03)', () =
     expect(localeCookie?.value).toBe('en');
   });
 
+  // (20-06) 20-UAT.md Test 2 (severity major): reversed the switcher out of
+  // the panel's primary list into the secondary tier, stacked directly
+  // above the Instagram line as two separate rows -- not sharing one row
+  // (user-confirmed during the mobile-nav-switcher-hierarchy debug
+  // session). This geometry assertion is what fails if the two secondary
+  // lines ever end up sharing a row again.
+  test("the switcher and Instagram lines are two stacked rows near the panel's bottom edge (20-06)", async ({
+    page,
+  }) => {
+    await openPanel(page);
+
+    const [switcherBox, secondaryBox, panelBox] = await Promise.all([
+      page.locator('dialog#mobile-nav .switcher-link').boundingBox(),
+      page.locator('dialog#mobile-nav .mobile-nav-panel__secondary').boundingBox(),
+      page.locator('dialog#mobile-nav').boundingBox(),
+    ]);
+
+    expect(switcherBox).not.toBeNull();
+    expect(secondaryBox).not.toBeNull();
+    expect(panelBox).not.toBeNull();
+
+    // Stacked, switcher above Instagram -- the 1px slack absorbs subpixel
+    // layout.
+    expect(switcherBox!.y + switcherBox!.height).toBeLessThanOrEqual(secondaryBox!.y + 1);
+
+    // Both horizontally centred on the panel's own centre axis.
+    const panelCenterX = panelBox!.x + panelBox!.width / 2;
+    const switcherCenterX = switcherBox!.x + switcherBox!.width / 2;
+    const secondaryCenterX = secondaryBox!.x + secondaryBox!.width / 2;
+    expect(Math.abs(switcherCenterX - panelCenterX)).toBeLessThanOrEqual(2);
+    expect(Math.abs(secondaryCenterX - panelCenterX)).toBeLessThanOrEqual(2);
+
+    // Instagram stays the bottom-most line, 48px clear of the panel's
+    // bottom edge (UI-SPEC 2xl offset).
+    const bottomOffset = panelBox!.y + panelBox!.height - (secondaryBox!.y + secondaryBox!.height);
+    expect(bottomOffset).toBeGreaterThanOrEqual(44);
+    expect(bottomOffset).toBeLessThanOrEqual(56);
+
+    // Tap targets survive the move -- rounded to the nearest pixel since
+    // getBoundingClientRect() can report e.g. 43.999969... for a genuine
+    // 44px min-height box due to sub-pixel layout rounding.
+    expect(Math.round(switcherBox!.height)).toBeGreaterThanOrEqual(44);
+    expect(Math.round(secondaryBox!.height)).toBeGreaterThanOrEqual(44);
+  });
+
   test("the close button's glyph morphs", async ({ page }) => {
     await openPanel(page);
 
@@ -646,6 +738,33 @@ test.describe('Phase 20 — phase gate cross-checks', () => {
       const secondaryHref = await dialog.locator('.mobile-nav-panel__secondary').getAttribute('href');
       expect(secondaryHref).toBe(instagramHref);
       expect(secondaryHref!.startsWith('https://')).toBe(true);
+    });
+  }
+
+  // (20-06) A named, standalone durable guard -- the generic anchor-parity
+  // test above already covers this href equality as one assertion among
+  // many, but this test exists on its own so a future edit that relocates
+  // the switcher again (as this very plan just did once) and accidentally
+  // re-renders it with a stale or non-base-aware href fails loudly and
+  // specifically, rather than being lost inside a large multi-assertion
+  // test's failure output.
+  for (const path of ['/', '/en/']) {
+    test(`${path} at 393x852: the relocated switcher's href still matches the header's own switcher href (20-06 durable guard)`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 393, height: 852 });
+      await page.goto(path);
+
+      const headerSwitcherHref = await page
+        .locator('[data-role="site-header"] .language-switcher .switcher-link')
+        .getAttribute('href');
+      expect(headerSwitcherHref).toBeTruthy();
+
+      await page.locator('[data-role="mobile-nav-toggle"]').click();
+      await page.locator('dialog#mobile-nav').waitFor({ state: 'visible' });
+
+      const panelSwitcherHref = await page.locator('dialog#mobile-nav > .language-switcher .switcher-link').getAttribute('href');
+      expect(panelSwitcherHref).toBe(headerSwitcherHref);
     });
   }
 
