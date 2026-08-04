@@ -36,7 +36,7 @@ interface Props {
   // header as today — no attribute, no extra element, no extra CSS match, no
   // extra client script. This component is the project's documented
   // per-page-regression hotspot (Phase 16's site-wide `overflow-x` revert;
-  // Phase 19's `:global()` scope-hash bug), so this new responsibility must
+  // Phase 19's scoped-style scope-hash bug), so this new responsibility must
   // stay fully inert unless a caller explicitly opts in. Only
   // HomeCarousel.astro's single homepage call site passes `true`.
   mobileNav?: boolean;
@@ -171,7 +171,7 @@ const menuLabel = 'Menu';
 <style is:global>
   /* Relocated from BaseLayout.astro (RESEARCH.md Pattern 3 / this plan's
      "SCOPING GOTCHA" note): the <header> now renders from this component,
-     leaving BaseLayout's own scoped-<style> scope, so .chrome-band's header
+     leaving BaseLayout's own scoped-style scope, so .chrome-band's header
      padding must live in an is:global block to keep reaching it. Global CSS
      still applies to the footer's own `footer.chrome-band` element too
      (BaseLayout.astro keeps that selector's border-top rule scoped there —
@@ -366,6 +366,64 @@ const menuLabel = 'Menu';
     text-decoration: underline;
   }
 
+  /* D-01 (Phase 20 Plan 03): the hamburger toggle and the 3-bar glyph it
+     shares with MobileNavPanel.astro's own close button (Pattern 3 — one CSS
+     definition drives both, so plan 20-04 can morph either instance into an
+     X with `transform` alone). `display: none` is the BASE state at every
+     width; only the phone media query below opts it in, so this rule is
+     inert on every page that doesn't render a hamburger at all. */
+  .mobile-nav__toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--tap-target-min);
+    min-height: var(--tap-target-min);
+    padding: 0;
+    background: none;
+    border: none;
+    /* color: inherit is load-bearing: it's what makes the bars white over
+       the carousel hero and ink in grid mode via HomeCarousel's existing
+       per-mode header re-skin below, with no new mode-specific rule. */
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .mobile-nav__bars {
+    position: relative;
+    display: block;
+    width: 22px;
+    height: 16px;
+  }
+
+  /* Absolute positioning (rather than flex spacing) is deliberate: plan
+     20-04 morphs these three bars into an X with `transform` alone, which
+     needs a stable, layout-independent origin per bar. */
+  .mobile-nav__bar {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: currentColor;
+  }
+
+  .mobile-nav__bar:nth-child(1) {
+    top: 0;
+  }
+
+  .mobile-nav__bar:nth-child(2) {
+    top: 7px;
+  }
+
+  .mobile-nav__bar:nth-child(3) {
+    top: 14px;
+  }
+
+  .mobile-nav__toggle:focus-visible,
+  .mobile-nav-panel__close:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
   /* Ported forward from HomeCarousel.astro's own live-tested mobile
      pixel-budget CSS (RESEARCH.md Pitfall 1/Pattern Map) — BaseLayout's
      header has never had mobile-specific CSS before (it only ever carried 4
@@ -386,6 +444,29 @@ const menuLabel = 'Menu';
     .site-nav .nav-link {
       padding-left: var(--space-xs);
       padding-right: var(--space-xs);
+    }
+  }
+
+  /* D-01/RESEARCH.md Open Question 2 (resolved): a SEPARATE media block, not
+     merged into the one above, so every page that doesn't pass mobileNav
+     keeps the existing 767px/400px trims exactly as-is. When mobileNav is
+     true, the header's own inline nav row and inline language switcher hide
+     entirely at phone widths — only the hamburger shows. The direct-child
+     combinator on the switcher rule is documentation as much as safety: the
+     panel's own switcher (rendered inside MobileNavPanel.astro, a sibling of
+     <header>) is never a `.site-header > .language-switcher`, so it can
+     never be caught by this rule. */
+  @media (max-width: 767px) {
+    .site-header[data-mobile-nav='true'] .site-nav {
+      display: none;
+    }
+
+    .site-header[data-mobile-nav='true'] > .language-switcher {
+      display: none;
+    }
+
+    .site-header[data-mobile-nav='true'] .mobile-nav__toggle {
+      display: inline-flex;
     }
   }
 
@@ -429,6 +510,172 @@ const menuLabel = 'Menu';
       padding-right: 2px;
       padding-left: 2px;
       font-size: 12px;
+    }
+  }
+
+  /* D-01/D-02 (Phase 20 Plan 03): the mobile-nav panel shell, copying
+     Lightbox.astro's `dialog#lightbox` sizing shape exactly (verified in
+     this codebase to already defeat the UA's default centered/
+     intrinsically-sized <dialog> box model). All four sizing declarations
+     below are required: the two max-* values are what defeat that default
+     regardless of the dialog's own content size. No motion/transition rule
+     is added here — that's plan 20-04. */
+  .mobile-nav-panel {
+    padding: 0;
+    border: none;
+    width: 100vw;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
+    background: var(--color-dominant);
+    color: var(--color-ink);
+  }
+
+  /* An unconditional `display` on the base rule would beat the UA's own
+     `:not([open])` rule regardless of specificity (author origin always
+     wins) — so the display rules are split, same shape as Lightbox.astro's
+     `dialog#lightbox[open]`/`:not([open])` pair. */
+  .mobile-nav-panel[open] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mobile-nav-panel:not([open]) {
+    display: none;
+  }
+
+  /* The panel is opaque and fills the viewport, so the backdrop only ever
+     shows through during the plan 20-04 open/close transition. */
+  .mobile-nav-panel::backdrop {
+    background: var(--color-dominant);
+  }
+
+  /* The logo must land in the SAME screen position as the closed header's
+     logo, which means matching .chrome-band's own padding at both phone
+     breakpoints (see the @media (max-width: 400px) override below). */
+  .mobile-nav-panel__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-lg) var(--space-md);
+  }
+
+  .mobile-nav-panel__logo {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+  }
+
+  .mobile-nav-panel__logo-img {
+    display: block;
+    width: 56px; /* matches .logo-mark__img */
+    height: auto;
+  }
+
+  /* Same box rules as .mobile-nav__toggle, but display: inline-flex
+     unconditionally — this button only ever exists inside the panel, so it
+     needs no phone-width gate. */
+  .mobile-nav-panel__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--tap-target-min);
+    min-height: var(--tap-target-min);
+    padding: 0;
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  /* D-04, UI-SPEC Typography "Display" role: the primary stacked nav list,
+     rendered in ink (not accent), so all four items (three links + the
+     language switcher) read as equal weight. */
+  .mobile-nav-panel__nav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xl);
+  }
+
+  .mobile-nav-panel__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap-target-min);
+    font-family: var(--text-display-family);
+    font-size: var(--text-display-size);
+    font-weight: var(--text-display-weight);
+    line-height: var(--text-display-leading);
+    color: var(--color-ink);
+    text-decoration: none;
+  }
+
+  .mobile-nav-panel__link:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /* D-04 "equal weight" requirement — a deliberate, scoped reversal of
+     LanguageSwitcher.astro's own accent-pink default. No global-selector
+     wrapper is needed here, unlike the RESEARCH.md Pitfall 2 / 19-PATTERNS.md
+     writeup this shape is drawn from: THIS style block is already declared
+     `is:global` on its opening tag, so Astro never appends a scope-hash to
+     any rule inside it in the first place — the two pre-existing
+     `.switcher-link` overrides above (`.site-header.site-header--solid
+     .switcher-link` etc.) already prove this exact cross-component reach
+     works with a plain selector, no extra wrapper. Adding one here would be
+     a redundant no-op. */
+  .mobile-nav-panel .language-switcher {
+    font-size: inherit;
+  }
+
+  .mobile-nav-panel .switcher-link {
+    font-family: var(--text-display-family);
+    font-size: var(--text-display-size);
+    font-weight: var(--text-display-weight);
+    line-height: var(--text-display-leading);
+    color: var(--color-ink);
+    padding: 0; /* keeps the inherited min-height: 44px tap target */
+  }
+
+  .mobile-nav-panel .switcher-link svg {
+    width: 22px;
+    height: 22px; /* proportionate beside 32px Unbounded */
+  }
+
+  /* D-04, UI-SPEC "Label" role: the small secondary Instagram line near the
+     panel's bottom edge. */
+  .mobile-nav-panel__secondary {
+    align-self: center;
+    margin-bottom: var(--space-2xl);
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap-target-min);
+    font-family: var(--font-sans);
+    font-size: var(--text-label-size);
+    font-weight: var(--text-label-weight);
+    line-height: var(--text-label-leading);
+    color: var(--color-ink);
+    text-decoration: none;
+  }
+
+  .mobile-nav-panel__secondary:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /* Mirrors the existing 400px trims for .chrome-band/.logo-mark__img above,
+     so the logo does not visibly jump when the panel opens on a narrow
+     phone. */
+  @media (max-width: 400px) {
+    .mobile-nav-panel__bar {
+      padding: var(--space-sm);
+    }
+
+    .mobile-nav-panel__logo-img {
+      width: 40px;
     }
   }
 </style>
