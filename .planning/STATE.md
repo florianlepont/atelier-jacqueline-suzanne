@@ -5,8 +5,8 @@ milestone_name: Mobile Experience Redesign
 current_phase: 21
 current_phase_name: Homepage Scroll Experience
 status: planning
-stopped_at: Phase 20 complete, ready to plan Phase 21
-last_updated: "2026-08-04T17:45:00.000Z"
+stopped_at: Phase 21 context gathered
+last_updated: "2026-08-04T17:28:48.726Z"
 last_activity: 2026-08-04
 last_activity_desc: Phase 20 complete, transitioned to Phase 21
 progress:
@@ -299,9 +299,9 @@ Items acknowledged and deferred at v1.5 milestone close on 2026-08-03 (`/gsd-com
 
 ## Session Continuity
 
-Last session: 2026-08-04T17:45:00.000Z
-Stopped at: Phase 20 complete, ready to plan Phase 21
-Resume file: None
+Last session: 2026-08-04T17:28:48.713Z
+Stopped at: Phase 21 context gathered
+Resume file: .planning/phases/21-homepage-scroll-experience/21-CONTEXT.md
 
 **Next up:** Phase 21 (Homepage Scroll Experience — HOME-14, HOME-15) is ready to plan via `/gsd-plan-phase 21` — the milestone's biggest, riskiest, sketch-explored centerpiece, depending on Phase 20's now-shipped accent-color mechanism. Phase 5 (Launch & Domain Cutover) remains open and deliberately deferred whenever launch is next prioritized. One non-blocking carryover: `20-REVIEW.md`'s unfixed Critical finding on `HomeCarousel.astro`'s touch handler (see Blockers/Concerns).
 
