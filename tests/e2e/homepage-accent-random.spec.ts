@@ -67,16 +67,20 @@ test.describe('homepage random starting accent (HOME-16, D-05)', () => {
     const entries = await readDataEntries(page);
     const palette = new Set(entries.map((e) => e.heroColor));
 
-    const observed = new Set<string>();
+    // Deliberately uses the real, unmocked Math.random across 6 reloads —
+    // this is the one test in the file that proves membership under actual
+    // runtime randomness rather than a stubbed value. It does NOT also
+    // assert on distinctness across those reloads: with a real RNG that
+    // assertion's failure probability is (1/count)^5 per run (non-trivial
+    // for a small gallery count), and the two tests above already prove
+    // distinctness deterministically (Math.random stubbed to 0 vs 0.999
+    // resolves to different galleries) — asserting it again here would only
+    // add flake risk, not coverage.
     for (let i = 0; i < 6; i++) {
       await page.reload();
       const accent = await currentAccent(page);
       expect(palette.has(accent)).toBe(true);
-      observed.add(accent);
     }
-
-    test.skip(entries.length < 2, 'needs at least 2 homepage galleries to prove distinctness across reloads');
-    expect(observed.size).toBeGreaterThanOrEqual(2);
   });
 
   test('the random accent does not change which gallery shows first', async ({ page }) => {

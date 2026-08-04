@@ -59,7 +59,7 @@ const {
 } = Astro.props;
 ---
 
-<dialog id="mobile-nav" class="mobile-nav-panel" data-role="mobile-nav-panel" aria-label={menuLabel}>
+<dialog id="mobile-nav" class="mobile-nav-panel" data-role="mobile-nav-panel" aria-label={siteTitle}>
   {/* Plan 20-05 (D-02): purely decorative dot texture, first child so it
       paints behind every other panel child in source order -- the explicit
       z-index layering in SiteHeader.astro's motion CSS is what actually
@@ -201,7 +201,12 @@ const {
       toggle!.setAttribute('aria-expanded', 'false');
       panel!.classList.remove('is-closing');
       closing = false;
-      toggle!.focus();
+      // The toggle is display:none above the phone breakpoint (e.g. when a
+      // breakpoint-crossing resize triggered this close) — focusing a
+      // non-rendered element is a no-op that silently drops focus to
+      // document.body, so only claim focus when the toggle is actually
+      // visible.
+      if (toggle!.offsetParent !== null) toggle!.focus();
     });
 
     // A visitor who rotates a tablet or resizes past 768px must not be left

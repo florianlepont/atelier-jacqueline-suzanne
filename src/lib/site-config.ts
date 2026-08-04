@@ -53,7 +53,9 @@ export function resolveEditionsIntro(page: EditionsPage | null, locale: Locale) 
 
 /** Resolve only named colors from the site's decorative design-system palette. */
 export function normalizeHeroColor(value?: string): string | undefined {
-  return value && value in HERO_COLORS ? HERO_COLORS[value as keyof typeof HERO_COLORS] : undefined
+  return value && Object.prototype.hasOwnProperty.call(HERO_COLORS, value)
+    ? HERO_COLORS[value as keyof typeof HERO_COLORS]
+    : undefined
 }
 
 /** Pick whichever of the site's ink/white colors has the stronger WCAG contrast. */
