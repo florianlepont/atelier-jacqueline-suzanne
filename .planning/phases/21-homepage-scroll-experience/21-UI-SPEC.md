@@ -67,6 +67,12 @@ Component-level mapping (exact reuse of existing shipped values — no new type 
 
 No new font sizes, weights, or families are introduced. Total distinct sizes in play: 4 (14, 15, 32, viewport-fill-display) — within the 3-4 size budget.
 
+**Font weight budget — 2 in-scope weights, plus 1 pre-existing sitewide brand constant:**
+
+This phase's own in-scope weight budget is exactly 2 weights: 400 (regular — Label/Body) and 600 (semibold — Heading). Those are the only weights this phase introduces or touches.
+
+The Display role's weight 900 ("black") is NOT part of this phase's 2-weight budget — it is a pre-existing, sitewide brand constant. Unbounded weight 900 is the wordmark's typeface weight across the whole site and has rendered at 900 since prior phases (the existing `.home-hero__wordmark` clamp this phase reuses verbatim, per the Component-level mapping above, already renders at 900 today — this phase does not introduce, change, or add that weight; it inherits it unmodified). Because the wordmark is a fixed, cross-phase brand element rather than new UI vocabulary introduced by this phase's own design decisions, it is exempted from the 2-weight in-scope count. Do not add a third weight anywhere else in this phase's new UI — the scroll-deck's own new elements (arrival-slide title/description, intro paragraph) must stay within 400/600 only.
+
 ---
 
 ## Color
