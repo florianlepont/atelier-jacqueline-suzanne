@@ -86,9 +86,16 @@ test.describe('carousel hover cursor (sketch 008 Variant C)', () => {
     expect(transitionProperty.split(',').map((p) => p.trim())).not.toContain('transform');
   });
 
-  test.describe('mobile', () => {
-    const { defaultBrowserType: _defaultBrowserType, ...iPhone14Pro } = devices['iPhone 14 Pro'];
-    test.use({ ...iPhone14Pro });
+  test.describe('touchscreen tablet (>=768px)', () => {
+    // Phase 21 retires the carousel below 767px (21-RESEARCH.md Pitfall 1),
+    // so a phone-width descriptor here would leave these assertions
+    // exercising a `display: none` subtree. The tablet descriptor below is
+    // 810x1080 — comfortably at/above the 768px breakpoint, still
+    // `hasTouch`/`isMobile` — so the coarse-pointer path this describe
+    // exists to cover (hover-cursor inertness on touch) stays meaningful
+    // per phase success criterion 5.
+    const { defaultBrowserType: _defaultBrowserType, ...ipadGen7 } = devices['iPad (gen 7)'];
+    test.use({ ...ipadGen7 });
 
     // Regression guard for a real bug caught during live-browser
     // verification: the cursor's base/resting properties (position,
@@ -824,9 +831,15 @@ test.describe('carousel hover-click navigation (sketch 008 Variant C)', () => {
     await expect(indexLabel).not.toHaveText(beforeTick);
   });
 
-  test.describe('mobile', () => {
-    const { defaultBrowserType: _defaultBrowserType, ...iPhone14Pro } = devices['iPhone 14 Pro'];
-    test.use({ ...iPhone14Pro });
+  test.describe('touchscreen tablet (>=768px)', () => {
+    // Phase 21 retires the carousel below 767px (21-RESEARCH.md Pitfall 1),
+    // so a phone-width descriptor here would leave these assertions
+    // exercising a `display: none` subtree. The tablet descriptor below is
+    // 810x1080 — comfortably at/above the 768px breakpoint, still
+    // `hasTouch`/`isMobile` — so the carousel's own tap/swipe handling
+    // stays meaningful (and testable) per phase success criterion 5.
+    const { defaultBrowserType: _defaultBrowserType, ...ipadGen7 } = devices['iPad (gen 7)'];
+    test.use({ ...ipadGen7 });
 
     test('a tap on the photo (negligible movement) opens the current gallery', async ({ page }) => {
       await page.goto('/');
@@ -890,6 +903,73 @@ test.describe('carousel hover-click navigation (sketch 008 Variant C)', () => {
       // populated with real src/pushed on touch (hoverCapable is false).
       expect(prevTransform).toMatch(/^matrix\(1, 0, 0, 1, -/);
       expect(nextTransform).toMatch(/^matrix\(1, 0, 0, 1, \d/);
+    });
+
+    // CR-01 (D-11, 20-REVIEW.md): a tap on a caption control — a progress
+    // dash or the autoplay toggle — bubbles up to this SAME touchend
+    // listener (the controls are DOM descendants of .home-hero__photo).
+    // Before the guard, the listener sees "negligible movement" and calls
+    // openCurrent(), silently hijacking the control tap into a gallery
+    // navigation. These two cases dispatch a real-coordinate tap with the
+    // control element as the event target (reusing the file's existing
+    // synthesized-Touch/TouchEvent pattern verbatim) and assert neither
+    // navigation nor the synchronous opening-state class occurs.
+    test('a tap on a progress dash does not navigate away or enter the opening state', async ({ page }) => {
+      await page.goto('/');
+      const startUrl = page.url();
+
+      await page.evaluate(() => {
+        const target = document.querySelector('[data-action="go-to"]')!;
+        const rect = target.getBoundingClientRect();
+        const clientX = rect.x + rect.width / 2;
+        const clientY = rect.y + rect.height / 2;
+        const makeTouchEvent = (type: string) => {
+          const touch = new Touch({ identifier: 1, target, clientX, clientY });
+          return new TouchEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            touches: type === 'touchend' ? [] : [touch],
+            changedTouches: [touch],
+          });
+        };
+        target.dispatchEvent(makeTouchEvent('touchstart'));
+        target.dispatchEvent(makeTouchEvent('touchend'));
+      });
+
+      // Give any (incorrect) navigation a chance to happen before asserting
+      // it didn't — there is no href to waitForURL against here.
+      await page.waitForTimeout(300);
+      expect(page.url()).toBe(startUrl);
+      const isOpening = await page.locator('.home-hero__photo').evaluate((el) => el.classList.contains('is-opening'));
+      expect(isOpening).toBe(false);
+    });
+
+    test('a tap on the autoplay toggle does not navigate away or enter the opening state', async ({ page }) => {
+      await page.goto('/');
+      const startUrl = page.url();
+
+      await page.evaluate(() => {
+        const target = document.querySelector('[data-role="autoplay-toggle"]')!;
+        const rect = target.getBoundingClientRect();
+        const clientX = rect.x + rect.width / 2;
+        const clientY = rect.y + rect.height / 2;
+        const makeTouchEvent = (type: string) => {
+          const touch = new Touch({ identifier: 1, target, clientX, clientY });
+          return new TouchEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            touches: type === 'touchend' ? [] : [touch],
+            changedTouches: [touch],
+          });
+        };
+        target.dispatchEvent(makeTouchEvent('touchstart'));
+        target.dispatchEvent(makeTouchEvent('touchend'));
+      });
+
+      await page.waitForTimeout(300);
+      expect(page.url()).toBe(startUrl);
+      const isOpening = await page.locator('.home-hero__photo').evaluate((el) => el.classList.contains('is-opening'));
+      expect(isOpening).toBe(false);
     });
   });
 });
@@ -980,30 +1060,13 @@ test.describe('carousel wordmark cutout (HOME-03, D-08)', () => {
   });
 });
 
-test.describe('grid hero wordmark cutout — mobile (HOME-03, D-05 reversal)', () => {
-  test('the grid hero wordmark cutout is mobile-only; desktop stays solid', async ({ page }) => {
-    // Mobile (393px): cutout applied — same background-clip:text +
-    // photo background-image treatment as the carousel wordmark.
-    await page.setViewportSize({ width: 393, height: 800 });
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Grille' }).click();
-
-    const mobileWordmark = page.locator('.home-grid__wordmark');
-    await expect(mobileWordmark).toBeVisible();
-    const mobileStyle = await mobileWordmark.evaluate((el) => {
-      const style = getComputedStyle(el);
-      return {
-        clip: style.webkitBackgroundClip || style.backgroundClip,
-        bg: style.backgroundImage,
-      };
-    });
-    expect(mobileStyle.clip).toContain('text');
-    expect(mobileStyle.bg).toContain('url(');
-
-    // Desktop (1280px): D-05 preserved — solid, non-transparent text, no
-    // cutout. Reload at the wider viewport rather than resizing in place,
-    // since the toggle mode is local component state that should still be
-    // in grid mode after a fresh load selects grid again.
+test.describe('grid hero wordmark, desktop (HOME-03, D-05)', () => {
+  test('the grid hero wordmark stays solid, non-transparent text on desktop', async ({ page }) => {
+    // Phase 21 retires the mobile grid hero tile's photo-cutout wordmark
+    // below 767px — the grid itself no longer renders there — so only this
+    // desktop no-cutout guard (D-05) remains meaningful. This test
+    // previously also asserted a 393px mobile cutout half; that half is
+    // removed here rather than left to assert against retired behavior.
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
