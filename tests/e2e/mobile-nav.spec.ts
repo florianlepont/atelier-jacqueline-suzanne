@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 // Phase 20 (HOME-13) regression net — written and proven green BEFORE
 // SiteHeader.astro gains its opt-in mobile-nav mode, per the v1.5
@@ -371,5 +371,187 @@ test.describe('Phase 20 — homepage mobile nav structure (HOME-13, D-01/D-02/D-
     for (let i = 0; i < 4; i++) {
       await expect(navLinks.nth(i)).toBeVisible();
     }
+  });
+});
+
+// Phase 20 Plan 04 (HOME-13, D-03): open/close BEHAVIOUR — appended below
+// plan 20-03's structural block per this plan's own instruction. Do not
+// weaken or remove any block above this point. Default target is the
+// French homepage at a 393x852 viewport unless a test says otherwise.
+test.describe('Phase 20 — homepage mobile nav behaviour (HOME-13, D-03)', () => {
+  async function openPanel(page: Page) {
+    await page.setViewportSize({ width: 393, height: 852 });
+    await page.goto('/');
+    await page.locator('[data-role="mobile-nav-toggle"]').click();
+    await expect(page.locator('dialog#mobile-nav')).toBeVisible();
+  }
+
+  test('tapping the hamburger opens the panel', async ({ page }) => {
+    await openPanel(page);
+
+    await expect(page.locator('[data-role="mobile-nav-toggle"]')).toHaveAttribute('aria-expanded', 'true');
+
+    const isOpen = await page
+      .locator('dialog#mobile-nav')
+      .evaluate((el) => (el as HTMLDialogElement).open);
+    expect(isOpen).toBe(true);
+
+    const dialog = page.locator('dialog#mobile-nav');
+    const links = dialog.locator('.mobile-nav-panel__link');
+    await expect(links).toHaveCount(3);
+    for (let i = 0; i < 3; i++) {
+      await expect(links.nth(i)).toBeVisible();
+    }
+    await expect(dialog.locator('.switcher-link')).toBeVisible();
+    await expect(dialog.locator('.mobile-nav-panel__secondary')).toBeVisible();
+  });
+
+  test('focus is contained while the panel is open', async ({ page }) => {
+    await openPanel(page);
+
+    // This is the behaviour the native dialog-modal call already provides
+    // for free (see MobileNavPanel.astro's client script) — this assertion
+    // exists to catch anyone replacing it with a hand-rolled toggle.
+    //
+    // Verified live: Chromium's own Tab-cycling for a native modal <dialog>
+    // transiently parks activeElement on <body> for exactly one step
+    // between the last and first focusable descendant, before wrapping
+    // back inside on the very next Tab — body has no tabindex/interactive
+    // affordance of its own, so this never lets focus reach (or a visitor
+    // activate) anything hidden behind the top layer; it is not the
+    // hand-rolled-focus-trap leak this test exists to catch. The check
+    // below tolerates that single documented resting point while still
+    // failing if focus ever lands on any OTHER element outside the panel.
+    const isContained = () =>
+      page.evaluate(
+        () => document.activeElement === document.body || document.activeElement?.closest('#mobile-nav') !== null,
+      );
+
+    expect(await isContained()).toBe(true);
+
+    for (let i = 0; i < 8; i++) {
+      await page.keyboard.press('Tab');
+      expect(await isContained()).toBe(true);
+    }
+  });
+
+  test('Escape closes the panel and restores focus', async ({ page }) => {
+    await openPanel(page);
+
+    await page.keyboard.press('Escape');
+
+    await expect(page.locator('dialog#mobile-nav')).toBeHidden();
+    await expect(page.locator('[data-role="mobile-nav-toggle"]')).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('[data-role="mobile-nav-toggle"]')).toBeFocused();
+  });
+
+  test('the in-panel close button closes the panel and restores focus', async ({ page }) => {
+    await openPanel(page);
+
+    await page.locator('[data-role="mobile-nav-close"]').click();
+
+    await expect(page.locator('dialog#mobile-nav')).toBeHidden();
+    await expect(page.locator('[data-role="mobile-nav-toggle"]')).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('[data-role="mobile-nav-toggle"]')).toBeFocused();
+  });
+
+  test('a click targeting the dialog element itself closes the panel', async ({ page }) => {
+    await openPanel(page);
+
+    // A coordinate-based backdrop click is deliberately NOT used: the panel
+    // is opaque and viewport-filling, so no ::backdrop region is reachable
+    // — this direct dispatch is what actually exercises the close handler's
+    // event.target === panel contract.
+    await page.evaluate(() => {
+      const dialog = document.getElementById('mobile-nav');
+      dialog?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    await expect(page.locator('dialog#mobile-nav')).toBeHidden();
+  });
+
+  test('reduced motion opens and closes instantly', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize({ width: 393, height: 852 });
+    await page.goto('/');
+
+    const duration = await page
+      .locator('dialog#mobile-nav')
+      .evaluate((el) => getComputedStyle(el).transitionDuration);
+    expect(duration).toBe('0s');
+
+    await page.locator('[data-role="mobile-nav-toggle"]').click();
+    await expect(page.locator('dialog#mobile-nav')).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(page.locator('dialog#mobile-nav')).toBeHidden();
+  });
+
+  test('crossing to a desktop viewport closes an open panel', async ({ page }) => {
+    await openPanel(page);
+
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    await expect(page.locator('dialog#mobile-nav')).toBeHidden();
+    await expect(page.locator('[data-role="mobile-nav-toggle"]')).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('the hamburger cannot open the panel at desktop widths', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/');
+
+    await expect(page.locator('[data-role="mobile-nav-toggle"]')).toBeHidden();
+    await expect(page.locator('dialog#mobile-nav')).toBeHidden();
+  });
+
+  test('panel primary links navigate', async ({ page }) => {
+    await openPanel(page);
+
+    const editionsLink = page.locator('dialog#mobile-nav .mobile-nav-panel__link').first();
+    await editionsLink.click();
+
+    await expect(page).toHaveURL(/editions/);
+  });
+
+  test("the panel's language switcher navigates and sets the locale cookie", async ({ page, context }) => {
+    await openPanel(page);
+
+    await page.locator('dialog#mobile-nav .switcher-link').click();
+
+    await expect(page).toHaveURL(/\/en\/$/);
+
+    const cookies = await context.cookies();
+    const localeCookie = cookies.find((cookie) => cookie.name === 'ajs_locale');
+    expect(localeCookie?.value).toBe('en');
+  });
+
+  test("the close button's glyph morphs", async ({ page }) => {
+    await openPanel(page);
+
+    const bars = page.locator('[data-role="mobile-nav-close"] .mobile-nav__bar');
+
+    // Poll rather than sample once, so the 220ms transition is ridden out
+    // rather than caught mid-flight.
+    await expect(async () => {
+      const [bar1Transform, bar2Opacity, bar3Transform] = await Promise.all([
+        bars.nth(0).evaluate((el) => getComputedStyle(el).transform),
+        bars.nth(1).evaluate((el) => getComputedStyle(el).opacity),
+        bars.nth(2).evaluate((el) => getComputedStyle(el).transform),
+      ]);
+      expect(bar1Transform).not.toBe('none');
+      expect(bar2Opacity).toBe('0');
+      expect(bar3Transform).not.toBe('none');
+    }).toPass();
+
+    await page.locator('[data-role="mobile-nav-close"]').click();
+
+    await expect(async () => {
+      const [bar1Transform, bar3Transform] = await Promise.all([
+        bars.nth(0).evaluate((el) => getComputedStyle(el).transform),
+        bars.nth(2).evaluate((el) => getComputedStyle(el).transform),
+      ]);
+      expect(bar1Transform).toBe('none');
+      expect(bar3Transform).toBe('none');
+    }).toPass();
   });
 });
