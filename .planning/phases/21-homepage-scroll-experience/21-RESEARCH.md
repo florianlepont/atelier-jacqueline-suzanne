@@ -435,7 +435,7 @@ mobile.addEventListener('change', setup);
 
 **If this table is empty:** N/A — see entries above. All are LOW-risk since each has an explicit fallback or is a directional (not precision-dependent) finding.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Exact `REVEAL_DISTANCE` value for production (sketch used 900px "Cinematic")**
    - What we know: Sketch 015 validated 900px as the winning pace on a real phone, compared against 420px/650px alternatives.
