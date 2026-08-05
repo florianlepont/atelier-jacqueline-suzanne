@@ -1758,9 +1758,38 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         // batched intersection callback. The rising-edge guard (wasRevealed)
         // is carried forward verbatim — it is load-bearing for HOME-16's
         // per-visit random starting accent and must not be simplified away.
+        // 21-08 (HOME-14, blur-placeholder gap —
+        // .planning/debug/homepage-scroll-deck-blur-placeholder-jank.md):
+        // starts the NEXT slide's sharp photo downloading the moment THIS
+        // slide arrives, so a normal, unhurried scroll pace finds it
+        // already loading well ahead of arrival — bounded to exactly one
+        // promotion per arrival (T-21-08-A). Idempotent per image: bails
+        // immediately if there is no next slide, if its sharp layer is
+        // missing, or if it is already loaded/already promoted — the
+        // `loading === 'lazy'` check is the deferral flag itself, and it is
+        // naturally self-clearing once flipped to 'eager', so this can
+        // never re-promote (or re-fetch) the same image twice. This warm
+        // never runs for a reduced-motion visitor — this whole driver never
+        // attaches under that query (D-15) — and that is acceptable: a
+        // reduced-motion visitor already gets Task 1's placeholder
+        // crossfade on every slide, the two eager-loaded slides from
+        // markup, and the browser's native lazy threshold for the rest;
+        // there is no motion-paced "about to arrive" moment for this warm
+        // to anticipate there.
+        function warmNextSlide(index: number) {
+          const nextSlide = slides[index + 1];
+          if (!nextSlide) return;
+          const img = nextSlide.querySelector<HTMLImageElement>('.home-slide__img--sharp');
+          if (!img || img.classList.contains('is-loaded')) return;
+          if (img.loading === 'lazy') {
+            img.loading = 'eager';
+            img.fetchPriority = 'low';
+          }
+        }
+
         function applyArrival() {
           const viewportHeight = window.innerHeight;
-          slides.forEach((slide) => {
+          slides.forEach((slide, index) => {
             const rect = slide.getBoundingClientRect();
             const ratio = computeSlideVisibleRatio(rect, viewportHeight);
             // The reveal is a live, two-directional state (arrives AND
@@ -1780,6 +1809,14 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
               root!.style.setProperty('--current-accent', slide.dataset.heroColor || 'var(--color-accent)');
               root!.style.setProperty('--current-accent-text', slide.dataset.heroTextColor || 'var(--color-on-accent)');
               arrivalAccentWritten = true;
+              // 21-08: the next-slide warm below is called ONLY from this
+              // rising-edge branch, never unconditionally inside the
+              // forEach above — applyArrival() runs on every painted frame
+              // (plan 21-07), so an unguarded call here would touch the
+              // same element up to sixty times a second. This warm exists
+              // specifically to close 21-UAT.md's blur-placeholder gap
+              // (missing preload/priority hint for the upcoming slide).
+              warmNextSlide(index);
             }
           });
         }
@@ -1815,6 +1852,14 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           // here, so the CSS end-state (reduced-motion / desktop media
           // queries) can fully take over the instant this driver detaches —
           // copy this 1:1 whenever onProgress() gains a new write.
+          //
+          // Deliberate exception: the 21-08 next-slide photo warm above has
+          // no matching undo here. Starting a photo download is not a
+          // reversible inline style, and cancelling or re-deferring an
+          // in-flight fetch on detach would be strictly worse for the
+          // visitor than letting it finish — this is a one-way promotion,
+          // not part of the reversible progress/arrival visual state the
+          // rest of this function resets.
           wordmark!.style.removeProperty('transform');
           wordmark!.style.removeProperty('transform-origin');
           wordmark!.style.removeProperty('opacity');
