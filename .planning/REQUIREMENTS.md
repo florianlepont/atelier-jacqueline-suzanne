@@ -12,8 +12,8 @@ Redesign the mobile (phone) experience only — desktop/tablet stays byte-for-by
 ### Homepage
 
 - [x] **HOME-13**: Visitor sees a mobile nav menu (hamburger or similar) on the homepage instead of the desktop header bar, with the language switcher inside it, on phone-width viewports only
-- [ ] **HOME-14**: Visitor on a phone browses the homepage via a single scroll-driven view (no carousel/grid toggle); each item's description text reveals as it arrives on screen during scroll
-- [ ] **HOME-15**: Visitor on a phone sees the "Atelier Jacqueline Suzanne" wordmark full-screen first; scrolling transitions through the wordmark's letterform into the first gallery's photo
+- [x] **HOME-14**: Visitor on a phone browses the homepage via a single scroll-driven view (no carousel/grid toggle); each item's description text reveals as it arrives on screen during scroll
+- [x] **HOME-15**: Visitor on a phone sees the "Atelier Jacqueline Suzanne" wordmark full-screen first; scrolling transitions through the wordmark's letterform into the first gallery's photo
 - [x] **HOME-16**: Visitor on a phone sees a different accent color each visit, randomly picked from the existing per-gallery `heroColor` values
 
 ### Portfolio Galleries
@@ -126,8 +126,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | HOME-13 | Phase 20 | Complete |
-| HOME-14 | Phase 21 | Pending |
-| HOME-15 | Phase 21 | Pending |
+| HOME-14 | Phase 21 | Complete |
+| HOME-15 | Phase 21 | Complete |
 | HOME-16 | Phase 20 | Complete |
 | PORT-07 | Phase 22 | Pending |
 | EDN-10 | Phase 22 | Pending |

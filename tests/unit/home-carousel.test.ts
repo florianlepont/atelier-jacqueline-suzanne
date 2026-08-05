@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   computeFocusOrigin,
   computeHoverZone,
+  computeSlideVisibleRatio,
   computeWordmarkBackgroundPosition,
   computeWordmarkSeamFraction,
   computeWordmarkZoomState,
@@ -433,6 +434,45 @@ describe('computeFocusOrigin', () => {
     expect(result).not.toBeNull();
     expect(result?.originX).toBeCloseTo(115, 5);
     expect(result?.originY).toBe(25);
+  });
+});
+
+// Phase 21, plan 21-07 (`21-UAT.md` gap 2 — the zoom-to-slide handoff
+// glitch, root-caused in
+// `.planning/debug/homepage-scroll-zoom-handoff-glitch.md`): the arrival
+// ratio math extracted so the per-frame driver can poll live geometry
+// instead of waiting on IntersectionObserver callback delivery.
+describe('computeSlideVisibleRatio', () => {
+  it('returns 1 for a slide fully covering the viewport', () => {
+    expect(computeSlideVisibleRatio({ top: 0, bottom: 852, height: 852 }, 852)).toBe(1);
+  });
+
+  it('returns 0 for a slide completely below the viewport', () => {
+    expect(computeSlideVisibleRatio({ top: 852, bottom: 1704, height: 852 }, 852)).toBe(0);
+  });
+
+  it('returns 0 for a slide completely above the viewport', () => {
+    expect(computeSlideVisibleRatio({ top: -852, bottom: 0, height: 852 }, 852)).toBe(0);
+  });
+
+  it('returns 0.5 for a slide exactly half scrolled in from below', () => {
+    expect(computeSlideVisibleRatio({ top: 426, bottom: 1278, height: 852 }, 852)).toBe(0.5);
+  });
+
+  it('returns 0.5 for a slide exactly half scrolled out toward above', () => {
+    expect(computeSlideVisibleRatio({ top: -426, bottom: 426, height: 852 }, 852)).toBe(0.5);
+  });
+
+  it('returns 1 for a slide taller than the viewport but fully covering it — denominator is min(height, viewportHeight), not rect.height', () => {
+    expect(computeSlideVisibleRatio({ top: -100, bottom: 900, height: 1000 }, 852)).toBe(1);
+  });
+
+  it('returns 0 for a degenerate non-positive viewportHeight, never dividing by zero', () => {
+    expect(computeSlideVisibleRatio({ top: 0, bottom: 852, height: 852 }, 0)).toBe(0);
+  });
+
+  it('returns 0 for a degenerate non-positive rect.height, never dividing by zero', () => {
+    expect(computeSlideVisibleRatio({ top: 0, bottom: 0, height: 0 }, 852)).toBe(0);
   });
 });
 

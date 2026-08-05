@@ -271,6 +271,47 @@ export function computeWordmarkZoomState(t: number): WordmarkZoomState {
   };
 }
 
+/**
+ * Phase 21, plan 21-07 (`21-UAT.md` gap 2, root-caused in
+ * `.planning/debug/homepage-scroll-zoom-handoff-glitch.md`): the 0..1
+ * fraction of a full-width deck slide's own rect currently visible in the
+ * viewport, re-derivable from a live `getBoundingClientRect()` on every
+ * painted frame — this is what lets the arrival reveal be POLLED instead of
+ * waiting on `IntersectionObserver` callback delivery, which is the actual
+ * mechanism fix for the handoff glitch (real touch-momentum/scroll-snap
+ * settling on iOS was throttling/coalescing both `scroll` dispatch and
+ * observer callbacks past the moment native `position: sticky` had already
+ * released).
+ *
+ * `rect` is deliberately a structural shape (top/bottom/height), not a
+ * `DOMRect`, matching `computeFocusOrigin`'s own DOM-free idiom above so
+ * this stays unit-testable outside a browser.
+ *
+ * The denominator is `min(rect.height, viewportHeight)`, NOT `rect.height` —
+ * this is the one deliberate divergence from `IntersectionObserver`'s own
+ * `intersectionRatio` semantics. A slide section can be taller than the
+ * live viewport (a phone's real, address-bar-adjusted `innerHeight` can
+ * disagree with the section's own resolved height), and if the denominator
+ * were the full rect height, "fully covering the viewport" would cap out
+ * below 1 and could permanently miss the 0.98 arrival threshold. Dividing
+ * by the smaller of the two means "fully covers what's actually visible"
+ * reaches exactly 1, which is what "arrived" is supposed to mean. Do not
+ * "correct" this back to `rect.height` — that reintroduces the exact
+ * failure mode this function exists to remove.
+ *
+ * Degenerate inputs (`viewportHeight <= 0` or `rect.height <= 0`) return 0
+ * rather than dividing by zero or reporting a spurious arrival. The result
+ * is always clamped to [0,1].
+ */
+export function computeSlideVisibleRatio(rect: { top: number; bottom: number; height: number }, viewportHeight: number): number {
+  if (viewportHeight <= 0 || rect.height <= 0) return 0;
+  const visibleTop = Math.max(rect.top, 0);
+  const visibleBottom = Math.min(rect.bottom, viewportHeight);
+  const visibleHeight = visibleBottom - visibleTop;
+  const denominator = Math.min(rect.height, viewportHeight);
+  return clamp01(visibleHeight / denominator);
+}
+
 export interface FocusOrigin {
   originX: number;
   originY: number;
