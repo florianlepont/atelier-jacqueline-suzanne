@@ -372,3 +372,185 @@ test.describe('wordmark-to-photo zoom driver (HOME-15, D-01 through D-04, D-12, 
     await expect(page.locator('[data-role="site-header"]')).toBeVisible();
   });
 });
+
+// Phase 21, plan 21-06 (HOME-14, D-09, D-10, D-13, D-14, D-15): arrival-
+// complete detection wired in HomeCarousel.astro's second <script> block —
+// the IntersectionObserver added on top of plans 21-04/21-05's static
+// structure and scroll-scrubbed zoom. Proves each gallery's description
+// stays hidden until that gallery's slide is fully settled (not merely
+// intersecting), then reveals via the existing 180ms transition and hides
+// again on reversal; that the live accent tracks the arrived gallery's own
+// hero colour without clobbering HOME-16's random starting pick; tap-to-
+// open navigation; and both inert paths (reduced motion, desktop). See
+// 21-VALIDATION.md's requirement-to-test map for the full row-by-row record
+// these cases close out.
+test.describe('arrival reveal and accent liveness (HOME-14, D-09, D-10, D-13, D-14, D-15)', () => {
+  interface DeckDataEntry {
+    heroColor: string;
+  }
+
+  async function readDeckDataEntries(page: Page): Promise<DeckDataEntry[]> {
+    return page.locator('ul[data-role="home-carousel-data"] li').evaluateAll((lis) =>
+      lis.map((li) => ({
+        heroColor: (li as HTMLElement).dataset.heroColor ?? '',
+      })),
+    );
+  }
+
+  async function currentAccent(page: Page): Promise<string> {
+    return page.evaluate(() =>
+      getComputedStyle(document.querySelector('.home') as HTMLElement).getPropertyValue('--current-accent').trim(),
+    );
+  }
+
+  // Derives scroll targets from rendered geometry rather than hardcoding
+  // pixel values (mirrors the zoom-driver describe block's own
+  // getRevealDistance above) — the track's own rendered height IS the point
+  // at which the first slide has fully arrived, and one further viewport
+  // height reaches the second.
+  async function getSlideScrollTargets(page: Page): Promise<{ first: number; second: number }> {
+    const { trackHeight, viewportHeight } = await page.evaluate(() => {
+      const track = document.querySelector<HTMLElement>('[data-role="zoom-track"]');
+      return {
+        trackHeight: track ? track.getBoundingClientRect().height : 0,
+        viewportHeight: window.innerHeight,
+      };
+    });
+    expect(trackHeight).toBeGreaterThan(viewportHeight);
+    return { first: trackHeight, second: trackHeight + viewportHeight };
+  }
+
+  async function slideOpacities(page: Page): Promise<string[]> {
+    return page
+      .locator('[data-role="deck-slide"] .home-slide__description')
+      .evaluateAll((els) => els.map((el) => getComputedStyle(el).opacity));
+  }
+
+  async function slideHeroColor(page: Page, index: number): Promise<string | null> {
+    return page.locator('[data-role="deck-slide"]').nth(index).getAttribute('data-hero-color');
+  }
+
+  test('before arrival: no slide carries the arrival class, every description is hidden (D-13/D-14, success criterion 3)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    await expect(page.locator('.home-slide.is-revealed')).toHaveCount(0);
+    const opacities = await slideOpacities(page);
+    expect(opacities.length).toBeGreaterThan(0);
+    opacities.forEach((opacity) => expect(opacity).toBe('0'));
+  });
+
+  test('phase-20 accent preserved: the live accent still resolves to a build-time hero colour before any arrival (HOME-16)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const entries = await readDeckDataEntries(page);
+    const palette = new Set(entries.map((e) => e.heroColor));
+    const accent = await currentAccent(page);
+    expect(palette.has(accent)).toBe(true);
+  });
+
+  test('arrival reveals: scrolling to the first slide reveals its description (success criterion 3)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const { first } = await getSlideScrollTargets(page);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(first));
+
+    await expect(page.locator('[data-role="deck-slide"]').nth(0)).toHaveClass(/is-revealed/);
+    await expect
+      .poll(async () =>
+        page.locator('[data-role="deck-slide"]').nth(0).locator('.home-slide__description').evaluate((el) => getComputedStyle(el).opacity),
+      )
+      .toBe('1');
+  });
+
+  test('accent tracks the arrived gallery (D-09)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const { first } = await getSlideScrollTargets(page);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(first));
+
+    const expectedColor = await slideHeroColor(page, 0);
+    expect(expectedColor).toBeTruthy();
+    await expect.poll(() => currentAccent(page)).toBe(expectedColor);
+  });
+
+  test('second slide: arrival and accent move to the second gallery, the first stops carrying the arrival class (D-05/D-09)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const entries = await readDeckDataEntries(page);
+    test.skip(entries.length < 2, 'needs at least 2 homepage galleries to prove a second arrival');
+
+    const { second } = await getSlideScrollTargets(page);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(second));
+
+    await expect(page.locator('[data-role="deck-slide"]').nth(1)).toHaveClass(/is-revealed/);
+    await expect(page.locator('[data-role="deck-slide"]').nth(0)).not.toHaveClass(/is-revealed/);
+
+    const expectedColor = await slideHeroColor(page, 1);
+    expect(expectedColor).toBeTruthy();
+    await expect.poll(() => currentAccent(page)).toBe(expectedColor);
+  });
+
+  test('reversal: scrolling back to the top hides every description again', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const { first } = await getSlideScrollTargets(page);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(first));
+    await expect(page.locator('[data-role="deck-slide"]').nth(0)).toHaveClass(/is-revealed/);
+
+    await page.evaluate(() => window.scrollTo(0, 0));
+
+    await expect(page.locator('.home-slide.is-revealed')).toHaveCount(0);
+    await expect
+      .poll(async () => {
+        const opacities = await slideOpacities(page);
+        return opacities.every((opacity) => opacity === '0');
+      })
+      .toBe(true);
+  });
+
+  test('tap-to-open: clicking a slide navigates to that gallery\'s detail page (D-10)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const slide = page.locator('[data-role="deck-slide"]').first();
+    const href = await slide.getAttribute('href');
+    expect(href).toBeTruthy();
+
+    await slide.click();
+    await page.waitForURL(new RegExp(href!.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  });
+
+  test('reduced motion: no arrival class is ever added, every description is permanently visible, and the accent does not change on scroll (D-15)', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    await expect(page.locator('.home-slide.is-revealed')).toHaveCount(0);
+    const opacities = await slideOpacities(page);
+    expect(opacities.length).toBeGreaterThan(0);
+    opacities.forEach((opacity) => expect(opacity).toBe('1'));
+
+    const accentBefore = await currentAccent(page);
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    // Proves the observer is genuinely detached under reduced motion, not
+    // merely styled away — a still-attached observer would still write a
+    // new accent once a slide's intersection ratio crossed the threshold.
+    await page.waitForTimeout(200);
+    const accentAfter = await currentAccent(page);
+    expect(accentAfter).toBe(accentBefore);
+    await expect(page.locator('.home-slide.is-revealed')).toHaveCount(0);
+  });
+
+  test('desktop inert: no slide carries the arrival class (success criterion 5)', async ({ page }) => {
+    await page.setViewportSize(DESKTOP_VIEWPORT);
+    await page.goto('/');
+
+    await expect(page.locator('.home-slide.is-revealed')).toHaveCount(0);
+  });
+});
