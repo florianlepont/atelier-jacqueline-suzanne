@@ -164,3 +164,10 @@ None - no external service configuration required. (The `.env` copy above is a s
 ---
 *Phase: 21-homepage-scroll-experience*
 *Completed: 2026-08-05*
+
+## Self-Check: PASSED
+
+- FOUND: src/components/HomeCarousel.astro
+- FOUND: tests/e2e/homepage-scroll-deck.spec.ts
+- FOUND: .planning/phases/21-homepage-scroll-experience/21-05-SUMMARY.md
+- FOUND: all 3 commits (3c1c3b3, e3374f8, 0b458d6)
