@@ -223,14 +223,22 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
               vertical offset — one less pixel-math dependency to keep in
               sync with the rest of the caption's content. */}
           <div class="home-hero__carousel-controls">
-            <div class="home-hero__progress" data-role="progress" role="tablist" aria-label={isEn ? 'Choose a gallery' : 'Choisir une galerie'}>
+            {/* WR-03 fix: this is a labeled group of independently-tabbable
+                buttons, not an ARIA tablist — role="tab" requires
+                aria-selected (not aria-current) as its selected-state
+                attribute, and implies the roving-tabindex/arrow-key tab
+                pattern, neither of which this widget implements (global
+                Left/Right already drives photo navigation independently of
+                dash focus). role="group" + aria-current="true" on the
+                current dash correctly conveys "the current gallery" for a
+                non-tab widget without the mismatched semantics. */}
+            <div class="home-hero__progress" data-role="progress" role="group" aria-label={isEn ? 'Choose a gallery' : 'Choisir une galerie'}>
               {galleries.map((gallery, i) => (
                 <button
                   type="button"
                   class="home-hero__progress-dash"
                   data-action="go-to"
                   data-index={i}
-                  role="tab"
                   aria-current={i === 0 ? 'true' : 'false'}
                   aria-label={`${gallery.title} (${i + 1}/${galleries.length})`}
                 />

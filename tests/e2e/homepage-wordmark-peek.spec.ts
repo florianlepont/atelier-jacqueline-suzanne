@@ -1050,7 +1050,9 @@ test.describe('carousel wordmark cutout (HOME-03, D-08)', () => {
 
     // Brume uses a dark purple panel with white interface text. Its already
     // dark photograph must be lifted rather than darkened further.
-    await page.getByRole('tab', { name: 'Brume (2/5)' }).click();
+    // WR-03: the progress dashes are a plain labeled button group
+    // (role="group"), not an ARIA tablist — role="tab" was removed.
+    await page.getByRole('button', { name: 'Brume (2/5)' }).click();
     await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
     await expect.poll(() => wordmark.evaluate((el) => getComputedStyle(el).filter)).toContain('brightness(1.38)');
     await expect.poll(() => wordmark.evaluate((el) => getComputedStyle(el).filter)).toContain('contrast(0.92)');
