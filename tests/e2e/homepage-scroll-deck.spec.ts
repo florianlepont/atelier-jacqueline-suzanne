@@ -32,6 +32,55 @@ async function readGalleryData(page: Page): Promise<GalleryDataEntry[]> {
   );
 }
 
+// Plan 21-07: lifted to module scope (unchanged bodies) from inside the
+// 'wordmark-to-photo zoom driver' describe block below, so the new
+// per-frame-driver describe block at the end of this file can reuse them
+// too, rather than duplicating them.
+
+// The track's own rendered height minus the viewport height IS the live
+// reveal distance (mirrors ZOOM_REVEAL_DISTANCE, 900px, but read from the
+// page rather than duplicated as a literal here — stays correct if a real-
+// device tuning pass ever changes the CSS track height + the exported
+// constant together).
+async function getRevealDistance(page: Page): Promise<number> {
+  const distance = await page.evaluate(() => {
+    const track = document.querySelector<HTMLElement>('[data-role="zoom-track"]');
+    if (!track) return 0;
+    return track.getBoundingClientRect().height - window.innerHeight;
+  });
+  expect(distance).toBeGreaterThan(0);
+  return distance;
+}
+
+// The driver applies `scale(...)` as a plain CSS transform (no rotation/
+// skew), so the computed matrix's first component IS the scale factor —
+// extracting it numerically keeps this robust to the exact string
+// representation ('none' at rest vs. 'matrix(...)' once scaled).
+function scaleFromComputedTransform(transform: string): number {
+  if (transform === 'none') return 1;
+  const match = transform.match(/^matrix\(([-0-9.]+),/);
+  return match ? parseFloat(match[1]) : NaN;
+}
+
+async function getWordmarkScale(page: Page): Promise<number> {
+  const transform = await page
+    .locator('[data-role="zoom-wordmark"]')
+    .evaluate((el) => getComputedStyle(el).transform);
+  return scaleFromComputedTransform(transform);
+}
+
+async function getWordmarkOpacity(page: Page): Promise<string> {
+  return page.locator('[data-role="zoom-wordmark"]').evaluate((el) => getComputedStyle(el).opacity);
+}
+
+async function getPhotoOpacity(page: Page): Promise<string> {
+  return page.locator('[data-role="zoom-photo"]').evaluate((el) => getComputedStyle(el).opacity);
+}
+
+async function getZoomActive(page: Page): Promise<string | null> {
+  return page.locator('.home').getAttribute('data-zoom-active');
+}
+
 test.describe('mode-toggle and carousel/grid retirement below 767px (success criterion 1)', () => {
   test('at phone width the mode-toggle is not visible, and neither the carousel nor the grid subtree is visible', async ({ page }) => {
     await page.setViewportSize(PHONE_VIEWPORT);
@@ -205,21 +254,6 @@ test.describe('desktop/tablet regression guard (success criterion 5, UI-02)', ()
 // of it — rest state, mid-scrub, completion, reversal, the measured anchor,
 // the header hide/fade (D-12), and both inert paths (reduced motion / desktop).
 test.describe('wordmark-to-photo zoom driver (HOME-15, D-01 through D-04, D-12, D-15)', () => {
-  // The track's own rendered height minus the viewport height IS the live
-  // reveal distance (mirrors ZOOM_REVEAL_DISTANCE, 900px, but read from the
-  // page rather than duplicated as a literal here — stays correct if a real-
-  // device tuning pass ever changes the CSS track height + the exported
-  // constant together).
-  async function getRevealDistance(page: Page): Promise<number> {
-    const distance = await page.evaluate(() => {
-      const track = document.querySelector<HTMLElement>('[data-role="zoom-track"]');
-      if (!track) return 0;
-      return track.getBoundingClientRect().height - window.innerHeight;
-    });
-    expect(distance).toBeGreaterThan(0);
-    return distance;
-  }
-
   // WR-01 guard: the track's rendered `data-reveal-distance` attribute is
   // written straight from the exported ZOOM_REVEAL_DISTANCE constant
   // (src/lib/home-carousel.ts), and the CSS track height now consumes that
@@ -243,35 +277,6 @@ test.describe('wordmark-to-photo zoom driver (HOME-15, D-01 through D-04, D-12, 
     const liveDistance = await getRevealDistance(page);
     expect(Math.abs(liveDistance - expectedDistance)).toBeLessThanOrEqual(1);
   });
-
-  // The driver applies `scale(...)` as a plain CSS transform (no rotation/
-  // skew), so the computed matrix's first component IS the scale factor —
-  // extracting it numerically keeps this robust to the exact string
-  // representation ('none' at rest vs. 'matrix(...)' once scaled).
-  function scaleFromComputedTransform(transform: string): number {
-    if (transform === 'none') return 1;
-    const match = transform.match(/^matrix\(([-0-9.]+),/);
-    return match ? parseFloat(match[1]) : NaN;
-  }
-
-  async function getWordmarkScale(page: Page): Promise<number> {
-    const transform = await page
-      .locator('[data-role="zoom-wordmark"]')
-      .evaluate((el) => getComputedStyle(el).transform);
-    return scaleFromComputedTransform(transform);
-  }
-
-  async function getWordmarkOpacity(page: Page): Promise<string> {
-    return page.locator('[data-role="zoom-wordmark"]').evaluate((el) => getComputedStyle(el).opacity);
-  }
-
-  async function getPhotoOpacity(page: Page): Promise<string> {
-    return page.locator('[data-role="zoom-photo"]').evaluate((el) => getComputedStyle(el).opacity);
-  }
-
-  async function getZoomActive(page: Page): Promise<string | null> {
-    return page.locator('.home').getAttribute('data-zoom-active');
-  }
 
   test('rest state before any scrolling (HOME-15)', async ({ page }) => {
     await page.setViewportSize(PHONE_VIEWPORT);
@@ -575,6 +580,163 @@ test.describe('arrival reveal and accent liveness (HOME-14, D-09, D-10, D-13, D-
     await page.setViewportSize(DESKTOP_VIEWPORT);
     await page.goto('/');
 
+    await expect(page.locator('.home-slide.is-revealed')).toHaveCount(0);
+  });
+});
+
+// Phase 21, plan 21-07 (`21-UAT.md` gap 2 — the zoom-to-slide handoff
+// glitch, root-caused in
+// `.planning/debug/homepage-scroll-zoom-handoff-glitch.md`): these cases
+// exist because the emulated Playwright projects (chromium's desktop
+// engine behind an emulated phone viewport, and webkit-mobile's desktop
+// WebKit build behind an emulated iPhone viewport) structurally cannot
+// reproduce real iOS touch-momentum/scroll-snap-settling physics — so
+// rather than trying to reproduce the frame-level artifact itself, this
+// block verifies the MECHANISM the fix depends on: that every visual
+// signal in the handoff is re-derived from live geometry every painted
+// frame, and never gated on `scroll` event dispatch or on
+// IntersectionObserver callback delivery.
+test.describe('per-frame deck driver — scroll-event independence and atomic handoff (21-UAT.md gap 2)', () => {
+  // Wraps window.addEventListener before the page's own scripts run, so
+  // every 'scroll' registration is silently dropped while every other
+  // event type is forwarded to the original. Safe on `/` specifically
+  // because HomeCarousel.astro's deck script is the only window scroll
+  // listener the homepage registers — DetailHero.astro and
+  // AboutPageBody.astro, the site's only other two, render on
+  // gallery/about routes and not here — so this suppression cannot mask
+  // an unrelated regression. If a future change adds another homepage
+  // scroll listener, this comment is the note that cases 1-3 below must
+  // be revisited.
+  async function suppressScrollListeners(page: Page) {
+    await page.addInitScript(() => {
+      const originalAddEventListener = window.addEventListener.bind(window);
+      window.addEventListener = ((type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) => {
+        if (type === 'scroll') return;
+        return originalAddEventListener(type, listener, options);
+      }) as typeof window.addEventListener;
+    });
+  }
+
+  // Derived from getRevealDistance(page) (never a hardcoded pixel value):
+  // the track's own rendered height (revealDistance + viewportHeight) is
+  // the scroll offset at which the pinned stage fully releases and the
+  // first slide's rect can reach the arrival ratio — the same quantity
+  // the 'arrival reveal and accent liveness' describe block above calls
+  // getSlideScrollTargets().first.
+  async function getArrivalScrollTarget(page: Page): Promise<number> {
+    const distance = await getRevealDistance(page);
+    const viewportHeight = await page.evaluate(() => window.innerHeight);
+    return distance + viewportHeight;
+  }
+
+  test('scroll-event independence — mid-scrub: the wordmark scale still updates with every scroll listener suppressed', async ({ page }) => {
+    await suppressScrollListeners(page);
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const distance = await getRevealDistance(page);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(distance / 2));
+
+    // Today's event-driven driver would stay frozen at scale 1 here; the
+    // loop-driven one must not.
+    await expect.poll(() => getWordmarkScale(page)).toBeGreaterThan(1);
+    await expect.poll(() => getWordmarkScale(page)).toBeLessThan(8.5);
+  });
+
+  test('scroll-event independence — completion: the crossfade and header-hide flag still resolve with every scroll listener suppressed', async ({ page }) => {
+    await suppressScrollListeners(page);
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const distance = await getRevealDistance(page);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(distance * 1.2));
+
+    await expect.poll(() => getWordmarkOpacity(page)).toBe('0');
+    await expect.poll(() => getPhotoOpacity(page)).toBe('1');
+    await expect.poll(() => getZoomActive(page)).toBe('false');
+  });
+
+  test('scroll-event independence — arrival: the reveal still fires with every scroll listener suppressed, proving it no longer waits on observer callback delivery', async ({ page }) => {
+    await suppressScrollListeners(page);
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const arrivalTarget = await getArrivalScrollTarget(page);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(arrivalTarget));
+
+    await expect(page.locator('[data-role="deck-slide"]').nth(0)).toHaveClass(/is-revealed/);
+    await expect
+      .poll(() =>
+        page
+          .locator('[data-role="deck-slide"]')
+          .nth(0)
+          .locator('.home-slide__description')
+          .evaluate((el) => getComputedStyle(el).opacity),
+      )
+      .toBe('1');
+  });
+
+  test('atomic handoff: wordmark opacity, photo opacity, the zoom-active attribute and the first slide\'s arrival class all reach their completed combination together, in one single read', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const arrivalTarget = await getArrivalScrollTarget(page);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(arrivalTarget));
+
+    // One single page.evaluate reads all four handoff signals together —
+    // no intermediate assertion between the reads, so a state where three
+    // signals are done and one is stale cannot pass expect.poll's equality
+    // check against the whole tuple at once.
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const wordmark = document.querySelector<HTMLElement>('[data-role="zoom-wordmark"]');
+          const photo = document.querySelector<HTMLElement>('[data-role="zoom-photo"]');
+          const home = document.querySelector<HTMLElement>('.home');
+          const firstSlide = document.querySelector<HTMLElement>('[data-role="deck-slide"]');
+          return {
+            wordmarkOpacity: wordmark ? getComputedStyle(wordmark).opacity : null,
+            photoOpacity: photo ? getComputedStyle(photo).opacity : null,
+            zoomActive: home ? home.getAttribute('data-zoom-active') : null,
+            firstSlideRevealed: firstSlide ? firstSlide.classList.contains('is-revealed') : false,
+          };
+        }),
+      )
+      .toEqual({ wordmarkOpacity: '0', photoOpacity: '1', zoomActive: 'false', firstSlideRevealed: true });
+  });
+
+  test('detach on gate change releases everything: resizing to desktop mid-arrival stops the loop and clears every inline write', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const arrivalTarget = await getArrivalScrollTarget(page);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(arrivalTarget));
+    await expect(page.locator('[data-role="deck-slide"]').nth(0)).toHaveClass(/is-revealed/);
+
+    await page.setViewportSize(DESKTOP_VIEWPORT);
+
+    // setup() runs behind a 100ms resize debounce — poll rather than
+    // asserting immediately, proving stopLoop() plus clearInlineStyles()
+    // both ran and nothing is left repainting.
+    await expect.poll(() => getZoomActive(page)).toBeNull();
+    await expect
+      .poll(() => page.locator('[data-role="zoom-wordmark"]').evaluate((el) => (el as HTMLElement).style.transform))
+      .toBe('');
+    await expect.poll(() => page.locator('.home-slide.is-revealed').count()).toBe(0);
+  });
+
+  test('reduced motion is still fully inert with the loop mechanism: no inline transform, no zoom-active attribute, no arrival class, and scrolling changes none of it', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const distance = await getRevealDistance(page);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(distance * 1.2));
+    await page.waitForTimeout(200);
+
+    const inlineTransform = await page.locator('[data-role="zoom-wordmark"]').evaluate((el) => (el as HTMLElement).style.transform);
+    expect(inlineTransform).toBe('');
+    expect(await getZoomActive(page)).toBeNull();
     await expect(page.locator('.home-slide.is-revealed')).toHaveCount(0);
   });
 });
