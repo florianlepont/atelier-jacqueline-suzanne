@@ -2,6 +2,11 @@ import {expect, test} from '@playwright/test'
 
 test.describe('critical cross-browser smoke', () => {
   test('homepage wordmark stays readable while the sharp hero is unavailable', async ({page}) => {
+    // Explicit even though webkit-mobile already defaults to an iPhone
+    // viewport — keeps this test honest under the chromium project too,
+    // which defaults to a desktop viewport where the deck (below) doesn't
+    // render at all (Phase 21/HOME-14).
+    await page.setViewportSize({width: 393, height: 852})
     await page.route(/cdn\.sanity\.io\/images\//, (route) => {
       const url = new URL(route.request().url())
       // Responsive delivery lets each engine choose 480/768/1200/1600/2000.
@@ -16,16 +21,31 @@ test.describe('critical cross-browser smoke', () => {
       return Boolean(placeholder?.complete && placeholder.naturalWidth > 0)
     })
 
-    const wordmark = page.locator('.home-hero__wordmark')
+    // Phase 21 (HOME-14/HOME-15): this project runs at an iPhone-width
+    // viewport, where `.home-hero` (and its wordmark) is now retired
+    // entirely in favor of the phone-width scroll deck's own zoom-wordmark
+    // — same underlying cutout mechanism (wordmarkPhotoFilter,
+    // .home.has-wordmark-photo gate), same first gallery's photo, so this
+    // is the faithful phone-width equivalent of the original assertion.
+    const wordmark = page.locator('[data-role="zoom-wordmark"]')
     await expect(wordmark).toBeVisible()
     await expect(wordmark).not.toHaveCSS('-webkit-text-fill-color', 'rgba(0, 0, 0, 0)')
     await expect(wordmark).not.toHaveCSS('color', 'rgba(0, 0, 0, 0)')
   })
 
-  test('mobile homepage toggles modes without horizontal overflow', async ({page}) => {
+  // Phase 21 (HOME-14): the carousel/grid mode-toggle this test used to
+  // click is retired entirely below 767px — this project's iPhone-width
+  // viewport now renders the scroll deck instead, so this smoke test
+  // (webkit-mobile's only real-Safari-engine coverage) is updated to prove
+  // the NEW phone-width layout instead of deleting the check outright.
+  // homepage-scroll-deck.spec.ts covers the equivalent guard for chromium.
+  test('mobile homepage (scroll deck) renders without horizontal overflow', async ({page}) => {
+    // Explicit even though webkit-mobile already defaults to an iPhone
+    // viewport — keeps this test honest under the chromium project too,
+    // which defaults to a desktop viewport where the deck doesn't render.
+    await page.setViewportSize({width: 393, height: 852})
     await page.goto('/')
-    await page.getByRole('button', {name: /grille|grid/i}).click()
-    await expect(page.locator('.home-grid')).toBeVisible()
+    await expect(page.locator('[data-role="scroll-deck"]')).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   })
 

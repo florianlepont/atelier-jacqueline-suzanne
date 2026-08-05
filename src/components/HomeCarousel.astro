@@ -3042,6 +3042,275 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     }
   }
 
+  /* Phase 21 (HOME-14/HOME-15): the phone-width scroll deck's own CSS.
+     Deliberately placed last, after the 359px block above, so source order
+     alone gates every override below at phone width — no extra
+     specificity tricks are needed beyond the media query itself. Task 2
+     already built the markup (unstyled, visible at every width); this
+     section is what actually retires the carousel/grid/toggle below 767px
+     and styles the deck. See
+     .claude/skills/sketch-findings-ajs-website/references/homepage-motion.md
+     and 21-UI-SPEC.md "Layout & Structure Contract"/"Motion & Interaction
+     Contract" for the full design rationale — this comment only records
+     the CSS-specific decisions. No motion is wired here: plans 21-05/21-06
+     layer the scroll driver and arrival observer on top of this static
+     end-state. */
+  .home-scroll-deck {
+    display: none;
+  }
+
+  @media (max-width: 767px) {
+    /* D-01/D-16/success criterion 1: the deck fully replaces the carousel/
+       grid/toggle below 767px — a pure CSS gate, never a JS markup swap
+       (21-RESEARCH.md Anti-Patterns). `.home-toggle` is this file's own
+       scoped class (the button is slotted into <SiteHeader> via its
+       `extra` slot but authored here), so this file's scoped selector
+       reaches it without a :global() wrapper. */
+    .home-hero,
+    .home-grid,
+    .home-toggle {
+      display: none;
+    }
+
+    .home-scroll-deck {
+      display: block;
+    }
+
+    /* Track: tall enough to host the full zoom scrub before the first real
+       slide arrives. 900px mirrors ZOOM_REVEAL_DISTANCE exported from
+       src/lib/home-carousel.ts (21-01) — CSS cannot import that TS
+       constant, so if the Cinematic pace is ever retuned after further
+       real-device testing, BOTH this literal and the exported constant
+       must move together, or plan 21-05's driver (which reads the exported
+       constant to compute progress) will disagree with how tall this
+       track actually is. */
+    .home-scroll-deck__track {
+      height: calc(100dvh + 900px);
+    }
+
+    .home-scroll-deck__stage {
+      position: sticky;
+      top: 0;
+      height: 100dvh;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* End-state crossfade target (t=0.85->1.0, driven by plan 21-05's
+       zoom driver) — a plain, uncut photo, so the extreme ~8.5x scale
+       never has to render a flawless text-clip cutout entirely on its
+       own. Rest state is fully transparent. */
+    .home-scroll-deck__photo {
+      position: absolute;
+      inset: 0;
+      background-image: var(--zoom-photo);
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      opacity: 0;
+    }
+
+    .home-scroll-deck__wordmark {
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      line-height: 0.92;
+      font-weight: 900;
+      text-align: center;
+      margin: 0;
+      /* Same per-line clamp the existing mobile hero wordmark uses
+         (verbatim, not retuned — see .home-hero__wordmark's own 767px
+         override above). */
+      font-size: clamp(36px, 9.8vw, 50px);
+      /* HOME-15/success criterion 4: "full-screen" describes the wordmark's
+         own BOX, not its glyph ink — reusing the hero wordmark's compact
+         clamp (above) for legible letterforms would size the h1 to only
+         ~106px tall at a 393px viewport, well short of the 40%-of-viewport
+         floor 21-04-PLAN.md's own Task 1 spec locks in. Generous
+         viewport-relative block padding (not a bigger font-size, and not
+         flex/grid on the h1 itself, which would break the plain <br>-based
+         "Atelier/Jacqueline/Suzanne" line breaks the span+text-node markup
+         above depends on) grows the box to comfortably clear that floor
+         while keeping the actual letterforms at the same reused clamp size,
+         symmetric top/bottom padding keeps them centered inside the taller
+         box. [Rule 1 auto-fix — see 21-04-SUMMARY.md Deviations.] */
+      padding-block: 20dvh;
+      padding-inline: 5vw;
+      position: relative;
+      will-change: transform, opacity;
+      /* The full-screen wordmark's own box IS the photo's box here (unlike
+         the carousel wordmark) — no computeWordmarkBackgroundPosition-style
+         alignment math is needed (21-RESEARCH.md Pitfall 5). Unsupported-
+         engine fallback: a solid, readable color outside the @supports
+         block below. */
+      background-image: var(--zoom-photo);
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      color: var(--current-accent-text, var(--color-on-accent));
+    }
+
+    @supports (background-clip: text) or (-webkit-background-clip: text) {
+      /* Safari warning (21-RESEARCH.md Pitfall 3, mirrors the existing
+         carousel wordmark's own comment above verbatim): extra paint
+         layers (a second background, a box-shadow, a text stroke)
+         combined with a text-clipped background produce raster seams on
+         Safari, especially at this scroll-driven scale's extreme end.
+         Exactly ONE filter declaration, no other paint layer — the
+         t=0.85->1.0 crossfade to the plain photo layer above is the
+         safety net for a less-than-flawless cutout at ~8.5x, not this
+         rule. */
+      .home-scroll-deck__wordmark {
+        -webkit-background-clip: text;
+        background-clip: text;
+      }
+
+      /* Mirrors .home-grid__wordmark's own @supports block above verbatim
+         (as instructed) — gated behind the SAME .home.has-wordmark-photo
+         class the carousel's <script> already toggles once the first
+         gallery's hero <img> confirms a successful load, not applied
+         unconditionally. [Rule 1 auto-fix — see 21-04-SUMMARY.md
+         Deviations: an unconditional transparent color/fill here would
+         leave the wordmark permanently invisible if the underlying photo
+         request ever fails, since --zoom-photo has no other load-success
+         signal of its own; --zoom-photo/--zoom-photo-filter are sourced
+         from this SAME first gallery (Task 2), so has-wordmark-photo's
+         existing load-success state is exactly the right gate to reuse.] */
+      .home.has-wordmark-photo .home-scroll-deck__wordmark {
+        color: transparent;
+        -webkit-text-fill-color: transparent;
+        filter: var(--zoom-photo-filter);
+      }
+    }
+
+    .home-scroll-deck__focus-letter {
+      /* Measurable box for plan 21-05's live transform-origin math only —
+         must not change the rendered wordmark's appearance in any way. */
+      display: inline-block;
+    }
+
+    /* .home-scroll-deck__slides (the wrapper) deliberately carries no
+       scroll-snap-type of its own — the html:has() rule in the is:global
+       block below owns it, scoped so the zoom track above stays entirely
+       outside the snap container (21-RESEARCH.md Pitfall 6). */
+    .home-slide {
+      display: block;
+      position: relative;
+      height: 100dvh;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+      color: var(--slide-accent-text, var(--color-on-accent));
+      text-decoration: none;
+    }
+
+    .home-slide:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: var(--focus-ring-offset);
+    }
+
+    .home-slide__img {
+      position: absolute;
+      inset: 0;
+      object-fit: cover;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Mobile variant of the accent panel (D-06) — a full-width, bottom-
+       anchored band, not the desktop corner-card geometry
+       .home-hero__accent/.home-grid__tile-copy use. */
+    .home-slide__accent {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      padding: var(--space-lg);
+      background-color: var(--slide-accent, var(--color-accent));
+      color: var(--slide-accent-text, var(--color-on-accent));
+    }
+
+    /* Reused verbatim from .home-grid__tile-title above (D-13) — always
+       visible; the title itself is never part of the reveal. */
+    .home-slide__title {
+      display: -webkit-box;
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: var(--weight-semibold);
+      line-height: 1.2;
+      min-height: calc(1.2em * 2);
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    /* Reused verbatim from .home-grid__tile-description above (D-13) — the
+       reveal values themselves (opacity/translateY/180ms ease) are locked;
+       do not retune. `is-revealed` is declared here and toggled by plan
+       21-06's arrival observer. */
+    .home-slide__description {
+      display: -webkit-box;
+      min-height: calc(1.4em * 3);
+      margin-top: var(--space-sm);
+      max-width: 52ch;
+      overflow: hidden;
+      font-size: 14px;
+      line-height: 1.4;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 180ms ease, transform 180ms ease;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+    }
+
+    .home-slide.is-revealed .home-slide__description {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* D-12: qualified with both the .home ancestor and both header variant
+       classes inside :global() so this beats .site-header--transparent's
+       own position: absolute (SiteHeader.astro's transparent-variant
+       rule) regardless of which variant a future change might render here.
+       Stacking above the deck is already guaranteed by the header's own
+       z-index: 5 (the .home :global(.site-header) rule above, near the top
+       of this style block), which nothing in the deck sets or contests. */
+    .home :global(.site-header--solid),
+    .home :global(.site-header--transparent) {
+      position: fixed;
+      transition: opacity 300ms ease, visibility 0s linear 300ms;
+    }
+
+    /* data-zoom-active is absent by default — only plan 21-05's zoom
+       driver ever writes it — so the header stays visible pre-JS, with JS
+       disabled, and under reduced motion. That default is load-bearing for
+       the reduced-motion route plan 21-03's tests rely on. Visibility only
+       flips to hidden once the opacity transition above finishes, so the
+       header reads as fading out rather than vanishing abruptly. */
+    .home[data-zoom-active='true'] :global(.site-header--solid),
+    .home[data-zoom-active='true'] :global(.site-header--transparent) {
+      opacity: 0;
+      visibility: hidden;
+    }
+  }
+
+  /* Phase 21 (D-15): the reduced-motion end state. Every description is
+     permanently visible with no observer running (plan 21-06 gates its
+     own attachment behind this identical matchMedia check, so there is
+     nothing left to reveal on scroll). The is:global block above disables
+     scroll-snap-type under this same query. The zoom wordmark and photo
+     layer need NO rule here at all — their unconditional rest state
+     (wordmark visible at scale 1, photo layer at opacity 0) IS the static
+     full-screen wordmark this reduced-motion end state requires, since
+     plan 21-05's driver never attaches under this query either. */
+  @media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+    .home-slide__description {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
 </style>
 
 <style is:global>
@@ -3058,9 +3327,47 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
      affects gallery/édition/about/contact/legal pages; BaseLayout's own
      `hideFooter` prop is untouched (it's a build-time prop and cannot react
      to this client-side carousel/grid toggle). Grid mode leaves the footer
-     visible, and the rule reverts cleanly on toggle either direction. */
-  body:has(.home[data-display-mode='carousel']) footer.chrome-band {
-    display: none;
+     visible, and the rule reverts cleanly on toggle either direction.
+
+     Phase 21 (D-08/HOME-14): wrapped in `min-width: 768px` — below 767px
+     the carousel/grid subtree is hidden entirely (see the phone-width
+     scoped <style> block above) and the phone-width deck instead relies on
+     the visitor scrolling straight past the last slide into the real
+     footer, so this hide rule must not reach phone width at all. No other
+     part of the rule changes. */
+  @media (min-width: 768px) {
+    body:has(.home[data-display-mode='carousel']) footer.chrome-band {
+      display: none;
+    }
+  }
+
+  /* Phase 21 (HOME-14/HOME-15): phone-width scroll snap for pages that
+     actually render the deck. `html:has(.home-scroll-deck)` — not a bare
+     `html` rule — so this snap type never leaks onto About/Contact/
+     gallery/édition pages, which don't render this markup. The page
+     itself is the scroll container (D-08 requires scrolling past the last
+     slide into the footer, so a nested scroller is out of the question),
+     and the zoom track above is a deliberately non-snapping 900px scrub
+     region that a strict snap mode would fight (21-RESEARCH.md Pitfall 6)
+     — `proximity` (not `mandatory`) keeps D-04's free scrub intact while
+     each slide's own `scroll-snap-stop: always` still prevents a fling
+     from skipping a gallery. This is the "exact snap-scroll CSS technique"
+     21-CONTEXT.md left open for planning to decide, not a change to any
+     locked decision. */
+  @media (max-width: 767px) {
+    html:has(.home-scroll-deck) {
+      scroll-snap-type: y proximity;
+    }
+  }
+
+  /* Phase 21 (D-15): the reduced-motion end state. No JS observer runs
+     under this query (plan 21-06 gates its own attachment behind the
+     identical matchMedia check), so every description must already be in
+     its final revealed state and the free-scrub snap must be fully off. */
+  @media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+    html:has(.home-scroll-deck) {
+      scroll-snap-type: none;
+    }
   }
 
   /* View Transitions pseudo-elements (quick-260713-jfz) live on the document
