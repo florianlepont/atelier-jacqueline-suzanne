@@ -42,7 +42,9 @@
     "security_enforcement": true,
     "security_asvs_level": 1,
     "security_block_on": "high",
-    "_auto_chain_active": true
+    "_auto_chain_active": true,
+    "build_command": "npm run build",
+    "test_command": "npm run typecheck && npm run test:unit && npm run test:e2e"
   },
   "ship": {
     "pr_body_sections": [
