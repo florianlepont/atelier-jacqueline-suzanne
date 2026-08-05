@@ -100,6 +100,15 @@ test.describe('homepage random starting accent (HOME-16, D-05)', () => {
   });
 
   test('the per-gallery accent still follows carousel position after the first advance', async ({ page }) => {
+    // Phase 21 (HOME-14): the describe block's own beforeEach forces phone
+    // width (393x852), but the carousel/progress-dash this test clicks is
+    // now retired below 767px (homepage-scroll-deck.spec.ts covers the
+    // phone-width replacement) — a real phone visitor has no dash to click
+    // anymore. The underlying "accent follows carousel position on advance"
+    // behaviour this test proves is still genuinely valid on tablet/desktop
+    // (the carousel is untouched there), so this one test overrides back to
+    // a desktop viewport rather than being retired outright.
+    await page.setViewportSize({ width: 1280, height: 800 });
     await page.addInitScript(() => {
       Math.random = () => 0.999;
     });

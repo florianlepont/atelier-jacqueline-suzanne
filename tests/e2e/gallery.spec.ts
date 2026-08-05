@@ -582,15 +582,25 @@ test.describe('gallery detail overlay-title matches the homepage carousel title 
 test.describe('gallery detail scroll-up-to-return (Item 6, quick-260725-tqs)', () => {
   async function discoverGallery(page: import('@playwright/test').Page) {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Grille' }).click();
-    const tile = page.locator('a.home-grid__tile').first();
-    const href = await tile.getAttribute('href');
-    expect(href).toBeTruthy();
-    const title = (await tile.locator('.home-grid__tile-title').innerText()).trim();
-    const slugMatch = href!.match(/\/galleries\/([^/]+)\/?$/);
-    const slug = slugMatch?.[1];
-    expect(slug).toBeTruthy();
-    return { href: href!, slug: slug!, title };
+    // Phase 21 (HOME-14): reads the build-time data node (Lightbox.astro
+    // precedent, also used by homepage-scroll-deck.spec.ts and
+    // homepage-accent-random.spec.ts) instead of clicking the "Grille"
+    // toggle + reading a `.home-grid__tile` — this helper is shared by both
+    // the 1280x900 desktop callers below AND the 390x844 touch-input caller,
+    // and the toggle/grid subtree is now retired entirely below 767px
+    // (structurally absent, not just visually hidden), so a real click
+    // there would time out forever.
+    const entry = await page
+      .locator('ul[data-role="home-carousel-data"] li')
+      .first()
+      .evaluate((li) => ({
+        href: (li as HTMLElement).dataset.href ?? '',
+        slug: (li as HTMLElement).dataset.slug ?? '',
+        title: (li as HTMLElement).dataset.title ?? '',
+      }));
+    expect(entry.href).toBeTruthy();
+    expect(entry.slug).toBeTruthy();
+    return { href: entry.href, slug: entry.slug, title: entry.title };
   }
 
   test.describe('positive path (must navigate)', () => {
@@ -921,8 +931,14 @@ test.describe('cross-document view-transition name gating — mobile (sketch 006
     page,
   }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Grille' }).click();
-    const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    // Phase 21 (HOME-14): the "Grille" toggle + `.home-grid__tile` are
+    // retired entirely below 767px — read the build-time data node instead
+    // (same pattern as discoverGallery() above), which exists at every
+    // viewport regardless of which subtree the CSS currently shows.
+    const firstTileHref = await page
+      .locator('ul[data-role="home-carousel-data"] li')
+      .first()
+      .evaluate((li) => (li as HTMLElement).dataset.href ?? '');
     expect(firstTileHref).toBeTruthy();
 
     await page.goto(firstTileHref!);
@@ -1089,10 +1105,15 @@ test.describe('gallery + édition thumbnail tiles render with no frame (PORT-05,
 test.describe('gallery detail hero statement renders in full, no clamp, no clipping (PORT-04, D-01)', () => {
   async function discoverGalleryHrefs(page: import('@playwright/test').Page) {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Grille' }).click();
-    const hrefs = await page.locator('a.home-grid__tile').evaluateAll((els) =>
-      els.map((el) => el.getAttribute('href')).filter((href): href is string => Boolean(href)),
-    );
+    // Phase 21 (HOME-14): shared by both the desktop AND mobile tests below
+    // — the "Grille" toggle + `.home-grid__tile` are retired entirely below
+    // 767px, so reads the build-time data node instead (works unchanged at
+    // every viewport).
+    const hrefs = await page
+      .locator('ul[data-role="home-carousel-data"] li')
+      .evaluateAll((els) =>
+        els.map((el) => (el as HTMLElement).dataset.href).filter((href): href is string => Boolean(href)),
+      );
     expect(hrefs.length).toBeGreaterThan(0);
     return hrefs;
   }
