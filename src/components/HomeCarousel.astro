@@ -364,6 +364,61 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         - D-07: exactly one photo per gallery (its own hero/cover photo) —
           not a multi-photo-per-gallery preview. */}
     <div class="home-scroll-deck" data-role="scroll-deck">
+      {/* 21-UAT.md gap 1 (missing pre-zoom intro beat) —
+          .planning/debug/homepage-scroll-missing-intro-beat.md: added AFTER
+          the phase's own real-device UAT found the wordmark-zoom opening
+          directly on load, with no preceding beat. This is additive scope
+          with no locked 21-CONTEXT.md decision behind it (none of D-01
+          through D-16 specifies a pre-wordmark beat) — 21-10-PLAN.md's own
+          <assumptions> block (A1 through A5) is the record of the open
+          design questions this markup answers, and 21-10-SUMMARY.md restates
+          them for the developer to confirm or correct. Both beats below
+          deliberately render byte-for-byte identical logo markup/classes so
+          the tagline reads as arriving beneath a logo that appears to stay
+          put (A4) — do not add a beat-specific size override to either. No
+          zoom math changes here: computeZoomProgress (src/lib/
+          home-carousel.ts) keys off .home-scroll-deck__track's own live
+          getBoundingClientRect().top, so prepending these two sibling
+          sections needs zero change to ZOOM_REVEAL_DISTANCE or the track
+          height calc below — the zoom simply stays at rest until the
+          browser has scrolled past both beats. */}
+      <div
+        class="home-scroll-deck__intro home-scroll-deck__intro--logo"
+        data-role="deck-intro"
+        data-intro-beat="1"
+      >
+        <img
+          src={logoWhiteSrc}
+          alt=""
+          aria-hidden="true"
+          class="home-scroll-deck__intro-logo"
+        />
+        {/* Decorative only (aria-hidden) — assumption A2: dismissed by
+            scrolling past, nothing else; no tap/timer affordance. */}
+        <div class="home-scroll-deck__intro-cue" aria-hidden="true">
+          <span>{isEn ? 'Scroll' : 'Défiler'}</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </div>
+      </div>
+      {introBody ? (
+        <div
+          class="home-scroll-deck__intro home-scroll-deck__intro--tagline"
+          data-role="deck-intro"
+          data-intro-beat="2"
+        >
+          {/* Byte-for-byte identical logo markup/classes/attributes to beat
+              1 above (assumption A4) — do not diverge. */}
+          <img
+            src={logoWhiteSrc}
+            alt=""
+            aria-hidden="true"
+            class="home-scroll-deck__intro-logo"
+          />
+          <p class="home-scroll-deck__intro-body">{introBody}</p>
+        </div>
+      ) : null}
       <div
         class="home-scroll-deck__track"
         data-role="zoom-track"
@@ -3545,6 +3600,91 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        blast radius far beyond this gap, and UI-02 forbids changes outside
        the phone-width homepage. Rejected on purpose, not omitted. */
 
+    /* 21-UAT.md gap 1 (pre-zoom intro beats, 21-10) —
+       .planning/debug/homepage-scroll-missing-intro-beat.md. Positioned
+       immediately before .home-scroll-deck__track below so source order
+       matches visual/DOM order. No `min-width: 768px` rule is needed for
+       these sections — .home-scroll-deck's own `display: none` base rule
+       (above, outside this media query) already makes them desktop-inert
+       for free, exactly like every other element in this subtree. */
+    .home-scroll-deck__intro {
+      height: 100svh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-lg);
+      padding-inline: var(--space-lg);
+      /* Assumption A5 (21-10-PLAN.md): ink background, continuous with the
+         deck's own paint floor (.home-scroll-deck__photo/.home-slide, plan
+         21-09) and the phone-only theme-color meta tag (plan 21-09) — an
+         ink intro screen never reintroduces the white-strip status-bar
+         problem plan 21-09 just closed. A white logomark is required for
+         contrast on ink, hence logoWhiteSrc below (not logoBlackSrc). */
+      background-color: var(--color-ink);
+      color: #FFFFFF;
+      text-align: center;
+      /* Assumption A3 (21-10-PLAN.md): deliberately NO scroll-snap-align/
+         scroll-snap-stop on these sections — each beat is exactly one
+         viewport tall so an ordinary scroll already lands on it cleanly,
+         and adding a snap point immediately before the deliberately
+         snap-free 900px zoom scrub could let the page-wide proximity snap
+         (is:global block below) pull the visitor backwards into the intro
+         mid-scrub — the same conflict class 21-RESEARCH.md Pitfall 6 made
+         the track itself snap-free to avoid. */
+    }
+
+    .home-scroll-deck__intro-logo {
+      width: 40vw;
+      max-width: 220px;
+      height: auto;
+      display: block;
+    }
+
+    .home-scroll-deck__intro-cue {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-xs);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      /* Assumption A5: a gentle, slow, small vertical drift — an
+         affordance, not a flourish. Suppressed entirely under reduced
+         motion below (assumption A1). */
+      animation: home-scroll-deck-intro-cue-drift 1.8s ease-in-out infinite;
+    }
+
+    @keyframes home-scroll-deck-intro-cue-drift {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(6px);
+      }
+    }
+
+    /* D-13: reused verbatim from .home-grid__tile-description/
+       .home-slide__description above — opacity/translateY/180ms ease are
+       locked, do not retune. `is-revealed` lands on the intro section
+       ancestor itself, the same ancestor-keyed shape
+       `.home-slide.is-revealed .home-slide__description` already uses, and
+       is toggled by the deck driver's per-frame arrival pass (Task 2). */
+    .home-scroll-deck__intro-body {
+      max-width: 52ch;
+      font-size: 14px;
+      line-height: 1.4;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .home-scroll-deck__intro.is-revealed .home-scroll-deck__intro-body {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
     /* Track: tall enough to host the full zoom scrub before the first real
        slide arrives. WR-01 fix: CSS cannot import the TS
        ZOOM_REVEAL_DISTANCE constant (src/lib/home-carousel.ts, 21-01)
@@ -3848,6 +3988,26 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     .home-slide__description {
       opacity: 1;
       transform: none;
+    }
+
+    /* Assumption A1 (21-10-PLAN.md): the intro beats are content, not
+       motion, so a reduced-motion visitor still gets both beats — the
+       tagline is permanently visible (no reveal) and the cue's drift is
+       suppressed. The header is deliberately NOT hidden here: D-12's
+       header-hide is entirely JS-attribute-driven (data-zoom-active/
+       data-intro-active, Task 2), and this driver never attaches at all
+       under this query (D-15's established convention), so the header
+       staying visible falls out of that convention for free rather than
+       being a new rule — this keeps mobile-nav.spec.ts/accessibility.spec.ts/
+       critical.smoke.spec.ts's existing reduced-motion route to an
+       interactive header intact. */
+    .home-scroll-deck__intro-body {
+      opacity: 1;
+      transform: none;
+    }
+
+    .home-scroll-deck__intro-cue {
+      animation: none;
     }
   }
 
