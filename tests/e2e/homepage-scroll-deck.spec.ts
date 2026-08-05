@@ -197,3 +197,178 @@ test.describe('desktop/tablet regression guard (success criterion 5, UI-02)', ()
     await expect(page.locator('[data-role="home-carousel"]')).toBeVisible();
   });
 });
+
+// Phase 21, plan 21-05 (HOME-15, D-01 through D-04, D-12, D-15): the
+// wordmark-to-photo zoom driver wired in HomeCarousel.astro's second
+// <script> block. Plan 21-04 above only proved the deck's STATIC shape; this
+// describe block proves the SCROLL-DRIVEN behavior plan 21-05 layers on top
+// of it — rest state, mid-scrub, completion, reversal, the measured anchor,
+// the header hide/fade (D-12), and both inert paths (reduced motion / desktop).
+test.describe('wordmark-to-photo zoom driver (HOME-15, D-01 through D-04, D-12, D-15)', () => {
+  // The track's own rendered height minus the viewport height IS the live
+  // reveal distance (mirrors ZOOM_REVEAL_DISTANCE, 900px, but read from the
+  // page rather than duplicated as a literal here — stays correct if a real-
+  // device tuning pass ever changes the CSS track height + the exported
+  // constant together).
+  async function getRevealDistance(page: Page): Promise<number> {
+    const distance = await page.evaluate(() => {
+      const track = document.querySelector<HTMLElement>('[data-role="zoom-track"]');
+      if (!track) return 0;
+      return track.getBoundingClientRect().height - window.innerHeight;
+    });
+    expect(distance).toBeGreaterThan(0);
+    return distance;
+  }
+
+  // The driver applies `scale(...)` as a plain CSS transform (no rotation/
+  // skew), so the computed matrix's first component IS the scale factor —
+  // extracting it numerically keeps this robust to the exact string
+  // representation ('none' at rest vs. 'matrix(...)' once scaled).
+  function scaleFromComputedTransform(transform: string): number {
+    if (transform === 'none') return 1;
+    const match = transform.match(/^matrix\(([-0-9.]+),/);
+    return match ? parseFloat(match[1]) : NaN;
+  }
+
+  async function getWordmarkScale(page: Page): Promise<number> {
+    const transform = await page
+      .locator('[data-role="zoom-wordmark"]')
+      .evaluate((el) => getComputedStyle(el).transform);
+    return scaleFromComputedTransform(transform);
+  }
+
+  async function getWordmarkOpacity(page: Page): Promise<string> {
+    return page.locator('[data-role="zoom-wordmark"]').evaluate((el) => getComputedStyle(el).opacity);
+  }
+
+  async function getPhotoOpacity(page: Page): Promise<string> {
+    return page.locator('[data-role="zoom-photo"]').evaluate((el) => getComputedStyle(el).opacity);
+  }
+
+  async function getZoomActive(page: Page): Promise<string | null> {
+    return page.locator('.home').getAttribute('data-zoom-active');
+  }
+
+  test('rest state before any scrolling (HOME-15)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const transform = await page.locator('[data-role="zoom-wordmark"]').evaluate((el) => getComputedStyle(el).transform);
+    expect(scaleFromComputedTransform(transform)).toBeCloseTo(1, 5);
+    await expect.poll(() => getPhotoOpacity(page)).toBe('0');
+    // "Zoom in progress" value — the driver sets this at t=0 too (the zoom
+    // has not yet reached its completed state), which is what keeps the
+    // header hidden from first paint per D-12/D-15's own load-bearing
+    // default-visible-until-JS-decides contract.
+    await expect.poll(() => getZoomActive(page)).toBe('true');
+  });
+
+  test('header hidden during the zoom (D-03/D-12)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    await expect(page.locator('[data-role="site-header"]')).not.toBeVisible();
+  });
+
+  test('mid-scrub scale is strictly between 1 and 8.5 (D-04)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const distance = await getRevealDistance(page);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(distance / 2));
+
+    await expect.poll(() => getWordmarkScale(page)).toBeGreaterThan(1);
+    await expect.poll(() => getWordmarkScale(page)).toBeLessThan(8.5);
+  });
+
+  test('completion: wordmark fully faded, photo fully opaque, zoom-active flips to its completed value (HOME-15, success criterion 4)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const distance = await getRevealDistance(page);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(distance * 1.2));
+
+    await expect.poll(() => getWordmarkOpacity(page)).toBe('0');
+    await expect.poll(() => getPhotoOpacity(page)).toBe('1');
+    await expect.poll(() => getZoomActive(page)).toBe('false');
+  });
+
+  test('header fades in once the zoom completes (D-12)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const distance = await getRevealDistance(page);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(distance * 1.2));
+
+    await expect(page.locator('[data-role="site-header"]')).toBeVisible();
+  });
+
+  test('reversibility: scrolling back to the top restores the rest state (D-04)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const distance = await getRevealDistance(page);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(distance * 1.2));
+    await expect.poll(() => getZoomActive(page)).toBe('false');
+
+    await page.evaluate(() => window.scrollTo(0, 0));
+
+    // Tolerance of 0.05 (per this plan's own instruction) on the scale
+    // comparison — the exact frame `expect.poll` samples right after a
+    // scroll-to-0 is not perfectly deterministic.
+    await expect.poll(() => getWordmarkScale(page)).toBeLessThan(1.05);
+    await expect.poll(() => getPhotoOpacity(page)).toBe('0');
+    await expect(page.locator('[data-role="site-header"]')).not.toBeVisible();
+  });
+
+  test('the zoom anchors on the leading letter, not the block center (HOME-15, Pitfall 4)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+    // Pitfall 4: measuring before the real Unbounded font has swapped in
+    // produces a wrong anchor — wait for fonts to settle before reading the
+    // computed transform-origin, same as the driver's own re-sync guard.
+    await page.evaluate(() => document.fonts.ready);
+
+    async function readOrigin() {
+      return page.locator('[data-role="zoom-wordmark"]').evaluate((el) => {
+        const originX = parseFloat(getComputedStyle(el).transformOrigin.split(' ')[0] ?? '0');
+        const width = el.getBoundingClientRect().width;
+        return { originX, width };
+      });
+    }
+
+    // expect.poll rides out the fonts.ready -> syncFocusOrigin() re-measure
+    // race rather than assuming it has already landed by the time this test
+    // reads the value.
+    await expect.poll(async () => (await readOrigin()).originX).toBeGreaterThan(0);
+    const { originX, width } = await readOrigin();
+    expect(originX).toBeGreaterThan(0);
+    expect(originX).toBeLessThan(width / 2);
+  });
+
+  test('reduced motion: no transform is written, no zoom-active attribute exists, and the header stays visible (D-15)', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const inlineTransform = await page.locator('[data-role="zoom-wordmark"]').evaluate((el) => (el as HTMLElement).style.transform);
+    expect(inlineTransform).toBe('');
+    expect(await getZoomActive(page)).toBeNull();
+    await expect(page.locator('[data-role="site-header"]')).toBeVisible();
+
+    await page.evaluate(() => window.scrollTo(0, 500));
+
+    const inlineTransformAfterScroll = await page
+      .locator('[data-role="zoom-wordmark"]')
+      .evaluate((el) => (el as HTMLElement).style.transform);
+    expect(inlineTransformAfterScroll).toBe('');
+  });
+
+  test('desktop inert: no zoom-active attribute, header visible (success criterion 5)', async ({ page }) => {
+    await page.setViewportSize(DESKTOP_VIEWPORT);
+    await page.goto('/');
+
+    expect(await getZoomActive(page)).toBeNull();
+    await expect(page.locator('[data-role="site-header"]')).toBeVisible();
+  });
+});
