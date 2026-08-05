@@ -539,6 +539,15 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         let carouselIndex = 0;
         let timer: ReturnType<typeof setInterval> | null = null;
         const reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+        // CR-01 fix: this desktop carousel's `data-display-mode` never
+        // actually leaves 'carousel' on a phone — the mode-toggle button
+        // that would flip it to 'grid' is display:none below 767px (see
+        // the `@media (max-width: 767px)` rule further down), so that
+        // dataset check alone can't gate auto-advance off at phone widths.
+        // Matches the identical `(max-width: 767px)` breakpoint the
+        // phone-only scroll-deck script (`mobile`, second <script> block
+        // below) and its CSS already use, byte-for-byte.
+        const phoneViewport = window.matchMedia('(max-width: 767px)');
         let autoAdvancePausedByUser = reduceMotionQuery.matches;
         let hasUserChosenAutoplay = false;
         // Cancels the previous render()'s pending hero load/error listeners so
@@ -866,7 +875,13 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         // mouseleave listeners removed).
         function startAutoAdvance() {
           stopAutoAdvance();
-          if (autoAdvancePausedByUser || root!.dataset.displayMode !== 'carousel') return;
+          // CR-01: the phone-width guard must be checked here (the single
+          // choke point every call site — bottom-of-script startup,
+          // focusout, the autoplay toggle, showCarousel(), the
+          // reduced-motion listener, and the manual-nav resumes in
+          // goToPrev/goToNext/goToIndex — already funnels through) rather
+          // than duplicated at each call site.
+          if (autoAdvancePausedByUser || phoneViewport.matches || root!.dataset.displayMode !== 'carousel') return;
           timer = setInterval(() => {
             carouselIndex = (carouselIndex + 1) % galleries.length;
             // quick-260803-bvu (Item 1): auto-advance must always look like
@@ -935,6 +950,17 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           autoAdvancePausedByUser = event.matches;
           syncAutoplayControl();
           if (autoAdvancePausedByUser) stopAutoAdvance();
+          else startAutoAdvance();
+        });
+
+        // CR-01: a resize/orientation change crossing the 767px breakpoint
+        // (e.g. rotating a tablet, or a desktop window narrowed past it)
+        // must (re)apply the phone-width gate live, not just at initial
+        // load. startAutoAdvance() already no-ops if paused-by-user or
+        // still below the breakpoint, so this is safe to call
+        // unconditionally on the "now wider" transition.
+        phoneViewport.addEventListener('change', () => {
+          if (phoneViewport.matches) stopAutoAdvance();
           else startAutoAdvance();
         });
 
@@ -1007,7 +1033,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         // layout's header, and a stray ArrowLeft/ArrowRight while typing
         // in an <input> shouldn't hijack the carousel).
         document.addEventListener('keydown', (event) => {
-          if (root!.dataset.displayMode !== 'carousel') return;
+          // CR-01 (see IN-01): the dataset check alone never gates this off
+          // on a phone, for the same reason startAutoAdvance() needed its
+          // own explicit phoneViewport check above.
+          if (root!.dataset.displayMode !== 'carousel' || phoneViewport.matches) return;
           const target = event.target as HTMLElement | null;
           if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
           if (event.key === 'ArrowLeft') {
