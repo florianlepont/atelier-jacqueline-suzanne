@@ -740,3 +740,225 @@ test.describe('per-frame deck driver — scroll-event independence and atomic ha
     await expect(page.locator('.home-slide.is-revealed')).toHaveCount(0);
   });
 });
+
+// Phase 21, plan 21-08 (HOME-14, blur-placeholder gap — 21-UAT.md's third
+// gap, root-caused in
+// .planning/debug/homepage-scroll-deck-blur-placeholder-jank.md): deck
+// slides never had HOME-09's blur-up placeholder mechanism (already proven
+// for .home-hero/.home-grid elsewhere in this suite) or a priority hint for
+// the upcoming slide, so a real phone scroll found the second-and-later
+// slides' full-resolution photo still arriving over the network with
+// nothing masking the wait. This block proves the two-layer stack, the
+// eager/priority split, the crossfade, the no-placeholder-means-blank-area
+// failure path, and the runtime next-slide warm all landed together.
+test.describe('deck-slide progressive loading (HOME-14, HOME-09, 21-UAT.md gap 3)', () => {
+  test('every slide renders exactly one placeholder and one sharp image, at genuinely different resolutions', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const slides = page.locator('[data-role="deck-slide"]');
+    const count = await slides.count();
+    expect(count).toBeGreaterThan(0);
+
+    for (let i = 0; i < count; i++) {
+      const slide = slides.nth(i);
+      await expect(slide.locator('.home-slide__img-placeholder')).toHaveCount(1);
+      await expect(slide.locator('.home-slide__img--sharp')).toHaveCount(1);
+
+      const placeholderSrc = await slide.locator('.home-slide__img-placeholder').getAttribute('src');
+      const sharpSrc = await slide.locator('.home-slide__img--sharp').getAttribute('src');
+      expect(placeholderSrc).toContain('w=24');
+      expect(sharpSrc).not.toContain('w=24');
+    }
+  });
+
+  test('the placeholder image never carries a lazy loading attribute (a 24px placeholder must never be deferred)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const loadingAttrs = await page
+      .locator('.home-slide__img-placeholder')
+      .evaluateAll((els) => els.map((el) => el.getAttribute('loading')));
+    expect(loadingAttrs.length).toBeGreaterThan(0);
+    loadingAttrs.forEach((attr) => expect(attr).toBeNull());
+  });
+
+  test('the first slide\'s sharp image is eager with high fetch priority', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const first = page.locator('.home-slide__img--sharp').nth(0);
+    expect(await first.getAttribute('loading')).toBe('eager');
+    expect(await first.getAttribute('fetchpriority')).toBe('high');
+  });
+
+  test('the second slide\'s sharp image is also eager (a real head start during the wordmark-zoom scrub)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const entries = await readGalleryData(page);
+    test.skip(entries.length < 2, 'needs at least 2 homepage galleries to prove the second slide is eager');
+
+    const second = page.locator('.home-slide__img--sharp').nth(1);
+    expect(await second.getAttribute('loading')).toBe('eager');
+  });
+
+  test('every slide from the third onward stays native-lazy with no fetch-priority hint (T-21-08-A bound)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const entries = await readGalleryData(page);
+    test.skip(entries.length < 3, 'needs at least 3 homepage galleries to prove a lazy slide exists');
+
+    const laterAttrs = await page.locator('.home-slide__img--sharp').evaluateAll((els) =>
+      els.slice(2).map((el) => ({ loading: el.getAttribute('loading'), fetchpriority: el.getAttribute('fetchpriority') })),
+    );
+    expect(laterAttrs.length).toBeGreaterThan(0);
+    laterAttrs.forEach(({ loading, fetchpriority }) => {
+      expect(loading).toBe('lazy');
+      expect(fetchpriority).toBeNull();
+    });
+  });
+
+  test('the first slide\'s crossfade reaches its loaded state, with the placeholder still present underneath', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const firstSlide = page.locator('[data-role="deck-slide"]').nth(0);
+    const sharp = firstSlide.locator('.home-slide__img--sharp');
+
+    // getComputedStyle, not toBeVisible() — an opacity:0 image still reads
+    // as "visible" to Playwright, so only a direct opacity read proves the
+    // crossfade has actually resolved (mirrors this file's own D-13
+    // describe block above).
+    await expect.poll(() => sharp.evaluate((el) => el.classList.contains('is-loaded'))).toBe(true);
+    await expect.poll(() => sharp.evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
+    await expect(firstSlide.locator('.home-slide__img-placeholder')).toHaveCount(1);
+  });
+
+  test('when every sharp rendition fails outright, the first slide still shows its placeholder rather than a blank area', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    // Mirrors critical.smoke.spec.ts's own abort predicate exactly (w=24
+    // allowed through, every other rendition aborted) so the two tests stay
+    // consistent with each other.
+    await page.route(/cdn\.sanity\.io\/images\//, (route) => {
+      const url = new URL(route.request().url());
+      return url.searchParams.get('w') !== '24' ? route.abort('failed') : route.continue();
+    });
+
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+
+    await page.waitForFunction(() => {
+      const placeholder = document.querySelector<HTMLImageElement>('.home-slide__img-placeholder');
+      return Boolean(placeholder?.complete && placeholder.naturalWidth > 0);
+    });
+
+    const firstSlide = page.locator('[data-role="deck-slide"]').nth(0);
+    const naturalWidth = await firstSlide
+      .locator('.home-slide__img-placeholder')
+      .evaluate((el) => (el as HTMLImageElement).naturalWidth);
+    expect(naturalWidth).toBeGreaterThan(0);
+
+    const box = await firstSlide.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.width).toBeGreaterThan(0);
+    expect(box!.height).toBeGreaterThan(0);
+  });
+
+  test('arriving at a slide promotes the NEXT slide\'s sharp image out of native-lazy (the runtime warm, D-14 rising edge)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    // A same-origin, near-instant preview server makes Chromium's own
+    // native-lazy heuristic aggressive enough to start fetching (and, if
+    // aborted, immediately error) a "lazy" slide's photo well before any
+    // scroll — which would flip is-loaded true first and make
+    // warmNextSlide's own is-loaded guard bail before it ever touches the
+    // `loading` attribute this test asserts on (confirmed by hand: even the
+    // LAST slide's image, several screens below the fold, already reports
+    // is-loaded on an aborted route before any scroll happens here). Route
+    // interception that never resolves — neither `continue()` nor
+    // `abort()` — leaves every non-24px request permanently pending
+    // instead: `load`/`error` can never fire, so `is-loaded` can never
+    // become true, and the ONLY way `loading` can flip away from 'lazy' is
+    // this component's own JS explicitly setting it. That isolates the
+    // attribute-mutation logic under test from the load/error race
+    // entirely, rather than trying to out-time it.
+    await page.route(/cdn\.sanity\.io\/images\//, (route) => {
+      const url = new URL(route.request().url());
+      if (url.searchParams.get('w') === '24') return route.continue();
+      // Deliberately unresolved: no continue(), abort(), or fulfill().
+    });
+
+    // domcontentloaded, not the default 'load' — with eager images (index
+    // 0/1) now permanently pending above, waiting for the 'load' event
+    // would hang for the test's own default timeout, since a pending
+    // subresource blocks it (mirrors the failure-path case above, which
+    // hits the same constraint for the same reason).
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+
+    const entries = await readGalleryData(page);
+    test.skip(entries.length < 2, 'needs at least 2 homepage galleries to prove any arrival-triggered warm');
+
+    const sharpImgs = page.locator('.home-slide__img--sharp');
+
+    if (entries.length < 3) {
+      // Only 2 galleries exist: slides 0 and 1 are BOTH already eager from
+      // markup (the index <= 1 split above), so the runtime warm has
+      // nothing left to promote — warmNextSlide(0) would target slides[1],
+      // already eager, and warmNextSlide(1) targets slides[2], which does
+      // not exist here. Assert the markup-level baseline instead of a
+      // runtime transition that cannot occur at this gallery count.
+      expect(await sharpImgs.nth(1).getAttribute('loading')).toBe('eager');
+      return;
+    }
+
+    // With 3+ galleries, the third slide's sharp image starts native-lazy
+    // (asserted above too) — the only way to observe it promoted is the
+    // runtime warm firing once the SECOND slide reaches arrival
+    // (warmNextSlide(1) targets slides[2]). Arriving at the first slide
+    // instead would only warm the second slide, already eager from markup,
+    // proving nothing new.
+    expect(await sharpImgs.nth(2).getAttribute('loading')).toBe('lazy');
+
+    // Derived from getRevealDistance(page) plus the live viewport height,
+    // never a hardcoded pixel value: the track's own rendered height is the
+    // scroll offset at which the first slide reaches arrival, and one
+    // further viewport height reaches the second (mirrors this file's own
+    // getSlideScrollTargets()/getArrivalScrollTarget() helpers above).
+    const distance = await getRevealDistance(page);
+    const viewportHeight = await page.evaluate(() => window.innerHeight);
+    const secondSlideArrivalTarget = distance + 2 * viewportHeight;
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(secondSlideArrivalTarget));
+
+    await expect(page.locator('[data-role="deck-slide"]').nth(1)).toHaveClass(/is-revealed/);
+    await expect.poll(() => sharpImgs.nth(2).getAttribute('loading')).not.toBe('lazy');
+  });
+
+  test('reduced motion: every slide still gets both layers, and the first slide\'s crossfade still reaches its loaded state (D-15)', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const slides = page.locator('[data-role="deck-slide"]');
+    const count = await slides.count();
+    expect(count).toBeGreaterThan(0);
+
+    for (let i = 0; i < count; i++) {
+      const slide = slides.nth(i);
+      await expect(slide.locator('.home-slide__img-placeholder')).toHaveCount(1);
+      await expect(slide.locator('.home-slide__img--sharp')).toHaveCount(1);
+    }
+
+    const firstSharp = slides.nth(0).locator('.home-slide__img--sharp');
+    await expect.poll(() => firstSharp.evaluate((el) => el.classList.contains('is-loaded'))).toBe(true);
+  });
+
+  test('desktop: the deck is absent and the grid tiles\' own HOME-09 placeholder/sharp pair is untouched (success criterion 5)', async ({ page }) => {
+    await page.setViewportSize(DESKTOP_VIEWPORT);
+    await page.goto('/');
+
+    await expect(page.locator('[data-role="scroll-deck"]')).not.toBeVisible();
+
+    const entries = await readGalleryData(page);
+    await expect(page.locator('.home-grid__tile-img-placeholder')).toHaveCount(entries.length);
+  });
+});
