@@ -962,3 +962,110 @@ test.describe('deck-slide progressive loading (HOME-14, HOME-09, 21-UAT.md gap 3
     await expect(page.locator('.home-grid__tile-img-placeholder')).toHaveCount(entries.length);
   });
 });
+
+// HOME-14, HOME-15, 21-UAT.md gap 4 (status-bar white bar) —
+// .planning/debug/homepage-scroll-ios-status-bar-white-gap.md. The actual
+// iOS toolbar-collapse/expand artifact is real-device-only: neither
+// Playwright project can reproduce it (chromium has no Mobile Safari
+// toolbar to animate, and webkit-mobile is documented elsewhere in this
+// phase's own plans as desktop WebKit with an emulated viewport, not real
+// Mobile Safari). These cases lock in the STRUCTURAL preconditions of the
+// fix instead — one constant sizing unit (svh, not dvh), the preserved
+// track/stage algebra, a non-white paint floor scoped to photo surfaces
+// only, and a correctly phone-scoped theme-color meta tag — while the
+// visual confirmation that the white bar itself is gone is carried to plan
+// 21-10's real-device human check.
+test.describe('deck viewport-height convention and phone theme colour (HOME-14, HOME-15, 21-UAT.md gap 4)', () => {
+  test('deck sections resolve to the visible viewport height (regression net, not an iOS repro — svh/dvh coincide in a fixed-viewport test engine)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const viewportHeight = await page.evaluate(() => window.innerHeight);
+
+    const stageBox = await page.locator('[data-role="zoom-stage"]').boundingBox();
+    expect(stageBox).not.toBeNull();
+    expect(Math.abs(stageBox!.height - viewportHeight)).toBeLessThanOrEqual(2);
+
+    const slides = page.locator('[data-role="deck-slide"]');
+    const count = await slides.count();
+    expect(count).toBeGreaterThan(0);
+    for (let i = 0; i < count; i++) {
+      const box = await slides.nth(i).boundingBox();
+      expect(box).not.toBeNull();
+      expect(Math.abs(box!.height - viewportHeight)).toBeLessThanOrEqual(2);
+    }
+  });
+
+  test('track/stage delta is exactly the reveal distance (sticky-release algebra, independent of the existing WR-01 innerHeight comparison)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const measurements = await page.evaluate(() => {
+      const track = document.querySelector<HTMLElement>('[data-role="zoom-track"]');
+      const stage = document.querySelector<HTMLElement>('[data-role="zoom-stage"]');
+      return {
+        trackHeight: track?.getBoundingClientRect().height ?? 0,
+        stageHeight: stage?.getBoundingClientRect().height ?? 0,
+        revealDistance: Number(track?.getAttribute('data-reveal-distance') ?? 0),
+      };
+    });
+
+    expect(measurements.revealDistance).toBeGreaterThan(0);
+    expect(Math.abs(measurements.trackHeight - measurements.stageHeight - measurements.revealDistance)).toBeLessThanOrEqual(1);
+  });
+
+  test('no photo surface can paint white: every slide and the zoom photo layer carry a non-white background-color', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const slideBackgrounds = await page.locator('[data-role="deck-slide"]').evaluateAll((els) =>
+      els.map((el) => getComputedStyle(el).backgroundColor),
+    );
+    expect(slideBackgrounds.length).toBeGreaterThan(0);
+    for (const bg of slideBackgrounds) {
+      expect(bg).not.toBe('transparent');
+      expect(bg).not.toBe('rgba(0, 0, 0, 0)');
+      expect(bg).not.toBe('rgb(255, 255, 255)');
+    }
+
+    const photoBackground = await page.locator('[data-role="zoom-photo"]').evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(photoBackground).not.toBe('transparent');
+    expect(photoBackground).not.toBe('rgba(0, 0, 0, 0)');
+    expect(photoBackground).not.toBe('rgb(255, 255, 255)');
+  });
+
+  test('the wordmark screen is deliberately unchanged: the pinned stage stays transparent, proving the paint floor was scoped to photo surfaces only', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const stageBackground = await page.locator('[data-role="zoom-stage"]').evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(['transparent', 'rgba(0, 0, 0, 0)']).toContain(stageBackground);
+  });
+
+  test('theme colour is present and phone-scoped', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const meta = page.locator('meta[name="theme-color"]');
+    await expect(meta).toHaveCount(1);
+    const content = await meta.getAttribute('content');
+    expect(content).toBeTruthy();
+    const media = await meta.getAttribute('media');
+    expect(media).toContain('767px');
+  });
+
+  test('theme colour is homepage-only: the About page emits no theme-color meta at all', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/about/');
+
+    await expect(page.locator('meta[name="theme-color"]')).toHaveCount(0);
+  });
+
+  test('desktop unaffected: the deck root is still not visible and the homepage still renders its carousel', async ({ page }) => {
+    await page.setViewportSize(DESKTOP_VIEWPORT);
+    await page.goto('/');
+
+    await expect(page.locator('[data-role="scroll-deck"]')).not.toBeVisible();
+    await expect(page.locator('[data-role="home-carousel"]')).toBeVisible();
+  });
+});
