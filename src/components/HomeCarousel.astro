@@ -1651,7 +1651,34 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       // Reversibility (D-04) is free: the zoom state is a pure function of
       // live scroll position, not a played animation, so scrolling back up
       // smoothly reverses the whole effect with no extra code.
-      import { ZOOM_REVEAL_DISTANCE, computeZoomProgress, computeWordmarkZoomState, computeFocusOrigin } from '../lib/home-carousel';
+      //
+      // Plan 21-07 (`21-UAT.md` gap 2, root-caused in
+      // `.planning/debug/homepage-scroll-zoom-handoff-glitch.md`): this
+      // driver originally ported DetailHero.astro's `scroll`-event-listener
+      // pattern verbatim, carrying forward its latent assumption that
+      // `scroll` events fire densely and promptly enough to keep JS-driven
+      // visual state in lockstep with the composited scroll position. That
+      // assumption held on desktop (mouse-wheel/trackpad input, no touch
+      // momentum, no coincident scroll-snap boundary at DetailHero's own
+      // completion point) but broke on real iOS Safari: touch-momentum
+      // scrolling plus this deck's `scroll-snap-stop: always` boundary
+      // landing exactly at the zoom's own completion offset caused `scroll`
+      // dispatch (and separately, plan 21-06's `IntersectionObserver`
+      // arrival callback) to be throttled/coalesced past the moment native
+      // `position: sticky` had already released — producing a stale,
+      // mid-crossfade frame overlapping the already-arrived first slide.
+      // The driver below therefore polls live geometry every painted frame
+      // instead of waiting on either event. `DetailHero.astro` itself is
+      // deliberately NOT changed by this plan — it is desktop-only, has no
+      // touch momentum, and has no snap boundary at its own completion
+      // point, so the original assumption still holds there.
+      import {
+        ZOOM_REVEAL_DISTANCE,
+        computeZoomProgress,
+        computeWordmarkZoomState,
+        computeFocusOrigin,
+        computeSlideVisibleRatio,
+      } from '../lib/home-carousel';
 
       const root = document.querySelector<HTMLElement>('.home');
       const deckRoot = document.querySelector<HTMLElement>('[data-role="scroll-deck"]');
@@ -1661,8 +1688,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       const photoLayer = deckRoot?.querySelector<HTMLElement>('[data-role="zoom-photo"]') ?? null;
       // Plan 21-06 (HOME-14, D-09/D-13/D-14): resolved alongside the other
       // deck element lookups. An empty array (no galleries, or the deck
-      // itself absent) is a safe no-op for every arrival-observer branch
-      // below.
+      // itself absent) is a safe no-op for every arrival branch below.
       const slides = deckRoot ? Array.from(deckRoot.querySelectorAll<HTMLElement>('[data-role="deck-slide"]')) : [];
 
       // Every element above is optional — a silent no-op if the deck is
@@ -1671,43 +1697,43 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       // `if (root && hero && grid && dataEl)` idiom.
       if (root && deckRoot && track && wordmark && focusLetter && photoLayer) {
         // Plan 21-06 (HOME-14, D-09/D-13/D-14): arrival-complete detection.
-        // A threshold array of [0, ARRIVAL_THRESHOLD, 1] — high (~0.98), not
-        // GalleryGrid.astro's 0.15 — because a full-viewport slide can only
-        // reach that ratio once it is genuinely settled: any intermediate
-        // scroll position necessarily bleeds an adjacent slide into the
-        // viewport. `scrollend` was deliberately not used as the primary
-        // arrival signal instead of IntersectionObserver: its Safari support
-        // only landed in 26.2, too recent to rely on for a phone-first
-        // feature — it remains available as a future refinement if
-        // real-device testing shows this ratio flapping (21-RESEARCH.md
-        // Pattern 4, Assumption A3).
+        // High (~0.98), not GalleryGrid.astro's 0.15 — because a
+        // full-viewport slide can only reach that ratio once it is
+        // genuinely settled: any intermediate scroll position necessarily
+        // bleeds an adjacent slide into the viewport.
         const ARRIVAL_THRESHOLD = 0.98;
-        let arrivalObserver: IntersectionObserver | null = null;
-        // Tracks whether the observer itself is the one that wrote the live
-        // accent, so clearInlineStyles() only ever removes what THIS
-        // observer set (see its own comment for why unconditional removal
+        // Tracks whether applyArrival() itself is the one that wrote the
+        // live accent, so clearInlineStyles() only ever removes what THIS
+        // driver set (see its own comment for why unconditional removal
         // would be unsafe).
         let arrivalAccentWritten = false;
 
-        function onArrival(entries: IntersectionObserverEntry[]) {
-          entries.forEach((entry) => {
-            const slide = entry.target as HTMLElement;
-            // The observer keeps watching this slide forever (contrast
-            // GalleryGrid.astro's one-shot reveal, which stops watching
-            // once revealed) — D-14's reveal is a live, two-directional
-            // state (arrives AND departs), so scrolling back up must hide
-            // the description again.
-            const reached = entry.intersectionRatio >= ARRIVAL_THRESHOLD;
+        // Plan 21-07: replaces onArrival(entries), the IntersectionObserver
+        // callback. Takes no arguments — reads window.innerHeight once, then
+        // for each slide computes its own LIVE getBoundingClientRect() and
+        // derives the arrival ratio via computeSlideVisibleRatio (plan
+        // 21-07/src/lib/home-carousel.ts) instead of waiting on a browser-
+        // batched intersection callback. The rising-edge guard (wasRevealed)
+        // is carried forward verbatim — it is load-bearing for HOME-16's
+        // per-visit random starting accent and must not be simplified away.
+        function applyArrival() {
+          const viewportHeight = window.innerHeight;
+          slides.forEach((slide) => {
+            const rect = slide.getBoundingClientRect();
+            const ratio = computeSlideVisibleRatio(rect, viewportHeight);
+            // The reveal is a live, two-directional state (arrives AND
+            // departs, contrast GalleryGrid.astro's one-shot reveal) — D-14
+            // — so scrolling back up must hide the description again.
+            const reached = ratio >= ARRIVAL_THRESHOLD;
             const wasRevealed = slide.classList.contains('is-revealed');
             slide.classList.toggle('is-revealed', reached);
 
             // Only write the live accent on the rising edge (just became
-            // arrived), never on every intersection callback — and never at
-            // load, since at scroll position 0 the pinned zoom stage fills
-            // the viewport so no slide can reach the arrival ratio yet. That
-            // keeps HOME-16's per-visit random starting accent (set once by
-            // the carousel's own script, above) untouched until a slide
-            // genuinely settles.
+            // arrived), never on every frame — and never at load, since at
+            // scroll position 0 the pinned zoom stage fills the viewport so
+            // no slide can reach the arrival ratio yet. That keeps HOME-16's
+            // per-visit random starting accent (set once by the carousel's
+            // own script, above) untouched until a slide genuinely settles.
             if (reached && !wasRevealed) {
               root!.style.setProperty('--current-accent', slide.dataset.heroColor || 'var(--color-accent)');
               root!.style.setProperty('--current-accent-text', slide.dataset.heroTextColor || 'var(--color-on-accent)');
@@ -1759,22 +1785,27 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           // reduce)` block), so the arrival class is reset here rather than
           // left stale from a prior attach — harmless no-op removal when it
           // was never set (e.g. this driver's very first, desktop-only
-          // setup() call, before any observer has ever run).
+          // setup() call, before the loop has ever run).
           slides.forEach((slide) => slide.classList.remove('is-revealed'));
 
           // Only ever clears the two accent custom properties if THIS
-          // observer actually wrote them. Unconditionally removing
+          // driver actually wrote them. Unconditionally removing
           // --current-accent/--current-accent-text here would clobber the
           // carousel's own render()/HOME-16 random-start accent the very
           // first time this function runs on desktop (detach is the branch
           // that always executes on initial load there) — a stale
-          // observer-written accent left behind after detaching would
+          // driver-written accent left behind after detaching would
           // otherwise silently override what the rest of the page computed.
           if (arrivalAccentWritten) {
             root!.style.removeProperty('--current-accent');
             root!.style.removeProperty('--current-accent-text');
             arrivalAccentWritten = false;
           }
+
+          // Plan 21-07: reset the progress cache too, so a later re-attach
+          // cannot skip its first paint by comparing computeProgress()'s
+          // first live read against a stale value from before this detach.
+          lastProgress = PROGRESS_SENTINEL;
         }
 
         const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -1785,65 +1816,96 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         const mobile = matchMedia('(max-width: 767px)');
 
         let rafId: number | null = null;
-        let scrollAttached = false;
+        let driverAttached = false;
 
         function computeProgress(): number {
           return computeZoomProgress(track!.getBoundingClientRect().top, ZOOM_REVEAL_DISTANCE);
         }
 
-        function onScroll() {
-          if (rafId !== null) return;
-          rafId = requestAnimationFrame(() => {
+        // Plan 21-07: a value no real progress fraction (always in [0,1])
+        // can equal, so the very first frame after a (re-)attach always
+        // paints regardless of what the last-seen progress was before.
+        const PROGRESS_SENTINEL = -1;
+        let lastProgress = PROGRESS_SENTINEL;
+
+        // Thin wrapper around onProgress(): short-circuits when the measured
+        // progress hasn't changed since last frame, so a stationary page
+        // performs zero style writes per frame (T-21-07-A), only the two
+        // cheap rect reads inside computeProgress()/applyArrival(). This is
+        // intentional PLAIN equality, not an epsilon — the value only
+        // changes when the measured rect changes, so the exact endpoints (0
+        // and 1) are still always reached and written; onProgress()'s own
+        // body is untouched.
+        function applyProgress(t: number) {
+          if (t === lastProgress) return;
+          lastProgress = t;
+          onProgress(t);
+        }
+
+        // Plan 21-07: the single continuously-running rAF loop that
+        // replaces both the `scroll`-event-driven update and the
+        // IntersectionObserver arrival reveal. Progress AND arrival are both
+        // re-derived from live getBoundingClientRect() on every painted
+        // frame while attached — nothing here may be gated on a scroll
+        // event or an observer callback, which is the entire mechanism fix
+        // for `21-UAT.md` gap 2 (see
+        // `.planning/debug/homepage-scroll-zoom-handoff-glitch.md`). Order
+        // matters and is deliberate: progress first, arrival second, so
+        // within any single frame the crossfade/header state and the
+        // reveal state are always consistent with each other.
+        function frame() {
+          applyProgress(computeProgress());
+          applyArrival();
+          rafId = requestAnimationFrame(frame);
+        }
+
+        // Mirrors src/pages/404.astro's tick()/startPointerLoop()/
+        // stopPointerLoop() pair — this repo's own existing
+        // continuously-running rAF loop with an explicit start/stop
+        // lifecycle — rather than inventing a new shape.
+        function startLoop() {
+          if (driverAttached) return;
+          driverAttached = true;
+          // Reset so the first frame after attach always paints, even if an
+          // identical progress value was last seen before a prior detach.
+          lastProgress = PROGRESS_SENTINEL;
+          rafId = requestAnimationFrame(frame);
+        }
+
+        function stopLoop() {
+          if (!driverAttached) return;
+          driverAttached = false;
+          // Cancelling without nulling the id (or nulling without
+          // cancelling) is exactly the leak that would let a detached
+          // driver keep repainting on desktop (T-21-07-A) — both must
+          // happen together.
+          if (rafId !== null) {
+            cancelAnimationFrame(rafId);
             rafId = null;
-            onProgress(computeProgress());
-          });
+          }
         }
 
         function setup() {
           if (reduceMotion.matches || !mobile.matches) {
-            if (scrollAttached) {
-              window.removeEventListener('scroll', onScroll);
-              scrollAttached = false;
-            }
-            if (rafId !== null) {
-              cancelAnimationFrame(rafId);
-              rafId = null;
-            }
-            // Plan 21-06: disconnect (never just stop observing) so a later
-            // re-attach (mobile/reduced-motion toggled back) starts a fresh
-            // observer rather than accumulating one per gate change (T-21-06-B).
-            if (arrivalObserver) {
-              arrivalObserver.disconnect();
-              arrivalObserver = null;
-            }
+            stopLoop();
             clearInlineStyles();
           } else {
-            if (!scrollAttached) {
-              window.addEventListener('scroll', onScroll, { passive: true });
-              scrollAttached = true;
+            // Plan 21-07: if requestAnimationFrame isn't available at all,
+            // there is no mechanism left to drive the reveal — fall back to
+            // always-visible descriptions (mirrors GalleryGrid.astro's own
+            // JS-without-IntersectionObserver branch, which this replaces)
+            // and never start the loop.
+            if (typeof requestAnimationFrame !== 'function') {
+              slides.forEach((slide) => slide.classList.add('is-revealed'));
+              return;
             }
             syncFocusOrigin();
-            // A mid-page reload (or a resize/orientationchange crossing the
-            // gate while already scrolled) must paint the correct state
-            // immediately, not wait for the next scroll event.
-            onProgress(computeProgress());
-
-            // Plan 21-06: only create once per attach — a resize/
-            // orientationchange-triggered setup() call while already
-            // attached must not recreate (and thus leak) the observer.
-            if (!arrivalObserver) {
-              if ('IntersectionObserver' in window) {
-                arrivalObserver = new IntersectionObserver(onArrival, {
-                  threshold: [0, ARRIVAL_THRESHOLD, 1],
-                });
-                slides.forEach((slide) => arrivalObserver!.observe(slide));
-              } else {
-                // Feature-detect fallback (mirrors GalleryGrid.astro's own
-                // JS-without-IntersectionObserver branch): descriptions are
-                // simply always visible rather than permanently hidden.
-                slides.forEach((slide) => slide.classList.add('is-revealed'));
-              }
-            }
+            // No separate "run one pass immediately" call is needed here —
+            // startLoop() resets lastProgress to its sentinel and schedules
+            // a frame, which paints the correct state on the very next
+            // animation frame, covering a mid-page reload or a resize/
+            // orientationchange crossing the gate while already scrolled.
+            startLoop();
           }
         }
 
@@ -1853,17 +1915,21 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
         // Pitfall 4: re-measure the focus origin once the real Unbounded
         // font has actually swapped in, only while the driver is currently
-        // attached (scrollAttached also implies reduced-motion doesn't match
+        // attached (driverAttached also implies reduced-motion doesn't match
         // and phone width does) — measuring while the display font is still
         // a system-sans fallback produces a visibly wrong anchor.
         if (document.fonts) {
           document.fonts.ready.then(() => {
-            if (scrollAttached) syncFocusOrigin();
+            if (driverAttached) syncFocusOrigin();
           });
         }
 
         // Reused verbatim from DetailHero.astro's own resize-debounce idiom
-        // rather than introducing a ResizeObserver.
+        // rather than introducing a ResizeObserver. The loop itself no
+        // longer needs a forced repaint here — it already re-reads live
+        // geometry every frame — but setup() must still re-run on
+        // resize/orientationchange to re-evaluate the media-query gate and
+        // re-measure the focus origin.
         let resizeTimer: ReturnType<typeof setTimeout> | null = null;
         window.addEventListener('resize', () => {
           if (resizeTimer) clearTimeout(resizeTimer);
