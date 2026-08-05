@@ -1587,6 +1587,154 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         });
       }
     </script>
+
+    <script>
+      // Phase 21 (HOME-15, D-01/D-02/D-03/D-04/D-12/D-15): the wordmark-to-
+      // photo zoom driver — a SECOND, independent <script> block from the
+      // carousel's own above. That script's swipe/hover/mode-toggle logic is
+      // entirely inert below 767px now, and mixing the two would couple two
+      // independently-gated concerns; this driver has its own reduced-
+      // motion/phone-width gate and lifecycle instead.
+      //
+      // Ported from DetailHero.astro's pinned scroll-scrubbed driver (lines
+      // 198-322), breakpoint direction inverted (max-width: 767px, not
+      // min-width: 768px) and a scale/opacity payload instead of a
+      // width/position tween. Progress is derived from the zoom track's own
+      // getBoundingClientRect().top (D-02) — never a bounded div's scrollTop,
+      // which was sketch-only scaffolding for side-by-side variant
+      // comparison. The actual math (progress/scale/opacity/focus-origin) is
+      // imported from src/lib/home-carousel.ts (plan 21-01), never
+      // re-implemented inline here.
+      //
+      // Reversibility (D-04) is free: the zoom state is a pure function of
+      // live scroll position, not a played animation, so scrolling back up
+      // smoothly reverses the whole effect with no extra code.
+      import { ZOOM_REVEAL_DISTANCE, computeZoomProgress, computeWordmarkZoomState, computeFocusOrigin } from '../lib/home-carousel';
+
+      const root = document.querySelector<HTMLElement>('.home');
+      const deckRoot = document.querySelector<HTMLElement>('[data-role="scroll-deck"]');
+      const track = deckRoot?.querySelector<HTMLElement>('[data-role="zoom-track"]') ?? null;
+      const wordmark = deckRoot?.querySelector<HTMLElement>('[data-role="zoom-wordmark"]') ?? null;
+      const focusLetter = deckRoot?.querySelector<HTMLElement>('[data-role="zoom-focus-letter"]') ?? null;
+      const photoLayer = deckRoot?.querySelector<HTMLElement>('[data-role="zoom-photo"]') ?? null;
+
+      // Every element above is optional — a silent no-op if the deck is
+      // absent (e.g. the zero-galleries empty state, which never renders
+      // `.home` at all), mirroring the existing script's own
+      // `if (root && hero && grid && dataEl)` idiom.
+      if (root && deckRoot && track && wordmark && focusLetter && photoLayer) {
+        // Pitfall 4: the "A" glyph's real rendered position shifts once
+        // Unbounded finishes loading (vs. a system-sans fallback) — this
+        // function only computes from whatever rects are live RIGHT NOW;
+        // callers are responsible for re-invoking it after document.fonts
+        // has settled (see below) and on resize/orientationchange.
+        function syncFocusOrigin() {
+          const wordmarkRect = wordmark!.getBoundingClientRect();
+          const focusRect = focusLetter!.getBoundingClientRect();
+          const origin = computeFocusOrigin(wordmarkRect, focusRect);
+          if (!origin) return;
+          wordmark!.style.transformOrigin = `${origin.originX}% ${origin.originY}%`;
+        }
+
+        function onProgress(t: number) {
+          const state = computeWordmarkZoomState(t);
+          wordmark!.style.transform = `scale(${state.scale})`;
+          wordmark!.style.opacity = String(state.wordmarkOpacity);
+          photoLayer!.style.opacity = String(state.photoOpacity);
+          // Sole driver of D-12's header hide (CSS already declared by plan
+          // 21-04): 'true' while the zoom is still scrubbing, flipped to the
+          // completed value ('false', still PRESENT — not removed) once
+          // progress reaches 1, so the header fades back in once the zoom
+          // finishes.
+          root!.setAttribute('data-zoom-active', t < 1 ? 'true' : 'false');
+        }
+
+        function clearInlineStyles() {
+          // Every property onProgress() writes above has a matching removal
+          // here, so the CSS end-state (reduced-motion / desktop media
+          // queries) can fully take over the instant this driver detaches —
+          // copy this 1:1 whenever onProgress() gains a new write.
+          wordmark!.style.removeProperty('transform');
+          wordmark!.style.removeProperty('transform-origin');
+          wordmark!.style.removeProperty('opacity');
+          photoLayer!.style.removeProperty('opacity');
+          root!.removeAttribute('data-zoom-active');
+        }
+
+        const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+        // Pitfall 2: this exact 767px value must match the CSS's own
+        // `@media (max-width: 767px)` gate byte-for-byte — a stray 768px
+        // (or min-width) would make the JS activate at a different width
+        // than the CSS that shows the markup this driver depends on.
+        const mobile = matchMedia('(max-width: 767px)');
+
+        let rafId: number | null = null;
+        let scrollAttached = false;
+
+        function computeProgress(): number {
+          return computeZoomProgress(track!.getBoundingClientRect().top, ZOOM_REVEAL_DISTANCE);
+        }
+
+        function onScroll() {
+          if (rafId !== null) return;
+          rafId = requestAnimationFrame(() => {
+            rafId = null;
+            onProgress(computeProgress());
+          });
+        }
+
+        function setup() {
+          if (reduceMotion.matches || !mobile.matches) {
+            if (scrollAttached) {
+              window.removeEventListener('scroll', onScroll);
+              scrollAttached = false;
+            }
+            if (rafId !== null) {
+              cancelAnimationFrame(rafId);
+              rafId = null;
+            }
+            clearInlineStyles();
+          } else {
+            if (!scrollAttached) {
+              window.addEventListener('scroll', onScroll, { passive: true });
+              scrollAttached = true;
+            }
+            syncFocusOrigin();
+            // A mid-page reload (or a resize/orientationchange crossing the
+            // gate while already scrolled) must paint the correct state
+            // immediately, not wait for the next scroll event.
+            onProgress(computeProgress());
+          }
+        }
+
+        setup();
+        reduceMotion.addEventListener('change', setup);
+        mobile.addEventListener('change', setup);
+
+        // Pitfall 4: re-measure the focus origin once the real Unbounded
+        // font has actually swapped in, only while the driver is currently
+        // attached (scrollAttached also implies reduced-motion doesn't match
+        // and phone width does) — measuring while the display font is still
+        // a system-sans fallback produces a visibly wrong anchor.
+        if (document.fonts) {
+          document.fonts.ready.then(() => {
+            if (scrollAttached) syncFocusOrigin();
+          });
+        }
+
+        // Reused verbatim from DetailHero.astro's own resize-debounce idiom
+        // rather than introducing a ResizeObserver.
+        let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+        window.addEventListener('resize', () => {
+          if (resizeTimer) clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(setup, 100);
+        });
+        window.addEventListener('orientationchange', () => {
+          if (resizeTimer) clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(setup, 100);
+        });
+      }
+    </script>
   </section>
 )}
 
