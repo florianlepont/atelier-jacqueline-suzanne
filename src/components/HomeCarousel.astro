@@ -3517,6 +3517,34 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       display: block;
     }
 
+    /* 21-UAT.md gap 4 (status-bar white bar) / 21-09 —
+       .planning/debug/homepage-scroll-ios-status-bar-white-gap.md: every
+       viewport-height length in this deck (track, stage, wordmark padding,
+       slide height) below used to use the dynamic viewport unit (`dvh`)
+       exclusively. `dvh` re-resolves LIVE while Mobile Safari's toolbar
+       collapses/expands during scroll, and dependent boxes are not
+       guaranteed to repaint in lockstep with that live value — a
+       documented WebKit timing class of defect, not a layout bug in this
+       file. `.home-hero__photo` above (this same file, ~L3347) already
+       hit this exact problem on a real device and already fixed it: it
+       deliberately uses `100svh` (the SMALL viewport — constant, always
+       the worst case with chrome visible) instead of `vh`/`dvh`, with a
+       real-device-screenshot comment explaining why. `DetailHero.astro`'s
+       own desktop scroll track (`calc(100svh + 900px)`) independently
+       proves the same `calc(100svh + <distance>)` shape already exists in
+       this repo. This plan carries that established convention forward to
+       the deck rather than inventing a new one: every `dvh` below becomes
+       `svh`. Because `svh` is constant (it never re-resolves mid-animation),
+       a box sized against it can never end up larger than what is actually
+       on screen — the class of bug that produced the white bar.
+
+       Deliberately NOT done here: `viewport-fit=cover` /
+       `env(safe-area-inset-*)`. The debug session noted its absence, but
+       adding it opts the WHOLE SITE into rendering under the status bar,
+       requiring safe-area padding on every page's chrome — a site-wide
+       blast radius far beyond this gap, and UI-02 forbids changes outside
+       the phone-width homepage. Rejected on purpose, not omitted. */
+
     /* Track: tall enough to host the full zoom scrub before the first real
        slide arrives. WR-01 fix: CSS cannot import the TS
        ZOOM_REVEAL_DISTANCE constant (src/lib/home-carousel.ts, 21-01)
@@ -3530,13 +3558,23 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        refactor drops it); it is not meant to require independent upkeep
        any more. */
     .home-scroll-deck__track {
-      height: calc(100dvh + var(--zoom-reveal-distance, 900px));
+      height: calc(100svh + var(--zoom-reveal-distance, 900px));
     }
 
+    /* 21-09: this MUST carry the SAME viewport-height unit as the track's
+       own term above (both `100svh` now). The sticky release point is the
+       algebraic difference between the track's height and this stage's
+       height — if the two ever used different viewport-height terms, the
+       release would stop coinciding with zoom progress reaching 1, which
+       is precisely the desynchronised-handoff class of bug plan 21-07 just
+       eliminated. The existing WR-01 e2e case (rendered reveal distance vs
+       the exported constant) and 21-09's new track-minus-stage-delta case
+       both guard this invariant — change both heights together, never one
+       alone. */
     .home-scroll-deck__stage {
       position: sticky;
       top: 0;
-      height: 100dvh;
+      height: 100svh;
       overflow: hidden;
       display: flex;
       align-items: center;
@@ -3550,6 +3588,20 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     .home-scroll-deck__photo {
       position: absolute;
       inset: 0;
+      /* 21-09 paint floor (21-UAT.md gap 4): this surface is a photograph
+         once opacity animates toward 1, so a non-white floor is safe here
+         — it is invisible in the normal case (the photo always covers it)
+         and only ever shows in the transient strip Safari's toolbar
+         animation can momentarily expose. Deliberately scoped to THIS
+         element only, not the pinned stage or the deck root — see
+         .home-scroll-deck__stage above, which stays without a
+         background-color so the pre-zoom wordmark screen keeps its exact
+         white appearance (needed for the unsupported-engine wordmark
+         fallback color and the photo-load-failure fallback
+         critical.smoke.spec.ts guards). A white strip over a white screen
+         isn't what was reported — the bar is only perceptible against a
+         photo, which is exactly where this floor goes. */
+      background-color: var(--color-ink);
       background-image: var(--zoom-photo);
       background-size: cover;
       background-position: center;
@@ -3579,8 +3631,15 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
          above depends on) grows the box to comfortably clear that floor
          while keeping the actual letterforms at the same reused clamp size,
          symmetric top/bottom padding keeps them centered inside the taller
-         box. [Rule 1 auto-fix — see 21-04-SUMMARY.md Deviations.] */
-      padding-block: 20dvh;
+         box. [Rule 1 auto-fix — see 21-04-SUMMARY.md Deviations.]
+         21-09: unit changed from `dvh` to `svh` (21-UAT.md gap 4 — see the
+         convention comment above `.home-scroll-deck__track`); the numeric
+         value (20) is unchanged. This does NOT move the locked 60%/40%
+         viewport-coverage floor 21-04-PLAN.md's Task 1 spec locks in —
+         Playwright's fixed-viewport test environment resolves `svh` and
+         `dvh` identically (no live toolbar animation to diverge over), so
+         the existing full-screen wordmark geometry e2e case still holds. */
+      padding-block: 20svh;
       padding-inline: 5vw;
       position: relative;
       will-change: transform, opacity;
@@ -3642,9 +3701,23 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     .home-slide {
       display: block;
       position: relative;
-      height: 100dvh;
+      /* 21-09: unit changed from `dvh` to `svh` (21-UAT.md gap 4 — see the
+         convention comment above `.home-scroll-deck__track`). A slide that
+         is never taller than the visible area (svh, the constant
+         worst-case unit) is also what lets computeSlideVisibleRatio
+         (plan 21-07) reach its arrival threshold reliably on a real phone,
+         instead of momentarily measuring against a taller box than what is
+         actually on screen during the toolbar's collapse/expand
+         animation. */
+      height: 100svh;
       scroll-snap-align: start;
       scroll-snap-stop: always;
+      /* 21-09 paint floor (21-UAT.md gap 4): scoped to this photo-bearing
+         surface only (see .home-scroll-deck__photo's matching comment
+         above for the full reasoning) — invisible in the normal case,
+         only shows in the transient strip the toolbar animation can
+         expose. */
+      background-color: var(--color-ink);
       color: var(--slide-accent-text, var(--color-on-accent));
       text-decoration: none;
     }
