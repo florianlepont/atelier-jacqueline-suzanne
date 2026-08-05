@@ -51,6 +51,17 @@ interface Props {
   // footer-independent calc(100svh + 900px) desktop scroll track (see that
   // plan's safety_investigation).
   hideFooter?: boolean;
+  // 21-09 (21-UAT.md gap 4 — .planning/debug/homepage-scroll-ios-status-bar-white-gap.md):
+  // opt-in, per-page, supplied by nothing but the homepage today. Mobile
+  // Safari derives the colour of the status-bar-adjacent chrome from the
+  // page's own body background during scroll-driven toolbar-collapse/
+  // expand transitions; every page on this site has a pure white body, so
+  // without this prop that chrome strip is always sampled as white. The
+  // phone-width homepage is the only surface where that strip lands over
+  // a full-bleed photograph instead of the page's own white background,
+  // so it is the only page that supplies a value. No default is given —
+  // see the meta tag below for why that omission is load-bearing.
+  phoneThemeColor?: string;
 }
 
 const {
@@ -61,6 +72,7 @@ const {
   structuredData: pageStructuredData,
   headerVariant = 'solid',
   hideFooter = false,
+  phoneThemeColor,
 } = Astro.props;
 const locale = Astro.currentLocale === 'en' ? 'en' : 'fr';
 
@@ -157,6 +169,15 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
     <link rel="alternate" hreflang="x-default" href={frenchUrl} />
     <meta name="robots" content={noIndex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'} />
     {description && <meta name="description" content={description} />}
+    {/* 21-09 (21-UAT.md gap 4): the phone-width media query is hardcoded
+       INTO the tag rather than exposed as a second prop, on purpose — that
+       is what makes this prop impossible to misuse in a way that would
+       tint desktop or tablet browser chrome, which UI-02 forbids. The
+       767px value is byte-for-byte the same phone-width breakpoint the
+       rest of this phase uses. An engine that ignores the media attribute
+       would apply the colour unconditionally — an acceptable degradation
+       for a browser-chrome tint, not a functional regression. */}
+    {phoneThemeColor && <meta name="theme-color" media="(max-width: 767px)" content={phoneThemeColor} />}
     <meta property="og:title" content={title} />
     {description && <meta property="og:description" content={description} />}
     <meta property="og:type" content="website" />

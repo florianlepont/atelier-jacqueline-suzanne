@@ -63,6 +63,8 @@ const galleries = (await getGalleries())
   noIndex={homePage?.seo?.noIndex}
   structuredData={structuredData}
   headerVariant="none"
+  phoneThemeColor="#1A1A1A"
 >
+  {/* The theme-colour prop above mirrors the color-ink/gray-900 token (BaseLayout.astro) — 21-09, 21-UAT.md gap 4 */}
   <HomeCarousel locale={locale} galleries={galleries} siteCopy={siteCopy} />
 </BaseLayout>
