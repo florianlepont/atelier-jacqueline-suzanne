@@ -1617,12 +1617,63 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       const wordmark = deckRoot?.querySelector<HTMLElement>('[data-role="zoom-wordmark"]') ?? null;
       const focusLetter = deckRoot?.querySelector<HTMLElement>('[data-role="zoom-focus-letter"]') ?? null;
       const photoLayer = deckRoot?.querySelector<HTMLElement>('[data-role="zoom-photo"]') ?? null;
+      // Plan 21-06 (HOME-14, D-09/D-13/D-14): resolved alongside the other
+      // deck element lookups. An empty array (no galleries, or the deck
+      // itself absent) is a safe no-op for every arrival-observer branch
+      // below.
+      const slides = deckRoot ? Array.from(deckRoot.querySelectorAll<HTMLElement>('[data-role="deck-slide"]')) : [];
 
       // Every element above is optional — a silent no-op if the deck is
       // absent (e.g. the zero-galleries empty state, which never renders
       // `.home` at all), mirroring the existing script's own
       // `if (root && hero && grid && dataEl)` idiom.
       if (root && deckRoot && track && wordmark && focusLetter && photoLayer) {
+        // Plan 21-06 (HOME-14, D-09/D-13/D-14): arrival-complete detection.
+        // A threshold array of [0, ARRIVAL_THRESHOLD, 1] — high (~0.98), not
+        // GalleryGrid.astro's 0.15 — because a full-viewport slide can only
+        // reach that ratio once it is genuinely settled: any intermediate
+        // scroll position necessarily bleeds an adjacent slide into the
+        // viewport. `scrollend` was deliberately not used as the primary
+        // arrival signal instead of IntersectionObserver: its Safari support
+        // only landed in 26.2, too recent to rely on for a phone-first
+        // feature — it remains available as a future refinement if
+        // real-device testing shows this ratio flapping (21-RESEARCH.md
+        // Pattern 4, Assumption A3).
+        const ARRIVAL_THRESHOLD = 0.98;
+        let arrivalObserver: IntersectionObserver | null = null;
+        // Tracks whether the observer itself is the one that wrote the live
+        // accent, so clearInlineStyles() only ever removes what THIS
+        // observer set (see its own comment for why unconditional removal
+        // would be unsafe).
+        let arrivalAccentWritten = false;
+
+        function onArrival(entries: IntersectionObserverEntry[]) {
+          entries.forEach((entry) => {
+            const slide = entry.target as HTMLElement;
+            // The observer keeps watching this slide forever (contrast
+            // GalleryGrid.astro's one-shot reveal, which stops watching
+            // once revealed) — D-14's reveal is a live, two-directional
+            // state (arrives AND departs), so scrolling back up must hide
+            // the description again.
+            const reached = entry.intersectionRatio >= ARRIVAL_THRESHOLD;
+            const wasRevealed = slide.classList.contains('is-revealed');
+            slide.classList.toggle('is-revealed', reached);
+
+            // Only write the live accent on the rising edge (just became
+            // arrived), never on every intersection callback — and never at
+            // load, since at scroll position 0 the pinned zoom stage fills
+            // the viewport so no slide can reach the arrival ratio yet. That
+            // keeps HOME-16's per-visit random starting accent (set once by
+            // the carousel's own script, above) untouched until a slide
+            // genuinely settles.
+            if (reached && !wasRevealed) {
+              root!.style.setProperty('--current-accent', slide.dataset.heroColor || 'var(--color-accent)');
+              root!.style.setProperty('--current-accent-text', slide.dataset.heroTextColor || 'var(--color-on-accent)');
+              arrivalAccentWritten = true;
+            }
+          });
+        }
+
         // Pitfall 4: the "A" glyph's real rendered position shifts once
         // Unbounded finishes loading (vs. a system-sans fallback) — this
         // function only computes from whatever rects are live RIGHT NOW;
@@ -1659,6 +1710,29 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           wordmark!.style.removeProperty('opacity');
           photoLayer!.style.removeProperty('opacity');
           root!.removeAttribute('data-zoom-active');
+
+          // Plan 21-06 (HOME-14, D-13/D-14/D-15): under reduced motion the
+          // CSS end state already makes every description permanently
+          // visible on its own (21-04's `@media (prefers-reduced-motion:
+          // reduce)` block), so the arrival class is reset here rather than
+          // left stale from a prior attach — harmless no-op removal when it
+          // was never set (e.g. this driver's very first, desktop-only
+          // setup() call, before any observer has ever run).
+          slides.forEach((slide) => slide.classList.remove('is-revealed'));
+
+          // Only ever clears the two accent custom properties if THIS
+          // observer actually wrote them. Unconditionally removing
+          // --current-accent/--current-accent-text here would clobber the
+          // carousel's own render()/HOME-16 random-start accent the very
+          // first time this function runs on desktop (detach is the branch
+          // that always executes on initial load there) — a stale
+          // observer-written accent left behind after detaching would
+          // otherwise silently override what the rest of the page computed.
+          if (arrivalAccentWritten) {
+            root!.style.removeProperty('--current-accent');
+            root!.style.removeProperty('--current-accent-text');
+            arrivalAccentWritten = false;
+          }
         }
 
         const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -1693,6 +1767,13 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
               cancelAnimationFrame(rafId);
               rafId = null;
             }
+            // Plan 21-06: disconnect (never just stop observing) so a later
+            // re-attach (mobile/reduced-motion toggled back) starts a fresh
+            // observer rather than accumulating one per gate change (T-21-06-B).
+            if (arrivalObserver) {
+              arrivalObserver.disconnect();
+              arrivalObserver = null;
+            }
             clearInlineStyles();
           } else {
             if (!scrollAttached) {
@@ -1704,6 +1785,23 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             // gate while already scrolled) must paint the correct state
             // immediately, not wait for the next scroll event.
             onProgress(computeProgress());
+
+            // Plan 21-06: only create once per attach — a resize/
+            // orientationchange-triggered setup() call while already
+            // attached must not recreate (and thus leak) the observer.
+            if (!arrivalObserver) {
+              if ('IntersectionObserver' in window) {
+                arrivalObserver = new IntersectionObserver(onArrival, {
+                  threshold: [0, ARRIVAL_THRESHOLD, 1],
+                });
+                slides.forEach((slide) => arrivalObserver!.observe(slide));
+              } else {
+                // Feature-detect fallback (mirrors GalleryGrid.astro's own
+                // JS-without-IntersectionObserver branch): descriptions are
+                // simply always visible rather than permanently hidden.
+                slides.forEach((slide) => slide.classList.add('is-revealed'));
+              }
+            }
           }
         }
 
