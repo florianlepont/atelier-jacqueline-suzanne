@@ -1787,6 +1787,14 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       // deck element lookups. An empty array (no galleries, or the deck
       // itself absent) is a safe no-op for every arrival branch below.
       const slides = deckRoot ? Array.from(deckRoot.querySelectorAll<HTMLElement>('[data-role="deck-slide"]')) : [];
+      // 21-10 (21-UAT.md gap 1): the two pre-zoom intro sections, resolved
+      // the same way as slides — an empty array (no intro markup, e.g. an
+      // older cached build) is a safe no-op throughout.
+      const introSections = deckRoot ? Array.from(deckRoot.querySelectorAll<HTMLElement>('[data-role="deck-intro"]')) : [];
+      // 21-10: the intro sections precede the slides in the per-frame
+      // arrival pass, mirroring their DOM order, so applyArrival() below
+      // iterates ONE array instead of two separate loops.
+      const arrivalTargets = [...introSections, ...slides];
 
       // Every element above is optional — a silent no-op if the deck is
       // absent (e.g. the zero-galleries empty state, which never renders
@@ -1842,36 +1850,53 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           }
         }
 
+        // 21-10 (21-UAT.md gap 1): iterates arrivalTargets (intro sections
+        // then slides), not slides alone, so the tagline's reveal resolves
+        // from this same per-frame pass rather than a second driver. Per-
+        // element body is otherwise identical to the pre-21-10 shape: ratio
+        // from computeSlideVisibleRatio against the live rect and
+        // window.innerHeight, comparison against ARRIVAL_THRESHOLD,
+        // wasRevealed captured before the toggle, and the class toggled in
+        // both directions.
         function applyArrival() {
           const viewportHeight = window.innerHeight;
-          slides.forEach((slide, index) => {
-            const rect = slide.getBoundingClientRect();
+          arrivalTargets.forEach((target) => {
+            const rect = target.getBoundingClientRect();
             const ratio = computeSlideVisibleRatio(rect, viewportHeight);
             // The reveal is a live, two-directional state (arrives AND
             // departs, contrast GalleryGrid.astro's one-shot reveal) — D-14
             // — so scrolling back up must hide the description again.
             const reached = ratio >= ARRIVAL_THRESHOLD;
-            const wasRevealed = slide.classList.contains('is-revealed');
-            slide.classList.toggle('is-revealed', reached);
+            const wasRevealed = target.classList.contains('is-revealed');
+            target.classList.toggle('is-revealed', reached);
 
-            // Only write the live accent on the rising edge (just became
-            // arrived), never on every frame — and never at load, since at
-            // scroll position 0 the pinned zoom stage fills the viewport so
-            // no slide can reach the arrival ratio yet. That keeps HOME-16's
-            // per-visit random starting accent (set once by the carousel's
-            // own script, above) untouched until a slide genuinely settles.
-            if (reached && !wasRevealed) {
-              root!.style.setProperty('--current-accent', slide.dataset.heroColor || 'var(--color-accent)');
-              root!.style.setProperty('--current-accent-text', slide.dataset.heroTextColor || 'var(--color-on-accent)');
+            // T-21-10-A / HOME-16: an intro section carries no
+            // data-hero-color attribute at all (only real slides do), so
+            // this guard is what keeps an intro section's arrival — which
+            // WILL reach the threshold on the very first frame, since beat
+            // 1 fills the entire viewport at scroll position 0 — from
+            // writing the fallback accent token onto .home and silently
+            // deleting HOME-16's per-visit random starting accent. Only
+            // write the live accent on the rising edge (just became
+            // arrived) of a REAL slide, never on every frame.
+            if (reached && !wasRevealed && target.dataset.heroColor) {
+              root!.style.setProperty('--current-accent', target.dataset.heroColor || 'var(--color-accent)');
+              root!.style.setProperty('--current-accent-text', target.dataset.heroTextColor || 'var(--color-on-accent)');
               arrivalAccentWritten = true;
-              // 21-08: the next-slide warm below is called ONLY from this
-              // rising-edge branch, never unconditionally inside the
+              // 21-08/21-10: the next-slide warm below is called ONLY from
+              // this rising-edge branch, never unconditionally inside the
               // forEach above — applyArrival() runs on every painted frame
               // (plan 21-07), so an unguarded call here would touch the
               // same element up to sixty times a second. This warm exists
               // specifically to close 21-UAT.md's blur-placeholder gap
               // (missing preload/priority hint for the upcoming slide).
-              warmNextSlide(index);
+              // 21-10: the call below must receive the slide's OWN index
+              // read from its own data-index attribute, NOT the position
+              // of the element inside arrivalTargets — that position is
+              // now offset by the intro sections ahead of it in the array,
+              // and using it directly would warm the wrong photo.
+              const slideIndex = Number(target.dataset.index);
+              if (!Number.isNaN(slideIndex)) warmNextSlide(slideIndex);
             }
           });
         }
@@ -1920,6 +1945,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           wordmark!.style.removeProperty('opacity');
           photoLayer!.style.removeProperty('opacity');
           root!.removeAttribute('data-zoom-active');
+          // 21-10 (21-UAT.md gap 1): data-intro-active is the one new
+          // per-frame write this task adds (Task 2 item 6/computeProgress()
+          // below) — its removal belongs in this same "every write has a
+          // matching removal here" list.
+          root!.removeAttribute('data-intro-active');
 
           // Plan 21-06 (HOME-14, D-13/D-14/D-15): under reduced motion the
           // CSS end state already makes every description permanently
@@ -1927,8 +1957,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           // reduce)` block), so the arrival class is reset here rather than
           // left stale from a prior attach — harmless no-op removal when it
           // was never set (e.g. this driver's very first, desktop-only
-          // setup() call, before the loop has ever run).
-          slides.forEach((slide) => slide.classList.remove('is-revealed'));
+          // setup() call, before the loop has ever run). 21-10: iterates
+          // arrivalTargets (not slides alone) so the intro tagline's own
+          // reveal is released on detach too.
+          arrivalTargets.forEach((target) => target.classList.remove('is-revealed'));
 
           // Only ever clears the two accent custom properties if THIS
           // driver actually wrote them. Unconditionally removing
@@ -1960,8 +1992,33 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         let rafId: number | null = null;
         let driverAttached = false;
 
+        // 21-10 (21-UAT.md gap 1): applyIntroActive() and this function's
+        // own progress derivation are two readings of the SAME
+        // getBoundingClientRect().top measurement, taken once per frame
+        // right here — not measured twice — so the intro-active condition
+        // and the zoom-progress condition can never disagree within a
+        // frame. frame() itself (below) stays exactly
+        // `applyProgress(computeProgress())` — this task adds the one new
+        // side effect here rather than adding a second call/second
+        // measurement to frame()'s own body.
+        function applyIntroActive(trackTop: number) {
+          if (introSections.length === 0) return;
+          // 'true' while the track's own top edge hasn't yet reached the
+          // viewport top — the intro sections are still occupying or
+          // partly occupying the screen. Removed (not just set to 'false')
+          // once the track reaches or passes the viewport top, matching
+          // data-zoom-active's own "absent by default" shape above.
+          if (trackTop > 0) {
+            root!.setAttribute('data-intro-active', 'true');
+          } else {
+            root!.removeAttribute('data-intro-active');
+          }
+        }
+
         function computeProgress(): number {
-          return computeZoomProgress(track!.getBoundingClientRect().top, ZOOM_REVEAL_DISTANCE);
+          const trackTop = track!.getBoundingClientRect().top;
+          applyIntroActive(trackTop);
+          return computeZoomProgress(trackTop, ZOOM_REVEAL_DISTANCE);
         }
 
         // Plan 21-07: a value no real progress fraction (always in [0,1])
@@ -3970,6 +4027,25 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        header reads as fading out rather than vanishing abruptly. */
     .home[data-zoom-active='true'] :global(.site-header--solid),
     .home[data-zoom-active='true'] :global(.site-header--transparent) {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    /* 21-UAT.md gap 1's own `missing` item about the header hide needing to
+       cover the new pre-zoom beats (21-10) —
+       .planning/debug/homepage-scroll-missing-intro-beat.md: without this,
+       the small top-left header logo would render simultaneously with the
+       new large centred intro logomark, since D-12's hide above is wired
+       solely to data-zoom-active, which the driver only ever sets once the
+       zoom track itself is on screen. data-intro-active is likewise absent
+       by default and is written only by the deck driver (Task 2's script
+       below), so the header stays visible pre-JS, with JS disabled, at
+       768px and above, and under reduced motion — that default remains
+       load-bearing for the reduced-motion route mobile-nav.spec.ts,
+       accessibility.spec.ts and critical.smoke.spec.ts all depend on
+       (assumption A1, 21-10-PLAN.md). */
+    .home[data-intro-active='true'] :global(.site-header--solid),
+    .home[data-intro-active='true'] :global(.site-header--transparent) {
       opacity: 0;
       visibility: hidden;
     }
