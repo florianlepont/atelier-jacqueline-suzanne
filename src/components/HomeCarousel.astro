@@ -391,15 +391,40 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
               '--slide-accent-text': gallery.heroTextColor ?? 'var(--color-on-accent)',
             }}
           >
+            {/* 21-08 (HOME-14, blur-placeholder gap —
+                .planning/debug/homepage-scroll-deck-blur-placeholder-jank.md):
+                the same HOME-09 two-layer blur-up pair .home-hero__photo and
+                .home-grid__tile already use, applied to deck slides for the
+                first time. Mirrors both existing placeholder call sites'
+                exact attribute set: blurSrc source, empty alt, aria-hidden,
+                NO loading attribute — a 24px placeholder must never be
+                deferred, or it stops being a placeholder at all. */}
+            <img
+              src={gallery.blurSrc}
+              alt=""
+              aria-hidden="true"
+              class="home-slide__img home-slide__img-placeholder"
+            />
+            {/* 21-08: three-way priority split by index, replacing the
+                prior first-slide-only eager/high. Index 0 stays eager/high
+                (first paint). Index 1 is ALSO eager, but at LOW fetch
+                priority — it must start downloading at page load so it is
+                already loaded by the time the visitor finishes the
+                wordmark-zoom scrub into slide 0, without competing with
+                slide 0's own paint. Index 2+ stay native-lazy with no
+                fetch-priority hint. Deliberately NOT widened past index 1:
+                eagerly fetching every gallery's full-resolution photo would
+                trade this perceived-latency gap for a real bandwidth/main-
+                thread problem on a phone connection (T-21-08-A). */}
             <img
               src={gallery.heroSrc}
               srcset={gallery.heroSrcSet}
               sizes="100vw"
               alt={gallery.alt}
-              loading={i === 0 ? 'eager' : 'lazy'}
+              loading={i <= 1 ? 'eager' : 'lazy'}
               decoding="async"
-              fetchpriority={i === 0 ? 'high' : undefined}
-              class="home-slide__img"
+              fetchpriority={i === 0 ? 'high' : i === 1 ? 'low' : undefined}
+              class="home-slide__img home-slide__img--sharp"
             />
             <div class="home-slide__accent">
               <span class="home-slide__title">{gallery.title}</span>
@@ -494,8 +519,25 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         // re-rendered by render() — a one-time load-listener setup here
         // (not inside render()) fades each tile's sharp <img> in over its
         // blurred placeholder as it lazy-loads into view.
+        //
+        // 21-08 (HOME-14, blur-placeholder gap —
+        // .planning/debug/homepage-scroll-deck-blur-placeholder-jank.md):
+        // the phone-width deck slides now render this same two-layer stack
+        // (see the deck slide markup above), so this loop is broadened to
+        // also cover .home-slide__img--sharp — the loop body below is kept
+        // byte-for-byte, only the queried element set grows. This wiring
+        // deliberately lives in this un-gated carousel script, not the
+        // phone-width deck driver script further down: a blur-to-sharp
+        // crossfade is a loading concern, not a motion concern, so it must
+        // keep working for a reduced-motion visitor too (D-15), and must
+        // never be torn down by the deck driver's detach path. The deck
+        // slide images exist in the DOM at every viewport width (the deck
+        // is `display: none` above 767px via CSS, not absent from markup),
+        // so on desktop these listeners simply never have anything to
+        // observe — a harmless no-op, not a leak.
         const gridTileImgs = Array.from(document.querySelectorAll<HTMLImageElement>('.home-grid__tile-img--sharp'));
-        gridTileImgs.forEach((img) => {
+        const deckSlideSharpImgs = Array.from(document.querySelectorAll<HTMLImageElement>('.home-slide__img--sharp'));
+        [...gridTileImgs, ...deckSlideSharpImgs].forEach((img) => {
           if (img.complete) {
             showSharp(img);
           } else {
@@ -3573,6 +3615,27 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       object-fit: cover;
       width: 100%;
       height: 100%;
+    }
+
+    /* HOME-09 (21-08, blur-placeholder gap —
+       .planning/debug/homepage-scroll-deck-blur-placeholder-jank.md): the
+       exact same two-layer opacity crossfade mechanism
+       .home-hero__img--sharp and .home-grid__tile-img--sharp already use,
+       reused verbatim (260ms ease, opacity 0 -> 1) rather than retuned. Both
+       the placeholder and sharp variants above already inherit
+       .home-slide__img's absolute fill/object-fit, so no extra positioning
+       rule is needed here (unlike .home-grid__tile-img, whose base rule
+       isn't itself absolutely positioned). No explicit z-index is added:
+       the sharp <img> is the placeholder's very next sibling and neither it
+       nor .home-slide__accent sets a z-index, so plain DOM order already
+       puts the sharp layer on top once it fades in. */
+    .home-slide__img--sharp {
+      opacity: 0;
+      transition: opacity 260ms ease;
+    }
+
+    .home-slide__img--sharp.is-loaded {
+      opacity: 1;
     }
 
     /* Mobile variant of the accent panel (D-06) — a full-width, bottom-
