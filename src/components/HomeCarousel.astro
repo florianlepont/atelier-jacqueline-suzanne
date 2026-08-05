@@ -21,7 +21,7 @@
 // and 10-UI-SPEC.md "<SiteHeader> component contract".
 import { getRelativeLocaleUrl } from 'astro:i18n';
 import SiteHeader from './SiteHeader.astro';
-import { wordmarkPhotoFilter } from '../lib/home-carousel';
+import { wordmarkPhotoFilter, ZOOM_REVEAL_DISTANCE } from '../lib/home-carousel';
 
 interface GalleryEntry {
   slug: string;
@@ -356,7 +356,12 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         - D-07: exactly one photo per gallery (its own hero/cover photo) —
           not a multi-photo-per-gallery preview. */}
     <div class="home-scroll-deck" data-role="scroll-deck">
-      <div class="home-scroll-deck__track" data-role="zoom-track">
+      <div
+        class="home-scroll-deck__track"
+        data-role="zoom-track"
+        data-reveal-distance={ZOOM_REVEAL_DISTANCE}
+        style={`--zoom-reveal-distance: ${ZOOM_REVEAL_DISTANCE}px`}
+      >
         <div class="home-scroll-deck__stage" data-role="zoom-stage">
           <div class="home-scroll-deck__photo" data-role="zoom-photo" aria-hidden="true"></div>
           <h1 class="home-scroll-deck__wordmark" data-role="zoom-wordmark">
@@ -3352,15 +3357,19 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     }
 
     /* Track: tall enough to host the full zoom scrub before the first real
-       slide arrives. 900px mirrors ZOOM_REVEAL_DISTANCE exported from
-       src/lib/home-carousel.ts (21-01) — CSS cannot import that TS
-       constant, so if the Cinematic pace is ever retuned after further
-       real-device testing, BOTH this literal and the exported constant
-       must move together, or plan 21-05's driver (which reads the exported
-       constant to compute progress) will disagree with how tall this
-       track actually is. */
+       slide arrives. WR-01 fix: CSS cannot import the TS
+       ZOOM_REVEAL_DISTANCE constant (src/lib/home-carousel.ts, 21-01)
+       directly, so the frontmatter above writes it into the
+       `--zoom-reveal-distance` custom property (and the
+       `data-reveal-distance` attribute, for tests/debugging) on the track
+       element itself — this is the single source of truth the constant
+       now drives, rather than a second, independently-hand-maintained
+       900px literal. The `900px` fallback below only matters if the
+       inline custom property is ever absent (e.g. a future markup
+       refactor drops it); it is not meant to require independent upkeep
+       any more. */
     .home-scroll-deck__track {
-      height: calc(100dvh + 900px);
+      height: calc(100dvh + var(--zoom-reveal-distance, 900px));
     }
 
     .home-scroll-deck__stage {

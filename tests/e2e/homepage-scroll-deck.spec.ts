@@ -220,6 +220,30 @@ test.describe('wordmark-to-photo zoom driver (HOME-15, D-01 through D-04, D-12, 
     return distance;
   }
 
+  // WR-01 guard: the track's rendered `data-reveal-distance` attribute is
+  // written straight from the exported ZOOM_REVEAL_DISTANCE constant
+  // (src/lib/home-carousel.ts), and the CSS track height now consumes that
+  // same value via the `--zoom-reveal-distance` custom property it also
+  // sets inline — see HomeCarousel.astro's frontmatter and the
+  // `.home-scroll-deck__track` rule. This test independently re-derives the
+  // expected distance from the constant (via the attribute) and fails if it
+  // ever drifts from the track's own live rendered height, which
+  // `getRevealDistance()` above alone cannot detect (it only ever reads the
+  // DOM, never the constant).
+  test('rendered reveal distance matches the exported ZOOM_REVEAL_DISTANCE constant (WR-01)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const expectedDistance = await page.evaluate(() => {
+      const track = document.querySelector<HTMLElement>('[data-role="zoom-track"]');
+      return Number(track?.dataset.revealDistance ?? NaN);
+    });
+    expect(expectedDistance).toBeGreaterThan(0);
+
+    const liveDistance = await getRevealDistance(page);
+    expect(Math.abs(liveDistance - expectedDistance)).toBeLessThanOrEqual(1);
+  });
+
   // The driver applies `scale(...)` as a plain CSS transform (no rotation/
   // skew), so the computed matrix's first component IS the scale factor —
   // extracting it numerically keeps this robust to the exact string
