@@ -154,7 +154,7 @@ Plans:
   4. On first load, a phone visitor sees the "Atelier Jacqueline Suzanne" wordmark filling the screen; scrolling visibly transitions through the wordmark's letterforms into the first gallery's photo, matching the approved sketch direction.
   5. On tablet/desktop viewports, the carousel/grid toggle and both view modes behave exactly as they did before this milestone.
 
-**Plans**: 7/10 plans executed
+**Plans**: 8/10 plans executed
 
 Plans:
 **Wave 1**
@@ -181,7 +181,7 @@ Plans:
 
 **Wave 6** *(gap closure — blocked on Wave 5 completion)*
 
-- [ ] 21-08-PLAN.md — Close UAT gap 3: give deck slides the site's own HOME-09 blur-up placeholder crossfade, plus bounded eager/priority hints and a next-slide warm on arrival
+- [x] 21-08-PLAN.md — Close UAT gap 3: give deck slides the site's own HOME-09 blur-up placeholder crossfade, plus bounded eager/priority hints and a next-slide warm on arrival
 
 **Wave 7** *(gap closure — blocked on Wave 6 completion)*
 
@@ -257,7 +257,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 18. Gallery & Éditions Display Fixes | 2/2 | Complete    | 2026-08-02 |
 | 19. Site-Wide Visual Polish | 2/2 | Complete    | 2026-08-03 |
 | 20. Mobile Navigation & Accent Color | 6/6 | Complete    | 2026-08-04 |
-| 21. Homepage Scroll Experience | 7/10 | In Progress|  |
+| 21. Homepage Scroll Experience | 8/10 | In Progress|  |
 | 22. Gallery & Édition Scroll Navigation | 0/TBD | Not started | - |
 | 23. About Portrait Placement & Milestone Regression Close | 0/TBD | Not started | - |
 
