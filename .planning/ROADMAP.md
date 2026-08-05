@@ -154,7 +154,7 @@ Plans:
   4. On first load, a phone visitor sees the "Atelier Jacqueline Suzanne" wordmark filling the screen; scrolling visibly transitions through the wordmark's letterforms into the first gallery's photo, matching the approved sketch direction.
   5. On tablet/desktop viewports, the carousel/grid toggle and both view modes behave exactly as they did before this milestone.
 
-**Plans**: 3/6 plans executed
+**Plans**: 4/6 plans executed
 
 Plans:
 **Wave 1**
@@ -165,7 +165,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 21-04-PLAN.md — Build the phone-width scroll deck's structure: failing structural spec, then the parallel markup, then the CSS that retires the carousel/grid/toggle below 767px
+- [x] 21-04-PLAN.md — Build the phone-width scroll deck's structure: failing structural spec, then the parallel markup, then the CSS that retires the carousel/grid/toggle below 767px
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -241,7 +241,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 18. Gallery & Éditions Display Fixes | 2/2 | Complete    | 2026-08-02 |
 | 19. Site-Wide Visual Polish | 2/2 | Complete    | 2026-08-03 |
 | 20. Mobile Navigation & Accent Color | 6/6 | Complete    | 2026-08-04 |
-| 21. Homepage Scroll Experience | 3/6 | In Progress|  |
+| 21. Homepage Scroll Experience | 4/6 | In Progress|  |
 | 22. Gallery & Édition Scroll Navigation | 0/TBD | Not started | - |
 | 23. About Portrait Placement & Milestone Regression Close | 0/TBD | Not started | - |
 
