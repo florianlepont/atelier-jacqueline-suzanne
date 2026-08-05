@@ -3667,13 +3667,14 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        exact same two-layer opacity crossfade mechanism
        .home-hero__img--sharp and .home-grid__tile-img--sharp already use,
        reused verbatim (260ms ease, opacity 0 -> 1) rather than retuned. Both
-       the placeholder and sharp variants above already inherit
-       .home-slide__img's absolute fill/object-fit, so no extra positioning
-       rule is needed here (unlike .home-grid__tile-img, whose base rule
-       isn't itself absolutely positioned). No explicit z-index is added:
-       the sharp <img> is the placeholder's very next sibling and neither it
-       nor .home-slide__accent sets a z-index, so plain DOM order already
-       puts the sharp layer on top once it fades in. */
+       .home-slide__img-placeholder and .home-slide__img--sharp above
+       already inherit .home-slide__img's absolute fill/object-fit, so no
+       extra positioning rule is needed here (unlike .home-grid__tile-img,
+       whose base rule isn't itself absolutely positioned). No explicit
+       z-index is added: the sharp <img> is the placeholder's very next
+       sibling and neither it nor .home-slide__accent sets a z-index, so
+       plain DOM order already puts the sharp layer on top once it fades
+       in. */
     .home-slide__img--sharp {
       opacity: 0;
       transition: opacity 260ms ease;
