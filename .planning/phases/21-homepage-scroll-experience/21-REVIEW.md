@@ -1,270 +1,130 @@
 ---
 phase: 21-homepage-scroll-experience
-reviewed: 2026-08-05T00:00:00Z
+reviewed: 2026-08-08T00:00:00Z
 depth: standard
-files_reviewed: 12
+files_reviewed: 7
 files_reviewed_list:
   - src/lib/home-carousel.ts
-  - src/components/HomeCarousel.astro
   - tests/unit/home-carousel.test.ts
-  - tests/e2e/homepage-wordmark-peek.spec.ts
-  - tests/e2e/critical.smoke.spec.ts
-  - tests/e2e/accessibility.spec.ts
-  - tests/e2e/mobile-nav.spec.ts
-  - tests/e2e/homepage-mobile-responsive.spec.ts
-  - tests/e2e/homepage-content-display.spec.ts
+  - src/components/HomeCarousel.astro
   - tests/e2e/homepage-scroll-deck.spec.ts
-  - tests/e2e/gallery.spec.ts
-  - tests/e2e/homepage-accent-random.spec.ts
+  - src/layouts/BaseLayout.astro
+  - src/pages/index.astro
+  - src/pages/en/index.astro
 findings:
   critical: 1
-  warning: 3
-  info: 1
-  total: 5
+  warning: 2
+  info: 0
+  total: 3
 status: issues_found
 ---
 
 # Phase 21: Code Review Report
 
-**Reviewed:** 2026-08-05T00:00:00Z
+**Reviewed:** 2026-08-08
 **Depth:** standard
-**Files Reviewed:** 12
+**Files Reviewed:** 7
 **Status:** issues_found
 
 ## Summary
 
-Reviewed the phase 21 homepage scroll-experience implementation: the pure
-computational module `src/lib/home-carousel.ts`, the `HomeCarousel.astro`
-component (frontmatter + two client `<script>` blocks + styles), its unit
-tests, and the e2e specs listed in scope. `src/lib/home-carousel.ts` is
-clean — every exported function is byte-matched by the unit tests
-(`tests/unit/home-carousel.test.ts`), including the documented degenerate
-cases (zero-width rects, zero reveal distance, clamp opt-out). The new
-phone-width scroll-deck markup/CSS/driver (plans 21-04/21-05/21-06) is
-well-covered by `homepage-scroll-deck.spec.ts`.
+This is the second review pass on Phase 21, scoped to the gap-closure diff since `087df689`: plan 21-07's replacement of the deck's scroll/IntersectionObserver driver with a single per-frame `requestAnimationFrame` loop, 21-08's blur-up placeholder + next-slide warm for deck slides, 21-09's `dvh`→`svh` conversion plus a photo-surface paint floor and a phone-scoped `theme-color` meta tag, and 21-10's new pre-zoom two-beat intro.
 
-The one real defect found is architectural: the pre-existing desktop
-carousel's `<script>` block (auto-advance timer, HOME-16 random-accent
-init) has no phone-width gate at all, and it shares the `--current-accent`/
-`--current-accent-text` CSS custom properties with the brand-new,
-phone-only zoom-wordmark introduced by this phase. Below 767px the carousel
-DOM is only `display:none`-hidden, not detached or gated in JS — so its
-6-second auto-advance interval keeps ticking, silently overwriting the same
-custom properties the visible zoom-wordmark's text color depends on. See
-CR-01 below for the full trace and why it isn't currently caught by any
-scoped test. Three further warnings (duplicated magic number between CSS
-and the exported `ZOOM_REVEAL_DISTANCE` constant, unmanaged background
-network usage as a side effect of CR-01, and an ARIA role/state mismatch on
-the progress dashes) and one info item are also recorded.
+The `computeSlideVisibleRatio` addition in `src/lib/home-carousel.ts` is correct, well-tested, and its degenerate-input handling matches the unit tests exactly. The `svh` conversion, paint-floor CSS, and `theme-color` meta wiring are all correctly scoped and match their own e2e assertions.
+
+However, plan 21-10's fix for a real bug (an intro section's own arrival wrongly clobbering the HOME-16 random starting accent) introduced a **new regression**: the same guard it added also silently disables accent-liveness (D-09) and the 21-08 next-slide photo warm (closing 21-UAT.md gap 3) for any real gallery slide that uses Sanity's documented "palette automatique" option (no `heroColor` set) — see CR-01. This is a plausible, ordinary content-editing path, not a hypothetical edge case, and none of the new/rebased e2e tests exercise a heroColor-less gallery, so it is not caught by the test suite.
+
+Two smaller quality issues (WR-01, WR-02) are also flagged: a duplicated magic color literal instead of referencing the existing design token, and a newly-added per-frame function that performs an unconditional DOM write, undermining the adjacent change-detection optimization it sits next to.
 
 ## Critical Issues
 
-### CR-01: Mobile zoom-wordmark's text color silently cycles every 6 seconds due to the desktop carousel's un-gated auto-advance sharing `--current-accent-text` with the phone-only zoom stage
+### CR-01: Deck arrival guard silently disables accent-liveness and next-slide warm for galleries without an explicit `heroColor`
 
-**File:** `src/components/HomeCarousel.astro:867-908` (auto-advance interval), `:1531-1533` (unconditional startup call), `:933-939` (reduced-motion toggle also (re)starts it), `:3397` (the mobile-only consumer)
+**File:** `src/components/HomeCarousel.astro:1861-1900` (specifically the guard at line 1882)
 
 **Issue:**
-The first `<script>` block (the pre-existing desktop carousel, lines
-420-1588) has no viewport gate anywhere in it — `hoverCapable` only gates
-hover/peek-specific features, and `root.dataset.displayMode` is set to
-`'carousel'` in the server-rendered markup (`HomeCarousel.astro:112`) and
-is only ever flipped to `'grid'` by the mode-toggle button's click handler.
-That button is `display:none` below 767px (`:3317`), so on a phone
-`data-display-mode` stays `'carousel'` forever, and:
+
+Plan 21-10 needed to stop an intro section's own arrival (beat 1 fills the viewport at scroll position 0, so it "arrives" on the very first frame) from clobbering HOME-16's random starting accent. It did this by adding `&& target.dataset.heroColor` to the rising-edge guard inside `applyArrival()`:
 
 ```js
-function startAutoAdvance() {
-  stopAutoAdvance();
-  if (autoAdvancePausedByUser || root!.dataset.displayMode !== 'carousel') return;
-  timer = setInterval(() => {
-    carouselIndex = (carouselIndex + 1) % galleries.length;
-    ...
-    render(true);   // <-- writes --current-accent / --current-accent-text on `root`
-    ...
-  }, 6000);
-  ...
+if (reached && !wasRevealed && target.dataset.heroColor) {
+  root!.style.setProperty('--current-accent', target.dataset.heroColor || 'var(--color-accent)');
+  root!.style.setProperty('--current-accent-text', target.dataset.heroTextColor || 'var(--color-on-accent)');
+  arrivalAccentWritten = true;
+  const slideIndex = Number(target.dataset.index);
+  if (!Number.isNaN(slideIndex)) warmNextSlide(slideIndex);
 }
 ```
 
-is invoked unconditionally at the bottom of the script (`render();
-syncAutoplayControl(); startAutoAdvance();`, lines 1531-1533) on every page
-load, at every viewport width, including phones where `.home-hero` is
-`display:none`. The interval keeps running indefinitely (nothing ever calls
-`stopAutoAdvance()` for a phone-width visitor — `focusin`/`focusout` only
-pause/resume it, they never permanently stop it), and every tick calls
-`render(true)`, which does:
+`data-hero-color` is absent on intro sections (correct, intentional), **but it is also absent on any real gallery slide whose Sanity `heroColor` field is unset** — this is not an edge case: `sanity/schemas/gallery.ts` documents the field as optional, with the explicit description "Choisir le fond du panneau associé à cette collection, **ou conserver la palette automatique**" (choose the panel background, *or keep the automatic palette*). `normalizeHeroColor()` (`src/lib/site-config.ts:55-59`) returns `undefined` in exactly this case, and the deck slide markup (`data-hero-color={gallery.heroColor}`) then omits the attribute entirely.
+
+Before this diff, the guard was only `if (reached && !wasRevealed)`, and the color write itself already had a safe fallback (`slide.dataset.heroColor || 'var(--color-accent)'`) for a missing color. 21-10's new guard removed that fallback path from ever running at all for a real slide:
+
+1. **Accent-liveness (D-09) breaks**: arriving at a "palette automatique" slide no longer updates `--current-accent`/`--current-accent-text` at all — the accent freezes at whatever the previously-arrived (or initial) gallery's color was. If the visitor later scrolls back to that gallery from a different direction, or scrolls past it into an adjacent gallery, the accent can visibly show the *wrong* gallery's color, since `root!.style.setProperty(...)` from an earlier arrival is an inline style that nothing ever resets it back from.
+2. **21-08's next-slide warm (21-UAT.md gap 3) regresses**: `warmNextSlide(slideIndex)` is nested inside the same guarded block, so arriving at a heroColor-less slide never promotes the *next* slide's sharp image out of native-lazy. For any gallery after index 1 that follows a heroColor-less gallery, this reintroduces the exact "blur-placeholder-jank" symptom plan 21-08 was written to close.
+
+None of the new/rebased e2e cases in `tests/e2e/homepage-scroll-deck.spec.ts` exercise a gallery without `heroColor` (every `slideHeroColor()`/`readDeckDataEntries()` assertion asserts the color is *truthy*), so this regression is not caught by the current suite.
+
+**Fix:** Distinguish "is a real slide" from "is a real slide with a color" using an attribute that is actually unique to slides (e.g. `data-index`, which only slide anchors carry — intro sections never set it), not `data-hero-color`:
 
 ```js
-root!.style.setProperty('--current-accent', accent.bg);
-root!.style.setProperty('--current-accent-text', accent.text);
-```
-
-on the shared `.home` root element (`root` in both scripts resolves to the
-same `<section class="home" data-display-mode="...">`).
-
-Meanwhile, this phase's own new phone-only zoom-wordmark reads that exact
-same custom property for its own text color:
-
-```css
-/* :3397, inside the "@media (max-width: 767px)" scroll-deck styles */
-.home-scroll-deck__wordmark {
-  ...
-  color: var(--current-accent-text, var(--color-on-accent));
+// data-index only exists on real slide anchors — intro sections never set
+// it — so this is the correct "is this a real slide, not an intro beat"
+// test, independent of whether heroColor happens to be set.
+if (reached && !wasRevealed && target.dataset.index !== undefined) {
+  root!.style.setProperty('--current-accent', target.dataset.heroColor || 'var(--color-accent)');
+  root!.style.setProperty('--current-accent-text', target.dataset.heroTextColor || 'var(--color-on-accent)');
+  arrivalAccentWritten = true;
+  const slideIndex = Number(target.dataset.index);
+  if (!Number.isNaN(slideIndex)) warmNextSlide(slideIndex);
 }
 ```
 
-So a phone visitor sitting on the full-screen intro wordmark (the very
-state D-16 documents as "intro-only", implicitly a stable first
-impression) will see its text color silently change every 6 seconds as the
-invisible desktop carousel auto-advances underneath it — entirely
-independent of, and racing against, this phase's own arrival
-`IntersectionObserver` (`:1650-1675`), which legitimately writes the same
-two properties once a slide arrives and is the ONLY accent writer that's
-supposed to be live on a phone before the header reappears.
-
-This is not exercised by the existing test suite: `homepage-scroll-deck.spec.ts`'s
-`'phase-20 accent preserved...'` test (`tests/e2e/homepage-scroll-deck.spec.ts:443-451`)
-only samples the accent once, immediately after `page.goto('/')`, and
-`homepage-accent-random.spec.ts` never asserts stability over time either — none of
-the scoped specs wait 6+ seconds at scroll position 0 on a phone viewport, which is
-exactly the window in which the bug is observable.
-
-**Fix:** Gate the entire first `<script>` block's auto-advance lifecycle
-(and, ideally, its `render()`-driven preloading — see WR-02) behind the
-same `(max-width: 767px)` media query the second script already uses, e.g.:
-
-```js
-const desktopCarousel = window.matchMedia('(max-width: 767px)');
-function maybeStartAutoAdvance() {
-  if (desktopCarousel.matches) { stopAutoAdvance(); return; }
-  startAutoAdvance();
-}
-// replace the bare `startAutoAdvance()` call at the bottom, the
-// focusout listener, and the reduced-motion-change branch with
-// `maybeStartAutoAdvance()`, and add:
-desktopCarousel.addEventListener('change', maybeStartAutoAdvance);
-```
+This restores the pre-21-10 fallback behavior (`'var(--color-accent)'`) for color-less galleries while still keeping intro sections from ever writing an accent, and keeps the next-slide warm firing on every real arrival regardless of whether that gallery opted into a custom `heroColor`.
 
 ## Warnings
 
-### WR-01: `ZOOM_REVEAL_DISTANCE` (900) is duplicated as an untracked CSS literal, with nothing enforcing the two stay in sync
+### WR-01: `phoneThemeColor="#1A1A1A"` duplicates the `--color-ink` token as a magic literal
 
-**File:** `src/components/HomeCarousel.astro:3325-3335`; `src/lib/home-carousel.ts:209`
+**File:** `src/pages/index.astro:66`, `src/pages/en/index.astro:60`
 
-**Issue:** The zoom track's height is hardcoded in CSS as `calc(100dvh +
-900px)`, and the comment directly on top of it (`:3326-3332`) already
-acknowledges the risk: "if the Cinematic pace is ever retuned... BOTH this
-literal and the exported constant must move together, or plan 21-05's
-driver... will disagree with how tall this track actually is." There is no
-compile-time (CSS can't import a TS constant) or test-time assertion tying
-the two together — `homepage-scroll-deck.spec.ts`'s `getRevealDistance()`
-helper derives its expected distance from the live DOM (track height minus
-viewport height), so it would keep passing even if the CSS's `900px` and
-`ZOOM_REVEAL_DISTANCE` silently drifted apart; it can't detect the
-divergence because it never independently re-derives the expected value
-from the constant itself.
+**Issue:** Both homepage entry points hardcode `phoneThemeColor="#1A1A1A"`, with a comment noting it "mirrors the color-ink/gray-900 token (BaseLayout.astro)". `--color-ink`/`--gray-900` is defined once, in `src/layouts/BaseLayout.astro`'s `:root` block, as the single source of truth for this value. Duplicating the literal in two page files means a future rebrand/palette change to `--gray-900` silently stops matching the phone status-bar tint, with no compiler/test signal — the two pages must be remembered and updated by hand.
 
-**Fix:** Add a `data-reveal-distance={ZOOM_REVEAL_DISTANCE}` attribute (or
-similar) on the track element rendered from the frontmatter/constant, and
-either (a) read it in CSS via a custom property computed from that
-attribute, or (b) add a unit/e2e assertion that reads both the exported
-constant and the rendered track's `getBoundingClientRect()` height and
-fails if they disagree by more than a pixel of rounding. At minimum, add a
-guard test asserting `trackHeight - viewportHeight === ZOOM_REVEAL_DISTANCE`
-rather than only using it to derive scroll targets.
+**Fix:** Export the ink value as a plain TS/JS constant (e.g. alongside `HERO_COLORS` in `src/lib/site-config.ts`) and import it in both page files instead of re-typing the hex literal:
 
-### WR-02: Same CR-01 root cause causes indefinite background network usage on phones
+```ts
+// site-config.ts
+export const COLOR_INK = '#1A1A1A'
+```
+```astro
+import { COLOR_INK } from '../lib/site-config';
+...
+<BaseLayout ... phoneThemeColor={COLOR_INK}>
+```
 
-**File:** `src/components/HomeCarousel.astro:799-809`
+### WR-02: `computeProgress()` performs an unconditional DOM write every animation frame, contradicting its own adjacent change-detection comment
 
-**Issue:** As a direct consequence of CR-01 (the desktop carousel's
-auto-advance interval never being gated off on phone widths), every 6-second
-tick of `render(true)` also runs the D-05 image-preload warm-up:
+**File:** `src/components/HomeCarousel.astro:2004-2022`
+
+**Issue:** `applyProgress()` (immediately below `computeProgress()`) is explicitly documented as "short-circuit[ing] when the measured progress hasn't changed since last frame, so a stationary page performs zero style writes per frame... only the two cheap rect reads inside `computeProgress()`/`applyArrival()`." But `computeProgress()` itself now calls `applyIntroActive(trackTop)`, which unconditionally calls `root!.setAttribute('data-intro-active', 'true')` or `root!.removeAttribute('data-intro-active')` on **every single call** — i.e. every animation frame the loop is attached, regardless of whether `trackTop`'s sign has changed since the previous frame. This directly contradicts the "zero style writes when stationary" invariant the surrounding code documents and relies on, and it is surprising for a function named `computeProgress` (which reads as a pure getter) to also be the one place a DOM attribute gets mutated on every frame.
+
+**Fix:** Give `applyIntroActive()` its own change-detection, mirroring `applyProgress()`'s `lastProgress` pattern, and/or move it out of `computeProgress()` into `frame()` alongside `applyProgress`/`applyArrival` so the "read" and "write" responsibilities aren't mixed inside one function:
 
 ```js
-const nextIndex = (carouselIndex + 1) % galleries.length;
-const nextSrc = galleries[nextIndex]?.heroSrc;
-if (nextSrc) {
-  const preload = new Image();
-  preload.srcset = galleries[nextIndex]?.heroSrcSet ?? '';
-  preload.sizes = '100vw';
-  preload.src = nextSrc;
+let introActive: boolean | null = null;
+function applyIntroActive(trackTop: number) {
+  if (introSections.length === 0) return;
+  const active = trackTop > 0;
+  if (active === introActive) return;
+  introActive = active;
+  if (active) root!.setAttribute('data-intro-active', 'true');
+  else root!.removeAttribute('data-intro-active');
 }
 ```
-
-On a phone this fires forever for a carousel that is never shown (the
-scroll deck already eagerly loads its own first slide and lazy-loads the
-rest), silently downloading a full-size responsive hero image over the
-visitor's mobile connection every 6 seconds for as long as the tab stays
-open on the homepage. This is a real data-usage/battery cost, not merely a
-speed concern, and disappears once WR-01/CR-01's viewport gate is added.
-
-**Fix:** Covered by the same fix as CR-01 — gating `startAutoAdvance()` (and
-therefore every `render(true)` tick) off on phone widths removes this
-network cost as a side effect.
-
-### WR-03: Progress-dash `role="tablist"`/`role="tab"` pairing uses `aria-current` instead of the ARIA-required `aria-selected`, and implements no tab keyboard pattern
-
-**File:** `src/components/HomeCarousel.astro:226-236` (markup), `:795` (JS update)
-
-**Issue:** The carousel's gallery-picker dashes are marked up as a
-`tablist`/`tab` pair:
-
-```astro
-<div class="home-hero__progress" data-role="progress" role="tablist" ...>
-  {galleries.map((gallery, i) => (
-    <button type="button" class="home-hero__progress-dash" role="tab"
-      aria-current={i === 0 ? 'true' : 'false'} ... />
-  ))}
-</div>
-```
-
-Per the ARIA spec, `role="tab"` requires `aria-selected` as its selected
-state (not `aria-current`, which has different semantics — "current item
-within a set", used for e.g. breadcrumbs/pagination). Using `aria-current`
-here means a screen reader announcing this widget as a tablist will not
-correctly report which tab is selected. Additionally, the ARIA `tablist`
-authoring pattern implies arrow-key navigation between tabs (Left/Right/
-Home/End moving focus, not just the whole-carousel `ArrowLeft`/`ArrowRight`
-navigation wired at document level for photo advance) — none of that is
-implemented; each dash is just a plain, independently-tabbable `<button>`.
-This mismatch between declared role semantics and actual keyboard/state
-behavior is a real assistive-tech UX defect, even though it isn't currently
-flagged by the axe-core scan in `accessibility.spec.ts` (axe's automated
-checks don't fully validate the tablist interaction pattern).
-
-**Fix:** Either (a) drop `role="tablist"`/`role="tab"` entirely in favor of
-a plain labeled group of buttons (e.g. `role="group"` + `aria-label`, each
-button using `aria-current="true"` as already written, which is valid and
-correctly conveys "the current gallery" semantics for a non-tab widget), or
-(b) keep the tab semantics but switch to `aria-selected` and implement the
-standard tablist roving-tabindex/arrow-key pattern. Option (a) is the
-smaller, lower-risk change given the existing keyboard model (global
-Left/Right already drives photo navigation independently of dash focus).
-
-## Info
-
-### IN-01: Desktop carousel's global `keydown` listener still mutates a `display:none` subtree on phones
-
-**File:** `src/components/HomeCarousel.astro:1009-1020`
-
-**Issue:** The `ArrowLeft`/`ArrowRight` handler is attached to `document`
-and gated only by `root!.dataset.displayMode !== 'carousel'` — which, per
-CR-01's trace, is always `'carousel'` on a phone. An external keyboard or
-switch-access device on a phone would still trigger `goToPrev()`/
-`goToNext()` against the hidden carousel, calling `render()` and mutating
-`--current-accent`/`--current-accent-text` exactly as CR-01 describes,
-compounding that bug's symptom. Low real-world likelihood (few phone users
-attach hardware keyboards), but worth folding into the same viewport-gate
-fix.
-
-**Fix:** No separate fix needed beyond CR-01's gate — once
-`startAutoAdvance`/`render`'s side effects are properly scoped off-phone,
-consider also short-circuiting this keydown handler with the same
-`matchMedia('(max-width: 767px)')` check for consistency.
+(Reset `introActive = null` in `clearInlineStyles()` alongside the existing `lastProgress` reset, for the same re-attach-must-always-paint reason.)
 
 ---
 
-_Reviewed: 2026-08-05T00:00:00Z_
+_Reviewed: 2026-08-08_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
