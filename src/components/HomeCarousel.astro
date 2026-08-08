@@ -1986,6 +1986,13 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           // cannot skip its first paint by comparing computeProgress()'s
           // first live read against a stale value from before this detach.
           lastProgress = PROGRESS_SENTINEL;
+
+          // WR-02 fix: same reasoning as lastProgress above, for
+          // applyIntroActive()'s own change-detection cache — a later
+          // re-attach must always paint data-intro-active's correct state
+          // on its first frame, not skip it by comparing against a stale
+          // value left over from before this detach.
+          introActive = null;
         }
 
         const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -2007,6 +2014,18 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         // `applyProgress(computeProgress())` — this task adds the one new
         // side effect here rather than adding a second call/second
         // measurement to frame()'s own body.
+        //
+        // WR-02 fix: mirrors applyProgress()'s own lastProgress
+        // change-detection pattern below — introActive caches the
+        // last-written state so the DOM attribute is only touched on an
+        // actual transition, not on every painted frame. Without this, a
+        // stationary page inside (or past) the intro would still write a
+        // DOM attribute every frame, contradicting the adjacent "zero
+        // style writes when stationary" invariant applyProgress()
+        // documents and relies on. Reset alongside lastProgress in
+        // clearInlineStyles() for the same re-attach-must-always-paint
+        // reason.
+        let introActive: boolean | null = null;
         function applyIntroActive(trackTop: number) {
           if (introSections.length === 0) return;
           // 'true' while the track's own top edge hasn't yet reached the
@@ -2014,7 +2033,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           // partly occupying the screen. Removed (not just set to 'false')
           // once the track reaches or passes the viewport top, matching
           // data-zoom-active's own "absent by default" shape above.
-          if (trackTop > 0) {
+          const active = trackTop > 0;
+          if (active === introActive) return;
+          introActive = active;
+          if (active) {
             root!.setAttribute('data-intro-active', 'true');
           } else {
             root!.removeAttribute('data-intro-active');
