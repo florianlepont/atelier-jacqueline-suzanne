@@ -364,6 +364,61 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         - D-07: exactly one photo per gallery (its own hero/cover photo) —
           not a multi-photo-per-gallery preview. */}
     <div class="home-scroll-deck" data-role="scroll-deck">
+      {/* 21-UAT.md gap 1 (missing pre-zoom intro beat) —
+          .planning/debug/homepage-scroll-missing-intro-beat.md: added AFTER
+          the phase's own real-device UAT found the wordmark-zoom opening
+          directly on load, with no preceding beat. This is additive scope
+          with no locked 21-CONTEXT.md decision behind it (none of D-01
+          through D-16 specifies a pre-wordmark beat) — 21-10-PLAN.md's own
+          <assumptions> block (A1 through A5) is the record of the open
+          design questions this markup answers, and 21-10-SUMMARY.md restates
+          them for the developer to confirm or correct. Both beats below
+          deliberately render byte-for-byte identical logo markup/classes so
+          the tagline reads as arriving beneath a logo that appears to stay
+          put (A4) — do not add a beat-specific size override to either. No
+          zoom math changes here: computeZoomProgress (src/lib/
+          home-carousel.ts) keys off .home-scroll-deck__track's own live
+          getBoundingClientRect().top, so prepending these two sibling
+          sections needs zero change to ZOOM_REVEAL_DISTANCE or the track
+          height calc below — the zoom simply stays at rest until the
+          browser has scrolled past both beats. */}
+      <div
+        class="home-scroll-deck__intro home-scroll-deck__intro--logo"
+        data-role="deck-intro"
+        data-intro-beat="1"
+      >
+        <img
+          src={logoWhiteSrc}
+          alt=""
+          aria-hidden="true"
+          class="home-scroll-deck__intro-logo"
+        />
+        {/* Decorative only (aria-hidden) — assumption A2: dismissed by
+            scrolling past, nothing else; no tap/timer affordance. */}
+        <div class="home-scroll-deck__intro-cue" aria-hidden="true">
+          <span>{isEn ? 'Scroll' : 'Défiler'}</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </div>
+      </div>
+      {introBody ? (
+        <div
+          class="home-scroll-deck__intro home-scroll-deck__intro--tagline"
+          data-role="deck-intro"
+          data-intro-beat="2"
+        >
+          {/* Byte-for-byte identical logo markup/classes/attributes to beat
+              1 above (assumption A4) — do not diverge. */}
+          <img
+            src={logoWhiteSrc}
+            alt=""
+            aria-hidden="true"
+            class="home-scroll-deck__intro-logo"
+          />
+          <p class="home-scroll-deck__intro-body">{introBody}</p>
+        </div>
+      ) : null}
       <div
         class="home-scroll-deck__track"
         data-role="zoom-track"
@@ -1732,6 +1787,14 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       // deck element lookups. An empty array (no galleries, or the deck
       // itself absent) is a safe no-op for every arrival branch below.
       const slides = deckRoot ? Array.from(deckRoot.querySelectorAll<HTMLElement>('[data-role="deck-slide"]')) : [];
+      // 21-10 (21-UAT.md gap 1): the two pre-zoom intro sections, resolved
+      // the same way as slides — an empty array (no intro markup, e.g. an
+      // older cached build) is a safe no-op throughout.
+      const introSections = deckRoot ? Array.from(deckRoot.querySelectorAll<HTMLElement>('[data-role="deck-intro"]')) : [];
+      // 21-10: the intro sections precede the slides in the per-frame
+      // arrival pass, mirroring their DOM order, so applyArrival() below
+      // iterates ONE array instead of two separate loops.
+      const arrivalTargets = [...introSections, ...slides];
 
       // Every element above is optional — a silent no-op if the deck is
       // absent (e.g. the zero-galleries empty state, which never renders
@@ -1787,36 +1850,53 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           }
         }
 
+        // 21-10 (21-UAT.md gap 1): iterates arrivalTargets (intro sections
+        // then slides), not slides alone, so the tagline's reveal resolves
+        // from this same per-frame pass rather than a second driver. Per-
+        // element body is otherwise identical to the pre-21-10 shape: ratio
+        // from computeSlideVisibleRatio against the live rect and
+        // window.innerHeight, comparison against ARRIVAL_THRESHOLD,
+        // wasRevealed captured before the toggle, and the class toggled in
+        // both directions.
         function applyArrival() {
           const viewportHeight = window.innerHeight;
-          slides.forEach((slide, index) => {
-            const rect = slide.getBoundingClientRect();
+          arrivalTargets.forEach((target) => {
+            const rect = target.getBoundingClientRect();
             const ratio = computeSlideVisibleRatio(rect, viewportHeight);
             // The reveal is a live, two-directional state (arrives AND
             // departs, contrast GalleryGrid.astro's one-shot reveal) — D-14
             // — so scrolling back up must hide the description again.
             const reached = ratio >= ARRIVAL_THRESHOLD;
-            const wasRevealed = slide.classList.contains('is-revealed');
-            slide.classList.toggle('is-revealed', reached);
+            const wasRevealed = target.classList.contains('is-revealed');
+            target.classList.toggle('is-revealed', reached);
 
-            // Only write the live accent on the rising edge (just became
-            // arrived), never on every frame — and never at load, since at
-            // scroll position 0 the pinned zoom stage fills the viewport so
-            // no slide can reach the arrival ratio yet. That keeps HOME-16's
-            // per-visit random starting accent (set once by the carousel's
-            // own script, above) untouched until a slide genuinely settles.
-            if (reached && !wasRevealed) {
-              root!.style.setProperty('--current-accent', slide.dataset.heroColor || 'var(--color-accent)');
-              root!.style.setProperty('--current-accent-text', slide.dataset.heroTextColor || 'var(--color-on-accent)');
+            // T-21-10-A / HOME-16: an intro section carries no
+            // data-hero-color attribute at all (only real slides do), so
+            // this guard is what keeps an intro section's arrival — which
+            // WILL reach the threshold on the very first frame, since beat
+            // 1 fills the entire viewport at scroll position 0 — from
+            // writing the fallback accent token onto .home and silently
+            // deleting HOME-16's per-visit random starting accent. Only
+            // write the live accent on the rising edge (just became
+            // arrived) of a REAL slide, never on every frame.
+            if (reached && !wasRevealed && target.dataset.heroColor) {
+              root!.style.setProperty('--current-accent', target.dataset.heroColor || 'var(--color-accent)');
+              root!.style.setProperty('--current-accent-text', target.dataset.heroTextColor || 'var(--color-on-accent)');
               arrivalAccentWritten = true;
-              // 21-08: the next-slide warm below is called ONLY from this
-              // rising-edge branch, never unconditionally inside the
+              // 21-08/21-10: the next-slide warm below is called ONLY from
+              // this rising-edge branch, never unconditionally inside the
               // forEach above — applyArrival() runs on every painted frame
               // (plan 21-07), so an unguarded call here would touch the
               // same element up to sixty times a second. This warm exists
               // specifically to close 21-UAT.md's blur-placeholder gap
               // (missing preload/priority hint for the upcoming slide).
-              warmNextSlide(index);
+              // 21-10: the call below must receive the slide's OWN index
+              // read from its own data-index attribute, NOT the position
+              // of the element inside arrivalTargets — that position is
+              // now offset by the intro sections ahead of it in the array,
+              // and using it directly would warm the wrong photo.
+              const slideIndex = Number(target.dataset.index);
+              if (!Number.isNaN(slideIndex)) warmNextSlide(slideIndex);
             }
           });
         }
@@ -1865,6 +1945,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           wordmark!.style.removeProperty('opacity');
           photoLayer!.style.removeProperty('opacity');
           root!.removeAttribute('data-zoom-active');
+          // 21-10 (21-UAT.md gap 1): data-intro-active is the one new
+          // per-frame write this task adds (Task 2 item 6/computeProgress()
+          // below) — its removal belongs in this same "every write has a
+          // matching removal here" list.
+          root!.removeAttribute('data-intro-active');
 
           // Plan 21-06 (HOME-14, D-13/D-14/D-15): under reduced motion the
           // CSS end state already makes every description permanently
@@ -1872,8 +1957,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           // reduce)` block), so the arrival class is reset here rather than
           // left stale from a prior attach — harmless no-op removal when it
           // was never set (e.g. this driver's very first, desktop-only
-          // setup() call, before the loop has ever run).
-          slides.forEach((slide) => slide.classList.remove('is-revealed'));
+          // setup() call, before the loop has ever run). 21-10: iterates
+          // arrivalTargets (not slides alone) so the intro tagline's own
+          // reveal is released on detach too.
+          arrivalTargets.forEach((target) => target.classList.remove('is-revealed'));
 
           // Only ever clears the two accent custom properties if THIS
           // driver actually wrote them. Unconditionally removing
@@ -1905,8 +1992,33 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         let rafId: number | null = null;
         let driverAttached = false;
 
+        // 21-10 (21-UAT.md gap 1): applyIntroActive() and this function's
+        // own progress derivation are two readings of the SAME
+        // getBoundingClientRect().top measurement, taken once per frame
+        // right here — not measured twice — so the intro-active condition
+        // and the zoom-progress condition can never disagree within a
+        // frame. frame() itself (below) stays exactly
+        // `applyProgress(computeProgress())` — this task adds the one new
+        // side effect here rather than adding a second call/second
+        // measurement to frame()'s own body.
+        function applyIntroActive(trackTop: number) {
+          if (introSections.length === 0) return;
+          // 'true' while the track's own top edge hasn't yet reached the
+          // viewport top — the intro sections are still occupying or
+          // partly occupying the screen. Removed (not just set to 'false')
+          // once the track reaches or passes the viewport top, matching
+          // data-zoom-active's own "absent by default" shape above.
+          if (trackTop > 0) {
+            root!.setAttribute('data-intro-active', 'true');
+          } else {
+            root!.removeAttribute('data-intro-active');
+          }
+        }
+
         function computeProgress(): number {
-          return computeZoomProgress(track!.getBoundingClientRect().top, ZOOM_REVEAL_DISTANCE);
+          const trackTop = track!.getBoundingClientRect().top;
+          applyIntroActive(trackTop);
+          return computeZoomProgress(trackTop, ZOOM_REVEAL_DISTANCE);
         }
 
         // Plan 21-07: a value no real progress fraction (always in [0,1])
@@ -3545,6 +3657,120 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        blast radius far beyond this gap, and UI-02 forbids changes outside
        the phone-width homepage. Rejected on purpose, not omitted. */
 
+    /* 21-UAT.md gap 1 (pre-zoom intro beats, 21-10) —
+       .planning/debug/homepage-scroll-missing-intro-beat.md. Positioned
+       immediately before .home-scroll-deck__track below so source order
+       matches visual/DOM order. No `min-width: 768px` rule is needed for
+       these sections — .home-scroll-deck's own `display: none` base rule
+       (above, outside this media query) already makes them desktop-inert
+       for free, exactly like every other element in this subtree. */
+    .home-scroll-deck__intro {
+      height: 100svh;
+      /* 21-10 Task 3 deviation (Rule 1 bug fix, assumption A4): a naive
+         flex column with `justify-content: center` centres the WHOLE
+         stack (logo + secondary element), so the logo itself lands at a
+         different vertical position in each beat whenever the secondary
+         element's own height differs — beat 1's short cue vs. beat 2's
+         (locale-dependent, possibly multi-line) tagline. That is exactly
+         what the identical-logomark-geometry case in
+         homepage-scroll-deck.spec.ts caught. A 3-row grid with the logo in
+         the fixed middle `auto` row, sandwiched between two `minmax(0,
+         1fr)` spacer rows, decouples the logo's position from the
+         secondary row's content entirely: `minmax(0, 1fr)` (not a bare
+         `1fr`) overrides each spacer row's content-based automatic minimum
+         to 0, so the two spacer rows are FORCED to stay exactly equal
+         regardless of what renders in row 3 — the logo is then always
+         precisely centred in the viewport in both beats. */
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
+      justify-items: center;
+      align-items: center;
+      gap: var(--space-lg);
+      padding-inline: var(--space-lg);
+      /* Assumption A5 (21-10-PLAN.md): ink background, continuous with the
+         deck's own paint floor (.home-scroll-deck__photo/.home-slide, plan
+         21-09) and the phone-only theme-color meta tag (plan 21-09) — an
+         ink intro screen never reintroduces the white-strip status-bar
+         problem plan 21-09 just closed. A white logomark is required for
+         contrast on ink, hence logoWhiteSrc below (not logoBlackSrc). */
+      background-color: var(--color-ink);
+      color: #FFFFFF;
+      text-align: center;
+      /* Assumption A3 (21-10-PLAN.md): deliberately NO scroll-snap-align/
+         scroll-snap-stop on these sections — each beat is exactly one
+         viewport tall so an ordinary scroll already lands on it cleanly,
+         and adding a snap point immediately before the deliberately
+         snap-free 900px zoom scrub could let the page-wide proximity snap
+         (is:global block below) pull the visitor backwards into the intro
+         mid-scrub — the same conflict class 21-RESEARCH.md Pitfall 6 made
+         the track itself snap-free to avoid. */
+    }
+
+    .home-scroll-deck__intro-logo {
+      /* Fixed middle row — its own vertical centre is therefore identical
+         in both beats regardless of the row-3 secondary element below it
+         (see the container rule's comment). */
+      grid-row: 2;
+      width: 40vw;
+      max-width: 220px;
+      height: auto;
+      display: block;
+    }
+
+    .home-scroll-deck__intro-cue {
+      /* Row 3, the second (bottom) spacer row — aligned to its own start
+         so the cue sits close under the logo rather than centred within
+         whatever leftover space that row's minmax(0, 1fr) track computes
+         to (see the container rule's comment). */
+      grid-row: 3;
+      align-self: start;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-xs);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      /* Assumption A5: a gentle, slow, small vertical drift — an
+         affordance, not a flourish. Suppressed entirely under reduced
+         motion below (assumption A1). */
+      animation: home-scroll-deck-intro-cue-drift 1.8s ease-in-out infinite;
+    }
+
+    @keyframes home-scroll-deck-intro-cue-drift {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(6px);
+      }
+    }
+
+    /* D-13: reused verbatim from .home-grid__tile-description/
+       .home-slide__description above — opacity/translateY/180ms ease are
+       locked, do not retune. `is-revealed` lands on the intro section
+       ancestor itself, the same ancestor-keyed shape
+       `.home-slide.is-revealed .home-slide__description` already uses, and
+       is toggled by the deck driver's per-frame arrival pass (Task 2).
+       grid-row/align-self: same row-3 placement as the cue above, and for
+       the same reason (assumption A4 fix). */
+    .home-scroll-deck__intro-body {
+      grid-row: 3;
+      align-self: start;
+      max-width: 52ch;
+      font-size: 14px;
+      line-height: 1.4;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .home-scroll-deck__intro.is-revealed .home-scroll-deck__intro-body {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
     /* Track: tall enough to host the full zoom scrub before the first real
        slide arrives. WR-01 fix: CSS cannot import the TS
        ZOOM_REVEAL_DISTANCE constant (src/lib/home-carousel.ts, 21-01)
@@ -3833,6 +4059,25 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       opacity: 0;
       visibility: hidden;
     }
+
+    /* 21-UAT.md gap 1's own `missing` item about the header hide needing to
+       cover the new pre-zoom beats (21-10) —
+       .planning/debug/homepage-scroll-missing-intro-beat.md: without this,
+       the small top-left header logo would render simultaneously with the
+       new large centred intro logomark, since D-12's hide above is wired
+       solely to data-zoom-active, which the driver only ever sets once the
+       zoom track itself is on screen. data-intro-active is likewise absent
+       by default and is written only by the deck driver (Task 2's script
+       below), so the header stays visible pre-JS, with JS disabled, at
+       768px and above, and under reduced motion — that default remains
+       load-bearing for the reduced-motion route mobile-nav.spec.ts,
+       accessibility.spec.ts and critical.smoke.spec.ts all depend on
+       (assumption A1, 21-10-PLAN.md). */
+    .home[data-intro-active='true'] :global(.site-header--solid),
+    .home[data-intro-active='true'] :global(.site-header--transparent) {
+      opacity: 0;
+      visibility: hidden;
+    }
   }
 
   /* Phase 21 (D-15): the reduced-motion end state. Every description is
@@ -3848,6 +4093,26 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     .home-slide__description {
       opacity: 1;
       transform: none;
+    }
+
+    /* Assumption A1 (21-10-PLAN.md): the intro beats are content, not
+       motion, so a reduced-motion visitor still gets both beats — the
+       tagline is permanently visible (no reveal) and the cue's drift is
+       suppressed. The header is deliberately NOT hidden here: D-12's
+       header-hide is entirely JS-attribute-driven (data-zoom-active/
+       data-intro-active, Task 2), and this driver never attaches at all
+       under this query (D-15's established convention), so the header
+       staying visible falls out of that convention for free rather than
+       being a new rule — this keeps mobile-nav.spec.ts/accessibility.spec.ts/
+       critical.smoke.spec.ts's existing reduced-motion route to an
+       interactive header intact. */
+    .home-scroll-deck__intro-body {
+      opacity: 1;
+      transform: none;
+    }
+
+    .home-scroll-deck__intro-cue {
+      animation: none;
     }
   }
 
