@@ -763,7 +763,27 @@ test.describe('arrival reveal and accent liveness (HOME-14, D-09, D-10, D-13, D-
   // deterministic regardless of live content.
   test('a slide with no heroColor still updates the live accent and still warms the next slide (D-09, 21-UAT.md gap 3, CR-01)', async ({ page }) => {
     await page.setViewportSize(PHONE_VIEWPORT);
-    await page.goto('/');
+
+    // Same isolation trick as this file's own 'arriving at a slide
+    // promotes the NEXT slide's sharp image out of native-lazy' case
+    // above: a same-origin, near-instant preview server makes Chromium's
+    // native-lazy heuristic aggressive enough to load a "lazy" slide's
+    // photo well before any scroll, which would flip is-loaded true first
+    // and make warmNextSlide's own is-loaded guard bail before it ever
+    // touches the `loading` attribute this test asserts on. Route
+    // interception that never resolves (no continue()/abort()/fulfill())
+    // for anything but the 24px placeholder leaves every sharp rendition
+    // permanently pending, so the ONLY way `loading` can flip away from
+    // 'lazy' is this component's own JS explicitly setting it.
+    await page.route(/cdn\.sanity\.io\/images\//, (route) => {
+      const url = new URL(route.request().url());
+      if (url.searchParams.get('w') === '24') return route.continue();
+    });
+
+    // domcontentloaded, not the default 'load' — with eager images now
+    // permanently pending above, waiting for 'load' would hang for the
+    // test's own default timeout.
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     const entries = await readDeckDataEntries(page);
     test.skip(
