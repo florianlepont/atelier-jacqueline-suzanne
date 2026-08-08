@@ -6,7 +6,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import HomeCarousel from '../../components/HomeCarousel.astro';
 import { getGalleries, getHomePage, getSiteSettings } from '../../lib/sanity';
 import { fullSizeUrl, thumbnailUrl, blurPlaceholderUrl, responsiveImageSrcSet, responsiveThumbnailSrcSet } from '../../lib/image';
-import { getHeroTextColor, normalizeHeroColor, resolveHomepageIntro, resolveSiteCopy } from '../../lib/site-config';
+import { COLOR_INK, getHeroTextColor, normalizeHeroColor, resolveHomepageIntro, resolveSiteCopy } from '../../lib/site-config';
 import { pickHeroIndex } from '../../lib/image-orientation';
 
 const locale = 'en' as const;
@@ -57,8 +57,8 @@ const galleries = (await getGalleries())
   noIndex={homePage?.seo?.noIndex}
   structuredData={structuredData}
   headerVariant="none"
-  phoneThemeColor="#1A1A1A"
+  phoneThemeColor={COLOR_INK}
 >
-  {/* The theme-colour prop above mirrors the color-ink/gray-900 token (BaseLayout.astro) — 21-09, 21-UAT.md gap 4 */}
+  {/* The theme-colour prop above is COLOR_INK, the same --color-ink/gray-900 token defined once in BaseLayout.astro — 21-09, 21-UAT.md gap 4; WR-01 fix */}
   <HomeCarousel locale={locale} galleries={galleries} siteCopy={siteCopy} />
 </BaseLayout>

@@ -5,6 +5,14 @@ export type Locale = 'fr' | 'en'
 export const DEFAULT_INSTAGRAM_URL = 'https://www.instagram.com/ajs_romanelepont/'
 export const DEFAULT_INSTAGRAM_LABEL = '@ajs_romanelepont'
 
+// WR-01 (21-REVIEW.md): single source of truth for the --color-ink/
+// --gray-900 token defined once in BaseLayout.astro's :root block, so
+// call sites needing the same value in plain TS/JS (outside CSS) import
+// this instead of re-typing the hex literal — a future rebrand/palette
+// change to --gray-900 would otherwise silently stop matching here, with
+// no compiler/test signal.
+export const COLOR_INK = '#1A1A1A'
+
 export const HERO_COLORS = {
   pink: '#FF3B94',
   // Nudged from #AF3DFF (a11y fix, Phase 20): the original never reached
