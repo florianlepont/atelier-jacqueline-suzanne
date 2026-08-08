@@ -32,6 +32,31 @@ async function readGalleryData(page: Page): Promise<GalleryDataEntry[]> {
   );
 }
 
+// Plan 21-10 (21-UAT.md gap 1, pre-zoom intro beats —
+// .planning/debug/homepage-scroll-missing-intro-beat.md): this is the ONE
+// plan in the gap-closure set that is EXPECTED to modify existing scroll-
+// target arithmetic. The two new intro beats occupy real document flow
+// before .home-scroll-deck__track, so every scroll target below that is
+// meant to land inside the zoom scrub or on a slide now needs this offset
+// added — rather than hardcode "two viewport heights" (assumption A4, which
+// the developer may revise), this derives the offset from the track's own
+// rendered geometry: its live getBoundingClientRect().top plus the current
+// scroll position, read at scroll position 0, IS the track's document
+// offset. Every caller below invokes this BEFORE any window.scrollTo() in
+// the same test, since the measurement is only valid at scroll position 0.
+// Asserts the derived offset is greater than 0 so a future change that
+// removes the intro beats fails loudly here instead of silently producing
+// meaningless scroll targets in the many cases that add this value.
+async function getIntroOffset(page: Page): Promise<number> {
+  const offset = await page.evaluate(() => {
+    const track = document.querySelector<HTMLElement>('[data-role="zoom-track"]');
+    if (!track) return 0;
+    return track.getBoundingClientRect().top + window.scrollY;
+  });
+  expect(offset).toBeGreaterThan(0);
+  return offset;
+}
+
 // Plan 21-07: lifted to module scope (unchanged bodies) from inside the
 // 'wordmark-to-photo zoom driver' describe block below, so the new
 // per-frame-driver describe block at the end of this file can reuse them
@@ -177,17 +202,201 @@ test.describe('scroll-deck structure (HOME-14, success criterion 2)', () => {
   });
 });
 
-test.describe('full-screen wordmark on first load (HOME-15, success criterion 4)', () => {
-  test('before any scrolling, the zoom wordmark fills most of the phone viewport', async ({ page }) => {
+// 21-10 (21-UAT.md gap 1): this block deliberately supersedes
+// 21-04-PLAN.md Task 1 case 3's original "before any scrolling" assertion —
+// a preceding pre-zoom beat necessarily makes that literally false BY
+// DESIGN once the new intro sections exist (see 21-10-PLAN.md's objective
+// and .planning/debug/homepage-scroll-missing-intro-beat.md). The wordmark
+// still fills the viewport with the SAME coverage thresholds this case has
+// always asserted — just once the visitor has scrolled past both intro
+// beats to the track's own document offset, rather than at scroll
+// position 0. This is the ONE case in this describe block whose assertion
+// itself (not just its scroll-target arithmetic) is intentionally rewritten
+// by plan 21-10; every other case in this file keeps its original
+// assertions, only rebasing the scroll target that reaches them.
+test.describe('full-screen wordmark once the pre-zoom intro beats are scrolled past (HOME-15, success criterion 4)', () => {
+  test('scrolled to the track\'s own document offset, the zoom wordmark fills most of the phone viewport', async ({ page }) => {
     await page.setViewportSize(PHONE_VIEWPORT);
     await page.goto('/');
 
+    const introOffset = await getIntroOffset(page);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(introOffset));
+
     const wordmark = page.locator('[data-role="zoom-wordmark"]');
     await expect(wordmark).toBeVisible();
-    const box = await wordmark.boundingBox();
+    await expect
+      .poll(async () => {
+        const box = await wordmark.boundingBox();
+        if (!box) return false;
+        return box.width >= PHONE_VIEWPORT.width * 0.6 && box.height >= PHONE_VIEWPORT.height * 0.4;
+      })
+      .toBe(true);
+  });
+});
+
+// Plan 21-10 (HOME-15, 21-UAT.md gap 1 —
+// .planning/debug/homepage-scroll-missing-intro-beat.md): the two pre-zoom
+// intro beats — a centred logomark with a scroll-down cue, then the site's
+// intro tagline arriving beneath the same logomark — that this plan adds
+// ahead of the wordmark zoom. None of 21-CONTEXT.md's sixteen locked
+// decisions specifies this beat; assumptions A1 through A5 in
+// 21-10-PLAN.md are the record of the open design questions these cases
+// pin down, restated verbatim in 21-10-SUMMARY.md, and put to the
+// developer by name in this plan's own real-device human check.
+test.describe('pre-zoom intro beats (HOME-15, 21-UAT.md gap 1, assumptions A1-A5)', () => {
+  test('beat 1 on first load: full-viewport, logomark and cue visible, wordmark present but off-screen below (A4/A5)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const beat1 = page.locator('[data-role="deck-intro"][data-intro-beat="1"]');
+    const box = await beat1.boundingBox();
     expect(box).not.toBeNull();
-    expect(box!.width).toBeGreaterThanOrEqual(PHONE_VIEWPORT.width * 0.6);
-    expect(box!.height).toBeGreaterThanOrEqual(PHONE_VIEWPORT.height * 0.4);
+    expect(Math.abs(box!.y)).toBeLessThanOrEqual(2);
+    expect(Math.abs(box!.height - PHONE_VIEWPORT.height)).toBeLessThanOrEqual(2);
+
+    await expect(beat1.locator('.home-scroll-deck__intro-logo')).toBeVisible();
+    await expect(beat1.locator('.home-scroll-deck__intro-cue')).toBeVisible();
+
+    const wordmarkBox = await page.locator('[data-role="zoom-wordmark"]').boundingBox();
+    expect(wordmarkBox).not.toBeNull();
+    expect(wordmarkBox!.y).toBeGreaterThanOrEqual(PHONE_VIEWPORT.height);
+  });
+
+  test('beat 2: after one viewport height of scroll its tagline reveals (opacity 0 -> 1), reading as arriving beneath the logo (D-13)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const beat2 = page.locator('[data-role="deck-intro"][data-intro-beat="2"]');
+    // Task 1 renders beat 2 only when introBody is non-empty, so a blank
+    // Sanity intro field must not turn this into a false failure.
+    test.skip((await beat2.count()) === 0, 'beat 2 only renders when introBody is non-empty');
+
+    const tagline = beat2.locator('.home-scroll-deck__intro-body');
+    await expect.poll(() => tagline.evaluate((el) => getComputedStyle(el).opacity)).toBe('0');
+
+    await page.evaluate((y) => window.scrollTo(0, y), PHONE_VIEWPORT.height);
+
+    const box = await beat2.boundingBox();
+    expect(box).not.toBeNull();
+    expect(Math.abs(box!.y)).toBeLessThanOrEqual(2);
+    await expect.poll(() => tagline.evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
+  });
+
+  test('both beats render byte-for-byte identical logomark geometry — same width, height and viewport-relative vertical centre (assumption A4)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const beat2 = page.locator('[data-role="deck-intro"][data-intro-beat="2"]');
+    test.skip((await beat2.count()) === 0, 'beat 2 only renders when introBody is non-empty');
+
+    const logo1Box = await page
+      .locator('[data-role="deck-intro"][data-intro-beat="1"] .home-scroll-deck__intro-logo')
+      .boundingBox();
+
+    // Beat 2 sits one viewport below beat 1 in document flow, so bring it
+    // on screen before comparing — both boxes are then viewport-relative
+    // and directly comparable, which is what makes the tagline read as
+    // arriving beneath a logo that appears to stay exactly where it was.
+    await page.evaluate((y) => window.scrollTo(0, y), PHONE_VIEWPORT.height);
+    const logo2Box = await beat2.locator('.home-scroll-deck__intro-logo').boundingBox();
+
+    expect(logo1Box).not.toBeNull();
+    expect(logo2Box).not.toBeNull();
+    expect(Math.abs(logo1Box!.width - logo2Box!.width)).toBeLessThanOrEqual(2);
+    expect(Math.abs(logo1Box!.height - logo2Box!.height)).toBeLessThanOrEqual(2);
+
+    const centre1 = logo1Box!.y + logo1Box!.height / 2;
+    const centre2 = logo2Box!.y + logo2Box!.height / 2;
+    expect(Math.abs(centre1 - centre2)).toBeLessThanOrEqual(2);
+  });
+
+  test('the header is hidden through both intro beats, and returns once the zoom fully completes (D-12 extension)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    await expect(page.locator('[data-role="site-header"]')).not.toBeVisible();
+
+    await page.evaluate((y) => window.scrollTo(0, y), PHONE_VIEWPORT.height);
+    await expect(page.locator('[data-role="site-header"]')).not.toBeVisible();
+
+    const introOffset = await getIntroOffset(page);
+    const distance = await getRevealDistance(page);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(introOffset + distance * 1.2));
+    await expect(page.locator('[data-role="site-header"]')).toBeVisible();
+  });
+
+  test('the intro beats carry no scroll-snap point, unlike a slide (assumption A3, 21-RESEARCH.md Pitfall 6)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const beat1SnapAlign = await page
+      .locator('[data-role="deck-intro"][data-intro-beat="1"]')
+      .evaluate((el) => getComputedStyle(el).scrollSnapAlign);
+    expect(beat1SnapAlign).toBe('none');
+
+    const slideSnapAlign = await page
+      .locator('[data-role="deck-slide"]')
+      .first()
+      .evaluate((el) => getComputedStyle(el).scrollSnapAlign);
+    expect(slideSnapAlign).toBe('start');
+  });
+
+  test('the beat-2 tagline renders non-empty copy sourced from Sanity, not hardcoded', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const beat2 = page.locator('[data-role="deck-intro"][data-intro-beat="2"]');
+    test.skip((await beat2.count()) === 0, 'beat 2 only renders when introBody is non-empty');
+
+    const text = await beat2.locator('.home-scroll-deck__intro-body').innerText();
+    expect(text.trim().length).toBeGreaterThan(0);
+  });
+
+  test('reduced motion: both beats render statically, the tagline is already visible, the header stays visible, and no intro-active attribute is written (assumption A1)', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    await expect(page.locator('[data-role="deck-intro"][data-intro-beat="1"]')).toBeVisible();
+
+    const beat2 = page.locator('[data-role="deck-intro"][data-intro-beat="2"]');
+    if ((await beat2.count()) > 0) {
+      const opacity = await beat2.locator('.home-scroll-deck__intro-body').evaluate((el) => getComputedStyle(el).opacity);
+      expect(opacity).toBe('1');
+    }
+
+    // Falls out of D-15's established convention rather than being a new
+    // rule: no scroll-linked JS attaches at all under reduced motion, so
+    // data-intro-active is never written and the header's CSS default
+    // (visible) is never overridden.
+    await expect(page.locator('[data-role="site-header"]')).toBeVisible();
+    const introActive = await page.locator('.home').getAttribute('data-intro-active');
+    expect(introActive).toBeNull();
+  });
+
+  test('desktop inert: neither intro beat is visible (success criterion 5, UI-02)', async ({ page }) => {
+    await page.setViewportSize(DESKTOP_VIEWPORT);
+    await page.goto('/');
+
+    await expect(page.locator('[data-role="deck-intro"][data-intro-beat="1"]')).not.toBeVisible();
+
+    const beat2 = page.locator('[data-role="deck-intro"][data-intro-beat="2"]');
+    if ((await beat2.count()) > 0) {
+      await expect(beat2).not.toBeVisible();
+    }
+  });
+
+  test('structural guards still hold with the intro beats present: exactly one level-1 heading, no horizontal overflow (D-16)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+
+    const measurements = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }));
+    expect(measurements.scrollWidth).toBeLessThanOrEqual(measurements.clientWidth);
   });
 });
 
@@ -303,8 +512,13 @@ test.describe('wordmark-to-photo zoom driver (HOME-15, D-01 through D-04, D-12, 
     await page.setViewportSize(PHONE_VIEWPORT);
     await page.goto('/');
 
+    // 21-10 (21-UAT.md gap 1): rebased — the intro beats now occupy real
+    // document flow before the track, so every scroll target that lands
+    // inside the scrub gains getIntroOffset()'s value. distance/2 alone is
+    // no longer "mid-scrub"; introOffset + distance/2 is.
+    const introOffset = await getIntroOffset(page);
     const distance = await getRevealDistance(page);
-    await page.evaluate((y) => window.scrollTo(0, y), Math.round(distance / 2));
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(introOffset + distance / 2));
 
     await expect.poll(() => getWordmarkScale(page)).toBeGreaterThan(1);
     await expect.poll(() => getWordmarkScale(page)).toBeLessThan(8.5);
@@ -314,8 +528,10 @@ test.describe('wordmark-to-photo zoom driver (HOME-15, D-01 through D-04, D-12, 
     await page.setViewportSize(PHONE_VIEWPORT);
     await page.goto('/');
 
+    // 21-10: rebased, see the mid-scrub case's comment above.
+    const introOffset = await getIntroOffset(page);
     const distance = await getRevealDistance(page);
-    await page.evaluate((y) => window.scrollTo(0, y), Math.round(distance * 1.2));
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(introOffset + distance * 1.2));
 
     await expect.poll(() => getWordmarkOpacity(page)).toBe('0');
     await expect.poll(() => getPhotoOpacity(page)).toBe('1');
@@ -326,8 +542,10 @@ test.describe('wordmark-to-photo zoom driver (HOME-15, D-01 through D-04, D-12, 
     await page.setViewportSize(PHONE_VIEWPORT);
     await page.goto('/');
 
+    // 21-10: rebased, see the mid-scrub case's comment above.
+    const introOffset = await getIntroOffset(page);
     const distance = await getRevealDistance(page);
-    await page.evaluate((y) => window.scrollTo(0, y), Math.round(distance * 1.2));
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(introOffset + distance * 1.2));
 
     await expect(page.locator('[data-role="site-header"]')).toBeVisible();
   });
@@ -336,8 +554,12 @@ test.describe('wordmark-to-photo zoom driver (HOME-15, D-01 through D-04, D-12, 
     await page.setViewportSize(PHONE_VIEWPORT);
     await page.goto('/');
 
+    // 21-10: rebased forward target, see the mid-scrub case's comment above
+    // — the return-to-0 target below is unchanged, since scrolling to the
+    // very top of the document restores both intro beats too.
+    const introOffset = await getIntroOffset(page);
     const distance = await getRevealDistance(page);
-    await page.evaluate((y) => window.scrollTo(0, y), Math.round(distance * 1.2));
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(introOffset + distance * 1.2));
     await expect.poll(() => getZoomActive(page)).toBe('false');
 
     await page.evaluate(() => window.scrollTo(0, 0));
@@ -434,10 +656,14 @@ test.describe('arrival reveal and accent liveness (HOME-14, D-09, D-10, D-13, D-
 
   // Derives scroll targets from rendered geometry rather than hardcoding
   // pixel values (mirrors the zoom-driver describe block's own
-  // getRevealDistance above) — the track's own rendered height IS the point
-  // at which the first slide has fully arrived, and one further viewport
-  // height reaches the second.
+  // getRevealDistance above) — the track's own rendered height IS the
+  // distance from the track's document offset at which the first slide has
+  // fully arrived, and one further viewport height reaches the second.
+  // 21-10 (21-UAT.md gap 1): folds in getIntroOffset() directly so every
+  // call site below gets the rebased target for free, rather than adding
+  // the offset at each of this helper's three call sites individually.
   async function getSlideScrollTargets(page: Page): Promise<{ first: number; second: number }> {
+    const introOffset = await getIntroOffset(page);
     const { trackHeight, viewportHeight } = await page.evaluate(() => {
       const track = document.querySelector<HTMLElement>('[data-role="zoom-track"]');
       return {
@@ -446,7 +672,7 @@ test.describe('arrival reveal and accent liveness (HOME-14, D-09, D-10, D-13, D-
       };
     });
     expect(trackHeight).toBeGreaterThan(viewportHeight);
-    return { first: trackHeight, second: trackHeight + viewportHeight };
+    return { first: introOffset + trackHeight, second: introOffset + trackHeight + viewportHeight };
   }
 
   async function slideOpacities(page: Page): Promise<string[]> {
@@ -622,11 +848,15 @@ test.describe('per-frame deck driver — scroll-event independence and atomic ha
   // the scroll offset at which the pinned stage fully releases and the
   // first slide's rect can reach the arrival ratio — the same quantity
   // the 'arrival reveal and accent liveness' describe block above calls
-  // getSlideScrollTargets().first.
+  // getSlideScrollTargets().first. 21-10 (21-UAT.md gap 1): folds in
+  // getIntroOffset() directly, same rationale as getSlideScrollTargets()
+  // above — every call site (including the atomic-handoff and detach-on-
+  // gate-change cases below) gets the rebased target for free.
   async function getArrivalScrollTarget(page: Page): Promise<number> {
+    const introOffset = await getIntroOffset(page);
     const distance = await getRevealDistance(page);
     const viewportHeight = await page.evaluate(() => window.innerHeight);
-    return distance + viewportHeight;
+    return introOffset + distance + viewportHeight;
   }
 
   test('scroll-event independence — mid-scrub: the wordmark scale still updates with every scroll listener suppressed', async ({ page }) => {
@@ -634,8 +864,11 @@ test.describe('per-frame deck driver — scroll-event independence and atomic ha
     await page.setViewportSize(PHONE_VIEWPORT);
     await page.goto('/');
 
+    // 21-10: rebased, see the 'wordmark-to-photo zoom driver' describe
+    // block's own mid-scrub case comment above.
+    const introOffset = await getIntroOffset(page);
     const distance = await getRevealDistance(page);
-    await page.evaluate((y) => window.scrollTo(0, y), Math.round(distance / 2));
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(introOffset + distance / 2));
 
     // Today's event-driven driver would stay frozen at scale 1 here; the
     // loop-driven one must not.
@@ -648,8 +881,10 @@ test.describe('per-frame deck driver — scroll-event independence and atomic ha
     await page.setViewportSize(PHONE_VIEWPORT);
     await page.goto('/');
 
+    // 21-10: rebased, see the mid-scrub case's comment above.
+    const introOffset = await getIntroOffset(page);
     const distance = await getRevealDistance(page);
-    await page.evaluate((y) => window.scrollTo(0, y), Math.round(distance * 1.2));
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(introOffset + distance * 1.2));
 
     await expect.poll(() => getWordmarkOpacity(page)).toBe('0');
     await expect.poll(() => getPhotoOpacity(page)).toBe('1');
@@ -923,10 +1158,14 @@ test.describe('deck-slide progressive loading (HOME-14, HOME-09, 21-UAT.md gap 3
     // never a hardcoded pixel value: the track's own rendered height is the
     // scroll offset at which the first slide reaches arrival, and one
     // further viewport height reaches the second (mirrors this file's own
-    // getSlideScrollTargets()/getArrivalScrollTarget() helpers above).
+    // getSlideScrollTargets()/getArrivalScrollTarget() helpers above). 21-10
+    // (21-UAT.md gap 1): rebased with getIntroOffset(), same rationale as
+    // every other scroll target in this file that lands inside the scrub or
+    // on a slide.
+    const introOffset = await getIntroOffset(page);
     const distance = await getRevealDistance(page);
     const viewportHeight = await page.evaluate(() => window.innerHeight);
-    const secondSlideArrivalTarget = distance + 2 * viewportHeight;
+    const secondSlideArrivalTarget = introOffset + distance + 2 * viewportHeight;
     await page.evaluate((y) => window.scrollTo(0, y), Math.round(secondSlideArrivalTarget));
 
     await expect(page.locator('[data-role="deck-slide"]').nth(1)).toHaveClass(/is-revealed/);

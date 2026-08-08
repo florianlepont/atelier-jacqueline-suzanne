@@ -3666,10 +3666,25 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        for free, exactly like every other element in this subtree. */
     .home-scroll-deck__intro {
       height: 100svh;
-      display: flex;
-      flex-direction: column;
+      /* 21-10 Task 3 deviation (Rule 1 bug fix, assumption A4): a naive
+         flex column with `justify-content: center` centres the WHOLE
+         stack (logo + secondary element), so the logo itself lands at a
+         different vertical position in each beat whenever the secondary
+         element's own height differs — beat 1's short cue vs. beat 2's
+         (locale-dependent, possibly multi-line) tagline. That is exactly
+         what the identical-logomark-geometry case in
+         homepage-scroll-deck.spec.ts caught. A 3-row grid with the logo in
+         the fixed middle `auto` row, sandwiched between two `minmax(0,
+         1fr)` spacer rows, decouples the logo's position from the
+         secondary row's content entirely: `minmax(0, 1fr)` (not a bare
+         `1fr`) overrides each spacer row's content-based automatic minimum
+         to 0, so the two spacer rows are FORCED to stay exactly equal
+         regardless of what renders in row 3 — the logo is then always
+         precisely centred in the viewport in both beats. */
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
+      justify-items: center;
       align-items: center;
-      justify-content: center;
       gap: var(--space-lg);
       padding-inline: var(--space-lg);
       /* Assumption A5 (21-10-PLAN.md): ink background, continuous with the
@@ -3692,6 +3707,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     }
 
     .home-scroll-deck__intro-logo {
+      /* Fixed middle row — its own vertical centre is therefore identical
+         in both beats regardless of the row-3 secondary element below it
+         (see the container rule's comment). */
+      grid-row: 2;
       width: 40vw;
       max-width: 220px;
       height: auto;
@@ -3699,6 +3718,12 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     }
 
     .home-scroll-deck__intro-cue {
+      /* Row 3, the second (bottom) spacer row — aligned to its own start
+         so the cue sits close under the logo rather than centred within
+         whatever leftover space that row's minmax(0, 1fr) track computes
+         to (see the container rule's comment). */
+      grid-row: 3;
+      align-self: start;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -3727,8 +3752,12 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        locked, do not retune. `is-revealed` lands on the intro section
        ancestor itself, the same ancestor-keyed shape
        `.home-slide.is-revealed .home-slide__description` already uses, and
-       is toggled by the deck driver's per-frame arrival pass (Task 2). */
+       is toggled by the deck driver's per-frame arrival pass (Task 2).
+       grid-row/align-self: same row-3 placement as the cue above, and for
+       the same reason (assumption A4 fix). */
     .home-scroll-deck__intro-body {
+      grid-row: 3;
+      align-self: start;
       max-width: 52ch;
       font-size: 14px;
       line-height: 1.4;
