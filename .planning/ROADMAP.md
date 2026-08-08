@@ -57,7 +57,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 18: Gallery & Éditions Display Fixes** - Gallery descriptions show in full, thumbnail grids lose their black border frame, and gallery pages show the site footer again (completed 2026-08-02)
 - [x] **Phase 19: Site-Wide Visual Polish** - Éditions row-hover color applies to the title/description too, the halftone texture bleeds to the true browser edge again without reintroducing horizontal scroll, and Contact's hover-fill text gets breathing room (completed 2026-08-03)
 - [x] **Phase 20: Mobile Navigation & Accent Color** - On phone-width viewports, the homepage header becomes a self-contained nav menu with the language switcher folded in, and each visit gets a randomly-picked accent color from existing gallery data; desktop/tablet unchanged (reopened 2026-08-04 — UAT Test 2 found two major visual gaps on a live phone test: the language switcher must drop from the big primary list to a small secondary line stacked above the Instagram link, reversing D-04's switcher clause, and the Instagram link needs the header's glyph; gap-closure plan 20-06 added) (completed 2026-08-04)
-- [ ] **Phase 21: Homepage Scroll Experience** - On phone-width viewports, the carousel/grid toggle is replaced by one continuous scroll-driven view opening on a full-screen wordmark that zooms through its letterforms into the first gallery photo, with on-arrival description reveals; desktop/tablet unchanged (reopened 2026-08-05 — UAT Test 1 found four major gaps on a live iPhone test: a missing pre-zoom logo/tagline intro beat the locked decisions never specified, a desynchronised zoom-to-slide handoff frame, deck slides missing the site's own HOME-09 blur-up placeholder, and a white bar at the iOS status bar from raw dynamic-viewport sizing plus no theme-color; gap-closure plans 21-07 through 21-10 added — see 21-UAT.md)
+- [x] **Phase 21: Homepage Scroll Experience** - On phone-width viewports, the carousel/grid toggle is replaced by one continuous scroll-driven view opening on a full-screen wordmark that zooms through its letterforms into the first gallery photo, with on-arrival description reveals; desktop/tablet unchanged (reopened 2026-08-05 — UAT Test 1 found four major gaps on a live iPhone test: a missing pre-zoom logo/tagline intro beat the locked decisions never specified, a desynchronised zoom-to-slide handoff frame, deck slides missing the site's own HOME-09 blur-up placeholder, and a white bar at the iOS status bar from raw dynamic-viewport sizing plus no theme-color; gap-closure plans 21-07 through 21-10 added — see 21-UAT.md) (completed 2026-08-08)
 - [ ] **Phase 22: Gallery & Édition Scroll Navigation** - On phone-width viewports, Gallery and Édition detail pages retire the click-to-open Lightbox for scroll-driven full-photo navigation, and the Édition intro text/primary photo get a legible, non-backdrop treatment; desktop/tablet unchanged
 - [ ] **Phase 23: About Portrait Placement & Milestone Regression Close** - On phone-width viewports, the About page's portrait photo moves to an improved position, and the milestone closes with a confirmed desktop/tablet regression sweep across every page touched
 
@@ -154,7 +154,7 @@ Plans:
   4. On first load, a phone visitor sees the "Atelier Jacqueline Suzanne" wordmark filling the screen; scrolling visibly transitions through the wordmark's letterforms into the first gallery's photo, matching the approved sketch direction.
   5. On tablet/desktop viewports, the carousel/grid toggle and both view modes behave exactly as they did before this milestone.
 
-**Plans**: 9/10 plans executed
+**Plans**: 10/10 plans complete
 
 Plans:
 **Wave 1**
@@ -189,7 +189,7 @@ Plans:
 
 **Wave 8** *(gap closure — blocked on Waves 5 and 7)*
 
-- [ ] 21-10-PLAN.md — Close UAT gap 1: add the pre-zoom logomark + scroll-cue and intro-tagline beats, extend D-12's header hide to cover them, rebase the spec's scroll geometry, and carry the consolidated real-device gate
+- [x] 21-10-PLAN.md — Close UAT gap 1: add the pre-zoom logomark + scroll-cue and intro-tagline beats, extend D-12's header hide to cover them, rebase the spec's scroll geometry, and carry the consolidated real-device gate
 
 **Cross-cutting constraints:**
 
@@ -257,7 +257,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 18. Gallery & Éditions Display Fixes | 2/2 | Complete    | 2026-08-02 |
 | 19. Site-Wide Visual Polish | 2/2 | Complete    | 2026-08-03 |
 | 20. Mobile Navigation & Accent Color | 6/6 | Complete    | 2026-08-04 |
-| 21. Homepage Scroll Experience | 9/10 | In Progress|  |
+| 21. Homepage Scroll Experience | 10/10 | Complete   | 2026-08-08 |
 | 22. Gallery & Édition Scroll Navigation | 0/TBD | Not started | - |
 | 23. About Portrait Placement & Milestone Regression Close | 0/TBD | Not started | - |
 
