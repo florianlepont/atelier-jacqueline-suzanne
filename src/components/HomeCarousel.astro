@@ -1870,16 +1870,22 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             const wasRevealed = target.classList.contains('is-revealed');
             target.classList.toggle('is-revealed', reached);
 
-            // T-21-10-A / HOME-16: an intro section carries no
-            // data-hero-color attribute at all (only real slides do), so
+            // T-21-10-A / HOME-16 (CR-01 fix): an intro section carries no
+            // data-index attribute at all (only real slide anchors do), so
             // this guard is what keeps an intro section's arrival — which
             // WILL reach the threshold on the very first frame, since beat
             // 1 fills the entire viewport at scroll position 0 — from
             // writing the fallback accent token onto .home and silently
             // deleting HOME-16's per-visit random starting accent. Only
             // write the live accent on the rising edge (just became
-            // arrived) of a REAL slide, never on every frame.
-            if (reached && !wasRevealed && target.dataset.heroColor) {
+            // arrived) of a REAL slide, never on every frame. Gating on
+            // data-index rather than data-hero-color matters: a gallery
+            // using Sanity's "palette automatique" option legitimately has
+            // no heroColor set, but it still has data-index — gating on
+            // heroColor presence silently skipped this whole block (and
+            // therefore the next-slide warm below) for that ordinary
+            // content-editing path.
+            if (reached && !wasRevealed && target.dataset.index !== undefined) {
               root!.style.setProperty('--current-accent', target.dataset.heroColor || 'var(--color-accent)');
               root!.style.setProperty('--current-accent-text', target.dataset.heroTextColor || 'var(--color-on-accent)');
               arrivalAccentWritten = true;

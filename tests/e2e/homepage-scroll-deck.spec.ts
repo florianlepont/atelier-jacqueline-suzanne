@@ -750,6 +750,59 @@ test.describe('arrival reveal and accent liveness (HOME-14, D-09, D-10, D-13, D-
     await expect.poll(() => currentAccent(page)).toBe(expectedColor);
   });
 
+  // CR-01 (21-REVIEW.md, gap-closure pass 2): guards against the regression
+  // where 21-10's rising-edge guard (`&& target.dataset.heroColor`) silently
+  // disabled D-09's accent-liveness AND the 21-08 next-slide warm for any
+  // gallery using Sanity's documented "palette automatique" option (no
+  // explicit heroColor — normalizeHeroColor() returns undefined, so the
+  // deck markup omits data-hero-color entirely). The fix gates on
+  // data-index instead, which every real slide anchor carries regardless of
+  // whether it opted into a custom colour. Strips data-hero-color from a
+  // live slide client-side rather than depending on the current Sanity
+  // catalog actually containing a colour-less gallery, so this stays
+  // deterministic regardless of live content.
+  test('a slide with no heroColor still updates the live accent and still warms the next slide (D-09, 21-UAT.md gap 3, CR-01)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const entries = await readDeckDataEntries(page);
+    test.skip(
+      entries.length < 3,
+      'needs at least 3 homepage galleries to prove both the accent fallback and the next-slide warm fire for a heroColor-less middle slide',
+    );
+
+    const { first, second } = await getSlideScrollTargets(page);
+
+    // Arrive at the first slide normally so the accent starts at a real,
+    // truthy hero colour — this is the value CR-01 proved the accent could
+    // silently stay frozen at once a later slide's own write was skipped.
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(first));
+    const firstColor = await slideHeroColor(page, 0);
+    expect(firstColor).toBeTruthy();
+    await expect.poll(() => currentAccent(page)).toBe(firstColor);
+
+    // Simulate a "palette automatique" gallery by removing the attribute
+    // the deck markup would already omit for one.
+    await page.locator('[data-role="deck-slide"]').nth(1).evaluate((el) => el.removeAttribute('data-hero-color'));
+    const nextSharp = page.locator('.home-slide__img--sharp').nth(2);
+    expect(await nextSharp.getAttribute('loading')).toBe('lazy');
+
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(second));
+    await expect(page.locator('[data-role="deck-slide"]').nth(1)).toHaveClass(/is-revealed/);
+
+    // Pre-fix, the guard skipped this whole block for a heroColor-less
+    // slide, so the accent stayed stuck at firstColor and warmNextSlide
+    // never fired. Post-fix, the pre-existing `|| 'var(--color-accent)'`
+    // fallback (never removed, only ever unreachable) writes the resolved
+    // fallback accent, and the warm still fires on every real arrival.
+    const fallbackAccent = await page.evaluate(() =>
+      getComputedStyle(document.documentElement).getPropertyValue('--color-accent').trim(),
+    );
+    await expect.poll(() => currentAccent(page)).toBe(fallbackAccent);
+    await expect.poll(() => currentAccent(page)).not.toBe(firstColor);
+    await expect.poll(() => nextSharp.getAttribute('loading')).not.toBe('lazy');
+  });
+
   test('reversal: scrolling back to the top hides every description again', async ({ page }) => {
     await page.setViewportSize(PHONE_VIEWPORT);
     await page.goto('/');
