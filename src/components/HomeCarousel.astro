@@ -3949,6 +3949,81 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       justify-content: center;
     }
 
+    /* 21-12 (21-UAT.md round-2 gap 3 —
+       .planning/debug/homepage-scroll-cover-photo-doubled.md): closes the
+       full-viewport-height dead zone that used to sit between zoom
+       completion and the first slide's own snap point. Before this plan
+       the sticky stage above released — exactly where zoom progress
+       reached 1 — a full deck viewport height ABOVE the first slide's snap
+       point, because the slides wrapper (below) still occupied the
+       crossfade layer's full trailing layout height after its opacity
+       animation finished. Scrolling through that zone showed this stage's
+       cover/center crop of the first gallery's hero photo finishing its
+       exit directly above the first slide's own cover crop of the SAME
+       photo — a hard seam where the same photograph appeared twice.
+
+       The fix (this rule group, plus the pull-up on
+       .home-scroll-deck__slides below): pull the slides wrapper up by
+       exactly one deck viewport height so the first slide's snap point
+       coincides with this stage's release point instead, and make this
+       stage opaque, explicitly stacked, and retired the instant the zoom
+       completes — see this plan's own geometry note for the full
+       before/after arithmetic.
+
+       Accepted side effect (Task 2 item 3): the first slide's snap point
+       now sits D px (not V + D px) after the track's top, within
+       proximity-snap range of the scrub's tail, so a resting scroll
+       position in the last ~250-400px of the zoom can be pulled forward to
+       completion. Deliberate, not a regression — it removes the ability to
+       rest mid-zoom in a half-scaled state and firms up arrival at the
+       first slide; scroll-snap-type itself is unchanged
+       (21-RESEARCH.md Pitfall 6 stays intact).
+
+       Every rule in this group (here and on .home-scroll-deck__slides
+       below) is keyed on the attribute only the motion driver ever writes
+       — presence alone for the pull-up, its completed value for the hide
+       below — so reduced motion, desktop and pre-JS rendering never see it
+       written at all and every rule here is inert by construction under
+       those conditions. Do not add a reduced-motion counterpart to
+       "complete" this block. */
+    .home-scroll-deck__stage {
+      /* Deliberately the SAME token body already paints
+         (--color-dominant), so the wordmark screen's rendered appearance
+         is pixel-identical to today's. This is a no-op visually and
+         load-bearing structurally: with the slides pulled up below, the
+         first slide now sits behind this stage for almost the whole
+         scrub, and a see-through stage would let that photo show through
+         the wordmark screen. Plan 21-09's reason for leaving the stage
+         unpainted (keeping the wordmark screen's exact appearance for the
+         unsupported-engine and photo-load-failure fallbacks
+         critical.smoke.spec.ts guards) is fully preserved by choosing
+         this exact token rather than a new colour. */
+      background-color: var(--color-dominant);
+      /* The slides are later siblings and are position: relative, so
+         plain paint order would otherwise put them above this stage now
+         that geometry alone no longer keeps them fully offscreen for most
+         of the scrub. The header's own z-index: 5 (the
+         .home :global(.site-header) rule further up this file) is
+         unaffected and still wins, so D-12's hide/show behaviour is
+         untouched. */
+      z-index: 1;
+    }
+
+    /* Fires the instant progress reaches 1, at which moment the first
+       slide is already filling the viewport with the same photograph at
+       the same crop, so the swap is imperceptible. NO transition of any
+       kind: any intermediate opacity here is precisely the doubled-photo
+       frame this plan exists to remove, so a fade would be actively
+       wrong. visibility (not opacity alone) is required so this stage
+       also stops hit-testing, letting taps reach the first slide's own
+       anchor (D-10) once the zoom is done. Scrolling back up restores the
+       stage on the same frame progress drops back below 1, giving D-04's
+       reversibility a seamless boundary because the crossfade layer is
+       still fully opaque at that instant. */
+    .home[data-zoom-active='false'] .home-scroll-deck__stage {
+      visibility: hidden;
+    }
+
     /* End-state crossfade target (t=0.85->1.0, driven by plan 21-05's
        zoom driver) — a plain, uncut photo, so the extreme ~8.5x scale
        never has to render a flawless text-clip cutout entirely on its
@@ -4070,7 +4145,25 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     /* .home-scroll-deck__slides (the wrapper) deliberately carries no
        scroll-snap-type of its own — the html:has() rule in the is:global
        block below owns it, scoped so the zoom track above stays entirely
-       outside the snap container (21-RESEARCH.md Pitfall 6). */
+       outside the snap container (21-RESEARCH.md Pitfall 6).
+
+       21-12 pull-up (21-UAT.md round-2 gap 3 —
+       .planning/debug/homepage-scroll-cover-photo-doubled.md): removes
+       this wrapper's inherited trailing viewport height of layout so the
+       first slide's own snap point coincides with .home-scroll-deck__stage
+       above's release point — see that rule's own comment block for the
+       full before/after arithmetic and the accepted proximity-snap side
+       effect. Gated on the attribute the motion driver writes being
+       PRESENT AT ALL (any value), not on either specific value. MUST use
+       the identical viewport-height expression the stage's own height
+       above uses: if the two ever diverge, the first slide's snap point
+       stops coinciding with the release point and the dead zone silently
+       returns at a fraction of its old size, which is far harder to
+       notice than the current full-viewport version. */
+    .home[data-zoom-active] .home-scroll-deck__slides {
+      margin-top: calc(-1 * var(--deck-vh, 100svh));
+    }
+
     .home-slide {
       display: block;
       position: relative;
