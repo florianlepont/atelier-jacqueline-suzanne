@@ -21,7 +21,7 @@
 // and 10-UI-SPEC.md "<SiteHeader> component contract".
 import { getRelativeLocaleUrl } from 'astro:i18n';
 import SiteHeader from './SiteHeader.astro';
-import { wordmarkPhotoFilter, ZOOM_REVEAL_DISTANCE } from '../lib/home-carousel';
+import { INTRO_REVEAL_DISTANCE, wordmarkPhotoFilter, ZOOM_REVEAL_DISTANCE } from '../lib/home-carousel';
 
 interface GalleryEntry {
   slug: string;
@@ -364,61 +364,74 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         - D-07: exactly one photo per gallery (its own hero/cover photo) —
           not a multi-photo-per-gallery preview. */}
     <div class="home-scroll-deck" data-role="scroll-deck">
-      {/* 21-UAT.md gap 1 (missing pre-zoom intro beat) —
-          .planning/debug/homepage-scroll-missing-intro-beat.md: added AFTER
-          the phase's own real-device UAT found the wordmark-zoom opening
-          directly on load, with no preceding beat. This is additive scope
-          with no locked 21-CONTEXT.md decision behind it (none of D-01
-          through D-16 specifies a pre-wordmark beat) — 21-10-PLAN.md's own
-          <assumptions> block (A1 through A5) is the record of the open
-          design questions this markup answers, and 21-10-SUMMARY.md restates
-          them for the developer to confirm or correct. Both beats below
-          deliberately render byte-for-byte identical logo markup/classes so
-          the tagline reads as arriving beneath a logo that appears to stay
-          put (A4) — do not add a beat-specific size override to either. No
-          zoom math changes here: computeZoomProgress (src/lib/
+      {/* 21-UAT.md round-2 gap 1 (logo duplication) —
+          .planning/debug/homepage-scroll-intro-logo-duplication.md: plan
+          21-10's two stacked, ordinary-flow beats above (each rendering its
+          own separate logomark image at matched static geometry) are
+          replaced here by ONE pinned, scroll-scrubbed intro block
+          containing exactly one logomark that shrinks continuously as the
+          tagline arrives beneath it. This corrects assumption A4 by
+          developer round-2 correction ("le logo se réduise et laisse
+          apparaître le texte de présentation" — one element, one continuous
+          transformation), not a defect fix: the shipped two-beat code
+          implemented A4 exactly as written. A1 (reduced motion gets the
+          intro as static content), A2 (dismissed by scrolling past, nothing
+          else), A3 (no scroll-snap point on the intro) and A5 (ink
+          background, white logomark, localised scroll cue with a gentle
+          drift) all still stand unchanged — only A4's implementation is
+          superseded, and only the layout container/reveal mechanism change,
+          not A5's visual tokens.
+
+          The shape deliberately mirrors the zoom track/stage pair directly
+          below (one sticky stage inside a tall track) and
+          DetailHero.astro's own `.detail-hero__pin` (one photo lerped by
+          one `t`, with dependent content revealed from sub-ranges of that
+          same `t`) — this codebase's own established idiom for a single
+          continuously-scrubbed element with dependent content on sub-ranges
+          of one shared progress value, not a novel mechanism.
+
+          No zoom math changes here: computeZoomProgress (src/lib/
           home-carousel.ts) keys off .home-scroll-deck__track's own live
-          getBoundingClientRect().top, so prepending these two sibling
-          sections needs zero change to ZOOM_REVEAL_DISTANCE or the track
-          height calc below — the zoom simply stays at rest until the
-          browser has scrolled past both beats. */}
+          getBoundingClientRect().top, so replacing the two static beats
+          with this track/stage pair needs zero change to
+          ZOOM_REVEAL_DISTANCE or the zoom track's own height calc below.
+
+          The new risk this plan takes on is the intro-to-zoom boundary this
+          track's bottom edge shares with the zoom track's top edge
+          (adjacent siblings, no margin) — assumption A4 was written
+          specifically to avoid adding a second pinned handoff boundary
+          right before the zoom's own. That risk is paid for by re-deriving
+          BOTH scrubs from live getBoundingClientRect() reads on every
+          painted frame (Task 3), the same rigor plan 21-07 already applied
+          to the zoom-to-slide boundary — no scroll listener, no observer,
+          anywhere in either path. */}
       <div
-        class="home-scroll-deck__intro home-scroll-deck__intro--logo"
-        data-role="deck-intro"
-        data-intro-beat="1"
+        class="home-scroll-deck__intro-track"
+        data-role="intro-track"
+        data-intro-distance={INTRO_REVEAL_DISTANCE}
+        style={`--intro-reveal-distance: ${INTRO_REVEAL_DISTANCE}px`}
       >
-        <img
-          src={logoWhiteSrc}
-          alt=""
-          aria-hidden="true"
-          class="home-scroll-deck__intro-logo"
-        />
-        {/* Decorative only (aria-hidden) — assumption A2: dismissed by
-            scrolling past, nothing else; no tap/timer affordance. */}
-        <div class="home-scroll-deck__intro-cue" aria-hidden="true">
-          <span>{isEn ? 'Scroll' : 'Défiler'}</span>
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M6 9l6 6 6-6" />
-          </svg>
-        </div>
-      </div>
-      {introBody ? (
-        <div
-          class="home-scroll-deck__intro home-scroll-deck__intro--tagline"
-          data-role="deck-intro"
-          data-intro-beat="2"
-        >
-          {/* Byte-for-byte identical logo markup/classes/attributes to beat
-              1 above (assumption A4) — do not diverge. */}
+        <div class="home-scroll-deck__intro-stage" data-role="intro-stage">
           <img
             src={logoWhiteSrc}
             alt=""
             aria-hidden="true"
             class="home-scroll-deck__intro-logo"
+            data-role="intro-logo"
           />
-          <p class="home-scroll-deck__intro-body">{introBody}</p>
+          {introBody ? (
+            <p class="home-scroll-deck__intro-body" data-role="intro-body">{introBody}</p>
+          ) : null}
+          {/* Decorative only (aria-hidden) — assumption A2: dismissed by
+              scrolling past, nothing else; no tap/timer affordance. */}
+          <div class="home-scroll-deck__intro-cue" data-role="intro-cue" aria-hidden="true">
+            <span>{isEn ? 'Scroll' : 'Défiler'}</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </div>
         </div>
-      ) : null}
+      </div>
       <div
         class="home-scroll-deck__track"
         data-role="zoom-track"
@@ -3790,63 +3803,87 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        — far beyond this gap, and UI-02 forbids changes outside the
        phone-width homepage), and that rejection still stands. */
 
-    /* 21-UAT.md gap 1 (pre-zoom intro beats, 21-10) —
-       .planning/debug/homepage-scroll-missing-intro-beat.md. Positioned
+    /* 21-UAT.md round-2 gap 1 (logo duplication, 21-13) —
+       .planning/debug/homepage-scroll-intro-logo-duplication.md. Positioned
        immediately before .home-scroll-deck__track below so source order
-       matches visual/DOM order. No `min-width: 768px` rule is needed for
-       these sections — .home-scroll-deck's own `display: none` base rule
-       (above, outside this media query) already makes them desktop-inert
-       for free, exactly like every other element in this subtree. */
-    .home-scroll-deck__intro {
-      /* 21-13 note: this rule is replaced wholesale by the pinned intro
-         redesign — converting it now keeps the tree consistent in the
-         meantime and makes the live-viewport-height convention the thing
-         21-13 inherits rather than re-deriving. */
+       matches visual/DOM order — the intro track's bottom edge IS the zoom
+       track's top edge (adjacent siblings, no margin). No `min-width: 768px`
+       rule is needed here — .home-scroll-deck's own `display: none` base
+       rule (above, outside this media query) already makes this subtree
+       desktop-inert for free, exactly like every other element in it.
+
+       Assumption A4 (21-10-PLAN.md) is SUPERSEDED by developer correction:
+       one pinned, scroll-scrubbed logomark replaces the two ordinary-flow
+       beats that used to live here. A1 (reduced motion = static content),
+       A2 (dismissed by scrolling past), A3 (no scroll-snap point) and A5
+       (ink background, white logomark, drifting cue) all still stand — see
+       the markup comment above for the full mapping.
+
+       Assumption A3 continued here, now structurally motivated rather than
+       merely prudent: NO scroll-snap-align/scroll-snap-stop on the track or
+       the stage — the intro is a free-scrub region of exactly the kind
+       21-RESEARCH.md Pitfall 6 made the zoom track snap-free to protect,
+       and adding a snap point here risks the same page-wide proximity-snap
+       conflict that reasoning already rules out. */
+    .home-scroll-deck__intro-track {
+      /* 21-11's live-viewport-height term, plus the intro's own reveal
+         distance (WR-01 pattern below) — mirrors the zoom track's own
+         height calc exactly one rule group below. This term and the
+         stage's height term (next rule) MUST resolve from the SAME
+         viewport-height expression, or the sticky release stops coinciding
+         with intro progress reaching 1 — the identical invariant the zoom
+         track's own comment already warns about, inherited here verbatim. */
+      height: calc(var(--deck-vh, 100svh) + var(--intro-reveal-distance, 900px));
+    }
+
+    .home-scroll-deck__intro-stage {
+      position: sticky;
+      top: 0;
+      /* Same invariant as the track's height term above — change both
+         together, never one alone. */
       height: var(--deck-vh, 100svh);
-      /* 21-10 Task 3 deviation (Rule 1 bug fix, assumption A4): a naive
-         flex column with `justify-content: center` centres the WHOLE
-         stack (logo + secondary element), so the logo itself lands at a
-         different vertical position in each beat whenever the secondary
-         element's own height differs — beat 1's short cue vs. beat 2's
-         (locale-dependent, possibly multi-line) tagline. That is exactly
-         what the identical-logomark-geometry case in
-         homepage-scroll-deck.spec.ts caught. A 3-row grid with the logo in
-         the fixed middle `auto` row, sandwiched between two `minmax(0,
-         1fr)` spacer rows, decouples the logo's position from the
-         secondary row's content entirely: `minmax(0, 1fr)` (not a bare
-         `1fr`) overrides each spacer row's content-based automatic minimum
-         to 0, so the two spacer rows are FORCED to stay exactly equal
-         regardless of what renders in row 3 — the logo is then always
-         precisely centred in the viewport in both beats. */
+      overflow: hidden;
+      /* 21-10 Task 3's original reasoning for this 3-row grid still holds
+         even with a single stage instead of two beats: a naive flex column
+         with `justify-content: center` would centre the WHOLE stack (logo +
+         tagline + cue), so the logo's own vertical position would shift
+         whenever the tagline's height changes across the scrub (0 lines
+         before the sub-range starts, 1-2 lines once it arrives). A 3-row
+         grid with the logo in the fixed middle `auto` row, sandwiched
+         between two `minmax(0, 1fr)` spacer rows, decouples the logo's
+         position from row 3's content entirely: `minmax(0, 1fr)` (not a
+         bare `1fr`) overrides each spacer row's content-based automatic
+         minimum to 0, so the two spacer rows stay exactly equal regardless
+         of what renders in row 3 — the logo is always precisely centred. */
       display: grid;
       grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
       justify-items: center;
       align-items: center;
       gap: var(--space-lg);
       padding-inline: var(--space-lg);
-      /* Assumption A5 (21-10-PLAN.md): ink background, continuous with the
-         deck's own paint floor (.home-scroll-deck__photo/.home-slide, plan
-         21-09) and the phone-only theme-color meta tag (plan 21-09) — an
-         ink intro screen never reintroduces the white-strip status-bar
-         problem plan 21-09 just closed. A white logomark is required for
-         contrast on ink, hence logoWhiteSrc below (not logoBlackSrc). */
+      /* Assumption A5 (21-10-PLAN.md, still standing): ink background,
+         continuous with the deck's own paint floor
+         (.home-scroll-deck__photo/.home-slide, plan 21-09) and the
+         phone-only theme-color meta tag (plan 21-09) — an ink intro screen
+         never reintroduces the white-strip status-bar problem plan 21-09
+         closed. A white logomark is required for contrast on ink, hence
+         logoWhiteSrc below (not logoBlackSrc). */
       background-color: var(--color-ink);
       color: #FFFFFF;
       text-align: center;
-      /* Assumption A3 (21-10-PLAN.md): deliberately NO scroll-snap-align/
-         scroll-snap-stop on these sections — each beat is exactly one
-         viewport tall so an ordinary scroll already lands on it cleanly,
-         and adding a snap point immediately before the deliberately
-         snap-free 900px zoom scrub could let the page-wide proximity snap
-         (is:global block below) pull the visitor backwards into the intro
-         mid-scrub — the same conflict class 21-RESEARCH.md Pitfall 6 made
-         the track itself snap-free to avoid. */
     }
 
     .home-scroll-deck__intro-logo {
-      /* Fixed middle row — its own vertical centre is therefore identical
-         in both beats regardless of the row-3 secondary element below it
-         (see the container rule's comment). */
+      /* Fixed middle row — its own vertical centre is therefore independent
+         of whatever renders in row 3 below it (see the stage rule's
+         comment). NO transform and NO transition here: the driver
+         (Task 3) writes the shrink transform inline every frame, and a
+         transition on a property written every frame turns a scrub into a
+         permanently-lagging catch-up animation that never matches scroll
+         position — the exact desynchronised-handoff defect class plan
+         21-07 eliminated, reintroduced at this new boundary. This is the
+         single easiest way to reintroduce a visible defect in this plan —
+         do not add either property back. */
       grid-row: 2;
       width: 40vw;
       max-width: 220px;
@@ -3854,13 +3891,36 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       display: block;
     }
 
-    .home-scroll-deck__intro-cue {
-      /* Row 3, the second (bottom) spacer row — aligned to its own start
-         so the cue sits close under the logo rather than centred within
-         whatever leftover space that row's minmax(0, 1fr) track computes
-         to (see the container rule's comment). */
+    /* D-13's locked VALUES (opacity 0 to 1, translateY 8px to 0) are fully
+       preserved here — only the driving mechanism changes, from a 180ms CSS
+       transition to scroll position (Task 3's computeIntroScrubState). The
+       rest state below (opacity 0, translateY 8px) matches that function's
+       own clamped-floor literal exactly, since it is what a visitor sees
+       before the driver's first painted frame. NO transition property: the
+       tagline's opacity/transform are written every frame by the driver,
+       and the same catch-up-animation defect the logo comment above
+       describes applies here too — .home-slide__description keeps its own
+       180ms transition, because slide descriptions are still class-toggled
+       and are plan 21-15's subject, not this plan's. */
+    .home-scroll-deck__intro-body {
       grid-row: 3;
       align-self: start;
+      max-width: 52ch;
+      font-size: 14px;
+      line-height: 1.4;
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    .home-scroll-deck__intro-cue {
+      /* Row 3, the BOTTOM of the spacer row (21-13: moved from `start` to
+         `end` so the cue sits near the bottom edge of the screen instead of
+         colliding with the tagline, which now shares this cell). The cue
+         and the tagline never compete visually: cueOpacity is driven to 0
+         by the first 20% of the scrub (computeIntroScrubState), well before
+         the tagline's own sub-range even starts at 25%. */
+      grid-row: 3;
+      align-self: end;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -3882,30 +3942,6 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       50% {
         transform: translateY(6px);
       }
-    }
-
-    /* D-13: reused verbatim from .home-grid__tile-description/
-       .home-slide__description above — opacity/translateY/180ms ease are
-       locked, do not retune. `is-revealed` lands on the intro section
-       ancestor itself, the same ancestor-keyed shape
-       `.home-slide.is-revealed .home-slide__description` already uses, and
-       is toggled by the deck driver's per-frame arrival pass (Task 2).
-       grid-row/align-self: same row-3 placement as the cue above, and for
-       the same reason (assumption A4 fix). */
-    .home-scroll-deck__intro-body {
-      grid-row: 3;
-      align-self: start;
-      max-width: 52ch;
-      font-size: 14px;
-      line-height: 1.4;
-      opacity: 0;
-      transform: translateY(8px);
-      transition: opacity 180ms ease, transform 180ms ease;
-    }
-
-    .home-scroll-deck__intro.is-revealed .home-scroll-deck__intro-body {
-      opacity: 1;
-      transform: translateY(0);
     }
 
     /* Track: tall enough to host the full zoom scrub before the first real
@@ -4336,12 +4372,21 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       transform: none;
     }
 
-    /* Assumption A1 (21-10-PLAN.md): the intro beats are content, not
-       motion, so a reduced-motion visitor still gets both beats — the
-       tagline is permanently visible (no reveal) and the cue's drift is
-       suppressed. The header is deliberately NOT hidden here: D-12's
+    /* Assumption A1 (21-10-PLAN.md, still standing after 21-13's pinned-
+       intro redesign): the intro is content, not motion, so a
+       reduced-motion visitor still gets it — the tagline is permanently
+       visible (no reveal) and the cue's drift is suppressed. The driver
+       (Task 3) never attaches under this query at all, so no inline write
+       to the logomark's transform or the tagline's opacity/transform ever
+       happens — the logomark therefore needs NO rule of its own here,
+       because its unstyled rest state (no transform) IS the static end
+       state a reduced-motion visitor should see. The track also keeps its
+       full height under reduced motion for the same reason the zoom track
+       already does: a static pinned stage scrolled past is this site's
+       established reduced-motion treatment for a scrub region, not an
+       oversight. The header is deliberately NOT hidden here: D-12's
        header-hide is entirely JS-attribute-driven (data-zoom-active/
-       data-intro-active, Task 2), and this driver never attaches at all
+       data-intro-active, Task 3), and this driver never attaches at all
        under this query (D-15's established convention), so the header
        staying visible falls out of that convention for free rather than
        being a new rule — this keeps mobile-nav.spec.ts/accessibility.spec.ts/
