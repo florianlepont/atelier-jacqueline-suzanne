@@ -1796,6 +1796,79 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       // iterates ONE array instead of two separate loops.
       const arrivalTargets = [...introSections, ...slides];
 
+      const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+      // Pitfall 2: this exact 767px value must match the CSS's own
+      // `@media (max-width: 767px)` gate byte-for-byte — a stray 768px
+      // (or min-width) would make the JS activate at a different width
+      // than the CSS that shows the markup this driver depends on.
+      // 21-11: hoisted out of the driver guard below (both queries were
+      // previously declared inside it) so this one declaration of each can
+      // be shared with the viewport-height sync block immediately below,
+      // which must run whether or not the deck's full element set is
+      // present.
+      const mobile = matchMedia('(max-width: 767px)');
+
+      // 21-11 (HOME-14/HOME-15, 21-UAT.md round-2 gap 4 —
+      // .planning/debug/homepage-scroll-still-not-fullscreen.md): a
+      // self-contained sizing sync, deliberately OUTSIDE the motion
+      // driver's `if (root && deckRoot && ...)` guard below — mirrors
+      // DetailHero.astro's own scroll-hint block (lines ~220-233), which is
+      // kept outside its reveal-driver guard for the same reason: it must
+      // never depend on that driver's element set being complete. `root`
+      // (`.home`) is the only element this needs.
+      //
+      // D-15 exemption: this is deliberately NOT gated on `reduceMotion`,
+      // unlike every scroll-linked driver elsewhere in this file. D-15's
+      // convention is "no scroll-linked JS attaches at all" for a
+      // reduced-motion visitor — but nothing here animates, reads scroll
+      // position, or drives a transform. It only mirrors the browser's own
+      // reported viewport size into a custom property, once per genuine
+      // size change, so a reduced-motion phone visitor still gets correct
+      // full-screen coverage (gap 4's failed truth says "at any point", not
+      // "while the motion driver happens to be attached").
+      //
+      // Declared at module scope (NOT nested inside an `if (root) {...}`
+      // block) so the driver guard below — a separate block — can also
+      // call it as frame()'s first statement (item 4). The function guards
+      // itself on `root` internally instead, which is what "guarded only
+      // on root being present" means here: it is always safe to call, and
+      // callers never need their own `if (root)` check around it.
+      const DECK_VH_SENTINEL = -1;
+      let lastDeckVh = DECK_VH_SENTINEL;
+
+      function syncDeckViewportHeight() {
+        if (!root) return;
+        if (!mobile.matches) {
+          // UI-02: nothing at 768px and above may carry the property.
+          root.style.removeProperty('--deck-vh');
+          lastDeckVh = DECK_VH_SENTINEL;
+          return;
+        }
+        // T-21-11-B: under pinch-zoom, visualViewport reports the
+        // zoomed-in visible area, which would collapse every full-screen
+        // deck box to a fraction of the screen. Falling back to
+        // window.innerHeight whenever the reported scale exceeds ~1.01
+        // keeps the deck sized to the actual screen, not the zoomed
+        // fragment of it.
+        const vv = window.visualViewport;
+        const height = vv && vv.scale <= 1.01 ? vv.height : window.innerHeight;
+        // T-21-11-A: only write on a genuine (>=1px) change, so Safari's
+        // toolbar-collapse animation — which can report sub-pixel height
+        // deltas on some frames — does not force a style write (and the
+        // resulting synchronous layout, see the frame() call site below)
+        // on every single frame.
+        if (Math.abs(height - lastDeckVh) < 1) return;
+        lastDeckVh = height;
+        root.style.setProperty('--deck-vh', `${height}px`);
+      }
+
+      syncDeckViewportHeight();
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', syncDeckViewportHeight, { passive: true });
+        window.visualViewport.addEventListener('scroll', syncDeckViewportHeight, { passive: true });
+      }
+      mobile.addEventListener('change', syncDeckViewportHeight);
+
       // Every element above is optional — a silent no-op if the deck is
       // absent (e.g. the zero-galleries empty state, which never renders
       // `.home` at all), mirroring the existing script's own
@@ -1946,6 +2019,15 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           // visitor than letting it finish — this is a one-way promotion,
           // not part of the reversible progress/arrival visual state the
           // rest of this function resets.
+          //
+          // 21-11: `--deck-vh` is ALSO deliberately excluded here, for a
+          // similar reason. This function releases only what the MOTION
+          // driver itself wrote; the sizing sync (above, outside this
+          // guard) is a separate, longer-lived concern with its own
+          // `mobile.matches` branch deciding when the property is present
+          // or absent, and that decision must survive a reduced-motion or
+          // desktop-gate detach of THIS driver unchanged. Do not "complete"
+          // the 1:1 removal list above by adding it here.
           wordmark!.style.removeProperty('transform');
           wordmark!.style.removeProperty('transform-origin');
           wordmark!.style.removeProperty('opacity');
@@ -1995,12 +2077,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           introActive = null;
         }
 
-        const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
-        // Pitfall 2: this exact 767px value must match the CSS's own
-        // `@media (max-width: 767px)` gate byte-for-byte — a stray 768px
-        // (or min-width) would make the JS activate at a different width
-        // than the CSS that shows the markup this driver depends on.
-        const mobile = matchMedia('(max-width: 767px)');
+        // 21-11: reduceMotion and mobile are now declared once, hoisted
+        // above this driver guard (see the sizing sync block above), so
+        // both the sync and this driver share the same two matchMedia
+        // instances rather than each creating their own.
 
         let rafId: number | null = null;
         let driverAttached = false;
@@ -2081,6 +2161,21 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         // within any single frame the crossfade/header state and the
         // reveal state are always consistent with each other.
         function frame() {
+          // 21-11: must run FIRST, before computeProgress()'s own
+          // getBoundingClientRect() read. A `--deck-vh` write changes the
+          // height of every deck box; getBoundingClientRect() forces a
+          // synchronous layout flush, so writing the property earlier in
+          // the same frame means that flush — and every rect this frame
+          // then reads — already reflects it. Writing it after (or
+          // deferring it to a separate rAF) would compute this frame's
+          // progress and arrival against the PREVIOUS frame's box heights,
+          // reintroducing gap 4 one frame at a time during a toolbar
+          // animation. The 1px change-detection cache inside
+          // syncDeckViewportHeight() means this forced reflow only happens
+          // on frames where the viewport genuinely changed size — on a
+          // stationary frame it is a same-value read, no write, no extra
+          // reflow.
+          syncDeckViewportHeight();
           applyProgress(computeProgress());
           applyArrival();
           rafId = requestAnimationFrame(frame);
