@@ -1380,4 +1380,93 @@ test.describe('deck viewport-height convention and phone theme colour (HOME-14, 
     await expect(page.locator('[data-role="scroll-deck"]')).not.toBeVisible();
     await expect(page.locator('[data-role="home-carousel"]')).toBeVisible();
   });
+
+  // 21-11 (HOME-14, HOME-15, 21-UAT.md round-2 gap 4 —
+  // .planning/debug/homepage-scroll-still-not-fullscreen.md): the live
+  // viewport-height sync (`syncDeckViewportHeight()` in HomeCarousel.astro)
+  // replaces every deck rule's bare `100svh` with `var(--deck-vh, 100svh)`,
+  // where `--deck-vh` is sourced from window.visualViewport/
+  // window.innerHeight and written once per genuine (>=1px) size change.
+  //
+  // What the cases below CAN prove, as a mechanism-level regression net:
+  // the property exists once attached, tracks the reported viewport,
+  // survives a resize, survives reduced motion, and stays off desktop.
+  // What they CANNOT prove: a fixed-viewport Playwright engine has no
+  // dynamic browser chrome to animate mid-scroll, so the visitor-facing
+  // result this gap is actually about — no white bar or gap at any point
+  // during Mobile Safari's toolbar collapse/expand — is confirmed only by
+  // the consolidated real-device check that closes this gap-closure set
+  // (plan 21-15). None of plan 21-09's existing cases above (this same
+  // describe block) are weakened, relaxed or deleted by this plan — they
+  // still assert against window.innerHeight, which a fixed-viewport engine
+  // resolves identically whether a box is sized from the `100svh` fallback
+  // or the live `--deck-vh` value, so they continue to hold unedited.
+  //
+  // Poll rather than assert once for --deck-vh: the sync runs its first
+  // write on the first painted animation frame after attach (or,
+  // above 767px / on the sizing block's own immediate call, synchronously
+  // on script execution) — not guaranteed synchronously at DOMContentLoaded
+  // from the test's perspective.
+  async function getDeckVh(page: Page): Promise<string> {
+    return page.evaluate(() =>
+      getComputedStyle(document.querySelector('.home')!).getPropertyValue('--deck-vh').trim(),
+    );
+  }
+
+  test('phone width: --deck-vh resolves on .home to a non-empty pixel value within 2px of window.innerHeight', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    await expect.poll(() => getDeckVh(page)).not.toBe('');
+    const deckVh = await getDeckVh(page);
+    const viewportHeight = await page.evaluate(() => window.innerHeight);
+    expect(deckVh.endsWith('px')).toBe(true);
+    expect(Math.abs(parseFloat(deckVh) - viewportHeight)).toBeLessThanOrEqual(2);
+  });
+
+  test('reduced motion, phone width: --deck-vh is STILL present and still matches window.innerHeight — the sizing fix is not gated behind the motion driver (gap 4: "at any point", not "while the motion driver happens to be attached")', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    await expect.poll(() => getDeckVh(page)).not.toBe('');
+    const deckVh = await getDeckVh(page);
+    const viewportHeight = await page.evaluate(() => window.innerHeight);
+    expect(Math.abs(parseFloat(deckVh) - viewportHeight)).toBeLessThanOrEqual(2);
+  });
+
+  test('desktop (1280x800): --deck-vh is absent from .home entirely (UI-02 — nothing at 768px and above consumes or carries the unit)', async ({ page }) => {
+    await page.setViewportSize(DESKTOP_VIEWPORT);
+    await page.goto('/');
+
+    await expect.poll(() => getDeckVh(page)).toBe('');
+  });
+
+  test('resize resilience: after a viewport resize to a different phone height, --deck-vh and the first slide track the new window.innerHeight', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+    await expect.poll(() => getDeckVh(page)).not.toBe('');
+
+    // The closest a fixed-viewport engine can get to Mobile Safari's
+    // toolbar-collapse animation: a genuine window.innerHeight change after
+    // attach. This is what would fail loudly if the sync were ever reduced
+    // to a one-shot read at load instead of a live resize listener.
+    await page.setViewportSize({ width: 393, height: 740 });
+
+    await expect
+      .poll(async () => {
+        const deckVh = await getDeckVh(page);
+        const viewportHeight = await page.evaluate(() => window.innerHeight);
+        return Math.abs(parseFloat(deckVh) - viewportHeight);
+      })
+      .toBeLessThanOrEqual(2);
+
+    await expect
+      .poll(async () => {
+        const box = await page.locator('[data-role="deck-slide"]').first().boundingBox();
+        const viewportHeight = await page.evaluate(() => window.innerHeight);
+        return box ? Math.abs(box.height - viewportHeight) : Number.POSITIVE_INFINITY;
+      })
+      .toBeLessThanOrEqual(2);
+  });
 });
