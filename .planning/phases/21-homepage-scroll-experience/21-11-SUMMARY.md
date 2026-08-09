@@ -154,3 +154,13 @@ None - no external service configuration required.
 ---
 *Phase: 21-homepage-scroll-experience*
 *Completed: 2026-08-09*
+
+## Self-Check: PASSED
+
+- FOUND: src/components/HomeCarousel.astro
+- FOUND: tests/e2e/homepage-scroll-deck.spec.ts
+- FOUND: .planning/phases/21-homepage-scroll-experience/21-11-SUMMARY.md
+- FOUND commit: 3b77a76 (Task 1)
+- FOUND commit: 118c315 (Task 2)
+- FOUND commit: 82330c3 (Task 3)
+- FOUND commit: 0a49b68 (plan metadata)
