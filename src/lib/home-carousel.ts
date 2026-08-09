@@ -209,23 +209,37 @@ function clamp01(v: number): number {
 export const ZOOM_REVEAL_DISTANCE = 900;
 
 /**
- * Converts the pinned scroll track's own `getBoundingClientRect().top`
- * (per D-02, mirroring `DetailHero.astro`'s existing scroll-scrubbed pin
- * driver — NOT a bounded div's `scrollTop`, which was sketch-only
- * scaffolding for side-by-side variant comparison) into a 0..1 zoom
- * progress fraction.
+ * Phase 21, plan 21-13: shared body extracted from `computeZoomProgress` so
+ * `computeIntroProgress` (below, added by plan 21-13 for `21-UAT.md`
+ * round-2 gap 1) can delegate to the exact same formula instead of a second
+ * hand-copied one drifting out of sync. Neither public function's
+ * signature, default argument, docstring or observable behaviour changed by
+ * this extraction — `computeZoomProgress`'s own describe block is the
+ * regression net and stays green unmodified.
  *
  * `trackTop` is 0 or positive while the track's top edge hasn't yet
- * scrolled past the viewport's top edge (zoom not started, clamped to 0);
- * it becomes increasingly negative as the page scrolls down, reaching
- * `-revealDistance` at the fully-zoomed end-state (clamped to 1 beyond
+ * scrolled past the viewport's top edge (not started, clamped to 0); it
+ * becomes increasingly negative as the page scrolls down, reaching
+ * `-revealDistance` at the fully-scrubbed end-state (clamped to 1 beyond
  * that). A `revealDistance <= 0` is a degenerate caller error — resolved to
  * the completed end-state (1) rather than dividing by zero/a negative
  * number and producing Infinity or NaN.
  */
-export function computeZoomProgress(trackTop: number, revealDistance: number = ZOOM_REVEAL_DISTANCE): number {
+function computeTrackProgress(trackTop: number, revealDistance: number): number {
   if (revealDistance <= 0) return 1;
   return clamp01(-trackTop / revealDistance);
+}
+
+/**
+ * Converts the pinned scroll track's own `getBoundingClientRect().top`
+ * (per D-02, mirroring `DetailHero.astro`'s existing scroll-scrubbed pin
+ * driver — NOT a bounded div's `scrollTop`, which was sketch-only
+ * scaffolding for side-by-side variant comparison) into a 0..1 zoom
+ * progress fraction. See `computeTrackProgress` above for the shared
+ * formula this delegates to.
+ */
+export function computeZoomProgress(trackTop: number, revealDistance: number = ZOOM_REVEAL_DISTANCE): number {
+  return computeTrackProgress(trackTop, revealDistance);
 }
 
 export interface WordmarkZoomState {
@@ -268,6 +282,96 @@ export function computeWordmarkZoomState(t: number): WordmarkZoomState {
     scale: 1 + 7.5 * eased,
     wordmarkOpacity: 1 - clamp01((ct - 0.92) / 0.08),
     photoOpacity: clamp01((ct - 0.85) / 0.15),
+  };
+}
+
+/**
+ * Phase 21, plan 21-13 (`21-UAT.md` round-2 gap 1, root-caused in
+ * `.planning/debug/homepage-scroll-intro-logo-duplication.md`), assumption
+ * A6: the scroll distance (in px) over which the pinned intro scrub plays
+ * out, from t=0 (stage not yet reached the top) to t=1 (logo shrunk to
+ * rest, tagline fully arrived). 900px is deliberately the SAME value as
+ * `ZOOM_REVEAL_DISTANCE` — the already real-device-confirmed "Cinematic"
+ * pace (see that constant's own docstring) — so the intro inherits a
+ * tested pacing rather than inventing an untested second one, and so the
+ * total pre-zoom distance (one viewport plus this distance) stays within
+ * 3% of what the superseded two-static-section design produced. *Alternative
+ * if a real-device check corrects this: a shorter or longer distance is a
+ * one-constant change.*
+ */
+export const INTRO_REVEAL_DISTANCE = 900;
+
+/**
+ * Converts the pinned intro track's own `getBoundingClientRect().top` into
+ * a 0..1 intro-scrub progress fraction — the intro's own analogue of
+ * `computeZoomProgress`, delegating to the same `computeTrackProgress`
+ * helper above so the two share one formula rather than two hand-copied
+ * ones. See `computeTrackProgress`'s docstring for the exact clamping
+ * behaviour at each end and for a degenerate (`<= 0`) `revealDistance`.
+ */
+export function computeIntroProgress(trackTop: number, revealDistance: number = INTRO_REVEAL_DISTANCE): number {
+  return computeTrackProgress(trackTop, revealDistance);
+}
+
+export interface IntroScrubState {
+  logoScale: number;
+  taglineOpacity: number;
+  taglineTranslateY: number;
+  cueOpacity: number;
+}
+
+/**
+ * `computeIntroScrubState(t)` — Phase 21, plan 21-13 (`21-UAT.md` round-2
+ * gap 1 and gap 2's intro half): the pinned intro's
+ * logo-shrink/tagline-arrival/cue-fade curve, driven by a single 0..1
+ * intro-progress number (see `computeIntroProgress`).
+ *
+ * The tagline's opacity/offset are deliberately a SUB-RANGE of this one
+ * progress value rather than their own separate mechanism — the same
+ * sub-range idiom `DetailHero.astro`'s `onProgress(t)` already uses to
+ * reveal dependent content from one shared `t`. That is what makes the
+ * logo's shrink and the tagline's arrival provably ONE continuous motion,
+ * not two coincidentally-timed ones. The trailing dwell this produces
+ * (tagline fully opaque and stationary for the last 40% of the scrub) is
+ * gap 2's structural fix — the intro half of `21-UAT.md` round-2 gap 2,
+ * whose debug session names the old two-beat design's missing snap point
+ * as the failure mechanism a pinned stage removes entirely. Not free
+ * tuning space.
+ *
+ * `t` is clamped to [0,1] first (scroll can overshoot either end).
+ * `logoScale` runs 1 down to 0.45 along an ease-OUT cubic
+ * (`1 - (1 - ct) ** 3`) of the clamped input — the opposite curve from the
+ * zoom's ease-in (`computeWordmarkZoomState`, `ct ** 3`), deliberately so:
+ * the zoom accelerates into a climax, the intro answers the visitor's
+ * first gesture immediately and then settles. `taglineOpacity` is
+ * `clamp01((ct - 0.25) / 0.35)` — starts a quarter of the way in, fully
+ * arrived at 60%. `taglineTranslateY` is D-13's locked 8px offset scaled by
+ * that same sub-range (8 at its start, 0 once it completes) — only the
+ * driving mechanism changes from a 180ms CSS transition to scroll
+ * position; D-13's values are unchanged. `cueOpacity` is
+ * `1 - clamp01(ct / 0.2)` — the scroll affordance is gone well before the
+ * tagline's own sub-range starts, so the two never compete in the same
+ * cell.
+ *
+ * The two endpoints (`ct <= 0`, `ct >= 1`) are returned as exact literals
+ * rather than run through the formulas below, for the same reason
+ * `computeWordmarkZoomState`'s docstring already gives: `1 - 0.55 * 1` does
+ * not land on an exact binary `0.45` (float noise), and a scale that never
+ * quite reaches its documented end value is exactly the kind of residual
+ * that makes a later "why is this 0.44999999999999996" investigation
+ * necessary.
+ */
+export function computeIntroScrubState(t: number): IntroScrubState {
+  const ct = clamp01(t);
+  if (ct <= 0) return { logoScale: 1, taglineOpacity: 0, taglineTranslateY: 8, cueOpacity: 1 };
+  if (ct >= 1) return { logoScale: 0.45, taglineOpacity: 1, taglineTranslateY: 0, cueOpacity: 0 };
+  const eased = 1 - (1 - ct) ** 3;
+  const taglineOpacity = clamp01((ct - 0.25) / 0.35);
+  return {
+    logoScale: 1 - 0.55 * eased,
+    taglineOpacity,
+    taglineTranslateY: 8 * (1 - taglineOpacity),
+    cueOpacity: 1 - clamp01(ct / 0.2),
   };
 }
 

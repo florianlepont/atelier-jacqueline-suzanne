@@ -2,12 +2,15 @@ import { describe, expect, it } from 'vitest';
 import {
   computeFocusOrigin,
   computeHoverZone,
+  computeIntroProgress,
+  computeIntroScrubState,
   computeSlideVisibleRatio,
   computeWordmarkBackgroundPosition,
   computeWordmarkSeamFraction,
   computeWordmarkZoomState,
   computeZoomProgress,
   detectSwipeDirection,
+  INTRO_REVEAL_DISTANCE,
   pickRandomGalleryIndex,
   wordmarkPhotoFilter,
   ZOOM_REVEAL_DISTANCE,
@@ -373,6 +376,137 @@ describe('computeWordmarkZoomState', () => {
       const { scale } = computeWordmarkZoomState(t);
       expect(scale).toBeGreaterThanOrEqual(previous);
       previous = scale;
+    }
+  });
+});
+
+// Phase 21, plan 21-13 (`21-UAT.md` round-2 gap 1, root-caused in
+// `.planning/debug/homepage-scroll-intro-logo-duplication.md`, assumption
+// A6): the intro's own scroll-distance-to-progress conversion, sharing the
+// same track-progress helper computeZoomProgress delegates to.
+describe('computeIntroProgress', () => {
+  it('INTRO_REVEAL_DISTANCE is the sketch-015 Cinematic pace, matching ZOOM_REVEAL_DISTANCE (assumption A6)', () => {
+    expect(INTRO_REVEAL_DISTANCE).toBe(900);
+  });
+
+  it('returns 0 when the track top is flush with the viewport top (scrub not started)', () => {
+    expect(computeIntroProgress(0)).toBe(0);
+  });
+
+  it('returns 0 while the track is still below the fold (positive top)', () => {
+    expect(computeIntroProgress(120)).toBe(0);
+  });
+
+  it('returns 0.5 halfway through the default reveal distance', () => {
+    expect(computeIntroProgress(-450)).toBe(0.5);
+  });
+
+  it('returns exactly 1 at the full default reveal distance', () => {
+    expect(computeIntroProgress(-900)).toBe(1);
+  });
+
+  it('clamps to 1 well past the reveal distance', () => {
+    expect(computeIntroProgress(-5000)).toBe(1);
+  });
+
+  it('honors an explicit reveal distance', () => {
+    expect(computeIntroProgress(-300, 600)).toBe(0.5);
+  });
+
+  it('resolves a degenerate (zero) reveal distance to the completed end-state, not Infinity/NaN', () => {
+    expect(computeIntroProgress(-300, 0)).toBe(1);
+  });
+
+  it('resolves a degenerate (negative) reveal distance to the completed end-state, not Infinity/NaN', () => {
+    expect(computeIntroProgress(-300, -100)).toBe(1);
+  });
+});
+
+// Phase 21, plan 21-13 (`21-UAT.md` round-2 gap 1 and gap 2's intro half):
+// the logo-shrink/tagline-arrival/cue-fade curve, driven by the same 0..1
+// progress `computeIntroProgress` produces. The tagline is deliberately a
+// sub-range of this ONE progress value (not its own mechanism) — the same
+// idiom DetailHero.astro's onProgress(t) sub-range reveal already uses —
+// which is what makes the logo's shrink and the tagline's arrival provably
+// one continuous motion rather than two coincidentally-timed ones. The
+// trailing ~40% dwell (taglineOpacity reaching 1 at ct=0.6, well before the
+// scrub's own end) is gap 2's structural fix: the tagline is fully opaque
+// and stationary for the last 40% of a pinned scrub, independent of the
+// visitor's scroll momentum.
+describe('computeIntroScrubState', () => {
+  it('at the clamped floor: logo at rest scale, tagline hidden and offset, cue fully visible', () => {
+    expect(computeIntroScrubState(0)).toEqual({ logoScale: 1, taglineOpacity: 0, taglineTranslateY: 8, cueOpacity: 1 });
+  });
+
+  it('at the clamped ceiling: logo at its shrunk end scale, tagline fully arrived, cue gone', () => {
+    expect(computeIntroScrubState(1)).toEqual({ logoScale: 0.45, taglineOpacity: 1, taglineTranslateY: 0, cueOpacity: 0 });
+  });
+
+  it('clamps input below 0 to behave as t = 0', () => {
+    expect(computeIntroScrubState(-2)).toEqual({ logoScale: 1, taglineOpacity: 0, taglineTranslateY: 8, cueOpacity: 1 });
+  });
+
+  it('clamps input above 1 to behave as t = 1', () => {
+    expect(computeIntroScrubState(4)).toEqual({ logoScale: 0.45, taglineOpacity: 1, taglineTranslateY: 0, cueOpacity: 0 });
+  });
+
+  it('cueOpacity reaches exactly 0 at ct = 0.2, before the tagline sub-range even starts (ct = 0.25)', () => {
+    const result = computeIntroScrubState(0.2);
+    expect(result.cueOpacity).toBe(0);
+    expect(result.taglineOpacity).toBe(0);
+  });
+
+  it('taglineOpacity is 0 until ct = 0.25, the start of its own sub-range', () => {
+    expect(computeIntroScrubState(0.25).taglineOpacity).toBe(0);
+  });
+
+  it('taglineOpacity reaches exactly 1 at ct = 0.6, leaving the last 40% of the scrub fully opaque and stationary (gap 2)', () => {
+    const result = computeIntroScrubState(0.6);
+    expect(result.taglineOpacity).toBe(1);
+    expect(result.taglineTranslateY).toBe(0);
+  });
+
+  it('at ct = 0.6 through 1, the tagline stays fully opaque and un-offset (the trailing dwell)', () => {
+    for (const ct of [0.6, 0.75, 0.9, 1]) {
+      const result = computeIntroScrubState(ct);
+      expect(result.taglineOpacity).toBe(1);
+      expect(result.taglineTranslateY).toBe(0);
+    }
+  });
+
+  it('logoScale runs along an ease-OUT cubic (responds immediately, settles toward the end) — distinct from the zoom’s ease-in', () => {
+    const result = computeIntroScrubState(0.1);
+    // eased = 1 - (1 - 0.1) ** 3 = 1 - 0.729 = 0.271; logoScale = 1 - 0.55 * 0.271
+    expect(result.logoScale).toBeCloseTo(1 - 0.55 * 0.271, 5);
+  });
+
+  it('logoScale is strictly decreasing across an ascending sweep of t', () => {
+    const sweep = [0, 0.1, 0.25, 0.5, 0.75, 0.9, 1];
+    let previous = Infinity;
+    for (const t of sweep) {
+      const { logoScale } = computeIntroScrubState(t);
+      expect(logoScale).toBeLessThan(previous);
+      previous = logoScale;
+    }
+  });
+
+  it('taglineOpacity is non-decreasing across an ascending sweep of t', () => {
+    const sweep = [0, 0.1, 0.25, 0.4, 0.6, 0.75, 0.9, 1];
+    let previous = -Infinity;
+    for (const t of sweep) {
+      const { taglineOpacity } = computeIntroScrubState(t);
+      expect(taglineOpacity).toBeGreaterThanOrEqual(previous);
+      previous = taglineOpacity;
+    }
+  });
+
+  it('cueOpacity is non-increasing across an ascending sweep of t', () => {
+    const sweep = [0, 0.05, 0.1, 0.2, 0.5, 1];
+    let previous = Infinity;
+    for (const t of sweep) {
+      const { cueOpacity } = computeIntroScrubState(t);
+      expect(cueOpacity).toBeLessThanOrEqual(previous);
+      previous = cueOpacity;
     }
   });
 });
