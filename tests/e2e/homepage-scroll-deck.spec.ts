@@ -77,6 +77,53 @@ async function getRevealDistance(page: Page): Promise<number> {
   return distance;
 }
 
+// Plan 21-12 (21-UAT.md round-2 gap 3 —
+// .planning/debug/homepage-scroll-cover-photo-doubled.md): each deck slide's
+// OWN live document offset — its bounding-rect top plus the current scroll
+// position — read at scroll position 0. Slide targets must be read from the
+// slides themselves, never computed from the track, because after this
+// plan's CSS the track's height and the slides' position are no longer in
+// the fixed relationship the old track-height arithmetic assumed (the
+// slides wrapper is pulled up by one deck viewport height while the motion
+// driver is attached, so the track's own height alone can no longer predict
+// where a slide actually sits). Deriving straight from the slides is what
+// keeps this spec immune to this class of change in future.
+//
+// The pull-up is applied by an attribute the driver writes only on its
+// first painted frame, so a read taken before that frame lands returns the
+// un-pulled-up (one deck-viewport-height too large) offset — this polls the
+// first slide's own offset until two consecutive reads agree, which is the
+// observable signal that frame 1 has already landed and the pull-up is in
+// effect.
+async function getSlideDocumentOffsets(page: Page): Promise<number[]> {
+  await page.evaluate(() => window.scrollTo(0, 0));
+
+  const readOffsets = () =>
+    page.evaluate(() =>
+      Array.from(document.querySelectorAll<HTMLElement>('[data-role="deck-slide"]')).map(
+        (slide) => slide.getBoundingClientRect().top + window.scrollY,
+      ),
+    );
+
+  let previousFirst: number | null = null;
+  await expect
+    .poll(async () => {
+      const offsets = await readOffsets();
+      const stable = previousFirst !== null && offsets[0] === previousFirst;
+      previousFirst = offsets[0] ?? null;
+      return stable;
+    })
+    .toBe(true);
+
+  const offsets = await readOffsets();
+  expect(offsets.length).toBeGreaterThan(0);
+  expect(offsets[0]).toBeGreaterThan(0);
+  for (let i = 1; i < offsets.length; i++) {
+    expect(offsets[i]).toBeGreaterThan(offsets[i - 1]);
+  }
+  return offsets;
+}
+
 // The driver applies `scale(...)` as a plain CSS transform (no rotation/
 // skew), so the computed matrix's first component IS the scale factor —
 // extracting it numerically keeps this robust to the exact string
@@ -654,25 +701,16 @@ test.describe('arrival reveal and accent liveness (HOME-14, D-09, D-10, D-13, D-
     );
   }
 
-  // Derives scroll targets from rendered geometry rather than hardcoding
-  // pixel values (mirrors the zoom-driver describe block's own
-  // getRevealDistance above) — the track's own rendered height IS the
-  // distance from the track's document offset at which the first slide has
-  // fully arrived, and one further viewport height reaches the second.
-  // 21-10 (21-UAT.md gap 1): folds in getIntroOffset() directly so every
-  // call site below gets the rebased target for free, rather than adding
-  // the offset at each of this helper's three call sites individually.
+  // 21-12: rebased on getSlideDocumentOffsets() (module scope, above) —
+  // each slide's own live document offset IS the scroll target that lands
+  // it exactly at the top of the viewport, which is what "arrived" means
+  // for these tests. Track-height arithmetic retired: after this plan the
+  // track's height no longer predicts a slide's position (see the helper's
+  // own comment). Shape kept identical ({ first, second }) so this
+  // function's three call sites below need no edit.
   async function getSlideScrollTargets(page: Page): Promise<{ first: number; second: number }> {
-    const introOffset = await getIntroOffset(page);
-    const { trackHeight, viewportHeight } = await page.evaluate(() => {
-      const track = document.querySelector<HTMLElement>('[data-role="zoom-track"]');
-      return {
-        trackHeight: track ? track.getBoundingClientRect().height : 0,
-        viewportHeight: window.innerHeight,
-      };
-    });
-    expect(trackHeight).toBeGreaterThan(viewportHeight);
-    return { first: introOffset + trackHeight, second: introOffset + trackHeight + viewportHeight };
+    const offsets = await getSlideDocumentOffsets(page);
+    return { first: offsets[0], second: offsets[1] };
   }
 
   async function slideOpacities(page: Page): Promise<string[]> {
@@ -916,20 +954,16 @@ test.describe('per-frame deck driver — scroll-event independence and atomic ha
     });
   }
 
-  // Derived from getRevealDistance(page) (never a hardcoded pixel value):
-  // the track's own rendered height (revealDistance + viewportHeight) is
-  // the scroll offset at which the pinned stage fully releases and the
-  // first slide's rect can reach the arrival ratio — the same quantity
-  // the 'arrival reveal and accent liveness' describe block above calls
-  // getSlideScrollTargets().first. 21-10 (21-UAT.md gap 1): folds in
-  // getIntroOffset() directly, same rationale as getSlideScrollTargets()
-  // above — every call site (including the atomic-handoff and detach-on-
-  // gate-change cases below) gets the rebased target for free.
+  // 21-12: rebased on getSlideDocumentOffsets() (module scope, above) — the
+  // first slide's own document offset is the scroll target at which its
+  // rect can reach the arrival ratio, the same quantity the 'arrival reveal
+  // and accent liveness' describe block above calls
+  // getSlideScrollTargets().first. Every call site below (including the
+  // atomic-handoff and detach-on-gate-change cases) gets the rebased target
+  // for free.
   async function getArrivalScrollTarget(page: Page): Promise<number> {
-    const introOffset = await getIntroOffset(page);
-    const distance = await getRevealDistance(page);
-    const viewportHeight = await page.evaluate(() => window.innerHeight);
-    return introOffset + distance + viewportHeight;
+    const offsets = await getSlideDocumentOffsets(page);
+    return offsets[0];
   }
 
   test('scroll-event independence — mid-scrub: the wordmark scale still updates with every scroll listener suppressed', async ({ page }) => {
@@ -1227,18 +1261,12 @@ test.describe('deck-slide progressive loading (HOME-14, HOME-09, 21-UAT.md gap 3
     // proving nothing new.
     expect(await sharpImgs.nth(2).getAttribute('loading')).toBe('lazy');
 
-    // Derived from getRevealDistance(page) plus the live viewport height,
-    // never a hardcoded pixel value: the track's own rendered height is the
-    // scroll offset at which the first slide reaches arrival, and one
-    // further viewport height reaches the second (mirrors this file's own
-    // getSlideScrollTargets()/getArrivalScrollTarget() helpers above). 21-10
-    // (21-UAT.md gap 1): rebased with getIntroOffset(), same rationale as
-    // every other scroll target in this file that lands inside the scrub or
-    // on a slide.
-    const introOffset = await getIntroOffset(page);
-    const distance = await getRevealDistance(page);
-    const viewportHeight = await page.evaluate(() => window.innerHeight);
-    const secondSlideArrivalTarget = introOffset + distance + 2 * viewportHeight;
+    // 21-12: rebased on getSlideDocumentOffsets() (module scope, above) —
+    // the second slide's own document offset is the scroll target at which
+    // it reaches arrival (mirrors this file's own
+    // getSlideScrollTargets()/getArrivalScrollTarget() helpers).
+    const offsets = await getSlideDocumentOffsets(page);
+    const secondSlideArrivalTarget = offsets[1];
     await page.evaluate((y) => window.scrollTo(0, y), Math.round(secondSlideArrivalTarget));
 
     await expect(page.locator('[data-role="deck-slide"]').nth(1)).toHaveClass(/is-revealed/);
@@ -1346,12 +1374,33 @@ test.describe('deck viewport-height convention and phone theme colour (HOME-14, 
     expect(photoBackground).not.toBe('rgb(255, 255, 255)');
   });
 
-  test('the wordmark screen is deliberately unchanged: the pinned stage stays transparent, proving the paint floor was scoped to photo surfaces only', async ({ page }) => {
+  // 21-12 (21-UAT.md round-2 gap 3 — .planning/debug/homepage-scroll-cover-
+  // photo-doubled.md): this case is DELIBERATELY superseded, not deleted.
+  // Plan 21-09 left the stage transparent so the wordmark screen's own
+  // white appearance came from `body`'s background showing through it; this
+  // plan paints the stage with `--color-dominant` instead — the SAME value
+  // `body` already painted through the transparent stage, so the rendered
+  // appearance of the wordmark screen is byte-for-byte unchanged even
+  // though the stage itself is no longer transparent. What actually changed
+  // is structural, not visual: the stage must now be opaque (it covers the
+  // first slide, which the pull-up moved to sit behind it for nearly the
+  // whole scrub) and explicitly stacked above the slides.
+  test('the wordmark screen is deliberately unchanged, but the pinned stage now paints an opaque surface and stacks above the slides (21-UAT.md round-2 gap 3)', async ({ page }) => {
     await page.setViewportSize(PHONE_VIEWPORT);
     await page.goto('/');
 
+    const dominant = await page.evaluate(() =>
+      getComputedStyle(document.body).backgroundColor,
+    );
     const stageBackground = await page.locator('[data-role="zoom-stage"]').evaluate((el) => getComputedStyle(el).backgroundColor);
-    expect(['transparent', 'rgba(0, 0, 0, 0)']).toContain(stageBackground);
+    // The wordmark screen's rendered appearance is pixel-identical to
+    // before: the stage now paints the exact colour body already showed
+    // through it when it was transparent.
+    expect(stageBackground).toBe(dominant);
+    expect(['transparent', 'rgba(0, 0, 0, 0)']).not.toContain(stageBackground);
+
+    const stageZIndex = await page.locator('[data-role="zoom-stage"]').evaluate((el) => getComputedStyle(el).zIndex);
+    expect(Number(stageZIndex)).toBeGreaterThan(0);
   });
 
   test('theme colour is present and phone-scoped', async ({ page }) => {
@@ -1468,5 +1517,177 @@ test.describe('deck viewport-height convention and phone theme colour (HOME-14, 
         return box ? Math.abs(box.height - viewportHeight) : Number.POSITIVE_INFINITY;
       })
       .toBeLessThanOrEqual(2);
+  });
+});
+
+// Phase 21, plan 21-12 (HOME-14, HOME-15, 21-UAT.md round-2 gap 3 —
+// .planning/debug/homepage-scroll-cover-photo-doubled.md): closes the full-
+// viewport-height dead zone that used to sit between zoom completion and
+// the first slide's own snap point, during which the crossfade layer's
+// photo and the first slide's own photo were both on screen showing pixel-
+// identical crops of the same source image. These cases verify the
+// MECHANISM (geometry and visibility) — that the first slide's snap point
+// now coincides with the stage's release point, and that the stage is
+// opaque, stacked, and retired the instant the zoom completes. The
+// visitor-facing result ("the photo appears once") is confirmed by the
+// consolidated real-device check in plan 21-15.
+test.describe('collapsed post-zoom dead zone (HOME-14, HOME-15, 21-UAT.md round-2 gap 3)', () => {
+  test('coincidence: the first slide\'s own document offset equals the zoom track\'s offset plus the live reveal distance — the fix that closes gap 3', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const introOffset = await getIntroOffset(page);
+    const distance = await getRevealDistance(page);
+    const offsets = await getSlideDocumentOffsets(page);
+
+    expect(Math.abs(offsets[0] - (introOffset + distance))).toBeLessThanOrEqual(2);
+  });
+
+  test('at the completion offset, the first slide fills the viewport from its own top and the pinned stage is retired — read atomically so no signal can be caught stale', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const offsets = await getSlideDocumentOffsets(page);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(offsets[0]));
+
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const firstSlide = document.querySelector<HTMLElement>('[data-role="deck-slide"]');
+          const stage = document.querySelector<HTMLElement>('[data-role="zoom-stage"]');
+          const home = document.querySelector<HTMLElement>('.home');
+          const rect = firstSlide?.getBoundingClientRect();
+          return {
+            topWithin2px: rect ? Math.abs(rect.top) <= 2 : false,
+            heightWithin2px: rect ? Math.abs(rect.height - window.innerHeight) <= 2 : false,
+            stageHidden: stage ? getComputedStyle(stage).visibility === 'hidden' : false,
+            zoomActive: home ? home.getAttribute('data-zoom-active') : null,
+          };
+        }),
+      )
+      .toEqual({ topWithin2px: true, heightWithin2px: true, stageHidden: true, zoomActive: 'false' });
+  });
+
+  // The direct automated analogue of the reported symptom: steps from the
+  // completion offset through one further viewport height in quarter-
+  // viewport increments, reading the stage's visibility and the first
+  // slide's own sharp-photo visibility together in a single page.evaluate
+  // per offset (mirrors plan 21-07's atomic-handoff sampling discipline —
+  // the two elements' states cannot be sampled from different frames this
+  // way), asserting the two are never both true at once.
+  test('no-doubling sweep: the pinned stage is never visible at the same time as the first slide\'s sharp photo, across the collapsed zone', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const offsets = await getSlideDocumentOffsets(page);
+    const viewportHeight = await page.evaluate(() => window.innerHeight);
+    const step = viewportHeight / 4;
+
+    for (let i = 0; i <= 4; i++) {
+      const y = Math.round(offsets[0] + i * step);
+      await page.evaluate((yy) => window.scrollTo(0, yy), y);
+
+      const state = await page.evaluate(() => {
+        const stage = document.querySelector<HTMLElement>('[data-role="zoom-stage"]');
+        const firstSharp = document.querySelector<HTMLElement>('[data-role="deck-slide"] .home-slide__img--sharp');
+        const stageVisible = stage ? getComputedStyle(stage).visibility !== 'hidden' : false;
+        const sharpRect = firstSharp?.getBoundingClientRect();
+        const sharpOnScreen = sharpRect ? sharpRect.bottom > 0 && sharpRect.top < window.innerHeight : false;
+        const sharpOpaque = firstSharp ? getComputedStyle(firstSharp).opacity === '1' : false;
+        return { stageVisible, sharpVisible: sharpOnScreen && sharpOpaque };
+      });
+
+      expect(state.stageVisible && state.sharpVisible, `both visible at offset ${y}`).toBe(false);
+    }
+  });
+
+  // T-21-12-D (this plan's own accepted, documented consequence): scrolling
+  // to a position within roughly 250-300px of completion (measured live in
+  // this same debug session — well inside the plan's own "roughly 250-
+  // 400px" estimate) resolves back to the completion snap point itself,
+  // synchronously, not to the requested position — an instant programmatic
+  // scroll IS already "at rest" the moment it is issued, so proximity snap
+  // applies immediately rather than only after a real gesture settles.
+  // There is therefore no scroll position from which this test (or a real
+  // visitor coming to rest) can observe an intermediate crossfade frame
+  // inside that tail anymore — which is exactly the deliberate effect this
+  // plan names as desirable ("removes the ability to rest mid-zoom in a
+  // half-scaled state"). This case targets well outside that snap-absorbed
+  // range instead, proving the actual boundary this plan owns has no gap:
+  // the stage reappears and scrubbing resumes the instant genuine scrub
+  // territory is re-entered, with no frame where neither the stage nor a
+  // fully-arrived first slide accounts for what is on screen.
+  test('reversibility at the boundary: leaving the snap-absorbed tail of the scrub immediately restores a visible stage and resumes the scrub, with no gap and no second copy (D-04, T-21-12-D)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const offsets = await getSlideDocumentOffsets(page);
+    const introOffset = await getIntroOffset(page);
+    const distance = await getRevealDistance(page);
+
+    // Just past completion — the stage is retired.
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(offsets[0] + 5));
+    await expect.poll(() => getZoomActive(page)).toBe('false');
+
+    // Well outside the snap-absorbed tail (500px, comfortably past the
+    // ~250-300px this session measured live).
+    const target = introOffset + distance - 500;
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(target));
+
+    await expect.poll(() => getZoomActive(page)).toBe('true');
+    await expect
+      .poll(() => page.locator('[data-role="zoom-stage"]').evaluate((el) => getComputedStyle(el).visibility))
+      .not.toBe('hidden');
+
+    // No second copy: genuinely back in scrub territory, not resting on
+    // the first slide itself (the no-doubling sweep case above already
+    // proves the absence of overlap exhaustively; this is the narrower
+    // boundary-specific sanity check for this one reversal target).
+    const firstSlideTop = await page
+      .locator('[data-role="deck-slide"]')
+      .first()
+      .evaluate((el) => el.getBoundingClientRect().top);
+    expect(firstSlideTop).toBeGreaterThan(0);
+  });
+
+  test('tap-through after completion: clicking the first slide navigates to its gallery detail route, proving the retired stage no longer intercepts the tap (D-10)', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const offsets = await getSlideDocumentOffsets(page);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(offsets[0]));
+    await expect.poll(() => getZoomActive(page)).toBe('false');
+
+    const slide = page.locator('[data-role="deck-slide"]').first();
+    const href = await slide.getAttribute('href');
+    expect(href).toBeTruthy();
+
+    await slide.click();
+    await page.waitForURL(new RegExp(href!.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  });
+
+  test('reduced motion, phone width: the pull-up and stage-retirement are provably inert — no zoom-active attribute, no negative margin on the slides wrapper, and the stage stays visible (D-15)', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    expect(await getZoomActive(page)).toBeNull();
+
+    const marginTop = await page
+      .locator('[data-role="deck-slides"]')
+      .evaluate((el) => parseFloat(getComputedStyle(el).marginTop));
+    expect(marginTop).toBeGreaterThanOrEqual(0);
+
+    const stageVisibility = await page.locator('[data-role="zoom-stage"]').evaluate((el) => getComputedStyle(el).visibility);
+    expect(stageVisibility).not.toBe('hidden');
+  });
+
+  test('desktop (1280x800): the deck root is still not visible, the homepage still renders its carousel, and no zoom-active attribute exists (UI-02)', async ({ page }) => {
+    await page.setViewportSize(DESKTOP_VIEWPORT);
+    await page.goto('/');
+
+    await expect(page.locator('[data-role="scroll-deck"]')).not.toBeVisible();
+    await expect(page.locator('[data-role="home-carousel"]')).toBeVisible();
+    expect(await getZoomActive(page)).toBeNull();
   });
 });
