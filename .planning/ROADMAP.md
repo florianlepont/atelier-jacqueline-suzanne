@@ -154,7 +154,7 @@ Plans:
   4. On first load, a phone visitor sees the "Atelier Jacqueline Suzanne" wordmark filling the screen; scrolling visibly transitions through the wordmark's letterforms into the first gallery's photo, matching the approved sketch direction.
   5. On tablet/desktop viewports, the carousel/grid toggle and both view modes behave exactly as they did before this milestone.
 
-**Plans**: 10/10 plans complete
+**Plans**: 10/15 plans complete (round-2 gap closure 21-11 through 21-15 pending — see 21-UAT.md round 2)
 
 Plans:
 **Wave 1**
@@ -190,6 +190,28 @@ Plans:
 **Wave 8** *(gap closure — blocked on Waves 5 and 7)*
 
 - [x] 21-10-PLAN.md — Close UAT gap 1: add the pre-zoom logomark + scroll-cue and intro-tagline beats, extend D-12's header hide to cover them, rebase the spec's scroll geometry, and carry the consolidated real-device gate
+
+*Round-2 gap closure (21-UAT.md round 2 — five real-device gaps found after the round-1 set shipped green). Wave numbering restarts at 1 for this set, matching each plan's own `wave` frontmatter.*
+
+**Round-2 Wave 1** *(gap closure — blocked on Wave 8 completion)*
+
+- [ ] 21-11-PLAN.md — Close round-2 gap 4: replace the deck's rigid `100svh` sizing with a live-synced `--deck-vh` custom property driven from `window.visualViewport`, so every full-screen section covers the current viewport in every Safari toolbar state
+
+**Round-2 Wave 2** *(blocked on Round-2 Wave 1)*
+
+- [ ] 21-12-PLAN.md — Close round-2 gap 3: collapse the full viewport height of dead zone between zoom completion and the first slide's snap point, and retire the pinned stage once its crossfade job is done, so the cover photo never renders twice
+
+**Round-2 Wave 3** *(blocked on Round-2 Waves 1 and 2)*
+
+- [ ] 21-13-PLAN.md — Close round-2 gap 1: replace the two stacked static intro sections with ONE pinned, scroll-scrubbed intro block whose single logomark shrinks continuously as the tagline arrives beneath it (also closes gap 2's intro half)
+
+**Round-2 Wave 4** *(blocked on Round-2 Wave 3)*
+
+- [ ] 21-14-PLAN.md — Close round-2 gap 5: restore D-12's header hide to the zoom alone so the hamburger is reachable from scroll position 0, suppress only the header's own logomark during the intro, and rebase the spec onto the pinned intro
+
+**Round-2 Wave 5** *(blocked on Round-2 Wave 4)*
+
+- [ ] 21-15-PLAN.md — Close round-2 gap 2's gallery half: replace `applyArrival()`'s symmetric visibility threshold with a two-level reveal/release latch so description text stays readable at a real scroll's resting position, and carry the consolidated real-device gate for all five round-2 gaps
 
 **Cross-cutting constraints:**
 
