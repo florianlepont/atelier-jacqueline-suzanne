@@ -1784,8 +1784,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       // point, so the original assumption still holds there.
       import {
         ZOOM_REVEAL_DISTANCE,
+        INTRO_REVEAL_DISTANCE,
         computeZoomProgress,
         computeWordmarkZoomState,
+        computeIntroProgress,
+        computeIntroScrubState,
         computeFocusOrigin,
         computeSlideVisibleRatio,
       } from '../lib/home-carousel';
@@ -1800,14 +1803,20 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       // deck element lookups. An empty array (no galleries, or the deck
       // itself absent) is a safe no-op for every arrival branch below.
       const slides = deckRoot ? Array.from(deckRoot.querySelectorAll<HTMLElement>('[data-role="deck-slide"]')) : [];
-      // 21-10 (21-UAT.md gap 1): the two pre-zoom intro sections, resolved
-      // the same way as slides — an empty array (no intro markup, e.g. an
-      // older cached build) is a safe no-op throughout.
-      const introSections = deckRoot ? Array.from(deckRoot.querySelectorAll<HTMLElement>('[data-role="deck-intro"]')) : [];
-      // 21-10: the intro sections precede the slides in the per-frame
-      // arrival pass, mirroring their DOM order, so applyArrival() below
-      // iterates ONE array instead of two separate loops.
-      const arrivalTargets = [...introSections, ...slides];
+      // Phase 21, plan 21-13 (21-UAT.md round-2 gap 1): the pinned intro's
+      // own elements, resolved the same optional way as track/wordmark/
+      // focusLetter/photoLayer above — but deliberately NOT added to the
+      // `if (root && deckRoot && ...)` guard below, so a missing intro
+      // (e.g. an older cached build with no intro markup) can never stop
+      // the zoom driver from attaching. introBodyEl is legitimately absent
+      // whenever the Sanity intro field is empty (see the markup's own
+      // `introBody ?` conditional) — every write to it below is
+      // individually null-guarded rather than folded into one
+      // all-or-nothing check.
+      const introTrack = deckRoot?.querySelector<HTMLElement>('[data-role="intro-track"]') ?? null;
+      const introLogo = deckRoot?.querySelector<HTMLElement>('[data-role="intro-logo"]') ?? null;
+      const introBodyEl = deckRoot?.querySelector<HTMLElement>('[data-role="intro-body"]') ?? null;
+      const introCue = deckRoot?.querySelector<HTMLElement>('[data-role="intro-cue"]') ?? null;
 
       const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
       // Pitfall 2: this exact 767px value must match the CSS's own
@@ -1936,17 +1945,26 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           }
         }
 
-        // 21-10 (21-UAT.md gap 1): iterates arrivalTargets (intro sections
-        // then slides), not slides alone, so the tagline's reveal resolves
-        // from this same per-frame pass rather than a second driver. Per-
-        // element body is otherwise identical to the pre-21-10 shape: ratio
-        // from computeSlideVisibleRatio against the live rect and
-        // window.innerHeight, comparison against ARRIVAL_THRESHOLD,
-        // wasRevealed captured before the toggle, and the class toggled in
-        // both directions.
+        // Phase 21, plan 21-13 (21-UAT.md round-2 gap 1, third `missing`
+        // item): iterates `slides` again, not a combined
+        // intro-plus-slides array — the intro is no longer an arrival
+        // target at all as of this plan. Plan 21-10 folded the two static
+        // intro beats into this same per-frame pass because their tagline
+        // reveal used the identical binary-threshold mechanism slide
+        // descriptions do; this plan replaces that mechanism for the intro
+        // entirely with a continuous scroll-scrubbed value
+        // (applyIntroScrub(), below) — a continuous scrub and a
+        // visibility-threshold toggle are different mechanisms, and mixing
+        // them is what produced two logos and an unreadable tagline in the
+        // first place (see .planning/debug/
+        // homepage-scroll-intro-logo-duplication.md). Per-element body is
+        // otherwise unchanged: ratio from computeSlideVisibleRatio against
+        // the live rect and window.innerHeight, comparison against
+        // ARRIVAL_THRESHOLD, wasRevealed captured before the toggle, and
+        // the class toggled in both directions.
         function applyArrival() {
           const viewportHeight = window.innerHeight;
-          arrivalTargets.forEach((target) => {
+          slides.forEach((target) => {
             const rect = target.getBoundingClientRect();
             const ratio = computeSlideVisibleRatio(rect, viewportHeight);
             // The reveal is a live, two-directional state (arrives AND
@@ -1956,21 +1974,18 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             const wasRevealed = target.classList.contains('is-revealed');
             target.classList.toggle('is-revealed', reached);
 
-            // T-21-10-A / HOME-16 (CR-01 fix): an intro section carries no
-            // data-index attribute at all (only real slide anchors do), so
-            // this guard is what keeps an intro section's arrival — which
-            // WILL reach the threshold on the very first frame, since beat
-            // 1 fills the entire viewport at scroll position 0 — from
-            // writing the fallback accent token onto .home and silently
-            // deleting HOME-16's per-visit random starting accent. Only
+            // T-21-10-A / HOME-16 (CR-01 fix): every element in `slides`
+            // carries a data-index attribute, so this guard is no longer
+            // strictly needed to exclude a non-slide arrival target — but
+            // it stays load-bearing for a SECOND, still-live reason: only
             // write the live accent on the rising edge (just became
-            // arrived) of a REAL slide, never on every frame. Gating on
-            // data-index rather than data-hero-color matters: a gallery
-            // using Sanity's "palette automatique" option legitimately has
-            // no heroColor set, but it still has data-index — gating on
-            // heroColor presence silently skipped this whole block (and
-            // therefore the next-slide warm below) for that ordinary
-            // content-editing path.
+            // arrived), never on every frame. Gating on data-index rather
+            // than data-hero-color matters: a gallery using Sanity's
+            // "palette automatique" option legitimately has no heroColor
+            // set, but it still has data-index — gating on heroColor
+            // presence would silently skip this whole block (and therefore
+            // the next-slide warm below) for that ordinary content-editing
+            // path.
             if (reached && !wasRevealed && target.dataset.index !== undefined) {
               root!.style.setProperty('--current-accent', target.dataset.heroColor || 'var(--color-accent)');
               root!.style.setProperty('--current-accent-text', target.dataset.heroTextColor || 'var(--color-on-accent)');
@@ -1982,11 +1997,9 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
               // same element up to sixty times a second. This warm exists
               // specifically to close 21-UAT.md's blur-placeholder gap
               // (missing preload/priority hint for the upcoming slide).
-              // 21-10: the call below must receive the slide's OWN index
-              // read from its own data-index attribute, NOT the position
-              // of the element inside arrivalTargets — that position is
-              // now offset by the intro sections ahead of it in the array,
-              // and using it directly would warm the wrong photo.
+              // The call below receives the slide's OWN index read from its
+              // own data-index attribute, matching its position in `slides`
+              // now that the array holds only real slides.
               const slideIndex = Number(target.dataset.index);
               if (!Number.isNaN(slideIndex)) warmNextSlide(slideIndex);
             }
@@ -2046,11 +2059,29 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           wordmark!.style.removeProperty('opacity');
           photoLayer!.style.removeProperty('opacity');
           root!.removeAttribute('data-zoom-active');
-          // 21-10 (21-UAT.md gap 1): data-intro-active is the one new
-          // per-frame write this task adds (Task 2 item 6/computeProgress()
-          // below) — its removal belongs in this same "every write has a
-          // matching removal here" list.
+          // 21-10 (21-UAT.md gap 1): data-intro-active — its removal
+          // belongs in this same "every write has a matching removal here"
+          // list regardless of which measurement now feeds it (21-13:
+          // the intro track's own bottom edge, not the zoom track's top).
           root!.removeAttribute('data-intro-active');
+          // Phase 21, plan 21-13 (T-21-13-B): the pinned intro's own three
+          // per-frame writes (applyIntroScrub(), below) — each individually
+          // null-guarded the same way its own write is, since introBodyEl
+          // is legitimately absent when the Sanity intro field is empty.
+          // Getting this wrong is not cosmetic: a desktop resize or a
+          // reduced-motion change would otherwise leave the logomark frozen
+          // at its last scrubbed scale and the tagline at its last
+          // scrubbed opacity/offset for a visitor whose CSS end state says
+          // both should be at rest and fully visible.
+          if (introLogo) introLogo.style.removeProperty('transform');
+          if (introBodyEl) {
+            introBodyEl.style.removeProperty('opacity');
+            introBodyEl.style.removeProperty('transform');
+          }
+          if (introCue) introCue.style.removeProperty('opacity');
+          // Same re-attach-must-always-paint reasoning as lastProgress
+          // below, for applyIntroScrub()'s own change-detection cache.
+          lastIntroProgress = INTRO_PROGRESS_SENTINEL;
 
           // Plan 21-06 (HOME-14, D-13/D-14/D-15): under reduced motion the
           // CSS end state already makes every description permanently
@@ -2058,10 +2089,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           // reduce)` block), so the arrival class is reset here rather than
           // left stale from a prior attach — harmless no-op removal when it
           // was never set (e.g. this driver's very first, desktop-only
-          // setup() call, before the loop has ever run). 21-10: iterates
-          // arrivalTargets (not slides alone) so the intro tagline's own
-          // reveal is released on detach too.
-          arrivalTargets.forEach((target) => target.classList.remove('is-revealed'));
+          // setup() call, before the loop has ever run). Phase 21, plan
+          // 21-13: iterates `slides` again (not a combined
+          // intro-plus-slides array) — the intro is no longer an arrival
+          // target at all, see applyArrival()'s own comment.
+          slides.forEach((target) => target.classList.remove('is-revealed'));
 
           // Only ever clears the two accent custom properties if THIS
           // driver actually wrote them. Unconditionally removing
@@ -2098,35 +2130,28 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         let rafId: number | null = null;
         let driverAttached = false;
 
-        // 21-10 (21-UAT.md gap 1): applyIntroActive() and this function's
-        // own progress derivation are two readings of the SAME
-        // getBoundingClientRect().top measurement, taken once per frame
-        // right here — not measured twice — so the intro-active condition
-        // and the zoom-progress condition can never disagree within a
-        // frame. frame() itself (below) stays exactly
-        // `applyProgress(computeProgress())` — this task adds the one new
-        // side effect here rather than adding a second call/second
-        // measurement to frame()'s own body.
-        //
-        // WR-02 fix: mirrors applyProgress()'s own lastProgress
-        // change-detection pattern below — introActive caches the
-        // last-written state so the DOM attribute is only touched on an
-        // actual transition, not on every painted frame. Without this, a
-        // stationary page inside (or past) the intro would still write a
-        // DOM attribute every frame, contradicting the adjacent "zero
-        // style writes when stationary" invariant applyProgress()
-        // documents and relies on. Reset alongside lastProgress in
-        // clearInlineStyles() for the same re-attach-must-always-paint
-        // reason.
+        // Phase 21, plan 21-13 (21-UAT.md round-2 gap 1): applyIntroActive()
+        // now derives from the INTRO track's own bottom edge, not the zoom
+        // track's top — plan 21-10's original "two readings of the SAME
+        // measurement" reasoning (this function and computeProgress() both
+        // reading the zoom track's rect) is superseded, because the intro
+        // now has its own track (Task 2) and inferring its state from the
+        // zoom track's rect would be an inference where a direct
+        // measurement is available. The two are still equal by construction
+        // — the intro track's bottom edge IS the zoom track's top edge,
+        // adjacent siblings with no margin — so this is a clarity and
+        // correctness improvement, not a behaviour change. Guarded on the
+        // intro track existing; the change-detection cache and its reset in
+        // clearInlineStyles() are both unchanged.
         let introActive: boolean | null = null;
-        function applyIntroActive(trackTop: number) {
-          if (introSections.length === 0) return;
-          // 'true' while the track's own top edge hasn't yet reached the
-          // viewport top — the intro sections are still occupying or
+        function applyIntroActive(introTrackBottom: number) {
+          if (!introTrack) return;
+          // 'true' while the intro track's own bottom edge hasn't yet
+          // reached the viewport top — the intro is still occupying or
           // partly occupying the screen. Removed (not just set to 'false')
-          // once the track reaches or passes the viewport top, matching
+          // once that edge reaches or passes the viewport top, matching
           // data-zoom-active's own "absent by default" shape above.
-          const active = trackTop > 0;
+          const active = introTrackBottom > 0;
           if (active === introActive) return;
           introActive = active;
           if (active) {
@@ -2138,7 +2163,6 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
         function computeProgress(): number {
           const trackTop = track!.getBoundingClientRect().top;
-          applyIntroActive(trackTop);
           return computeZoomProgress(trackTop, ZOOM_REVEAL_DISTANCE);
         }
 
@@ -2162,6 +2186,55 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           onProgress(t);
         }
 
+        // Phase 21, plan 21-13 (21-UAT.md round-2 gap 1, T-21-13-A/B/C/D):
+        // the pinned intro's own per-frame scrub pass. Returns immediately
+        // when the intro track is absent — a missing intro must never stop
+        // the zoom from attaching (see the lookups above).
+        //
+        // Takes ONE getBoundingClientRect() of the intro track per frame and
+        // uses BOTH of its edges — the top feeds computeIntroProgress(), the
+        // bottom feeds applyIntroActive() — never two separate rect reads.
+        // Same discipline plan 21-10 established for the intro-active/
+        // zoom-progress pair and for the same reason.
+        //
+        // T-21-13-D: the intro-active flag is updated on EVERY frame,
+        // BEFORE the progress short-circuit below — this is the one place
+        // this pass may not mirror applyProgress() blindly. Progress sits
+        // pinned at exactly 1 for the whole sticky release, while the
+        // flag's own condition (the track's bottom edge) keeps changing
+        // across it, so a progress-keyed short-circuit would freeze the
+        // attribute at its last mid-scrub value for the entire release —
+        // and once plan 21-14 makes that attribute the header logomark's
+        // only hide condition, a permanently suppressed header for the
+        // rest of the visit.
+        //
+        // T-21-13-A: STYLE writes (not the intro-active flag above) are
+        // short-circuited against a module-local last-progress cache, the
+        // same sentinel shape applyProgress() uses above, preserving the
+        // "zero style writes when stationary" invariant plan 21-07
+        // established (T-21-07-A). Every write is transform/opacity only,
+        // so it stays compositor-friendly (T-21-13-A).
+        const INTRO_PROGRESS_SENTINEL = -1;
+        let lastIntroProgress = INTRO_PROGRESS_SENTINEL;
+        function applyIntroScrub() {
+          if (!introTrack) return;
+          const rect = introTrack.getBoundingClientRect();
+          applyIntroActive(rect.bottom);
+          const t = computeIntroProgress(rect.top, INTRO_REVEAL_DISTANCE);
+          if (t === lastIntroProgress) return;
+          lastIntroProgress = t;
+          const state = computeIntroScrubState(t);
+          // introBodyEl is legitimately absent when the Sanity intro field
+          // is empty — each write below is individually null-guarded
+          // rather than folded into one all-or-nothing check.
+          if (introLogo) introLogo.style.transform = `scale(${state.logoScale})`;
+          if (introBodyEl) {
+            introBodyEl.style.opacity = String(state.taglineOpacity);
+            introBodyEl.style.transform = `translateY(${state.taglineTranslateY}px)`;
+          }
+          if (introCue) introCue.style.opacity = String(state.cueOpacity);
+        }
+
         // Plan 21-07: the single continuously-running rAF loop that
         // replaces both the `scroll`-event-driven update and the
         // IntersectionObserver arrival reveal. Progress AND arrival are both
@@ -2170,9 +2243,17 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         // event or an observer callback, which is the entire mechanism fix
         // for `21-UAT.md` gap 2 (see
         // `.planning/debug/homepage-scroll-zoom-handoff-glitch.md`). Order
-        // matters and is deliberate: progress first, arrival second, so
-        // within any single frame the crossfade/header state and the
-        // reveal state are always consistent with each other.
+        // matters and is deliberate: sizing first, then the intro (which
+        // comes first in the document), then the zoom, then arrival — so
+        // within any single frame the intro scrub, the crossfade/header
+        // state and the reveal state are always consistent with each
+        // other. Phase 21, plan 21-13: both the intro scrub and the zoom
+        // progress are re-derived from live rects inside this ONE frame,
+        // with no scroll listener and no observer anywhere in either path
+        // — that is the entire mitigation for the new intro-to-zoom
+        // boundary being the risk assumption A4 was written to avoid, and
+        // it is the same mechanism plan 21-07 used to fix the
+        // zoom-to-slide boundary.
         function frame() {
           // 21-11: must run FIRST, before computeProgress()'s own
           // getBoundingClientRect() read. A `--deck-vh` write changes the
@@ -2189,6 +2270,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           // stationary frame it is a same-value read, no write, no extra
           // reflow.
           syncDeckViewportHeight();
+          applyIntroScrub();
           applyProgress(computeProgress());
           applyArrival();
           rafId = requestAnimationFrame(frame);
@@ -2232,6 +2314,18 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             // and never start the loop.
             if (typeof requestAnimationFrame !== 'function') {
               slides.forEach((slide) => slide.classList.add('is-revealed'));
+              // Phase 21, plan 21-13: mirrors what the reduced-motion CSS
+              // block does declaratively, for the one route that has
+              // neither the CSS query nor a running loop. Without this the
+              // tagline's CSS rest state (opacity 0) would leave it
+              // permanently invisible, since nothing else would ever write
+              // it. The logomark needs no explicit action here — its
+              // unstyled rest state (no transform ever written) IS the
+              // static end state.
+              if (introBodyEl) {
+                introBodyEl.style.opacity = '1';
+                introBodyEl.style.transform = 'none';
+              }
               return;
             }
             syncFocusOrigin();
