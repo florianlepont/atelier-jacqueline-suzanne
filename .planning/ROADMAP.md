@@ -154,7 +154,7 @@ Plans:
   4. On first load, a phone visitor sees the "Atelier Jacqueline Suzanne" wordmark filling the screen; scrolling visibly transitions through the wordmark's letterforms into the first gallery's photo, matching the approved sketch direction.
   5. On tablet/desktop viewports, the carousel/grid toggle and both view modes behave exactly as they did before this milestone.
 
-**Plans**: 12/15 plans executed
+**Plans**: 13/15 plans executed
 
 Plans:
 **Wave 1**
@@ -203,7 +203,7 @@ Plans:
 
 **Round-2 Wave 3** *(blocked on Round-2 Waves 1 and 2)*
 
-- [ ] 21-13-PLAN.md — Close round-2 gap 1: replace the two stacked static intro sections with ONE pinned, scroll-scrubbed intro block whose single logomark shrinks continuously as the tagline arrives beneath it (also closes gap 2's intro half)
+- [x] 21-13-PLAN.md — Close round-2 gap 1: replace the two stacked static intro sections with ONE pinned, scroll-scrubbed intro block whose single logomark shrinks continuously as the tagline arrives beneath it (also closes gap 2's intro half)
 
 **Round-2 Wave 4** *(blocked on Round-2 Wave 3)*
 
@@ -279,7 +279,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 18. Gallery & Éditions Display Fixes | 2/2 | Complete    | 2026-08-02 |
 | 19. Site-Wide Visual Polish | 2/2 | Complete    | 2026-08-03 |
 | 20. Mobile Navigation & Accent Color | 6/6 | Complete    | 2026-08-04 |
-| 21. Homepage Scroll Experience | 12/15 | In Progress|  |
+| 21. Homepage Scroll Experience | 13/15 | In Progress|  |
 | 22. Gallery & Édition Scroll Navigation | 0/TBD | Not started | - |
 | 23. About Portrait Placement & Milestone Regression Close | 0/TBD | Not started | - |
 
