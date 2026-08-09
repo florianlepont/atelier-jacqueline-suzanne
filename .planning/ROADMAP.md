@@ -154,7 +154,7 @@ Plans:
   4. On first load, a phone visitor sees the "Atelier Jacqueline Suzanne" wordmark filling the screen; scrolling visibly transitions through the wordmark's letterforms into the first gallery's photo, matching the approved sketch direction.
   5. On tablet/desktop viewports, the carousel/grid toggle and both view modes behave exactly as they did before this milestone.
 
-**Plans**: 10/15 plans complete (round-2 gap closure 21-11 through 21-15 pending — see 21-UAT.md round 2)
+**Plans**: 11/15 plans executed
 
 Plans:
 **Wave 1**
@@ -195,7 +195,7 @@ Plans:
 
 **Round-2 Wave 1** *(gap closure — blocked on Wave 8 completion)*
 
-- [ ] 21-11-PLAN.md — Close round-2 gap 4: replace the deck's rigid `100svh` sizing with a live-synced `--deck-vh` custom property driven from `window.visualViewport`, so every full-screen section covers the current viewport in every Safari toolbar state
+- [x] 21-11-PLAN.md — Close round-2 gap 4: replace the deck's rigid `100svh` sizing with a live-synced `--deck-vh` custom property driven from `window.visualViewport`, so every full-screen section covers the current viewport in every Safari toolbar state
 
 **Round-2 Wave 2** *(blocked on Round-2 Wave 1)*
 
@@ -279,7 +279,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 18. Gallery & Éditions Display Fixes | 2/2 | Complete    | 2026-08-02 |
 | 19. Site-Wide Visual Polish | 2/2 | Complete    | 2026-08-03 |
 | 20. Mobile Navigation & Accent Color | 6/6 | Complete    | 2026-08-04 |
-| 21. Homepage Scroll Experience | 10/10 | Complete   | 2026-08-08 |
+| 21. Homepage Scroll Experience | 11/15 | In Progress|  |
 | 22. Gallery & Édition Scroll Navigation | 0/TBD | Not started | - |
 | 23. About Portrait Placement & Milestone Regression Close | 0/TBD | Not started | - |
 
