@@ -3752,33 +3752,43 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       display: block;
     }
 
-    /* 21-UAT.md gap 4 (status-bar white bar) / 21-09 —
-       .planning/debug/homepage-scroll-ios-status-bar-white-gap.md: every
-       viewport-height length in this deck (track, stage, wordmark padding,
-       slide height) below used to use the dynamic viewport unit (`dvh`)
-       exclusively. `dvh` re-resolves LIVE while Mobile Safari's toolbar
-       collapses/expands during scroll, and dependent boxes are not
-       guaranteed to repaint in lockstep with that live value — a
-       documented WebKit timing class of defect, not a layout bug in this
-       file. `.home-hero__photo` above (this same file, ~L3347) already
-       hit this exact problem on a real device and already fixed it: it
-       deliberately uses `100svh` (the SMALL viewport — constant, always
-       the worst case with chrome visible) instead of `vh`/`dvh`, with a
-       real-device-screenshot comment explaining why. `DetailHero.astro`'s
-       own desktop scroll track (`calc(100svh + 900px)`) independently
-       proves the same `calc(100svh + <distance>)` shape already exists in
-       this repo. This plan carries that established convention forward to
-       the deck rather than inventing a new one: every `dvh` below becomes
-       `svh`. Because `svh` is constant (it never re-resolves mid-animation),
-       a box sized against it can never end up larger than what is actually
-       on screen — the class of bug that produced the white bar.
+    /* 21-11 (HOME-14/HOME-15, 21-UAT.md round-2 gap 4 —
+       .planning/debug/homepage-scroll-still-not-fullscreen.md), superseding
+       plan 21-09's convention below: 21-09 converted every viewport-height
+       length in this deck (track, stage, wordmark padding, slide height)
+       from `dvh` to `100svh`, optimising for "never LARGER than the
+       screen" — but the reported defect (this gap) was the box being
+       SMALLER than the screen. `svh` is a static lower bound: it always
+       resolves to Mobile Safari's SMALLEST content area (toolbar fully
+       expanded). A sticky full-bleed section sized to that constant
+       undershoots by exactly the retracted-chrome height for as long as
+       the chrome is retracted — which is the NORMAL state during active
+       scrolling, not an edge case. The uncovered strip fell through to
+       `body`'s literal-white background: the white bar at the top, and a
+       matching white gap at the bottom.
 
-       Deliberately NOT done here: `viewport-fit=cover` /
-       `env(safe-area-inset-*)`. The debug session noted its absence, but
-       adding it opts the WHOLE SITE into rendering under the status bar,
-       requiring safe-area padding on every page's chrome — a site-wide
-       blast radius far beyond this gap, and UI-02 forbids changes outside
-       the phone-width homepage. Rejected on purpose, not omitted. */
+       `.home-hero__photo` (this same file, ~L2483) is this repo's own
+       cited precedent for correct viewport-height sizing, and it was never
+       an exact height — it is `min-height: 100svh; max-height: 100vh`, a
+       RANGE. Plan 21-09 borrowed the unit but not the shape. This plan
+       (21-11) supplies the missing piece with the same shape's intent, via
+       a live-synced source instead of a second static bound: every
+       `100svh` below becomes `var(--deck-vh, 100svh)`, where `--deck-vh`
+       (written by `syncDeckViewportHeight()` in the <script> block above)
+       mirrors the browser's CURRENT visible viewport height every frame.
+       The box now tracks the real, live screen instead of either static
+       extreme. The `100svh` fallback inside every `var()` remains
+       load-bearing and mandatory: it is what the deck resolves to pre-JS,
+       with JS disabled, and — because the sync removes the property above
+       767px — it is also what keeps these rules sane if the media gate is
+       ever crossed mid-session.
+
+       Still deliberately NOT done here: `viewport-fit=cover` /
+       `env(safe-area-inset-*)`. Plan 21-09 rejected that on purpose for
+       its site-wide blast radius (opts the WHOLE SITE into rendering under
+       the status bar, requiring safe-area padding on every page's chrome
+       — far beyond this gap, and UI-02 forbids changes outside the
+       phone-width homepage), and that rejection still stands. */
 
     /* 21-UAT.md gap 1 (pre-zoom intro beats, 21-10) —
        .planning/debug/homepage-scroll-missing-intro-beat.md. Positioned
@@ -3788,7 +3798,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        (above, outside this media query) already makes them desktop-inert
        for free, exactly like every other element in this subtree. */
     .home-scroll-deck__intro {
-      height: 100svh;
+      /* 21-13 note: this rule is replaced wholesale by the pinned intro
+         redesign — converting it now keeps the tree consistent in the
+         meantime and makes the live-viewport-height convention the thing
+         21-13 inherits rather than re-deriving. */
+      height: var(--deck-vh, 100svh);
       /* 21-10 Task 3 deviation (Rule 1 bug fix, assumption A4): a naive
          flex column with `justify-content: center` centres the WHOLE
          stack (logo + secondary element), so the logo itself lands at a
@@ -3907,23 +3921,28 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
        refactor drops it); it is not meant to require independent upkeep
        any more. */
     .home-scroll-deck__track {
-      height: calc(100svh + var(--zoom-reveal-distance, 900px));
+      /* 21-11: unit changed from bare `100svh` to `var(--deck-vh, 100svh)`
+         (see the convention comment above); the `+ var(--zoom-reveal-
+         distance, 900px)` term is untouched, so the track/stage delta
+         stays exactly the reveal distance regardless of which value the
+         viewport-height term resolves to. */
+      height: calc(var(--deck-vh, 100svh) + var(--zoom-reveal-distance, 900px));
     }
 
-    /* 21-09: this MUST carry the SAME viewport-height unit as the track's
-       own term above (both `100svh` now). The sticky release point is the
-       algebraic difference between the track's height and this stage's
-       height — if the two ever used different viewport-height terms, the
-       release would stop coinciding with zoom progress reaching 1, which
-       is precisely the desynchronised-handoff class of bug plan 21-07 just
-       eliminated. The existing WR-01 e2e case (rendered reveal distance vs
-       the exported constant) and 21-09's new track-minus-stage-delta case
-       both guard this invariant — change both heights together, never one
-       alone. */
+    /* 21-09/21-11: this MUST carry the SAME viewport-height expression as
+       the track's own term above (both `var(--deck-vh, 100svh)` now). The
+       sticky release point is the algebraic difference between the
+       track's height and this stage's height — if the two ever used
+       different viewport-height terms, the release would stop coinciding
+       with zoom progress reaching 1, which is precisely the
+       desynchronised-handoff class of bug plan 21-07 just eliminated. The
+       existing WR-01 e2e case (rendered reveal distance vs the exported
+       constant) and 21-09's track-minus-stage-delta case both guard this
+       invariant — change both heights together, never one alone. */
     .home-scroll-deck__stage {
       position: sticky;
       top: 0;
-      height: 100svh;
+      height: var(--deck-vh, 100svh);
       overflow: hidden;
       display: flex;
       align-items: center;
@@ -3983,12 +4002,17 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
          box. [Rule 1 auto-fix — see 21-04-SUMMARY.md Deviations.]
          21-09: unit changed from `dvh` to `svh` (21-UAT.md gap 4 — see the
          convention comment above `.home-scroll-deck__track`); the numeric
-         value (20) is unchanged. This does NOT move the locked 60%/40%
+         value (20) is unchanged. 21-11: expression changed again, from the
+         bare `20svh` to `calc(var(--deck-vh, 100svh) * 0.2)` — same
+         convention comment — preserving the exact 0.2 (20%) numeric
+         proportion of whichever viewport-height value the expression
+         resolves to. This does NOT move the locked 60%/40%
          viewport-coverage floor 21-04-PLAN.md's Task 1 spec locks in —
-         Playwright's fixed-viewport test environment resolves `svh` and
-         `dvh` identically (no live toolbar animation to diverge over), so
-         the existing full-screen wordmark geometry e2e case still holds. */
-      padding-block: 20svh;
+         Playwright's fixed-viewport test environment resolves the
+         fallback `100svh` and the live `--deck-vh` identically at a fixed
+         viewport size (no live toolbar animation to diverge over), so the
+         existing full-screen wordmark geometry e2e case still holds. */
+      padding-block: calc(var(--deck-vh, 100svh) * 0.2);
       padding-inline: 5vw;
       position: relative;
       will-change: transform, opacity;
@@ -4051,14 +4075,15 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       display: block;
       position: relative;
       /* 21-09: unit changed from `dvh` to `svh` (21-UAT.md gap 4 — see the
-         convention comment above `.home-scroll-deck__track`). A slide that
-         is never taller than the visible area (svh, the constant
-         worst-case unit) is also what lets computeSlideVisibleRatio
-         (plan 21-07) reach its arrival threshold reliably on a real phone,
-         instead of momentarily measuring against a taller box than what is
-         actually on screen during the toolbar's collapse/expand
-         animation. */
-      height: 100svh;
+         convention comment above `.home-scroll-deck__track`). 21-11:
+         expression changed again, from bare `100svh` to
+         `var(--deck-vh, 100svh)` — same convention comment. A slide sized
+         to the LIVE visible viewport height is what lets
+         computeSlideVisibleRatio (plan 21-07) reach its arrival threshold
+         reliably on a real phone at every point in the toolbar's
+         collapse/expand animation, rather than momentarily measuring
+         against a box permanently pinned to the smallest extreme. */
+      height: var(--deck-vh, 100svh);
       scroll-snap-align: start;
       scroll-snap-stop: always;
       /* 21-09 paint floor (21-UAT.md gap 4): scoped to this photo-bearing
