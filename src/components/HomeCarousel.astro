@@ -1791,6 +1791,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         computeIntroScrubState,
         computeFocusOrigin,
         computeSlideVisibleRatio,
+        computeArrivalRevealed,
       } from '../lib/home-carousel';
 
       const root = document.querySelector<HTMLElement>('.home');
@@ -1896,12 +1897,46 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       // `.home` at all), mirroring the existing script's own
       // `if (root && hero && grid && dataEl)` idiom.
       if (root && deckRoot && track && wordmark && focusLetter && photoLayer) {
-        // Plan 21-06 (HOME-14, D-09/D-13/D-14): arrival-complete detection.
-        // High (~0.98), not GalleryGrid.astro's 0.15 — because a
-        // full-viewport slide can only reach that ratio once it is
-        // genuinely settled: any intermediate scroll position necessarily
-        // bleeds an adjacent slide into the viewport.
-        const ARRIVAL_THRESHOLD = 0.98;
+        // Plan 21-06 (HOME-14, D-09/D-13/D-14) originally used a single
+        // high (~0.98) symmetric threshold here — the same number to show
+        // AND hide a gallery's description, evaluated fresh on every
+        // painted frame. Plan 21-15 (`21-UAT.md` round-2 gap 2, gallery
+        // half, root-caused in
+        // `.planning/debug/homepage-scroll-text-reveal-too-fast.md`)
+        // replaced it: a single frame below that number — from an
+        // unreliable `scroll-snap: proximity` stop (Pitfall 6, see the
+        // snap-type rule below) or simply the settle spring of a
+        // successful snap — re-hid text the 180ms reveal transition had
+        // only just finished bringing in. Plan 21-11's live-viewport slide
+        // sizing (`--deck-vh`) made this worse still: it collapsed the
+        // tolerance band the old number quietly relied on (see
+        // `ARRIVAL_REVEAL_THRESHOLD`'s own docstring in
+        // `src/lib/home-carousel.ts`). The fix is a two-level latch
+        // (`computeArrivalRevealed`, imported above) whose only state is
+        // the class list itself — `wasRevealed`, read from
+        // `target.classList` on the line above the toggle below, exactly
+        // as the old code already did for the accent rising-edge guard —
+        // so no new per-frame state exists. The reveal side
+        // (`ARRIVAL_REVEAL_THRESHOLD`) must stay above 0.5: every deck
+        // slide is one viewport tall and they are contiguous, so two
+        // adjacent slides' visible ratios sum to at most 1, and a
+        // threshold above 0.5 guarantees at most one slide can be "arrived"
+        // at any scroll position — the property D-09's live accent and the
+        // 21-08 next-slide warm both depend on. This is assumption A8,
+        // pending the real-device confirmation this plan's own Task 3
+        // carries.
+        //
+        // A consequence worth knowing before it surprises anyone: after
+        // plan 21-12's pull-up, the first slide's top edge reaches the
+        // pinned stage's release point within the last ~9% of the zoom
+        // scrub, so the first slide now latches revealed slightly BEFORE
+        // zoom completion rather than exactly at it. This is invisible and
+        // harmless — plan 21-12 made the stage opaque and stacked above
+        // the slides for precisely that span, so the first slide's accent
+        // panel is covered until the stage retires — and its only real
+        // effect is that D-09's accent write and the 21-08 warm both fire
+        // a few dozen pixels earlier, which for the warm is a small
+        // improvement. Do not "fix" it.
         // Tracks whether applyArrival() itself is the one that wrote the
         // live accent, so clearInlineStyles() only ever removes what THIS
         // driver set (see its own comment for why unconditional removal
@@ -1960,8 +1995,9 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         // homepage-scroll-intro-logo-duplication.md). Per-element body is
         // otherwise unchanged: ratio from computeSlideVisibleRatio against
         // the live rect and window.innerHeight, comparison against
-        // ARRIVAL_THRESHOLD, wasRevealed captured before the toggle, and
-        // the class toggled in both directions.
+        // computeArrivalRevealed (plan 21-15), wasRevealed captured before
+        // the toggle and fed INTO the latch call itself, and the class
+        // toggled in both directions.
         function applyArrival() {
           const viewportHeight = window.innerHeight;
           slides.forEach((target) => {
@@ -1969,9 +2005,12 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             const ratio = computeSlideVisibleRatio(rect, viewportHeight);
             // The reveal is a live, two-directional state (arrives AND
             // departs, contrast GalleryGrid.astro's one-shot reveal) — D-14
-            // — so scrolling back up must hide the description again.
-            const reached = ratio >= ARRIVAL_THRESHOLD;
+            // — so scrolling back up must hide the description again. Read
+            // order: ratio, then previous state, then the toggle — the
+            // latch itself is what gives that previous state one frame of
+            // memory (plan 21-15, `21-UAT.md` round-2 gap 2).
             const wasRevealed = target.classList.contains('is-revealed');
+            const reached = computeArrivalRevealed(ratio, wasRevealed);
             target.classList.toggle('is-revealed', reached);
 
             // T-21-10-A / HOME-16 (CR-01 fix): every element in `slides`
@@ -4385,7 +4424,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     /* Reused verbatim from .home-grid__tile-description above (D-13) — the
        reveal values themselves (opacity/translateY/180ms ease) are locked;
        do not retune. `is-revealed` is declared here and toggled by plan
-       21-06's arrival observer. */
+       21-06's arrival observer. Plan 21-15 (`21-UAT.md` round-2 gap 2)
+       confirmed the transition itself was never the defect — being told to
+       run backwards a frame after running forwards was; do not "fix" gap 2
+       a second time by retuning these locked values. */
     .home-slide__description {
       display: -webkit-box;
       min-height: calc(1.4em * 3);
@@ -4604,7 +4646,26 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
      each slide's own `scroll-snap-stop: always` still prevents a fling
      from skipping a gallery. This is the "exact snap-scroll CSS technique"
      21-CONTEXT.md left open for planning to decide, not a change to any
-     locked decision. */
+     locked decision.
+
+     Plan 21-15, assumption A9: `21-UAT.md` round-2 gap 2's second
+     `missing` item asked whether this deck needs a firmer snap guarantee
+     than `proximity` provides on iOS. It WAS reconsidered and deliberately
+     declined, not silently skipped. `mandatory` is the only firmer mode,
+     and the page itself is the scroll container (D-08 requires scrolling
+     past the last slide into the real footer, so a nested scroller that
+     could scope `scroll-snap-type` more narrowly is out of the question).
+     Under `mandatory` the browser must always come to rest on a snap
+     point, but the intro track (plan 21-13) and this zoom track are both
+     tall, deliberately snap-point-free free-scrub regions — the visitor
+     could no longer rest anywhere inside either of them, and the page
+     would fling from the top straight to the first slide, destroying
+     D-04's scrubbable, reversible zoom. So the snap mode stays here, and
+     the gallery-description reveal was made robust to an unreliable stop
+     instead of demanding a reliable one (see `computeArrivalRevealed` in
+     `src/lib/home-carousel.ts` and its call site above) — which also
+     covers the case where iOS snaps correctly but the reveal threshold is
+     only crossed during the settle spring. */
   @media (max-width: 767px) {
     html:has(.home-scroll-deck) {
       scroll-snap-type: y proximity;
