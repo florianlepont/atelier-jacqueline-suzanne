@@ -4419,33 +4419,99 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       transition: opacity 300ms ease, visibility 0s linear 300ms;
     }
 
+    /* 21-14 (21-UAT.md round-2 gap 5): companion transition for the
+       header's own logo anchor, carrying the SAME opacity transition and
+       the SAME delayed visibility transition the header itself declares
+       immediately above — copied deliberately, not invented, so the logo
+       anchor fades with the identical timing the whole header already uses
+       when the intro's suppression rule (further below) toggles it, rather
+       than popping instantly. The delayed visibility transition is what
+       keeps that fade readable in both directions. */
+    .home :global(.site-header--solid .logo-mark),
+    .home :global(.site-header--transparent .logo-mark) {
+      transition: opacity 300ms ease, visibility 0s linear 300ms;
+    }
+
     /* data-zoom-active is absent by default — only plan 21-05's zoom
        driver ever writes it — so the header stays visible pre-JS, with JS
        disabled, and under reduced motion. That default is load-bearing for
        the reduced-motion route plan 21-03's tests rely on. Visibility only
        flips to hidden once the opacity transition above finishes, so the
-       header reads as fading out rather than vanishing abruptly. */
-    .home[data-zoom-active='true'] :global(.site-header--solid),
-    .home[data-zoom-active='true'] :global(.site-header--transparent) {
+       header reads as fading out rather than vanishing abruptly.
+
+       21-14 (21-UAT.md round-2 gap 5) `:not([data-intro-active])` addendum
+       — a Task 3 discovery, not part of Task 1's original scope, recorded
+       here because it lives in the exact rule Task 1 already touched.
+       computeZoomProgress/onProgress clamp the zoom's own progress to 0
+       for ANY trackTop >= 0 — this was harmless pre-21-10 (the zoom track
+       WAS the deck's first child, so trackTop==0 at rest meant "the
+       wordmark IS on screen", the correct moment to hide the header) but
+       is no longer equivalent now that the pinned intro (21-13) sits
+       ahead of it: at scroll 0 the zoom track can be a full intro's-worth
+       of pixels below the viewport, yet `data-zoom-active` still reads
+       'true' the instant the driver's first frame runs (confirmed live:
+       `data-zoom-active='true'` AND `data-intro-active='true'`
+       simultaneously at scroll 0) — so without this addendum, restoring
+       D-12's hide scope to `data-zoom-active` alone (Task 1) would still
+       leave the header hidden throughout the whole intro, silently
+       reopening gap 5 the moment Task 1's own intro-active fix landed.
+       `data-intro-active`'s own presence is exactly the raw geometric
+       signal (the intro track's bottom edge, i.e. the zoom track's own
+       top edge, hasn't yet reached the viewport top — 21-13's
+       applyIntroActive()) this rule needs and `data-zoom-active` alone
+       does not carry: gating the hide on its ABSENCE defers the header
+       hide until the zoom has genuinely, visually engaged, without
+       touching computeProgress()/onProgress()'s attribute VALUE at all —
+       both other data-zoom-active consumers in this file (the
+       collapsed-dead-zone stage/slides rules, 21-12) are untouched, since
+       neither reads data-intro-active. */
+    .home[data-zoom-active='true']:not([data-intro-active]) :global(.site-header--solid),
+    .home[data-zoom-active='true']:not([data-intro-active]) :global(.site-header--transparent) {
       opacity: 0;
       visibility: hidden;
     }
 
-    /* 21-UAT.md gap 1's own `missing` item about the header hide needing to
-       cover the new pre-zoom beats (21-10) —
-       .planning/debug/homepage-scroll-missing-intro-beat.md: without this,
-       the small top-left header logo would render simultaneously with the
-       new large centred intro logomark, since D-12's hide above is wired
-       solely to data-zoom-active, which the driver only ever sets once the
-       zoom track itself is on screen. data-intro-active is likewise absent
-       by default and is written only by the deck driver (Task 2's script
-       below), so the header stays visible pre-JS, with JS disabled, at
-       768px and above, and under reduced motion — that default remains
-       load-bearing for the reduced-motion route mobile-nav.spec.ts,
-       accessibility.spec.ts and critical.smoke.spec.ts all depend on
-       (assumption A1, 21-10-PLAN.md). */
-    .home[data-intro-active='true'] :global(.site-header--solid),
-    .home[data-intro-active='true'] :global(.site-header--transparent) {
+    /* 21-14 (21-UAT.md round-2 gap 5 —
+       .planning/debug/homepage-scroll-nav-unreachable-at-start.md):
+       restores D-12's header-hide scope to data-zoom-active alone — exactly
+       what shipped before plan 21-10 and exactly what D-12 decided. Plan
+       21-10 had widened the rule above to hide the WHOLE header while that
+       same attribute was set, reasoning (its own comment, superseded
+       here) that "the small top-left header logo would render
+       simultaneously with the new large centred intro logomark." Round-2
+       UAT overturns that judgment, not the observation: the developer's
+       own wording — "Le hamburger de navigation devrait au moins
+       apparaître au tout début" (the hamburger, at the very start) — asks
+       for navigation to be reachable from arrival, not for the header's
+       own logomark to return alongside the intro's. The collision plan
+       21-10 named is real, and sharper after plan 21-13's redesign (the
+       intro logomark now shrinks to ~45% of its start size across the
+       scrub, much closer to the header logomark's own size than either
+       static beat ever was) — so instead of re-hiding the whole header,
+       this rule suppresses ONLY the header's own logo anchor for the
+       duration of the intro (assumption A7, 21-14-PLAN.md), leaving the
+       hamburger, the language switcher and the rest of the header's hit
+       area reachable throughout. The `:global()` closes INSIDE the
+       `.logo-mark` descendant chain (not before it) deliberately: Astro
+       re-scopes anything written after a `:global()` closes, and a
+       re-scoped class from another component (SiteHeader.astro) would
+       match nothing — that trap would make this rule silently inert.
+       Opacity is paired with visibility (not opacity alone) so the
+       suppressed anchor also drops out of hit-testing and the
+       accessibility tree — an invisible-but-still-clickable anchor sitting
+       over the top-left of the intro would be a tap-hijack surface and a
+       phantom link in the a11y tree, the identical reasoning the
+       zoom-keyed hide above already documents for the whole header.
+       data-intro-active is still absent by default and still written only
+       by the deck driver (unchanged by this plan), so the header AND its
+       logo anchor are both fully visible pre-JS, with JS disabled, at
+       768px and above, and under reduced motion — the default the
+       reduced-motion route in mobile-nav.spec.ts, accessibility.spec.ts
+       and critical.smoke.spec.ts depends on. This rule is now the
+       attribute's ONLY consumer anywhere in the codebase — deleting it
+       without a replacement would leave a flag nothing reads. */
+    .home[data-intro-active='true'] :global(.site-header--solid .logo-mark),
+    .home[data-intro-active='true'] :global(.site-header--transparent .logo-mark) {
       opacity: 0;
       visibility: hidden;
     }
