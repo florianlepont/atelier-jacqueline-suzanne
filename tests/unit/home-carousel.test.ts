@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ARRIVAL_RELEASE_THRESHOLD,
+  ARRIVAL_REVEAL_THRESHOLD,
+  computeArrivalRevealed,
   computeFocusOrigin,
   computeHoverZone,
   computeIntroProgress,
@@ -15,6 +18,11 @@ import {
   wordmarkPhotoFilter,
   ZOOM_REVEAL_DISTANCE,
 } from '../../src/lib/home-carousel';
+
+// RED: ARRIVAL_REVEAL_THRESHOLD, ARRIVAL_RELEASE_THRESHOLD and
+// computeArrivalRevealed do not exist yet — this import failure is the
+// intended failing state for plan 21-15's Task 1 TDD RED gate (`21-UAT.md`
+// round-2 gap 2, gallery-description half; `.planning/debug/homepage-scroll-text-reveal-too-fast.md`).
 
 // RED: src/lib/home-carousel.ts does not exist yet — this import failure is
 // the intended failing state for this task's TDD RED gate; the module is
@@ -607,6 +615,89 @@ describe('computeSlideVisibleRatio', () => {
 
   it('returns 0 for a degenerate non-positive rect.height, never dividing by zero', () => {
     expect(computeSlideVisibleRatio({ top: 0, bottom: 0, height: 0 }, 852)).toBe(0);
+  });
+});
+
+// Phase 21, plan 21-15 (`21-UAT.md` round-2 gap 2, gallery-description half;
+// `.planning/debug/homepage-scroll-text-reveal-too-fast.md`; D-13/D-14;
+// assumption A8): computeArrivalRevealed is the two-level reveal/release
+// latch that replaces applyArrival()'s old symmetric 0.98 comparison. Case
+// order mirrors this plan's own <behavior> spec: reveal-side boundary,
+// mid-band while unrevealed, the hold (gap 2's actual fix), release-side
+// boundary, the hysteresis sweep, the degenerate-ordering collapse, and the
+// constants' own ordering invariant.
+describe('computeArrivalRevealed', () => {
+  it('not revealed, ratio just below the reveal threshold: stays hidden', () => {
+    expect(computeArrivalRevealed(0.89, false)).toBe(false);
+  });
+
+  it('not revealed, ratio exactly at the reveal threshold: reveals (inclusive boundary)', () => {
+    expect(computeArrivalRevealed(0.9, false)).toBe(true);
+  });
+
+  it('not revealed, ratio comfortably inside the hysteresis band (0.7): stays hidden — the reveal side still demands near-full coverage (D-14)', () => {
+    expect(computeArrivalRevealed(0.7, false)).toBe(false);
+  });
+
+  it('ALREADY REVEALED, ratio dipped into the band (0.7): STAYS revealed — this is the single assertion that encodes gap 2\'s fix', () => {
+    expect(computeArrivalRevealed(0.7, true)).toBe(true);
+  });
+
+  it('already revealed, ratio exactly at the release threshold: stays revealed (inclusive boundary)', () => {
+    expect(computeArrivalRevealed(0.45, true)).toBe(true);
+  });
+
+  it('already revealed, ratio just below the release threshold: releases', () => {
+    expect(computeArrivalRevealed(0.44, true)).toBe(false);
+  });
+
+  it('a non-finite ratio releases rather than sticking on, even if previously revealed', () => {
+    expect(computeArrivalRevealed(Number.NaN, true)).toBe(false);
+    expect(computeArrivalRevealed(Number.POSITIVE_INFINITY, false)).toBe(false);
+  });
+
+  it('sweep 0 -> 1 -> 0, feeding each result back as the next call\'s wasRevealed, produces exactly one rising transition and one falling transition, and the falling one occurs at a strictly lower ratio than the rising one — that inequality IS hysteresis', () => {
+    const up = Array.from({ length: 101 }, (_, i) => i / 100);
+    const down = Array.from({ length: 101 }, (_, i) => 1 - i / 100);
+    const sequence = [...up, ...down];
+
+    let wasRevealed = false;
+    let risingRatio: number | null = null;
+    let fallingRatio: number | null = null;
+    let risingCount = 0;
+    let fallingCount = 0;
+
+    for (const ratio of sequence) {
+      const revealed = computeArrivalRevealed(ratio, wasRevealed);
+      if (revealed && !wasRevealed) {
+        risingCount += 1;
+        risingRatio = ratio;
+      }
+      if (!revealed && wasRevealed) {
+        fallingCount += 1;
+        fallingRatio = ratio;
+      }
+      wasRevealed = revealed;
+    }
+
+    expect(risingCount).toBe(1);
+    expect(fallingCount).toBe(1);
+    expect(risingRatio).not.toBeNull();
+    expect(fallingRatio).not.toBeNull();
+    expect(fallingRatio as number).toBeLessThan(risingRatio as number);
+  });
+
+  it('degenerate: a release threshold above the reveal threshold collapses to symmetric behaviour — a revealed slide at a ratio between the two releases rather than latching forever', () => {
+    // revealThreshold 0.9, releaseThreshold 0.95 (misordered) collapses to
+    // using 0.9 for both comparisons, so a revealed slide at 0.9 stays
+    // revealed but a revealed slide at 0.89 releases — never a permanent latch.
+    expect(computeArrivalRevealed(0.9, true, 0.9, 0.95)).toBe(true);
+    expect(computeArrivalRevealed(0.89, true, 0.9, 0.95)).toBe(false);
+  });
+
+  it('constants: the release threshold is strictly less than the reveal threshold, and the reveal threshold is strictly greater than 0.5', () => {
+    expect(ARRIVAL_RELEASE_THRESHOLD).toBeLessThan(ARRIVAL_REVEAL_THRESHOLD);
+    expect(ARRIVAL_REVEAL_THRESHOLD).toBeGreaterThan(0.5);
   });
 });
 
