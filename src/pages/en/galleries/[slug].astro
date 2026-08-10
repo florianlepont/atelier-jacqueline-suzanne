@@ -14,6 +14,7 @@ import type { GalleryGridItem } from '../../../components/GalleryGrid.astro';
 import { getGalleries } from '../../../lib/sanity';
 import { fullSizeUrl, responsiveImageSrcSet } from '../../../lib/image';
 import { pickHeroIndex } from '../../../lib/image-orientation';
+import { getHeroTextColor, normalizeHeroColor } from '../../../lib/site-config';
 
 export const getStaticPaths = (async () => {
   const galleries = await getGalleries();
@@ -56,6 +57,8 @@ const carouselReturnHref = `${getRelativeLocaleUrl(locale, '')}?carousel=${galle
 const seoTitle = gallery.seo?.title?.[locale] ?? `${gallery.title} — Atelier Jacqueline Suzanne`;
 const seoDescription = gallery.seo?.description?.[locale] ?? statement;
 const socialImage = fullSizeUrl(gallery.seo?.image ?? heroImage, 1200);
+const accent = normalizeHeroColor(gallery.heroColor) ?? '#A6FD29';
+const accentText = getHeroTextColor(accent);
 
 // Bug fix (gallery-thumb-grid-confusion), generalized by quick-260724-oep:
 // the hero image is already shown full-bleed above — exclude it from the
@@ -106,6 +109,7 @@ const structuredData = {
   noIndex={gallery.seo?.noIndex}
   structuredData={structuredData}
   headerVariant="transparent"
+  mobileNav={true}
 >
   <GalleryDetailBody
     leadPhotoSrc={heroSrc}
@@ -118,6 +122,8 @@ const structuredData = {
     statement={statement}
     scrollHintLabel={scrollHintLabel}
     carouselReturnHref={carouselReturnHref}
+    accent={accent}
+    accentText={accentText}
     gridItems={gridItems}
     lightboxImages={gallery.images}
     locale={locale}

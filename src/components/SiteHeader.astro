@@ -40,6 +40,7 @@ interface Props {
   // stay fully inert unless a caller explicitly opts in. Only
   // HomeCarousel.astro's single homepage call site passes `true`.
   mobileNav?: boolean;
+  galleryLinks?: Array<{ href: string; label: string }>;
 }
 
 const {
@@ -58,6 +59,7 @@ const {
   logoBlackSrc,
   logoWhiteSrc,
   mobileNav = false,
+  galleryLinks = [],
 } = Astro.props;
 
 // D-01: three new copy strings, resolved with the same
@@ -74,6 +76,7 @@ const {
 const isEnLocale = Astro.currentLocale === 'en';
 const openMenuLabel = isEnLocale ? 'Open menu' : 'Ouvrir le menu';
 const closeMenuLabel = isEnLocale ? 'Close menu' : 'Fermer le menu';
+const homeLabel = isEnLocale ? 'Home / Galleries' : 'Accueil / Galeries';
 const menuLabel = 'Menu';
 ---
 
@@ -152,6 +155,7 @@ const menuLabel = 'Menu';
      Éditions link; nesting the dialog inside <header> would break those. */
   <MobileNavPanel
     homeHref={homeHref}
+    homeLabel={homeLabel}
     siteTitle={siteTitle}
     editionsLabel={editionsLabel}
     editionsHref={editionsHref}
@@ -165,6 +169,7 @@ const menuLabel = 'Menu';
     logoBlackSrc={logoBlackSrc}
     closeMenuLabel={closeMenuLabel}
     menuLabel={menuLabel}
+    galleryLinks={galleryLinks}
   />
 )}
 
@@ -649,10 +654,26 @@ const menuLabel = 'Menu';
     padding: var(--space-lg) var(--space-md);
   }
 
-  .mobile-nav-panel__logo {
+  .mobile-nav-panel__logo,
+  .mobile-nav-panel__close {
     display: inline-flex;
     align-items: center;
+    /* Keep both controls on the same baseline as their closed-header
+       counterparts. The logo needs this safe-area offset to avoid clipping;
+       applying it to the close button too preserves the hamburger → cross
+       illusion instead of making the cross jump upward on open. */
+    transform: translateY(calc(var(--space-lg) + env(safe-area-inset-top)));
+  }
+
+  .mobile-nav-panel__logo {
     text-decoration: none;
+  }
+
+  /* Opening the dialog places keyboard focus on its first link. The global
+     pink link ring reads like an unintended logo border here, so retain the
+     focus cue in the panel's neutral ink instead. */
+  .mobile-nav-panel__logo:focus-visible {
+    outline-color: var(--color-ink);
   }
 
   .mobile-nav-panel__logo-img {
@@ -763,6 +784,41 @@ const menuLabel = 'Menu';
   }
 
   .mobile-nav-panel__link:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  .mobile-nav-panel__home-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+  }
+
+  .mobile-nav-panel__gallery-links {
+    display: flex;
+    max-width: min(88vw, 360px);
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 0.45rem;
+  }
+
+  .mobile-nav-panel__gallery-links a {
+    color: var(--color-ink);
+    font-size: 12px;
+    font-weight: var(--weight-semibold);
+    line-height: 1.2;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .mobile-nav-panel__gallery-links a:not(:last-child)::after {
+    margin: 0 0.5rem;
+    color: color-mix(in srgb, var(--color-ink) 55%, transparent);
+    content: '/';
+  }
+
+  .mobile-nav-panel__gallery-links a:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
   }

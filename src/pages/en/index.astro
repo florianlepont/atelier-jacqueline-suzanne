@@ -4,9 +4,10 @@
 // D-08–D-12 rationale.
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import HomeCarousel from '../../components/HomeCarousel.astro';
+import MobileHomePrototype from '../../components/MobileHomePrototype.astro';
 import { getGalleries, getHomePage, getSiteSettings } from '../../lib/sanity';
 import { fullSizeUrl, thumbnailUrl, blurPlaceholderUrl, responsiveImageSrcSet, responsiveThumbnailSrcSet } from '../../lib/image';
-import { COLOR_INK, getHeroTextColor, normalizeHeroColor, resolveHomepageIntro, resolveSiteCopy } from '../../lib/site-config';
+import { getHeroTextColor, normalizeHeroColor, resolveHomepageIntro, resolveSiteCopy } from '../../lib/site-config';
 import { pickHeroIndex } from '../../lib/image-orientation';
 
 const locale = 'en' as const;
@@ -48,6 +49,8 @@ const galleries = (await getGalleries())
       heroTextColor: heroColor ? getHeroTextColor(heroColor) : undefined,
     };
   });
+
+const assetBase = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '');
 ---
 
 <BaseLayout
@@ -57,8 +60,80 @@ const galleries = (await getGalleries())
   noIndex={homePage?.seo?.noIndex}
   structuredData={structuredData}
   headerVariant="none"
-  phoneThemeColor={COLOR_INK}
+  phoneFullBleed={true}
+  phoneCanvasColor={galleries[0]?.heroColor ?? '#A6FD29'}
 >
-  {/* The theme-colour prop above is COLOR_INK, the same --color-ink/gray-900 token defined once in BaseLayout.astro — 21-09, 21-UAT.md gap 4; WR-01 fix */}
-  <HomeCarousel locale={locale} galleries={galleries} siteCopy={siteCopy} />
+  <div class="homepage-legacy">
+    <HomeCarousel locale={locale} galleries={galleries} siteCopy={siteCopy} mobileNav />
+  </div>
+  <div class="homepage-mobile">
+    <MobileHomePrototype
+      locale={locale}
+      galleries={galleries.map((gallery) => ({
+        slug: gallery.slug,
+        title: gallery.title,
+        imageSrc: gallery.heroSrc,
+        imageSrcSet: gallery.heroSrcSet,
+        alt: gallery.alt,
+        accent: gallery.heroColor ?? '#FF3B94',
+        accentText: gallery.heroTextColor ?? '#1A1A1A',
+      }))}
+      siteTitle={siteSettings?.siteTitle?.[locale] ?? 'Atelier Jacqueline Suzanne'}
+      homepageIntro={siteCopy.homepageIntro}
+      editionsLabel={siteCopy.editionsLabel}
+      aboutLabel={siteCopy.aboutLabel}
+      contactLabel={siteCopy.contactLabel}
+      instagramUrl={siteCopy.instagramUrl}
+      instagramLabel={siteCopy.instagramLabel}
+      logoBlackSrc={`${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`}
+      logoWhiteSrc={`${assetBase}/logos/AJS_Brutalist_White_Transparent.png`}
+      showHeader={false}
+    />
+  </div>
 </BaseLayout>
+
+<style is:global>
+  .homepage-mobile { display: none; }
+
+  @media (max-width: 767px) {
+    .homepage-mobile { display: block; }
+
+    .homepage-legacy .home {
+      height: 0;
+      min-height: 0;
+      overflow: visible;
+      background: transparent;
+    }
+
+    .homepage-legacy .home > :not(.site-header):not(.mobile-nav-panel) {
+      display: none !important;
+    }
+
+    .homepage-legacy .home .site-header {
+      position: fixed;
+      z-index: 3;
+      width: 100%;
+      padding-top: calc(var(--space-sm) + env(safe-area-inset-top));
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+
+    .homepage-legacy .home .site-header .logo-mark {
+      visibility: visible !important;
+    }
+
+    .homepage-legacy .home .home-toggle {
+      display: none;
+    }
+
+    html:not(.mobile-home-arrival-past) .homepage-legacy .home .logo-mark {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-6px);
+    }
+  }
+
+  @media (min-width: 768px) {
+    .homepage-mobile { display: none; }
+  }
+</style>

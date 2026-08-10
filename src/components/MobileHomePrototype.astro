@@ -1,0 +1,489 @@
+---
+// Deliberately isolated mobile-home direction for review before it replaces
+// the production HomeCarousel mobile branch. Desktop remains unchanged.
+import { getRelativeLocaleUrl } from 'astro:i18n';
+import SiteHeader from './SiteHeader.astro';
+
+interface GalleryEntry {
+  slug: string;
+  title: string;
+  imageSrc: string;
+  imageSrcSet: string;
+  alt: string;
+  accent: string;
+  accentText: string;
+}
+
+interface Props {
+  locale: 'fr' | 'en';
+  galleries: GalleryEntry[];
+  siteTitle: string;
+  homepageIntro: string;
+  editionsLabel: string;
+  aboutLabel: string;
+  contactLabel: string;
+  instagramUrl: string;
+  instagramLabel: string;
+  logoBlackSrc: string;
+  logoWhiteSrc: string;
+  showHeader?: boolean;
+}
+
+const {
+  locale,
+  galleries,
+  siteTitle,
+  homepageIntro,
+  editionsLabel,
+  aboutLabel,
+  contactLabel,
+  instagramUrl,
+  instagramLabel,
+  logoBlackSrc,
+  logoWhiteSrc,
+  showHeader = true,
+} = Astro.props;
+
+const isEn = locale === 'en';
+const firstGallery = galleries[0];
+const homeHref = getRelativeLocaleUrl(locale, '');
+const editionsHref = getRelativeLocaleUrl(locale, 'editions');
+const aboutHref = getRelativeLocaleUrl(locale, 'about');
+const contactHref = getRelativeLocaleUrl(locale, 'contact');
+const viewGalleryLabel = isEn ? 'View the series' : 'Voir la série';
+const scrollLabel = isEn ? 'Scroll' : 'Défiler';
+const instagramNewTabHint = isEn ? ' (opens in new tab)' : ' (nouvelle fenêtre)';
+const mobileGalleryLinks = galleries.map((gallery) => ({
+  href: getRelativeLocaleUrl(locale, `galleries/${gallery.slug}`),
+  label: gallery.title,
+}));
+---
+
+{firstGallery && (
+  <section class="mobile-home-prototype">
+    {showHeader && <SiteHeader
+      variant="transparent"
+      siteTitle={siteTitle}
+      homeHref={homeHref}
+      editionsLabel={editionsLabel}
+      editionsHref={editionsHref}
+      aboutLabel={aboutLabel}
+      aboutHref={aboutHref}
+      contactLabel={contactLabel}
+      contactHref={contactHref}
+      instagramUrl={instagramUrl}
+      instagramLabel={instagramLabel}
+      instagramNewTabHint={instagramNewTabHint}
+      logoBlackSrc={logoBlackSrc}
+      logoWhiteSrc={logoWhiteSrc}
+      mobileNav={true}
+      galleryLinks={mobileGalleryLinks}
+    />}
+
+    <article class="mobile-home-prototype__arrival">
+      <div class="mobile-home-prototype__arrival-stage" data-role="prototype-arrival-stage">
+        <img
+          class="mobile-home-prototype__arrival-image"
+          data-role="prototype-arrival-photo"
+          src={firstGallery.imageSrc}
+          srcset={firstGallery.imageSrcSet}
+          sizes="100vw"
+          alt={firstGallery.alt}
+          fetchpriority="high"
+        />
+        <div class="mobile-home-prototype__arrival-shade" aria-hidden="true"></div>
+        <h1 class="mobile-home-prototype__wordmark">
+          <img src={logoWhiteSrc} alt={siteTitle} />
+        </h1>
+        {homepageIntro && <p class="mobile-home-prototype__arrival-intro" data-role="prototype-arrival-intro">{homepageIntro}</p>}
+        <p class="mobile-home-prototype__scroll-cue" data-role="prototype-scroll-cue" aria-hidden="true">{scrollLabel}</p>
+      </div>
+    </article>
+
+    <div class="mobile-home-prototype__series-list">
+      {galleries.map((gallery, index) => (
+        <article class:list={['mobile-home-prototype__series', index === 0 && 'mobile-home-prototype__series--first']}>
+          {index !== 0 && (
+            <div class="mobile-home-prototype__series-image-track">
+              <div class="mobile-home-prototype__series-image-frame">
+                <img
+                  class="mobile-home-prototype__series-image"
+                  src={gallery.imageSrc}
+                  srcset={gallery.imageSrcSet}
+                  sizes="100vw"
+                  alt={gallery.alt}
+                  loading="lazy"
+                  decoding="async"
+                />
+                <div
+                  class="mobile-home-prototype__series-panel mobile-home-prototype__series-panel--overlay"
+                  style={{ '--series-accent': gallery.accent, '--series-accent-text': gallery.accentText }}
+                >
+                  <p class="mobile-home-prototype__series-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</p>
+                  <h2>{gallery.title}</h2>
+                  <a href={getRelativeLocaleUrl(locale, `galleries/${gallery.slug}`)} class="mobile-home-prototype__series-link">
+                    {viewGalleryLabel}<span aria-hidden="true">↗</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
+          {index === 0 && (
+            <div
+              class="mobile-home-prototype__series-panel"
+              style={{ '--series-accent': gallery.accent, '--series-accent-text': gallery.accentText }}
+            >
+              <p class="mobile-home-prototype__series-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</p>
+              <h2>{gallery.title}</h2>
+              <a href={getRelativeLocaleUrl(locale, `galleries/${gallery.slug}`)} class="mobile-home-prototype__series-link">
+                {viewGalleryLabel}<span aria-hidden="true">↗</span>
+              </a>
+            </div>
+          )}
+        </article>
+      ))}
+    </div>
+  </section>
+)}
+
+<style>
+  .mobile-home-prototype {
+    /* Do not paint an ink canvas around the whole route. On iOS Safari that
+       canvas is also what appears through the floating browser controls;
+       the document-level editorial canvas must remain the visible
+       continuation instead. Individual panels retain their own deliberate
+       backgrounds below. */
+    background: transparent;
+    color: #fff;
+  }
+
+  .mobile-home-prototype :global(.site-header) {
+    position: fixed;
+    z-index: 3;
+    width: 100%;
+    padding-top: calc(var(--space-lg) + env(safe-area-inset-top));
+  }
+
+  .mobile-home-prototype :global(.site-header .logo-mark) {
+    transition: opacity 180ms ease-out, transform 180ms ease-out;
+  }
+
+  /* The overlaid wordmark owns the arrival. The compact navigation mark only
+     appears after it has cleared, so the opening composition contains a
+     single AJS logo rather than two competing ones. */
+  .mobile-home-prototype:not(.is-past-arrival) :global(.site-header .logo-mark) {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-6px);
+  }
+
+  .mobile-home-prototype__arrival {
+    position: relative;
+    /* The arrival deliberately leaves a full beat after the introduction
+       fades: the first photograph is allowed to stand alone before the
+       series panels enter the viewport. */
+    /* This is intentionally a long scroll composition, not a quick
+       transition. Each visual beat owns enough physical scroll distance to
+       be read at a natural finger-scroll pace. */
+    height: calc(100svh + min(520svh, 3600px));
+    height: calc(100vh + min(520vh, 3600px));
+  }
+
+  .mobile-home-prototype__arrival-stage {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    height: 100vh;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    isolation: isolate;
+  }
+
+  .mobile-home-prototype__arrival-image,
+  .mobile-home-prototype__series-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .mobile-home-prototype__arrival-image {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    /* The landscape is deliberately scanned from its left edge to its right
+       edge. Object positioning makes that travel legible rather than merely
+       nudging an enlarged crop by a few pixels. */
+    object-position: calc(var(--prototype-arrival-pan, 0.5) * 100%) center;
+    transform: scale(1.02);
+    will-change: object-position;
+  }
+
+  .mobile-home-prototype__arrival-shade {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(180deg, rgba(26, 26, 26, 0.32) 0%, transparent 34%, rgba(26, 26, 26, 0.18) 63%, rgba(26, 26, 26, 0.62) 100%);
+  }
+
+  .mobile-home-prototype__wordmark {
+    width: min(66vw, 350px);
+    margin: 0;
+    filter: drop-shadow(0 2px 12px rgba(0, 0, 0, 0.22));
+    transform: translateZ(0) scale(calc(1 + var(--prototype-wordmark-progress, 0) * 1.55));
+    opacity: calc(1 - var(--prototype-wordmark-progress, 0) * 1.35);
+    transition: none;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+  }
+
+  .mobile-home-prototype__wordmark img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .mobile-home-prototype__scroll-cue {
+    position: absolute;
+    bottom: calc(var(--space-xl) + 88px + env(safe-area-inset-bottom));
+    margin: 0;
+    padding: 0.45rem 0.7rem;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 999px;
+    box-shadow: 0 2px 12px rgba(26, 26, 26, 0.2);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #1A1A1A;
+    opacity: calc(1 - var(--prototype-arrival-progress, 0) * 4);
+    animation: prototype-scroll-cue 1.7s ease-in-out infinite;
+  }
+
+  .mobile-home-prototype__arrival-intro {
+    position: absolute;
+    right: var(--space-md);
+    bottom: calc(var(--space-xl) + 124px + env(safe-area-inset-bottom));
+    left: var(--space-md);
+    max-width: 34ch;
+    margin: 0;
+    color: #fff;
+    font-size: clamp(18px, 5vw, 24px);
+    line-height: 1.28;
+    opacity: var(--prototype-arrival-intro-opacity, 0);
+    transform: translate3d(0, var(--prototype-arrival-intro-offset, 14px), 0);
+    will-change: transform, opacity;
+  }
+
+  .mobile-home-prototype__series {
+    position: relative;
+    background: var(--color-ink);
+  }
+
+  .mobile-home-prototype__series--first {
+    min-height: 0;
+  }
+
+  .mobile-home-prototype__series-image-track {
+    /* Each photograph owns a full scroll sequence before its editorial
+       panel can enter: hold → horizontal scan → release. */
+    height: calc(100svh + min(180svh, 1600px));
+    height: calc(100vh + min(180vh, 1600px));
+  }
+
+  .mobile-home-prototype__series-image-frame {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .mobile-home-prototype__series-image {
+    object-position: calc(var(--prototype-series-pan, 0.5) * 100%) center;
+    transform: scale(1.02);
+    will-change: object-position;
+  }
+
+  @keyframes prototype-scroll-cue {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(7px); }
+  }
+
+  .mobile-home-prototype__series-panel {
+    padding: var(--space-lg) var(--space-md) calc(var(--space-xl) + env(safe-area-inset-bottom));
+    background: var(--series-accent);
+    color: var(--series-accent-text);
+  }
+
+  .mobile-home-prototype__series-panel--overlay {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1;
+    opacity: var(--prototype-series-panel-progress, 0);
+    transform: translate3d(0, calc((1 - var(--prototype-series-panel-progress, 0)) * 28px), 0);
+    transition: none;
+    will-change: opacity, transform;
+  }
+
+  .mobile-home-prototype__series-number {
+    margin: 0 0 var(--space-lg);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+  }
+
+  .mobile-home-prototype__series h2 {
+    max-width: 11ch;
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(30px, 8.5vw, 44px);
+    line-height: 1.12;
+  }
+
+  .mobile-home-prototype__series-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    min-height: var(--tap-target-min);
+    padding: 0 var(--space-md);
+    border: 1px solid currentColor;
+    color: inherit;
+    font-size: 14px;
+    font-weight: var(--weight-semibold);
+    text-decoration: none;
+  }
+
+  .mobile-home-prototype__series h2 + .mobile-home-prototype__series-link {
+    margin-top: var(--space-xl);
+  }
+
+  .mobile-home-prototype__series-link:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+  }
+
+  @media (min-width: 768px) {
+    .mobile-home-prototype {
+      max-width: 520px;
+      margin: 0 auto;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mobile-home-prototype__scroll-cue {
+      animation: none;
+    }
+
+    .mobile-home-prototype__arrival {
+      height: 100svh;
+      height: 100vh;
+    }
+
+    .mobile-home-prototype__arrival-stage {
+      position: relative;
+    }
+
+    .mobile-home-prototype__arrival-intro {
+      opacity: 1;
+      transform: none;
+    }
+  }
+</style>
+
+<script>
+  // Scroll-scrub only composited properties. Geometry is measured on load
+  // and resize — never in the animation frame — so rapid iOS scrolling does
+  // not repeatedly force layout while the logo and photograph move.
+  const home = document.querySelector<HTMLElement>('.mobile-home-prototype');
+  const arrival = document.querySelector<HTMLElement>('.mobile-home-prototype__arrival');
+  const stage = document.querySelector<HTMLElement>('[data-role="prototype-arrival-stage"]');
+  const seriesImages = Array.from(document.querySelectorAll<HTMLImageElement>('.mobile-home-prototype__series-image'));
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let arrivalStart = 0;
+  let arrivalDistance = 1;
+  let lastProgress = -1;
+  let frame: number | null = null;
+  let seriesMetrics: Array<{ image: HTMLImageElement; panel: HTMLElement | null; top: number; height: number; lastOffset: number | null }> = [];
+
+  function measureArrival() {
+    if (!arrival) return;
+    arrivalStart = arrival.offsetTop;
+    arrivalDistance = Math.max(1, arrival.offsetHeight - window.innerHeight);
+    const pageY = window.scrollY;
+    seriesMetrics = seriesImages.map((image) => {
+      const track = image.closest<HTMLElement>('.mobile-home-prototype__series-image-track');
+      const rect = track?.getBoundingClientRect();
+      return {
+        image,
+        panel: image.parentElement?.querySelector<HTMLElement>('.mobile-home-prototype__series-panel--overlay') ?? null,
+        top: (rect?.top ?? 0) + pageY,
+        height: rect?.height ?? window.innerHeight,
+        lastOffset: null,
+      };
+    });
+  }
+
+  function syncSeriesPhotos() {
+    if (reducedMotion.matches) return;
+    seriesMetrics.forEach((metric) => {
+      const scrollDistance = Math.max(1, metric.height - window.innerHeight);
+      const progress = Math.max(0, Math.min(1, (window.scrollY - metric.top) / scrollDistance));
+      if (progress === metric.lastOffset) return;
+      metric.lastOffset = progress;
+      metric.image.style.setProperty('--prototype-series-pan', progress.toFixed(3));
+      metric.panel?.style.setProperty('--prototype-series-panel-progress', Math.max(0, Math.min(1, (progress - 0.33) / 0.67)).toFixed(3));
+    });
+  }
+
+  function syncArrival() {
+    frame = null;
+    if (!stage || !home) return;
+    if (reducedMotion.matches) {
+      home.classList.add('is-past-arrival');
+      document.documentElement.classList.add('mobile-home-arrival-past');
+      return;
+    }
+    const progress = Math.min(1, Math.max(0, (window.scrollY - arrivalStart) / arrivalDistance));
+    syncSeriesPhotos();
+    if (progress === lastProgress) return;
+    lastProgress = progress;
+    stage.style.setProperty('--prototype-arrival-progress', progress.toFixed(3));
+    // The sequence is deliberately serial: logo alone → logo zoom/fade →
+    // text arrives → text remains while the landscape scans horizontally →
+    // text fades → photograph alone → following series.
+    const wordmarkProgress = Math.min(1, Math.max(0, (progress - 0.06) / 0.36));
+    const introIn = Math.min(1, Math.max(0, (progress - 0.46) / 0.12));
+    const introOut = 1 - Math.min(1, Math.max(0, (progress - 0.82) / 0.08));
+    const introOpacity = introIn * introOut;
+    stage.style.setProperty('--prototype-wordmark-progress', wordmarkProgress.toFixed(3));
+    stage.style.setProperty('--prototype-arrival-intro-opacity', introOpacity.toFixed(3));
+    stage.style.setProperty('--prototype-arrival-intro-offset', `${((1 - introIn) * 14).toFixed(1)}px`);
+    // Begin the scan just before the text arrives, then keep it moving
+    // throughout the reading phase until its final fade.
+    stage.style.setProperty('--prototype-arrival-pan', Math.min(1, Math.max(0, (progress - 0.38) / 0.44)).toFixed(3));
+    home.classList.toggle('is-past-arrival', progress > 0.98);
+    document.documentElement.classList.toggle('mobile-home-arrival-past', progress > 0.98);
+  }
+
+  function requestSync() {
+    if (frame === null) frame = requestAnimationFrame(syncArrival);
+  }
+
+  measureArrival();
+  syncArrival();
+  window.addEventListener('scroll', requestSync, { passive: true });
+  window.addEventListener('resize', () => {
+    measureArrival();
+    requestSync();
+  });
+  window.addEventListener('load', () => {
+    measureArrival();
+    requestSync();
+  }, { once: true });
+  reducedMotion.addEventListener('change', () => {
+    if (reducedMotion.matches) stage?.style.removeProperty('--prototype-arrival-progress');
+    else requestSync();
+  });
+</script>

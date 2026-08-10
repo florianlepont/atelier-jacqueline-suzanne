@@ -37,12 +37,8 @@ test.describe('Instagram nav link (HOME-04)', () => {
     expect(instagramIndex).toBeGreaterThan(contactIndex);
   });
 
-  // HOME-13 (Phase 20): at phone widths the homepage's Instagram affordance
-  // moves out of .site-nav into the mobile nav panel's secondary line — that
-  // new affordance is asserted in tests/e2e/mobile-nav.spec.ts once plans
-  // 20-03/20-04 land it. The homepage keeps only its overflow-guard
-  // obligation here; the inline-nav Instagram visibility claim moves to
-  // /about/, a page that keeps the inline nav at every viewport.
+  // At phone widths, every shared header now exposes Instagram from the
+  // hamburger panel instead of the hidden inline navigation.
   test('at a 393px mobile viewport the homepage has no horizontal page overflow', async ({ page }) => {
     await page.setViewportSize({ width: 393, height: 800 });
     await page.goto('/');
@@ -54,13 +50,11 @@ test.describe('Instagram nav link (HOME-04)', () => {
     expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.innerWidth);
   });
 
-  test('at a 393px mobile viewport the inline-nav Instagram link is visible on /about/', async ({ page }) => {
+  test('at a 393px mobile viewport Instagram is visible from the /about/ hamburger panel', async ({ page }) => {
     await page.setViewportSize({ width: 393, height: 800 });
     await page.goto('/about/');
-
-    // Scoped to .site-nav — the pre-existing footer Instagram link also
-    // matches this href but is not the subject of this mobile-fit assertion.
-    const instagramLink = page.locator('.site-nav a[href="https://www.instagram.com/ajs_romanelepont/"]');
+    await page.locator('[data-role="mobile-nav-toggle"]').click();
+    const instagramLink = page.locator('dialog#mobile-nav .mobile-nav-panel__secondary[href="https://www.instagram.com/ajs_romanelepont/"]');
     await expect(instagramLink).toBeVisible();
   });
 

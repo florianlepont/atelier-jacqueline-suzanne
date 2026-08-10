@@ -1,6 +1,17 @@
 import AxeBuilder from '@axe-core/playwright'
 import {expect, test} from '@playwright/test'
 
+async function reachMobileHeader(page: import('@playwright/test').Page, path: '/' | '/en/') {
+  await page.setViewportSize({width: 393, height: 852})
+  await page.goto(path)
+  const target = await page.locator('.mobile-home-prototype__arrival').evaluate((arrival) => {
+    const element = arrival as HTMLElement
+    return element.offsetTop + (element.offsetHeight - window.innerHeight) * 0.82
+  })
+  await page.evaluate((y) => window.scrollTo(0, y), target)
+  await expect(page.locator('[data-role="mobile-nav-toggle"]')).toBeVisible()
+}
+
 for (const path of [
   '/',
   '/about/',
@@ -65,13 +76,7 @@ for (const path of ['/', '/en/']) {
     page,
   }) => {
     await page.setViewportSize({width: 393, height: 852})
-    // Phase 21 (D-12/D-15): forces reduced motion so the header/toggle is
-    // deterministically interactive at scroll position 0 once the
-    // full-screen wordmark zoom lands — D-12 hides the header while the
-    // zoom is scrubbing, D-15 makes reduced-motion visitors skip the scroll
-    // driver entirely. The motion-on path is covered by the new
-    // homepage-scroll-deck spec instead.
-    await page.emulateMedia({reducedMotion: 'reduce'})
+    await page.setViewportSize({width: 393, height: 852})
     await page.goto(path)
     const results = await new AxeBuilder({page}).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
     const blocking = results.violations.filter(
@@ -89,11 +94,7 @@ for (const path of ['/', '/en/']) {
     page,
   }) => {
     await page.setViewportSize({width: 393, height: 852})
-    // Phase 21 (D-12/D-15): see the closed-header test above for the full
-    // rationale — reduced motion keeps the header/toggle reachable at
-    // scroll position 0 once the wordmark zoom lands.
-    await page.emulateMedia({reducedMotion: 'reduce'})
-    await page.goto(path)
+    await reachMobileHeader(page, path as '/' | '/en/')
     await page.locator('[data-role="mobile-nav-toggle"]').click()
     await page.locator('dialog#mobile-nav').waitFor({state: 'visible'})
     const results = await new AxeBuilder({page}).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()

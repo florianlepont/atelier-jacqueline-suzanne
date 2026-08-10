@@ -50,9 +50,13 @@ interface Props {
   locale: 'fr' | 'en';
   galleries: GalleryEntry[];
   siteCopy: SiteCopy;
+  // The production page renders this legacy carousel only above the mobile
+  // breakpoint, alongside the dedicated phone experience. Suppressing its
+  // mobile drawer in that composition avoids duplicate dialog IDs/scripts.
+  mobileNav?: boolean;
 }
 
-const { locale, galleries, siteCopy } = Astro.props;
+const { locale, galleries, siteCopy, mobileNav = true } = Astro.props;
 const isEn = locale === 'en';
 
 // Site-wide editable copy is resolved by the page at build time. Defaults in
@@ -91,6 +95,10 @@ const playCarouselLabel = isEn ? 'Play automatic carousel' : 'Relancer le carrou
 const openLabel = isEn ? 'OPEN' : 'OUVRIR';
 const wordmark = 'Atelier Jacqueline Suzanne';
 const introBody = siteCopy.homepageIntro;
+const mobileGalleryLinks = galleries.map((gallery) => ({
+  href: getRelativeLocaleUrl(locale, `galleries/${gallery.slug}`),
+  label: gallery.title,
+}));
 
 const totalLabel = String(galleries.length).padStart(2, '0');
 const firstGallery = galleries[0];
@@ -141,7 +149,8 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       instagramNewTabHint={instagramNewTabHint}
       logoBlackSrc={logoBlackSrc}
       logoWhiteSrc={logoWhiteSrc}
-      mobileNav={true}
+      mobileNav={mobileNav}
+      galleryLinks={mobileGalleryLinks}
     >
       {/* HOME-13/D-01 (Phase 20 Plan 03): the only opt-in call site in the
           codebase — every other <SiteHeader> consumer (BaseLayout.astro)

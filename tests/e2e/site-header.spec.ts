@@ -92,25 +92,11 @@ test.describe('Shared SiteHeader — mobile fit at 320px with 4 nav links (EDN-0
 // at 360/374/375px (switcher center drops ~68px below the nav center per
 // 13-VERIFICATION.md's own measurement); expected to stay GREEN at
 // 320/390/767px.
-// HOME-13 (Phase 20): this block used to sweep the SAME phone-range widths
-// across both /about/ (solid) and / (transparent). Below 768px the homepage
-// no longer has an inline nav row to fit once plan 20-03 lands its opt-in
-// mobile-nav mode — that phone-width header contract moves to
-// tests/e2e/mobile-nav.spec.ts. The matrix is split: the phone-range widths
-// stay scoped to /about/ (a page that keeps the inline nav at every
-// viewport, unaffected by Phase 20), and the homepage is re-measured only
-// at >=768px, where it keeps its inline single-row header permanently, both
-// before and after Phase 20.
-//
-// Non-vacuity guard (T-20-04): the original `evaluate` returned ONLY
-// center-Y values — if the nav and switcher ever became `display: none`,
-// both rects would collapse to all-zeros, both centers would read 0, and
-// the `<= 5` same-row assertion would pass VACUOUSLY. `navHeight` and
-// `switcherHeight` are now asserted greater than 0 before the same-row
-// check, so this block fails loudly instead of silently agreeing that
-// `0 === 0`.
-test.describe('Shared SiteHeader — single-row fit across the mobile range (EDN-01, D-02, SC #5, gap-closure)', () => {
-  async function assertSingleRowFit(page: import('@playwright/test').Page) {
+// The narrow range now has one shared contract: the inline header is hidden
+// and the hamburger remains reachable without page overflow. The desktop
+// range retains the original single-row navigation geometry assertion.
+test.describe('Shared SiteHeader — final responsive fit', () => {
+  async function assertDesktopSingleRowFit(page: import('@playwright/test').Page) {
     const measurements = await page.evaluate(() => {
       const headerEl = document.querySelector('[data-role="site-header"]');
       const nav = headerEl?.querySelector('.site-nav a.nav-link');
@@ -137,12 +123,18 @@ test.describe('Shared SiteHeader — single-row fit across the mobile range (EDN
 
   const phoneWidths = [320, 360, 374, 375, 390, 767];
   for (const width of phoneWidths) {
-    test(`/about/ (solid) at ${width}px: nav and language switcher share one row, no horizontal overflow`, async ({
+    test(`/about/ (solid) at ${width}px: hamburger replaces inline navigation without overflow`, async ({
       page,
     }) => {
       await page.setViewportSize({ width, height: 800 });
       await page.goto('/about/');
-      await assertSingleRowFit(page);
+      await expect(page.locator('[data-role="mobile-nav-toggle"]')).toBeVisible();
+      await expect(page.locator('[data-role="site-header"] .site-nav')).toBeHidden();
+      const overflow = await page.evaluate(() => ({
+        scrollWidth: document.documentElement.scrollWidth,
+        innerWidth: window.innerWidth,
+      }));
+      expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.innerWidth);
     });
   }
 
@@ -153,7 +145,7 @@ test.describe('Shared SiteHeader — single-row fit across the mobile range (EDN
     }) => {
       await page.setViewportSize({ width, height: 800 });
       await page.goto('/');
-      await assertSingleRowFit(page);
+      await assertDesktopSingleRowFit(page);
     });
   }
 });

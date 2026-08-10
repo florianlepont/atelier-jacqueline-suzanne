@@ -97,6 +97,15 @@ interface Props {
   // flag; it is no longer a per-caller behavior at all. Both édition
   // [slug].astro twins pass true; gallery pages never set it.
   editionVariant?: boolean;
+  // Gallery detail pages use a separate editorial panel on phones. Editions
+  // keep the established shared detail hero treatment.
+  galleryVariant?: boolean;
+  // Édition details use the same phone-only photo-then-panel structure as
+  // galleries, but keep their neutral editorial panel rather than borrowing
+  // a gallery accent colour.
+  editionPanel?: boolean;
+  accent?: string;
+  accentText?: string;
 }
 
 const {
@@ -112,12 +121,17 @@ const {
   scrollHintLabel,
   carouselReturnHref,
   editionVariant = false,
+  galleryVariant = false,
+  editionPanel = false,
+  accent = '#A6FD29',
+  accentText = '#1A1A1A',
 } = Astro.props;
 ---
 
 <div
-  class={`detail-hero${editionVariant ? ' detail-hero--edition' : ''}`}
+  class={`detail-hero${editionVariant ? ' detail-hero--edition' : ''}${galleryVariant ? ' detail-hero--gallery' : ''}${editionPanel ? ' detail-hero--edition-panel' : ''}`}
   data-carousel-return-href={carouselReturnHref}
+  style={{ '--detail-hero-accent': accent, '--detail-hero-accent-text': accentText }}
 >
   <div class="detail-hero__pin">
     <div class="detail-hero__photo">
@@ -461,7 +475,9 @@ const {
   .detail-hero {
     position: relative;
     height: calc(100svh + 900px);
-    background: var(--color-ink);
+    /* A deliberate colour canvas is visible while the remote Sanity image
+       decodes. It replaces the old black flash on a slow mobile network. */
+    background: var(--detail-hero-accent);
   }
 
   .detail-hero__pin {
@@ -469,7 +485,7 @@ const {
     top: 0;
     height: 100svh;
     overflow: hidden;
-    background: var(--color-ink);
+    background: var(--detail-hero-accent);
   }
 
   .detail-hero__photo {
@@ -762,6 +778,50 @@ const {
      + big title bottom-left), but the visible title is now the real
      <h1>. Applies regardless of motion preference. */
   @media (max-width: 767px) {
+    .detail-hero--gallery .detail-hero__pin,
+    .detail-hero--edition-panel .detail-hero__pin {
+      height: auto;
+      min-height: 0;
+      overflow: visible;
+      background: transparent;
+    }
+
+    .detail-hero--gallery .detail-hero__photo,
+    .detail-hero--edition-panel .detail-hero__photo {
+      position: relative;
+      height: 70svh;
+      min-height: 420px;
+    }
+
+    .detail-hero--gallery .detail-hero__scrim,
+    .detail-hero--edition-panel .detail-hero__scrim {
+      opacity: 0.18;
+    }
+
+    .detail-hero--gallery .detail-hero__reveal,
+    .detail-hero--edition-panel .detail-hero__reveal {
+      position: relative;
+      inset: auto;
+      max-width: none;
+      padding: var(--space-xl) var(--space-md) calc(var(--space-xl) + env(safe-area-inset-bottom));
+      background: var(--detail-hero-accent);
+      color: var(--detail-hero-accent-text);
+    }
+
+    .detail-hero--gallery .detail-hero__reveal-title,
+    .detail-hero--gallery .detail-hero__statement,
+    .detail-hero--gallery .detail-hero__format,
+    .detail-hero--edition-panel .detail-hero__reveal-title,
+    .detail-hero--edition-panel .detail-hero__statement,
+    .detail-hero--edition-panel .detail-hero__format {
+      color: inherit;
+    }
+
+    .detail-hero--gallery .detail-hero__format,
+    .detail-hero--edition-panel .detail-hero__format {
+      border-color: currentColor;
+    }
+
     .detail-hero {
       height: auto;
     }

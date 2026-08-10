@@ -33,7 +33,7 @@ async function currentAccent(page: import('@playwright/test').Page): Promise<str
 
 test.describe('homepage random starting accent (HOME-16, D-05)', () => {
   test.beforeEach(async ({ page }) => {
-    await page.setViewportSize({ width: 393, height: 852 });
+    await page.setViewportSize({ width: 1280, height: 800 });
   });
 
   test('a forced lowest random value starts the accent on the first gallery\'s heroColor', async ({ page }) => {

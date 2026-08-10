@@ -39,7 +39,6 @@ const {
   <PageTitleHeader heading={heading} headingId="about-title" intro="" />
 
   <div class="about-page__bio-row">
-    <p class="about-page__lead">{biography}</p>
     {portraitImage && (
       <figure class="about-page__portrait">
         <img
@@ -52,6 +51,7 @@ const {
         />
       </figure>
     )}
+    <p class="about-page__lead">{biography}</p>
   </div>
 
   {exhibitionImage && (
@@ -246,6 +246,7 @@ const {
   }
 
   .about-page__lead {
+    order: 1;
     flex: 1 1 auto;
     margin: 0;
     font-size: var(--editorial-page-lead-size);
@@ -254,6 +255,7 @@ const {
   }
 
   .about-page__portrait {
+    order: 2;
     flex: 0 0 auto;
     width: 112px;
     height: 112px;
@@ -351,14 +353,20 @@ const {
 
   @media (max-width: 767px) {
     .about-page__bio-row {
-      flex-direction: column-reverse;
-      gap: var(--space-md);
+      display: block;
     }
 
     .about-page__portrait {
-      width: 72px;
-      height: 72px;
-      align-self: flex-end;
+      float: right;
+      width: 64px;
+      height: 64px;
+      margin: 0 0 var(--space-sm) var(--space-md);
+    }
+
+    .about-page__bio-row::after {
+      content: '';
+      display: block;
+      clear: both;
     }
 
     /* D-06: mobile keeps a plain static full-bleed photo band — today's

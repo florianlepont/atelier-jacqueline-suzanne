@@ -31,6 +31,16 @@ interface Props {
 }
 
 const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Astro.props;
+
+const MOBILE_ACCENTS = [
+  { background: 'var(--color-accent)', text: 'var(--color-on-accent)', light: true },
+  { background: 'var(--palette-purple)', text: '#FFFFFF', light: false },
+  { background: 'var(--palette-teal)', text: 'var(--color-ink)', light: true },
+  { background: 'var(--palette-lime)', text: 'var(--color-ink)', light: true },
+  { background: 'var(--palette-plum)', text: '#FFFFFF', light: false },
+];
+
+const mobileCtaLabel = viewEditionLabel.replace(/^\s*—\s*/, '');
 ---
 
 <article class="editions-list">
@@ -45,14 +55,26 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
           {tiles.map((tile, idx) => {
             const label = `${heading.replace(/s$/, '')} ${String(idx + 1).padStart(2, '0')}`;
             const rowDelay = Math.min(0.6 + idx * 0.12, 1.2);
+            const accent = MOBILE_ACCENTS[idx % MOBILE_ACCENTS.length];
             return (
-              <a class="editions-index__row" href={tile.href} data-img={tile.imgSrc} style={`animation-delay: ${rowDelay}s`}>
+              <a
+                class="editions-index__row"
+                href={tile.href}
+                data-img={tile.imgSrc}
+                data-accent={accent.background}
+                data-accent-text={accent.text}
+                data-accent-light={String(accent.light)}
+                style={`animation-delay: ${rowDelay}s`}
+              >
+                <div class="editions-index__mobile-media" aria-hidden="true">
+                  <img src={tile.imgSrc} srcset={tile.imgSrcset} sizes="(max-width: 800px) 100vw, 340px" alt="" loading={idx === 0 ? 'eager' : 'lazy'} />
+                </div>
                 <span class="editions-index__number">{label}</span>
                 <h2 class="editions-index__title">{tile.title}</h2>
                 <div class="editions-index__statement-wrap">
                   <p class="editions-index__statement">{tile.statement}</p>
                 </div>
-                <span class="sr-only">{viewEditionLabel}</span>
+                <span class="editions-index__cta">{mobileCtaLabel} <span aria-hidden="true">→</span></span>
               </a>
             );
           })}
@@ -162,6 +184,11 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
     transition: opacity 0.25s ease;
   }
 
+  .editions-index__mobile-media,
+  .editions-index__cta {
+    display: none;
+  }
+
   .editions-index__statement-wrap {
     display: grid;
     grid-template-rows: 0fr;
@@ -253,17 +280,68 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
   }
 
   @media (max-width: 800px) {
-    .editions-index__statement-wrap {
-      grid-template-rows: 1fr;
+    .editions-list {
+      padding-top: var(--space-2xl);
     }
 
-    .editions-index__statement {
+    .editions-index__row {
+      padding: var(--space-lg) var(--space-md) var(--space-xl);
+    }
+
+    .editions-index__mobile-media {
+      display: block;
+      aspect-ratio: 4 / 5;
+      margin-bottom: var(--space-lg);
+      overflow: hidden;
+      background: var(--gray-100);
+    }
+
+    .editions-index__mobile-media img {
+      display: block;
+      width: 100%;
+      height: 112%;
+      object-fit: cover;
+      transform: translate3d(0, 0, 0) scale(1.08);
+      transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .editions-index__row.is-active .editions-index__mobile-media img {
+      transform: translate3d(0, -6%, 0) scale(1.14);
+    }
+
+    /* A touch browser can retain a synthetic :hover after a gesture; never
+       let the desktop dimming rule make an active mobile title look faded. */
+    .editions-index:hover .editions-index__title {
       opacity: 1;
-      margin-top: var(--space-sm);
+    }
+
+    .editions-index__statement-wrap {
+      display: none;
+    }
+
+    .editions-index__cta {
+      display: inline-flex;
+      align-items: center;
+      min-height: var(--tap-target-min);
+      margin-top: var(--space-lg);
+      padding: 0 var(--space-md);
+      border: var(--border-hairline) solid currentColor;
+      font-size: var(--text-label-size);
+      font-weight: var(--weight-semibold);
+      line-height: 1;
     }
 
     .editions-preview {
       display: none;
+    }
+
+    /* On touch, the selected edition owns the entire reading surface — not
+       just the page margins. This is the mobile equivalent of desktop's
+       hover takeover, with the accent's paired text colour kept intact. */
+    :global(html.editions-row-active) .editions-index__row,
+    :global(html.editions-row-active) .editions-index__number {
+      color: var(--editions-row-accent-text);
+      border-color: var(--editions-row-accent-text);
     }
   }
 </style>
@@ -297,21 +375,87 @@ const { heading, intro, tiles, emptyHeading, emptyBody, viewEditionLabel } = Ast
     ];
     const root = document.documentElement;
 
-    container.querySelectorAll('.editions-index__row').forEach((row, idx) => {
+    function clearActiveRow() {
+      rows.forEach((row) => row.classList.remove('is-active'));
+      root.classList.remove('editions-row-active', 'editions-row-light', 'editions-row-dark');
+      root.style.removeProperty('--editions-row-accent');
+      root.style.removeProperty('--editions-row-accent-text');
+    }
+
+    function setActiveRow(accent: (typeof ACCENTS)[number]) {
+      root.style.setProperty('--editions-row-accent', accent.bg);
+      root.style.setProperty('--editions-row-accent-text', accent.text);
+      root.classList.add('editions-row-active');
+      root.classList.toggle('editions-row-light', accent.light);
+      root.classList.toggle('editions-row-dark', !accent.light);
+    }
+
+    const rows = Array.from(container.querySelectorAll('.editions-index__row'));
+
+    rows.forEach((row, idx) => {
       const accent = ACCENTS[idx % ACCENTS.length];
       row.addEventListener('mouseenter', () => {
         (previewImg as HTMLImageElement).src = (row as HTMLElement).dataset.img ?? '';
         preview.classList.add('active');
-        root.style.setProperty('--editions-row-accent', accent.bg);
-        root.style.setProperty('--editions-row-accent-text', accent.text);
-        root.classList.add('editions-row-active');
-        root.classList.toggle('editions-row-light', accent.light);
-        root.classList.toggle('editions-row-dark', !accent.light);
+        setActiveRow(accent);
       });
       row.addEventListener('mouseleave', () => {
         preview.classList.remove('active');
-        root.classList.remove('editions-row-active', 'editions-row-light', 'editions-row-dark');
+        clearActiveRow();
       });
     });
+
+    // Touch has no hover state. Select the edition occupying the reading
+    // zone with IntersectionObserver rather than a scroll handler: the
+    // colour hand-off is intentional, cheap and stable on iPhone.
+    const phoneQuery = window.matchMedia('(max-width: 800px)');
+    let observer: IntersectionObserver | null = null;
+    let headerObserver: IntersectionObserver | null = null;
+
+    function syncTouchSelection() {
+      observer?.disconnect();
+      headerObserver?.disconnect();
+      clearActiveRow();
+
+      if (!phoneQuery.matches) return;
+
+      observer = new IntersectionObserver(
+        (entries) => {
+          const visible = entries
+            .filter((entry) => entry.isIntersecting)
+            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+          if (!visible) return;
+
+          const activeRow = visible.target as HTMLElement;
+          rows.forEach((row) => row.classList.toggle('is-active', row === activeRow));
+          setActiveRow({
+            bg: activeRow.dataset.accent ?? 'var(--color-accent)',
+            text: activeRow.dataset.accentText ?? 'var(--color-on-accent)',
+            light: activeRow.dataset.accentLight === 'true',
+          });
+        },
+        { threshold: [0.45, 0.6, 0.75], rootMargin: '-18% 0px -32% 0px' },
+      );
+
+      rows.forEach((row) => observer!.observe(row));
+
+      const pageHeader = document.querySelector('.page-title-header');
+      if (pageHeader) {
+        headerObserver = new IntersectionObserver(
+          ([entry]) => {
+            // Returning to the editorial introduction is a deliberate reset
+            // point: restore the white page and its divider before the user
+            // reaches the menu heading, rather than leaving the last card's
+            // accent stuck behind it.
+            if (entry.isIntersecting && entry.intersectionRatio >= 0.55) clearActiveRow();
+          },
+          { threshold: [0.55] },
+        );
+        headerObserver.observe(pageHeader);
+      }
+    }
+
+    syncTouchSelection();
+    phoneQuery.addEventListener('change', syncTouchSelection);
   })();
 </script>

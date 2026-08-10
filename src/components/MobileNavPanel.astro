@@ -33,6 +33,7 @@ import LanguageSwitcher from './LanguageSwitcher.astro';
 
 interface Props {
   homeHref: string;
+  homeLabel: string;
   siteTitle: string;
   editionsLabel: string;
   editionsHref: string;
@@ -46,10 +47,12 @@ interface Props {
   logoBlackSrc: string;
   closeMenuLabel: string;
   menuLabel: string;
+  galleryLinks?: Array<{ href: string; label: string }>;
 }
 
 const {
   homeHref,
+  homeLabel,
   siteTitle,
   editionsLabel,
   editionsHref,
@@ -63,7 +66,9 @@ const {
   logoBlackSrc,
   closeMenuLabel,
   menuLabel,
+  galleryLinks = [],
 } = Astro.props;
+const isEnLocale = Astro.currentLocale === 'en';
 ---
 
 <dialog id="mobile-nav" class="mobile-nav-panel" data-role="mobile-nav-panel" aria-label={siteTitle}>
@@ -91,6 +96,14 @@ const {
     </button>
   </div>
   <nav class="mobile-nav-panel__nav" aria-label={menuLabel}>
+    <div class="mobile-nav-panel__home-group">
+      <a href={homeHref} class="mobile-nav-panel__link">{homeLabel}</a>
+      {galleryLinks.length > 0 && (
+        <div class="mobile-nav-panel__gallery-links" aria-label={isEnLocale ? 'Galleries' : 'Galeries'}>
+          {galleryLinks.map((gallery) => <a href={gallery.href}>{gallery.label}</a>)}
+        </div>
+      )}
+    </div>
     <a href={editionsHref} class="mobile-nav-panel__link">{editionsLabel}</a>
     <a href={aboutHref} class="mobile-nav-panel__link">{aboutLabel}</a>
     <a href={contactHref} class="mobile-nav-panel__link">{contactLabel}</a>
