@@ -4623,6 +4623,23 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     }
   }
 
+  /* WR-03: a phone-width visitor with JavaScript disabled and no
+     reduced-motion preference gets neither of the two things above that
+     ever move .home-scroll-deck__intro-body off its opacity: 0 rest
+     state — applyIntroScrub() (Task 3) requires JS to attach at all, and
+     the reduced-motion override immediately above only fires when the
+     OS/browser reports that preference. `(scripting: none)` targets
+     exactly that remaining gap, so the real, Sanity-authored tagline copy
+     (siteCopy.homepageIntro) is never permanently invisible. Mirrors the
+     reduced-motion override's own end-state values (opacity 1, transform
+     none) rather than inventing a new one. */
+  @media (max-width: 767px) and (scripting: none) {
+    .home-scroll-deck__intro-body {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
 </style>
 
 <style is:global>
