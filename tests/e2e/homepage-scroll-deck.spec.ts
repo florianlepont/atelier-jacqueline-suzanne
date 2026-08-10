@@ -618,6 +618,205 @@ test.describe('pinned intro scrub (HOME-15, 21-UAT.md round-2 gap 1, assumptions
       })
       .toBeLessThan(1);
   });
+
+  // Task 3 (21-UAT.md round-2 gap 5 —
+  // .planning/debug/homepage-scroll-nav-unreachable-at-start.md): the
+  // header cases. Case 1 below is the literal statement of the developer's
+  // correction ("Le hamburger de navigation devrait au moins apparaître au
+  // tout début") and the single most important assertion in this plan.
+  // D-12's own decision — hide the header once the wordmark zoom has
+  // genuinely engaged, fade it back in once the zoom completes — was never
+  // overturned by this correction, only the MOMENT that decision used to
+  // fire (previously coincident with scroll 0, before the intro existed)
+  // is now corrected: see the 'wordmark-to-photo zoom driver' describe
+  // block's own "header hidden once the zoom scrub genuinely engages, past
+  // the intro (D-03/D-12, scope corrected by 21-14 gap 5)" and "header
+  // fades in once the zoom completes (D-12)" cases, which already assert
+  // that decision directly — not duplicated here.
+  test('reachable from arrival: at scroll position 0, without scrolling at all, the site header is visible AND the hamburger toggle is visible and enabled', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    await expect(page.locator('[data-role="site-header"]')).toBeVisible();
+    const toggle = page.locator('[data-role="mobile-nav-toggle"]');
+    await expect(toggle).toBeVisible();
+    await expect(toggle).toBeEnabled();
+  });
+
+  test('still reachable through the whole intro: at the halfway point of the scrub and again at its very end, the header and the hamburger are both still visible', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    for (const fraction of [0.5, 1]) {
+      const target = await introScrubTarget(page, fraction);
+      await page.evaluate((y) => window.scrollTo(0, y), target);
+
+      await expect(page.locator('[data-role="site-header"]')).toBeVisible();
+      await expect(page.locator('[data-role="mobile-nav-toggle"]')).toBeVisible();
+    }
+  });
+
+  test("the logomark is the one thing suppressed (A7): the header's own logo anchor is hidden at scroll 0 and at the halfway point while the header itself stays visible, and is visible again past the zoom's completion — the hamburger's own visibility is asserted in the same case so a future change that suppresses too much fails here", async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const header = page.locator('[data-role="site-header"]');
+    const logoAnchor = page.locator('[data-role="site-header"] .logo-mark');
+    const toggle = page.locator('[data-role="mobile-nav-toggle"]');
+
+    await expect(header).toBeVisible();
+    await expect(logoAnchor).not.toBeVisible();
+    await expect(toggle).toBeVisible();
+
+    const halfway = await introScrubTarget(page, 0.5);
+    await page.evaluate((y) => window.scrollTo(0, y), halfway);
+    await expect(header).toBeVisible();
+    await expect(logoAnchor).not.toBeVisible();
+    await expect(toggle).toBeVisible();
+
+    const introOffset = await getIntroOffset(page);
+    const distance = await getRevealDistance(page);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(introOffset + distance * 1.2));
+    await expect(logoAnchor).toBeVisible();
+  });
+
+  test('the hamburger actually works from arrival: at scroll position 0, clicking it opens the navigation panel', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    await page.locator('[data-role="mobile-nav-toggle"]').click();
+    await expect(page.locator('dialog#mobile-nav')).toBeVisible();
+  });
+
+  // Inert routes and structural guards, moved from 21-10-PLAN.md's retired
+  // block (direct equivalents — see the old-to-new mapping comment above
+  // this describe block).
+
+  test("no snap point on the intro (assumption A3, 21-RESEARCH.md Pitfall 6): the intro track's and the intro stage's computed scroll-snap-align are both none, while a slide's is still start", async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const trackSnapAlign = await page.locator('[data-role="intro-track"]').evaluate((el) => getComputedStyle(el).scrollSnapAlign);
+    expect(trackSnapAlign).toBe('none');
+
+    const stageSnapAlign = await page.locator('[data-role="intro-stage"]').evaluate((el) => getComputedStyle(el).scrollSnapAlign);
+    expect(stageSnapAlign).toBe('none');
+
+    const slideSnapAlign = await page
+      .locator('[data-role="deck-slide"]')
+      .first()
+      .evaluate((el) => getComputedStyle(el).scrollSnapAlign);
+    expect(slideSnapAlign).toBe('start');
+  });
+
+  test("no transition on the scrubbed properties: the intro tagline's computed transition-duration resolves to 0s — a transition on a property written every frame is the lag defect this phase has already fixed once at another boundary, and this is the cheapest possible guard against reintroducing it", async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const introBody = page.locator('[data-role="intro-body"]');
+    test.skip((await introBody.count()) === 0, 'intro tagline only renders when introBody is non-empty');
+
+    const transitionDuration = await introBody.evaluate((el) => getComputedStyle(el).transitionDuration);
+    expect(transitionDuration).toBe('0s');
+  });
+
+  test('the tagline renders non-empty copy sourced from Sanity, not hardcoded', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const introBody = page.locator('[data-role="intro-body"]');
+    test.skip((await introBody.count()) === 0, 'intro tagline only renders when introBody is non-empty');
+
+    const text = await introBody.innerText();
+    expect(text.trim().length).toBeGreaterThan(0);
+  });
+
+  test("reduced motion (assumption A1): both the logomark and the tagline render; the logomark carries no inline transform and its computed scale is 1; the tagline's computed opacity is 1; the cue has no running animation; no intro-active attribute exists; the site header AND its logo anchor are both visible; and scrolling through the intro changes none of it", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const introLogo = page.locator('[data-role="intro-logo"]');
+    await expect(introLogo).toBeVisible();
+
+    const inlineTransform = await introLogo.evaluate((el) => (el as HTMLElement).style.transform);
+    expect(inlineTransform).toBe('');
+    const computedTransform = await introLogo.evaluate((el) => getComputedStyle(el).transform);
+    expect(scaleFromComputedTransform(computedTransform)).toBeCloseTo(1, 5);
+
+    const introBody = page.locator('[data-role="intro-body"]');
+    if ((await introBody.count()) > 0) {
+      await expect(introBody).toBeVisible();
+      const opacity = await introBody.evaluate((el) => getComputedStyle(el).opacity);
+      expect(opacity).toBe('1');
+    }
+
+    const cueAnimationName = await page.locator('[data-role="intro-cue"]').evaluate((el) => getComputedStyle(el).animationName);
+    expect(cueAnimationName).toBe('none');
+
+    const introActive = await page.locator('.home').getAttribute('data-intro-active');
+    expect(introActive).toBeNull();
+
+    await expect(page.locator('[data-role="site-header"]')).toBeVisible();
+    await expect(page.locator('[data-role="site-header"] .logo-mark')).toBeVisible();
+
+    await page.evaluate(() => window.scrollTo(0, 500));
+
+    const inlineTransformAfterScroll = await introLogo.evaluate((el) => (el as HTMLElement).style.transform);
+    expect(inlineTransformAfterScroll).toBe('');
+    const introActiveAfterScroll = await page.locator('.home').getAttribute('data-intro-active');
+    expect(introActiveAfterScroll).toBeNull();
+  });
+
+  test("desktop (1280x800): the intro track is not visible, no intro-active attribute exists, and the header's logo anchor is visible", async ({ page }) => {
+    await page.setViewportSize(DESKTOP_VIEWPORT);
+    await page.goto('/');
+
+    await expect(page.locator('[data-role="intro-track"]')).not.toBeVisible();
+    const introActive = await page.locator('.home').getAttribute('data-intro-active');
+    expect(introActive).toBeNull();
+    await expect(page.locator('[data-role="site-header"] .logo-mark')).toBeVisible();
+  });
+
+  test("detach releases the intro's writes: scrolling to the middle of the intro scrub and then resizing to the desktop viewport leaves the logomark with no inline transform and the tagline with no inline opacity — the direct assertion of plan 21-13's 1:1 removal contract", async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const target = await introScrubTarget(page, 0.5);
+    await page.evaluate((y) => window.scrollTo(0, y), target);
+
+    const introLogo = page.locator('[data-role="intro-logo"]');
+    await expect
+      .poll(async () => scaleFromComputedTransform(await introLogo.evaluate((el) => getComputedStyle(el).transform)))
+      .toBeLessThan(1);
+
+    await page.setViewportSize(DESKTOP_VIEWPORT);
+
+    // setup() runs behind a 100ms resize debounce (mirrors the 21-07
+    // detach-on-gate-change case in the 'per-frame deck driver' describe
+    // block below) — poll rather than asserting immediately.
+    await expect
+      .poll(() => introLogo.evaluate((el) => (el as HTMLElement).style.transform))
+      .toBe('');
+
+    const introBody = page.locator('[data-role="intro-body"]');
+    if ((await introBody.count()) > 0) {
+      await expect.poll(() => introBody.evaluate((el) => (el as HTMLElement).style.opacity)).toBe('');
+    }
+  });
+
+  test('structural guards with the new markup: exactly one level-1 heading at phone width, and no horizontal page overflow at phone width', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+
+    const measurements = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }));
+    expect(measurements.scrollWidth).toBeLessThanOrEqual(measurements.clientWidth);
+  });
 });
 
 test.describe('description default/reveal state (D-13)', () => {
@@ -721,9 +920,38 @@ test.describe('wordmark-to-photo zoom driver (HOME-15, D-01 through D-04, D-12, 
     await expect.poll(() => getZoomActive(page)).toBe('true');
   });
 
-  test('header hidden during the zoom (D-03/D-12)', async ({ page }) => {
+  // 21-14 (21-UAT.md round-2 gap 5 —
+  // .planning/debug/homepage-scroll-nav-unreachable-at-start.md): this case
+  // is DELIBERATELY superseded, not deleted or relaxed — same
+  // "deliberately superseded assertion" pattern plan 21-10 used for the
+  // wordmark-on-first-load case and plan 21-12 used for the
+  // stage-transparency case. The original assertion this replaces was
+  // "at scroll position 0, the header is not visible" — that held true
+  // pre-21-13 because the zoom track was the deck's own first child, so
+  // scroll 0 and "the zoom has visually engaged" were the same instant.
+  // 21-13's pinned intro made them different instants: at scroll 0 the zoom
+  // track can sit a full intro's-worth of pixels below the viewport, yet
+  // computeZoomProgress/onProgress clamp to the same t=0 (data-zoom-active
+  // still reads 'true') regardless of how far below it actually is —
+  // confirmed live, data-zoom-active='true' AND data-intro-active='true'
+  // simultaneously at scroll 0. D-12's decision itself (hide the header
+  // once the zoom has genuinely engaged) was never overturned — only the
+  // MOMENT that decision fires had drifted out of sync with scroll 0 once
+  // the intro started occupying that position instead. The CSS fix (this
+  // plan, same rule Task 1 already touched: the header-hide now also
+  // requires data-intro-active's ABSENCE) restores the two to agreement.
+  // The header-reachable-at-scroll-0 half of this correction is asserted
+  // directly by the 'pinned intro scrub' describe block's own header cases
+  // (gap 5, assumption A7) — this case now asserts the OTHER half: the
+  // header genuinely does still hide once the zoom scrub is actually
+  // running, mid-scrub, matching the 'mid-scrub scale' case's own target.
+  test('header hidden once the zoom scrub genuinely engages, past the intro (D-03/D-12, scope corrected by 21-14 gap 5)', async ({ page }) => {
     await page.setViewportSize(PHONE_VIEWPORT);
     await page.goto('/');
+
+    const introOffset = await getIntroOffset(page);
+    const distance = await getRevealDistance(page);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(introOffset + distance / 2));
 
     await expect(page.locator('[data-role="site-header"]')).not.toBeVisible();
   });
@@ -789,7 +1017,15 @@ test.describe('wordmark-to-photo zoom driver (HOME-15, D-01 through D-04, D-12, 
     // scroll-to-0 is not perfectly deterministic.
     await expect.poll(() => getWordmarkScale(page)).toBeLessThan(1.05);
     await expect.poll(() => getPhotoOpacity(page)).toBe('0');
-    await expect(page.locator('[data-role="site-header"]')).not.toBeVisible();
+    // 21-14 (21-UAT.md round-2 gap 5): the true rest state at scroll 0 is
+    // the pinned intro, not the wordmark zoom — the header is genuinely
+    // reachable there (assumption A7), so "restores the rest state" now
+    // includes the header being visible again, not hidden. See the
+    // rewritten 'header hidden once the zoom scrub genuinely engages...'
+    // case above for the full reasoning; this assertion is this same
+    // correction's other bookend (reversing INTO the rest state, not out
+    // of it).
+    await expect(page.locator('[data-role="site-header"]')).toBeVisible();
   });
 
   test('the zoom anchors on the leading letter, not the block center (HOME-15, Pitfall 4)', async ({ page }) => {
