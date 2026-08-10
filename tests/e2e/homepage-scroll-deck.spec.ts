@@ -77,6 +77,37 @@ async function getRevealDistance(page: Page): Promise<number> {
   return distance;
 }
 
+// Plan 21-14 (21-UAT.md round-2 gap 1, pinned intro rebase): the intro
+// track's own live scrub distance — its rendered height minus the viewport
+// height IS the distance the pinned intro scrubs over, the intro's own
+// analogue of getRevealDistance() above. Asserts a positive value before
+// returning, same discipline as getIntroOffset()/getRevealDistance(), so a
+// future change that collapses the intro's own scrub geometry fails loudly
+// here instead of silently producing meaningless scroll targets in every
+// case below that depends on it.
+async function getIntroScrubDistance(page: Page): Promise<number> {
+  const distance = await page.evaluate(() => {
+    const track = document.querySelector<HTMLElement>('[data-role="intro-track"]');
+    if (!track) return 0;
+    return track.getBoundingClientRect().height - window.innerHeight;
+  });
+  expect(distance).toBeGreaterThan(0);
+  return distance;
+}
+
+// Converts a 0..1 progress fraction (the same domain computeIntroProgress()
+// operates in) into an absolute document scroll offset for the intro's own
+// scrub. The intro track starts at document offset 0 (asserted by this
+// file's own geometry case below), so the target is simply the scrub
+// distance times the fraction — expressing every case's target this way,
+// rather than repeating "distance * fraction" arithmetic at each call site,
+// is what keeps every case correct if the curve's own distance is ever
+// retuned (assumption A6).
+async function introScrubTarget(page: Page, fraction: number): Promise<number> {
+  const distance = await getIntroScrubDistance(page);
+  return Math.round(distance * fraction);
+}
+
 // Plan 21-12 (21-UAT.md round-2 gap 3 —
 // .planning/debug/homepage-scroll-cover-photo-doubled.md): each deck slide's
 // OWN live document offset — its bounding-rect top plus the current scroll
@@ -132,6 +163,19 @@ function scaleFromComputedTransform(transform: string): number {
   if (transform === 'none') return 1;
   const match = transform.match(/^matrix\(([-0-9.]+),/);
   return match ? parseFloat(match[1]) : NaN;
+}
+
+// Plan 21-14: the tagline's own analogue of scaleFromComputedTransform
+// above — the driver applies `translateY(...)` as a plain 2D transform, so
+// the computed matrix's 6th component (ty) IS the vertical offset in
+// pixels. `translateY(0px)` still resolves to the identity matrix string
+// (not 'none'), since the transform property itself is set even at zero —
+// this is what makes a raw string comparison against 'none' wrong for the
+// "no residual vertical offset" case below.
+function translateYFromComputedTransform(transform: string): number {
+  if (transform === 'none') return 0;
+  const match = transform.match(/^matrix\(([-0-9.]+),\s*([-0-9.]+),\s*([-0-9.]+),\s*([-0-9.]+),\s*([-0-9.]+),\s*([-0-9.]+)\)$/);
+  return match ? parseFloat(match[6]) : NaN;
 }
 
 async function getWordmarkScale(page: Page): Promise<number> {
@@ -281,169 +325,298 @@ test.describe('full-screen wordmark once the pre-zoom intro beats are scrolled p
   });
 });
 
-// Plan 21-10 (HOME-15, 21-UAT.md gap 1 —
-// .planning/debug/homepage-scroll-missing-intro-beat.md): the two pre-zoom
-// intro beats — a centred logomark with a scroll-down cue, then the site's
-// intro tagline arriving beneath the same logomark — that this plan adds
-// ahead of the wordmark zoom. None of 21-CONTEXT.md's sixteen locked
-// decisions specifies this beat; assumptions A1 through A5 in
-// 21-10-PLAN.md are the record of the open design questions these cases
-// pin down, restated verbatim in 21-10-SUMMARY.md, and put to the
-// developer by name in this plan's own real-device human check.
-test.describe('pre-zoom intro beats (HOME-15, 21-UAT.md gap 1, assumptions A1-A5)', () => {
-  test('beat 1 on first load: full-viewport, logomark and cue visible, wordmark present but off-screen below (A4/A5)', async ({ page }) => {
+// Plan 21-14 (HOME-15, 21-UAT.md round-2 gap 1 —
+// .planning/debug/homepage-scroll-intro-logo-duplication.md; round-2 gap 5 —
+// .planning/debug/homepage-scroll-nav-unreachable-at-start.md): replaces
+// 21-10-PLAN.md's retired 'pre-zoom intro beats' block wholesale, rebased
+// onto plan 21-13's pinned, scroll-scrubbed intro track/stage.
+//
+// Assumption status: A4 (two stacked, ordinary-flow static beats) is
+// SUPERSEDED by developer round-2 correction — plan 21-13 replaced it with
+// one pinned, scroll-scrubbed logomark that shrinks continuously as the
+// tagline arrives beneath it. A1 (reduced motion = static content), A2
+// (dismissed by scrolling past), A3 (no scroll-snap point) and A5 (ink
+// background, white logomark, drifting cue) all still stand unchanged — see
+// 21-13-SUMMARY.md's own A1-A6 mapping. A6 (21-13-PLAN.md: 900px reveal
+// distance, shrink-in-place) is new since plan 21-13 and still pending the
+// real-device confirmation plan 21-15 carries. A7 (21-14-PLAN.md: the header
+// stays reachable throughout the intro, only its own logomark is
+// suppressed) is this plan's own new assumption, covered by Task 3's header
+// cases below.
+//
+// Old case -> new case mapping (21-10-PLAN.md's nine cases; nothing dropped
+// silently):
+// - "beat 1 on first load..." (A4/A5) -> SUPERSEDED OUTRIGHT. Its entire
+//   premise (two static full-viewport sections, the first holding a bare
+//   logomark+cue) no longer exists post-21-13; replaced by "exactly one
+//   logomark exists" and "at scroll position 0: rest state" below.
+// - "beat 2: after one viewport height of scroll its tagline reveals..."
+//   (D-13) -> direct equivalent: "at the end of the scrub" below (D-13's
+//   locked values, now driven by scroll position instead of a fixed
+//   one-viewport threshold).
+// - "both beats render byte-for-byte identical logomark geometry..." (A4)
+//   -> SUPERSEDED OUTRIGHT. Its entire premise (two logos that must match)
+//   is exactly what gap 1's redesign removed; replaced by "exactly one
+//   logomark exists", which asserts there is only one.
+// - "the header is hidden through both intro beats..." (D-12 extension) ->
+//   SUPERSEDED OUTRIGHT by round-2 gap 5's correction; rewritten (not
+//   deleted) as Task 3's own header case below, with a comment naming the
+//   exact assertion it replaces.
+// - "the intro beats carry no scroll-snap point..." (A3) -> direct
+//   equivalent, added by Task 3 below.
+// - "the beat-2 tagline renders non-empty copy sourced from Sanity..." ->
+//   direct equivalent, added by Task 3 below.
+// - "reduced motion: both beats render statically..." (A1) -> direct
+//   equivalent, added by Task 3 below (rewritten for the single stage and
+//   for A7 — header AND its logo anchor both visible).
+// - "desktop inert: neither intro beat is visible" -> direct equivalent,
+//   added by Task 3 below.
+// - "structural guards still hold..." (D-16) -> direct equivalent, added by
+//   Task 3 below.
+//
+// This block (Task 2's half) adds the pinned intro's own new coverage —
+// geometry/parity, rest/mid/end-of-scrub states, the readability dwell,
+// reversibility, the atomic intro-to-zoom boundary read and scroll-event
+// independence — none of which had an analogue in the retired two-beat
+// design. Task 3 adds the header cases (gap 5) and the six moved/rewritten
+// cases listed above into this same block, so the intro's whole story lives
+// in one place.
+test.describe('pinned intro scrub (HOME-15, 21-UAT.md round-2 gap 1, assumptions A1-A7)', () => {
+  test("geometry and parity: the intro track is the deck's first child, starts at document offset 0, and its rendered scrub distance matches the exported INTRO_REVEAL_DISTANCE (WR-01 parity, the intro's own version)", async ({ page }) => {
     await page.setViewportSize(PHONE_VIEWPORT);
     await page.goto('/');
 
-    const beat1 = page.locator('[data-role="deck-intro"][data-intro-beat="1"]');
-    const box = await beat1.boundingBox();
-    expect(box).not.toBeNull();
-    expect(Math.abs(box!.y)).toBeLessThanOrEqual(2);
-    expect(Math.abs(box!.height - PHONE_VIEWPORT.height)).toBeLessThanOrEqual(2);
+    const measurements = await page.evaluate(() => {
+      const deckRoot = document.querySelector('[data-role="scroll-deck"]');
+      const track = document.querySelector<HTMLElement>('[data-role="intro-track"]');
+      return {
+        isFirstChild: !!track && deckRoot?.firstElementChild === track,
+        trackTop: track ? track.getBoundingClientRect().top + window.scrollY : null,
+        expectedDistance: Number(track?.getAttribute('data-intro-distance') ?? NaN),
+      };
+    });
 
-    await expect(beat1.locator('.home-scroll-deck__intro-logo')).toBeVisible();
-    await expect(beat1.locator('.home-scroll-deck__intro-cue')).toBeVisible();
+    expect(measurements.isFirstChild).toBe(true);
+    expect(measurements.trackTop).not.toBeNull();
+    expect(Math.abs(measurements.trackTop!)).toBeLessThanOrEqual(2);
+    expect(measurements.expectedDistance).toBeGreaterThan(0);
+
+    const liveDistance = await getIntroScrubDistance(page);
+    expect(Math.abs(liveDistance - measurements.expectedDistance)).toBeLessThanOrEqual(2);
+  });
+
+  test("the pre-zoom distance the rest of the file depends on (getIntroOffset) equals the viewport height plus the intro's own scrub distance", async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const introOffset = await getIntroOffset(page);
+    const scrubDistance = await getIntroScrubDistance(page);
+    const viewportHeight = await page.evaluate(() => window.innerHeight);
+    expect(Math.abs(introOffset - (viewportHeight + scrubDistance))).toBeLessThanOrEqual(2);
+  });
+
+  test("exactly one logomark exists in the document — gap 1's reported symptom, stated as a single assertion", async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    await expect(page.locator('[data-role="intro-logo"]')).toHaveCount(1);
+  });
+
+  test('at scroll position 0: the stage is pinned at the top, the logo is at rest scale, the tagline is invisible, the cue is visible, and the zoom wordmark is still off-screen below', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const stageBox = await page.locator('[data-role="intro-stage"]').boundingBox();
+    expect(stageBox).not.toBeNull();
+    expect(Math.abs(stageBox!.y)).toBeLessThanOrEqual(2);
+    expect(Math.abs(stageBox!.height - PHONE_VIEWPORT.height)).toBeLessThanOrEqual(2);
+
+    const transform = await page.locator('[data-role="intro-logo"]').evaluate((el) => getComputedStyle(el).transform);
+    expect(scaleFromComputedTransform(transform)).toBeCloseTo(1, 2);
+
+    const introBody = page.locator('[data-role="intro-body"]');
+    // introBody only renders when Sanity's intro field is non-empty — a
+    // blank field must not turn this into a false failure (same guard
+    // 21-10's own beat-2 cases used).
+    if ((await introBody.count()) > 0) {
+      await expect.poll(() => introBody.evaluate((el) => getComputedStyle(el).opacity)).toBe('0');
+    }
+    await expect.poll(() => page.locator('[data-role="intro-cue"]').evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
 
     const wordmarkBox = await page.locator('[data-role="zoom-wordmark"]').boundingBox();
     expect(wordmarkBox).not.toBeNull();
     expect(wordmarkBox!.y).toBeGreaterThanOrEqual(PHONE_VIEWPORT.height);
   });
 
-  test('beat 2: after one viewport height of scroll its tagline reveals (opacity 0 -> 1), reading as arriving beneath the logo (D-13)', async ({ page }) => {
+  test('at the halfway point of the scrub: the logo is mid-shrink, the tagline is mid-reveal, the cue is gone, and the stage is still genuinely pinned (not scrolling with the page)', async ({ page }) => {
     await page.setViewportSize(PHONE_VIEWPORT);
     await page.goto('/');
 
-    const beat2 = page.locator('[data-role="deck-intro"][data-intro-beat="2"]');
-    // Task 1 renders beat 2 only when introBody is non-empty, so a blank
-    // Sanity intro field must not turn this into a false failure.
-    test.skip((await beat2.count()) === 0, 'beat 2 only renders when introBody is non-empty');
+    const target = await introScrubTarget(page, 0.5);
+    await page.evaluate((y) => window.scrollTo(0, y), target);
 
-    const tagline = beat2.locator('.home-scroll-deck__intro-body');
-    await expect.poll(() => tagline.evaluate((el) => getComputedStyle(el).opacity)).toBe('0');
+    async function readLogoScale() {
+      const transform = await page.locator('[data-role="intro-logo"]').evaluate((el) => getComputedStyle(el).transform);
+      return scaleFromComputedTransform(transform);
+    }
+    await expect.poll(readLogoScale).toBeGreaterThan(0.45);
+    await expect.poll(readLogoScale).toBeLessThan(1);
 
-    await page.evaluate((y) => window.scrollTo(0, y), PHONE_VIEWPORT.height);
+    const introBody = page.locator('[data-role="intro-body"]');
+    if ((await introBody.count()) > 0) {
+      await expect
+        .poll(async () => parseFloat(await introBody.evaluate((el) => getComputedStyle(el).opacity)))
+        .toBeGreaterThan(0);
+      const opacity = parseFloat(await introBody.evaluate((el) => getComputedStyle(el).opacity));
+      expect(opacity).toBeLessThan(1);
+    }
 
-    const box = await beat2.boundingBox();
-    expect(box).not.toBeNull();
-    expect(Math.abs(box!.y)).toBeLessThanOrEqual(2);
-    await expect.poll(() => tagline.evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
+    await expect.poll(() => page.locator('[data-role="intro-cue"]').evaluate((el) => getComputedStyle(el).opacity)).toBe('0');
+
+    const stageBox = await page.locator('[data-role="intro-stage"]').boundingBox();
+    expect(stageBox).not.toBeNull();
+    expect(Math.abs(stageBox!.y)).toBeLessThanOrEqual(2);
   });
 
-  test('both beats render byte-for-byte identical logomark geometry — same width, height and viewport-relative vertical centre (assumption A4)', async ({ page }) => {
+  test('at the end of the scrub: the logo is at its end scale, the tagline is fully arrived with no residual vertical offset, the cue is gone, and the stage is STILL pinned — the sticky release coincides exactly with progress reaching 1', async ({ page }) => {
     await page.setViewportSize(PHONE_VIEWPORT);
     await page.goto('/');
 
-    const beat2 = page.locator('[data-role="deck-intro"][data-intro-beat="2"]');
-    test.skip((await beat2.count()) === 0, 'beat 2 only renders when introBody is non-empty');
+    const introBody = page.locator('[data-role="intro-body"]');
+    test.skip((await introBody.count()) === 0, 'intro tagline only renders when introBody is non-empty');
 
-    const logo1Box = await page
-      .locator('[data-role="deck-intro"][data-intro-beat="1"] .home-scroll-deck__intro-logo')
-      .boundingBox();
+    const target = await introScrubTarget(page, 1);
+    await page.evaluate((y) => window.scrollTo(0, y), target);
 
-    // Beat 2 sits one viewport below beat 1 in document flow, so bring it
-    // on screen before comparing — both boxes are then viewport-relative
-    // and directly comparable, which is what makes the tagline read as
-    // arriving beneath a logo that appears to stay exactly where it was.
-    await page.evaluate((y) => window.scrollTo(0, y), PHONE_VIEWPORT.height);
-    const logo2Box = await beat2.locator('.home-scroll-deck__intro-logo').boundingBox();
+    async function readLogoScale() {
+      const transform = await page.locator('[data-role="intro-logo"]').evaluate((el) => getComputedStyle(el).transform);
+      return scaleFromComputedTransform(transform);
+    }
+    await expect.poll(readLogoScale).toBeCloseTo(0.45, 2);
 
-    expect(logo1Box).not.toBeNull();
-    expect(logo2Box).not.toBeNull();
-    expect(Math.abs(logo1Box!.width - logo2Box!.width)).toBeLessThanOrEqual(2);
-    expect(Math.abs(logo1Box!.height - logo2Box!.height)).toBeLessThanOrEqual(2);
+    await expect.poll(() => introBody.evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
+    await expect
+      .poll(async () => translateYFromComputedTransform(await introBody.evaluate((el) => getComputedStyle(el).transform)))
+      .toBeCloseTo(0, 1);
 
-    const centre1 = logo1Box!.y + logo1Box!.height / 2;
-    const centre2 = logo2Box!.y + logo2Box!.height / 2;
-    expect(Math.abs(centre1 - centre2)).toBeLessThanOrEqual(2);
+    await expect.poll(() => page.locator('[data-role="intro-cue"]').evaluate((el) => getComputedStyle(el).opacity)).toBe('0');
+
+    const stageBox = await page.locator('[data-role="intro-stage"]').boundingBox();
+    expect(stageBox).not.toBeNull();
+    expect(Math.abs(stageBox!.y)).toBeLessThanOrEqual(2);
   });
 
-  test('the header is hidden through both intro beats, and returns once the zoom fully completes (D-12 extension)', async ({ page }) => {
+  test("readability dwell (gap 2's intro half): across a sweep from 60% through 100% of the scrub, the tagline stays fully opaque and the stage stays pinned at every step", async ({ page }) => {
     await page.setViewportSize(PHONE_VIEWPORT);
     await page.goto('/');
 
-    await expect(page.locator('[data-role="site-header"]')).not.toBeVisible();
+    const introBody = page.locator('[data-role="intro-body"]');
+    test.skip((await introBody.count()) === 0, 'intro tagline only renders when introBody is non-empty');
 
-    await page.evaluate((y) => window.scrollTo(0, y), PHONE_VIEWPORT.height);
-    await expect(page.locator('[data-role="site-header"]')).not.toBeVisible();
+    // Stepping no coarser than a tenth of the scrub, per this plan's own
+    // behaviour spec — a literal array (not a floating-point loop
+    // increment) so the sweep reliably includes both endpoints (0.6 and
+    // 1.0) regardless of binary floating-point accumulation error.
+    const fractions = [0.6, 0.7, 0.8, 0.9, 1.0];
+    for (const fraction of fractions) {
+      const target = await introScrubTarget(page, fraction);
+      await page.evaluate((y) => window.scrollTo(0, y), target);
+
+      await expect.poll(() => introBody.evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
+
+      const stageBox = await page.locator('[data-role="intro-stage"]').boundingBox();
+      expect(stageBox).not.toBeNull();
+      expect(Math.abs(stageBox!.y)).toBeLessThanOrEqual(2);
+    }
+  });
+
+  test('reversibility (D-04 applied to the new intro-to-zoom junction): scrolling to the end of the scrub and back to 0 restores scale 1, tagline opacity 0 and cue opacity 1', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    async function readLogoScale() {
+      const transform = await page.locator('[data-role="intro-logo"]').evaluate((el) => getComputedStyle(el).transform);
+      return scaleFromComputedTransform(transform);
+    }
+
+    const endTarget = await introScrubTarget(page, 1);
+    await page.evaluate((y) => window.scrollTo(0, y), endTarget);
+    await expect.poll(readLogoScale).toBeCloseTo(0.45, 2);
+
+    await page.evaluate(() => window.scrollTo(0, 0));
+
+    await expect.poll(readLogoScale).toBeCloseTo(1, 2);
+    const introBody = page.locator('[data-role="intro-body"]');
+    if ((await introBody.count()) > 0) {
+      await expect.poll(() => introBody.evaluate((el) => getComputedStyle(el).opacity)).toBe('0');
+    }
+    await expect.poll(() => page.locator('[data-role="intro-cue"]').evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
+  });
+
+  test('atomic intro-to-zoom boundary: at the offset where the intro scrub ends, ONE page.evaluate reads the logo scale, the wordmark scale, the photo layer opacity, and both active attributes together, in a single frame', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
 
     const introOffset = await getIntroOffset(page);
-    const distance = await getRevealDistance(page);
-    await page.evaluate((y) => window.scrollTo(0, y), Math.round(introOffset + distance * 1.2));
-    await expect(page.locator('[data-role="site-header"]')).toBeVisible();
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(introOffset));
+
+    // ONE page.evaluate call site reads all five handoff signals together —
+    // no intermediate assertion between the reads, so a state where four
+    // signals are done and one is stale cannot pass expect.poll's equality
+    // check against the whole tuple at once. Mirrors the 21-07 atomic-
+    // handoff case in the 'per-frame deck driver' describe block below.
+    // Scale (not the raw transform string) is compared, parsed inside the
+    // browser context so the read itself stays a single round trip — a raw
+    // matrix-string comparison would be brittle across the two Playwright
+    // projects' differing float-formatting.
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          function scaleOf(transform: string): number {
+            if (transform === 'none') return 1;
+            const match = transform.match(/^matrix\(([-0-9.]+),/);
+            return match ? parseFloat(match[1]) : NaN;
+          }
+          const logo = document.querySelector<HTMLElement>('[data-role="intro-logo"]');
+          const wordmark = document.querySelector<HTMLElement>('[data-role="zoom-wordmark"]');
+          const photo = document.querySelector<HTMLElement>('[data-role="zoom-photo"]');
+          const home = document.querySelector<HTMLElement>('.home');
+          return {
+            logoScale: logo ? scaleOf(getComputedStyle(logo).transform) : null,
+            wordmarkScale: wordmark ? scaleOf(getComputedStyle(wordmark).transform) : null,
+            photoOpacity: photo ? getComputedStyle(photo).opacity : null,
+            introActive: home ? home.getAttribute('data-intro-active') : null,
+            zoomActive: home ? home.getAttribute('data-zoom-active') : null,
+          };
+        }),
+      )
+      .toEqual({ logoScale: 0.45, wordmarkScale: 1, photoOpacity: '0', introActive: null, zoomActive: 'true' });
   });
 
-  test('the intro beats carry no scroll-snap point, unlike a slide (assumption A3, 21-RESEARCH.md Pitfall 6)', async ({ page }) => {
+  test("scroll-event independence for the intro scrub: with every scroll listener suppressed before the page's own scripts run, scrolling to the halfway point still moves the logo's scale off 1 (gap 1's fifth missing item)", async ({ page }) => {
+    // Same addInitScript idiom as suppressScrollListeners() in the
+    // 'per-frame deck driver' describe block below (that helper is scoped
+    // to its own describe block, not module scope, so this inlines the
+    // identical body rather than reaching across describe blocks for it).
+    await page.addInitScript(() => {
+      const originalAddEventListener = window.addEventListener.bind(window);
+      window.addEventListener = ((type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) => {
+        if (type === 'scroll') return;
+        return originalAddEventListener(type, listener, options);
+      }) as typeof window.addEventListener;
+    });
     await page.setViewportSize(PHONE_VIEWPORT);
     await page.goto('/');
 
-    const beat1SnapAlign = await page
-      .locator('[data-role="deck-intro"][data-intro-beat="1"]')
-      .evaluate((el) => getComputedStyle(el).scrollSnapAlign);
-    expect(beat1SnapAlign).toBe('none');
+    const target = await introScrubTarget(page, 0.5);
+    await page.evaluate((y) => window.scrollTo(0, y), target);
 
-    const slideSnapAlign = await page
-      .locator('[data-role="deck-slide"]')
-      .first()
-      .evaluate((el) => getComputedStyle(el).scrollSnapAlign);
-    expect(slideSnapAlign).toBe('start');
-  });
-
-  test('the beat-2 tagline renders non-empty copy sourced from Sanity, not hardcoded', async ({ page }) => {
-    await page.setViewportSize(PHONE_VIEWPORT);
-    await page.goto('/');
-
-    const beat2 = page.locator('[data-role="deck-intro"][data-intro-beat="2"]');
-    test.skip((await beat2.count()) === 0, 'beat 2 only renders when introBody is non-empty');
-
-    const text = await beat2.locator('.home-scroll-deck__intro-body').innerText();
-    expect(text.trim().length).toBeGreaterThan(0);
-  });
-
-  test('reduced motion: both beats render statically, the tagline is already visible, the header stays visible, and no intro-active attribute is written (assumption A1)', async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.setViewportSize(PHONE_VIEWPORT);
-    await page.goto('/');
-
-    await expect(page.locator('[data-role="deck-intro"][data-intro-beat="1"]')).toBeVisible();
-
-    const beat2 = page.locator('[data-role="deck-intro"][data-intro-beat="2"]');
-    if ((await beat2.count()) > 0) {
-      const opacity = await beat2.locator('.home-scroll-deck__intro-body').evaluate((el) => getComputedStyle(el).opacity);
-      expect(opacity).toBe('1');
-    }
-
-    // Falls out of D-15's established convention rather than being a new
-    // rule: no scroll-linked JS attaches at all under reduced motion, so
-    // data-intro-active is never written and the header's CSS default
-    // (visible) is never overridden.
-    await expect(page.locator('[data-role="site-header"]')).toBeVisible();
-    const introActive = await page.locator('.home').getAttribute('data-intro-active');
-    expect(introActive).toBeNull();
-  });
-
-  test('desktop inert: neither intro beat is visible (success criterion 5, UI-02)', async ({ page }) => {
-    await page.setViewportSize(DESKTOP_VIEWPORT);
-    await page.goto('/');
-
-    await expect(page.locator('[data-role="deck-intro"][data-intro-beat="1"]')).not.toBeVisible();
-
-    const beat2 = page.locator('[data-role="deck-intro"][data-intro-beat="2"]');
-    if ((await beat2.count()) > 0) {
-      await expect(beat2).not.toBeVisible();
-    }
-  });
-
-  test('structural guards still hold with the intro beats present: exactly one level-1 heading, no horizontal overflow (D-16)', async ({ page }) => {
-    await page.setViewportSize(PHONE_VIEWPORT);
-    await page.goto('/');
-
-    await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
-
-    const measurements = await page.evaluate(() => ({
-      clientWidth: document.documentElement.clientWidth,
-      scrollWidth: document.documentElement.scrollWidth,
-    }));
-    expect(measurements.scrollWidth).toBeLessThanOrEqual(measurements.clientWidth);
+    await expect
+      .poll(async () => {
+        const transform = await page.locator('[data-role="intro-logo"]').evaluate((el) => getComputedStyle(el).transform);
+        return scaleFromComputedTransform(transform);
+      })
+      .toBeLessThan(1);
   });
 });
 
