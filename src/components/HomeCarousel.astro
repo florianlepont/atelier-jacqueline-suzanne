@@ -2021,7 +2021,16 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             // memory (plan 21-15, `21-UAT.md` round-2 gap 2).
             const wasRevealed = target.classList.contains('is-revealed');
             const reached = computeArrivalRevealed(ratio, wasRevealed);
-            target.classList.toggle('is-revealed', reached);
+            // WR-02: classList.toggle() always re-serializes and writes the
+            // `class` attribute, even when membership doesn't change — it is
+            // NOT a no-op write when the value is unchanged (unlike
+            // applyProgress()'s/applyIntroScrub()'s plain `t === last...`
+            // guards above, which this mirrors). Gating on an actual
+            // transition preserves the "zero style writes when stationary"
+            // invariant (T-21-07-A) for a fully settled page.
+            if (reached !== wasRevealed) {
+              target.classList.toggle('is-revealed', reached);
+            }
 
             // T-21-10-A / HOME-16 (CR-01 fix): every element in `slides`
             // carries a data-index attribute, so this guard is no longer
