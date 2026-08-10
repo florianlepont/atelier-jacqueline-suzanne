@@ -1999,7 +1999,17 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         // the toggle and fed INTO the latch call itself, and the class
         // toggled in both directions.
         function applyArrival() {
-          const viewportHeight = window.innerHeight;
+          // 21-11/WR-01: match --deck-vh's own source rather than reading
+          // window.innerHeight independently. rect.height below is CSS-sized
+          // from var(--deck-vh, 100svh), whose value is lastDeckVh (written
+          // by syncDeckViewportHeight(), which frame() already calls before
+          // applyArrival() on this same frame) — falling back to
+          // window.innerHeight only when the deck-vh cache doesn't apply
+          // (desktop, where syncDeckViewportHeight() clears it to the
+          // sentinel) keeps the ratio's denominator from disagreeing with
+          // the value that actually sized the slide during Mobile Safari's
+          // toolbar-collapse animation.
+          const viewportHeight = mobile.matches && lastDeckVh !== DECK_VH_SENTINEL ? lastDeckVh : window.innerHeight;
           slides.forEach((target) => {
             const rect = target.getBoundingClientRect();
             const ratio = computeSlideVisibleRatio(rect, viewportHeight);
