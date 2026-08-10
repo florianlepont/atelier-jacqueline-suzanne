@@ -2100,3 +2100,233 @@ test.describe('collapsed post-zoom dead zone (HOME-14, HOME-15, 21-UAT.md round-
     expect(await getZoomActive(page)).toBeNull();
   });
 });
+
+// Phase 21, plan 21-15 (`21-UAT.md` round-2 gap 2, gallery-description
+// half; root-caused in
+// `.planning/debug/homepage-scroll-text-reveal-too-fast.md`; D-13, D-14;
+// assumptions A8 and A9): what these cases can and cannot prove. A
+// fixed-viewport Playwright engine has no touch momentum, no real
+// `scroll-snap: proximity` heuristics under a finger, and no settle spring
+// — so it cannot itself reproduce the on-phone symptom (text flashing on
+// and straight back off). What it CAN verify is the LATCH itself
+// (`computeArrivalRevealed`, wired into `applyArrival()` by this plan's
+// Task 2) at the resting positions those missing physics actually produce
+// on a real device: deliberately UN-snapped, mid-band scroll offsets. The
+// visitor-facing readability result is confirmed only by this plan's own
+// Task 3 real-device human-check, below.
+test.describe('gallery-description reveal latch (21-UAT.md round-2 gap 2, gallery half, assumptions A8/A9)', () => {
+  // Mirrors ARRIVAL_REVEAL_THRESHOLD (0.9) / ARRIVAL_RELEASE_THRESHOLD
+  // (0.45) from src/lib/home-carousel.ts as local literals, per this
+  // file's own established convention of re-deriving expected values from
+  // rendered geometry/attributes rather than importing the module directly
+  // into a Playwright spec (see getRevealDistance()'s own comment above).
+  const REVEAL_THRESHOLD = 0.9;
+  const RELEASE_THRESHOLD = 0.45;
+
+  // Snap isolation, and why it is faithful rather than convenient: these
+  // cases must place the viewport at deliberately UN-snapped, mid-band
+  // resting positions — exactly the resting position a real iOS proximity
+  // scroll produces, and precisely what gap 2 is about. A programmatic
+  // `scrollTo` within proximity range of a snap point can be pulled back
+  // into alignment by the test engine, which would make every case below
+  // pass vacuously at ratio 1. Suppressing snap on the document element
+  // with an important-priority inline style is the same discipline plan
+  // 21-07's listener-suppression cases already established for a
+  // different mechanism.
+  async function suppressSnap(page: Page): Promise<void> {
+    await page.evaluate(() => {
+      document.documentElement.style.setProperty('scroll-snap-type', 'none', 'important');
+    });
+  }
+
+  // One page.evaluate, atomically reading a slide's measured visible ratio
+  // (the exact formula computeSlideVisibleRatio uses in
+  // src/lib/home-carousel.ts), its is-revealed class membership, and its
+  // description's computed opacity together — so ratio, class and opacity
+  // can never be sampled from different frames.
+  async function readSlideState(page: Page, index: number): Promise<{ ratio: number; revealed: boolean; opacity: string }> {
+    return page.evaluate((i) => {
+      const slide = document.querySelectorAll<HTMLElement>('[data-role="deck-slide"]')[i];
+      const rect = slide.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const visibleTop = Math.max(rect.top, 0);
+      const visibleBottom = Math.min(rect.bottom, viewportHeight);
+      const visibleHeight = visibleBottom - visibleTop;
+      const denominator = Math.min(rect.height, viewportHeight);
+      const ratio = denominator > 0 ? Math.max(0, Math.min(1, visibleHeight / denominator)) : 0;
+      const description = slide.querySelector('.home-slide__description') as HTMLElement | null;
+      return {
+        ratio,
+        revealed: slide.classList.contains('is-revealed'),
+        opacity: description ? getComputedStyle(description).opacity : '',
+      };
+    }, index);
+  }
+
+  // Polls the atomic read above until two consecutive samples agree —
+  // mirrors getSlideDocumentOffsets()'s own "poll until two consecutive
+  // reads agree" idiom (module scope, above), applied here to settle BOTH
+  // the per-frame driver's rAF loop and the description's 180ms opacity
+  // transition before the case takes its real assertion values from the
+  // returned, already-atomic snapshot.
+  async function waitForSlideStateSettled(page: Page, index: number): Promise<{ ratio: number; revealed: boolean; opacity: string }> {
+    let previous: { ratio: number; revealed: boolean; opacity: string } | null = null;
+    await expect
+      .poll(async () => {
+        const state = await readSlideState(page, index);
+        const stable = previous !== null && previous.ratio === state.ratio && previous.revealed === state.revealed && previous.opacity === state.opacity;
+        previous = state;
+        return stable;
+      })
+      .toBe(true);
+    return previous!;
+  }
+
+  test("baseline: at the first slide's own document offset, the slide carries the reveal class and its description reads opacity 1", async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const offsets = await getSlideDocumentOffsets(page);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(offsets[0]));
+
+    const state = await waitForSlideStateSettled(page, 0);
+    expect(state.revealed).toBe(true);
+    expect(state.opacity).toBe('1');
+  });
+
+  test("the latch holds (gap 2's fix): from the revealed state, a further 0.3 of the viewport height of scroll leaves the description on screen", async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const offsets = await getSlideDocumentOffsets(page);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(offsets[0]));
+    await waitForSlideStateSettled(page, 0);
+
+    // Before this plan, this exact offset re-hid the text on the very next
+    // frame — the single most important case in the plan.
+    await suppressSnap(page);
+    const target = offsets[0] + Math.round(PHONE_VIEWPORT.height * 0.3);
+    await page.evaluate((y) => window.scrollTo(0, y), target);
+    const state = await waitForSlideStateSettled(page, 0);
+
+    expect(state.ratio).toBeGreaterThanOrEqual(RELEASE_THRESHOLD);
+    expect(state.ratio).toBeLessThan(REVEAL_THRESHOLD);
+    expect(state.revealed).toBe(true);
+    expect(state.opacity).toBe('1');
+  });
+
+  test("the hold is not a fluke of one offset: sweeping from the slide's own offset through 0.5 of the viewport height keeps the description visible at every in-band step", async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const offsets = await getSlideDocumentOffsets(page);
+    await suppressSnap(page);
+
+    for (let fraction = 0; fraction <= 0.5 + 1e-9; fraction += 0.05) {
+      const target = offsets[0] + Math.round(PHONE_VIEWPORT.height * fraction);
+      await page.evaluate((y) => window.scrollTo(0, y), target);
+      const state = await waitForSlideStateSettled(page, 0);
+      if (state.ratio >= RELEASE_THRESHOLD) {
+        expect(state.opacity, `fraction ${fraction}, ratio ${state.ratio}`).toBe('1');
+      }
+    }
+  });
+
+  test("the latch releases: 0.6 of the viewport height past the slide's offset, well below the release threshold, hides the description", async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const offsets = await getSlideDocumentOffsets(page);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(offsets[0]));
+    await waitForSlideStateSettled(page, 0);
+
+    await suppressSnap(page);
+    const target = offsets[0] + Math.round(PHONE_VIEWPORT.height * 0.6);
+    await page.evaluate((y) => window.scrollTo(0, y), target);
+    const state = await waitForSlideStateSettled(page, 0);
+
+    expect(state.ratio).toBeLessThan(RELEASE_THRESHOLD);
+    expect(state.revealed).toBe(false);
+    expect(state.opacity).toBe('0');
+  });
+
+  test('the reveal side still demands arrival (D-14): a never-revealed slide covering about 0.7 of the screen stays hidden', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const offsets = await getSlideDocumentOffsets(page);
+    await suppressSnap(page);
+
+    // A slide fully below the viewport at scroll 0 crosses ~0.7 coverage
+    // when scrolled to 0.3 of the viewport height short of its own
+    // offset — i.e. 70% of it is already on screen, 30% still below. The
+    // slide has never been revealed in this page's lifetime (no earlier
+    // scroll visited its offset), so this exercises the reveal side, not
+    // the release side.
+    const target = Math.max(0, offsets[0] - Math.round(PHONE_VIEWPORT.height * 0.3));
+    await page.evaluate((y) => window.scrollTo(0, y), target);
+    const state = await waitForSlideStateSettled(page, 0);
+
+    expect(state.ratio).toBeGreaterThanOrEqual(RELEASE_THRESHOLD);
+    expect(state.ratio).toBeLessThan(REVEAL_THRESHOLD);
+    expect(state.revealed).toBe(false);
+    expect(state.opacity).toBe('0');
+  });
+
+  test('jitter does not restart the accent (D-09/HOME-16): wobbling into the band and back to the offset twice leaves the accent and the arrival class untouched', async ({ page }) => {
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const offsets = await getSlideDocumentOffsets(page);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(offsets[0]));
+    await waitForSlideStateSettled(page, 0);
+
+    const heroColor = await page.locator('[data-role="deck-slide"]').nth(0).getAttribute('data-hero-color');
+    expect(heroColor).toBeTruthy();
+    const readAccent = () =>
+      page.evaluate(() => getComputedStyle(document.querySelector('.home') as HTMLElement).getPropertyValue('--current-accent').trim());
+    await expect.poll(readAccent).toBe(heroColor);
+
+    await suppressSnap(page);
+    const bandTarget = offsets[0] + Math.round(PHONE_VIEWPORT.height * 0.3);
+    for (let i = 0; i < 2; i++) {
+      await page.evaluate((y) => window.scrollTo(0, y), bandTarget);
+      await waitForSlideStateSettled(page, 0);
+      await page.evaluate((y) => window.scrollTo(0, y), Math.round(offsets[0]));
+      await waitForSlideStateSettled(page, 0);
+    }
+
+    expect(await readAccent()).toBe(heroColor);
+    await expect(page.locator('.home-slide.is-revealed')).toHaveCount(1);
+    await expect(page.locator('[data-role="deck-slide"]').nth(0)).toHaveClass(/is-revealed/);
+  });
+
+  test('reduced motion is untouched (D-15): every description reads opacity 1, no slide carries the reveal class, and scrolling into the band changes neither', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize(PHONE_VIEWPORT);
+    await page.goto('/');
+
+    const readOpacities = () =>
+      page.locator('[data-role="deck-slide"] .home-slide__description').evaluateAll((els) => els.map((el) => getComputedStyle(el).opacity));
+
+    const opacities = await readOpacities();
+    expect(opacities.length).toBeGreaterThan(0);
+    opacities.forEach((opacity) => expect(opacity).toBe('1'));
+    await expect(page.locator('.home-slide.is-revealed')).toHaveCount(0);
+
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight / 2));
+    await page.waitForTimeout(200);
+
+    const opacitiesAfter = await readOpacities();
+    opacitiesAfter.forEach((opacity) => expect(opacity).toBe('1'));
+    await expect(page.locator('.home-slide.is-revealed')).toHaveCount(0);
+  });
+
+  test('desktop is untouched (UI-02): at 1280x800 the deck root is not visible and no slide carries the reveal class', async ({ page }) => {
+    await page.setViewportSize(DESKTOP_VIEWPORT);
+    await page.goto('/');
+
+    await expect(page.locator('[data-role="scroll-deck"]')).not.toBeVisible();
+    await expect(page.locator('.home-slide.is-revealed')).toHaveCount(0);
+  });
+});
