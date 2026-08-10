@@ -1,130 +1,132 @@
 ---
 phase: 21-homepage-scroll-experience
-reviewed: 2026-08-08T00:00:00Z
-depth: standard
-files_reviewed: 7
+reviewed: 2026-08-10T12:17:46Z
+depth: deep
+files_reviewed: 4
 files_reviewed_list:
-  - src/lib/home-carousel.ts
-  - tests/unit/home-carousel.test.ts
   - src/components/HomeCarousel.astro
+  - src/lib/home-carousel.ts
   - tests/e2e/homepage-scroll-deck.spec.ts
-  - src/layouts/BaseLayout.astro
-  - src/pages/index.astro
-  - src/pages/en/index.astro
+  - tests/unit/home-carousel.test.ts
 findings:
-  critical: 1
-  warning: 2
-  info: 0
-  total: 3
+  critical: 0
+  warning: 3
+  info: 1
+  total: 4
 status: issues_found
 ---
 
 # Phase 21: Code Review Report
 
-**Reviewed:** 2026-08-08
-**Depth:** standard
-**Files Reviewed:** 7
+**Reviewed:** 2026-08-10T12:17:46Z
+**Depth:** deep
+**Files Reviewed:** 4
 **Status:** issues_found
 
 ## Summary
 
-This is the second review pass on Phase 21, scoped to the gap-closure diff since `087df689`: plan 21-07's replacement of the deck's scroll/IntersectionObserver driver with a single per-frame `requestAnimationFrame` loop, 21-08's blur-up placeholder + next-slide warm for deck slides, 21-09's `dvh`→`svh` conversion plus a photo-surface paint floor and a phone-scoped `theme-color` meta tag, and 21-10's new pre-zoom two-beat intro.
+This is a scoped, independent re-review of the round-2 UAT gap-closure work only (plans 21-11 through 21-15, the diff between `3c99634` and `HEAD` across the 4 files listed above), not the whole phase. The stale round-1 `21-REVIEW.md` (dated 2026-08-08, scoped to 7 files including layout/page files not touched by round 2) has been replaced entirely by this review.
 
-The `computeSlideVisibleRatio` addition in `src/lib/home-carousel.ts` is correct, well-tested, and its degenerate-input handling matches the unit tests exactly. The `svh` conversion, paint-floor CSS, and `theme-color` meta wiring are all correctly scoped and match their own e2e assertions.
+I read every line of the diff plus the surrounding file (both `<script>` blocks and the full `<style>` block in `HomeCarousel.astro`, all of `src/lib/home-carousel.ts`, and both test files in full), traced the `--deck-vh` custom property from its single writer (`syncDeckViewportHeight()`) through every CSS consumer, traced `data-zoom-active`/`data-intro-active` through the full scroll-position state machine (including the 21-14 `:not([data-intro-active])` addendum), and manually re-derived the intro/zoom/slide scroll-offset algebra from the CSS `height`/`margin-top` expressions to confirm the geometry the plans' own comments claim actually holds.
 
-However, plan 21-10's fix for a real bug (an intro section's own arrival wrongly clobbering the HOME-16 random starting accent) introduced a **new regression**: the same guard it added also silently disables accent-liveness (D-09) and the 21-08 next-slide photo warm (closing 21-UAT.md gap 3) for any real gallery slide that uses Sanity's documented "palette automatique" option (no `heroColor` set) — see CR-01. This is a plausible, ordinary content-editing path, not a hypothetical edge case, and none of the new/rebased e2e tests exercise a heroColor-less gallery, so it is not caught by the test suite.
+The geometry, the hysteresis latch (`computeArrivalRevealed`), the intro scrub curve (`computeIntroScrubState`), and the `--deck-vh` consumers in CSS are all internally consistent and match what the extensive inline documentation claims — I could not find a defect in the core scroll-position math, the 21-12 pull-up/stage-retirement coincidence, or the 21-14 header/logo-suppression scoping. The unit and e2e test coverage for the new pure functions is unusually thorough and I did not find gaps in it, nor orphaned CSS classes/data-roles/test helpers left over from the retired two-beat intro design (grepped for `beat`/`intro-beat`/`deck-intro` residue — none found outside historical comments).
 
-Two smaller quality issues (WR-01, WR-02) are also flagged: a duplicated magic color literal instead of referencing the existing design token, and a newly-added per-frame function that performs an unconditional DOM write, undermining the adjacent change-detection optimization it sits next to.
-
-## Critical Issues
-
-### CR-01: Deck arrival guard silently disables accent-liveness and next-slide warm for galleries without an explicit `heroColor`
-
-**File:** `src/components/HomeCarousel.astro:1861-1900` (specifically the guard at line 1882)
-
-**Issue:**
-
-Plan 21-10 needed to stop an intro section's own arrival (beat 1 fills the viewport at scroll position 0, so it "arrives" on the very first frame) from clobbering HOME-16's random starting accent. It did this by adding `&& target.dataset.heroColor` to the rising-edge guard inside `applyArrival()`:
-
-```js
-if (reached && !wasRevealed && target.dataset.heroColor) {
-  root!.style.setProperty('--current-accent', target.dataset.heroColor || 'var(--color-accent)');
-  root!.style.setProperty('--current-accent-text', target.dataset.heroTextColor || 'var(--color-on-accent)');
-  arrivalAccentWritten = true;
-  const slideIndex = Number(target.dataset.index);
-  if (!Number.isNaN(slideIndex)) warmNextSlide(slideIndex);
-}
-```
-
-`data-hero-color` is absent on intro sections (correct, intentional), **but it is also absent on any real gallery slide whose Sanity `heroColor` field is unset** — this is not an edge case: `sanity/schemas/gallery.ts` documents the field as optional, with the explicit description "Choisir le fond du panneau associé à cette collection, **ou conserver la palette automatique**" (choose the panel background, *or keep the automatic palette*). `normalizeHeroColor()` (`src/lib/site-config.ts:55-59`) returns `undefined` in exactly this case, and the deck slide markup (`data-hero-color={gallery.heroColor}`) then omits the attribute entirely.
-
-Before this diff, the guard was only `if (reached && !wasRevealed)`, and the color write itself already had a safe fallback (`slide.dataset.heroColor || 'var(--color-accent)'`) for a missing color. 21-10's new guard removed that fallback path from ever running at all for a real slide:
-
-1. **Accent-liveness (D-09) breaks**: arriving at a "palette automatique" slide no longer updates `--current-accent`/`--current-accent-text` at all — the accent freezes at whatever the previously-arrived (or initial) gallery's color was. If the visitor later scrolls back to that gallery from a different direction, or scrolls past it into an adjacent gallery, the accent can visibly show the *wrong* gallery's color, since `root!.style.setProperty(...)` from an earlier arrival is an inline style that nothing ever resets it back from.
-2. **21-08's next-slide warm (21-UAT.md gap 3) regresses**: `warmNextSlide(slideIndex)` is nested inside the same guarded block, so arriving at a heroColor-less slide never promotes the *next* slide's sharp image out of native-lazy. For any gallery after index 1 that follows a heroColor-less gallery, this reintroduces the exact "blur-placeholder-jank" symptom plan 21-08 was written to close.
-
-None of the new/rebased e2e cases in `tests/e2e/homepage-scroll-deck.spec.ts` exercise a gallery without `heroColor` (every `slideHeroColor()`/`readDeckDataEntries()` assertion asserts the color is *truthy*), so this regression is not caught by the current suite.
-
-**Fix:** Distinguish "is a real slide" from "is a real slide with a color" using an attribute that is actually unique to slides (e.g. `data-index`, which only slide anchors carry — intro sections never set it), not `data-hero-color`:
-
-```js
-// data-index only exists on real slide anchors — intro sections never set
-// it — so this is the correct "is this a real slide, not an intro beat"
-// test, independent of whether heroColor happens to be set.
-if (reached && !wasRevealed && target.dataset.index !== undefined) {
-  root!.style.setProperty('--current-accent', target.dataset.heroColor || 'var(--color-accent)');
-  root!.style.setProperty('--current-accent-text', target.dataset.heroTextColor || 'var(--color-on-accent)');
-  arrivalAccentWritten = true;
-  const slideIndex = Number(target.dataset.index);
-  if (!Number.isNaN(slideIndex)) warmNextSlide(slideIndex);
-}
-```
-
-This restores the pre-21-10 fallback behavior (`'var(--color-accent)'`) for color-less galleries while still keeping intro sections from ever writing an accent, and keeps the next-slide warm firing on every real arrival regardless of whether that gallery opted into a custom `heroColor`.
+What I did find: one real cross-plan consistency bug in the arrival-ratio viewport-height source (the exact class of risk the plans' own threat model calls out for `--deck-vh`, but in a code path 21-11 didn't touch), one place where a documented hot-path invariant ("zero style writes when stationary") is not actually honored, and a no-JS content-visibility gap in the new pinned intro tagline. None of these are being flagged reflexively — each is traced to a specific line and a concrete mechanism below. No security issues, no dead imports/exports, no orphaned test helpers.
 
 ## Warnings
 
-### WR-01: `phoneThemeColor="#1A1A1A"` duplicates the `--color-ink` token as a magic literal
+### WR-01: `applyArrival()`'s viewport-height source is not the same expression `--deck-vh` uses, contradicting the very invariant plan 21-11 exists to guarantee
 
-**File:** `src/pages/index.astro:66`, `src/pages/en/index.astro:60`
+**File:** `src/components/HomeCarousel.astro:2002` (also compare `:1877`)
+**Issue:** Plan 21-11 introduced `--deck-vh` specifically because a plain `window.innerHeight`/`100svh` read can disagree with the browser's live visible viewport height during Mobile Safari's toolbar collapse/expand animation (the whole subject of round-2 gap 4), and it made every CSS consumer of viewport height in this deck (`intro-track`, `intro-stage`, `zoom-track`, `zoom-stage`, the `.home-scroll-deck__slides` pull-up margin, `.home-slide`, the wordmark padding) read the identical `var(--deck-vh, 100svh)` expression, sourced from `syncDeckViewportHeight()`'s `vv.scale <= 1.01 ? vv.height : window.innerHeight` logic.
 
-**Issue:** Both homepage entry points hardcode `phoneThemeColor="#1A1A1A"`, with a comment noting it "mirrors the color-ink/gray-900 token (BaseLayout.astro)". `--color-ink`/`--gray-900` is defined once, in `src/layouts/BaseLayout.astro`'s `:root` block, as the single source of truth for this value. Duplicating the literal in two page files means a future rebrand/palette change to `--gray-900` silently stops matching the phone status-bar tint, with no compiler/test signal — the two pages must be remembered and updated by hand.
-
-**Fix:** Export the ink value as a plain TS/JS constant (e.g. alongside `HERO_COLORS` in `src/lib/site-config.ts`) and import it in both page files instead of re-typing the hex literal:
-
-```ts
-// site-config.ts
-export const COLOR_INK = '#1A1A1A'
-```
-```astro
-import { COLOR_INK } from '../lib/site-config';
-...
-<BaseLayout ... phoneThemeColor={COLOR_INK}>
-```
-
-### WR-02: `computeProgress()` performs an unconditional DOM write every animation frame, contradicting its own adjacent change-detection comment
-
-**File:** `src/components/HomeCarousel.astro:2004-2022`
-
-**Issue:** `applyProgress()` (immediately below `computeProgress()`) is explicitly documented as "short-circuit[ing] when the measured progress hasn't changed since last frame, so a stationary page performs zero style writes per frame... only the two cheap rect reads inside `computeProgress()`/`applyArrival()`." But `computeProgress()` itself now calls `applyIntroActive(trackTop)`, which unconditionally calls `root!.setAttribute('data-intro-active', 'true')` or `root!.removeAttribute('data-intro-active')` on **every single call** — i.e. every animation frame the loop is attached, regardless of whether `trackTop`'s sign has changed since the previous frame. This directly contradicts the "zero style writes when stationary" invariant the surrounding code documents and relies on, and it is surprising for a function named `computeProgress` (which reads as a pure getter) to also be the one place a DOM attribute gets mutated on every frame.
-
-**Fix:** Give `applyIntroActive()` its own change-detection, mirroring `applyProgress()`'s `lastProgress` pattern, and/or move it out of `computeProgress()` into `frame()` alongside `applyProgress`/`applyArrival` so the "read" and "write" responsibilities aren't mixed inside one function:
+`applyArrival()` — the function that decides, every painted frame, whether a slide has "arrived" (feeding `computeArrivalRevealed`, the live accent write, and the 21-08 next-slide image warm) — was written before 21-11 and was never updated to match:
 
 ```js
-let introActive: boolean | null = null;
-function applyIntroActive(trackTop: number) {
-  if (introSections.length === 0) return;
-  const active = trackTop > 0;
-  if (active === introActive) return;
-  introActive = active;
-  if (active) root!.setAttribute('data-intro-active', 'true');
-  else root!.removeAttribute('data-intro-active');
+function applyArrival() {
+  const viewportHeight = window.innerHeight;   // <-- not --deck-vh's source
+  slides.forEach((target) => {
+    const rect = target.getBoundingClientRect(); // rect.height tracks --deck-vh
+    const ratio = computeSlideVisibleRatio(rect, viewportHeight);
+    ...
+```
+
+`rect.height` here is the slide's live rendered height, which is CSS-sized from `var(--deck-vh, 100svh)` (i.e. `visualViewport.height` in the common non-zoomed case). The ratio's denominator (`computeSlideVisibleRatio`'s `min(rect.height, viewportHeight)`) and its visible-window clamp both use `window.innerHeight` instead — a second, independently-sourced viewport height that is not guaranteed to agree with the one that actually sized the slide, especially while both are changing during a live scroll (the exact scenario 21-11's own docstring names: "Mobile Safari's toolbar-collapse animation ... can report sub-pixel height deltas on some frames"). This is precisely the class of bug 21-11 fixed for CSS sizing, reintroduced here for the JS reveal/accent/warm logic 21-15 just spent a whole plan hardening.
+
+The existing test suite cannot catch this: the `--deck-vh` describe block's own comments document that "a fixed-viewport Playwright engine has no dynamic browser chrome to animate mid-scroll," and every arrival case in this file targets a settled scroll position where `visualViewport.height === window.innerHeight`, so the divergence never manifests in CI.
+
+**Fix:**
+```js
+function applyArrival() {
+  const viewportHeight = mobile.matches && lastDeckVh !== DECK_VH_SENTINEL ? lastDeckVh : window.innerHeight;
+  ...
+```
+(`lastDeckVh` is already the module-scope cache `syncDeckViewportHeight()` maintains, and `frame()` already calls `syncDeckViewportHeight()` before `applyArrival()` in the same frame, so this requires no new measurement — just reusing the value that already determined `rect.height`.)
+
+### WR-02: `applyArrival()` writes `classList` unconditionally every frame, contradicting the documented "zero style writes when stationary" invariant
+
+**File:** `src/components/HomeCarousel.astro:2001-2046` (contrast with `applyProgress()` at `:2222-2226` and `applyIntroScrub()` at `:2258-2275`)
+**Issue:** The file's own comments are explicit about a hot-path invariant: `applyProgress()`'s comment states "a stationary page performs zero style writes per frame ... only the two cheap rect reads inside `computeProgress()`/`applyArrival()`" (line ~2217), and `applyIntroScrub()` mirrors the same change-detection cache (`lastIntroProgress`) for the identical reason.
+
+`applyArrival()` has no equivalent guard:
+```js
+slides.forEach((target) => {
+  const rect = target.getBoundingClientRect();
+  const ratio = computeSlideVisibleRatio(rect, viewportHeight);
+  const wasRevealed = target.classList.contains('is-revealed');
+  const reached = computeArrivalRevealed(ratio, wasRevealed);
+  target.classList.toggle('is-revealed', reached);   // <-- always runs
+  ...
+```
+`Element.classList.toggle(token, force)` always executes the DOMTokenList "update steps," which re-serialize and write the element's `class` attribute regardless of whether membership actually changed — it is not a no-op write when the value is unchanged. So on a fully stationary page (no scrolling, driver still attached and still running its rAF loop), this writes to every slide's `class` attribute 60 times a second, for as long as the visitor stays on the page — directly contradicting the "only cheap rect reads" claim the surrounding code relies on future maintainers trusting.
+
+**Fix:** Gate the write the same way `applyProgress()`/`applyIntroScrub()` already do:
+```js
+if (reached !== wasRevealed) {
+  target.classList.toggle('is-revealed', reached);
 }
 ```
-(Reset `introActive = null` in `clearInlineStyles()` alongside the existing `lastProgress` reset, for the same re-attach-must-always-paint reason.)
+(the accent/warm block below already only fires `if (reached && !wasRevealed && ...)`, so this doesn't change any existing behavior — it only stops the redundant same-value write.)
+
+### WR-03: The pinned intro's tagline has no fallback for a visitor with JavaScript disabled — it stays permanently invisible
+
+**File:** `src/components/HomeCarousel.astro:4038-4046` (base rule) vs. `:4571-4605` (the only override, gated on `prefers-reduced-motion: reduce`)
+**Issue:** `.home-scroll-deck__intro-body`'s rest state, introduced by plan 21-13, is:
+```css
+.home-scroll-deck__intro-body {
+  grid-row: 3;
+  align-self: start;
+  max-width: 52ch;
+  font-size: 14px;
+  line-height: 1.4;
+  opacity: 0;
+  transform: translateY(8px);
+}
+```
+The only two things that ever move `opacity` off `0` are: (1) `applyIntroScrub()` in the deck driver `<script>`, which requires JavaScript to be enabled and requires `mobile.matches && !reduceMotion.matches`; and (2) the `@media (max-width: 767px) and (prefers-reduced-motion: reduce)` block, which sets `opacity: 1` unconditionally — but only for visitors whose OS/browser reports a reduced-motion preference.
+
+A phone-width visitor with JavaScript disabled and no reduced-motion preference set gets neither: the intro logomark and scroll cue render fine (they're plain CSS/markup with no JS-only rest state), but the tagline — real, Sanity-authored descriptive copy (`siteCopy.homepageIntro`), not decoration — never becomes visible. This is a real content-availability gap, not a progressive-enhancement nicety: the same rest-state pattern (`opacity: 0`, revealed only by JS or by the reduced-motion override) is used elsewhere in this file too (e.g. `.home-slide__description`), so it isn't unique to the intro, but plan 21-13 is what created this exact rule and had the opportunity to close the gap for at least the new code; it didn't. The rest of this file is otherwise conspicuously careful about the "pre-JS, JS disabled" case (see the comments at lines ~283, ~3927-3928, ~4154, ~4478, ~4549 that explicitly reason about it for the header, the pull-up margin, and the wordmark) — this is the one place in the round-2 diff where that discipline lapsed.
+
+**Fix:** Add a `@media (scripting: none)` fallback (or, more conservatively, drop the `opacity: 0` default and instead apply it only from a class the script adds on successful attach), e.g.:
+```css
+@media (max-width: 767px) and (scripting: none) {
+  .home-scroll-deck__intro-body {
+    opacity: 1;
+    transform: none;
+  }
+}
+```
+
+## Info
+
+### IN-01: `.home-scroll-deck__stage` is declared as two separate, non-adjacent rule blocks
+
+**File:** `src/components/HomeCarousel.astro:4111-4119` and `:4158-4179`
+**Issue:** The selector `.home-scroll-deck__stage` appears twice in the stylesheet — once with `position`/`top`/`height`/`overflow`/`display` (pre-existing, from plan 21-09), and again ~40 lines later with `background-color`/`z-index` (added by plan 21-12). Both are individually well-commented and this is functionally harmless (CSS merges declarations for the same selector regardless of source order), but it means a future reader searching for "everything `.home-scroll-deck__stage` sets" via a single text search of the selector's first occurrence will miss the second block, and a future editor changing one is more likely to leave the other stale.
+**Fix:** Not urgent; if this file is touched again, consider merging the two declarations into one rule block (or leaving an explicit comment cross-reference at the first occurrence pointing at the second).
 
 ---
 
-_Reviewed: 2026-08-08_
+_Reviewed: 2026-08-10T12:17:46Z_
 _Reviewer: Claude (gsd-code-reviewer)_
-_Depth: standard_
+_Depth: deep_
