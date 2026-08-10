@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Mobile Experience Redesign
-current_phase: 21
+current_phase: 23
 status: completed
-stopped_at: Phase 21 complete (mechanical reconciliation 2026-08-10 — see Accumulated Context)
-last_updated: "2026-08-10T20:24:31.404Z"
+stopped_at: v1.6 milestone resolved 2026-08-10 (Phase 22 cancelled, Phase 23 complete) — see Accumulated Context
+last_updated: "2026-08-10T20:45:00.000Z"
 last_activity: 2026-08-10
 progress:
-  total_phases: 5
-  completed_phases: 2
+  total_phases: 4
+  completed_phases: 3
   total_plans: 21
   completed_plans: 21
-  percent: 40
-current_phase_name: Homepage Scroll Experience
+  percent: 75
+current_phase_name: About Portrait Placement & Milestone Regression Close
 ---
 
 # Project State
@@ -23,12 +23,12 @@ current_phase_name: Homepage Scroll Experience
 See: .planning/PROJECT.md (updated 2026-08-04)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; v1.3 adds a non-transactional Éditions showcase; checkout still follows in the future v1.x shop milestone.)
-**Current focus:** Phase 21 closed; Phase 22 (Gallery & Édition Scroll Navigation) not yet started
+**Current focus:** v1.6 milestone resolved (Phase 20 shipped, Phase 21 shipped then superseded, Phase 22 cancelled, Phase 23 shipped); no phase currently active — Phase 5 (Launch & Domain Cutover) remains the only open v1 phase, deliberately deferred
 
 ## Current Position
 
-Phase: 21 — COMPLETE (15/15 plans)
-Status: Phase 21 complete — mechanically reconciled 2026-08-10, see Accumulated Context
+Phase: v1.6 milestone — RESOLVED (Phase 20 complete, Phase 21 complete, Phase 22 cancelled, Phase 23 complete)
+Status: No phase currently active. Next open work is either Phase 5 (deliberately deferred since 2026-07-27) or a new milestone via /gsd-new-milestone
 Last activity: 2026-08-10
 
 ## Performance Metrics
@@ -149,7 +149,9 @@ Recent decisions affecting current work:
 - [Phase 20]: Delivered HOME-13 (mobile nav menu + switcher) and HOME-16 (per-visit random accent color) across 6 plans, 5 waves. Live on-phone UAT (20-UAT.md Test 2) reversed D-04's switcher clause post-ship: the language switcher moved from a fourth equal-weight primary link to a small secondary-tier line above the Instagram link (same size/color), and the Instagram link gained the header's own SVG glyph — closed by gap-closure plan 20-06, independently re-verified (54/54 mobile-nav e2e including 7 new tests, own screenshots, live coverage re-run matching baseline exactly) before phase close. Security audit (retroactive, first SECURITY.md for this phase) closed all 19 registered threats, 4 of them high-severity (transitionend-gated close funnel DoS, shared-header-edit blast radius, halftone-containment DoS, base-path bypass) — see `20-SECURITY.md`. Code review flagged 1 unrelated Critical (pre-existing `HomeCarousel.astro` touch-handler can misfire on progress-dash/autoplay controls on real touchscreens) — not fixed in this phase, tracked in `20-REVIEW.md`.
 - [Phase 21]: Round-2 on-phone UAT (21-UAT.md) found 5 more live-device gaps against the HomeCarousel scroll-deck after round 1's gap-closure had shipped green (duplicated intro logo, unreadable text-reveal timing, a doubled cover photo, a persistent white bar top/bottom, an unreachable nav hamburger) — closed by plans 21-11 through 21-15 (5 waves, worktree-isolated), plus a scoped deep code review (`21-REVIEW.md`, 0 critical/3 warning/1 info, all three warnings fixed and independently reconfirmed — `21-REVIEW-FIX.md`, commits `c163d13`/`3991e4a`/`db1af15`). `gsd-verifier` then routed to `human_needed` a third time, pending a consolidated real-device UAT round 3 (persisted as `21-UAT.md`, commit `d8c01ae`) — the phase never reached that round.
   Before round 3 could run, the phone-width mobile homepage was rebuilt from scratch outside this plan/execute cycle: `src/components/MobileHomePrototype.astro` (a new component, different mechanism — wordmark scale/fade → description reveal → contemplation beat → horizontal photo pan through the series, not the letterform-zoom `HomeCarousel` built) was introduced and wired into `src/pages/index.astro`/`src/pages/en/index.astro` at ≤767px by undocumented work with no GSD artifact, then refined by a Codex-run `/gsd:quick` task (`260810-qmm`, `.planning/quick/260810-qmm-.../`, uncommitted by its own executor — "shared worktree contains user-owned uncommitted changes"), and everything was squashed into one manually-authored commit, `6c51695` ("feat: refine mobile gallery journey", 2026-08-10 22:14, no phase/plan reference). `HomeCarousel`'s scroll-deck (all 15 phase-21 plans' work, three UAT rounds, the code review) remains in the codebase, correct and passing its own tests, but is now CSS-hidden (`display: none !important` under `@media (max-width: 767px)`) and unreachable at the one viewport it targeted — `MobileHomePrototype` owns phone-width HOME-14/HOME-15 instead.
-  Per explicit user decision (2026-08-10, mechanical-sync path chosen over a retroactive `/gsd-discuss-phase 21` re-verification — see the Phase 8 precedent above for the alternative pattern): Phase 21 is closed on `6c51695` as the authoritative final state, without re-checking `MobileHomePrototype` against `21-CONTEXT.md`'s locked decisions (D-01–D-16) or HOME-15's literal "letterform" wording. The pending round-3 UAT is superseded/cancelled — it tested a mechanism no longer live on phone. `21-VERIFICATION.md`/`21-REVIEW.md` remain accurate as historical snapshots of the (now-superseded) `HomeCarousel` mechanism, not of what's shipped today.
+  Per explicit user decision (2026-08-10, mechanical-sync path chosen over a retroactive `/gsd-discuss-phase 21` re-verification — see the Phase 8 precedent above for the alternative pattern): Phase 21 is closed on `6c51695` as the authoritative final state, without re-checking `MobileHomePrototype` against `21-CONTEXT.md`'s locked decisions (D-01–D-16) or HOME-15's literal "letterform" wording. The pending round-3 UAT is superseded/cancelled — it tested a mechanism no longer live on phone. `21-VERIFICATION.md`'s frontmatter `status` was changed from `human_needed` to `superseded` (with a `superseded_note` explaining why) so `gsd-tools progress` stops reporting the phase as "Needs Review" — it now reads "Executed", the honest label for a phase whose plans all ran but whose own verification never reached a terminal `passed`/`gaps_found` state. `21-VERIFICATION.md`'s findings and `21-REVIEW.md` remain accurate as historical snapshots of the (now-superseded) `HomeCarousel` mechanism, not of what's shipped today.
+- [Phase 22]: CANCELLED 2026-08-10 by explicit user decision ("Cancel phase 22"). Never planned or implemented — no `.planning/phases/22-*/` directory was ever created, no discuss-phase or plan-phase ran. Requirements PORT-07, EDN-10, EDN-11 (Gallery/Édition Lightbox retirement + Édition intro-text/photo treatment) are dropped from active v1.6 scope; see `REQUIREMENTS.md`'s `[ ]` entries marked CANCELLED and the Traceability table. Revisit only via a future milestone if this work is wanted again — nothing about the cancellation implies the underlying user need was solved elsewhere.
+- [Phase 23]: COMPLETE 2026-08-10 by explicit user decision ("Phase 23 is done by previous commit"), delivered directly in commit `6c51695` alongside Phase 21's supersession and the `260810-qmm` quick task — no `.planning/phases/23-*/` directory, no formal plans, no discuss-phase ever ran. Verified before accepting the claim: `git show 6c51695 -- src/components/AboutPageBody.astro` confirms a real ABOUT-05-shaped change — `.about-page__bio-row` moved from `flex-direction: column-reverse` to `display: block` with the portrait `float: right` (64px) and text wrapping around it at ≤767px (was a stacked column before), desktop keeps the flex row with an explicit `order` swap (portrait now precedes the lead paragraph in DOM order too). UI-02's combined desktop/tablet regression sweep was accepted on the user's word, not independently re-run by this session. Requirements ABOUT-05 and UI-02 marked `[x]` in `REQUIREMENTS.md`.
 
 ### Pending Todos
 

@@ -1,7 +1,16 @@
 ---
 phase: 21-homepage-scroll-experience
 verified: 2026-08-10T14:35:00Z
-status: human_needed
+status: superseded
+superseded_note: |
+  This verification pass genuinely reached human_needed and its findings below remain an accurate
+  historical snapshot of the HomeCarousel scroll-deck mechanism as of 2026-08-10T14:35:00Z. The pending
+  real-device UAT round it called for was never run. Before it could be, the phone-width mobile
+  homepage was rebuilt outside this plan/execute cycle as MobileHomePrototype.astro (commit 6c51695,
+  "feat: refine mobile gallery journey", 2026-08-10T22:14:13+02:00), which now owns phone-width HOME-14/
+  HOME-15 instead. Phase 21 was closed mechanically on that commit as the authoritative final state, per
+  explicit user direction, without re-running this file's pending human_verification item. See STATE.md's
+  [Phase 21] Accumulated Context entry (2026-08-10) for the full reconciliation.
 score: 5/5 must-haves verified (roadmap success criteria); 68/68 plan-level must_have truths verified (45 carried forward from the round-1 gap-closure pass, 23 new from round-2 gap-closure plans 21-11..21-15)
 behavior_unverified: 0
 overrides_applied: 0

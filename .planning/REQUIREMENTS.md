@@ -18,20 +18,20 @@ Redesign the mobile (phone) experience only — desktop/tablet stays byte-for-by
 
 ### Portfolio Galleries
 
-- [ ] **PORT-07**: Visitor on a phone navigates a gallery's photos by scrolling through them full-size and uncropped, with no separate lightbox/"picture mode" view
+- [ ] **PORT-07**: Visitor on a phone navigates a gallery's photos by scrolling through them full-size and uncropped, with no separate lightbox/"picture mode" view — CANCELLED 2026-08-10, Phase 22 cancelled by explicit user decision, not implemented, no longer in active scope
 
 ### Éditions
 
-- [ ] **EDN-10**: Visitor on a phone navigates an édition's photos by scrolling through them full-size and uncropped, with no separate lightbox/"picture mode" view
-- [ ] **EDN-11**: Visitor on a phone reads an édition's intro/statement text against a legible solid background instead of overlaid on a photo, with the primary photo shown among the others rather than as a full-bleed backdrop
+- [ ] **EDN-10**: Visitor on a phone navigates an édition's photos by scrolling through them full-size and uncropped, with no separate lightbox/"picture mode" view — CANCELLED 2026-08-10, Phase 22 cancelled by explicit user decision, not implemented, no longer in active scope
+- [ ] **EDN-11**: Visitor on a phone reads an édition's intro/statement text against a legible solid background instead of overlaid on a photo, with the primary photo shown among the others rather than as a full-bleed backdrop — CANCELLED 2026-08-10, Phase 22 cancelled by explicit user decision, not implemented, no longer in active scope
 
 ### About
 
-- [ ] **ABOUT-05**: Visitor on a phone sees the About page's portrait photo in an improved position relative to the surrounding text (exact treatment resolved via sketch)
+- [x] **ABOUT-05**: Visitor on a phone sees the About page's portrait photo in an improved position relative to the surrounding text (exact treatment resolved via sketch) — delivered via direct commit `6c51695` (2026-08-10), outside the plan/execute cycle, attributed to Phase 23 per user direction; float-right portrait with text wrap on mobile, order-swapped on desktop
 
 ### Site-Wide (regression guard)
 
-- [ ] **UI-02**: Desktop/tablet layout, navigation, and interaction behavior are provably unchanged by every phase in this milestone
+- [x] **UI-02**: Desktop/tablet layout, navigation, and interaction behavior are provably unchanged by every phase in this milestone — accepted complete via commit `6c51695` per user direction (mechanical reconciliation, not independently re-verified by this session)
 
 ## Carried Forward (still open, not part of v1.6)
 
@@ -129,21 +129,24 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HOME-14 | Phase 21 | Complete |
 | HOME-15 | Phase 21 | Complete |
 | HOME-16 | Phase 20 | Complete |
-| PORT-07 | Phase 22 | Pending |
-| EDN-10 | Phase 22 | Pending |
-| EDN-11 | Phase 22 | Pending |
-| ABOUT-05 | Phase 23 | Pending |
-| UI-02 | Phase 23 | Pending |
+| PORT-07 | Phase 22 | Cancelled |
+| EDN-10 | Phase 22 | Cancelled |
+| EDN-11 | Phase 22 | Cancelled |
+| ABOUT-05 | Phase 23 | Complete |
+| UI-02 | Phase 23 | Complete |
 | LAUNCH-01 | Phase 5 | Pending |
 
 **Coverage:**
 
 - v1.6 requirements: 9 total (HOME-13, HOME-14, HOME-15, HOME-16, PORT-07, EDN-10, EDN-11, ABOUT-05, UI-02)
 - Mapped to phases: 9/9 ✓ — Phase 20 (HOME-13, HOME-16), Phase 21 (HOME-14, HOME-15), Phase 22 (PORT-07, EDN-10, EDN-11), Phase 23 (ABOUT-05, UI-02)
+- Delivered: 6/9 — Phase 20 (2/2), Phase 21 (2/2, mechanism superseded by `MobileHomePrototype.astro` — see ROADMAP.md/STATE.md), Phase 23 (2/2, via direct commit `6c51695`)
+- Cancelled: 3/9 — Phase 22 (PORT-07, EDN-10, EDN-11), 2026-08-10, explicit user decision
+- v1.6 milestone status: resolved 2026-08-10 (6 delivered, 3 cancelled) — no open phases remain in this milestone
 - Carried-forward requirements: 1 total (LAUNCH-01)
-- Mapped to phases: 1/1 ✓ (Phase 5, not started)
+- Mapped to phases: 1/1 ✓ (Phase 5, not started, deliberately deferred)
 - v2 (v1.x fast-follow) requirements: 18 tracked, not yet in roadmap (out of scope for this roadmap by design)
 
 ---
 *Requirements defined: 2026-08-03*
-*Last updated: 2026-08-03 — ROADMAP.md created: 4 phases (20-23) mapped to all 9 v1.6 requirements, 100% coverage.*
+*Last updated: 2026-08-10 — v1.6 milestone resolved: Phase 22 cancelled (PORT-07, EDN-10, EDN-11 dropped), Phase 23 completed via direct commit `6c51695` (ABOUT-05, UI-02).*
