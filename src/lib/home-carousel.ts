@@ -416,6 +416,109 @@ export function computeSlideVisibleRatio(rect: { top: number; bottom: number; he
   return clamp01(visibleHeight / denominator);
 }
 
+/**
+ * Phase 21, plan 21-15 (`21-UAT.md` round-2 gap 2, gallery-description half;
+ * root-caused in `.planning/debug/homepage-scroll-text-reveal-too-fast.md`;
+ * D-13/D-14; assumption A8): the visible ratio (see `computeSlideVisibleRatio`
+ * above) at or above which a slide that is NOT currently revealed becomes
+ * revealed.
+ *
+ * This moved off the old symmetric 0.98 because plan 21-11's live-viewport
+ * slide sizing (`--deck-vh`) collapsed the tolerance band the old value
+ * quietly relied on: before that plan, a slide's `100svh` height was
+ * reliably SHORTER than the live `innerHeight` whenever Mobile Safari's
+ * toolbar was retracted, so `computeSlideVisibleRatio`'s
+ * `min(rect.height, viewportHeight)` denominator let the ratio sit at
+ * exactly 1 across a whole band of scroll positions. Once the deck's slides
+ * are sized from the live viewport instead, that band collapses to nothing —
+ * `ratio >= 0.98` became a window roughly 17px wide on an 852px screen. 0.9
+ * still means the slide occupies at least 90% of the screen — unambiguously
+ * D-14's "arrival-complete", not "starting to enter" — with headroom this
+ * plan's own two-level latch (see `computeArrivalRevealed` below) needs to
+ * be robust to an unreliable `scroll-snap: proximity` stop.
+ *
+ * The PAIR (a high reveal threshold, a much lower release threshold) is the
+ * mechanism decision; the exact numbers are tuning — the same distinction
+ * `ZOOM_REVEAL_DISTANCE`'s own docstring draws between a locked pace
+ * category and a pixel count. This value must never drop to 0.5 or below:
+ * every deck slide is one viewport tall and they are contiguous, so two
+ * adjacent slides' visible ratios sum to at most 1. A reveal threshold above
+ * 0.5 therefore guarantees at most ONE slide can cross into the revealed
+ * state at any scroll position, which is the property D-09's live accent
+ * and the 21-08 next-slide warm both ride on (they fire on the rising edge
+ * of exactly one slide). Drop this to 0.5 or below and two galleries can be
+ * "arrived" at once, and the accent starts tracking whichever one the array
+ * order happened to visit last.
+ */
+export const ARRIVAL_REVEAL_THRESHOLD = 0.9;
+
+/**
+ * Phase 21, plan 21-15 (`21-UAT.md` round-2 gap 2, gallery-description half;
+ * assumption A8): the visible ratio below which a slide that IS currently
+ * revealed stops being revealed — the release side of the two-level latch
+ * `computeArrivalRevealed` implements. Deliberately far below
+ * `ARRIVAL_REVEAL_THRESHOLD` (see that constant's own docstring for why the
+ * PAIR, not the exact numbers, is the mechanism decision): 0.45 means a
+ * description survives until its slide is more than half gone, which is
+ * what makes a real momentum scroll settling slightly off a snap point still
+ * leave the text readable.
+ */
+export const ARRIVAL_RELEASE_THRESHOLD = 0.45;
+
+/**
+ * Phase 21, plan 21-15 (`21-UAT.md` round-2 gap 2, gallery-description half;
+ * root-caused in `.planning/debug/homepage-scroll-text-reveal-too-fast.md`;
+ * D-13/D-14; assumption A8): a two-level (Schmitt-trigger) latch replacing
+ * `applyArrival()`'s old symmetric `ratio >= 0.98` comparison, which used
+ * the SAME number to show and to hide a gallery's description, evaluated
+ * fresh on every painted frame. That gave the boundary no memory: a single
+ * frame below 0.98 — from an unreliable `scroll-snap: proximity` stop, or
+ * simply the settle spring of a successful snap — re-hid text the 180ms
+ * reveal transition had only just finished bringing in.
+ *
+ * `wasRevealed` false: returns true only when `ratio` is at or above
+ * `revealThreshold`. `wasRevealed` true: returns true while `ratio` is at or
+ * above `releaseThreshold`, false below it. Both boundaries are inclusive on
+ * the "revealed" side — an exclusive comparison on one side and inclusive on
+ * the other is exactly the kind of asymmetry that produces a one-frame
+ * flicker at the boundary, which is this function's whole subject.
+ *
+ * A non-finite `ratio` returns false. This is not reachable through
+ * `computeSlideVisibleRatio` (which clamps and resolves degenerate inputs to
+ * 0), but a latch is the one place where "unknown" must fail toward
+ * released rather than sticking on.
+ *
+ * Degenerate caller: a `releaseThreshold` greater than `revealThreshold` is
+ * resolved by using `revealThreshold` for BOTH comparisons — i.e. the latch
+ * collapses to the old symmetric behaviour rather than becoming a latch that
+ * can never release. That direction is chosen deliberately: a stuck-revealed
+ * description is a silent, permanent breach of D-14 and D-04 that no amount
+ * of scrolling can clear, whereas collapsing to symmetric is merely the old
+ * behaviour back.
+ *
+ * A dwell-in-frames alternative (require N consecutive frames above the
+ * threshold before revealing) was considered and rejected: it makes
+ * revealing HARDER, which is the wrong direction — the reported failure
+ * includes a reveal that barely happens at all, and a dwell requirement
+ * could stop it happening at all. It would also make the reveal a function
+ * of elapsed time rather than scroll position, which D-04's reversibility
+ * and D-15's reduced-motion end state both rule out. This latch's state is
+ * exactly the class list `applyArrival()` already reads on the line above
+ * the toggle today (for the accent rising-edge guard) — nothing new is
+ * stored, nothing new is written, and the function stays a pure function of
+ * its two numeric inputs plus that one boolean.
+ */
+export function computeArrivalRevealed(
+  ratio: number,
+  wasRevealed: boolean,
+  revealThreshold: number = ARRIVAL_REVEAL_THRESHOLD,
+  releaseThreshold: number = ARRIVAL_RELEASE_THRESHOLD,
+): boolean {
+  if (!Number.isFinite(ratio)) return false;
+  const effectiveReleaseThreshold = releaseThreshold > revealThreshold ? revealThreshold : releaseThreshold;
+  return wasRevealed ? ratio >= effectiveReleaseThreshold : ratio >= revealThreshold;
+}
+
 export interface FocusOrigin {
   originX: number;
   originY: number;
