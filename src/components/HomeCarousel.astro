@@ -627,10 +627,9 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         });
 
         // quick-260724-uf5 (sketch 006): the SOURCE side of the homepage ->
-        // gallery-detail cross-document photo morph. Mirrors this file's
-        // existing dynamic-naming pattern for the in-page mode-toggle morph
-        // (namedMorphTile below) — assign the name on click and leave it in
-        // place. Harmless on browsers without cross-document View
+        // gallery-detail cross-document photo morph. Assign the name at
+        // click time and leave it in place. Harmless on browsers without
+        // cross-document View
         // Transitions support: this is a plain style write, no
         // preventDefault, no manual navigation — every homepage -> gallery
         // link is a real <a href>, so unsupported browsers just navigate
@@ -1564,28 +1563,6 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         // attributes (the plain module script can't read frontmatter vars).
         const modeToggleBtn = root.querySelector<HTMLButtonElement>('[data-role="mode-toggle"]');
 
-        // Shared-element morph target: the grid gallery tiles (hero tile
-        // excluded — it has no matching carousel slide), queried once
-        // alongside the other element lookups above. gridGalleryTiles[i]
-        // corresponds 1:1 with galleries[i]/carouselIndex, since both derive
-        // from the same server-rendered gallery order.
-        const gridGalleryTiles = Array.from(
-          grid.querySelectorAll<HTMLElement>('.home-grid__tile:not(.home-grid__tile--hero)'),
-        );
-        let namedMorphTile: HTMLElement | null = null;
-
-        // Narrow local typing for the View Transitions DOM API — avoids
-        // depending on lib.dom's (not-yet-universal) ViewTransition types
-        // just to feature-detect and call it.
-        type VTDocument = Document & {
-          startViewTransition?: (cb: () => void) => {
-            finished: Promise<void>;
-            ready: Promise<void>;
-            updateCallbackDone: Promise<void>;
-          };
-        };
-        const vtDoc = document as VTDocument;
-
         modeToggleBtn?.addEventListener('click', () => {
           // Stop the periodic attention-pulse (see .home-toggle--used in
           // the <style> block) for good once the visitor has actually
@@ -1602,79 +1579,17 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             goingToGrid ? modeToggleBtn.dataset.labelCarousel ?? '' : modeToggleBtn.dataset.labelGrid ?? '',
           );
 
-          // Re-point the shared-element morph name to whichever gallery the
-          // carousel currently shows (it auto-advances), so both toggle
-          // directions morph the correct tile rather than always the first.
-          if (namedMorphTile) {
-            namedMorphTile.style.viewTransitionName = '';
-          }
-          const morphTarget = gridGalleryTiles[carouselIndex] ?? null;
-          if (morphTarget) {
-            morphTarget.style.viewTransitionName = 'ajs-hero-morph';
-          }
-          namedMorphTile = morphTarget;
-
-          // HOME-06 (D-10/D-12): .home-hero__photo/.home-hero__accent no
-          // longer carry a permanent, unconditional view-transition-name in
-          // CSS (see their <style> comments) — name them here instead,
-          // synchronously before startViewTransition() is called, exactly
-          // mirroring how morphTarget/namedMorphTile above are assigned:
-          // set on click, left in place (not proactively reverted to '').
-          // Deliberately NOT cleared via transition.finished — an earlier
-          // version of this fix did that, but a second toggle click fired
-          // before the first transition's `finished` promise settled races
-          // the cleanup against the second click's own naming, sometimes
-          // clearing the name while the second transition is still capturing
-          // its snapshot (confirmed as the cause of a real, reproducible
-          // failure in the existing accent-panel fade-timing test — the
-          // named pseudo-element silently failed to materialize). Leaving
-          // the name in place after the first interaction is safe: it still
-          // fully addresses the D-10 hypothesis (the element carries no name
-          // at first paint / before any interaction, which is the scenario
-          // the reported mobile regression is about), it just no longer
-          // reverts to unnamed between later toggles — same persistence
-          // model gridGalleryTiles' morphTarget already uses.
-          if (heroPhoto) heroPhoto.style.viewTransitionName = 'ajs-hero-morph';
-          if (accentPanel) accentPanel.style.viewTransitionName = 'ajs-accent-panel';
-
           const mutate = goingToGrid ? showGrid : showCarousel;
 
-          if (typeof vtDoc.startViewTransition === 'function') {
-            // WebKit can expose the entering accent-panel pseudo-element at
-            // its final opacity as soon as `ready` resolves, ignoring the
-            // intended delayed entrance. Keep the real panel (and therefore
-            // its new-state capture) transparent until the photo transition
-            // has finished, then restore its normal CSS opacity. This guard
-            // is only needed when the panel enters (grid -> carousel).
-            const guardedAccentPanel = goingToGrid ? null : accentPanel;
-            guardedAccentPanel?.style.setProperty('opacity', '0');
-
-            const transition = vtDoc.startViewTransition(mutate);
-            if (guardedAccentPanel) {
-              const revealAccentPanel = () => {
-                guardedAccentPanel.style.removeProperty('opacity');
-                if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-                // The View Transition overlay is gone, so this animation
-                // affects the real panel rather than another engine-owned
-                // snapshot. Cancel after completion to hand opacity back to
-                // the component stylesheet without a visual discontinuity.
-                const fade = guardedAccentPanel.animate(
-                  [{ opacity: 0 }, { opacity: 1 }],
-                  {
-                    duration: 320,
-                    easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-                    fill: 'both',
-                  },
-                );
-                const releaseFade = () => fade.cancel();
-                void fade.finished.then(releaseFade, releaseFade);
-              };
-              void transition.finished.then(revealAccentPanel, revealAccentPanel);
-            }
-          } else {
-            mutate();
-          }
+          /* The native View Transitions API composites full-page snapshots
+             while this switch moves both a photo and a coloured accent
+             panel. In WebKit/Chromium that compositor can temporarily paint
+             the accent snapshot across the header, even though the header's
+             actual DOM background is white. A header must never be an accent
+             colour, so this particular switch deliberately uses a direct DOM
+             swap. The carousel's in-gallery photo motion remains unchanged;
+             only the unreliable grid/carousel morph is removed. */
+          mutate();
         });
 
         // quick-260725-tqs (Item 6, Part C): land on the gallery requested
@@ -2762,25 +2677,6 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     min-height: 100svh;
     max-height: 100vh;
     overflow: hidden;
-    /* HOME-06 (D-10/D-12) fix: view-transition-name is NO LONGER set here.
-       quick-260713-jfz originally gave this element a permanent, unconditional
-       `view-transition-name: ajs-hero-morph` — present at all times, including
-       first paint, not just during an active transition. That asymmetry (the
-       matching grid tile in gridGalleryTiles is only named dynamically, right
-       before a transition, and unnamed again afterward) was the leading
-       hypothesis for the reported mobile regression: a name that is "always
-       on" is exactly the kind of permanent state that could interact badly
-       with a real mobile browser's dynamic address-bar chrome collapsing on
-       first load (D-10). A disable/re-enable experiment under Chromium
-       mobile emulation showed no measurable difference either way (see
-       07-02-SUMMARY.md) — this bug class is known to escape emulation (D-11)
-       — so the hypothesis could not be directly confirmed here, but removing
-       the permanent naming is still the correct, low-risk fix: it makes this
-       element's naming symmetric with its grid-tile counterpart (both are
-       now named only for the duration of an actual transition, via
-       `heroPhoto.style.viewTransitionName` in the <script> below) and
-       eliminates the "always named, even at rest" state entirely, without
-       gating document.startViewTransition() to desktop (D-12). */
   }
 
   /* quick-260726-u97 (sketch 008 Variant C): the adjacent-gallery preview
@@ -3326,27 +3222,6 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     width: min(700px, 52%);
     padding: var(--space-xl);
     z-index: 3;
-    /* Direct follow-up (quick-260713-jfz) established WHY this element needs
-       its own view-transition-name (without one, it was just part of the
-       flat "everything else" root snapshot, painted BELOW the named
-       ajs-hero-morph group in the view-transition overlay's default stacking
-       order — the still-growing photo morph visually covered it for the
-       whole transition, reading as a sudden pop instead of a fade-in once
-       the overlay tore down and real DOM stacking took over). Naming it
-       gives it its own group in the pseudo-element tree, stacked above
-       ajs-hero-morph, so it can fade in independently and stay visible
-       throughout (a pure enter/exit fade — no "old" counterpart on the grid
-       side, since the whole .home-hero is hidden in grid mode).
-
-       HOME-06 (D-10/D-12) fix: the name itself is NO LONGER set here as a
-       permanent, unconditional value. It was one of the two elements flagged
-       as the leading hypothesis for the reported mobile full-bleed
-       regression (always-on naming, even at first paint, unlike the
-       matching grid tile which is only named during an active transition —
-       see .home-hero__photo's comment above for the full reasoning and the
-       disable/re-enable experiment recorded in 07-02-SUMMARY.md). The name
-       is now set dynamically via `accentPanel.style.viewTransitionName` in
-       the <script> below, only for the duration of an actual transition. */
     /* Solid "paper" backing for the whole panel (wordmark + intro together),
        cycling per-gallery via --current-accent (set by render()). This is
        what makes the wordmark below read as letters CUT OUT of a solid
@@ -4737,75 +4612,30 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     }
   }
 
-  /* View Transitions pseudo-elements (quick-260713-jfz) live on the document
-     root, outside this component's subtree — Astro's scoped <style> above
-     cannot target ::view-transition-*, so this must be a global block.
-     Customizes the swap's timing beyond the browser's flat ~250ms default
-     cross-fade: a deliberate ~420ms root cross-fade plus the shared-element
-     ajs-hero-morph group (named on .home-hero__photo above and on the
-     matching grid tile by the <script> block), so the hero photo visibly
-     grows/shrinks/repositions toward its grid tile instead of just fading. */
-  /* Explicit stacking, unconditional (not just under no-preference — wrong
-     stacking would be just as visible, if briefly, even at reduced-motion
-     durations). Default view-transition-group stacking follows DOM/paint
-     order, which put ajs-header (comes BEFORE .home-hero__photo in the
-     markup) and, less obviously, ajs-accent-panel too, at the mercy of
-     that ordering rather than a guarantee. Named groups default to normal
-     stacking (root at the back); giving ajs-hero-morph the lowest explicit
-     z-index and the header/panel higher ones guarantees both always paint
-     above the morphing photo regardless of markup order, instead of
-     relying on "it happens to come after in the DOM." */
-  ::view-transition-group(ajs-hero-morph) {
-    z-index: 1;
-  }
-
-  ::view-transition-group(ajs-header),
-  ::view-transition-group(ajs-accent-panel) {
-    z-index: 2;
+  /* SiteHeader keeps its own named snapshot for cross-document navigation.
+     The homepage's internal grid/carousel switch deliberately has no
+     document-level View Transition, so it needs no snapshot styling. */
+  ::view-transition-group(ajs-header) {
+    z-index: 3;
   }
 
   @media (prefers-reduced-motion: no-preference) {
     ::view-transition-old(root),
-    ::view-transition-new(root),
-    ::view-transition-group(ajs-hero-morph) {
+    ::view-transition-new(root) {
       animation-duration: 420ms;
       animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* The panel's exit remains a pseudo-element fade. Its entrance is
-       deliberately absent here: WebKit can start that pseudo-animation at
-       its final time. The click handler instead captures the entering panel
-       transparent, waits for the photo View Transition to finish, and then
-       fades the real DOM panel in with the Web Animations API. */
-    @keyframes ajs-panel-fade-out {
-      from {
-        opacity: 1;
-      }
-      to {
-        opacity: 0;
-      }
+    /* Keep the shared header stable while documents change rather than
+       blending a previous-page header with the destination header. */
+    ::view-transition-old(ajs-header) {
+      animation: none;
+      opacity: 0;
     }
 
-    /* Exit fade (carousel->grid direction) — no entrance delay needed
-       here, live measurement showed the exit already reads smoothly with
-       an immediate fade-out. */
-    ::view-transition-old(ajs-accent-panel) {
-      animation: ajs-panel-fade-out 380ms cubic-bezier(0.4, 0, 0.2, 1) both;
-    }
-
-    /* Direct follow-up: the header (ajs-header, named above) was fully
-       blanked out for a visible chunk of the transition — the morphing
-       photo's box overlapped its screen area while the header was still
-       painted in the (wrongly-stacked) root layer beneath it. Unlike the
-       accent panel, the header is present in BOTH the carousel and grid
-       states (just restyled — gradient-over-photo vs solid background), so
-       this is a genuine cross-fade of its two appearances, not an
-       enter/exit — no entrance delay needed, just the same duration as
-       everything else for a consistent feel. */
-    ::view-transition-old(ajs-header),
     ::view-transition-new(ajs-header) {
-      animation-duration: 420ms;
-      animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      animation: none;
+      opacity: 1;
     }
   }
 

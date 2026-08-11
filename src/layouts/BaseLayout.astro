@@ -185,7 +185,12 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
     <meta charset="utf-8" />
     <meta name="viewport" content={phoneFullBleed ? 'width=device-width, initial-scale=1, viewport-fit=cover' : 'width=device-width, initial-scale=1'} />
     {phoneFullBleed && <meta name="color-scheme" content="light" />}
-    {phoneCanvasColor && <style is:inline set:html={`html, body { background: ${phoneCanvasColor}; }`}></style>}
+    {phoneCanvasColor && (
+      <style
+        is:inline
+        set:html={`@media (max-width: 767px) { html, body { background: ${phoneCanvasColor}; } }`}
+      ></style>
+    )}
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
     <link rel="canonical" href={canonicalUrl} />
@@ -394,6 +399,16 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
     font-weight: var(--weight-regular);
     background-color: var(--color-dominant);
     color: var(--color-ink);
+  }
+
+  /* Desktop browser rubber-banding exposes the root canvas rather than the
+     carousel. Keep that canvas neutral: homepage accents belong inside the
+     artwork, never above or below the page. Phone-only full-bleed routes
+     keep their dedicated canvas colour through the max-width rule in head. */
+  @media (min-width: 768px) {
+    html {
+      background-color: var(--color-dominant);
+    }
   }
 
   /* Must live in the base stylesheet (rather than a child component) so it

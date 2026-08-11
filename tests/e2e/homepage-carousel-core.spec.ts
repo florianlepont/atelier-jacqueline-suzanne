@@ -258,6 +258,11 @@ test.describe('single unified mode toggle (HOME-01, D-01/D-02)', () => {
     await expect
       .poll(() => header.evaluate((element) => getComputedStyle(element).backgroundColor))
       .toBe('rgb(255, 255, 255)');
+    await expect
+      .poll(() =>
+        page.evaluate(() => getComputedStyle(document.documentElement).backgroundColor),
+      )
+      .toBe('rgb(255, 255, 255)');
   });
 
   test('exactly one toggle button exists and its accessible name flips with display mode', async ({ page }) => {
@@ -321,90 +326,27 @@ test.describe('view-transition toggle — reduced-motion still swaps modes', () 
   });
 });
 
-test.describe('view-transition accent-panel sequencing', () => {
-  test('keeps the real accent panel hidden through the photo morph, then progressively fades it in', async ({
-    page,
-  }) => {
+test.describe('grid/carousel swap', () => {
+  test('uses a direct swap so no document-level transition snapshot can recolor the header', async ({ page }) => {
     await page.goto('/');
 
-    const supported = await page.evaluate(() => typeof document.startViewTransition === 'function');
-    test.skip(!supported, 'document.startViewTransition unsupported in this browser');
-
-    // Capture the transition object so this test can assert the sequencing
-    // boundary directly. The real panel must remain hidden for the whole
-    // photo morph; relying only on a delayed pseudo-element animation is not
-    // portable because WebKit can expose that enter-only animation already
-    // at its final time when `ready` resolves.
     await page.evaluate(() => {
-      const original = document.startViewTransition.bind(document);
-      (window as unknown as { __lastVT: unknown }).__lastVT = null;
-      document.startViewTransition = (callback: () => void) => {
-        const transition = original(callback);
-        (window as unknown as { __lastVT: unknown }).__lastVT = transition;
-        return transition;
+      (window as unknown as { __viewTransitionStarted?: boolean }).__viewTransitionStarted = false;
+      document.startViewTransition = () => {
+        (window as unknown as { __viewTransitionStarted?: boolean }).__viewTransitionStarted = true;
+        throw new Error('The grid/carousel swap must not start a document view transition');
       };
     });
 
-    const toggle = page.locator('[data-role="mode-toggle"]');
-    await toggle.click();
-    await page.evaluate(async () => {
-      const transition = (window as unknown as {
-        __lastVT: { finished: Promise<void> };
-      }).__lastVT;
-      await transition.finished;
-    });
+    await page.getByRole('button', { name: 'Grille' }).click();
 
-    await page.evaluate(() => {
-      document.querySelector<HTMLButtonElement>('[data-role="mode-toggle"]')?.click();
-    });
-    await page.evaluate(async () => {
-      const transition = (window as unknown as {
-        __lastVT: { ready: Promise<void> };
-      }).__lastVT;
-      await transition.ready;
-    });
-
-    const accentPanel = page.locator('[data-role="accent-panel"]');
-    await expect(accentPanel).toHaveCSS('opacity', '0');
-
-    const fadeOpacities = await page.evaluate(async () => {
-      const transition = (window as unknown as {
-        __lastVT: { finished: Promise<void> };
-      }).__lastVT;
-      await transition.finished;
-
-      const panel = document.querySelector<HTMLElement>('[data-role="accent-panel"]');
-      if (!panel) return null;
-
-      const fade = panel.getAnimations().find((animation) => {
-        const effect = animation.effect as KeyframeEffect | null;
-        return effect?.pseudoElement == null && Number(effect?.getTiming().duration) === 320;
-      });
-      if (!fade) return null;
-
-      fade.pause();
-      const readAt = (time: number) => {
-        fade.currentTime = time;
-        void panel.offsetHeight;
-        return parseFloat(getComputedStyle(panel).opacity);
-      };
-
-      const samples = {
-        start: readAt(0),
-        halfway: readAt(160),
-        end: readAt(320),
-      };
-      fade.finish();
-      await Promise.resolve();
-      return samples;
-    });
-
-    expect(fadeOpacities).not.toBeNull();
-    expect(fadeOpacities!.start).toBeLessThanOrEqual(0.05);
-    expect(fadeOpacities!.halfway).toBeGreaterThan(0.05);
-    expect(fadeOpacities!.halfway).toBeLessThan(0.95);
-    expect(fadeOpacities!.end).toBeGreaterThanOrEqual(0.95);
-    await expect(accentPanel).toHaveCSS('opacity', '1');
+    await expect(page.locator('[data-role="home-grid"]')).toBeVisible();
+    await expect(page.locator('[data-role="site-header"]')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    await expect
+      .poll(() =>
+        page.evaluate(() => (window as unknown as { __viewTransitionStarted?: boolean }).__viewTransitionStarted),
+      )
+      .toBe(false);
   });
 });
 
@@ -463,6 +405,8 @@ test.describe('mode-toggle icon color regression (HOME-10-REGRESSION)', () => {
   test('grid mode: .home-toggle__box and morph-cell render ink (no regression)', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
+    await page.locator('[data-role="mode-toggle"]').blur();
+    await page.mouse.move(1000, 800);
 
     await expect
       .poll(() => page.locator('.home-toggle__box').evaluate((el) => getComputedStyle(el).color))
