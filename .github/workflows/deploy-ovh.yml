@@ -184,6 +184,29 @@ jobs:
           name: ovh-dist
           path: dist
 
+      # One-time launch workaround (2026-08-11): OVH provisioned a default
+      # placeholder index.html in /home/atelihu/www when the domain was
+      # attached via Multisite. Two prior manual-approval runs both failed
+      # identically on "dest open .../index.html: Failure" while every
+      # other file in the same recursive put succeeded — a stale-file
+      # conflict, not a transient network error. This step removes only
+      # that single known path via the plain SFTP protocol (no shell —
+      # matches the sftp_only constraint above) before the real upload.
+      # continue-on-error: true because this is best-effort cleanup; the
+      # real proof is whether the next step's upload succeeds. Safe to
+      # remove once the first successful production deploy confirms the
+      # stale file is gone for good.
+      - name: 'Workaround: remove stale OVH default index.html'
+        continue-on-error: true
+        env:
+          SFTP_PASSWORD: ${{ secrets.OVH_SFTP_PASSWORD }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
+          sshpass -e sftp -oBatchMode=no -oStrictHostKeyChecking=no -P 22 atelihu@ftp.cluster129.hosting.ovh.net <<'EOF'
+          ls -la /home/atelihu/www/index.html
+          rm /home/atelihu/www/index.html
+          EOF
+
       # Pinned to the immutable commit SHA (v1.2.6), never a tag or branch:
       # this is a Docker action that builds and runs third-party code on
       # this runner while OVH_SFTP_PASSWORD is in scope, so a mutable tag
