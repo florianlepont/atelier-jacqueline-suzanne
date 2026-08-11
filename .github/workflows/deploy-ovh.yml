@@ -1,27 +1,28 @@
 name: Deploy to OVH production
 
 # This is the ONLY path that ever writes to the real production domain,
-# atelierjacquelinesuzanne.fr, served from OVH Web Hosting. It now has two
-# trigger paths:
+# atelierjacquelinesuzanne.fr, served from OVH Web Hosting. It now starts
+# only from a deliberate `Mettre en production` click in Sanity Studio's
+# editorial dashboard (see .planning/quick/260811-w8d-build-the-real-mettre-
+# en-production-feat/), which publishes an internal `siteProductionRelease`
+# release-marker document; a Sanity Project Webhook filtering on that
+# document type fires this workflow's dedicated
+# `production-deploy-requested` repository_dispatch event. This is why the
+# unprotected `production-ovh-auto` environment below carries no GitHub
+# reviewer gate for that event: the editor's click IS the human checkpoint,
+# and it happens only after she has checked GitHub Pages staging herself —
+# a second approval in a tool she has no access to would add nothing.
 #
-#   - A Sanity content publish fires the `sanity-content-published`
-#     repository_dispatch event, which starts this workflow automatically
-#     and deploys straight through with no approval pause — a deliberate,
-#     dated supersession of D-01 (see
-#     .planning/phases/05-launch-domain-cutover/05-CONTEXT.md), made
-#     because the non-technical maintainer has no GitHub access and could
-#     not otherwise publish content to the real domain.
-#   - Every other trigger (a manual `workflow_dispatch`) still pauses on
-#     the `production-ovh` environment's Required reviewer, per D-02,
-#     exactly as before.
+# A content publish ALONE no longer reaches production; it only rebuilds
+# GitHub Pages staging via .github/workflows/deploy.yml, which this
+# workflow does not touch and does not share a trigger with. Every other
+# trigger (a manual `workflow_dispatch`) still pauses on the
+# `production-ovh` environment's Required reviewer, per D-02, exactly as
+# before.
 #
-# A code commit landing on `main` still deploys ONLY to GitHub Pages
-# staging via .github/workflows/deploy.yml, which this workflow does not
-# touch and does not share a trigger with.
-#
-# Because `repository_dispatch` always runs against the default branch,
-# an automatic content deploy also ships whatever code is currently on
-# `main` — treat `main` as always production-ready.
+# Because `repository_dispatch` always runs against the default branch, a
+# production release also ships whatever code is currently on `main` —
+# treat `main` as always production-ready.
 #
 # The `deploy` job below is gated on a trigger-conditional GitHub
 # Environment. With a Required reviewer configured on `production-ovh`,
@@ -33,7 +34,7 @@ name: Deploy to OVH production
 on:
   workflow_dispatch: {}
   repository_dispatch:
-    types: [sanity-content-published]
+    types: [production-deploy-requested]
 
 permissions:
   contents: read
