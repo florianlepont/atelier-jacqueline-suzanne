@@ -35,9 +35,9 @@ Names only — never commit real values, tokens, or keys. `.env` is gitignored; 
 | `SANITY_PROJECT_ID` | required (build) | Sanity project id for build-time content fetch. |
 | `SANITY_DATASET` | required (build) | Sanity dataset name (e.g. `production`). |
 | `SANITY_API_READ_TOKEN` | required (build) | Sanity read token used at build time. |
-| `PUBLIC_WEB3FORMS_ACCESS_KEY` | contact form | Currently unprovisioned / deferred to the Phase 5 OVH cutover — the contact form is non-functional until it is set. |
 | `SITE_URL` | optional (build) | Canonical site origin; defaults to `https://florianlepont.github.io`. |
 | `ASTRO_BASE` | optional (build) | Base path; defaults to `/`; set `/ajs-website/` for the GitHub Pages staging build. |
+| `PUBLIC_CONTACT_ENDPOINT` | optional (build) | Contact form POST target; defaults to the same-origin path `/contact.php`. Must be set to the absolute production URL (`https://atelierjacquelinesuzanne.fr/contact.php`) for the GitHub Pages staging build, since that host cannot execute PHP. |
 
 Note: the `sanity/` Studio has its own env (`SANITY_STUDIO_PREVIEW_URL`) documented in `sanity/README.md`.
 

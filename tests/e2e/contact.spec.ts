@@ -1,20 +1,26 @@
 import { test, expect } from '@playwright/test';
 
-// RED (Wave 0): src/lib/contact-form.ts, src/components/ContactForm.astro,
-// and the /contact/ + /en/contact/ routes do not exist yet — they are built
-// in Plan 03-02 Tasks 2/3. These assertions target the real contracts
-// documented in 03-RESEARCH.md (Pitfall 2: never hit the real Web3Forms
-// endpoint in CI, always mock via page.route()) and 03-UI-SPEC.md (Form
-// Interaction States: exact success/error/validation copy) and are expected
-// to FAIL until then — do not stub or weaken them to make them pass early.
-
-const WEB3FORMS_URL = 'https://api.web3forms.com/submit';
+// These assertions target the contact form's real submission contract:
+// src/lib/contact-form.ts (validation/honeypot helpers) and
+// src/components/ContactForm.astro (the submit handler + response
+// handling), documented in 03-UI-SPEC.md (Form Interaction States: exact
+// success/error/validation copy) and 05-RESEARCH.md/05-PATTERNS.md (the
+// OVH contact.php endpoint contract). Every network call is mocked via
+// page.route() — the real third-party form-relay service this form used
+// before 05-02 (never provisioned; see project memory) has been retired.
+//
+// CONTACT_ENDPOINT is a glob, not a literal URL, because the same spec must
+// intercept both the same-origin default ('/contact.php', what the local
+// preview build uses) and an absolute production URL, depending on how the
+// build under test was configured (see resolveContactEndpoint in
+// src/lib/contact-form.ts).
+const CONTACT_ENDPOINT = '**/contact.php';
 
 test.describe('contact form success', () => {
   test('submitting valid input shows the inline FR success message without navigating away (CONT-01, D-09)', async ({
     page,
   }) => {
-    await page.route(WEB3FORMS_URL, (route) =>
+    await page.route(CONTACT_ENDPOINT, (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -37,7 +43,7 @@ test.describe('contact form success', () => {
   });
 
   test('submitting valid input shows the inline EN success message at /en/contact/', async ({ page }) => {
-    await page.route(WEB3FORMS_URL, (route) =>
+    await page.route(CONTACT_ENDPOINT, (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -64,7 +70,7 @@ test.describe('contact form honeypot', () => {
     page,
   }) => {
     let requestFired = false;
-    await page.route(WEB3FORMS_URL, (route) => {
+    await page.route(CONTACT_ENDPOINT, (route) => {
       requestFired = true;
       return route.abort();
     });
@@ -87,7 +93,7 @@ test.describe('contact form honeypot', () => {
 test.describe('contact form validation', () => {
   test('empty name shows a per-field validation error and fires no network call', async ({ page }) => {
     let requestFired = false;
-    await page.route(WEB3FORMS_URL, (route) => {
+    await page.route(CONTACT_ENDPOINT, (route) => {
       requestFired = true;
       return route.abort();
     });
@@ -103,7 +109,7 @@ test.describe('contact form validation', () => {
 
   test('malformed email shows a per-field validation error and fires no network call', async ({ page }) => {
     let requestFired = false;
-    await page.route(WEB3FORMS_URL, (route) => {
+    await page.route(CONTACT_ENDPOINT, (route) => {
       requestFired = true;
       return route.abort();
     });
@@ -120,7 +126,7 @@ test.describe('contact form validation', () => {
 
   test('empty English message shows the localized error and fires no network call', async ({page}) => {
     let requestFired = false;
-    await page.route(WEB3FORMS_URL, (route) => {
+    await page.route(CONTACT_ENDPOINT, (route) => {
       requestFired = true;
       return route.abort();
     });
@@ -149,7 +155,7 @@ test.describe('contact form submission failures', () => {
   };
 
   test('shows a recoverable error for an HTTP failure', async ({page}) => {
-    await page.route(WEB3FORMS_URL, (route) =>
+    await page.route(CONTACT_ENDPOINT, (route) =>
       route.fulfill({status: 503, contentType: 'application/json', body: '{"success":false}'}),
     );
     await fillValidForm(page);
@@ -158,7 +164,7 @@ test.describe('contact form submission failures', () => {
   });
 
   test('shows a recoverable error for a rejected application response', async ({page}) => {
-    await page.route(WEB3FORMS_URL, (route) =>
+    await page.route(CONTACT_ENDPOINT, (route) =>
       route.fulfill({status: 200, contentType: 'application/json', body: '{"success":false}'}),
     );
     await fillValidForm(page);
@@ -167,7 +173,7 @@ test.describe('contact form submission failures', () => {
   });
 
   test('shows a recoverable error for invalid JSON', async ({page}) => {
-    await page.route(WEB3FORMS_URL, (route) =>
+    await page.route(CONTACT_ENDPOINT, (route) =>
       route.fulfill({status: 200, contentType: 'text/plain', body: 'not json'}),
     );
     await fillValidForm(page);
@@ -176,7 +182,7 @@ test.describe('contact form submission failures', () => {
   });
 
   test('shows a recoverable error when the network fails', async ({page}) => {
-    await page.route(WEB3FORMS_URL, (route) => route.abort('failed'));
+    await page.route(CONTACT_ENDPOINT, (route) => route.abort('failed'));
     await fillValidForm(page);
     await page.getByRole('button', {name: /envoyer le message/i}).click();
     await expectRecoverableError(page);
@@ -184,7 +190,7 @@ test.describe('contact form submission failures', () => {
 
   test('coalesces duplicate submit events into one request', async ({page}) => {
     let requests = 0;
-    await page.route(WEB3FORMS_URL, async (route) => {
+    await page.route(CONTACT_ENDPOINT, async (route) => {
       requests += 1;
       await new Promise((resolve) => setTimeout(resolve, 100));
       await route.fulfill({status: 200, contentType: 'application/json', body: '{"success":true}'});
