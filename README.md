@@ -57,7 +57,7 @@ This project has two deploy targets. Do not confuse them.
 
 | | Staging — GitHub Pages | Production — OVH |
 |---|---|---|
-| Trigger | Automatic on push to `main`, and on the Sanity `sanity-content-published` webhook | Automatic on the Sanity `sanity-content-published` webhook (no approval); manual dispatch otherwise (approval required) — a code commit to `main` never deploys here |
+| Trigger | Automatic on push to `main`, and on the Sanity `sanity-content-published` webhook | Automatic on the dedicated `production-deploy-requested` event fired by the editor's `Mettre en production` click in Sanity Studio (no approval); manual dispatch otherwise (Required-reviewer approval) — a code commit to `main` never deploys here |
 | Workflow | `.github/workflows/deploy.yml` | `.github/workflows/deploy-ovh.yml` |
 | Base path | `/ajs-website/` | Root (`/`) |
 | URL | https://florianlepont.github.io/ajs-website/ | https://atelierjacquelinesuzanne.fr |
@@ -66,13 +66,13 @@ Per D-03, GitHub Pages stays alive permanently as a pre-production environment a
 
 ### Production deploy: the two paths
 
-- **Content path (automatic).** Romane publishes in Sanity Studio → the publish webhook fires `sanity-content-published` → BOTH deploy.yml (staging) and deploy-ovh.yml (production) run → production runs every blocking gate, then deploys with no approval pause. This is a deliberate post-launch supersession of D-01's original manual-only rule, so the non-technical maintainer can self-serve.
+- **Content path (editor-gated).** Romane publishes in Studio → the content webhook fires and rebuilds GitHub Pages staging only → the dashboard's pipeline bar shows staging going green → she opens staging and checks it herself → she clicks `Mettre en production` → that publishes an internal release-marker document → a second Sanity webhook fires the production-release event → deploy-ovh.yml runs every blocking gate and deploys to the real domain with no GitHub approval pause, because her click already was the human checkpoint and she has no GitHub access to give a second one.
 - **Code path (manual, unchanged).** A commit landing on `main` deploys only to GitHub Pages staging. Shipping code to production is still an explicit `gh workflow run deploy-ovh.yml` that pauses on the `production-ovh` Required reviewer.
-- **The caveat, stated plainly:** because the webhook always builds the default branch, a content publish also ships whatever code is currently on `main`. Keep `main` production-ready; if unreleased code is sitting on `main`, a Sanity publish will release it.
+- **The caveat, restated:** because the release event always builds the default branch, a production release also ships whatever code is currently on `main`. Keep `main` production-ready. Note that this is now materially safer than before, because the release is a deliberate, separately-timed act rather than a side effect of every content publish.
 
 ### Production deploy: one-time setup
 
-Before `deploy-ovh.yml` can be run, these five things must be configured once:
+Before `deploy-ovh.yml` can be run, these six things must be configured once:
 
 1. **Repository secret `OVH_SFTP_PASSWORD`** — the SFTP password for user `atelihu`, found in the OVH Control Panel under Web Cloud → Hosting plans → `atelihu` → FTP - SSH. Set it scoped to the environment:
    ```
@@ -86,6 +86,15 @@ Before `deploy-ovh.yml` can be run, these five things must be configured once:
    gh secret set OVH_SFTP_PASSWORD --env production-ovh-auto
    ```
    If this step is skipped, automatic runs fail fast at the workflow's `Guard: SFTP credentials are present` step with an explicit error, rather than silently attempting an unauthenticated upload.
+6. **Sanity Project Webhook (`production-deploy-requested`)** — configured in **Sanity's own dashboard** (`https://www.sanity.io/manage` → project → API → Webhooks), **NOT** in this repository. Until it exists, the Studio `Mettre en production` button will publish its marker and report success, and nothing will happen: no production run will ever start. Configuration:
+   - Trigger on **Create** and **Update**.
+   - Dataset: `production`.
+   - Filter on the release-marker document type: `_type == "siteProductionRelease"`.
+   - HTTP method: `POST` to `https://api.github.com/repos/florianlepont/ajs-website/dispatches`.
+   - Body (projection) producing the event this repo's workflow now listens for: `{"event_type": "production-deploy-requested"}`.
+   - Headers: `Accept: application/vnd.github+json`, `Content-Type: application/json`, and a bearer `Authorization` header.
+   - The token is a **fine-grained GitHub PAT** scoped to this single repo (`florianlepont/ajs-website`) with `Contents: Read and write` and an expiry date. It lives **ONLY** in this webhook's header configuration in Sanity's dashboard — it must never be committed to this repository, written into any workflow file, or pasted anywhere else.
+   - Verification note: the **existing** webhook driving the staging event (`sanity-content-published`) almost certainly filters on the *other* marker document type (`siteDeployment`). Open it, confirm its shape, and mirror it for the new webhook rather than editing it — staging must keep its own trigger untouched.
 
 ### Production deploy: how to run one
 

@@ -54,13 +54,13 @@ changer n’a aucun effet immédiat sur le site :
 
 ## État de la mise à jour du site
 
-Après la publication Sanity, GitHub reconstruit le site statique. Le statut compare la date de
-publication avec les exécutions GitHub suivantes :
+Après la publication Sanity, GitHub reconstruit le site de préproduction (staging). Le statut
+compare la date de publication avec les exécutions GitHub suivantes :
 
 - **Modifications en attente** : des brouillons restent à publier ;
 - **Mise à jour en attente** : la nouvelle exécution GitHub n’est pas encore visible ;
 - **Mise à jour en cours** : le site est en reconstruction ;
-- **Site à jour** : une exécution créée après la publication a réussi ;
+- **Staging à jour** : une exécution créée après la publication a réussi ;
 - **Échec de la mise à jour** : Sanity est publié, mais le site peut encore afficher l’ancienne
   version ;
 - **Mise à jour non démarrée** : aucune exécution n’est apparue après trois minutes ;
@@ -69,6 +69,14 @@ publication avec les exécutions GitHub suivantes :
 
 En cas d’échec ou de délai anormal, ouvrir le lien du statut pour consulter GitHub Actions et
 prévenir le mainteneur. Ne pas republier plusieurs fois sans avoir identifié la cause.
+
+Sous le bouton **Mettre le site à jour**, une barre à 3 segments (Contenu / Staging / Production)
+et une ligne d’action résument tout le trajet jusqu’au site réel : publier dans Sanity met à jour
+automatiquement le site de préproduction ; une fois celui-ci vérifié, cliquer sur **Mettre en
+production** l’envoie vers l’adresse réelle. Le bouton reste grisé jusqu’à ce que le staging soit
+confirmé à jour, affiche un indicateur de progression pendant le déploiement en production, puis
+passe à un état « à jour » une fois terminé. Si un segment devient rouge, la ligne d’action précise
+quelle étape a échoué.
 
 ## Collections photo
 
@@ -119,10 +127,12 @@ site n’est pas livré.
   actualiser le Tableau de bord.
 - **La publication échoue** : utiliser **Actualiser et réessayer**. Si l’erreur persiste,
   transmettre son détail technique au mainteneur.
-- **Le site semble ancien après un succès Sanity** : attendre le statut GitHub. Seul **Site à
-  jour** confirme une exécution postérieure à la publication.
+- **Le site de préproduction semble ancien après un succès Sanity** : attendre le statut GitHub.
+  Seul **Staging à jour** confirme une exécution postérieure à la publication.
 - **Le statut GitHub est indisponible** : ouvrir GitHub Actions depuis le statut et prévenir le
   mainteneur ; le Tableau de bord ne suppose pas que le site est à jour.
+- **Le bouton « Mettre en production » reste grisé** : le staging n’est pas encore confirmé à
+  jour ; vérifier d’abord son statut avant de contacter le mainteneur.
 
 ## Vérification technique du déclenchement GitHub
 
@@ -141,7 +151,12 @@ avec **Mettre le site à jour**. Pour cet unique lot, vérifier :
 - une seule livraison Sanity réussie (statut 204) ;
 - une seule nouvelle exécution GitHub Actions, déclenchée par `repository_dispatch` avec l’action
   `sanity-content-published` ;
-- une exécution terminée avec succès, puis le statut **Site à jour** dans le Tableau de bord.
+- une exécution terminée avec succès, puis le statut **Staging à jour** dans le Tableau de bord.
+
+La confirmation de l’étape production se vérifie séparément, uniquement en cliquant **Mettre en
+production** une fois le staging confirmé : une seule exécution `deploy-ovh.yml`, déclenchée par
+`repository_dispatch` avec l’action `production-deploy-requested`, terminée avec succès, puis le
+statut **Production à jour** dans le Tableau de bord.
 
 Consigner uniquement l’horodatage du lot, le nombre de documents publics modifiés, le statut de la
 livraison et l’issue de l’exécution GitHub. En cas de plusieurs livraisons ou exécutions, ne pas
