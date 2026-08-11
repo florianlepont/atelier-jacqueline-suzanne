@@ -176,3 +176,7 @@ Both README.md's new "Production deploy: one-time setup" subsection and this pla
 ---
 *Phase: 05-launch-domain-cutover*
 *Completed: 2026-08-11*
+
+## Self-Check: PASSED
+
+All created/modified files verified present on disk (`.github/workflows/deploy-ovh.yml`, `tests/unit/deploy-ovh-workflow.test.ts`, `.github/workflows/deploy.yml`, `README.md`, this SUMMARY). All four task commits (`c96ae6e`, `f9bea5a`, `00e9943`, `43a93e8`) verified present in `git log`.
