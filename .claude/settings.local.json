@@ -9,7 +9,8 @@
       "Bash(npx eslint *)",
       "Bash(echo \"exit=$?\")",
       "Bash(tail -20 /tmp_config_check.json)",
-      "Bash(rm -f /tmp_config_check.json)"
+      "Bash(rm -f /tmp_config_check.json)",
+      "Bash(git -C /Users/florian/Projects/ajs-website status --short .planning/phases/21-homepage-scroll-experience/)"
     ],
     "deny": [
       "Read(.env)",
