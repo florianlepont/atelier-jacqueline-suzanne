@@ -177,3 +177,27 @@ No credential, token, or password value appears anywhere in this document.
 **Nothing was smoke-checked against the production origin after this deploy** — DNS still points at the old Fastly/Myportfolio addresses (see the resolver-view and zone-export captures above), so any probe would only describe the old site. That is Task 4 and plan `05-06`'s job, in that order.
 
 **The one-time workaround step in `deploy-ovh.yml` ("Workaround: remove stale OVH default index.html") is now safe to remove** in a follow-up commit — the stale file is confirmed gone, and every subsequent deploy will be uploading over content this pipeline itself produced.
+
+---
+
+## DNS cutover (Task 4) — completed
+
+**Performed by the maintainer** (Claude has no OVH credentials — this edit cannot be automated), via the per-record Modify/Delete actions in OVH's DNS zone editor:
+
+| Record | Before | After |
+|---|---|---|
+| apex `A` (`@`) | `151.101.128.119` + `151.101.192.119` | `51.91.236.255` (single record; the second Fastly `A` was deleted rather than left stale) |
+| `www` `A` | `151.101.128.119` + `151.101.192.119` | `51.91.236.255` (same treatment) |
+
+**Verification performed by Claude immediately after, against the authoritative nameserver (`@ns16.ovh.net`) and independently confirmed:**
+
+- `dig +short MX atelierjacquelinesuzanne.fr` (sorted) — **byte-identical** to `05-mx-baseline.txt`. Email untouched.
+- `dig +short TXT atelierjacquelinesuzanne.fr` — unchanged: SPF record and the `1|www...` marker both present.
+- `dig +short NS atelierjacquelinesuzanne.fr` — unchanged: `ns16.ovh.net.`, `dns16.ovh.net.`.
+- `dig +short A atelierjacquelinesuzanne.fr` / `www.atelierjacquelinesuzanne.fr` — both `51.91.236.255`, no Fastly address remaining, already visible on the public resolver (fast, thanks to the 60s TTL set at Task 2).
+- `curl -sSI http://atelierjacquelinesuzanne.fr/` — `301` to `https://`, `server: Apache` (the `.htaccess` HTTPS-redirect rule from plan `05-01` is live).
+- `curl -skSI https://atelierjacquelinesuzanne.fr/` — `200`, `content-type: text/html`, matches the new Astro site's output — **not** the old Myportfolio/Fastly response.
+
+**Known, expected, temporary state:** the HTTPS certificate currently served is OVH's shared cluster certificate (`CN=cluster129.hosting.ovh.net`, Let's Encrypt), not yet a certificate issued specifically for `atelierjacquelinesuzanne.fr`. OVH auto-provisions the domain-specific certificate after detecting the DNS points at the hosting account — this typically takes minutes to a few hours and requires no action. Re-check with `curl -v` once propagation completes; this is tracked as a follow-up in plan `05-06`, not a defect in this cutover.
+
+Exactly two DNS records were modified (both `A`), two stale duplicates were deleted, and nothing else in the zone was touched. D-02, D-04, and ROADMAP success criterion 1 (new site serves the domain) are satisfied by this section; success criterion 2 (MX preserved) is satisfied by the MX diff above; success criterion 3 (rehearsed/verified) was satisfied across Task 1 (baseline capture) through this task (live verification).
