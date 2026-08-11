@@ -3,11 +3,13 @@ import {
   PUBLIC_DOCUMENTS_QUERY,
   PUBLIC_DOCUMENTS_QUERY_PARAMS,
   DEPLOYMENT_MARKER_QUERY,
+  PRODUCTION_RELEASE_MARKER_QUERY,
   attentionPriority,
   attentionRowSummary,
   baseId,
   buildActivities,
   buildDeploymentMarkerActions,
+  buildProductionReleaseMarkerActions,
   buildAttentionGroups,
   ConfirmationChangedError,
   createInventoryGenerationGuard,
@@ -28,6 +30,8 @@ import {
   preparePublicationBatch,
   preflightForConfirmation,
   publicationCardState,
+  publicationError,
+  triggerProductionRelease,
 } from '../../sanity/editorial/dashboardLogic';
 import type {DashboardDocument, DashboardRow} from '../../sanity/editorial/dashboardLogic';
 import {summarizeChecks} from '../../sanity/editorial/checks';
@@ -309,6 +313,160 @@ describe('deployment marker actions', () => {
     expect(DEPLOYMENT_MARKER_QUERY).toContain("_id == 'siteDeployment'");
     expect(DEPLOYMENT_MARKER_QUERY).toContain("_type == 'siteDeployment'");
     expect(PUBLIC_DOCUMENTS_QUERY).not.toContain('siteDeployment');
+  });
+});
+
+describe('production release marker actions', () => {
+  it('creates then publishes the first production marker, with no content-publish action present', () => {
+    const actions = buildProductionReleaseMarkerActions(null, '2026-08-11T10:00:00.000Z');
+
+    expect(actions).toEqual([
+      {
+        actionType: 'sanity.action.document.create',
+        publishedId: 'siteProductionRelease',
+        attributes: {
+          _type: 'siteProductionRelease',
+          buildSequence: 1,
+          lastTriggeredAt: '2026-08-11T10:00:00.000Z',
+        },
+        ifExists: 'fail',
+      },
+      {
+        actionType: 'sanity.action.document.publish',
+        draftId: 'drafts.siteProductionRelease',
+        publishedId: 'siteProductionRelease',
+      },
+    ]);
+  });
+
+  it('accepts no parameter through which a content-publish action could be supplied', () => {
+    expect(buildProductionReleaseMarkerActions).toHaveLength(2);
+  });
+
+  it('increments and revision-locks an existing production marker before its final publish', () => {
+    const actions = buildProductionReleaseMarkerActions(
+      {_id: 'siteProductionRelease', _rev: 'prod-marker-rev', buildSequence: 4},
+      '2026-08-11T10:00:00.000Z',
+    );
+
+    expect(actions).toEqual([
+      {
+        actionType: 'sanity.action.document.edit',
+        draftId: 'drafts.siteProductionRelease',
+        publishedId: 'siteProductionRelease',
+        patch: {
+          set: {
+            buildSequence: 5,
+            lastTriggeredAt: '2026-08-11T10:00:00.000Z',
+          },
+        },
+      },
+      {
+        actionType: 'sanity.action.document.publish',
+        draftId: 'drafts.siteProductionRelease',
+        publishedId: 'siteProductionRelease',
+        ifPublishedRevisionId: 'prod-marker-rev',
+      },
+    ]);
+  });
+
+  it.each([
+    ['non-integer buildSequence', {_id: 'siteProductionRelease' as const, _rev: 'rev', buildSequence: 1.5}],
+    ['zero buildSequence', {_id: 'siteProductionRelease' as const, _rev: 'rev', buildSequence: 0}],
+    ['negative buildSequence', {_id: 'siteProductionRelease' as const, _rev: 'rev', buildSequence: -1}],
+    ['missing _rev', {_id: 'siteProductionRelease' as const, _rev: '', buildSequence: 4}],
+  ])('throws a French actualisez-et-réessayez error for %s', (_label, marker) => {
+    expect(() => buildProductionReleaseMarkerActions(marker, '2026-08-11T10:00:00.000Z')).toThrow(
+      /Actualisez et réessayez/,
+    );
+  });
+
+  it('keeps buildDeploymentMarkerActions byte-identical for the absent-marker case', () => {
+    const actions = buildDeploymentMarkerActions(
+      [],
+      undefined,
+      '2026-08-11T10:00:00.000Z',
+    );
+    expect(actions).toEqual([
+      {
+        actionType: 'sanity.action.document.create',
+        publishedId: 'siteDeployment',
+        attributes: {
+          _type: 'siteDeployment',
+          buildSequence: 1,
+          lastTriggeredAt: '2026-08-11T10:00:00.000Z',
+        },
+        ifExists: 'fail',
+      },
+      {
+        actionType: 'sanity.action.document.publish',
+        draftId: 'drafts.siteDeployment',
+        publishedId: 'siteDeployment',
+      },
+    ]);
+  });
+
+  it('projects lastTriggeredAt in addition to the base marker fields', () => {
+    expect(PRODUCTION_RELEASE_MARKER_QUERY).toContain("_id == 'siteProductionRelease'");
+    expect(PRODUCTION_RELEASE_MARKER_QUERY).toContain("_type == 'siteProductionRelease'");
+    expect(PRODUCTION_RELEASE_MARKER_QUERY).toContain('lastTriggeredAt');
+    expect(DEPLOYMENT_MARKER_QUERY).not.toContain('lastTriggeredAt');
+  });
+
+  it('fetches the marker with the published perspective, calls action once with a distinct tag, and returns the written timestamp', async () => {
+    const client = {
+      fetch: vi.fn().mockResolvedValue(null),
+      action: vi.fn().mockResolvedValue({transactionId: 'tx-release'}),
+    };
+    const now = new Date('2026-08-11T12:00:00.000Z');
+
+    const timestamp = await triggerProductionRelease(client, now);
+
+    expect(client.fetch).toHaveBeenCalledWith(
+      PRODUCTION_RELEASE_MARKER_QUERY,
+      {},
+      {perspective: 'published'},
+    );
+    expect(client.action).toHaveBeenCalledTimes(1);
+    expect(client.action).toHaveBeenCalledWith(
+      [
+        {
+          actionType: 'sanity.action.document.create',
+          publishedId: 'siteProductionRelease',
+          attributes: {
+            _type: 'siteProductionRelease',
+            buildSequence: 1,
+            lastTriggeredAt: '2026-08-11T12:00:00.000Z',
+          },
+          ifExists: 'fail',
+        },
+        {
+          actionType: 'sanity.action.document.publish',
+          draftId: 'drafts.siteProductionRelease',
+          publishedId: 'siteProductionRelease',
+        },
+      ],
+      {tag: 'editorial.production-release'},
+    );
+    expect(client.action.mock.calls[0][1].tag).not.toBe('editorial.publish-all');
+    expect(timestamp).toBe('2026-08-11T12:00:00.000Z');
+  });
+
+  it('propagates a rejected client.action rather than resolving', async () => {
+    const client = {
+      fetch: vi.fn().mockResolvedValue(null),
+      action: vi.fn().mockRejectedValue(new Error('403 permission denied')),
+    };
+
+    await expect(triggerProductionRelease(client, new Date('2026-08-11T12:00:00.000Z'))).rejects.toThrow(
+      'permission denied',
+    );
+  });
+
+  it('exports publicationError for reuse by the new handler', () => {
+    expect(publicationError(new Error('boom'))).toBe('boom');
+    expect(publicationError('plain string')).toBe('plain string');
+    expect(publicationError(undefined)).toBe('Erreur de publication inconnue.');
   });
 });
 

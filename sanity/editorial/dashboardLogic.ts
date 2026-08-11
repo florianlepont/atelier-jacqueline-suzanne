@@ -72,11 +72,20 @@ export interface PublishDocumentAction {
   ifPublishedRevisionId?: string
 }
 
+// The two internal marker document ids the dashboard writes to. Widening the
+// marker action interfaces and `DeploymentMarker` by this union (rather than
+// duplicating each interface per marker) is what lets one implementation
+// back both `buildDeploymentMarkerActions` (staging content-publish) and
+// `buildProductionReleaseMarkerActions` (production release).
+export const DEPLOYMENT_MARKER_ID = 'siteDeployment' as const
+export const PRODUCTION_RELEASE_MARKER_ID = 'siteProductionRelease' as const
+export type MarkerDocumentId = typeof DEPLOYMENT_MARKER_ID | typeof PRODUCTION_RELEASE_MARKER_ID
+
 export interface CreateDeploymentMarkerAction {
   actionType: 'sanity.action.document.create'
-  publishedId: 'siteDeployment'
+  publishedId: MarkerDocumentId
   attributes: {
-    _type: 'siteDeployment'
+    _type: MarkerDocumentId
     buildSequence: number
     lastTriggeredAt: string
   }
@@ -85,8 +94,8 @@ export interface CreateDeploymentMarkerAction {
 
 export interface EditDeploymentMarkerAction {
   actionType: 'sanity.action.document.edit'
-  draftId: 'drafts.siteDeployment'
-  publishedId: 'siteDeployment'
+  draftId: `drafts.${MarkerDocumentId}`
+  publishedId: MarkerDocumentId
   patch: {
     set: {
       buildSequence: number
@@ -97,8 +106,8 @@ export interface EditDeploymentMarkerAction {
 
 export interface PublishDeploymentMarkerAction {
   actionType: 'sanity.action.document.publish'
-  draftId: 'drafts.siteDeployment'
-  publishedId: 'siteDeployment'
+  draftId: `drafts.${MarkerDocumentId}`
+  publishedId: MarkerDocumentId
   ifPublishedRevisionId?: string
 }
 
@@ -109,9 +118,10 @@ export type DocumentAction =
   | PublishDeploymentMarkerAction
 
 export interface DeploymentMarker {
-  _id: 'siteDeployment'
+  _id: MarkerDocumentId
   _rev: string
   buildSequence: number
+  lastTriggeredAt?: string
 }
 
 export interface PublicationBatch {
@@ -169,8 +179,16 @@ export const PUBLIC_DOCUMENTS_QUERY_PARAMS = {
 export const PUBLISHED_TIMESTAMPS_QUERY =
   '*[_id in $ids] {_id, _updatedAt}'
 
-export const DEPLOYMENT_MARKER_QUERY =
-  "*[_id == 'siteDeployment' && _type == 'siteDeployment'][0] {_id, _rev, buildSequence}"
+function markerQuery(id: MarkerDocumentId, extraFields: string[] = []): string {
+  const fields = ['_id', '_rev', 'buildSequence', ...extraFields].join(', ')
+  return `*[_id == '${id}' && _type == '${id}'][0] {${fields}}`
+}
+
+export const DEPLOYMENT_MARKER_QUERY = markerQuery(DEPLOYMENT_MARKER_ID)
+
+export const PRODUCTION_RELEASE_MARKER_QUERY = markerQuery(PRODUCTION_RELEASE_MARKER_ID, [
+  'lastTriggeredAt',
+])
 
 const EMPTY_CATEGORY_COUNTS: Record<PublicationCategory, number> = {
   modified: 0,
@@ -432,19 +450,26 @@ export function preparePublicationBatch(documents: DashboardDocument[]): Publica
   }
 }
 
-export function buildDeploymentMarkerActions(
-  publicActions: PublishDocumentAction[],
+const markerLabels: Record<MarkerDocumentId, string> = {
+  [DEPLOYMENT_MARKER_ID]: 'déploiement',
+  [PRODUCTION_RELEASE_MARKER_ID]: 'mise en production',
+}
+
+// Returns ONLY the create-or-edit-then-publish pair for the given marker.
+// Shared by buildDeploymentMarkerActions (bundled with content-publish
+// actions) and buildProductionReleaseMarkerActions (standalone).
+function markerActions(
+  markerId: MarkerDocumentId,
   marker: DeploymentMarker | null | undefined,
   lastTriggeredAt: string,
 ): DocumentAction[] {
   if (!marker) {
     return [
-      ...publicActions,
       {
         actionType: 'sanity.action.document.create',
-        publishedId: 'siteDeployment',
+        publishedId: markerId,
         attributes: {
-          _type: 'siteDeployment',
+          _type: markerId,
           buildSequence: 1,
           lastTriggeredAt,
         },
@@ -452,22 +477,21 @@ export function buildDeploymentMarkerActions(
       },
       {
         actionType: 'sanity.action.document.publish',
-        draftId: 'drafts.siteDeployment',
-        publishedId: 'siteDeployment',
+        draftId: `drafts.${markerId}`,
+        publishedId: markerId,
       },
     ]
   }
 
   if (!Number.isSafeInteger(marker.buildSequence) || marker.buildSequence < 1 || !marker._rev) {
-    throw new Error('Marqueur technique de déploiement invalide. Actualisez et réessayez.')
+    throw new Error(`Marqueur technique de ${markerLabels[markerId]} invalide. Actualisez et réessayez.`)
   }
 
   return [
-    ...publicActions,
     {
       actionType: 'sanity.action.document.edit',
-      draftId: 'drafts.siteDeployment',
-      publishedId: 'siteDeployment',
+      draftId: `drafts.${markerId}`,
+      publishedId: markerId,
       patch: {
         set: {
           buildSequence: marker.buildSequence + 1,
@@ -477,14 +501,34 @@ export function buildDeploymentMarkerActions(
     },
     {
       actionType: 'sanity.action.document.publish',
-      draftId: 'drafts.siteDeployment',
-      publishedId: 'siteDeployment',
+      draftId: `drafts.${markerId}`,
+      publishedId: markerId,
       ifPublishedRevisionId: marker._rev,
     },
   ]
 }
 
-function publicationError(reason: unknown): string {
+export function buildDeploymentMarkerActions(
+  publicActions: PublishDocumentAction[],
+  marker: DeploymentMarker | null | undefined,
+  lastTriggeredAt: string,
+): DocumentAction[] {
+  return [...publicActions, ...markerActions(DEPLOYMENT_MARKER_ID, marker, lastTriggeredAt)]
+}
+
+// Deliberately takes NO `publicActions` parameter. The Sanity Actions API
+// commits its array as one transaction, so the only safe guarantee that a
+// production release can never be bundled into a content-publish batch is
+// that content actions cannot be handed to this builder at all -- the
+// absence of the parameter is the guarantee, not a comment.
+export function buildProductionReleaseMarkerActions(
+  marker: DeploymentMarker | null | undefined,
+  lastTriggeredAt: string,
+): DocumentAction[] {
+  return markerActions(PRODUCTION_RELEASE_MARKER_ID, marker, lastTriggeredAt)
+}
+
+export function publicationError(reason: unknown): string {
   if (reason instanceof Error) return reason.message
   return typeof reason === 'string' ? reason : 'Erreur de publication inconnue.'
 }
@@ -789,6 +833,25 @@ export function createPublicationController({
     publish,
     refreshTracking: trackCommittedPublication,
   }
+}
+
+// Publishes the siteProductionRelease marker in a single tagged Actions API
+// call and returns the timestamp it wrote. No try/catch here: the caller
+// owns error presentation, exactly as createPublicationController leaves
+// publicationError formatting to its own state machine.
+export async function triggerProductionRelease(
+  client: PublicationClient,
+  now: Date = new Date(),
+): Promise<string> {
+  const marker = await client.fetch<DeploymentMarker | null>(
+    PRODUCTION_RELEASE_MARKER_QUERY,
+    {},
+    {perspective: 'published'},
+  )
+  const lastTriggeredAt = now.toISOString()
+  const actions = buildProductionReleaseMarkerActions(marker, lastTriggeredAt)
+  await client.action(actions, {tag: 'editorial.production-release'})
+  return lastTriggeredAt
 }
 
 export function pluralize(count: number, singular: string, plural: string = `${singular}s`) {
