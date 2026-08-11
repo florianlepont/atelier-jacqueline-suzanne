@@ -18,14 +18,27 @@ describe('.github/workflows/deploy-ovh.yml', () => {
     expect(ovhWorkflow.length).toBeGreaterThan(0);
   });
 
-  it('triggers on manual dispatch and on the Sanity content webhook, never on a code commit to main (D-01 as superseded)', () => {
+  it('triggers on manual dispatch and on the dedicated production-release event, never on a code commit to main', () => {
     expect(ovhWorkflow).toContain('workflow_dispatch');
     expect(ovhWorkflow).toContain('repository_dispatch:');
-    expect(ovhWorkflow).toContain('types: [sanity-content-published]');
+    expect(ovhWorkflow).toContain('types: [production-deploy-requested]');
     // Surviving half of D-01: automatic production deploys are now allowed
-    // for CONTENT only (the Sanity webhook above), never for code — a
-    // commit landing on `main` must still never trigger this workflow.
+    // only for a deliberate `Mettre en production` release, never for a
+    // code commit landing on `main`.
     expect(ovhWorkflow).not.toContain('push:');
+  });
+
+  it('never mentions the content-publish event name outside its header comment narration', () => {
+    // The header comment legitimately narrates the OLD mechanism (this
+    // workflow used to also fire on the Sanity content-publish webhook), so
+    // a naive whole-file search for the old event name would make that very
+    // documentation self-invalidating. Stripping comment lines first proves
+    // the event name is gone from every functional part of the workflow.
+    const commentStripped = ovhWorkflow
+      .split('\n')
+      .filter((line) => !line.trim().startsWith('#'))
+      .join('\n');
+    expect(commentStripped).not.toContain('sanity-content-published');
   });
 
   it('applies the human-approval environment to every trigger except the Sanity webhook (D-01 supersession)', () => {
