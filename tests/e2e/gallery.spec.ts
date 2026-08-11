@@ -1005,6 +1005,17 @@ test.describe('gallery + édition thumbnail tiles render with no frame (PORT-05,
     const objectFit = await firstTileImg.evaluate((el) => getComputedStyle(el).objectFit);
     expect(objectFit).toBe('contain');
 
+    // The tile is lazily loaded — poll until the img has actually decoded a
+    // real image before measuring, or the ratio check below would race a
+    // still-loading <img> into a false NaN measurement (naturalWidth === 0).
+    await expect
+      .poll(() =>
+        firstTileImg.evaluate(
+          (el) => (el as HTMLImageElement).complete && (el as HTMLImageElement).naturalWidth > 0,
+        ),
+      )
+      .toBe(true);
+
     const ratios = await firstTileImg.evaluate((el) => {
       const img = el as HTMLImageElement;
       return {

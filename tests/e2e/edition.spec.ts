@@ -415,6 +415,17 @@ test.describe('editions masonry grid photos uncropped and flush (quick-260803-jb
     const position = await firstTileImg.evaluate((el) => getComputedStyle(el).position);
     expect(position).toBe('static');
 
+    // The tile is lazily loaded — poll until the img has actually decoded a
+    // real image before measuring, or the ratio check below would race a
+    // still-loading <img> into a false NaN measurement (naturalWidth === 0).
+    await expect
+      .poll(() =>
+        firstTileImg.evaluate(
+          (el) => (el as HTMLImageElement).complete && (el as HTMLImageElement).naturalWidth > 0,
+        ),
+      )
+      .toBe(true);
+
     const ratios = await firstTileImg.evaluate((el) => {
       const img = el as HTMLImageElement;
       return {
