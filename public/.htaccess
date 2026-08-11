@@ -2,3 +2,17 @@
 # into its own error handling on static hosting — both pieces are required
 # together (RESEARCH.md "Don't Hand-Roll" table).
 ErrorDocument 404 /404.html
+
+# OVH's Apache lists directory contents by default for any folder lacking
+# an index file, which would expose the _astro/ asset tree and any future
+# upload directory (ASVS V4).
+Options -Indexes
+
+# OVH auto-issues and auto-renews a Let's Encrypt certificate on web
+# hosting plans, so HTTPS already works — this only stops plaintext
+# requests being served instead (ASVS V13/V14). %{HTTP_HOST} is used
+# instead of a hardcoded domain so the rule stays correct if the hosting
+# account ever serves another name.
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]

@@ -129,6 +129,15 @@ jobs:
         env:
           EXPECTED_BASE: /ajs-website/
 
+      # GitHub Pages has no PHP runtime, so it would otherwise serve
+      # contact.php as a downloadable source file at
+      # https://florianlepont.github.io/ajs-website/contact.php, publishing
+      # the endpoint's internals. This is production-only (05-01-PLAN.md
+      # Task 3C) and runs after artifact verification so that step still
+      # sees the file, but before the artifact is uploaded/published.
+      - name: Strip the PHP endpoint from the Pages artifact
+        run: rm -f dist/contact.php
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

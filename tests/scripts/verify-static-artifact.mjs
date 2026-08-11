@@ -53,6 +53,42 @@ const htaccess = await readFile(new URL('.htaccess', dist), 'utf8')
 if (!htaccess.includes('ErrorDocument 404 /404.html')) {
   failures.push('dist/.htaccess does not wire the OVH 404 document')
 }
+if (!htaccess.includes('Options -Indexes')) {
+  failures.push('dist/.htaccess does not disable directory listing (Options -Indexes)')
+}
+
+// 05-01-PLAN.md Task 3B: prove the OVH contact endpoint really ships through
+// Astro's public/ passthrough and is the validated build, not a stub —
+// nobody should be able to delete/replace it during a refactor unnoticed.
+let contactPhp
+try {
+  contactPhp = await readFile(new URL('contact.php', dist), 'utf8')
+} catch {
+  failures.push('dist/contact.php is missing — the OVH contact endpoint did not ship in this build')
+}
+if (contactPhp && !contactPhp.includes('FILTER_VALIDATE_EMAIL')) {
+  failures.push('dist/contact.php does not contain FILTER_VALIDATE_EMAIL — this looks like a stub, not the validated endpoint')
+}
+
+// Cross-file honeypot parity: renaming the honeypot field on one side only
+// would make every real submission look like a bot (or every bot look
+// real) — the highest-value silent breakage in this phase. Checked against
+// dist/ rather than source so this doesn't race sibling plan 05-02's edits
+// to src/components/ContactForm.astro in the same wave.
+try {
+  const contactHtml = await readFile(new URL('contact/index.html', dist), 'utf8')
+  const honeypotMatch = contactHtml.match(/data-role="honeypot"[^>]*\bname="([^"]+)"/) ??
+    contactHtml.match(/\bname="([^"]+)"[^>]*data-role="honeypot"/)
+  if (!honeypotMatch) {
+    failures.push('dist/contact/index.html has no input carrying data-role="honeypot" to compare against contact.php')
+  } else if (contactPhp && !contactPhp.includes(honeypotMatch[1])) {
+    failures.push(
+      `dist/contact/index.html's honeypot field name "${honeypotMatch[1]}" does not appear in dist/contact.php`,
+    )
+  }
+} catch {
+  failures.push('dist/contact/index.html is missing — cannot verify honeypot field-name parity with dist/contact.php')
+}
 
 // EDN-06 build-blocking commerce-string guard: Éditions is a pure showcase
 // (no pricing/availability/purchase affordance). The forbidden token list
