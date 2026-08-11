@@ -32,7 +32,10 @@ test.describe('critical cross-browser smoke', () => {
   })
 
   test('contact form completes a mocked submission', async ({page}) => {
-    await page.route('https://api.web3forms.com/submit', (route) =>
+    // Same-origin OVH contact.php endpoint (05-02-PLAN.md) — replaced the
+    // retired Web3Forms third-party relay. Matches CONTACT_ENDPOINT in
+    // tests/e2e/contact.spec.ts.
+    await page.route('**/contact.php', (route) =>
       route.fulfill({status: 200, contentType: 'application/json', body: '{"success":true}'}),
     )
     await page.goto('/contact/')
