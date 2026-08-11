@@ -18,10 +18,31 @@ describe('.github/workflows/deploy-ovh.yml', () => {
     expect(ovhWorkflow.length).toBeGreaterThan(0);
   });
 
-  it('is manual-dispatch-only (D-01): contains workflow_dispatch, never push or repository_dispatch', () => {
+  it('triggers on manual dispatch and on the Sanity content webhook, never on a code commit to main (D-01 as superseded)', () => {
     expect(ovhWorkflow).toContain('workflow_dispatch');
+    expect(ovhWorkflow).toContain('repository_dispatch:');
+    expect(ovhWorkflow).toContain('types: [sanity-content-published]');
+    // Surviving half of D-01: automatic production deploys are now allowed
+    // for CONTENT only (the Sanity webhook above), never for code — a
+    // commit landing on `main` must still never trigger this workflow.
     expect(ovhWorkflow).not.toContain('push:');
-    expect(ovhWorkflow).not.toContain('repository_dispatch');
+  });
+
+  it('applies the human-approval environment to every trigger except the Sanity webhook (D-01 supersession)', () => {
+    expect(ovhWorkflow).toMatch(
+      /name:\s*\$\{\{\s*github\.event_name == 'repository_dispatch'\s*&&\s*'production-ovh-auto'\s*\|\|\s*'production-ovh'\s*\}\}/,
+    );
+    const autoEnvOccurrences = ovhWorkflow.split('production-ovh-auto').length - 1;
+    expect(autoEnvOccurrences).toBeGreaterThanOrEqual(1);
+  });
+
+  it('fails loudly when the resolved environment has no SFTP secret, before any upload is attempted', () => {
+    expect(ovhWorkflow).toContain('Guard: SFTP credentials are present');
+    const deployJobIndex = ovhWorkflow.indexOf('\n  deploy:');
+    const guardIndex = ovhWorkflow.indexOf('Guard: SFTP credentials are present');
+    const firstSftpActionIndex = ovhWorkflow.indexOf('uses: wlixcc/SFTP-Deploy-Action');
+    expect(guardIndex).toBeGreaterThan(deployJobIndex);
+    expect(guardIndex).toBeLessThan(firstSftpActionIndex);
   });
 
   it('sets SITE_URL to the real production domain', () => {
@@ -84,7 +105,7 @@ describe('.github/workflows/deploy.yml', () => {
     expect(pagesWorkflow).toContain('PUBLIC_CONTACT_ENDPOINT: https://atelierjacquelinesuzanne.fr/contact.php');
   });
 
-  it('still triggers automatically on push and the Sanity webhook (D-01: staging pipeline untouched)', () => {
+  it('still triggers automatically on push and the Sanity webhook (staging pipeline untouched)', () => {
     expect(pagesWorkflow).toContain('push:');
     expect(pagesWorkflow).toContain('repository_dispatch:');
   });
