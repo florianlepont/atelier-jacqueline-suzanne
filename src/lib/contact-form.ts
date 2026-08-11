@@ -33,3 +33,36 @@ export function isValidEmail(value: string): boolean {
 export function isBlank(value: string): boolean {
   return value.trim().length === 0;
 }
+
+/**
+ * Same-origin default contact-form POST target (05-02-PLAN.md). On the OVH
+ * production build this relative path is correct because the site and
+ * `contact.php` share an origin. Exported as a named constant so both
+ * `resolveContactEndpoint`'s fallback and any caller needing the default
+ * (e.g. ContactForm.astro's <script>, which cannot read frontmatter
+ * constants directly) reference one source of truth.
+ */
+export const DEFAULT_CONTACT_ENDPOINT = '/contact.php';
+
+/**
+ * Resolves the contact form's fetch target from an optional build-time
+ * configuration value.
+ *
+ * WHY this indirection exists instead of hardcoding a path: on the OVH
+ * production build the endpoint is same-origin, so a relative path is
+ * correct. But D-03 (05-CONTEXT.md) keeps GitHub Pages alive permanently as
+ * a pre-production environment, and that build is served from a different
+ * origin under a `/ajs-website/` base — a relative path there would resolve
+ * against the GitHub Pages host, which has no PHP runtime. So the Pages
+ * build overrides this with an absolute URL at build time via
+ * `PUBLIC_CONTACT_ENDPOINT`.
+ */
+export function resolveContactEndpoint(configured?: string | null): string {
+  if (typeof configured === 'string') {
+    const trimmed = configured.trim();
+    if (trimmed.length > 0) {
+      return trimmed;
+    }
+  }
+  return DEFAULT_CONTACT_ENDPOINT;
+}

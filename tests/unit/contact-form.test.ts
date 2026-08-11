@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isBlank, isHoneypotTriggered, isValidEmail } from '../../src/lib/contact-form';
+import { isBlank, isHoneypotTriggered, isValidEmail, resolveContactEndpoint } from '../../src/lib/contact-form';
 
 // RED (Wave 0): src/lib/contact-form.ts does not exist yet — it is built in
 // Plan 03-02 Task 2. This import failure is the intended failing state for
@@ -48,5 +48,37 @@ describe('isBlank', () => {
 
   it('returns false for a real value', () => {
     expect(isBlank('hello')).toBe(false);
+  });
+});
+
+describe('resolveContactEndpoint', () => {
+  it('returns the same-origin default when given undefined', () => {
+    expect(resolveContactEndpoint(undefined)).toBe('/contact.php');
+  });
+
+  it('returns the same-origin default when given null', () => {
+    expect(resolveContactEndpoint(null)).toBe('/contact.php');
+  });
+
+  it('returns the same-origin default when given an empty string', () => {
+    expect(resolveContactEndpoint('')).toBe('/contact.php');
+  });
+
+  it('returns the same-origin default when given a whitespace-only string', () => {
+    expect(resolveContactEndpoint('   ')).toBe('/contact.php');
+  });
+
+  it('returns the configured absolute URL verbatim', () => {
+    expect(resolveContactEndpoint('https://atelierjacquelinesuzanne.fr/contact.php')).toBe(
+      'https://atelierjacquelinesuzanne.fr/contact.php',
+    );
+  });
+
+  it('trims surrounding whitespace from a configured path', () => {
+    expect(resolveContactEndpoint('  /contact.php  ')).toBe('/contact.php');
+  });
+
+  it('honours any caller-supplied path verbatim', () => {
+    expect(resolveContactEndpoint('/api/mail.php')).toBe('/api/mail.php');
   });
 });
