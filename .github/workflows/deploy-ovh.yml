@@ -1,0 +1,230 @@
+name: Deploy to OVH production (manual)
+
+# This is the ONLY path that ever writes to the real production domain,
+# atelierjacquelinesuzanne.fr, served from OVH Web Hosting. It never runs
+# automatically — D-01 requires every production deploy to be an explicit,
+# deliberate human action. Pushes to `main` continue to deploy ONLY to
+# GitHub Pages staging via .github/workflows/deploy.yml, which this
+# workflow does not touch and does not share a trigger with.
+#
+# The `deploy` job below is gated on the `production-ovh` GitHub
+# Environment. With a Required reviewer configured on that environment,
+# GitHub pauses the run after the `build` job's recap is printed and
+# requires a recorded human approval before the SFTP push can happen
+# (D-02). See README.md "Deployments" section for the one-time setup and
+# the run procedure.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+# Only one production push should ever be in flight/queued — two
+# interleaved pushes to the same remote directory would race.
+concurrency:
+  group: ovh-production
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            sanity/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Sanity Studio dependencies
+        run: npm ci --prefix sanity
+
+      - name: Lint and build Sanity Studio
+        run: |
+          npm --prefix sanity run lint
+          npm --prefix sanity run build
+
+      # BLOCKING gate, same as staging: a type error inside .astro
+      # frontmatter (or any .ts source) fails the run before any build
+      # is attempted.
+      - name: Type-check (astro check)
+        run: npm run typecheck
+
+      # Production build: root base path (OVH serves the domain root, so
+      # the base-path env var used by the GitHub Pages build is
+      # deliberately left UNSET here — setting it would make every baked
+      # href/asset path wrong on the real domain) and an explicit
+      # SITE_URL pointing at the real domain. A missing SITE_URL here is
+      # the failure mode that silently ships canonical tags, hreflang
+      # links, sitemap.xml, and robots.txt all pointing back at the
+      # GitHub Pages host. PUBLIC_CONTACT_ENDPOINT is deliberately left
+      # UNSET too: production is same-origin with contact.php, so the
+      # contact-form helper's default (/contact.php) is already correct.
+      - name: Build (OVH production artifact, root base)
+        run: npm run build
+        env:
+          SANITY_PROJECT_ID: ${{ secrets.SANITY_PROJECT_ID }}
+          SANITY_DATASET: ${{ secrets.SANITY_DATASET }}
+          SANITY_API_READ_TOKEN: ${{ secrets.SANITY_API_READ_TOKEN }}
+          SITE_URL: https://atelierjacquelinesuzanne.fr
+
+      # BLOCKING gate: proves the root-base artifact is well-formed, and
+      # (per 05-01-PLAN.md) also proves dist/contact.php and the hardened
+      # dist/.htaccess shipped with matching honeypot field names.
+      - name: Verify static artifact
+        run: npm run test:artifact
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium webkit
+
+      # OS-level browser deps are not stored in ~/.cache/ms-playwright, so
+      # they must still be installed even when the browser binary cache hits.
+      - name: Install Playwright OS dependencies (cache hit)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium webkit
+
+      # BLOCKING gate: the production path never skips a gate the staging
+      # path enforces.
+      - name: Run Playwright e2e tests
+        run: npx playwright test
+
+      # BLOCKING gate.
+      - name: Run Vitest unit tests with coverage thresholds
+        run: npm run test:coverage
+
+      # The SFTP step below uploads dotfiles by explicit name (see the
+      # "Deploy .htaccess" step in the deploy job), because a shell glob
+      # like ./dist/* silently skips them. This guard turns "a new
+      # top-level dotfile appeared and would be silently dropped from
+      # production" into a loud build failure instead of a silent gap.
+      - name: 'Guard: only .htaccess is a top-level dotfile'
+        run: |
+          dotfiles=$(find dist -maxdepth 1 -mindepth 1 -name '.*' -printf '%f\n' | sort)
+          expected='.htaccess'
+          if [ "$dotfiles" != "$expected" ]; then
+            echo "::error::Expected dist/ to contain exactly one top-level dotfile (.htaccess), found: $(echo "$dotfiles" | tr '\n' ' ')" >&2
+            exit 1
+          fi
+
+      # This recap is the artifact a human reads before approving the
+      # `deploy` job's environment gate (D-02) — it is already visible in
+      # the same run, above the Approve/Reject button.
+      - name: Deploy recap
+        run: |
+          {
+            echo "## OVH production deploy recap"
+            echo ""
+            echo "- **Commit:** \`${GITHUB_SHA}\` — $(git log -1 --pretty=%s)"
+            echo "- **Target host:** \`ftp.cluster129.hosting.ovh.net\`"
+            echo "- **Remote path:** \`/home/atelihu/www\`"
+            echo "- **Resolved SITE_URL:** \`https://atelierjacquelinesuzanne.fr\`"
+            echo "- **File count:** $(find dist -type f | wc -l)"
+            echo "- **Total size:** $(du -sh dist | cut -f1)"
+            echo ""
+            echo "### Top-level dist/ entries"
+            echo '```'
+            ls -1a dist
+            echo '```'
+            echo ""
+            if [ -f dist/contact.php ]; then
+              echo "- dist/contact.php: present"
+            else
+              echo "- dist/contact.php: **MISSING**"
+            fi
+            if [ -f dist/.htaccess ]; then
+              echo "- dist/.htaccess: present"
+            else
+              echo "- dist/.htaccess: **MISSING**"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # actions/upload-artifact@v4.4+ excludes hidden files by default.
+      # Without include-hidden-files: true, dist/.htaccess never even
+      # reaches the deploy job, and production ships with no Apache
+      # config (no ErrorDocument, no Options -Indexes, no HTTPS redirect).
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ovh-dist
+          path: dist
+          include-hidden-files: true
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    # This environment declaration IS the D-02 human-approval gate: with a
+    # Required reviewer configured on the `production-ovh` environment
+    # (see README.md), GitHub pauses this job here and shows an
+    # Approve/Reject button, with the build job's recap already visible
+    # in the same run. Nothing below this line runs until a human approves.
+    environment:
+      name: production-ovh
+      url: https://atelierjacquelinesuzanne.fr
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ovh-dist
+          path: dist
+
+      # Pinned to the immutable commit SHA (v1.2.6), never a tag or branch:
+      # this is a Docker action that builds and runs third-party code on
+      # this runner while OVH_SFTP_PASSWORD is in scope, so a mutable tag
+      # would be an exfiltration path if the upstream tag were ever
+      # force-moved. sftp_only: true is required because OVH's mutualized
+      # tier has no SSH shell (Professional tier and up only) — without it
+      # the action's `ssh … mkdir -p` step would fail. delete_remote_files
+      # is deliberately left unset (default false): setting it true would
+      # attempt `ssh … rm -rf` on a host with no shell.
+      - name: Deploy dist to OVH (SFTP)
+        uses: wlixcc/SFTP-Deploy-Action@a5ccb9c6211a94cc59404f0fdb2a9936a6dfee64 # v1.2.6
+        with:
+          username: atelihu
+          server: ftp.cluster129.hosting.ovh.net
+          port: '22'
+          password: ${{ secrets.OVH_SFTP_PASSWORD }}
+          local_path: './dist/*'
+          remote_path: '/home/atelihu/www'
+          sftp_only: true
+
+      # The previous step's ./dist/* glob cannot match dotfiles, so
+      # Apache's config has to be sent by explicit path. The build job's
+      # "only .htaccess is a top-level dotfile" guard proves this is the
+      # only dotfile that needs this treatment.
+      - name: Deploy .htaccess to OVH (SFTP, dotfile)
+        uses: wlixcc/SFTP-Deploy-Action@a5ccb9c6211a94cc59404f0fdb2a9936a6dfee64 # v1.2.6
+        with:
+          username: atelihu
+          server: ftp.cluster129.hosting.ovh.net
+          port: '22'
+          password: ${{ secrets.OVH_SFTP_PASSWORD }}
+          local_path: './dist/.htaccess'
+          remote_path: '/home/atelihu/www'
+          sftp_only: true
+
+      - name: Deploy complete
+        run: |
+          {
+            echo "## OVH production deploy complete"
+            echo ""
+            echo "Files pushed to \`atelihu@ftp.cluster129.hosting.ovh.net:/home/atelihu/www\`."
+            echo ""
+            echo "DNS is unchanged by this workflow — files are now on the server, but the domain does not point at this hosting until the separate manual DNS cutover runs."
+          } >> "$GITHUB_STEP_SUMMARY"
