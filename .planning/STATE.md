@@ -1,20 +1,20 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-milestone_name: MVP (Phase 5 — deferred launch, now resumed)
-current_phase: "05"
-status: Ready to execute
+milestone_name: MVP
+current_phase: 05
+current_phase_name: Launch & Domain Cutover
+status: executing
 stopped_at: Phase 5 planned — 6 plans, 4 waves, verification passed
-last_updated: "2026-08-11T13:57:55.000Z"
+last_updated: "2026-08-11T14:16:50.728Z"
 last_activity: 2026-08-11
-last_activity_desc: Phase 5 (Launch & Domain Cutover) planned — 6 plans across 4 waves, plan-checker verification passed
+last_activity_desc: Phase 05 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 6
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
-current_phase_name: Launch & Domain Cutover
 ---
 
 # Project State
@@ -24,14 +24,14 @@ current_phase_name: Launch & Domain Cutover
 See: .planning/PROJECT.md (updated 2026-08-04)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; v1.3 adds a non-transactional Éditions showcase; checkout still follows in the future v1.x shop milestone.)
-**Current focus:** Phase 5 (Launch & Domain Cutover) — the deliberately-deferred v1.0 tail phase — resumed at the user's initiative; planned (6 plans, 4 waves) and verification-passed, ready to execute. Not part of any v1.x milestone.
+**Current focus:** Phase 05 — Launch & Domain Cutover
 
 ## Current Position
 
-Phase: Phase 5 — Launch & Domain Cutover
-Plan: 6 plans (4 waves) — ready to execute
+Phase: 05 (Launch & Domain Cutover) — EXECUTING
+Plan: 2 of 6
 Status: Ready to execute
-Last activity: 2026-08-11 — Phase 5 planning complete, plan-checker verification passed
+Last activity: 2026-08-11 — Phase 05 execution started
 
 ## Performance Metrics
 
@@ -81,6 +81,7 @@ Last activity: 2026-08-11 — Phase 5 planning complete, plan-checker verificati
 | Phase 07 P01 | 15min | 2 tasks | 2 files |
 | Phase 07 P02 | ~20min | 2 tasks | 2 files |
 | Phase 08 | unknown (implemented directly on main, outside plan/execute tracking) | - | 2 files (HomeCarousel.astro, homepage.spec.ts) + unrelated adjacent Sanity schema work |
+| Phase 05 P01 | 25min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -157,6 +158,9 @@ Recent decisions affecting current work:
 - [Phase 23]: COMPLETE 2026-08-10 by explicit user decision ("Phase 23 is done by previous commit"), delivered directly in commit `6c51695` alongside Phase 21's supersession and the `260810-qmm` quick task — no `.planning/phases/23-*/` directory, no formal plans, no discuss-phase ever ran. Verified before accepting the claim: `git show 6c51695 -- src/components/AboutPageBody.astro` confirms a real ABOUT-05-shaped change — `.about-page__bio-row` moved from `flex-direction: column-reverse` to `display: block` with the portrait `float: right` (64px) and text wrapping around it at ≤767px (was a stacked column before), desktop keeps the flex row with an explicit `order` swap (portrait now precedes the lead paragraph in DOM order too). UI-02's combined desktop/tablet regression sweep was accepted on the user's word, not independently re-run by this session. Requirements ABOUT-05 and UI-02 marked `[x]` in `REQUIREMENTS.md`.
 - [Milestone v1.6 audit]: Ran `/gsd-audit-milestone 1.6` 2026-08-11 before archiving (user chose the thorough path over proceeding directly). Phase 20/21 VERIFICATION.md read directly; `gsd-integration-checker` spawned for cross-phase wiring and live E2E re-run. Found one real regression the prior reconciliation missed because it worked at the tracking-artifact level, not the runtime level: **HOME-16 (per-visit random accent color) was silently broken by commit `6c51695`.** `pickRandomGalleryIndex()` in `HomeCarousel.astro` still runs and writes `--current-accent` onto `.home`, but `.home`'s non-header children are `display:none` at phone width since `MobileHomePrototype.astro` took over that viewport; the actual phone-visible background is a separate, hardcoded mechanism (`phoneCanvasColor={galleries[0]?.heroColor}` in `index.astro:70`, applied via `BaseLayout.astro:188`) that never reads the random pick. Live-verified by the integration checker (three page loads at 390×844 with `Math.random` forced to 0/0.5/0.999, identical `document.body` background every time) and independently re-confirmed by the orchestrator via direct source read — the safety classifier was unavailable for that subagent run, so its claim was not accepted on its word alone. `homepage-accent-random.spec.ts` never catches this: it forces a 1280×800 desktop viewport in its own `beforeEach`. Audit written to `.planning/v1.6-MILESTONE-AUDIT.md`, `status: gaps_found`.
   Presented to the user with the standard gap-closure options (insert a closure phase, or proceed and accept as tech debt). User chose neither — explicit instruction "annule le HOME-16" (cancel HOME-16), the same disposition already applied to Phase 22's three requirements. `REQUIREMENTS.md` HOME-16 changed from `[x]` Complete to cancelled (unchecked, with the full history inline); `ROADMAP.md`'s Phase 20 line and success-criterion 3 annotated; the audit file's own `status` updated to `tech_debt` via an explicit `resolution` block in its frontmatter — the original `gaps_found` finding and evidence were preserved, not rewritten, matching how `21-VERIFICATION.md`'s `superseded_note` was handled during the earlier reconciliation. v1.6 is now clear to archive via `/gsd-complete-milestone 1.6` with 5/9 requirements delivered and 4/9 cancelled (Phase 22's three plus HOME-16).
+
+- [Phase 05]: Contact-form recipient confirmed by the maintainer as contact@atelierjacquelinesuzanne.fr (D-07) — the existing publicEmail default, explicitly confirmed rather than assumed.
+- [Phase 05]: PHP mail() endpoint validation tested via source-invariant text assertions (no PHP runtime), per 05-VALIDATION.md Wave 0's recommendation for a single ~110-line script.
 
 ### Pending Todos
 
@@ -333,7 +337,7 @@ Note on the 9 `homepage-scroll-*` debug sessions above: all confirmed root-cause
 
 ## Session Continuity
 
-Last session: 2026-08-11T12:48:50.194Z
+Last session: 2026-08-11T14:15:22.081Z
 Stopped at: Phase 5 context gathered
 Resume file: .planning/phases/05-launch-domain-cutover/05-CONTEXT.md
 
