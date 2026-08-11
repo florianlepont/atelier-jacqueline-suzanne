@@ -1,20 +1,20 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.6
-milestone_name: Mobile Experience Redesign
-current_phase: 6
-status: Awaiting next milestone
-stopped_at: Phase 5 context gathered
-last_updated: "2026-08-11T12:48:50.204Z"
+milestone: v1.0
+milestone_name: MVP (Phase 5 — deferred launch, now resumed)
+current_phase: "05"
+status: Ready to execute
+stopped_at: Phase 5 planned — 6 plans, 4 waves, verification passed
+last_updated: "2026-08-11T13:57:55.000Z"
 last_activity: 2026-08-11
-last_activity_desc: Milestone v1.6 completed and archived
+last_activity_desc: Phase 5 (Launch & Domain Cutover) planned — 6 plans across 4 waves, plan-checker verification passed
 progress:
-  total_phases: 3
-  completed_phases: 2
-  total_plans: 21
-  completed_plans: 21
-  percent: 67
-current_phase_name: About Portrait Placement & Milestone Regression Close
+  total_phases: 1
+  completed_phases: 0
+  total_plans: 6
+  completed_plans: 0
+  percent: 0
+current_phase_name: Launch & Domain Cutover
 ---
 
 # Project State
@@ -24,14 +24,14 @@ current_phase_name: About Portrait Placement & Milestone Regression Close
 See: .planning/PROJECT.md (updated 2026-08-04)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; v1.3 adds a non-transactional Éditions showcase; checkout still follows in the future v1.x shop milestone.)
-**Current focus:** v1.6 milestone resolved (Phase 20 shipped, Phase 21 shipped then superseded, Phase 22 cancelled, Phase 23 shipped); no phase currently active — Phase 5 (Launch & Domain Cutover) remains the only open v1 phase, deliberately deferred
+**Current focus:** Phase 5 (Launch & Domain Cutover) — the deliberately-deferred v1.0 tail phase — resumed at the user's initiative; planned (6 plans, 4 waves) and verification-passed, ready to execute. Not part of any v1.x milestone.
 
 ## Current Position
 
-Phase: Milestone v1.6 complete
-Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-08-11 — Milestone v1.6 completed and archived
+Phase: Phase 5 — Launch & Domain Cutover
+Plan: 6 plans (4 waves) — ready to execute
+Status: Ready to execute
+Last activity: 2026-08-11 — Phase 5 planning complete, plan-checker verification passed
 
 ## Performance Metrics
 
