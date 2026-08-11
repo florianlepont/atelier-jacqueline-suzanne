@@ -79,7 +79,15 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
   2. Any existing email service tied to the domain (MX records) continues to work after cutover.
   3. The DNS cutover was rehearsed/verified (e.g., staging alias tested, TTLs lowered in advance) before the production switch.
 
-**Plans**: TBD
+**Plans:** 6 plans (4 waves)
+
+Plans:
+- [ ] 05-01-PLAN.md — OVH PHP `mail()` contact endpoint, hardened `.htaccess`, build-artifact guarantees (wave 1, D-07 mailbox checkpoint)
+- [ ] 05-02-PLAN.md — repoint `ContactForm.astro` at the PHP endpoint, CORS-safe FormData body, endpoint resolver (wave 1)
+- [ ] 05-03-PLAN.md — manual-only `deploy-ovh.yml` production workflow with recap + environment approval gate (wave 2, D-01/D-02)
+- [ ] 05-04-PLAN.md — `launch-smoke-check.sh` rehearsed against staging, plus the DNS cutover runbook (wave 2)
+- [ ] 05-05-PLAN.md — zone capture, human go-ahead, first production SFTP push, A-record cutover (wave 3, D-02/D-04, not autonomous)
+- [ ] 05-06-PLAN.md — post-cutover verification: smoke check + MX diff, real mail delivery, launch evidence log (wave 4)
 
 ### v1.1 Homepage Refinements (Phase 6) — SHIPPED 2026-07-13
 
