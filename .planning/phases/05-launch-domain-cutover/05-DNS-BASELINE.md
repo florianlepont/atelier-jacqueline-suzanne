@@ -91,9 +91,49 @@ If MX or SPF ever differ from the above, that is runbook Section 5's immediate, 
 
 ## OVH zone text-mode export (pasted at the D-04 checkpoint)
 
-*Reserved for Task 2. This resolver-side `dig` capture above only shows the record types that were explicitly queried — the OVH control panel's "Edit in text mode" export shows every record that exists in the zone, including anything the targeted lookups above might have missed. Task 2 will append that export here verbatim and diff it against the capture above.*
+Pasted verbatim by the maintainer from OVH Control Panel → Web Cloud → Domain names → `atelierjacquelinesuzanne.fr` → DNS zone → "Edit in text mode", 2026-08-11:
 
-**Not yet filled in — do not proceed past Task 2 without this section being populated and reviewed.**
+```
+$TTL 3600
+@	IN SOA dns16.ovh.net. tech.ovh.net. (2086453506 86400 3600 3600000 60)
+        IN NS     dns16.ovh.net.
+        IN NS     ns16.ovh.net.
+        IN MX     1 mx1.mail.ovh.net.
+        IN MX     5 mx2.mail.ovh.net.
+        IN MX     100 mx3.mail.ovh.net.
+        IN A     151.101.192.119
+        IN A     151.101.128.119
+        IN TXT     "v=spf1 include:mx.ovh.com -all"
+        IN TXT     "1|www.atelierjacquelinesuzanne.fr"
+_autodiscover._tcp        IN SRV     0 0 443 mailconfig.ovh.net.
+_imaps._tcp        IN SRV     0 0 993 ssl0.ovh.net.
+_submission._tcp        IN SRV     0 0 465 ssl0.ovh.net.
+autoconfig        IN CNAME     mailconfig.ovh.net.
+autodiscover        IN CNAME     mailconfig.ovh.net.
+ftp        IN CNAME     atelierjacquelinesuzanne.fr.
+imap        IN CNAME     ssl0.ovh.net.
+mail        IN CNAME     ssl0.ovh.net.
+ovhmo-selector-1._domainkey        IN CNAME     ovhmo-selector-1._domainkey.4262476.fa.dkim.mail.ovh.net.
+ovhmo-selector-2._domainkey        IN CNAME     ovhmo-selector-2._domainkey.4262477.fa.dkim.mail.ovh.net.
+pop3        IN CNAME     ssl0.ovh.net.
+smtp        IN CNAME     ssl0.ovh.net.
+www        IN A     151.101.128.119
+www        IN A     151.101.192.119
+www        IN TXT     "3|welcome"
+```
+
+### Diff against the Task 1 `dig` capture
+
+The NS, apex A, www A, MX, and TXT records the zone export shows are **byte-identical** to Task 1's `dig` capture — no drift, no surprise value.
+
+**Records the export reveals that the targeted `dig` queries never asked about** (all mail/domain infrastructure, none in the proposed change set, none to be touched by Task 4):
+- `SOA` — standard zone metadata, serial `2086453506`.
+- 3× `SRV` (`_autodiscover._tcp`, `_imaps._tcp`, `_submission._tcp`) — email client autoconfiguration.
+- 7× `CNAME` (`autoconfig`, `autodiscover`, `ftp`, `imap`, `mail`, `pop3`, `smtp`) — all point at `ssl0.ovh.net.` / `mailconfig.ovh.net.`, or in `ftp`'s case, back at the zone apex.
+- 2× DKIM-selector `CNAME` (`ovhmo-selector-1._domainkey`, `ovhmo-selector-2._domainkey`) — email authentication; breaking these would not stop mail delivery outright but would hurt deliverability/anti-spoofing.
+- `www` `TXT` `"3|welcome"` — an OVH-internal marker TXT, same family as the apex `"1|www...."` marker.
+
+**D-04 satisfied.** None of the above is in scope for Task 4's edit — that edit touches exactly the apex `A` and `www` `A` records and nothing else, confirmed against this full picture rather than the narrower `dig` view alone.
 
 ---
 
