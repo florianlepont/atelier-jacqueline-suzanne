@@ -199,7 +199,7 @@ jobs:
       - name: 'Workaround: remove stale OVH default index.html'
         continue-on-error: true
         env:
-          SFTP_PASSWORD: ${{ secrets.OVH_SFTP_PASSWORD }}
+          SSHPASS: ${{ secrets.OVH_SFTP_PASSWORD }}
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
           sshpass -e sftp -oBatchMode=no -oStrictHostKeyChecking=no -P 22 atelihu@ftp.cluster129.hosting.ovh.net <<'EOF'
