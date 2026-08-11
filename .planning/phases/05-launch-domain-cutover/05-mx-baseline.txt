@@ -1,0 +1,3 @@
+5 mx2.mail.ovh.net.
+1 mx1.mail.ovh.net.
+100 mx3.mail.ovh.net.
