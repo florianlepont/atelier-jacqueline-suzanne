@@ -313,3 +313,176 @@ export function nextDeploymentPollDelay({
   if (terminal) return 5 * 60_000
   return elapsedMs < 2 * 60_000 ? 5_000 : 15_000
 }
+
+// --- Release pipeline state machine (sketch 016 Variant C) ---
+//
+// This is the ONLY place that decides what the 3-segment bar and the single
+// promote row show. The dashboard component renders straight from this
+// function's result -- no state derivation may live in the component.
+
+export type PipelineSegmentKind = 'pending' | 'active' | 'done' | 'failed'
+
+export interface ReleasePipelineSegments {
+  content: PipelineSegmentKind
+  staging: PipelineSegmentKind
+  production: PipelineSegmentKind
+}
+
+export interface ReleasePipelinePromote {
+  title: string
+  detail: string
+  buttonLabel: string
+  buttonDisabled: boolean
+  dimmed: boolean
+  actionLabel?: string
+  actionUrl?: string
+}
+
+export interface ReleasePipelineState {
+  segments: ReleasePipelineSegments
+  promote: ReleasePipelinePromote
+}
+
+function deploymentSegmentKind(kind: DeploymentStateKind): PipelineSegmentKind {
+  if (kind === 'current') return 'done'
+  if (kind === 'deploying' || kind === 'waiting-run') return 'active'
+  if (kind === 'failed') return 'failed'
+  return 'pending'
+}
+
+// Stale when there is no production release timestamp at all, or when the
+// newest content publication parses to a strictly later instant than the
+// production release timestamp. An unparseable value on either side is
+// treated the same as "no proven release" -- fails toward re-enabling the
+// button rather than getting permanently stuck on a stale "Production à
+// jour", mirroring the module's general fail-closed-to-uncertain posture.
+function isProductionReleaseStale(publishedAt: string, productionReleaseAt: string): boolean {
+  if (!productionReleaseAt) return true
+  const publishedTime = timestamp(publishedAt)
+  const releaseTime = timestamp(productionReleaseAt)
+  if (publishedTime === null || releaseTime === null) return true
+  return publishedTime > releaseTime
+}
+
+function resolvePromoteRow({
+  segments,
+  staging,
+  production,
+  requestError,
+}: {
+  segments: ReleasePipelineSegments
+  staging: DeploymentState
+  production: DeploymentState
+  requestError?: string
+}): ReleasePipelinePromote {
+  if (requestError) {
+    return {
+      title: 'La mise en production n’a pas pu démarrer.',
+      detail: requestError,
+      buttonLabel: 'Réessayer',
+      buttonDisabled: false,
+      dimmed: false,
+    }
+  }
+
+  if (segments.production === 'active') {
+    return {
+      title: 'Mise en production en cours…',
+      detail: 'GitHub construit et pousse le site vers OVH.',
+      buttonLabel: 'Déploiement en cours…',
+      buttonDisabled: true,
+      dimmed: false,
+    }
+  }
+
+  if (segments.production === 'failed') {
+    return {
+      title: 'Échec de la mise en production.',
+      detail:
+        'Le staging est à jour, mais le déploiement vers le domaine réel a échoué. Réessayez, ou prévenez le mainteneur.',
+      buttonLabel: 'Réessayer',
+      buttonDisabled: false,
+      dimmed: false,
+      actionLabel: production.actionLabel,
+      actionUrl: production.actionUrl,
+    }
+  }
+
+  if (segments.production === 'done') {
+    return {
+      title: 'Production à jour',
+      detail: 'Le site public reflète la dernière publication.',
+      buttonLabel: 'Production à jour ✓',
+      buttonDisabled: true,
+      dimmed: false,
+    }
+  }
+
+  if (segments.staging === 'failed') {
+    return {
+      title: 'Échec du staging.',
+      detail: 'La mise en production reste bloquée jusqu’à ce que le staging réussisse.',
+      buttonLabel: 'Mettre en production',
+      buttonDisabled: true,
+      dimmed: true,
+      actionLabel: staging.actionLabel,
+      actionUrl: staging.actionUrl,
+    }
+  }
+
+  if (segments.content !== 'done' || segments.staging !== 'done') {
+    return {
+      title: 'En attente du staging…',
+      detail: 'La production sera disponible une fois le staging confirmé.',
+      buttonLabel: 'Mettre en production',
+      buttonDisabled: true,
+      dimmed: true,
+    }
+  }
+
+  return {
+    title: 'Staging vérifié — prêt pour la production ?',
+    detail: 'Ouvrez le site de préproduction pour vérifier avant de continuer.',
+    buttonLabel: 'Mettre en production',
+    buttonDisabled: false,
+    dimmed: false,
+  }
+}
+
+export function releasePipelineState({
+  pendingCount,
+  staging,
+  production,
+  publishedAt,
+  productionReleaseAt,
+  busy,
+  requestError,
+}: {
+  pendingCount: number
+  staging: DeploymentState
+  production: DeploymentState
+  publishedAt: string
+  productionReleaseAt: string
+  busy: boolean
+  requestError?: string
+}): ReleasePipelineState {
+  const content: PipelineSegmentKind = pendingCount === 0 ? 'done' : 'pending'
+  const stagingSegment = deploymentSegmentKind(staging.kind)
+  const stale = isProductionReleaseStale(publishedAt, productionReleaseAt)
+  const productionSegment: PipelineSegmentKind = busy
+    ? 'active'
+    : stale
+      ? 'pending'
+      : deploymentSegmentKind(production.kind)
+
+  const segments: ReleasePipelineSegments = {
+    content,
+    staging: stagingSegment,
+    production: productionSegment,
+  }
+
+  return {
+    segments,
+    promote: resolvePromoteRow({segments, staging, production, requestError}),
+  }
+}

@@ -8,11 +8,13 @@ import {
   nextDeploymentPollDelay,
   PRODUCTION_SITE_URL,
   PRODUCTION_WORKFLOW_FILE,
+  releasePipelineState,
   selectQualifiedRun,
   STAGING_WORKFLOW_FILE,
   workflowActionsUrl,
   workflowRunsUrl,
   type DeploymentRun,
+  type DeploymentState,
 } from '../../sanity/editorial/deployment'
 
 const publishedAt = '2026-07-29T09:00:00Z'
@@ -403,5 +405,284 @@ describe('deployment polling cadence', () => {
         firstPoll: false,
       }),
     ).toBe(5 * 60_000)
+  })
+})
+
+describe('release pipeline state', () => {
+  const noProductionRelease: DeploymentState = deploymentState({
+    runs: [],
+    publishedAt: '',
+    pendingCount: 0,
+    target: 'production',
+  })
+
+  it('marks the content segment done with no pending drafts and pending otherwise', () => {
+    const staging = deploymentState({runs: [run()], publishedAt, pendingCount: 0})
+    const done = releasePipelineState({
+      pendingCount: 0,
+      staging,
+      production: noProductionRelease,
+      publishedAt,
+      productionReleaseAt: '',
+      busy: false,
+    })
+    expect(done.segments.content).toBe('done')
+
+    const pending = releasePipelineState({
+      pendingCount: 2,
+      staging,
+      production: noProductionRelease,
+      publishedAt,
+      productionReleaseAt: '',
+      busy: false,
+    })
+    expect(pending.segments.content).toBe('pending')
+  })
+
+  it.each([
+    [
+      'current',
+      () => deploymentState({runs: [run()], publishedAt, pendingCount: 0}),
+      'done',
+    ],
+    [
+      'deploying',
+      () =>
+        deploymentState({
+          runs: [run({status: 'in_progress', conclusion: null})],
+          publishedAt,
+          pendingCount: 0,
+        }),
+      'active',
+    ],
+    [
+      'waiting-run',
+      () =>
+        deploymentState({
+          runs: [],
+          publishedAt,
+          pendingCount: 0,
+          now: new Date('2026-07-29T09:01:00Z'),
+        }),
+      'active',
+    ],
+    [
+      'failed',
+      () =>
+        deploymentState({runs: [run({conclusion: 'failure'})], publishedAt, pendingCount: 0}),
+      'failed',
+    ],
+    [
+      'pending-content',
+      () => deploymentState({runs: [], publishedAt, pendingCount: 1}),
+      'pending',
+    ],
+    [
+      'unknown',
+      () =>
+        deploymentState({runs: [], publishedAt, pendingCount: 0, error: new Error('rate limited')}),
+      'pending',
+    ],
+  ] as const)('maps staging kind %s to segment %s', (expectedKind, buildStaging, expectedSegment) => {
+    const staging = buildStaging()
+    expect(staging.kind).toBe(expectedKind)
+    const result = releasePipelineState({
+      pendingCount: staging.kind === 'pending-content' ? 1 : 0,
+      staging,
+      production: noProductionRelease,
+      publishedAt,
+      productionReleaseAt: '',
+      busy: false,
+    })
+    expect(result.segments.staging).toBe(expectedSegment)
+  })
+
+  it('with no production release ever recorded, keeps production pending and the row dimmed/disabled/titled "En attente du staging…"', () => {
+    const staging = deploymentState({
+      runs: [run({status: 'in_progress', conclusion: null})],
+      publishedAt,
+      pendingCount: 0,
+    })
+    const result = releasePipelineState({
+      pendingCount: 0,
+      staging,
+      production: noProductionRelease,
+      publishedAt,
+      productionReleaseAt: '',
+      busy: false,
+    })
+    expect(result.segments.production).toBe('pending')
+    expect(result.promote.dimmed).toBe(true)
+    expect(result.promote.buttonDisabled).toBe(true)
+    expect(result.promote.title).toBe('En attente du staging…')
+  })
+
+  it('with content done, staging done, and no production release, enables the promote button', () => {
+    const staging = deploymentState({runs: [run()], publishedAt, pendingCount: 0})
+    const result = releasePipelineState({
+      pendingCount: 0,
+      staging,
+      production: noProductionRelease,
+      publishedAt,
+      productionReleaseAt: '',
+      busy: false,
+    })
+    expect(result.promote.dimmed).toBe(false)
+    expect(result.promote.buttonDisabled).toBe(false)
+    expect(result.promote.buttonLabel).toBe('Mettre en production')
+    expect(result.promote.title).toBe('Staging vérifié — prêt pour la production ?')
+  })
+
+  it('a release in flight marks the production segment active and disables the button while it runs', () => {
+    const staging = deploymentState({runs: [run()], publishedAt, pendingCount: 0})
+    const result = releasePipelineState({
+      pendingCount: 0,
+      staging,
+      production: noProductionRelease,
+      publishedAt,
+      productionReleaseAt: '',
+      busy: true,
+    })
+    expect(result.segments.production).toBe('active')
+    expect(result.promote.buttonDisabled).toBe(true)
+    expect(result.promote.title).toBe('Mise en production en cours…')
+  })
+
+  it('a proven-current production run newer than the newest publication marks production done and locks the button', () => {
+    const productionReleaseAt = '2026-07-29T09:05:00Z'
+    const staging = deploymentState({runs: [run()], publishedAt, pendingCount: 0})
+    const production = deploymentState({
+      runs: [
+        run({
+          created_at: '2026-07-29T09:05:01Z',
+          run_started_at: '2026-07-29T09:05:03Z',
+          updated_at: '2026-07-29T09:06:00Z',
+        }),
+      ],
+      publishedAt: productionReleaseAt,
+      pendingCount: 0,
+      target: 'production',
+    })
+    expect(production.kind).toBe('current')
+    const result = releasePipelineState({
+      pendingCount: 0,
+      staging,
+      production,
+      publishedAt,
+      productionReleaseAt,
+      busy: false,
+    })
+    expect(result.segments.production).toBe('done')
+    expect(result.promote.buttonDisabled).toBe(true)
+    expect(result.promote.title).toBe('Production à jour')
+  })
+
+  it('a production release older than the newest content publication falls back to pending and re-enables the button', () => {
+    const productionReleaseAt = '2026-07-29T08:00:00Z'
+    const staging = deploymentState({runs: [run()], publishedAt, pendingCount: 0})
+    const production = deploymentState({
+      runs: [
+        run({
+          created_at: '2026-07-29T08:00:01Z',
+          run_started_at: '2026-07-29T08:00:03Z',
+          updated_at: '2026-07-29T08:01:00Z',
+        }),
+      ],
+      publishedAt: productionReleaseAt,
+      pendingCount: 0,
+      target: 'production',
+    })
+    expect(production.kind).toBe('current')
+    const result = releasePipelineState({
+      pendingCount: 0,
+      staging,
+      production,
+      publishedAt, // newer than productionReleaseAt
+      productionReleaseAt,
+      busy: false,
+    })
+    expect(result.segments.production).toBe('pending')
+    expect(result.promote.buttonDisabled).toBe(false)
+    expect(result.promote.title).toBe('Staging vérifié — prêt pour la production ?')
+  })
+
+  it('a failed staging run disables the button and names the staging stage as the failure', () => {
+    const staging = deploymentState({
+      runs: [run({conclusion: 'failure'})],
+      publishedAt,
+      pendingCount: 0,
+    })
+    const result = releasePipelineState({
+      pendingCount: 0,
+      staging,
+      production: noProductionRelease,
+      publishedAt,
+      productionReleaseAt: '',
+      busy: false,
+    })
+    expect(result.segments.staging).toBe('failed')
+    expect(result.promote.buttonDisabled).toBe(true)
+    expect(result.promote.dimmed).toBe(true)
+    expect(result.promote.title.toLowerCase()).toContain('staging')
+  })
+
+  it('a failed production run enables the button for retry and names the production stage as the failure', () => {
+    const productionReleaseAt = '2026-07-29T09:05:00Z'
+    const staging = deploymentState({runs: [run()], publishedAt, pendingCount: 0})
+    const production = deploymentState({
+      runs: [
+        run({
+          conclusion: 'failure',
+          created_at: '2026-07-29T09:05:01Z',
+          run_started_at: '2026-07-29T09:05:03Z',
+          updated_at: '2026-07-29T09:06:00Z',
+        }),
+      ],
+      publishedAt: productionReleaseAt,
+      pendingCount: 0,
+      target: 'production',
+    })
+    expect(production.kind).toBe('failed')
+    const result = releasePipelineState({
+      pendingCount: 0,
+      staging,
+      production,
+      publishedAt,
+      productionReleaseAt,
+      busy: false,
+    })
+    expect(result.segments.production).toBe('failed')
+    expect(result.promote.buttonDisabled).toBe(false)
+    expect(result.promote.title.toLowerCase()).toContain('production')
+    expect(result.promote.actionUrl).toBe(production.actionUrl)
+  })
+
+  it('a trigger request error wins over every other row state and is surfaced verbatim with an enabled retry button', () => {
+    const productionReleaseAt = '2026-07-29T09:05:00Z'
+    const staging = deploymentState({runs: [run()], publishedAt, pendingCount: 0})
+    const production = deploymentState({
+      runs: [
+        run({
+          conclusion: 'failure',
+          created_at: '2026-07-29T09:05:01Z',
+          run_started_at: '2026-07-29T09:05:03Z',
+          updated_at: '2026-07-29T09:06:00Z',
+        }),
+      ],
+      publishedAt: productionReleaseAt,
+      pendingCount: 0,
+      target: 'production',
+    })
+    const result = releasePipelineState({
+      pendingCount: 0,
+      staging,
+      production,
+      publishedAt,
+      productionReleaseAt,
+      busy: false,
+      requestError: 'GitHub a refusé la requête (403).',
+    })
+    expect(result.promote.detail).toBe('GitHub a refusé la requête (403).')
+    expect(result.promote.buttonDisabled).toBe(false)
   })
 })
