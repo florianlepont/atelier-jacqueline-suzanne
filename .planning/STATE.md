@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Mobile Experience Redesign
-current_phase: 23
+current_phase: 6
 status: Awaiting next milestone
-stopped_at: v1.6 milestone shipped and archived 2026-08-11 — see MILESTONES.md
-last_updated: "2026-08-11T08:23:44.133Z"
+stopped_at: Phase 5 context gathered
+last_updated: "2026-08-11T12:48:50.204Z"
 last_activity: 2026-08-11
 last_activity_desc: Milestone v1.6 completed and archived
 progress:
-  total_phases: 4
-  completed_phases: 4
+  total_phases: 3
+  completed_phases: 2
   total_plans: 21
   completed_plans: 21
-  percent: 100
+  percent: 67
 current_phase_name: About Portrait Placement & Milestone Regression Close
 ---
 
@@ -333,9 +333,9 @@ Note on the 9 `homepage-scroll-*` debug sessions above: all confirmed root-cause
 
 ## Session Continuity
 
-Last session: 2026-08-04T20:08:10.497Z
-Stopped at: Phase 21 UI-SPEC approved
-Resume file: .planning/phases/21-homepage-scroll-experience/21-UI-SPEC.md
+Last session: 2026-08-11T12:48:50.194Z
+Stopped at: Phase 5 context gathered
+Resume file: .planning/phases/05-launch-domain-cutover/05-CONTEXT.md
 
 **Next up:** Phase 21 (Homepage Scroll Experience — HOME-14, HOME-15) is ready to plan via `/gsd-plan-phase 21` — the milestone's biggest, riskiest, sketch-explored centerpiece, depending on Phase 20's now-shipped accent-color mechanism. Phase 5 (Launch & Domain Cutover) remains open and deliberately deferred whenever launch is next prioritized. One non-blocking carryover: `20-REVIEW.md`'s unfixed Critical finding on `HomeCarousel.astro`'s touch handler (see Blockers/Concerns).
 
