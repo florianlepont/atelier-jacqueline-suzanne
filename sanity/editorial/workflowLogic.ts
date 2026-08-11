@@ -21,7 +21,8 @@ export type PublicSiteDocumentType = (typeof PUBLIC_SITE_DOCUMENT_TYPES)[number]
 // These documents support Studio infrastructure and are never editorial
 // content. Keep this registry separate from the seven public document types:
 // it controls Studio-only affordances, not the site's content inventory.
-export const INTERNAL_SYSTEM_DOCUMENT_TYPES = ['siteDeployment'] as const
+// Both entries are deploy-trigger markers written only by the dashboard.
+export const INTERNAL_SYSTEM_DOCUMENT_TYPES = ['siteDeployment', 'siteProductionRelease'] as const
 
 export type InternalSystemDocumentType = (typeof INTERNAL_SYSTEM_DOCUMENT_TYPES)[number]
 

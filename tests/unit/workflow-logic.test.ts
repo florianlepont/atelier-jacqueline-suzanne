@@ -7,6 +7,7 @@ import {
   completenessBadge,
   filterDocumentActions,
   INTERNAL_SYSTEM_DOCUMENT_TYPES,
+  isInternalSystemDocumentType,
   isPublicSiteDocumentType,
 } from '../../sanity/editorial/workflowLogic'
 
@@ -31,7 +32,9 @@ describe('Sanity workflow decision logic', () => {
     expect(isPublicSiteDocumentType('edition')).toBe(true)
     expect(isPublicSiteDocumentType('exhibition')).toBe(false)
     expect(isPublicSiteDocumentType('siteDeployment')).toBe(false)
-    expect(INTERNAL_SYSTEM_DOCUMENT_TYPES).toEqual(['siteDeployment'])
+    expect(isPublicSiteDocumentType('siteProductionRelease')).toBe(false)
+    expect(INTERNAL_SYSTEM_DOCUMENT_TYPES).toEqual(['siteDeployment', 'siteProductionRelease'])
+    expect(isInternalSystemDocumentType('siteProductionRelease')).toBe(true)
     expect(CHECKLIST_ENABLED_TYPES).toEqual([
       ...PUBLIC_SITE_DOCUMENT_TYPES,
       'exhibition',
@@ -80,6 +83,19 @@ describe('Sanity workflow decision logic', () => {
     ]
 
     expect(filterDocumentActions(actions, 'siteDeployment')).toEqual([])
+  })
+
+  it('removes every manual mutation action from the internal production-release marker', () => {
+    const actions = [
+      {action: 'publish'},
+      {action: 'discardChanges'},
+      {action: 'unpublish'},
+      {action: 'restore'},
+      {action: 'delete'},
+      {action: 'duplicate'},
+    ]
+
+    expect(filterDocumentActions(actions, 'siteProductionRelease')).toEqual([])
   })
 
   it('reports required, recommended, and ready completeness states', () => {
