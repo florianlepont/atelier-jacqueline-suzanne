@@ -109,6 +109,11 @@ jobs:
           SANITY_DATASET: ${{ secrets.SANITY_DATASET }}
           SANITY_API_READ_TOKEN: ${{ secrets.SANITY_API_READ_TOKEN }}
           ASTRO_BASE: /ajs-website/
+          # GitHub Pages has no PHP runtime and is served from a different
+          # origin than production, so this staging build must POST
+          # cross-origin to the real contact.php endpoint (D-03: this
+          # environment stays alive permanently as pre-production).
+          PUBLIC_CONTACT_ENDPOINT: https://atelierjacquelinesuzanne.fr/contact.php
 
       # WR-04: regression guard for the exact bug class that shipped as
       # CR-01 — a hardcoded root-relative link (unrelated to the switcher
