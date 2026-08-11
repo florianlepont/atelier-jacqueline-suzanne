@@ -304,6 +304,30 @@ Items acknowledged and deferred at v1.5 milestone close on 2026-08-03 (`/gsd-com
 | quick_task | 260722-refine-contact-details | missing (still unexecuted, still superseded by the sketch-013 Contact redesign — see v1.4 note above) |
 | quick_task | 260722-remove-redundant-sanity-fieldsets | missing (still unexecuted, still superseded by the Studio rework — see v1.4 note above) |
 
+Items acknowledged and deferred at v1.6 milestone close on 2026-08-11 (`/gsd-complete-milestone` pre-close audit, 17 open items; user chose "Acquitter comme abandonnées, procéder"):
+
+| Category | Item | Status |
+|----------|------|--------|
+| debug | knowledge-base | unknown (same persistent false positive noted at every prior close since v1.3 — the resolved-sessions index file itself, not a live investigation) |
+| debug | homepage-scroll-missing-intro-beat | diagnosed, hypothesis CONFIRMED — closed by gap-closure plan 21-10 (round 1) |
+| debug | homepage-scroll-zoom-handoff-glitch | diagnosed, hypothesis CONFIRMED — closed by gap-closure plan 21-07 (round 1) |
+| debug | homepage-scroll-deck-blur-placeholder-jank | diagnosed, hypothesis CONFIRMED — closed by gap-closure plan 21-09 (round 1) |
+| debug | homepage-scroll-ios-status-bar-white-gap | diagnosed, hypothesis CONFIRMED — closed by gap-closure plan 21-09 (round 1) |
+| debug | homepage-scroll-intro-logo-duplication | diagnosed, hypothesis CONFIRMED — closed by gap-closure plan 21-13 (round 2, gap 1) |
+| debug | homepage-scroll-text-reveal-too-fast | diagnosed, hypothesis CONFIRMED — closed by gap-closure plans 21-13 (intro half) and 21-15 (gallery half) (round 2, gap 2) |
+| debug | homepage-scroll-cover-photo-doubled | diagnosed, hypothesis CONFIRMED — closed by gap-closure plan 21-12 (round 2, gap 3) |
+| debug | homepage-scroll-still-not-fullscreen | diagnosed, hypothesis CONFIRMED — closed by gap-closure plan 21-11 (round 2, gap 4) |
+| debug | homepage-scroll-nav-unreachable-at-start | diagnosed, hypothesis CONFIRMED — closed by gap-closure plan 21-14 (round 2, gap 5) |
+| uat_gap | Phase 21: 21-UAT.md | superseded (0 pending scenarios — round-3 real-device check never ran; the mechanism it would have tested was itself superseded by commit `6c51695` before that round could happen — see the [Phase 21] Accumulated Context entry above) |
+| quick_task | 260722-compact-sanity-document-layout | missing (still unexecuted, still superseded — see v1.4/v1.5 notes above) |
+| quick_task | 260722-improve-contact-page | missing (still unexecuted, still superseded — see v1.4/v1.5 notes above) |
+| quick_task | 260722-normalize-sanity-form-spacing | missing (still unexecuted, still superseded — see v1.4/v1.5 notes above) |
+| quick_task | 260722-rebalance-contact-typography | missing (still unexecuted, still superseded — see v1.4/v1.5 notes above) |
+| quick_task | 260722-refine-contact-details | missing (still unexecuted, still superseded — see v1.4/v1.5 notes above) |
+| quick_task | 260722-remove-redundant-sanity-fieldsets | missing (still unexecuted, still superseded — see v1.4/v1.5 notes above) |
+
+Note on the 9 `homepage-scroll-*` debug sessions above: all confirmed root-caused and closed via specific plans within this same session. Never moved to `.planning/debug/resolved/` because that auto-move (execute-phase.md's `close_parent_artifacts` step) only fires for decimal phases (X.Y) — Phase 21 is an integer phase, so the move never triggered. A tooling gap, not neglect; recorded here rather than silently acknowledged.
+
 ## Session Continuity
 
 Last session: 2026-08-04T20:08:10.497Z
