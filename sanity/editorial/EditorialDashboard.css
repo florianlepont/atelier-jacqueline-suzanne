@@ -47,12 +47,85 @@
 
 .editorial-dashboard__publish-panel {
   --dashboard-publish-accent: #556bfc;
+  /* Mirror deploymentDotColors' positive/critical hex values in
+     EditorialDashboard.tsx exactly, so the pipeline bar's done/failed fills
+     and the header deployment status dot never drift apart. */
+  --dashboard-pipeline-done: #10b981;
+  --dashboard-pipeline-failed: #ef4444;
   background-color: var(--dashboard-surface-background);
   border: 1px solid color-mix(in srgb, var(--card-fg-color) 9%, transparent);
   border-left: 3px solid var(--dashboard-publish-accent);
   box-shadow:
     0 1px 0 color-mix(in srgb, var(--card-fg-color) 6%, transparent),
     0 12px 28px -20px color-mix(in srgb, var(--card-fg-color) 24%, transparent);
+}
+
+.editorial-dashboard__pipeline-bar {
+  display: flex;
+  gap: 4px;
+  height: 6px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.editorial-dashboard__pipeline-segment {
+  flex: 1;
+  background-color: color-mix(in srgb, var(--card-bg-color) 92%, var(--card-fg-color) 8%);
+}
+
+.editorial-dashboard__pipeline-segment--done {
+  background-color: var(--dashboard-pipeline-done);
+}
+
+.editorial-dashboard__pipeline-segment--active {
+  background-color: var(--dashboard-publish-accent);
+  animation: editorial-dashboard-pipeline-pulse 1.4s ease-in-out infinite;
+}
+
+.editorial-dashboard__pipeline-segment--failed {
+  background-color: var(--dashboard-pipeline-failed);
+}
+
+@keyframes editorial-dashboard-pipeline-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editorial-dashboard__pipeline-segment--active {
+    animation: none;
+  }
+}
+
+.editorial-dashboard__pipeline-labels {
+  margin-top: 8px;
+}
+
+.editorial-dashboard__pipeline-label {
+  flex: 1;
+  text-align: center;
+  font-size: 11px;
+  color: var(--card-muted-fg-color);
+}
+
+.editorial-dashboard__pipeline-label--strong {
+  color: var(--card-fg-color);
+  font-weight: 600;
+}
+
+.editorial-dashboard__promote-row {
+  padding: 14px 16px;
+  border-radius: 6px;
+  background-color: var(--dashboard-group-header-background);
+}
+
+.editorial-dashboard__promote-row--locked {
+  opacity: 0.5;
 }
 
 .editorial-dashboard__publish-divider {

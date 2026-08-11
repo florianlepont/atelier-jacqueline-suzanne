@@ -19,9 +19,11 @@ import {
   getRecentDeployments,
   latestValidTimestamp,
   nextDeploymentPollDelay,
+  PRODUCTION_WORKFLOW_FILE,
+  releasePipelineState,
   SITE_PREVIEW_URL,
 } from './deployment'
-import type {DeploymentRun, DeploymentState} from './deployment'
+import type {DeploymentRun, DeploymentState, PipelineSegmentKind} from './deployment'
 import {getDocumentChecks, summarizeChecks} from './checks'
 import {
   attentionPriority,
@@ -41,9 +43,12 @@ import {
   preflightForConfirmation,
   preparePublicationBatch,
   publicationCardState,
+  publicationError,
+  PRODUCTION_RELEASE_MARKER_QUERY,
   PUBLIC_DOCUMENTS_QUERY,
   PUBLIC_DOCUMENTS_QUERY_PARAMS,
   rowTypeLabels,
+  triggerProductionRelease,
 } from './dashboardLogic'
 import type {
   AttentionGroup,
@@ -82,6 +87,11 @@ export function EditorialDashboard() {
   })
   const [confirmationOpen, setConfirmationOpen] = useState(false)
   const [publishedAt, setPublishedAt] = useState<string>()
+  const [productionRuns, setProductionRuns] = useState<DeploymentRun[]>([])
+  const [productionDeploymentError, setProductionDeploymentError] = useState<unknown>()
+  const [productionReleaseAt, setProductionReleaseAt] = useState<string>('')
+  const [releaseBusy, setReleaseBusy] = useState(false)
+  const [releaseError, setReleaseError] = useState<string>()
   const hasDataRef = useRef(false)
   // A client replacement is a lifecycle boundary: the old client's pending
   // inventory responses must never update the new client's dashboard.
@@ -323,6 +333,110 @@ export function EditorialDashboard() {
       clearTimeout(timer)
     }
   }, [draftCount, publishedReference])
+
+  // Seeds the production release timestamp from the persisted marker, so the
+  // pipeline survives a reload or a second browser tab rather than living
+  // only in this component's React state. A missing/failed marker read must
+  // not break the dashboard -- it is simply treated as "never released"
+  // unless a newer value is already known from this session's own trigger.
+  useEffect(() => {
+    let cancelled = false
+    client
+      .fetch<{lastTriggeredAt?: string} | null>(
+        PRODUCTION_RELEASE_MARKER_QUERY,
+        {},
+        {perspective: 'published'},
+      )
+      .then((marker) => {
+        if (cancelled) return
+        setProductionReleaseAt((current) => latestValidTimestamp(current, marker?.lastTriggeredAt))
+      })
+      .catch(() => {
+        // Supplementary read; the dashboard keeps whatever it already knows.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [client, refreshKey])
+
+  // Structural copy of the staging polling effect above, tracking the
+  // production workflow instead. It never polls a workflow for a release
+  // that was never requested.
+  useEffect(() => {
+    if (!productionReleaseAt) {
+      setProductionRuns([])
+      setProductionDeploymentError(undefined)
+      return undefined
+    }
+
+    const controller = new AbortController()
+    let cancelled = false
+    let timer: ReturnType<typeof setTimeout> | undefined
+
+    const load = async () => {
+      try {
+        const runs = await getRecentDeployments(controller.signal, PRODUCTION_WORKFLOW_FILE)
+        if (cancelled) return
+        setProductionRuns(runs)
+        setProductionDeploymentError(undefined)
+        const nextState = deploymentState({
+          runs,
+          publishedAt: productionReleaseAt,
+          pendingCount: 0,
+          target: 'production',
+        })
+        const elapsedMs = Math.max(0, Date.now() - new Date(productionReleaseAt).getTime())
+        timer = setTimeout(
+          () => void load(),
+          nextDeploymentPollDelay({elapsedMs, terminal: nextState.terminal, firstPoll: false}),
+        )
+      } catch (reason) {
+        if (cancelled || (reason instanceof DOMException && reason.name === 'AbortError')) return
+        setProductionDeploymentError(reason)
+        timer = setTimeout(() => void load(), 5 * 60_000)
+      }
+    }
+
+    timer = setTimeout(
+      () => void load(),
+      nextDeploymentPollDelay({elapsedMs: 0, terminal: false, firstPoll: true}),
+    )
+    return () => {
+      cancelled = true
+      controller.abort()
+      clearTimeout(timer)
+    }
+  }, [productionReleaseAt])
+
+  const currentProductionDeploymentState = deploymentState({
+    runs: productionRuns,
+    publishedAt: productionReleaseAt,
+    pendingCount: 0,
+    error: productionDeploymentError,
+    target: 'production',
+  })
+  const pipeline = releasePipelineState({
+    pendingCount: draftCount,
+    staging: currentDeploymentState,
+    production: currentProductionDeploymentState,
+    publishedAt: publishedReference,
+    productionReleaseAt,
+    busy: releaseBusy,
+    requestError: releaseError,
+  })
+
+  const triggerProductionReleaseClick = async () => {
+    setReleaseBusy(true)
+    setReleaseError(undefined)
+    try {
+      const timestamp = await triggerProductionRelease(client as unknown as PublicationClient)
+      setProductionReleaseAt((current) => latestValidTimestamp(current, timestamp))
+    } catch (reason) {
+      setReleaseError(publicationError(reason))
+    } finally {
+      setReleaseBusy(false)
+    }
+  }
 
   const blockingRows = attention.filter((row) => !row.summary.requiredComplete)
   // A single blocked content is fully covered by the banner (named title,
@@ -578,6 +692,73 @@ export function EditorialDashboard() {
                     />
                   )}
                 </Flex>
+
+                <section aria-label="Progression de la mise en ligne">
+                  <Stack space={3}>
+                    <Box className="editorial-dashboard__pipeline-bar" aria-hidden="true">
+                      <span
+                        className={`editorial-dashboard__pipeline-segment editorial-dashboard__pipeline-segment--${pipeline.segments.content}`}
+                      />
+                      <span
+                        className={`editorial-dashboard__pipeline-segment editorial-dashboard__pipeline-segment--${pipeline.segments.staging}`}
+                      />
+                      <span
+                        className={`editorial-dashboard__pipeline-segment editorial-dashboard__pipeline-segment--${pipeline.segments.production}`}
+                      />
+                    </Box>
+                    <Flex justify="space-between" className="editorial-dashboard__pipeline-labels">
+                      <Text size={0} className={pipelineLabelClassName(pipeline.segments.content)}>
+                        Contenu
+                      </Text>
+                      <Text size={0} className={pipelineLabelClassName(pipeline.segments.staging)}>
+                        Staging
+                      </Text>
+                      <Text size={0} className={pipelineLabelClassName(pipeline.segments.production)}>
+                        Production
+                      </Text>
+                    </Flex>
+                    <Flex
+                      align="center"
+                      justify="space-between"
+                      gap={3}
+                      wrap="wrap"
+                      className={
+                        pipeline.promote.dimmed
+                          ? 'editorial-dashboard__promote-row editorial-dashboard__promote-row--locked'
+                          : 'editorial-dashboard__promote-row'
+                      }
+                    >
+                      <Stack space={2} style={{minWidth: 0, flex: '1 1 260px'}}>
+                        <Text size={1} weight="semibold">
+                          {pipeline.promote.title}
+                        </Text>
+                        <Text size={1} muted>
+                          {pipeline.promote.detail}
+                        </Text>
+                      </Stack>
+                      <Flex align="center" gap={2} wrap="wrap">
+                        {pipeline.promote.actionUrl && (
+                          <a
+                            href={pipeline.promote.actionUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="editorial-dashboard__deployment-status"
+                          >
+                            {pipeline.promote.actionLabel}
+                          </a>
+                        )}
+                        <Button
+                          tone="primary"
+                          text={pipeline.promote.buttonLabel}
+                          disabled={pipeline.promote.buttonDisabled}
+                          loading={releaseBusy}
+                          onClick={() => void triggerProductionReleaseClick()}
+                          style={{minHeight: 44}}
+                        />
+                      </Flex>
+                    </Flex>
+                  </Stack>
+                </section>
 
                 {publicationPanelHasBody && (
                   <Box className="editorial-dashboard__publish-divider" />
@@ -1040,6 +1221,14 @@ const deploymentDotColors: Record<DashboardTone, string> = {
   positive: '#10b981',
   caution: '#f59e0b',
   critical: '#ef4444',
+}
+
+// Matches the sketch's label emphasis rule: done/active segments read full
+// strength and semibold, everything else stays muted.
+function pipelineLabelClassName(kind: PipelineSegmentKind): string {
+  return kind === 'done' || kind === 'active'
+    ? 'editorial-dashboard__pipeline-label editorial-dashboard__pipeline-label--strong'
+    : 'editorial-dashboard__pipeline-label'
 }
 
 function DeploymentStatus({state}: {state: DeploymentState}) {
