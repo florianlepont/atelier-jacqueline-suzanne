@@ -3,9 +3,15 @@ import {
   deploymentState,
   deploymentSubtitle,
   getRecentDeployments,
+  GITHUB_WORKFLOW_URL,
   latestValidTimestamp,
   nextDeploymentPollDelay,
+  PRODUCTION_SITE_URL,
+  PRODUCTION_WORKFLOW_FILE,
   selectQualifiedRun,
+  STAGING_WORKFLOW_FILE,
+  workflowActionsUrl,
+  workflowRunsUrl,
   type DeploymentRun,
 } from '../../sanity/editorial/deployment'
 
@@ -50,6 +56,36 @@ describe('GitHub deployment reads', () => {
   it('throws a useful error for an unsuccessful GitHub response', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', {status: 503})))
     await expect(getRecentDeployments()).rejects.toThrow('GitHub API: 503')
+  })
+
+  it('fetches the production workflow when passed deploy-ovh.yml, and defaults to staging', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(async () => new Response(JSON.stringify({workflow_runs: []})))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await getRecentDeployments(undefined, PRODUCTION_WORKFLOW_FILE)
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('deploy-ovh.yml'),
+      expect.anything(),
+    )
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('per_page=10'), expect.anything())
+
+    await getRecentDeployments()
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining(STAGING_WORKFLOW_FILE),
+      expect.anything(),
+    )
+  })
+
+  it('builds runs and actions URLs for a given workflow file', () => {
+    expect(workflowRunsUrl(PRODUCTION_WORKFLOW_FILE)).toBe(
+      'https://api.github.com/repos/florianlepont/ajs-website/actions/workflows/deploy-ovh.yml/runs?per_page=10',
+    )
+    expect(workflowActionsUrl(PRODUCTION_WORKFLOW_FILE)).toBe(
+      'https://github.com/florianlepont/ajs-website/actions/workflows/deploy-ovh.yml',
+    )
+    expect(workflowActionsUrl(STAGING_WORKFLOW_FILE)).toBe(GITHUB_WORKFLOW_URL)
   })
 })
 
@@ -243,17 +279,92 @@ describe('deployment-aware dashboard subtitle', () => {
     expect(subtitle).not.toContain('Site à jour')
   })
 
-  it('mentions Site à jour only for a proven current deployment', () => {
+  it('mentions Staging à jour only for a proven current staging deployment', () => {
     expect(
       deploymentSubtitle({
         kind: 'current',
-        label: 'Site à jour',
+        label: 'Staging à jour',
         detail: 'Verified',
         tone: 'positive',
         terminal: true,
         actionUrl: 'https://example.com',
       }),
-    ).toBe('Tous les contenus sont publiés · Site à jour.')
+    ).toBe('Tous les contenus sont publiés · Staging à jour.')
+  })
+})
+
+describe('deployment state disambiguated by target', () => {
+  it('labels a proven-current staging deployment "Staging à jour" and links to the staging preview URL', () => {
+    const state = deploymentState({runs: [run()], publishedAt, pendingCount: 0})
+    expect(state.kind).toBe('current')
+    expect(state.label).toBe('Staging à jour')
+    expect(state.actionUrl).toBe('https://florianlepont.github.io/ajs-website/')
+  })
+
+  it('labels a proven-current production deployment "Production à jour" and links to the real domain', () => {
+    const state = deploymentState({
+      runs: [run()],
+      publishedAt,
+      pendingCount: 0,
+      target: 'production',
+    })
+    expect(state.kind).toBe('current')
+    expect(state.label).toBe('Production à jour')
+    expect(state.actionUrl).toBe(PRODUCTION_SITE_URL)
+  })
+
+  it('links non-terminal and failure production states to the production workflow, never staging', () => {
+    const waiting = deploymentState({
+      runs: [],
+      publishedAt,
+      pendingCount: 0,
+      now: new Date('2026-07-29T09:01:00Z'),
+      target: 'production',
+    })
+    expect(waiting.kind).toBe('waiting-run')
+    expect(waiting.actionUrl).toBe(workflowActionsUrl(PRODUCTION_WORKFLOW_FILE))
+    expect(waiting.actionUrl).not.toBe(GITHUB_WORKFLOW_URL)
+
+    const unknown = deploymentState({
+      runs: [run()],
+      publishedAt: 'not-a-date',
+      pendingCount: 0,
+      target: 'production',
+    })
+    expect(unknown.kind).toBe('unknown')
+    expect(unknown.actionUrl).toBe(workflowActionsUrl(PRODUCTION_WORKFLOW_FILE))
+  })
+
+  it('keeps every other state kind, tone, terminal flag identical between targets', () => {
+    const stagingDeploying = deploymentState({
+      runs: [run({status: 'in_progress', conclusion: null})],
+      publishedAt,
+      pendingCount: 0,
+    })
+    const productionDeploying = deploymentState({
+      runs: [run({status: 'in_progress', conclusion: null})],
+      publishedAt,
+      pendingCount: 0,
+      target: 'production',
+    })
+    expect(stagingDeploying.kind).toBe(productionDeploying.kind)
+    expect(stagingDeploying.tone).toBe(productionDeploying.tone)
+    expect(stagingDeploying.terminal).toBe(productionDeploying.terminal)
+
+    const stagingFailed = deploymentState({
+      runs: [run({conclusion: 'failure'})],
+      publishedAt,
+      pendingCount: 0,
+    })
+    const productionFailed = deploymentState({
+      runs: [run({conclusion: 'failure'})],
+      publishedAt,
+      pendingCount: 0,
+      target: 'production',
+    })
+    expect(stagingFailed.kind).toBe(productionFailed.kind)
+    expect(stagingFailed.tone).toBe(productionFailed.tone)
+    expect(stagingFailed.terminal).toBe(productionFailed.terminal)
   })
 })
 
