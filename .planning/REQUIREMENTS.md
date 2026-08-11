@@ -14,7 +14,7 @@ Redesign the mobile (phone) experience only — desktop/tablet stays byte-for-by
 - [x] **HOME-13**: Visitor sees a mobile nav menu (hamburger or similar) on the homepage instead of the desktop header bar, with the language switcher inside it, on phone-width viewports only
 - [x] **HOME-14**: Visitor on a phone browses the homepage via a single scroll-driven view (no carousel/grid toggle); each item's description text reveals as it arrives on screen during scroll
 - [x] **HOME-15**: Visitor on a phone sees the "Atelier Jacqueline Suzanne" wordmark full-screen first; scrolling transitions through the wordmark's letterform into the first gallery's photo
-- [x] **HOME-16**: Visitor on a phone sees a different accent color each visit, randomly picked from the existing per-gallery `heroColor` values
+- [ ] **HOME-16**: Visitor on a phone sees a different accent color each visit, randomly picked from the existing per-gallery `heroColor` values — CANCELLED 2026-08-11, explicit user decision. Was satisfied at Phase 20 close (2026-08-04), then silently broken by commit `6c51695` (2026-08-10) when the phone-width homepage renderer switched from `HomeCarousel` to `MobileHomePrototype.astro` without porting the accent-randomization wiring — found by the v1.6 milestone audit (`.planning/v1.6-MILESTONE-AUDIT.md`). Not fixed; dropped from scope instead.
 
 ### Portfolio Galleries
 
@@ -128,7 +128,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HOME-13 | Phase 20 | Complete |
 | HOME-14 | Phase 21 | Complete |
 | HOME-15 | Phase 21 | Complete |
-| HOME-16 | Phase 20 | Complete |
+| HOME-16 | Phase 20 | Cancelled |
 | PORT-07 | Phase 22 | Cancelled |
 | EDN-10 | Phase 22 | Cancelled |
 | EDN-11 | Phase 22 | Cancelled |
@@ -140,13 +140,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 - v1.6 requirements: 9 total (HOME-13, HOME-14, HOME-15, HOME-16, PORT-07, EDN-10, EDN-11, ABOUT-05, UI-02)
 - Mapped to phases: 9/9 ✓ — Phase 20 (HOME-13, HOME-16), Phase 21 (HOME-14, HOME-15), Phase 22 (PORT-07, EDN-10, EDN-11), Phase 23 (ABOUT-05, UI-02)
-- Delivered: 6/9 — Phase 20 (2/2), Phase 21 (2/2, mechanism superseded by `MobileHomePrototype.astro` — see ROADMAP.md/STATE.md), Phase 23 (2/2, via direct commit `6c51695`)
-- Cancelled: 3/9 — Phase 22 (PORT-07, EDN-10, EDN-11), 2026-08-10, explicit user decision
-- v1.6 milestone status: resolved 2026-08-10 (6 delivered, 3 cancelled) — no open phases remain in this milestone
+- Delivered: 5/9 — Phase 20 (1/2 — HOME-13 stands, HOME-16 cancelled), Phase 21 (2/2, mechanism superseded by `MobileHomePrototype.astro` — see ROADMAP.md/STATE.md), Phase 23 (2/2, via direct commit `6c51695`)
+- Cancelled: 4/9 — Phase 22 (PORT-07, EDN-10, EDN-11), 2026-08-10; HOME-16 (Phase 20), 2026-08-11 — both explicit user decisions
+- v1.6 milestone status: resolved 2026-08-11 (5 delivered, 4 cancelled) — no open phases remain in this milestone; milestone audit gap (HOME-16) closed by cancellation, not by fix
 - Carried-forward requirements: 1 total (LAUNCH-01)
 - Mapped to phases: 1/1 ✓ (Phase 5, not started, deliberately deferred)
 - v2 (v1.x fast-follow) requirements: 18 tracked, not yet in roadmap (out of scope for this roadmap by design)
 
 ---
 *Requirements defined: 2026-08-03*
-*Last updated: 2026-08-10 — v1.6 milestone resolved: Phase 22 cancelled (PORT-07, EDN-10, EDN-11 dropped), Phase 23 completed via direct commit `6c51695` (ABOUT-05, UI-02).*
+*Last updated: 2026-08-11 — v1.6 milestone resolved: Phase 22 cancelled (PORT-07, EDN-10, EDN-11 dropped), Phase 23 completed via direct commit `6c51695` (ABOUT-05, UI-02), HOME-16 cancelled after the milestone audit found it silently broken by that same commit.*
