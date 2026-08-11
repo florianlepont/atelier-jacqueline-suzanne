@@ -156,3 +156,24 @@ All checks are read-only; none of them modify anything on OVH or in GitHub Actio
 **This readiness check failure blocks Task 3 (the dispatch) until `origin/main` is updated.** Per this task's own instruction ("If any readiness check fails, stop and report. Do not proceed to Task 2 with a known-broken prerequisite"), and because pushing 28 unreviewed commits to the public remote is an action with real side effects (it will also trigger `deploy.yml`'s push-triggered GitHub Pages staging deploy) outside this dispatch's explicitly read-only, nothing-dispatched-to-GitHub-Actions scope, this was **not fixed automatically** here. It is reported for the maintainer's explicit decision, not silently resolved.
 
 No credential, token, or password value appears anywhere in this document.
+
+---
+
+## Deploy (Task 3)
+
+**Successful run:** [`31525572071`](https://github.com/florianlepont/ajs-website/actions/runs/31525572071) — conclusion `success`, both `build` and `deploy` jobs green.
+**Deployed commit:** `b550b9ecd60ec2d6c5dfaa4e866c53d63070ff5d`
+**Run started:** 2026-08-11T18:59:27Z · **Run completed:** 2026-08-11T19:06:23Z
+**Target:** `ftp.cluster129.hosting.ovh.net:/home/atelihu/www`
+**SFTP steps confirmed:** `Deploy dist to OVH (SFTP)` ✓ and `Deploy .htaccess to OVH (SFTP, dotfile)` ✓ (both required — the second exists solely because `./dist/*` cannot match dotfiles).
+
+**Getting here took three attempts, all recorded for the audit trail:**
+
+1. **Run [`31507309098`](https://github.com/florianlepont/ajs-website/actions/runs/31507309098) — failed in `build`.** `tests/e2e/critical.smoke.spec.ts`'s "contact form completes a mocked submission" test still mocked the retired `https://api.web3forms.com/submit` endpoint (never updated when plan `05-02` repointed the form at `contact.php`). Fixed in `87785d3`: route mock changed to `**/contact.php`, matching `tests/e2e/contact.spec.ts`'s own `CONTACT_ENDPOINT` pattern. No SFTP attempt was made — the build gate correctly blocked before reaching OVH.
+2. **Run [`31507915488`](https://github.com/florianlepont/ajs-website/actions/runs/31507915488) — `build` passed, approved, `deploy` failed.** `Deploy dist to OVH (SFTP)` failed with `dest open "/home/atelihu/www/index.html": Failure` — every other file in the same recursive upload succeeded. Root cause: OVH provisions a default placeholder `index.html` in a hosting's webroot when a domain is attached via Multisite, and the existing file could not be overwritten by a plain `put`. Added a one-time workaround step (`54cd8c9`) to delete that specific path via plain SFTP before the main upload.
+3. **Run [`31523817015`](https://github.com/florianlepont/ajs-website/actions/runs/31523817015) — `build` passed, approved, `deploy` failed again, same file.** The workaround step itself had a bug: `sshpass -e` requires the password in an environment variable literally named `SSHPASS`; it was named `SFTP_PASSWORD`. `continue-on-error: true` suppressed the failure (correctly, per its own design as best-effort cleanup) but meant the real fix silently never ran. Fixed in `b550b9e`.
+4. **Run `31525572071` (this one) — clean.** The workaround step deleted the stale `index.html`, and both SFTP steps succeeded on the first real attempt afterward.
+
+**Nothing was smoke-checked against the production origin after this deploy** — DNS still points at the old Fastly/Myportfolio addresses (see the resolver-view and zone-export captures above), so any probe would only describe the old site. That is Task 4 and plan `05-06`'s job, in that order.
+
+**The one-time workaround step in `deploy-ovh.yml` ("Workaround: remove stale OVH default index.html") is now safe to remove** in a follow-up commit — the stale file is confirmed gone, and every subsequent deploy will be uploading over content this pipeline itself produced.
