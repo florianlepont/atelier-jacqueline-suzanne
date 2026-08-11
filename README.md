@@ -51,6 +51,40 @@ Note: the `sanity/` Studio has its own env (`SANITY_STUDIO_PREVIEW_URL`) documen
 | `npm run test:unit` | Run unit tests (Vitest). |
 | `npm run test:e2e` | Run e2e tests (Playwright). |
 
+## Deployments
+
+This project has two deploy targets. Do not confuse them.
+
+| | Staging — GitHub Pages | Production — OVH |
+|---|---|---|
+| Trigger | Automatic on push to `main`, and on the Sanity `sanity-content-published` webhook | **Manual only** — pushing to `main` never deploys here |
+| Workflow | `.github/workflows/deploy.yml` | `.github/workflows/deploy-ovh.yml` |
+| Base path | `/ajs-website/` | Root (`/`) |
+| URL | https://florianlepont.github.io/ajs-website/ | https://atelierjacquelinesuzanne.fr |
+
+Per D-03, GitHub Pages stays alive permanently as a pre-production environment after the domain cutover — it is not retired. It is useful for previewing future changes before they reach the real domain, at no extra cost.
+
+### Production deploy: one-time setup
+
+Before `deploy-ovh.yml` can be run, these four things must be configured once:
+
+1. **Repository secret `OVH_SFTP_PASSWORD`** — the SFTP password for user `atelihu`, found in the OVH Control Panel under Web Cloud → Hosting plans → `atelihu` → FTP - SSH. Set it scoped to the environment:
+   ```
+   gh secret set OVH_SFTP_PASSWORD --env production-ovh
+   ```
+2. **Repository Environment `production-ovh`** — create it under Settings → Environments, with at least one Required reviewer. This is what makes the workflow pause for approval; without it the run proceeds straight to the SFTP push and D-02's approval gate does not exist.
+3. **Confirm the webroot path** under `/home/atelihu` (the workflow assumes `www`) — OVH Control Panel → Web Cloud → Hosting plans → `atelihu` → Multisite.
+4. **Confirm `atelierjacquelinesuzanne.fr` is attached to the `atelihu` hosting plan** via Multisite, since the DNS cutover in the launch runbook points the domain at that hosting.
+
+### Production deploy: how to run one
+
+1. Dispatch the workflow — from the Actions tab, or `gh workflow run deploy-ovh.yml`.
+2. The `build` job runs every blocking gate (Sanity Studio lint/build, typecheck, static-artifact verification, Playwright e2e, Vitest coverage) and writes a recap to the run summary: commit, target host/path, resolved `SITE_URL`, file count/size, and confirmation that `contact.php` and `.htaccess` are both present.
+3. The run pauses on the `production-ovh` environment. Read the recap, then Approve.
+4. The `deploy` job pushes `dist/` over SFTP to OVH.
+
+This workflow only changes files on the server — it never touches DNS.
+
 ## Sanity Studio
 
 Run it from the subproject:
