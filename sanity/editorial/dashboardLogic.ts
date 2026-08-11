@@ -72,6 +72,48 @@ export interface PublishDocumentAction {
   ifPublishedRevisionId?: string
 }
 
+export interface CreateDeploymentMarkerAction {
+  actionType: 'sanity.action.document.create'
+  publishedId: 'siteDeployment'
+  attributes: {
+    _type: 'siteDeployment'
+    buildSequence: number
+    lastTriggeredAt: string
+  }
+  ifExists: 'fail'
+}
+
+export interface EditDeploymentMarkerAction {
+  actionType: 'sanity.action.document.edit'
+  draftId: 'drafts.siteDeployment'
+  publishedId: 'siteDeployment'
+  patch: {
+    set: {
+      buildSequence: number
+      lastTriggeredAt: string
+    }
+  }
+}
+
+export interface PublishDeploymentMarkerAction {
+  actionType: 'sanity.action.document.publish'
+  draftId: 'drafts.siteDeployment'
+  publishedId: 'siteDeployment'
+  ifPublishedRevisionId?: string
+}
+
+export type DocumentAction =
+  | PublishDocumentAction
+  | CreateDeploymentMarkerAction
+  | EditDeploymentMarkerAction
+  | PublishDeploymentMarkerAction
+
+export interface DeploymentMarker {
+  _id: 'siteDeployment'
+  _rev: string
+  buildSequence: number
+}
+
 export interface PublicationBatch {
   total: number
   categories: Record<PublicationCategory, number>
@@ -114,7 +156,7 @@ export interface PublicationClient {
     params?: Record<string, unknown>,
     options?: Record<string, unknown>,
   ): Promise<T>
-  action(actions: PublishDocumentAction[], options: {tag: string}): Promise<unknown>
+  action(actions: DocumentAction[], options: {tag: string}): Promise<unknown>
 }
 
 export const PUBLIC_DOCUMENTS_QUERY =
@@ -126,6 +168,9 @@ export const PUBLIC_DOCUMENTS_QUERY_PARAMS = {
 
 export const PUBLISHED_TIMESTAMPS_QUERY =
   '*[_id in $ids] {_id, _updatedAt}'
+
+export const DEPLOYMENT_MARKER_QUERY =
+  "*[_id == 'siteDeployment' && _type == 'siteDeployment'][0] {_id, _rev, buildSequence}"
 
 const EMPTY_CATEGORY_COUNTS: Record<PublicationCategory, number> = {
   modified: 0,
@@ -387,6 +432,58 @@ export function preparePublicationBatch(documents: DashboardDocument[]): Publica
   }
 }
 
+export function buildDeploymentMarkerActions(
+  publicActions: PublishDocumentAction[],
+  marker: DeploymentMarker | null | undefined,
+  lastTriggeredAt: string,
+): DocumentAction[] {
+  if (!marker) {
+    return [
+      ...publicActions,
+      {
+        actionType: 'sanity.action.document.create',
+        publishedId: 'siteDeployment',
+        attributes: {
+          _type: 'siteDeployment',
+          buildSequence: 1,
+          lastTriggeredAt,
+        },
+        ifExists: 'fail',
+      },
+      {
+        actionType: 'sanity.action.document.publish',
+        draftId: 'drafts.siteDeployment',
+        publishedId: 'siteDeployment',
+      },
+    ]
+  }
+
+  if (!Number.isSafeInteger(marker.buildSequence) || marker.buildSequence < 1 || !marker._rev) {
+    throw new Error('Marqueur technique de déploiement invalide. Actualisez et réessayez.')
+  }
+
+  return [
+    ...publicActions,
+    {
+      actionType: 'sanity.action.document.edit',
+      draftId: 'drafts.siteDeployment',
+      publishedId: 'siteDeployment',
+      patch: {
+        set: {
+          buildSequence: marker.buildSequence + 1,
+          lastTriggeredAt,
+        },
+      },
+    },
+    {
+      actionType: 'sanity.action.document.publish',
+      draftId: 'drafts.siteDeployment',
+      publishedId: 'siteDeployment',
+      ifPublishedRevisionId: marker._rev,
+    },
+  ]
+}
+
 function publicationError(reason: unknown): string {
   if (reason instanceof Error) return reason.message
   return typeof reason === 'string' ? reason : 'Erreur de publication inconnue.'
@@ -537,6 +634,15 @@ export function createPublicationController({
     )[0]
   }
 
+  const fetchDeploymentMarker = async (): Promise<DeploymentMarker | null> => {
+    const marker = await client.fetch<DeploymentMarker | null>(
+      DEPLOYMENT_MARKER_QUERY,
+      {},
+      {perspective: 'published'},
+    )
+    return marker
+  }
+
   const trackCommittedPublication = () => {
     if (trackingPromise) return trackingPromise
     if (!committedBatch || committedPublishedIds.length === 0) {
@@ -645,7 +751,9 @@ export function createPublicationController({
         }
 
         batch = freshBatch
-        await client.action(batch.actions, {tag: 'editorial.publish-all'})
+        const marker = await fetchDeploymentMarker()
+        const actions = buildDeploymentMarkerActions(batch.actions, marker, new Date().toISOString())
+        await client.action(actions, {tag: 'editorial.publish-all'})
         committed = true
         committedBatch = batch
         committedPublishedIds = batch.actions.map(({publishedId}) => publishedId)

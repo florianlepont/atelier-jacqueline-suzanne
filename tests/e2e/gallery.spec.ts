@@ -32,6 +32,31 @@ test.describe('gallery listing', () => {
 });
 
 test.describe('gallery detail', () => {
+  test('desktop reveal text uses the gallery accent’s computed black-or-white ink', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Grille' }).click();
+
+    const href = await page.locator('a.home-grid__tile').first().getAttribute('href');
+    expect(href).toBeTruthy();
+    await page.goto(href!);
+    await page.evaluate(() => window.scrollTo(0, 700));
+
+    const colors = await page.locator('.detail-hero').evaluate((hero) => {
+      const reveal = hero.querySelector<HTMLElement>('.detail-hero__reveal');
+      const probe = document.createElement('span');
+      probe.style.color = 'var(--detail-hero-desktop-accent-text)';
+      hero.append(probe);
+      const expected = getComputedStyle(probe).color;
+      probe.remove();
+
+      return { expected, actual: reveal ? getComputedStyle(reveal).color : '' };
+    });
+
+    expect(colors.actual).toBe(colors.expected);
+    expect(colors.actual).toMatch(/^rgb\((26, 26, 26|255, 255, 255)\)$/);
+  });
+
   test('renders the bilingual artist statement, differing between "/galleries/{slug}" and "/en/galleries/{slug}"', async ({
     page,
   }) => {

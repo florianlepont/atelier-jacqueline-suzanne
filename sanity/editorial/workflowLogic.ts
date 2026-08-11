@@ -18,6 +18,13 @@ export const PUBLIC_SITE_DOCUMENT_TYPES = [
 
 export type PublicSiteDocumentType = (typeof PUBLIC_SITE_DOCUMENT_TYPES)[number]
 
+// These documents support Studio infrastructure and are never editorial
+// content. Keep this registry separate from the seven public document types:
+// it controls Studio-only affordances, not the site's content inventory.
+export const INTERNAL_SYSTEM_DOCUMENT_TYPES = ['siteDeployment'] as const
+
+export type InternalSystemDocumentType = (typeof INTERNAL_SYSTEM_DOCUMENT_TYPES)[number]
+
 export const PUBLIC_SINGLETON_TYPES = [
   'siteSettings',
   'homePage',
@@ -43,6 +50,7 @@ export const PUBLIC_DOCUMENT_LABELS: Record<PublicSiteDocumentType, string> = {
 
 const publicTypeSet = new Set<string>(PUBLIC_SITE_DOCUMENT_TYPES)
 const singletonTypeSet = new Set<string>(PUBLIC_SINGLETON_TYPES)
+const internalSystemTypeSet = new Set<string>(INTERNAL_SYSTEM_DOCUMENT_TYPES)
 
 export const protectedDocumentTypes = singletonTypeSet
 export const publicSiteDocumentTypes = publicTypeSet
@@ -51,10 +59,24 @@ export function isPublicSiteDocumentType(schemaType: string): schemaType is Publ
   return publicTypeSet.has(schemaType)
 }
 
+export function isInternalSystemDocumentType(
+  schemaType: string,
+): schemaType is InternalSystemDocumentType {
+  return internalSystemTypeSet.has(schemaType)
+}
+
 export function filterDocumentActions<T extends {action?: string}>(
   actions: T[],
   schemaType: string,
 ): T[] {
+  if (isInternalSystemDocumentType(schemaType)) {
+    return actions.filter(
+      (action) =>
+        !new Set(['publish', 'unpublish', 'delete', 'duplicate', 'discardChanges', 'restore']).has(
+          action.action ?? '',
+        ),
+    )
+  }
   if (!isPublicSiteDocumentType(schemaType)) return actions
 
   const blockedActions = singletonTypeSet.has(schemaType)

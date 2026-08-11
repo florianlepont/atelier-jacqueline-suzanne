@@ -106,6 +106,12 @@ interface Props {
   editionPanel?: boolean;
   accent?: string;
   accentText?: string;
+  // The edition detail panel remains neutral on phones, but uses the ink
+  // canvas on desktop where the scroll reveal opens a large side panel.
+  // Gallery callers omit these props, so their desktop canvas remains their
+  // own computed accent colour.
+  desktopAccent?: string;
+  desktopAccentText?: string;
 }
 
 const {
@@ -125,13 +131,20 @@ const {
   editionPanel = false,
   accent = '#A6FD29',
   accentText = '#1A1A1A',
+  desktopAccent = accent,
+  desktopAccentText = accentText,
 } = Astro.props;
 ---
 
 <div
   class={`detail-hero${editionVariant ? ' detail-hero--edition' : ''}${galleryVariant ? ' detail-hero--gallery' : ''}${editionPanel ? ' detail-hero--edition-panel' : ''}`}
   data-carousel-return-href={carouselReturnHref}
-  style={{ '--detail-hero-accent': accent, '--detail-hero-accent-text': accentText }}
+  style={{
+    '--detail-hero-accent': accent,
+    '--detail-hero-accent-text': accentText,
+    '--detail-hero-desktop-accent': desktopAccent,
+    '--detail-hero-desktop-accent-text': desktopAccentText,
+  }}
 >
   <div class="detail-hero__pin">
     <div class="detail-hero__photo">
@@ -477,7 +490,7 @@ const {
     height: calc(100svh + 900px);
     /* A deliberate colour canvas is visible while the remote Sanity image
        decodes. It replaces the old black flash on a slow mobile network. */
-    background: var(--detail-hero-accent);
+    background: var(--detail-hero-desktop-accent);
   }
 
   .detail-hero__pin {
@@ -485,7 +498,7 @@ const {
     top: 0;
     height: 100svh;
     overflow: hidden;
-    background: var(--detail-hero-accent);
+    background: var(--detail-hero-desktop-accent);
   }
 
   .detail-hero__photo {
@@ -636,6 +649,7 @@ const {
     transform: translateY(-50%);
     max-width: 420px;
     text-align: left;
+    color: var(--detail-hero-desktop-accent-text);
     opacity: 0;
     pointer-events: none;
   }
@@ -645,7 +659,8 @@ const {
     font-size: var(--text-label-size);
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: rgba(255, 255, 255, 0.7);
+    color: currentColor;
+    opacity: 0.7;
   }
 
   .detail-hero__reveal-title {
@@ -654,14 +669,15 @@ const {
     font-size: clamp(40px, 6vw, 72px);
     line-height: 1.02;
     font-weight: var(--weight-semibold);
-    color: #FFFFFF;
+    color: inherit;
   }
 
   .detail-hero__statement {
     margin-top: var(--space-md);
     font-size: var(--text-body-size);
     line-height: 1.5;
-    color: rgba(255, 255, 255, 0.85);
+    color: inherit;
+    opacity: 0.85;
   }
 
   .detail-hero__format {
@@ -671,8 +687,8 @@ const {
     font-weight: var(--weight-semibold);
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: #FFFFFF;
-    border-bottom: 2px solid var(--color-accent);
+    color: inherit;
+    border-bottom: 2px solid currentColor;
     padding-bottom: var(--space-sm);
     opacity: 0;
   }
@@ -778,6 +794,10 @@ const {
      + big title bottom-left), but the visible title is now the real
      <h1>. Applies regardless of motion preference. */
   @media (max-width: 767px) {
+    .detail-hero {
+      background: var(--detail-hero-accent);
+    }
+
     .detail-hero--gallery .detail-hero__pin,
     .detail-hero--edition-panel .detail-hero__pin {
       height: auto;

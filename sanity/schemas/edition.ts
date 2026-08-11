@@ -52,6 +52,7 @@ export const edition = defineType({
   groups: [
     {name: 'publication', title: 'Visibilité', default: true},
     {name: 'content', title: 'Présentation'},
+    {name: 'relatedCollection', title: 'Collection liée'},
     {name: 'photos', title: 'Photos'},
     // No 'seo' group this phase -- omitted by Claude's Discretion (no
     // requirement calls for it yet); Phase 12 may add SEO once the public
@@ -109,7 +110,7 @@ export const edition = defineType({
       name: 'relatedGallery',
       title: 'Collection photo liée (optionnel)',
       type: 'reference',
-      group: 'content',
+      group: 'relatedCollection',
       to: [{type: 'gallery'}],
       description:
         'Lien optionnel vers la collection Portfolio qui présente les mêmes photographies, lorsqu\'elle existe. Exemple : l\'édition « Rebut » (le livre imprimé) et la collection photo « Rebut » sont le même sujet — renseigner ce champ affiche un lien vers la collection sur la page de l\'édition. Laisser vide s\'il n\'existe pas de collection correspondante.',

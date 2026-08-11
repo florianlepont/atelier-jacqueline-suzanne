@@ -2,10 +2,12 @@ import {describe, expect, it, vi} from 'vitest';
 import {
   PUBLIC_DOCUMENTS_QUERY,
   PUBLIC_DOCUMENTS_QUERY_PARAMS,
+  DEPLOYMENT_MARKER_QUERY,
   attentionPriority,
   attentionRowSummary,
   baseId,
   buildActivities,
+  buildDeploymentMarkerActions,
   buildAttentionGroups,
   ConfirmationChangedError,
   createInventoryGenerationGuard,
@@ -235,6 +237,81 @@ describe('publication inventory and preflight', () => {
   });
 });
 
+describe('deployment marker actions', () => {
+  it('creates then publishes the first marker after every public action', () => {
+    const actions = buildDeploymentMarkerActions(
+      [
+        {
+          actionType: 'sanity.action.document.publish',
+          draftId: 'drafts.homePage',
+          publishedId: 'homePage',
+          ifDraftRevisionId: 'home-draft-rev',
+        },
+      ],
+      undefined,
+      '2026-08-11T10:00:00.000Z',
+    );
+
+    expect(actions).toEqual([
+      {
+        actionType: 'sanity.action.document.publish',
+        draftId: 'drafts.homePage',
+        publishedId: 'homePage',
+        ifDraftRevisionId: 'home-draft-rev',
+      },
+      {
+        actionType: 'sanity.action.document.create',
+        publishedId: 'siteDeployment',
+        attributes: {
+          _type: 'siteDeployment',
+          buildSequence: 1,
+          lastTriggeredAt: '2026-08-11T10:00:00.000Z',
+        },
+        ifExists: 'fail',
+      },
+      {
+        actionType: 'sanity.action.document.publish',
+        draftId: 'drafts.siteDeployment',
+        publishedId: 'siteDeployment',
+      },
+    ]);
+  });
+
+  it('increments and revision-locks an existing marker before its final publish', () => {
+    const actions = buildDeploymentMarkerActions(
+      [],
+      {_id: 'siteDeployment', _rev: 'marker-rev', buildSequence: 7},
+      '2026-08-11T10:00:00.000Z',
+    );
+
+    expect(actions).toEqual([
+      {
+        actionType: 'sanity.action.document.edit',
+        draftId: 'drafts.siteDeployment',
+        publishedId: 'siteDeployment',
+        patch: {
+          set: {
+            buildSequence: 8,
+            lastTriggeredAt: '2026-08-11T10:00:00.000Z',
+          },
+        },
+      },
+      {
+        actionType: 'sanity.action.document.publish',
+        draftId: 'drafts.siteDeployment',
+        publishedId: 'siteDeployment',
+        ifPublishedRevisionId: 'marker-rev',
+      },
+    ]);
+  });
+
+  it('queries only the fixed published marker outside the public inventory', () => {
+    expect(DEPLOYMENT_MARKER_QUERY).toContain("_id == 'siteDeployment'");
+    expect(DEPLOYMENT_MARKER_QUERY).toContain("_type == 'siteDeployment'");
+    expect(PUBLIC_DOCUMENTS_QUERY).not.toContain('siteDeployment');
+  });
+});
+
 describe('publication controller', () => {
   it('publishes every fresh draft in one guarded Actions API call and refreshes timestamps', async () => {
     const raw = [
@@ -249,6 +326,7 @@ describe('publication controller', () => {
         .fn()
         .mockResolvedValueOnce(raw)
         .mockResolvedValueOnce(raw)
+        .mockResolvedValueOnce(null)
         .mockResolvedValueOnce([
           {_id: 'homePage', _updatedAt: '2026-07-29T09:00:00Z'},
           {_id: 'gallery-new', _updatedAt: '2026-07-29T09:01:00Z'},
@@ -279,6 +357,21 @@ describe('publication controller', () => {
           publishedId: 'gallery-new',
           ifDraftRevisionId: 'drafts.gallery-new-rev',
         },
+        {
+          actionType: 'sanity.action.document.create',
+          publishedId: 'siteDeployment',
+          attributes: {
+            _type: 'siteDeployment',
+            buildSequence: 1,
+            lastTriggeredAt: expect.any(String),
+          },
+          ifExists: 'fail',
+        },
+        {
+          actionType: 'sanity.action.document.publish',
+          draftId: 'drafts.siteDeployment',
+          publishedId: 'siteDeployment',
+        },
       ],
       {tag: 'editorial.publish-all'},
     );
@@ -290,6 +383,59 @@ describe('publication controller', () => {
     });
     expect(onRefresh).toHaveBeenCalledTimes(1);
     expect(controller.state.phase).toBe('success');
+  });
+
+  it('appends an existing marker update to the same one-call public batch without tracking it as content', async () => {
+    const raw = [
+      publicationDocument('drafts.homePage', 'homePage', {
+        intro: {fr: 'Bienvenue', en: 'Welcome'},
+      }),
+    ];
+    const client = {
+      fetch: vi
+        .fn()
+        .mockResolvedValueOnce(raw)
+        .mockResolvedValueOnce(raw)
+        .mockResolvedValueOnce({_id: 'siteDeployment', _rev: 'marker-rev', buildSequence: 7})
+        .mockResolvedValueOnce([{_id: 'homePage', _updatedAt: '2026-07-29T09:00:00Z'}]),
+      action: vi.fn().mockResolvedValue({transactionId: 'tx-marker-update'}),
+    };
+    const controller = createPublicationController({client});
+
+    await controller.preflight();
+    await expect(controller.publish()).resolves.toEqual({
+      committed: true,
+      trackingVerified: true,
+      publishedAt: '2026-07-29T09:00:00Z',
+      publishedIds: ['homePage'],
+    });
+
+    expect(client.action).toHaveBeenCalledTimes(1);
+    expect(client.action).toHaveBeenCalledWith(
+      [
+        {
+          actionType: 'sanity.action.document.publish',
+          draftId: 'drafts.homePage',
+          publishedId: 'homePage',
+          ifDraftRevisionId: 'drafts.homePage-rev',
+        },
+        {
+          actionType: 'sanity.action.document.edit',
+          draftId: 'drafts.siteDeployment',
+          publishedId: 'siteDeployment',
+          patch: {
+            set: {buildSequence: 8, lastTriggeredAt: expect.any(String)},
+          },
+        },
+        {
+          actionType: 'sanity.action.document.publish',
+          draftId: 'drafts.siteDeployment',
+          publishedId: 'siteDeployment',
+          ifPublishedRevisionId: 'marker-rev',
+        },
+      ],
+      {tag: 'editorial.publish-all'},
+    );
   });
 
   it('shares an in-flight publication promise so double confirmation dispatches once', async () => {
@@ -307,6 +453,7 @@ describe('publication controller', () => {
         .fn()
         .mockResolvedValueOnce(raw)
         .mockResolvedValueOnce(raw)
+        .mockResolvedValueOnce(null)
         .mockResolvedValueOnce([{_id: 'homePage', _updatedAt: '2026-07-29T09:00:00Z'}]),
       action: vi.fn().mockReturnValue(actionPromise),
     };
@@ -348,8 +495,10 @@ describe('publication controller', () => {
         .fn()
         .mockResolvedValueOnce(raw)
         .mockResolvedValueOnce(raw)
+        .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(raw)
         .mockResolvedValueOnce(raw)
+        .mockResolvedValueOnce(null)
         .mockResolvedValueOnce([{_id: 'homePage', _updatedAt: '2026-07-29T09:00:00Z'}]),
       action: vi
         .fn()
@@ -588,6 +737,7 @@ describe('publication controller', () => {
         .fn()
         .mockResolvedValueOnce(raw)
         .mockResolvedValueOnce(raw)
+        .mockResolvedValueOnce(null)
         .mockRejectedValueOnce(new Error('timestamp query unavailable'))
         .mockResolvedValueOnce([{_id: 'homePage', _updatedAt: '2026-07-29T09:00:00Z'}]),
       action: vi.fn().mockResolvedValue({transactionId: 'tx-committed'}),
@@ -629,6 +779,7 @@ describe('publication controller', () => {
         .fn()
         .mockResolvedValueOnce(raw)
         .mockResolvedValueOnce(raw)
+        .mockResolvedValueOnce(null)
         .mockResolvedValueOnce([
           {_id: 'homePage', _updatedAt: '2026-07-29T09:00:00Z'},
         ]),

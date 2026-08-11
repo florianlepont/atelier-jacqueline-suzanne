@@ -37,8 +37,11 @@ brouillon existe. Le récapitulatif distingue :
 - **Nouveau, gardé hors ligne** : conserve le contenu hors du site public.
 
 La publication est globale et atomique : toutes les modifications sont envoyées dans une seule
-transaction Sanity. Si une vérification ou la transaction échoue, le Tableau de bord n’annonce
-jamais un succès partiel. Actualiser les données, corriger l’erreur signalée, puis réessayer.
+transaction Sanity. Cette transaction enregistre aussi un unique marqueur technique de
+déploiement : il déclenche une seule reconstruction du site, même si le lot contient plusieurs
+documents. Ce marqueur n’est pas un contenu éditorial ; ne jamais le créer ni le modifier. Si une
+vérification ou la transaction échoue, le Tableau de bord n’annonce jamais un succès partiel.
+Actualiser les données, corriger l’erreur signalée, puis réessayer.
 
 ## Visibilité d’une collection ou d’une édition
 
@@ -121,18 +124,28 @@ site n’est pas livré.
 - **Le statut GitHub est indisponible** : ouvrir GitHub Actions depuis le statut et prévenir le
   mainteneur ; le Tableau de bord ne suppose pas que le site est à jour.
 
-## PENDING MANUAL UAT
+## Vérification technique du déclenchement GitHub
 
-Ces vérifications réelles ne sont pas couvertes par les tests locaux de ce plan :
+Cette vérification est réservée au mainteneur après le déploiement du Studio. Dans Sanity Manage,
+modifier le webhook existant **GitHub Actions rebuild** — sans en créer un second — pour qu’il
+réagisse aux créations et mises à jour du seul document publié dont l’identifiant et le type sont
+`siteDeployment`, avec le filtre `_id == 'siteDeployment' && _type == 'siteDeployment'`.
+Désactiver les brouillons et versions. Conserver sa destination GitHub, son en-tête
+d’autorisation existant et sa projection `event_type` : aucun secret ne doit être copié dans le
+Studio ou ce dépôt.
 
-- [ ] Avec le rôle **Editor**, confirmer que l’utilisatrice peut modifier les sept types publics
-  et exécuter la transaction globale, sans accès inutile aux réglages d’administration.
-- [ ] Après une publication globale réelle, confirmer que les mutations déclenchent bien le
-  webhook Sanity vers GitHub et qu’une exécution qualifiée apparaît.
-- [ ] Confirmer le fan-out attendu du webhook pour la transaction multi-documents et l’absence de
-  déploiements manquants ou dupliqués problématiques.
+Avant un essai, noter les livraisons du webhook et les exécutions GitHub Actions existantes.
+Préparer au moins deux brouillons publics déjà approuvés, puis les publier ensemble une seule fois
+avec **Mettre le site à jour**. Pour cet unique lot, vérifier :
 
-Ce plan ne déploie pas le Studio, ne publie aucun contenu réel et n’observe aucun webhook réel.
+- une seule livraison Sanity réussie (statut 204) ;
+- une seule nouvelle exécution GitHub Actions, déclenchée par `repository_dispatch` avec l’action
+  `sanity-content-published` ;
+- une exécution terminée avec succès, puis le statut **Site à jour** dans le Tableau de bord.
+
+Consigner uniquement l’horodatage du lot, le nombre de documents publics modifiés, le statut de la
+livraison et l’issue de l’exécution GitHub. En cas de plusieurs livraisons ou exécutions, ne pas
+republier : laisser le webhook large désactivé et transmettre les entrées de journal au mainteneur.
 
 ## Développement local
 

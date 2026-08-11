@@ -12,7 +12,7 @@ import {checklistEnabledTypes, checklistInspector} from './editorial/DocumentChe
 import {openSitePageInspector} from './editorial/OpenSitePage'
 import {MediaLibrary} from './editorial/MediaLibrary'
 import {StudioLayout} from './editorial/StudioLayout'
-import {PUBLIC_SINGLETON_TYPES} from './editorial/workflowLogic'
+import {INTERNAL_SYSTEM_DOCUMENT_TYPES, PUBLIC_SINGLETON_TYPES} from './editorial/workflowLogic'
 
 export default defineConfig({
   name: 'default',
@@ -83,6 +83,9 @@ export default defineConfig({
             (template) =>
               !PUBLIC_SINGLETON_TYPES.includes(
                 template.templateId as (typeof PUBLIC_SINGLETON_TYPES)[number],
+              ) &&
+              !INTERNAL_SYSTEM_DOCUMENT_TYPES.includes(
+                template.templateId as (typeof INTERNAL_SYSTEM_DOCUMENT_TYPES)[number],
               ),
           )
         : prev,

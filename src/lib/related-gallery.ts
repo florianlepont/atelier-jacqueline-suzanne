@@ -37,8 +37,8 @@ export function getRelatedGalleryLink(
   const href = getRelativeLocaleUrl(locale, `galleries/${slug}`);
   const text =
     locale === 'fr'
-      ? `À voir aussi : la collection « ${title} »`
-      : `Also see: the “${title}” collection`;
+      ? `Voir la collection « ${title} »`
+      : `View the “${title}” collection`;
 
   return { href, text };
 }

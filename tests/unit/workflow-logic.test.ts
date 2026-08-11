@@ -6,6 +6,7 @@ import {
   collectionStatusBadge,
   completenessBadge,
   filterDocumentActions,
+  INTERNAL_SYSTEM_DOCUMENT_TYPES,
   isPublicSiteDocumentType,
 } from '../../sanity/editorial/workflowLogic'
 
@@ -29,6 +30,8 @@ describe('Sanity workflow decision logic', () => {
     ])
     expect(isPublicSiteDocumentType('edition')).toBe(true)
     expect(isPublicSiteDocumentType('exhibition')).toBe(false)
+    expect(isPublicSiteDocumentType('siteDeployment')).toBe(false)
+    expect(INTERNAL_SYSTEM_DOCUMENT_TYPES).toEqual(['siteDeployment'])
     expect(CHECKLIST_ENABLED_TYPES).toEqual([
       ...PUBLIC_SITE_DOCUMENT_TYPES,
       'exhibition',
@@ -64,6 +67,19 @@ describe('Sanity workflow decision logic', () => {
       {action: 'restore'},
     ])
     expect(filterDocumentActions(actions, 'exhibition')).toBe(actions)
+  })
+
+  it('removes every manual mutation action from the internal deployment marker', () => {
+    const actions = [
+      {action: 'publish'},
+      {action: 'discardChanges'},
+      {action: 'unpublish'},
+      {action: 'restore'},
+      {action: 'delete'},
+      {action: 'duplicate'},
+    ]
+
+    expect(filterDocumentActions(actions, 'siteDeployment')).toEqual([])
   })
 
   it('reports required, recommended, and ready completeness states', () => {

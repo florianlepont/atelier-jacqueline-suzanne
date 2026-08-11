@@ -87,6 +87,7 @@ export const structure: StructureResolver = (S, context) =>
             'edition',
             'exhibition',
             'seo',
+            'siteDeployment',
           ].includes(listItem.getId() ?? ''),
       ),
     ])

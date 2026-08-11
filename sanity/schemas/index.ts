@@ -8,6 +8,7 @@ import {exhibition} from './exhibition'
 import {seo} from './seo'
 import {imageRights} from './imageRights'
 import {contactPage} from './contactPage'
+import {siteDeployment} from './siteDeployment'
 
 export const schemaTypes = [
   siteSettings,
@@ -20,4 +21,5 @@ export const schemaTypes = [
   exhibition,
   seo,
   imageRights,
+  siteDeployment,
 ]

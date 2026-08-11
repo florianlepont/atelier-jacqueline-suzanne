@@ -609,23 +609,51 @@ test.describe('edition detail scroll-up-to-return (Item 6, quick-260803-bvu)', (
 });
 
 test.describe('editions related-gallery cross-link (EDN-08)', () => {
-  test('no cross-link renders on current content (no édition has relatedGallery set yet)', async ({
-    page,
-  }) => {
+  test('renders a mobile-friendly related collection card when an edition has a linked gallery', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/editions/');
-    const frHref = await page.locator('.editions-index__row').first().getAttribute('href');
-    expect(frHref).toBeTruthy();
+    const editionHrefs = await page.locator('.editions-index__row').evaluateAll((rows) =>
+      rows
+        .map((row) => row.getAttribute('href'))
+        .filter((href): href is string => Boolean(href)),
+    );
 
-    const slugMatch = frHref!.match(/\/editions\/([^/]+)\/?$/);
-    const slug = slugMatch?.[1];
-    expect(slug).toBeTruthy();
-    const enHref = `/en/editions/${slug}/`;
+    let foundRelatedCollection = false;
+    let relatedEditionHref = '';
+    for (const href of editionHrefs) {
+      await page.goto(href);
+      const related = page.locator('.edition-detail__related');
+      if ((await related.count()) === 0) continue;
 
-    await page.goto(frHref!);
-    await expect(page.locator('.edition-detail__related')).toHaveCount(0);
+      foundRelatedCollection = true;
+      relatedEditionHref = href;
+      await expect(related).toBeVisible();
+      await expect(related).toHaveAttribute('href', /\/galleries\/[^/]+\/?$/);
+      await expect(related).toContainText(/Voir la collection/);
 
-    await page.goto(enHref);
-    await expect(page.locator('.edition-detail__related')).toHaveCount(0);
+      const styles = await related.evaluate((link) => {
+        const style = getComputedStyle(link);
+        return {
+          display: style.display,
+          borderTopWidth: style.borderTopWidth,
+        };
+      });
+      expect(styles).toEqual({
+        display: 'inline-flex',
+        borderTopWidth: '2px',
+      });
+      break;
+    }
+
+    expect(foundRelatedCollection).toBe(true);
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(relatedEditionHref);
+    const desktopStyles = await page.locator('.edition-detail__related').evaluate((link) => {
+      const style = getComputedStyle(link);
+      return { display: style.display, borderTopWidth: style.borderTopWidth };
+    });
+    expect(desktopStyles).toEqual({ display: 'inline-flex', borderTopWidth: '2px' });
   });
 });
 
@@ -902,6 +930,37 @@ test.describe('editions hero reduced-motion (sketch 005)', () => {
     await expect(pin).toBeVisible();
     const pinPosition = await pin.evaluate((el) => getComputedStyle(el).position);
     expect(pinPosition).toBe('sticky');
+  });
+});
+
+test.describe('edition detail desktop contrast', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test('uses the dark ink canvas with white reveal text and keeps the mobile panel neutral', async ({ page }) => {
+    await page.goto('/editions/');
+    const rowHref = await page.locator('.editions-index__row').first().getAttribute('href');
+    expect(rowHref).toBeTruthy();
+    await page.goto(rowHref!);
+    await page.evaluate(() => window.scrollTo(0, 700));
+
+    const desktopColors = await page.locator('.detail-hero').evaluate((hero) => {
+      const reveal = hero.querySelector<HTMLElement>('.detail-hero__reveal');
+      return {
+        canvas: getComputedStyle(hero).backgroundColor,
+        text: reveal ? getComputedStyle(reveal).color : '',
+      };
+    });
+
+    expect(desktopColors).toEqual({ canvas: 'rgb(26, 26, 26)', text: 'rgb(255, 255, 255)' });
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.reload();
+
+    const mobileColors = await page.locator('.detail-hero__reveal').evaluate((reveal) => ({
+      canvas: getComputedStyle(reveal).backgroundColor,
+      text: getComputedStyle(reveal).color,
+    }));
+    expect(mobileColors).toEqual({ canvas: 'rgb(255, 255, 255)', text: 'rgb(26, 26, 26)' });
   });
 });
 

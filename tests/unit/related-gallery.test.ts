@@ -6,19 +6,18 @@ import { getRelatedGalleryLink } from '../../src/lib/related-gallery';
 // mock-populated passthrough test for the pure link helper.
 
 describe('getRelatedGalleryLink', () => {
-  it('returns an fr href + text for a populated relatedGallery', () => {
+  it('returns an fr href and compact CTA text for a populated relatedGallery', () => {
     const link = getRelatedGalleryLink({ title: 'Rebut', slug: 'rebut' }, 'fr');
     expect(link).not.toBeNull();
     expect(link!.href).toMatch(/\/galleries\/rebut\/?$/);
-    expect(link!.text).toContain('Rebut');
-    expect(link!.text).toContain('collection');
+    expect(link!.text).toBe('Voir la collection « Rebut »');
   });
 
   it('returns an en href + text for a populated relatedGallery', () => {
     const link = getRelatedGalleryLink({ title: 'Rebut', slug: 'rebut' }, 'en');
     expect(link).not.toBeNull();
     expect(link!.href).toMatch(/\/en\/galleries\/rebut\/?$/);
-    expect(link!.text).toContain('Rebut');
+    expect(link!.text).toBe('View the “Rebut” collection');
   });
 
   it('returns null for a null relatedGallery', () => {
