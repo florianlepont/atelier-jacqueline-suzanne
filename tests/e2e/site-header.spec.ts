@@ -58,7 +58,9 @@ test.describe('Shared SiteHeader — mobile fit at 393px (HOME-10, Pitfall 1)', 
   }
 });
 
-// Phase 13 (EDN-01, D-02/D-05) — re-measured with the 4th (Éditions) nav
+// Phase 13 (EDN-01, D-02/D-05) — re-measured with the desktop-only
+// galleries shortcut and the primary nav links present. Phone widths hide
+// the desktop shortcut in favour of the existing hamburger/gallery list.
 // link present: the narrowest supported phone width (320px), for one
 // solid-variant page (/about/) and two transparent-variant pages
 // (homepage carousel and gallery-detail). The existing @media
@@ -160,21 +162,21 @@ test.describe('Shared SiteHeader — mode-toggle scoping (HOME-10, D-04)', () =>
 });
 
 test.describe('Shared SiteHeader — nav structure (HOME-10, D-01)', () => {
-  // Phase 13 (EDN-01, D-01): "Éditions" is now the FIRST nav link, ahead of
-  // About — nav order becomes Éditions -> About -> Contact -> Instagram.
-  test('/about/: .site-nav exposes Éditions, About, Contact, and Instagram links in that DOM order', async ({ page }) => {
+  test('/about/: .site-nav exposes Galleries, Éditions, About, Contact, and Instagram links in that DOM order', async ({ page }) => {
     await page.goto('/about/');
 
     const navLinks = page.locator('.site-nav > a.nav-link');
-    await expect(navLinks).toHaveCount(4);
+    await expect(navLinks).toHaveCount(5);
 
     const hrefs = await navLinks.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
+    const galleriesIndex = hrefs.findIndex((href) => href?.includes('?view=grid'));
     const editionsIndex = hrefs.findIndex((href) => href?.includes('editions'));
     const aboutIndex = hrefs.findIndex((href) => href?.includes('about'));
     const contactIndex = hrefs.findIndex((href) => href?.includes('contact'));
     const instagramIndex = hrefs.findIndex((href) => href === INSTAGRAM_HREF);
 
-    expect(editionsIndex).toBe(0);
+    expect(galleriesIndex).toBe(0);
+    expect(editionsIndex).toBeGreaterThan(galleriesIndex);
     expect(aboutIndex).toBeGreaterThan(editionsIndex);
     expect(contactIndex).toBeGreaterThan(aboutIndex);
     expect(instagramIndex).toBeGreaterThan(contactIndex);
@@ -201,13 +203,15 @@ test.describe('Shared SiteHeader — Éditions nav link (EDN-01, D-01, SC #1/#2)
 
       const header = page.locator('[data-role="site-header"]');
       const navLinks = header.locator('.site-nav > a.nav-link');
-      await expect(navLinks).toHaveCount(4);
+      await expect(navLinks).toHaveCount(5);
 
       const firstLink = navLinks.first();
       const href = await firstLink.getAttribute('href');
-      expect(href).toContain(editionsSegment);
+      expect(href).toContain('?view=grid');
+      await expect(firstLink).toHaveText(path.startsWith('/en/') ? 'Galleries' : 'Galeries');
 
-      // Exactly one editions link in the header, and it is the first one.
+      // Exactly one editions link in the header; Galleries remains a
+      // shortcut to the homepage's grid, not a separate page.
       const editionsLinks = header.locator(`a[href*="${editionsSegment}"]`);
       await expect(editionsLinks).toHaveCount(1);
     });
@@ -246,24 +250,25 @@ test.describe('Shared SiteHeader — homepage carousel/grid stay Éditions-free 
 // <SiteHeader> — the homepage still renders its own .home-nav today, so
 // `.site-nav > a.nav-link` resolves to zero elements on '/'.
 test.describe('Shared SiteHeader — cross-page structural identity (HOME-10, D-01, D-05)', () => {
-  test('/ and /about/ render the same .site-nav .nav-link count and order (Éditions, About, Contact, Instagram)', async ({ page }) => {
+  test('/ and /about/ render the same .site-nav .nav-link count and order (Galleries, Éditions, About, Contact, Instagram)', async ({ page }) => {
     await page.goto('/');
     const homeNavLinks = page.locator('.site-nav > a.nav-link');
-    await expect(homeNavLinks).toHaveCount(4);
+    await expect(homeNavLinks).toHaveCount(5);
     const homeHrefs = await homeNavLinks.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
 
     await page.goto('/about/');
     const aboutNavLinks = page.locator('.site-nav > a.nav-link');
-    await expect(aboutNavLinks).toHaveCount(4);
+    await expect(aboutNavLinks).toHaveCount(5);
     const aboutHrefs = await aboutNavLinks.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
 
     // Same count, same order, same hrefs — proves one shared component, not
     // two divergent implementations that happen to agree by coincidence.
     expect(homeHrefs).toEqual(aboutHrefs);
-    expect(homeHrefs[0]).toContain('editions');
-    expect(homeHrefs[1]).toContain('about');
-    expect(homeHrefs[2]).toContain('contact');
-    expect(homeHrefs[3]).toBe(INSTAGRAM_HREF);
+    expect(homeHrefs[0]).toContain('?view=grid');
+    expect(homeHrefs[1]).toContain('editions');
+    expect(homeHrefs[2]).toContain('about');
+    expect(homeHrefs[3]).toContain('contact');
+    expect(homeHrefs[4]).toBe(INSTAGRAM_HREF);
   });
 });
 

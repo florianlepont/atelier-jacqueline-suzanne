@@ -237,6 +237,29 @@ test.describe('i18n non-regression guard', () => {
 });
 
 test.describe('single unified mode toggle (HOME-01, D-01/D-02)', () => {
+  test('the desktop Galleries shortcut opens the homepage directly in grid mode', async ({ page }) => {
+    await page.goto('/about/');
+
+    const galleriesLink = page.locator('[data-role="site-header"] .nav-link--desktop-galleries');
+    await expect(galleriesLink).toHaveText('Galeries');
+    await galleriesLink.click();
+
+    await expect(page).toHaveURL(/\/?view=grid$/);
+    await expect(page.locator('[data-role="home-grid"]')).toBeVisible();
+    await expect(page.locator('[data-role="home-carousel"]')).toBeHidden();
+  });
+
+  test('the direct grid route keeps its desktop header white and neutral', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/?view=grid');
+
+    const header = page.locator('[data-role="site-header"]');
+    await expect(header).toBeVisible();
+    await expect
+      .poll(() => header.evaluate((element) => getComputedStyle(element).backgroundColor))
+      .toBe('rgb(255, 255, 255)');
+  });
+
   test('exactly one toggle button exists and its accessible name flips with display mode', async ({ page }) => {
     await page.goto('/');
 

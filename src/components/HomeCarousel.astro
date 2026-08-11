@@ -102,6 +102,7 @@ const mobileGalleryLinks = galleries.map((gallery) => ({
 
 const totalLabel = String(galleries.length).padStart(2, '0');
 const firstGallery = galleries[0];
+const initialDisplayMode = Astro.url.searchParams.get('view') === 'grid' ? 'grid' : 'carousel';
 
 // Base-aware logo paths (matches BaseLayout.astro's assetBase pattern) — a
 // bare root-relative "/logos/..." src 404s under the GitHub Pages deploy's
@@ -117,7 +118,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 ) : (
   <section
     class="home"
-    data-display-mode="carousel"
+    data-display-mode={initialDisplayMode}
     style={{
       '--wordmark-photo': 'none',
       '--wordmark-photo-filter': wordmarkPhotoFilter(firstGallery.heroTextColor),
@@ -182,7 +183,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       </button>
     </SiteHeader>
 
-    <div class="home-hero" data-role="home-carousel">
+    <div class="home-hero" data-role="home-carousel" hidden={initialDisplayMode === 'grid'}>
       {/* Wraps the photo + its overlaid chrome (scrim, arrows, caption) in
           its own sized box, separate from .home-hero__accent below. On
           mobile, .home-hero__accent is in-flow (not absolute — see its
@@ -315,7 +316,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       </div>
     </div>
 
-    <div class="home-grid" data-role="home-grid" hidden>
+    <div class="home-grid" data-role="home-grid" hidden={initialDisplayMode !== 'grid'}>
       <div class="home-grid__tiles">
         {/* D-06: non-link hero tile — same square sizing as every gallery
             tile, but a plain <div> (no gallery to navigate to). D-05: solid
@@ -1691,7 +1692,11 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
         render();
         syncAutoplayControl();
-        startAutoAdvance();
+        if (new URLSearchParams(window.location.search).get('view') === 'grid') {
+          showGrid();
+        } else {
+          startAutoAdvance();
+        }
 
         // HOME-16/D-05: a random-per-visit STARTING accent, layered on top
         // of the render() call above rather than folded into it — only the
@@ -2500,8 +2505,13 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
      exactly — the unification this whole phase exists to deliver. */
   .home[data-display-mode='grid'] :global(.site-header--transparent) {
     position: static;
-    background: none;
+    /* The gallery grid is a white editorial page, just like every other
+       non-hero route. An explicit opaque fill matters here: `none` lets a
+       gallery accent from a previous interaction show through the header.
+       That produced a fluorescent header in the direct `?view=grid` route. */
+    background: var(--color-dominant);
     color: var(--color-ink);
+    border-bottom: var(--border-hairline) solid var(--color-border);
   }
 
   .home[data-display-mode='grid'] :global(.site-header--transparent .nav-link) {

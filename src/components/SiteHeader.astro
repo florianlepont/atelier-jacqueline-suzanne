@@ -77,6 +77,12 @@ const isEnLocale = Astro.currentLocale === 'en';
 const openMenuLabel = isEnLocale ? 'Open menu' : 'Ouvrir le menu';
 const closeMenuLabel = isEnLocale ? 'Close menu' : 'Fermer le menu';
 const homeLabel = isEnLocale ? 'Home / Galleries' : 'Accueil / Galeries';
+// The homepage is the galleries overview as well. On desktop, make that
+// route explicit instead of relying on visitors to discover the icon-only
+// carousel/grid toggle. The mobile drawer already exposes the individual
+// galleries, so this link is deliberately hidden at phone widths.
+const desktopGalleriesLabel = isEnLocale ? 'Galleries' : 'Galeries';
+const desktopGalleriesHref = `${homeHref}?view=grid`;
 const menuLabel = 'Menu';
 ---
 
@@ -91,6 +97,7 @@ const menuLabel = 'Menu';
     <img src={logoWhiteSrc} alt="" class="logo-mark__img logo-mark__img--hover" />
   </a>
   <nav class="site-nav" aria-label="Primary">
+    <a href={desktopGalleriesHref} class="nav-link nav-link--desktop-galleries">{desktopGalleriesLabel}</a>
     {/* EDN-01/D-01: Éditions renders FIRST, highest visual nav priority —
         before the existing About/Contact links. Reuses .nav-link verbatim,
         no new class/active-state treatment (13-UI-SPEC.md). */}
@@ -369,6 +376,12 @@ const menuLabel = 'Menu';
   .nav-link:hover,
   .nav-link:focus-visible {
     text-decoration: underline;
+  }
+
+  @media (max-width: 767px) {
+    .nav-link--desktop-galleries {
+      display: none;
+    }
   }
 
   /* D-01 (Phase 20 Plan 03): the hamburger toggle and the 3-bar glyph it

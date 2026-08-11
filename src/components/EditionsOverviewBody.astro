@@ -19,6 +19,7 @@ interface EditionTile {
   alt: string;
   title: string;
   statement: string;
+  format: string;
 }
 
 interface Props {
@@ -71,6 +72,7 @@ const mobileCtaLabel = viewEditionLabel.replace(/^\s*—\s*/, '');
                 </div>
                 <span class="editions-index__number">{label}</span>
                 <h2 class="editions-index__title">{tile.title}</h2>
+                <span class="editions-index__format">{tile.format}</span>
                 <div class="editions-index__statement-wrap">
                   <p class="editions-index__statement">{tile.statement}</p>
                 </div>
@@ -184,9 +186,31 @@ const mobileCtaLabel = viewEditionLabel.replace(/^\s*—\s*/, '');
     transition: opacity 0.25s ease;
   }
 
-  .editions-index__mobile-media,
-  .editions-index__cta {
+  .editions-index__mobile-media {
     display: none;
+  }
+
+  .editions-index__format {
+    display: block;
+    margin-top: var(--space-sm);
+    color: #6b6b6b;
+    font-size: var(--text-label-size);
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.04em;
+    line-height: 1.35;
+    text-transform: uppercase;
+    transition: color 0.35s ease;
+  }
+
+  .editions-index__cta {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap-target-min);
+    margin-top: var(--space-md);
+    color: currentColor;
+    font-size: var(--text-label-size);
+    font-weight: var(--weight-semibold);
+    line-height: 1;
   }
 
   .editions-index__statement-wrap {
@@ -208,6 +232,10 @@ const mobileCtaLabel = viewEditionLabel.replace(/^\s*—\s*/, '');
   }
 
   :global(html.editions-row-active) .editions-index__statement {
+    color: var(--editions-row-accent-text);
+  }
+
+  :global(html.editions-row-active) .editions-index__format {
     color: var(--editions-row-accent-text);
   }
 
@@ -320,9 +348,6 @@ const mobileCtaLabel = viewEditionLabel.replace(/^\s*—\s*/, '');
     }
 
     .editions-index__cta {
-      display: inline-flex;
-      align-items: center;
-      min-height: var(--tap-target-min);
       margin-top: var(--space-lg);
       padding: 0 var(--space-md);
       border: var(--border-hairline) solid currentColor;

@@ -63,6 +63,15 @@ test.describe('editions overview', () => {
     const titleText = (await title.innerText()).trim();
     expect(titleText.length).toBeGreaterThan(0);
 
+    // The overview must explain the object and expose an explicit route
+    // before hover; visitors should not have to discover the cursor preview
+    // to understand that a row is an édition they can open.
+    const format = row.locator('.editions-index__format');
+    await expect(format).toBeVisible();
+    await expect(format).toContainText(/Édition imprimée.*pages.*Tirage/i);
+    await expect(row.locator('.editions-index__cta')).toBeVisible();
+    await expect(row.locator('.editions-index__cta')).toContainText(/Voir l'édition/i);
+
     // The statement is CSS-hidden (opacity:0/max-height:0) until hover, but
     // its text is always present in the DOM — textContent() is
     // state-independent, matching the pattern used at the detail no-JS

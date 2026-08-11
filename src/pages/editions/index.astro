@@ -39,6 +39,7 @@ const tiles = (await getEditions())
       alt: cover.alt?.[locale] ?? '',
       title: edition.title,
       statement: edition.statement?.[locale] ?? '',
+      format: `Édition imprimée · ${edition.pageCount} pages · Tirage ${edition.printRun}`,
     };
   });
 
