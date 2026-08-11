@@ -8,22 +8,30 @@ A bilingual (French/English) website for Romane Lepont's photography and artisti
 
 Visitors can browse Romane's photographic work and buy a piece (print, original, book, or merch) through a real, working checkout — everything else supports that. **Delivered in two milestones**: v1 replaces the current site fast with portfolio/about/contact so the old Myportfolio site can be retired sooner; v1.x adds exhibitions, the shop, and checkout on top of that foundation.
 
-## Current Milestone: v1.6 Mobile Experience Redesign
+## Current Milestone: none — awaiting next milestone
+
+v1.6 shipped 2026-08-11 (see archived brief below). Phase 5 (Launch & Domain Cutover) and the v1.x wave (Exhibitions, Shop, Checkout, Shipping, commerce Legal) remain open and deliberately deferred, per explicit user choice (2026-08-03) — see REQUIREMENTS.md v2 section. Next milestone not yet scoped — run `/gsd-new-milestone` to start one.
+
+<details>
+<summary>Archived: v1.6 Mobile Experience Redesign milestone brief (shipped 2026-08-11)</summary>
 
 **Goal:** Redesign the mobile (phone) experience only — desktop/tablet stays byte-for-byte unchanged — replacing the carousel/grid toggle and click-to-open lightbox with scroll-driven navigation across the Homepage, Gallery detail, and Édition detail pages.
 
-**Target features:**
-- Homepage (mobile): a mobile nav menu (hamburger or similar) replaces the header bar; the language switcher moves inside it
-- Homepage (mobile): the carousel/grid toggle is removed; a single scroll-driven view (grid-mode style) replaces it, with each item's description text revealing on scroll-arrival via a new transition
-- Homepage (mobile): the first screen (wordmark) goes full-screen; scrolling zooms through the letterform into the first gallery's photo — explored via sketch before implementation
-- Homepage (mobile): the accent color is randomly picked per visit from the existing per-gallery `heroColor` field (the same mechanism the desktop carousel already uses) — homepage-only, no new palette
-- Gallery detail (mobile): the click-to-open Lightbox is retired; scroll-driven navigation between full, uncropped photos replaces it
-- Édition detail (mobile): the same scroll-driven navigation replaces the Lightbox; the intro/statement text gets a legible solid background instead of sitting over a photo; the primary photo is shown among the others rather than as a full-bleed backdrop
-- About (mobile): the portrait photo's placement is improved — explored via sketch before implementation
+**What actually shipped** (differs from the original target features below — full story at `.planning/milestones/v1.6-ROADMAP.md`):
+- Homepage (mobile): mobile nav menu (hamburger) replacing the header bar, language switcher folded inside — shipped as planned via the normal plan/execute cycle (HOME-13)
+- Homepage (mobile): scroll-driven single view replacing the carousel/grid toggle, full-screen wordmark transitioning into the first gallery's photo — shipped, but not by the phase that built it: Phase 21's own `HomeCarousel` scroll-deck (15 plans, 3 real-device UAT rounds, a code review, all closing real defects) was superseded at phone width by a direct commit (`6c51695`) introducing a new `MobileHomePrototype.astro` component, before a final confirmation UAT round could run. `HomeCarousel`'s scroll-deck remains in the codebase, correct and tested, but unreachable at ≤767px (HOME-14, HOME-15)
+- Homepage (mobile): per-visit random accent color — shipped at Phase 20 close, then silently broken by that same direct commit (the randomization was never ported to the new renderer); found by the milestone's own post-hoc audit and CANCELLED rather than fixed (HOME-16)
+- Gallery detail (mobile): Lightbox retirement — CANCELLED, Phase 22 was never planned or implemented (PORT-07)
+- Édition detail (mobile): Lightbox retirement + legible intro-text treatment — CANCELLED, same Phase 22 (EDN-10, EDN-11)
+- About (mobile): portrait placement improved — shipped via the same direct commit that rebuilt the homepage, accepted without independent GSD verification (ABOUT-05)
 
-**Process:** sketch-first for the riskiest/most subjective pieces (homepage letterform-zoom transition, Édition intro-text legibility redesign, About portrait placement) before real implementation, per user preference (2026-08-03). Desktop/tablet must remain unchanged throughout — every phase in this milestone needs an explicit no-desktop-regression guard.
+**Process note:** sketch-first for the riskiest pieces was the original intent; in practice the mobile homepage's actual final direction (and the About portrait placement) was decided and implemented directly on `main`, outside the plan/execute/verify cycle, partway through the milestone.
 
-v1.5 shipped 2026-08-03 (see archived brief below). Phase 5 (Launch & Domain Cutover) and the v1.x wave (Exhibitions, Shop, Checkout, Shipping, commerce Legal) remain open and deliberately deferred behind this milestone, per explicit user choice (2026-08-03) — see REQUIREMENTS.md v2 section.
+**Result:** 5/9 requirements delivered, 4/9 cancelled. See `.planning/milestones/v1.6-REQUIREMENTS.md` for the full traceability table and `.planning/milestones/v1.6-MILESTONE-AUDIT.md` for the audit that found the HOME-16 regression.
+
+**Note:** Phase 5 (Launch & Domain Cutover) and the v1.x wave remain open and deliberately deferred, not part of this milestone.
+
+</details>
 
 <details>
 <summary>Archived: v1.5 Global Improvements & Bug Fixes milestone brief (shipped 2026-08-03)</summary>
@@ -143,19 +151,14 @@ v1.5 shipped 2026-08-03 (see archived brief below). Phase 5 (Launch & Domain Cut
 
 v1.5 "Global Improvements & Bug Fixes" is now feature-complete: all 8 requirements (HOME-11, HOME-12, PORT-04, PORT-05, PORT-06, EDN-09, UI-01, CONT-03) shipped across Phases 17–19. Formal milestone close (`/gsd-complete-milestone v1.5`) not yet run.
 
-**v1.6 (Mobile Experience Redesign — in progress):**
+**v1.6 (Mobile Experience Redesign, shipped 2026-08-11):**
 - [x] Mobile nav menu replacing the header bar, language switcher included — HOME-13, Phase 20 (a gap-closure plan, 20-06, was needed after live on-phone UAT: the switcher initially shipped as a fourth equal-weight primary link per D-04, then reversed to a small secondary-tier line above the Instagram link, which also gained the header's Instagram glyph; both re-verified independently before phase close)
-- [x] Homepage per-visit random accent color (reusing existing per-gallery `heroColor`) on mobile — HOME-16, Phase 20
+- [x] Homepage carousel/grid toggle removed on mobile, single scroll-driven view with on-arrival description reveal — HOME-14, Phase 21 (mechanism delivered is `MobileHomePrototype.astro`, not the `HomeCarousel` scroll-deck Phase 21's own 15 plans built and three UAT rounds verified — see archived milestone brief above)
+- [x] Homepage full-screen wordmark transitioning into the first gallery photo on mobile — HOME-15, Phase 21 (same mechanism caveat as HOME-14)
+- [x] About: improved mobile portrait placement — ABOUT-05, Phase 23 (delivered via direct commit `6c51695`, no independent GSD verification — spot-checked against the diff only)
+- [x] Desktop/tablet behavior unchanged throughout every mobile-only change in this milestone — UI-02, Phase 23 (accepted on the user's word; not independently re-verified by a dedicated regression pass)
 
 ### Active
-
-**v1.6 (Mobile Experience Redesign) — requirements being defined, see REQUIREMENTS.md:**
-- [ ] Homepage carousel/grid toggle removed on mobile; single scroll-driven view with on-arrival description reveal
-- [ ] Homepage full-screen wordmark with a letterform-zoom transition into the first gallery photo on mobile
-- [ ] Gallery detail: Lightbox retired on mobile, replaced by scroll-driven full-photo navigation
-- [ ] Édition detail: Lightbox retired on mobile, replaced by scroll-driven full-photo navigation; legible intro-text treatment
-- [ ] About: improved mobile portrait placement
-- [ ] Desktop/tablet behavior unchanged throughout
 
 **v1.0 (Phase 5, deliberately deferred — not part of any shipped milestone):**
 - [ ] Site is reachable at the existing domain, atelierjacquelinesuzanne.fr, via a rehearsed DNS cutover from the current Myportfolio site — LAUNCH-01, Phase 5: Launch & Domain Cutover. Explicit user decision (2026-07-27), reconfirmed at v1.0's retroactive close: *"cancel the initial plan to deliver and publish the website officially... we'll do it later."* Not abandoned — the site has kept shipping on GitHub Pages staging through v1.1/v1.2/v1.3 instead, and this stays open for whenever launch is next prioritized.
@@ -187,6 +190,7 @@ v1.5 "Global Improvements & Bug Fixes" is now feature-complete: all 8 requiremen
 - French e-commerce legal requirements (mentions légales, CGV incl. 14-day droit de rétractation, GDPR/cookie consent) are mandatory before any live transaction. Separately, Stripe payouts require Romane to have a registered business (SIRET) in France — this has its own lead time and should be tracked as an early, parallel administrative task, not a blocker gating development.
 - As of v1.4's close (2026-08-01), every page's title treatment (Contact, Éditions, About) and the 404 fallback now share the same editorial identity (`PageTitleHeader` giant-title + halftone + hairline divider, or the 404's own custom photo-backdrop concept). All shipped work lives on `main`; no other branches remain, local or on GitHub. The only open v1 phase is Phase 5 (Launch & Domain Cutover); the v1.x shop/checkout/exhibitions wave remains unscoped in REQUIREMENTS.md's v2 section.
 - As of v1.5's close (2026-08-03), all 8 live-reported bugs/regressions from the shipped v1.4 site are fixed and verified: homepage carousel/intro (Phase 17), gallery/Éditions display (Phase 18), and the shared-component visual polish batch — Éditions row-hover, halftone bleed, Contact spacing (Phase 19). One known, documented, non-blocking residual from UI-01: on platforms with space-taking (non-overlay) scrollbars, viewport units used for the halftone's full-bleed geometry can theoretically extend ~half a scrollbar-width past the client edge — flagged in `PageTitleHeader.astro`'s own comment with a documented guard-term remedy, not exercised by this repo's headless/overlay-scrollbar CI environment. `fix/homepage-editions-contact-ux` (noticed as an unmerged worktree during v1.5's close) was reviewed, iterated on live (4 rounds of follow-up correction — homepage carousel/cursor/grid-title, then three successive corrections to the Éditions photo-crop treatment), rebased onto `main`, and merged via PR #14 on 2026-08-03. `sketch-012-contact-finalize` remains an unrelated, unmerged worktree still pending Florian's review.
+- As of v1.6's close (2026-08-11): the phone-width (≤767px) homepage is rendered by `MobileHomePrototype.astro`, a component introduced by direct commit (`6c51695`, 2026-08-10) rather than through the plan/execute cycle. `HomeCarousel.astro`'s own scroll-deck (Phase 21's actual deliverable — wordmark-zoom, scroll-snap slides, reveal-latch — 15 plans, 3 real-device UAT rounds, a code review) remains in the codebase, correct and tested, but is CSS-hidden and unreachable at that viewport; it still renders normally at desktop/tablet width. Known tech debt carried forward: Phase 21's own SUMMARY.md files describe an implementation that is no longer what ships (documentation, not behavior, is stale); Phase 22 (Gallery/Édition Lightbox retirement) was never built and would start from zero if revisited; neither Phase 20 nor Phase 21 ever reached Nyquist `compliant: true`; `homepage-accent-random.spec.ts` only runs at desktop width, which is exactly why it missed HOME-16's regression — a phone-width case would close that blind spot before any future mobile-homepage work. The pre-existing `HomeCarousel.astro` touch-handler bug (progress-dash/autoplay controls can misfire on real touchscreens, found by `20-REVIEW.md`) is still open — it affects the desktop/tablet carousel, which is unaffected by any of the above.
 
 ## Constraints
 
@@ -231,6 +235,10 @@ v1.5 "Global Improvements & Bug Fixes" is now feature-complete: all 8 requiremen
 | `PageTitleHeader.astro`'s halftone bleed uses geometry-based containment (`calc(50% - 50vw)`) instead of the component-level `overflow-x: clip` that shipped in Phase 16 | Phase 19 planning measured that a clipping ancestor and a full-bleed child are mutually exclusive — the clip suppressed the bleed entirely rather than coexisting with it. `position: relative` + `isolation: isolate` kept on the header so it stays the halftone's containing block; a D-05 regression net (7-page × 5-width overflow matrix, positive `position: sticky` assertions for About's hero and DetailHero's pin) was written and proven green against the pre-change tree first, given this exact component broke production once before (Phase 16, 2026-07-29) | Confirmed — Phase 19, 18/18 new regression tests pass, full local CI gate green including both Playwright projects |
 | Contact/Éditions single-word `<h1>` headings ("Contact", "Éditions") get `min-width: 0` on their CSS Grid titleblock item plus `overflow-wrap: break-word` on the h1 | Removing `PageTitleHeader`'s clip (Phase 19, UI-01) unmasked a latent, pre-existing bug: CSS Grid's default `min-width: auto` plus the h1's shrink-to-fit sizing overflowed 320px viewports by ~26px. Auto-fixed by the Phase 19 executor as an in-scope Rule 1 correction, not a separate requirement | Confirmed — Phase 19, verified via the same overflow-matrix regression net |
 | Mobile nav panel's language switcher moved from a fourth equal-weight primary link (D-04 as originally decided) to a small secondary-tier line stacked above the Instagram link, at the same size/color; Instagram link gained the header's own SVG glyph | Live on-phone UAT (20-UAT.md Test 2) reversed D-04's switcher clause: "langage switch is supposed to be at the bottom, with the same font size of the instagram... for the instagram, can you put the instagram logo instead?" Closed by gap-closure plan 20-06; the underlying implementation of D-04's other clauses (primary tier styling, Instagram position/size, D-06 accent-pink elsewhere) was correct and untouched | Confirmed — Phase 20, re-verified 2026-08-04 (54/54 mobile-nav e2e including 7 new (20-06) tests, own screenshots, live coverage re-run) |
+| Phase 21's `HomeCarousel` scroll-deck (shipped, verified through 2 gap-closure rounds and a code review) accepted as superseded by `MobileHomePrototype.astro` at phone width, delivered via a direct commit (`6c51695`) outside the plan/execute cycle, without re-verifying the replacement against `21-CONTEXT.md`'s locked decisions | User's explicit choice (2026-08-10) of "mechanical sync only" over a retroactive `/gsd-discuss-phase 21` re-verification when reconciling STATE.md/ROADMAP.md drift against the repo. `HomeCarousel`'s scroll-deck code was left in place, correct and tested, but is unreachable (`display:none`) at ≤767px | Confirmed — user decision 2026-08-10, see STATE.md `[Phase 21]` Accumulated Context entry |
+| Phase 22 (Gallery & Édition Lightbox retirement, PORT-07/EDN-10/EDN-11) cancelled before any implementation began | User's explicit instruction ("Cancel phase 22") during the same reconciliation — no discuss-phase or plan-phase had run for it | Confirmed — user decision 2026-08-10 |
+| Phase 23 (About portrait placement + milestone regression sweep, ABOUT-05/UI-02) accepted complete on the user's word ("Phase 23 is done by previous commit"), delivered via the same direct commit as Phase 21's supersession, with only ABOUT-05 spot-checked against the actual diff (`AboutPageBody.astro`'s bio-row layout) before acceptance | User's explicit claim, verified rather than rubber-stamped — the diff confirmed a real ABOUT-05-shaped change; UI-02's regression sweep was accepted without independent re-verification | Confirmed — user decision 2026-08-10 |
+| HOME-16 (Phase 20's per-visit random accent color) cancelled rather than fixed, after the v1.6 milestone audit found it silently broken by commit `6c51695`'s phone-width renderer swap (the randomization was never ported to `MobileHomePrototype.astro`) | User's explicit instruction ("annule le HOME-16") when presented with the audit's gap-closure options (insert a fix phase, or accept as tech debt) — chose neither, matching Phase 22's cancellation disposition | Confirmed — user decision 2026-08-11, see `.planning/milestones/v1.6-MILESTONE-AUDIT.md` |
 
 ## Evolution
 
@@ -250,4 +258,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-04 after Phase 20 (Mobile Navigation & Accent Color) — HOME-13 and HOME-16 validated. Includes gap-closure plan 20-06 (switcher hierarchy + Instagram glyph, per live UAT), independently re-verified and security-audited (19/19 threats closed) before close. Next: Phase 21 (Homepage Scroll Experience).*
+*Last updated: 2026-08-11 after v1.6 Mobile Experience Redesign milestone close. 5/9 requirements delivered (HOME-13, HOME-14, HOME-15, ABOUT-05, UI-02), 4/9 cancelled (HOME-16, PORT-07, EDN-10, EDN-11). Phase 21's shipped mechanism (`MobileHomePrototype.astro`) differs from what its own plans built (`HomeCarousel`'s scroll-deck) — see the archived v1.6 milestone brief above and `.planning/milestones/v1.6-ROADMAP.md`. Next: `/gsd-new-milestone` (not yet started) or resume Phase 5 (Launch & Domain Cutover, deliberately deferred).*
