@@ -1,0 +1,425 @@
+<title>Sketch 016 — Dashboard Deploy Stepper</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --studio-bg: #131521;
+    --studio-page-bg: #16182a;
+    --studio-card-bg: #1c1f30;
+    --studio-card-bg-2: #21243a;
+    --studio-border: rgba(255,255,255,0.09);
+    --studio-fg: #f1f3f6;
+    --studio-muted: #878ea3;
+    --studio-accent: #556bfc;
+    --studio-accent-bg: rgba(85,107,252,0.14);
+    --studio-positive: #059669;
+    --studio-positive-bg: rgba(16,185,129,0.14);
+    --studio-caution: #d97706;
+    --studio-caution-bg: rgba(245,158,11,0.14);
+    --studio-critical: #dc2626;
+    --studio-critical-bg: rgba(239,68,68,0.14);
+    --studio-neutral-bg: rgba(255,255,255,0.06);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--studio-page-bg);
+    color: var(--studio-fg);
+    font-family: -apple-system, "Inter", system-ui, sans-serif;
+    padding-top: 54px;
+  }
+  #variant-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9998;
+    background: var(--studio-bg); border-bottom: 1px solid var(--studio-border);
+    padding: 10px 16px; display: flex; gap: 8px; align-items: center;
+  }
+  .variant-tab {
+    background: transparent; border: 1px solid transparent; color: var(--studio-muted);
+    font-size: 13px; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-family: inherit;
+  }
+  .variant-tab.active { background: var(--studio-card-bg-2); color: var(--studio-fg); border-color: var(--studio-border); }
+  .variant-tab:hover:not(.active) { color: var(--studio-fg); }
+  .nav-sep { width: 1px; height: 20px; background: var(--studio-border); margin: 0 4px; }
+  .state-btn {
+    background: transparent; border: 1px solid var(--studio-border); color: var(--studio-muted);
+    font-size: 12px; padding: 6px 10px; border-radius: 5px; cursor: pointer; font-family: inherit;
+  }
+  .state-btn.active { background: var(--studio-accent-bg); color: var(--studio-accent); border-color: var(--studio-accent); }
+
+  .variant { display: none; }
+  .variant.active { display: block; }
+
+  .stage {
+    max-width: 720px; margin: 40px auto; padding: 0 20px;
+  }
+  .panel {
+    background: var(--studio-card-bg);
+    border: 1px solid var(--studio-border);
+    border-left: 3px solid var(--studio-accent);
+    border-radius: 6px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.04), 0 12px 28px -20px rgba(0,0,0,0.5);
+    padding: 24px 28px;
+  }
+  .panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .panel-head-left { display: flex; align-items: center; gap: 14px; }
+  .icon-chip {
+    width: 44px; height: 44px; border-radius: 12px; flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--studio-accent-bg); color: var(--studio-accent); font-size: 20px;
+  }
+  .panel-title { font-size: 17px; font-weight: 600; margin: 0 0 4px 0; }
+  .panel-sub { font-size: 13px; color: var(--studio-muted); margin: 0; }
+  .btn {
+    border: none; border-radius: 5px; font-family: inherit; font-size: 13px; font-weight: 600;
+    padding: 0 18px; height: 40px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-primary { background: var(--studio-accent); color: white; }
+  .btn-primary:disabled { background: rgba(85,107,252,0.35); color: rgba(255,255,255,0.55); cursor: not-allowed; }
+  .btn-quiet { background: var(--studio-neutral-bg); color: var(--studio-fg); }
+
+  .divider { height: 1px; background: var(--studio-border); margin: 20px 0; }
+
+  .spinner {
+    width: 13px; height: 13px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.25); border-top-color: currentColor;
+    animation: spin 0.8s linear infinite; display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---- Variant A: horizontal connected stepper ---- */
+  .stepper-a { display: flex; align-items: flex-start; margin-top: 4px; }
+  .step-a { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; }
+  .step-a-line {
+    position: absolute; top: 15px; left: -50%; right: 50%; height: 2px; background: var(--studio-border); z-index: 0;
+  }
+  .step-a:first-child .step-a-line { display: none; }
+  .step-a-line.done { background: var(--studio-positive); }
+  .dot-a {
+    width: 32px; height: 32px; border-radius: 50%; z-index: 1;
+    display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;
+    background: var(--studio-card-bg-2); border: 2px solid var(--studio-border); color: var(--studio-muted);
+  }
+  .dot-a.done { background: var(--studio-positive-bg); border-color: var(--studio-positive); color: var(--studio-positive); }
+  .dot-a.active { background: var(--studio-accent-bg); border-color: var(--studio-accent); color: var(--studio-accent); }
+  .dot-a.failed { background: var(--studio-critical-bg); border-color: var(--studio-critical); color: var(--studio-critical); }
+  .step-a-label { font-size: 12px; font-weight: 600; margin-top: 8px; color: var(--studio-fg); }
+  .step-a-detail { font-size: 11px; color: var(--studio-muted); margin-top: 2px; max-width: 130px; }
+
+  /* ---- Variant B: vertical checklist rows ---- */
+  .row-b { display: flex; align-items: center; gap: 14px; padding: 14px 4px; border-bottom: 1px solid var(--studio-border); }
+  .row-b:last-child { border-bottom: none; }
+  .badge-b {
+    width: 28px; height: 28px; border-radius: 8px; flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;
+    background: var(--studio-neutral-bg); color: var(--studio-muted);
+  }
+  .badge-b.done { background: var(--studio-positive-bg); color: var(--studio-positive); }
+  .badge-b.active { background: var(--studio-accent-bg); color: var(--studio-accent); }
+  .badge-b.failed { background: var(--studio-critical-bg); color: var(--studio-critical); }
+  .row-b-title { font-size: 13px; font-weight: 600; flex: 1; }
+  .row-b-detail { font-size: 12px; color: var(--studio-muted); }
+  .tag-b { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px; }
+  .tag-b.done { background: var(--studio-positive-bg); color: var(--studio-positive); }
+  .tag-b.active { background: var(--studio-accent-bg); color: var(--studio-accent); }
+  .tag-b.pending { background: var(--studio-neutral-bg); color: var(--studio-muted); }
+  .tag-b.failed { background: var(--studio-critical-bg); color: var(--studio-critical); }
+
+  /* ---- Variant C: compact segmented bar ---- */
+  .segbar-c { display: flex; gap: 4px; height: 6px; border-radius: 4px; overflow: hidden; margin-top: 14px; }
+  .seg-c { flex: 1; background: var(--studio-neutral-bg); }
+  .seg-c.done { background: var(--studio-positive); }
+  .seg-c.active { background: var(--studio-accent); animation: pulse 1.4s ease-in-out infinite; }
+  .seg-c.failed { background: var(--studio-critical); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+  .seglabels-c { display: flex; justify-content: space-between; margin-top: 8px; }
+  .seglabel-c { font-size: 11px; color: var(--studio-muted); flex: 1; text-align: center; }
+  .seglabel-c.done, .seglabel-c.active { color: var(--studio-fg); font-weight: 600; }
+  .promote-row-c {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    margin-top: 18px; padding: 14px 16px; border-radius: 6px; background: var(--studio-card-bg-2);
+  }
+  .promote-row-c.locked { opacity: 0.5; }
+
+  .note {
+    font-size: 12px; color: var(--studio-muted); text-align: center; margin-top: 28px; max-width: 560px; margin-left: auto; margin-right: auto;
+  }
+</style>
+
+<div id="variant-nav">
+  <button class="variant-tab active" onclick="showVariant('a')">A — Stepper horizontal connecté</button>
+  <button class="variant-tab" onclick="showVariant('b')">B — Liste verticale (checklist)</button>
+  <button class="variant-tab" onclick="showVariant('c')">C — Barre segmentée compacte ★ Retenu</button>
+  <div class="nav-sep"></div>
+  <button class="state-btn active" onclick="setState('staging-progress', event)">1. Staging en cours</button>
+  <button class="state-btn" onclick="setState('ready-for-prod', event)">2. Staging prêt → prod disponible</button>
+  <button class="state-btn" onclick="setState('prod-progress', event)">3. Prod en cours</button>
+  <button class="state-btn" onclick="setState('all-done', event)">4. Tout à jour</button>
+  <button class="state-btn" onclick="setState('staging-failed', event)">⚠ Échec staging</button>
+</div>
+
+<!-- ============ VARIANT A ============ -->
+<div id="variant-a" class="variant active">
+  <div class="stage">
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-head-left">
+          <div class="icon-chip">↑</div>
+          <div>
+            <p class="panel-title">Mettre le site à jour</p>
+            <p class="panel-sub" id="a-sub">Aucune modification publique en attente.</p>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="a-main-btn">Mettre le site à jour</button>
+      </div>
+      <div class="divider"></div>
+      <div class="stepper-a">
+        <div class="step-a">
+          <div class="dot-a" id="a-dot-1">1</div>
+          <div class="step-a-label">Contenu publié</div>
+          <div class="step-a-detail" id="a-detail-1">Sanity</div>
+        </div>
+        <div class="step-a">
+          <div class="step-a-line" id="a-line-1"></div>
+          <div class="dot-a" id="a-dot-2">2</div>
+          <div class="step-a-label">Staging à jour</div>
+          <div class="step-a-detail" id="a-detail-2">GitHub Pages</div>
+        </div>
+        <div class="step-a">
+          <div class="step-a-line" id="a-line-2"></div>
+          <div class="dot-a" id="a-dot-3">3</div>
+          <div class="step-a-label">Production à jour</div>
+          <div class="step-a-detail" id="a-detail-3">atelierjacquelinesuzanne.fr</div>
+        </div>
+      </div>
+      <div id="a-promote-zone" style="margin-top:20px; display:none;">
+        <div class="divider"></div>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:16px;">
+          <div>
+            <div style="font-size:13px; font-weight:600;">Staging vérifié — prêt pour la production ?</div>
+            <div style="font-size:12px; color:var(--studio-muted); margin-top:2px;">Ouvrez le site de préproduction pour vérifier avant de continuer.</div>
+          </div>
+          <button class="btn btn-primary" id="a-promote-btn">Mettre en production</button>
+        </div>
+      </div>
+    </div>
+    <p class="note">Variante A — inspirée des trackers d'expédition/CI classiques. Les points se remplissent au fur et à mesure ; le bouton "Mettre en production" n'apparaît qu'une fois l'étape 2 confirmée.</p>
+  </div>
+</div>
+
+<!-- ============ VARIANT B ============ -->
+<div id="variant-b" class="variant">
+  <div class="stage">
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-head-left">
+          <div class="icon-chip">↑</div>
+          <div>
+            <p class="panel-title">Mettre le site à jour</p>
+            <p class="panel-sub" id="b-sub">Aucune modification publique en attente.</p>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="b-main-btn">Mettre le site à jour</button>
+      </div>
+      <div class="divider"></div>
+      <div>
+        <div class="row-b">
+          <div class="badge-b" id="b-badge-1">1</div>
+          <div style="flex:1;">
+            <div class="row-b-title">Contenu publié dans Sanity</div>
+            <div class="row-b-detail" id="b-detail-1">—</div>
+          </div>
+          <div class="tag-b" id="b-tag-1">En attente</div>
+        </div>
+        <div class="row-b">
+          <div class="badge-b" id="b-badge-2">2</div>
+          <div style="flex:1;">
+            <div class="row-b-title">Staging à jour <span style="color:var(--studio-muted); font-weight:400;">(github.io)</span></div>
+            <div class="row-b-detail" id="b-detail-2">—</div>
+          </div>
+          <div class="tag-b" id="b-tag-2">En attente</div>
+        </div>
+        <div class="row-b" id="b-row-3">
+          <div class="badge-b" id="b-badge-3">3</div>
+          <div style="flex:1;">
+            <div class="row-b-title">Production à jour <span style="color:var(--studio-muted); font-weight:400;">(atelierjacquelinesuzanne.fr)</span></div>
+            <div class="row-b-detail" id="b-detail-3">—</div>
+          </div>
+          <div id="b-action-3"><div class="tag-b pending">Verrouillé</div></div>
+        </div>
+      </div>
+    </div>
+    <p class="note">Variante B — chaque étape est une ligne avec son propre statut, à l'image de la liste "Activité récente" déjà présente dans le tableau de bord. L'étape 3 affiche un vrai bouton dès qu'elle se débloque, pas juste un badge.</p>
+  </div>
+</div>
+
+<!-- ============ VARIANT C ============ -->
+<div id="variant-c" class="variant">
+  <div class="stage">
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-head-left">
+          <div class="icon-chip">↑</div>
+          <div>
+            <p class="panel-title">Mettre le site à jour</p>
+            <p class="panel-sub" id="c-sub">Aucune modification publique en attente.</p>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="c-main-btn">Mettre le site à jour</button>
+      </div>
+      <div class="segbar-c">
+        <div class="seg-c" id="c-seg-1"></div>
+        <div class="seg-c" id="c-seg-2"></div>
+        <div class="seg-c" id="c-seg-3"></div>
+      </div>
+      <div class="seglabels-c">
+        <div class="seglabel-c" id="c-label-1">Contenu</div>
+        <div class="seglabel-c" id="c-label-2">Staging</div>
+        <div class="seglabel-c" id="c-label-3">Production</div>
+      </div>
+      <div class="promote-row-c locked" id="c-promote-row">
+        <div>
+          <div style="font-size:13px; font-weight:600;" id="c-promote-title">En attente du staging…</div>
+          <div style="font-size:12px; color:var(--studio-muted); margin-top:2px;" id="c-promote-detail">La production sera disponible une fois le staging confirmé.</div>
+        </div>
+        <button class="btn btn-primary" id="c-promote-btn" disabled>Mettre en production</button>
+      </div>
+    </div>
+    <p class="note">Variante C — la plus proche du bandeau de statut déjà présent en haut du tableau de bord aujourd'hui (le point coloré + libellé). Minimaliste ; toute l'info de détail vit dans la seule ligne d'action en bas, qui change de contenu selon l'étape.</p>
+  </div>
+</div>
+
+<script>
+function showVariant(id) {
+  document.querySelectorAll('.variant').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.variant-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('variant-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+const STATES = {
+  'staging-progress': {
+    sub: '1 contenu modifié depuis la dernière mise en ligne.',
+    mainBtnText: 'Vérification…', mainBtnDisabled: true,
+    step1: 'done', step2: 'active', step3: 'pending',
+    detail1: 'Publié il y a 30s', detail2: 'GitHub reconstruit le site…', detail3: 'En attente du staging',
+    promoteVisible: false, promoteLocked: true,
+    promoteTitle: 'En attente du staging…', promoteDetail: 'La production sera disponible une fois le staging confirmé.'
+  },
+  'ready-for-prod': {
+    sub: 'Contenus publiés dans Sanity. La mise à jour du site est maintenant suivie séparément.',
+    mainBtnText: 'Mettre le site à jour', mainBtnDisabled: false,
+    step1: 'done', step2: 'done', step3: 'pending',
+    detail1: 'Publié il y a 3 min', detail2: 'Site à jour · il y a 1 min', detail3: 'Prêt à déployer',
+    promoteVisible: true, promoteLocked: false,
+    promoteTitle: 'Staging vérifié — prêt pour la production ?', promoteDetail: 'Ouvrez le site de préproduction pour vérifier avant de continuer.'
+  },
+  'prod-progress': {
+    sub: 'Contenus publiés dans Sanity. La mise à jour du site est maintenant suivie séparément.',
+    mainBtnText: 'Mettre le site à jour', mainBtnDisabled: false,
+    step1: 'done', step2: 'done', step3: 'active',
+    detail1: 'Publié il y a 6 min', detail2: 'Site à jour · il y a 4 min', detail3: 'Déploiement en cours…',
+    promoteVisible: true, promoteLocked: true,
+    promoteTitle: 'Mise en production en cours…', promoteDetail: 'GitHub construit et pousse le site vers OVH.'
+  },
+  'all-done': {
+    sub: 'Aucune modification publique en attente.',
+    mainBtnText: 'Mettre le site à jour', mainBtnDisabled: true,
+    step1: 'done', step2: 'done', step3: 'done',
+    detail1: 'Publié il y a 9 min', detail2: 'Site à jour · il y a 7 min', detail3: 'Site à jour · il y a 2 min',
+    promoteVisible: true, promoteLocked: true,
+    promoteTitle: 'Production à jour', promoteDetail: 'Le site public reflète la dernière publication.',
+    promoteDone: true
+  },
+  'staging-failed': {
+    sub: '1 contenu modifié depuis la dernière mise en ligne.',
+    mainBtnText: 'Actualiser et réessayer', mainBtnDisabled: false,
+    step1: 'done', step2: 'failed', step3: 'pending',
+    detail1: 'Publié il y a 5 min', detail2: 'Échec du déploiement', detail3: 'Bloqué par l’étape 2',
+    promoteVisible: false, promoteLocked: true,
+    promoteTitle: 'En attente du staging…', promoteDetail: 'La production sera disponible une fois le staging confirmé.'
+  },
+};
+
+function setState(key, evt) {
+  document.querySelectorAll('.state-btn').forEach(b => b.classList.remove('active'));
+  if (evt) evt.target.classList.add('active');
+  const s = STATES[key];
+  applyStateA(s); applyStateB(s); applyStateC(s);
+}
+
+function stepClass(kind) {
+  return kind === 'done' ? 'done' : kind === 'active' ? 'active' : kind === 'failed' ? 'failed' : '';
+}
+
+function applyStateA(s) {
+  document.getElementById('a-sub').textContent = s.sub;
+  const btn = document.getElementById('a-main-btn');
+  btn.textContent = s.mainBtnText; btn.disabled = s.mainBtnDisabled;
+
+  [1,2,3].forEach(n => {
+    const dot = document.getElementById('a-dot-' + n);
+    const kind = s['step' + n];
+    dot.className = 'dot-a ' + stepClass(kind);
+    dot.innerHTML = kind === 'done' ? '✓' : kind === 'failed' ? '!' : (kind === 'active' ? '<span class="spinner"></span>' : String(n));
+    document.getElementById('a-detail-' + n).textContent = s['detail' + n];
+  });
+  document.getElementById('a-line-1').className = 'step-a-line ' + (s.step1 === 'done' ? 'done' : '');
+  document.getElementById('a-line-2').className = 'step-a-line ' + (s.step2 === 'done' ? 'done' : '');
+  document.getElementById('a-promote-zone').style.display = s.promoteVisible ? 'block' : 'none';
+  const pBtn = document.getElementById('a-promote-btn');
+  if (pBtn) { pBtn.disabled = s.promoteLocked && !s.promoteDone; pBtn.textContent = s.promoteDone ? 'Production à jour ✓' : (s.step3 === 'active' ? 'Déploiement en cours…' : 'Mettre en production'); }
+}
+
+function applyStateB(s) {
+  document.getElementById('b-sub').textContent = s.sub;
+  const btn = document.getElementById('b-main-btn');
+  btn.textContent = s.mainBtnText; btn.disabled = s.mainBtnDisabled;
+
+  [1,2,3].forEach(n => {
+    const kind = s['step' + n];
+    const badge = document.getElementById('b-badge-' + n);
+    badge.className = 'badge-b ' + stepClass(kind);
+    badge.innerHTML = kind === 'done' ? '✓' : kind === 'failed' ? '!' : (kind === 'active' ? '<span class="spinner"></span>' : String(n));
+    document.getElementById('b-detail-' + n).textContent = s['detail' + n];
+  });
+  const tag1 = document.getElementById('b-tag-1');
+  tag1.className = 'tag-b ' + (s.step1 === 'done' ? 'done' : s.step1 === 'active' ? 'active' : 'pending');
+  tag1.textContent = s.step1 === 'done' ? 'Publié' : s.step1 === 'active' ? 'En cours' : 'En attente';
+
+  const tag2 = document.getElementById('b-tag-2');
+  tag2.className = 'tag-b ' + (s.step2 === 'done' ? 'done' : s.step2 === 'active' ? 'active' : s.step2 === 'failed' ? 'failed' : 'pending');
+  tag2.textContent = s.step2 === 'done' ? 'À jour' : s.step2 === 'active' ? 'En cours' : s.step2 === 'failed' ? 'Échec' : 'En attente';
+
+  const action3 = document.getElementById('b-action-3');
+  if (s.promoteVisible) {
+    action3.innerHTML = s.promoteDone
+      ? '<div class="tag-b done">À jour</div>'
+      : (s.step3 === 'active'
+          ? '<div class="tag-b active"><span class="spinner"></span> En cours</div>'
+          : '<button class="btn btn-primary" style="height:32px; padding:0 14px; font-size:12px;">Mettre en production</button>');
+  } else {
+    action3.innerHTML = '<div class="tag-b pending">Verrouillé</div>';
+  }
+}
+
+function applyStateC(s) {
+  document.getElementById('c-sub').textContent = s.sub;
+  const btn = document.getElementById('c-main-btn');
+  btn.textContent = s.mainBtnText; btn.disabled = s.mainBtnDisabled;
+
+  [1,2,3].forEach(n => {
+    const kind = s['step' + n];
+    document.getElementById('c-seg-' + n).className = 'seg-c ' + stepClass(kind);
+    document.getElementById('c-label-' + n).className = 'seglabel-c ' + (kind === 'done' ? 'done' : kind === 'active' ? 'active' : '');
+  });
+
+  const row = document.getElementById('c-promote-row');
+  const pBtn = document.getElementById('c-promote-btn');
+  document.getElementById('c-promote-title').textContent = s.promoteTitle;
+  document.getElementById('c-promote-detail').textContent = s.promoteDetail;
+  row.className = 'promote-row-c' + (s.promoteVisible ? '' : ' locked');
+  pBtn.disabled = !s.promoteVisible || s.promoteLocked;
+  pBtn.textContent = s.promoteDone ? 'Production à jour ✓' : (s.step3 === 'active' ? 'Déploiement en cours…' : 'Mettre en production');
+}
+
+setState('staging-progress');
+</script>
