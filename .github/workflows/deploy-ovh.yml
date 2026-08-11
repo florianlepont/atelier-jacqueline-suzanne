@@ -1,27 +1,49 @@
-name: Deploy to OVH production (manual)
+name: Deploy to OVH production
 
 # This is the ONLY path that ever writes to the real production domain,
-# atelierjacquelinesuzanne.fr, served from OVH Web Hosting. It never runs
-# automatically — D-01 requires every production deploy to be an explicit,
-# deliberate human action. Pushes to `main` continue to deploy ONLY to
-# GitHub Pages staging via .github/workflows/deploy.yml, which this
-# workflow does not touch and does not share a trigger with.
+# atelierjacquelinesuzanne.fr, served from OVH Web Hosting. It now has two
+# trigger paths:
 #
-# The `deploy` job below is gated on the `production-ovh` GitHub
-# Environment. With a Required reviewer configured on that environment,
-# GitHub pauses the run after the `build` job's recap is printed and
+#   - A Sanity content publish fires the `sanity-content-published`
+#     repository_dispatch event, which starts this workflow automatically
+#     and deploys straight through with no approval pause — a deliberate,
+#     dated supersession of D-01 (see
+#     .planning/phases/05-launch-domain-cutover/05-CONTEXT.md), made
+#     because the non-technical maintainer has no GitHub access and could
+#     not otherwise publish content to the real domain.
+#   - Every other trigger (a manual `workflow_dispatch`) still pauses on
+#     the `production-ovh` environment's Required reviewer, per D-02,
+#     exactly as before.
+#
+# A code commit landing on `main` still deploys ONLY to GitHub Pages
+# staging via .github/workflows/deploy.yml, which this workflow does not
+# touch and does not share a trigger with.
+#
+# Because `repository_dispatch` always runs against the default branch,
+# an automatic content deploy also ships whatever code is currently on
+# `main` — treat `main` as always production-ready.
+#
+# The `deploy` job below is gated on a trigger-conditional GitHub
+# Environment. With a Required reviewer configured on `production-ovh`,
+# GitHub pauses manual runs after the `build` job's recap is printed and
 # requires a recorded human approval before the SFTP push can happen
-# (D-02). See README.md "Deployments" section for the one-time setup and
-# the run procedure.
+# (D-02); `production-ovh-auto` carries no such gate. See README.md
+# "Deployments" section for the one-time setup and the run procedure.
 
 on:
   workflow_dispatch: {}
+  repository_dispatch:
+    types: [sanity-content-published]
 
 permissions:
   contents: read
 
 # Only one production push should ever be in flight/queued — two
-# interleaved pushes to the same remote directory would race.
+# interleaved pushes to the same remote directory would race. This same
+# `ovh-production` group with `cancel-in-progress: false` now also
+# serialises automatic runs: a burst of Sanity publishes queues rather
+# than racing, and GitHub keeps only the most recent pending run — which
+# is the desired latest-content-wins behaviour.
 concurrency:
   group: ovh-production
   cancel-in-progress: false
@@ -169,15 +191,31 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    # This environment declaration IS the D-02 human-approval gate: with a
-    # Required reviewer configured on the `production-ovh` environment
-    # (see README.md), GitHub pauses this job here and shows an
-    # Approve/Reject button, with the build job's recap already visible
-    # in the same run. Nothing below this line runs until a human approves.
+    # GitHub environment protection rules are a property of the
+    # environment, not the job, so a conditional approval gate requires
+    # two environments: `production-ovh` carries the Required reviewer
+    # and gates manual runs (D-02), while `production-ovh-auto` is
+    # deliberately created with no protection rules so Sanity-content
+    # runs deploy straight through. Environment secrets do not cross
+    # environments, so `OVH_SFTP_PASSWORD` must exist on BOTH (see
+    # README.md "Deployments").
     environment:
-      name: production-ovh
+      name: ${{ github.event_name == 'repository_dispatch' && 'production-ovh-auto' || 'production-ovh' }}
       url: https://atelierjacquelinesuzanne.fr
     steps:
+      # Without this, a missing environment secret resolves to an empty
+      # string and the SFTP action attempts an unauthenticated
+      # connection, producing an opaque failure. This turns that into a
+      # loud, actionable one before any upload is attempted.
+      - name: 'Guard: SFTP credentials are present'
+        env:
+          OVH_SFTP_PASSWORD: ${{ secrets.OVH_SFTP_PASSWORD }}
+        run: |
+          if [ -z "$OVH_SFTP_PASSWORD" ]; then
+            echo "::error::OVH_SFTP_PASSWORD is missing on both the production-ovh and production-ovh-auto environments (whichever this run resolved to). Run: gh secret set OVH_SFTP_PASSWORD --env production-ovh-auto" >&2
+            exit 1
+          fi
+
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
