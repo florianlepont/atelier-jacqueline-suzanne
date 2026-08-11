@@ -1,9 +1,10 @@
 ---
 // Contact form island (CONT-01, CONT-02): a dependency-free vanilla-JS form,
 // mirroring Lightbox.astro's pattern (typed <script>, no framework, no
-// client:* directive). Submits via fetch() to Web3Forms (03-RESEARCH.md
-// Pattern 2) with a client-side honeypot short-circuit that runs BEFORE the
-// network call (03-RESEARCH.md Pattern 1, 03-UI-SPEC.md Layout Notes).
+// client:* directive). Submits via fetch() to the OVH-hosted contact.php
+// endpoint (05-02-PLAN.md, resolveContactEndpoint) with a client-side
+// honeypot short-circuit that runs BEFORE the network call (03-RESEARCH.md
+// Pattern 1, 03-UI-SPEC.md Layout Notes).
 //
 // Localized copy is computed once here (frontmatter), same as Lightbox's
 // per-locale label strings â€” but since the <script> below cannot read Astro
@@ -20,6 +21,7 @@
 import Input from './Input.astro';
 import Textarea from './Textarea.astro';
 import Button from './Button.astro';
+import { resolveContactEndpoint } from '../lib/contact-form';
 
 interface Props {
   locale: 'fr' | 'en';
@@ -27,6 +29,11 @@ interface Props {
 }
 
 const { locale, publicEmail = 'contact@atelierjacquelinesuzanne.fr' } = Astro.props;
+
+// 05-02-PLAN.md: same-origin '/contact.php' on the OVH production build;
+// overridden to an absolute URL for the permanently-alive GitHub Pages
+// build (D-03), which has no PHP runtime, via PUBLIC_CONTACT_ENDPOINT.
+const contactEndpoint = resolveContactEndpoint(import.meta.env.PUBLIC_CONTACT_ENDPOINT as string | undefined);
 
 const nameLabel = locale === 'en' ? 'Name' : 'Nom';
 const emailLabel = locale === 'en' ? 'Email' : 'E-mail';
@@ -65,6 +72,7 @@ const errMessageBlank = locale === 'en' ? 'Please enter a message.' : 'Merci dâ€
   data-err-email-blank={errEmailBlank}
   data-err-email-invalid={errEmailInvalid}
   data-err-message-blank={errMessageBlank}
+  data-contact-endpoint={contactEndpoint}
   class="contact-form"
   novalidate
 >
@@ -109,7 +117,7 @@ const errMessageBlank = locale === 'en' ? 'Please enter a message.' : 'Merci dâ€
 <p data-role="form-status" class="contact-form__status" aria-live="polite"></p>
 
 <script>
-  import { isBlank, isHoneypotTriggered, isValidEmail } from '../lib/contact-form';
+  import { DEFAULT_CONTACT_ENDPOINT, isBlank, isHoneypotTriggered, isValidEmail } from '../lib/contact-form';
 
   const form = document.querySelector<HTMLFormElement>('#contact-form');
   const statusEl = document.querySelector<HTMLElement>('[data-role="form-status"]');
@@ -128,6 +136,7 @@ const errMessageBlank = locale === 'en' ? 'Please enter a message.' : 'Merci dâ€
     const errEmailBlank = form.dataset.errEmailBlank ?? '';
     const errEmailInvalid = form.dataset.errEmailInvalid ?? '';
     const errMessageBlank = form.dataset.errMessageBlank ?? '';
+    const contactEndpoint = form.dataset.contactEndpoint ?? DEFAULT_CONTACT_ENDPOINT;
     let isSubmitting = false;
 
     function clearErrors() {
@@ -200,15 +209,14 @@ const errMessageBlank = locale === 'en' ? 'Please enter a message.' : 'Merci dâ€
       isSubmitting = true;
       setSubmitting(true);
       try {
-        const response = await fetch('https://api.web3forms.com/submit', {
+        // Send the FormData object directly (no Content-Type header, no
+        // hand-built JSON): multipart/form-data is CORS-safelisted, so no
+        // preflight OPTIONS request fires when this is called cross-origin
+        // from the permanently-alive GitHub Pages staging site (D-03), and
+        // contact.php (plan 05-01) reads it natively via $_POST.
+        const response = await fetch(contactEndpoint, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            access_key: import.meta.env.PUBLIC_WEB3FORMS_ACCESS_KEY,
-            name,
-            email,
-            message,
-          }),
+          body: data,
         });
         const json = await response.json();
         if (response.ok && json.success) {
