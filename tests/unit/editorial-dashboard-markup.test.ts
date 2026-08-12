@@ -235,3 +235,62 @@ describe('editorial dashboard post-publish success state has no duplicated statu
     ).toBe(true);
   });
 });
+
+// The routing, disabled and reset RULES are unit-tested directly in
+// tests/unit/release-gate.test.ts. What cannot be reached from `node` is the
+// JSX and hook WIRING that connects those rules to the actual controls, and
+// a mis-wire there reinstates the one-click-to-production bug the rules
+// were written to prevent.
+describe('editorial dashboard release gate is wired through the shared releaseGate rules', () => {
+  const source = readFileSync(COMPONENT_PATH, 'utf-8');
+
+  it('never calls the release trigger from inside the gate control itself', () => {
+    const gateIndex = source.indexOf('__pipeline-gate editorial');
+    expect(gateIndex, 'expected to find the pipeline-gate button class marker').toBeGreaterThan(-1);
+    const closingButtonIndex = source.indexOf('</button>', gateIndex);
+    expect(closingButtonIndex, 'expected to find the closing </button> of the gate control').toBeGreaterThan(-1);
+    const gateSlice = source.slice(gateIndex, closingButtonIndex);
+
+    expect(
+      gateSlice.includes('triggerProductionRelease'),
+      'the ready state of this control must open the site de test, not publish — a direct call to the release trigger here is exactly the regression being fixed',
+    ).toBe(false);
+  });
+
+  it('routes the gate click through the shared gateClickAction rule', () => {
+    expect(
+      source.includes('gateClickAction(gateVariant'),
+      're-deriving the branch inline at the call site would put the publish decision back outside test coverage',
+    ).toBe(true);
+  });
+
+  it('opens the staging URL and records the preview approval together', () => {
+    const openIndex = source.indexOf('window.open(SITE_PREVIEW_URL');
+    expect(openIndex, 'expected the preview click to open SITE_PREVIEW_URL').toBeGreaterThan(-1);
+    const nearbySlice = source.slice(openIndex, openIndex + 300);
+
+    expect(
+      /setHasPreviewedStaging\(true\)/.test(nearbySlice),
+      'opening the tab without recording the approval leaves the publish button permanently disabled; recording it without opening the tab unlocks publishing on a preview that never happened',
+    ).toBe(true);
+  });
+
+  it('resets the preview flag from an effect keyed solely on gateVariant', () => {
+    const effectPattern = /useEffect\(\(\)\s*=>\s*\{[\s\S]*?nextPreviewedFlag\(gateVariant[\s\S]{0,200}?\},\s*\[gateVariant\]\)/;
+    expect(
+      effectPattern.test(source),
+      'this is the invariant that stops a stale approval of one batch from unlocking a newer, unreviewed one; widening the dependency array or moving the reset into a click handler silently breaks it',
+    ).toBe(true);
+  });
+
+  it('gates the publish button on ready and on the shared disabled rule, with the label appearing exactly once', () => {
+    expect(
+      source.includes('productionPublishDisabled('),
+      'the new button is the only control that starts a production release from this panel, so its disabled rule must come from the tested helper rather than an inline condition',
+    ).toBe(true);
+    expect(
+      (source.match(/Publier sur le site en ligne/g) ?? []).length,
+      'a second occurrence of this label means it leaked into another gate state or into a comment',
+    ).toBe(1);
+  });
+});
