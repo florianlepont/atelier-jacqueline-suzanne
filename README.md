@@ -57,7 +57,7 @@ This project has two deploy targets. Do not confuse them.
 
 | | Staging — GitHub Pages | Production — OVH |
 |---|---|---|
-| Trigger | Automatic on push to `main`, and on the Sanity `sanity-content-published` webhook | Automatic on the dedicated `production-deploy-requested` event fired by the editor's `Mettre en production` click in Sanity Studio (no approval); manual dispatch otherwise (Required-reviewer approval) — a code commit to `main` never deploys here |
+| Trigger | Automatic on push to `main`, and on the Sanity `sanity-content-published` webhook | Automatic on the dedicated `production-deploy-requested` event fired by the editor's `Publier sur le site en ligne` click in Sanity Studio (no approval); manual dispatch otherwise (Required-reviewer approval) — a code commit to `main` never deploys here |
 | Workflow | `.github/workflows/deploy.yml` | `.github/workflows/deploy-ovh.yml` |
 | Base path | `/ajs-website/` | Root (`/`) |
 | URL | https://florianlepont.github.io/ajs-website/ | https://atelierjacquelinesuzanne.fr |
@@ -66,7 +66,7 @@ Per D-03, GitHub Pages stays alive permanently as a pre-production environment a
 
 ### Production deploy: the two paths
 
-- **Content path (editor-gated).** Romane publishes in Studio → the content webhook fires and rebuilds GitHub Pages staging only → the dashboard's pipeline bar shows staging going green → she opens staging and checks it herself → she clicks `Mettre en production` → that publishes an internal release-marker document → a second Sanity webhook fires the production-release event → deploy-ovh.yml runs every blocking gate and deploys to the real domain with no GitHub approval pause, because her click already was the human checkpoint and she has no GitHub access to give a second one.
+- **Content path (editor-gated).** Romane publishes in Studio → the content webhook fires and rebuilds GitHub Pages staging only → the dashboard's pipeline bar shows staging going green → she opens staging and checks it herself → she clicks `Publier sur le site en ligne` → that publishes an internal release-marker document → a second Sanity webhook fires the production-release event → deploy-ovh.yml runs every blocking gate and deploys to the real domain with no GitHub approval pause, because her click already was the human checkpoint and she has no GitHub access to give a second one.
 - **Code path (manual, unchanged).** A commit landing on `main` deploys only to GitHub Pages staging. Shipping code to production is still an explicit `gh workflow run deploy-ovh.yml` that pauses on the `production-ovh` Required reviewer.
 - **The caveat, restated:** because the release event always builds the default branch, a production release also ships whatever code is currently on `main`. Keep `main` production-ready. Note that this is now materially safer than before, because the release is a deliberate, separately-timed act rather than a side effect of every content publish.
 
@@ -86,7 +86,7 @@ Before `deploy-ovh.yml` can be run, these six things must be configured once:
    gh secret set OVH_SFTP_PASSWORD --env production-ovh-auto
    ```
    If this step is skipped, automatic runs fail fast at the workflow's `Guard: SFTP credentials are present` step with an explicit error, rather than silently attempting an unauthenticated upload.
-6. **Sanity Project Webhook (`production-deploy-requested`)** — configured in **Sanity's own dashboard** (`https://www.sanity.io/manage` → project → API → Webhooks), **NOT** in this repository. Until it exists, the Studio `Mettre en production` button will publish its marker and report success, and nothing will happen: no production run will ever start. Configuration:
+6. **Sanity Project Webhook (`production-deploy-requested`)** — configured in **Sanity's own dashboard** (`https://www.sanity.io/manage` → project → API → Webhooks), **NOT** in this repository. Until it exists, the Studio `Publier sur le site en ligne` button will publish its marker and report success, and nothing will happen: no production run will ever start. Configuration:
    - Trigger on **Create** and **Update**.
    - Dataset: `production`.
    - Filter on the release-marker document type: `_type == "siteProductionRelease"`.

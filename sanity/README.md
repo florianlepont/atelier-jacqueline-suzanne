@@ -10,8 +10,11 @@ nécessaire.
 2. Modifier les champs. Le Studio sauvegarde le brouillon automatiquement.
 3. Consulter la **Checklist** du document.
 4. Revenir au Tableau de bord : le contenu apparaît dans le lot **Mettre le site à jour**.
-5. Vérifier le récapitulatif, puis publier tout le lot avec ce bouton.
-6. Suivre l’état de la reconstruction du site dans l’en-tête.
+5. **Étape 1** : vérifier le récapitulatif, puis publier tout le lot avec ce bouton. Le site de
+   test se met à jour automatiquement.
+6. **Étape 2** : une fois le site de test confirmé à jour, cliquer sur **Publier sur le site en
+   ligne** pour l’envoyer vers l’adresse réelle. Les deux étapes sont volontairement séparées :
+   l’étape 2 reste visible mais grisée jusqu’à ce que l’étape 1 ait abouti.
 
 Les fiches de contenu n’ont volontairement pas de bouton de publication. Un brouillon ne
 devient public qu’avec l’action globale **Mettre le site à jour** du Tableau de bord.
@@ -52,15 +55,15 @@ changer n’a aucun effet immédiat sur le site :
 - un contenu masqué ou archivé est retiré après cette même action ;
 - son document et ses médias restent conservés dans Sanity.
 
-## État de la mise à jour du site
+## État de la mise à jour du site de test
 
-Après la publication Sanity, GitHub reconstruit le site de préproduction (staging). Le statut
-compare la date de publication avec les exécutions GitHub suivantes :
+Après la publication Sanity, GitHub reconstruit le site de test. Le statut compare la date de
+publication avec les exécutions GitHub suivantes :
 
 - **Modifications en attente** : des brouillons restent à publier ;
 - **Mise à jour en attente** : la nouvelle exécution GitHub n’est pas encore visible ;
 - **Mise à jour en cours** : le site est en reconstruction ;
-- **Staging à jour** : une exécution créée après la publication a réussi ;
+- **Site de test à jour** : une exécution créée après la publication a réussi ;
 - **Échec de la mise à jour** : Sanity est publié, mais le site peut encore afficher l’ancienne
   version ;
 - **Mise à jour non démarrée** : aucune exécution n’est apparue après trois minutes ;
@@ -70,13 +73,16 @@ compare la date de publication avec les exécutions GitHub suivantes :
 En cas d’échec ou de délai anormal, ouvrir le lien du statut pour consulter GitHub Actions et
 prévenir le mainteneur. Ne pas republier plusieurs fois sans avoir identifié la cause.
 
-Sous le bouton **Mettre le site à jour**, une barre à 3 segments (Contenu / Staging / Production)
-et une ligne d’action résument tout le trajet jusqu’au site réel : publier dans Sanity met à jour
-automatiquement le site de préproduction ; une fois celui-ci vérifié, cliquer sur **Mettre en
-production** l’envoie vers l’adresse réelle. Le bouton reste grisé jusqu’à ce que le staging soit
-confirmé à jour, affiche un indicateur de progression pendant le déploiement en production, puis
-passe à un état « à jour » une fois terminé. Si un segment devient rouge, la ligne d’action précise
-quelle étape a échoué.
+Une fois l’Étape 2 déclenchée, les mêmes statuts apparaissent pour le Site en ligne, jusqu’à
+**Site en ligne à jour**.
+
+Sous le bouton **Mettre le site à jour**, une barre à 2 segments (Contenu + site de test / Site en ligne)
+et une ligne d’action résument tout le trajet jusqu’au site réel : publier dans Sanity
+(Étape 1) met à jour automatiquement le site de test ; une fois celui-ci vérifié, cliquer sur
+**Publier sur le site en ligne** (Étape 2) l’envoie vers l’adresse réelle. Le bouton de l’étape 2
+reste visible mais grisé jusqu’à ce que le site de test soit confirmé à jour, affiche un indicateur
+de progression pendant l’envoi vers le site en ligne, puis passe à un état « à jour » une fois
+terminé. Si un segment devient rouge, la ligne d’action précise quelle étape a échoué.
 
 ## Collections photo
 
@@ -127,12 +133,12 @@ site n’est pas livré.
   actualiser le Tableau de bord.
 - **La publication échoue** : utiliser **Actualiser et réessayer**. Si l’erreur persiste,
   transmettre son détail technique au mainteneur.
-- **Le site de préproduction semble ancien après un succès Sanity** : attendre le statut GitHub.
-  Seul **Staging à jour** confirme une exécution postérieure à la publication.
+- **Le site de test semble ancien après un succès Sanity** : attendre le statut GitHub.
+  Seul **Site de test à jour** confirme une exécution postérieure à la publication.
 - **Le statut GitHub est indisponible** : ouvrir GitHub Actions depuis le statut et prévenir le
   mainteneur ; le Tableau de bord ne suppose pas que le site est à jour.
-- **Le bouton « Mettre en production » reste grisé** : le staging n’est pas encore confirmé à
-  jour ; vérifier d’abord son statut avant de contacter le mainteneur.
+- **Le bouton « Publier sur le site en ligne » reste grisé** : le site de test n’est pas encore
+  confirmé à jour ; vérifier d’abord son statut avant de contacter le mainteneur.
 
 ## Vérification technique du déclenchement GitHub
 
@@ -151,12 +157,13 @@ avec **Mettre le site à jour**. Pour cet unique lot, vérifier :
 - une seule livraison Sanity réussie (statut 204) ;
 - une seule nouvelle exécution GitHub Actions, déclenchée par `repository_dispatch` avec l’action
   `sanity-content-published` ;
-- une exécution terminée avec succès, puis le statut **Staging à jour** dans le Tableau de bord.
+- une exécution terminée avec succès, puis le statut **Site de test à jour** dans le Tableau de
+  bord.
 
-La confirmation de l’étape production se vérifie séparément, uniquement en cliquant **Mettre en
-production** une fois le staging confirmé : une seule exécution `deploy-ovh.yml`, déclenchée par
+La confirmation de l’étape 2 se vérifie séparément, uniquement en cliquant **Publier sur le site
+en ligne** une fois le site de test confirmé : une seule exécution `deploy-ovh.yml`, déclenchée par
 `repository_dispatch` avec l’action `production-deploy-requested`, terminée avec succès, puis le
-statut **Production à jour** dans le Tableau de bord.
+statut **Site en ligne à jour** dans le Tableau de bord.
 
 Consigner uniquement l’horodatage du lot, le nombre de documents publics modifiés, le statut de la
 livraison et l’issue de l’exécution GitHub. En cas de plusieurs livraisons ou exécutions, ne pas
