@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-08-04)
 Phase: 05 (Launch & Domain Cutover) — EXECUTING
 Plan: 2 of 6
 Status: Ready to execute
-Last activity: 2026-08-11 - Completed quick task 260811-w8d: real "Mettre en production" dashboard button (sketch 016, replaces 260811-v3t's mechanism), verified (Phase 05 Wave 4 execution still in progress in parallel)
+Last activity: 2026-08-12 - Completed quick task 260812-bj1: reworked the dashboard's vocabulary/layout (Étape 1/Étape 2 card, "site de test"/"site en ligne", 2-segment bar) for clarity, redeployed to Sanity Studio (Phase 05 Wave 4 execution still in progress in parallel)
 
 ## Performance Metrics
 
@@ -185,6 +185,7 @@ Both prior research-carryover items were resolved during Phase 1 execution:
 | 260713-jfz | Add an animated transition between carousel and grid view modes using the View Transitions API, with shared-element morphing and graceful fallback | 2026-07-13 | 57733a8 | | [260713-jfz-add-an-animated-transition-between-carou](./quick/260713-jfz-add-an-animated-transition-between-carou/) |
 | 260811-v3t | Make Sanity-content-triggered production deploys automatic, while keeping code-push-triggered production deploys manual | 2026-08-11 | 3af94aa | | [260811-v3t-make-sanity-content-triggered-production](./quick/260811-v3t-make-sanity-content-triggered-production/) |
 | 260811-w8d | Build the real "Mettre en production" feature per sketch 016 (Variant C) — replaces 260811-v3t's raw auto-deploy with a human-checkpoint-gated Sanity Studio dashboard button | 2026-08-11 | d5b41ae | Verified | [260811-w8d-build-the-real-mettre-en-production-feat](./quick/260811-w8d-build-the-real-mettre-en-production-feat/) |
+| 260812-bj1 | Rework the dashboard's vocabulary and layout (Étape 1/Étape 2 card, "site de test"/"site en ligne", 2-segment bar) so the publish→promote flow reads clearly for Romane | 2026-08-12 | 79b7891 | | [260812-bj1-retravailler-le-vocabulaire-et-la-mise-e](./quick/260812-bj1-retravailler-le-vocabulaire-et-la-mise-e/) |
 | 260713-kit | Fix the pink accent panel's view-transition fade — corrected to a sequential handoff (photo morph finishes, then panel fades in cleanly), not overlapping or popping | 2026-07-13 | 2a943ef | | [260713-kit-the-pink-accent-panel-now-appears-only-a](./quick/260713-kit-the-pink-accent-panel-now-appears-only-a/) |
 | 260714-d6h | Improve the Sanity Studio EditorialDashboard "À faire maintenant" panel UI — urgency-distinct priority-section headers (tonal Card + circular tonal count badge) and denser, more scannable attention cards (tonal left accent bar, truncated Manque line, tonal completion badge) | 2026-07-14 | 1a19972 | | [260714-d6h-improve-the-sanity-studio-editorialdashb](./quick/260714-d6h-improve-the-sanity-studio-editorialdashb/) |
 | 260718-qdz | Fix mode-toggle icon color regression on the homepage — restored the carousel-mode white / grid-mode ink color split for the display-mode toggle, silently dropped when Phase 10's SiteHeader refactor replaced the old `.home-header` container-level color rule with narrower per-element overrides | 2026-07-18 | 292488a | | [260718-qdz-fix-mode-toggle-icon-color-regression-on](./quick/260718-qdz-fix-mode-toggle-icon-color-regression-on/) |
