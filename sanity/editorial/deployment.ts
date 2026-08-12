@@ -443,19 +443,20 @@ function resolvePromoteRow({
   // the first branch returns, reaching the second implies
   // segments.content === 'done', so that is not restated in its condition.
   //
-  // The nothing-has-been-launched-yet framing now lives once, in the panel
-  // header subtitle, gated on `notStarted` below -- not in this row's own
-  // copy. This row only names step 2's precondition, in a shorter sentence
-  // than the genuine in-flight wait below keeps. Do not re-merge these two
-  // branches on the grounds that they now look similar: doing so
-  // reintroduces the misleading-wait copy bug 260812-f22 fixed, and
+  // This row deliberately carries no copy of its own: the panel header
+  // subtitle (gated on `notStarted` below), the two pending pipeline nodes
+  // and the locked gate button already state this situation in full, and
+  // the surrounding dashboard shows no step numbering for a heading here to
+  // refer to. Do not restore a heading or a sentence on this branch. Do not
+  // re-merge these two branches on the grounds that they now look similar:
+  // doing so reintroduces the misleading-wait copy bug 260812-f22 fixed, and
   // re-deriving `notStarted` from a locally-computed condition instead of
   // reading this flag would let the header clause leak into the
   // production-active/failed/done and staging-failed branches above.
   if (segments.content !== 'done') {
     return {
-      title: 'Étape 2 — site en ligne',
-      detail: 'Disponible une fois le site de test à jour.',
+      title: '',
+      detail: '',
       buttonLabel: 'Publier sur le site en ligne',
       buttonDisabled: true,
       dimmed: true,

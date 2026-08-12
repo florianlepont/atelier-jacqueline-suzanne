@@ -533,7 +533,7 @@ describe('release pipeline state', () => {
     expect(result.segments.staging).toBe(expectedSegment)
   })
 
-  it('with unpublished drafts pending, flags the row as not-started so the header can carry that framing, and names step 2\'s precondition itself', () => {
+  it('with unpublished drafts pending, flags the row as not-started and returns no copy of its own, since the header and pipeline nodes already carry that framing', () => {
     const staging = deploymentState({runs: [], publishedAt, pendingCount: 1})
     const result = releasePipelineState({
       pendingCount: 1,
@@ -544,14 +544,18 @@ describe('release pipeline state', () => {
       busy: false,
     })
     expect(result.segments.content).toBe('pending')
-    expect(result.promote.title).toBe('Étape 2 — site en ligne')
-    expect(result.promote.detail).toBe('Disponible une fois le site de test à jour.')
-    // The panel's own header and "Mettre le site à jour" button render
-    // directly above this text, so repeating the instruction here is noise.
-    expect(result.promote.detail).not.toContain('Mettre le site à jour')
+    // Empty is the intended contract here, not an oversight: the panel
+    // header subtitle and the two pending pipeline nodes already state this
+    // situation in full, and the dashboard shows no step numbering for a
+    // heading here to refer to. Do not "helpfully" fill this back in.
+    expect(result.promote.title).toBe('')
+    expect(result.promote.detail).toBe('')
     expect(result.promote.dimmed).toBe(true)
     expect(result.promote.buttonDisabled).toBe(true)
     expect(result.promote.notStarted).toBe(true)
+    // This is the locked gate button's accessible name and must survive
+    // the copy removal above.
+    expect(result.promote.buttonLabel).toBe('Publier sur le site en ligne')
   })
 
   it('with no production release ever recorded, keeps production pending and the row dimmed/disabled/titled "En attente du site de test…"', () => {
