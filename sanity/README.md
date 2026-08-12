@@ -10,11 +10,12 @@ nécessaire.
 2. Modifier les champs. Le Studio sauvegarde le brouillon automatiquement.
 3. Consulter la **Checklist** du document.
 4. Revenir au Tableau de bord : le contenu apparaît dans le lot **Mettre le site à jour**.
-5. **Étape 1** : vérifier le récapitulatif, puis publier tout le lot avec ce bouton. Le site de
+5. Vérifier le récapitulatif, puis publier tout le lot avec **Mettre le site à jour**. Le site de
    test se met à jour automatiquement.
-6. **Étape 2** : une fois le site de test confirmé à jour, cliquer sur **Publier sur le site en
-   ligne** pour l’envoyer vers l’adresse réelle. Les deux étapes sont volontairement séparées :
-   l’étape 2 reste visible mais grisée jusqu’à ce que l’étape 1 ait abouti.
+6. Une fois le site de test confirmé à jour, le bouton rond posé sur la ligne entre les deux
+   étapes de la barre de progression se débloque : cliquer sur ce bouton pour envoyer le site vers
+   son adresse réelle. Les deux actions sont volontairement séparées : la seconde reste visible
+   mais verrouillée jusqu’à ce que la première ait abouti.
 
 Les fiches de contenu n’ont volontairement pas de bouton de publication. Un brouillon ne
 devient public qu’avec l’action globale **Mettre le site à jour** du Tableau de bord.
@@ -73,16 +74,16 @@ publication avec les exécutions GitHub suivantes :
 En cas d’échec ou de délai anormal, ouvrir le lien du statut pour consulter GitHub Actions et
 prévenir le mainteneur. Ne pas republier plusieurs fois sans avoir identifié la cause.
 
-Une fois l’Étape 2 déclenchée, les mêmes statuts apparaissent pour le Site en ligne, jusqu’à
-**Site en ligne à jour**.
+Une fois la publication vers le site en ligne déclenchée, les mêmes statuts apparaissent pour le
+Site en ligne, jusqu’à **Site en ligne à jour**.
 
-Sous le bouton **Mettre le site à jour**, une barre à 2 segments (Contenu + site de test / Site en ligne)
-et une ligne d’action résument tout le trajet jusqu’au site réel : publier dans Sanity
-(Étape 1) met à jour automatiquement le site de test ; une fois celui-ci vérifié, cliquer sur
-**Publier sur le site en ligne** (Étape 2) l’envoie vers l’adresse réelle. Le bouton de l’étape 2
-reste visible mais grisé jusqu’à ce que le site de test soit confirmé à jour, affiche un indicateur
-de progression pendant l’envoi vers le site en ligne, puis passe à un état « à jour » une fois
-terminé. Si un segment devient rouge, la ligne d’action précise quelle étape a échoué.
+Sous le bouton **Mettre le site à jour**, une barre de progression montre deux étapes
+(« Contenu + site de test » et « Site en ligne ») reliées par une ligne dont le centre porte le
+bouton de publication. Chaque étape devient verte une fois à jour, tourne pendant son exécution et
+devient rouge en cas d’échec. Le bouton central reste verrouillé jusqu’à ce que le site de test
+soit confirmé à jour, devient alors cliquable, s’éteint pendant que la publication est en cours,
+puis affiche une coche une fois terminée. En cas d’échec, un message sous la barre précise quelle
+étape a échoué.
 
 ## Collections photo
 
@@ -160,8 +161,9 @@ avec **Mettre le site à jour**. Pour cet unique lot, vérifier :
 - une exécution terminée avec succès, puis le statut **Site de test à jour** dans le Tableau de
   bord.
 
-La confirmation de l’étape 2 se vérifie séparément, uniquement en cliquant **Publier sur le site
-en ligne** une fois le site de test confirmé : une seule exécution `deploy-ovh.yml`, déclenchée par
+La confirmation de la publication sur le site en ligne se vérifie séparément, uniquement en
+cliquant **Publier sur le site en ligne** une fois le site de test confirmé : une seule exécution
+`deploy-ovh.yml`, déclenchée par
 `repository_dispatch` avec l’action `production-deploy-requested`, terminée avec succès, puis le
 statut **Site en ligne à jour** dans le Tableau de bord.
 

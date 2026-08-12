@@ -2,18 +2,18 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// The Sanity Studio editorial dashboard's two-segment publication progress
-// bar was invisible in production: `.editorial-dashboard__pipeline-bar` is
-// `display: flex` with `.editorial-dashboard__pipeline-segment` children
-// that are `flex: 1` (i.e. flex-basis 0). Every child contributing zero
-// intrinsic base width means the container itself has no content width to
-// derive from. Its ancestor is a Sanity UI `<Stack space={3}>` in
-// EditorialDashboard.tsx, which does NOT stretch its children to full
-// width — so without its own declared width, the bar collapses to a
-// near-zero-width sliver and the two labels below it float with nothing
-// visibly connecting them. `.editorial-dashboard__publish-divider` in this
-// same stylesheet already carries `width: 100%` for exactly this reason;
-// this test locks in the same fix for the pipeline bar.
+// The Sanity Studio editorial dashboard's publication pipeline row
+// (`.editorial-dashboard__pipeline`) is a flex container whose connector
+// child (`.editorial-dashboard__pipeline-connector`) has a zero flex basis
+// (`flex: 1 1 auto` with no intrinsic content width). Its ancestor is a
+// Sanity UI `<Stack space={3}>` in EditorialDashboard.tsx, which does NOT
+// stretch its children to full width — so without its own declared width,
+// the row collapses and the central approval-gate button lands flush
+// against the two node circles instead of sitting on a visible connecting
+// line between them. `.editorial-dashboard__publish-divider` in this same
+// stylesheet already carries `width: 100%` for exactly this reason; this
+// test locks in the same fix for the pipeline row (the same failure mode
+// quick task 260812-ca1 fixed on the retired segmented bar).
 //
 // This is a source-text test, not a CSS-import test: `sanity/` deps live
 // in `sanity/node_modules` and are not resolvable from the root Vitest
@@ -27,38 +27,78 @@ function extractRuleBlocks(source: string, selector: string): string[] {
   return Array.from(source.matchAll(pattern)).map((match) => match[1]);
 }
 
-describe('editorial dashboard pipeline bar CSS stays visible (not collapsed to zero width)', () => {
+describe('editorial dashboard pipeline row CSS stays visible (not collapsed to zero width)', () => {
   const source = readFileSync(STYLESHEET_PATH, 'utf-8');
 
-  it('declares exactly one .editorial-dashboard__pipeline-bar rule block', () => {
-    const blocks = extractRuleBlocks(source, '.editorial-dashboard__pipeline-bar');
+  it('declares exactly one .editorial-dashboard__pipeline rule block', () => {
+    const blocks = extractRuleBlocks(source, '.editorial-dashboard__pipeline');
     expect(
       blocks,
-      'expected exactly one .editorial-dashboard__pipeline-bar rule — a duplicate/override copy would make width assertions ambiguous',
+      'expected exactly one .editorial-dashboard__pipeline rule — a duplicate/override copy would make the width assertion ambiguous',
     ).toHaveLength(1);
   });
 
-  it('the .editorial-dashboard__pipeline-bar rule declares an explicit width: 100%', () => {
-    const [block] = extractRuleBlocks(source, '.editorial-dashboard__pipeline-bar');
-    expect(
-      /width\s*:\s*100%\s*;/.test(block),
-      'the pipeline bar container needs its own declared width because its flex:1 children contribute zero intrinsic width — without it, the bar collapses to a near-zero-width sliver',
-    ).toBe(true);
-  });
-
-  it('the .editorial-dashboard__pipeline-bar rule still declares display: flex', () => {
-    const [block] = extractRuleBlocks(source, '.editorial-dashboard__pipeline-bar');
+  it('the .editorial-dashboard__pipeline rule declares display: flex and an explicit width: 100%', () => {
+    const [block] = extractRuleBlocks(source, '.editorial-dashboard__pipeline');
     expect(
       /display\s*:\s*flex\s*;/.test(block),
-      'the width fix must not replace or disturb the flex layout the two segments depend on',
+      'the row needs its flex layout for the node/connector/node children to lay out side by side',
+    ).toBe(true);
+    expect(
+      /width\s*:\s*100%\s*;/.test(block),
+      'the row needs its own declared width because its connector child contributes zero intrinsic width — without it, the row collapses and the gate lands flush against the nodes',
     ).toBe(true);
   });
 
-  it('the sibling .editorial-dashboard__pipeline-segment rule still declares flex: 1', () => {
-    const [block] = extractRuleBlocks(source, '.editorial-dashboard__pipeline-segment');
+  it('the .editorial-dashboard__pipeline-connector rule declares flex: 1 1 auto', () => {
+    const [block] = extractRuleBlocks(source, '.editorial-dashboard__pipeline-connector');
     expect(
-      /flex\s*:\s*1\s*;/.test(block),
-      'documents WHY the container needs its own width: zero flex-basis children contribute no intrinsic width to a flex container',
+      /flex\s*:\s*1\s+1\s+auto\s*;/.test(block),
+      'documents WHY the row needs its own width: a zero flex-basis connector contributes no intrinsic width to a flex container',
     ).toBe(true);
+  });
+
+  it('declares all five gate modifier selectors exactly once each', () => {
+    const modifiers = ['locked', 'ready', 'active', 'done', 'failed'];
+    for (const modifier of modifiers) {
+      const blocks = extractRuleBlocks(source, `.editorial-dashboard__pipeline-gate--${modifier}`);
+      expect(
+        blocks,
+        `expected exactly one .editorial-dashboard__pipeline-gate--${modifier} rule — a missing or duplicated gate face would mean a partially-ported state machine`,
+      ).toHaveLength(1);
+    }
+  });
+
+  it('disables the ready-gate pulse and the spinner animation under prefers-reduced-motion', () => {
+    const mediaBlocks = Array.from(
+      source.matchAll(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?)\n\}/g),
+    ).map((match) => match[1]);
+    const combined = mediaBlocks.join('\n');
+    expect(
+      combined.includes('editorial-dashboard__pipeline-gate--ready') &&
+        /animation\s*:\s*none\s*;/.test(combined),
+      'the pulsing ready-gate animation must be disabled under prefers-reduced-motion, matching the guard the retired stylesheet had for its single animation',
+    ).toBe(true);
+    expect(
+      combined.includes('editorial-dashboard__pipeline-spin'),
+      'the spinner rotation animation must also be disabled under prefers-reduced-motion',
+    ).toBe(true);
+  });
+
+  it('no longer contains any of the removed pipeline selector fragments', () => {
+    const removedFragments = [
+      'pipeline-bar',
+      'pipeline-segment',
+      'pipeline-label',
+      'step-eyebrow',
+      'promote-row',
+    ];
+    for (const fragment of removedFragments) {
+      const occurrences = source.split(fragment).length - 1;
+      expect(
+        occurrences,
+        `expected zero occurrences of "${fragment}" — its presence would mean the replacement layered on top of the old rules instead of removing them`,
+      ).toBe(0);
+    }
   });
 });
