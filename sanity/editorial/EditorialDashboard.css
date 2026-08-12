@@ -48,8 +48,8 @@
 .editorial-dashboard__publish-panel {
   --dashboard-publish-accent: #556bfc;
   /* Mirror deploymentDotColors' positive/critical hex values in
-     EditorialDashboard.tsx exactly, so the pipeline bar's done/failed fills
-     and the header deployment status dot never drift apart. */
+     EditorialDashboard.tsx exactly, so this pipeline's done/failed node and
+     gate colouring and the header deployment status dot never drift apart. */
   --dashboard-pipeline-done: #10b981;
   --dashboard-pipeline-failed: #ef4444;
   background-color: var(--dashboard-surface-background);
@@ -60,81 +60,194 @@
     0 12px 28px -20px color-mix(in srgb, var(--card-fg-color) 24%, transparent);
 }
 
-.editorial-dashboard__pipeline-bar {
+/* This row's connector child has a zero flex basis, and its Sanity UI
+   <Stack> ancestor does not stretch its children -- so without an explicit
+   width here, the connector renders at zero and the two nodes clump
+   together. */
+.editorial-dashboard__pipeline {
   display: flex;
+  align-items: flex-start;
   width: 100%;
-  gap: 4px;
-  height: 6px;
-  border-radius: 4px;
-  overflow: hidden;
 }
 
-.editorial-dashboard__pipeline-segment {
-  flex: 1;
+.editorial-dashboard__pipeline-node {
+  flex: 0 0 auto;
+  width: 104px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.editorial-dashboard__pipeline-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  background-color: var(--dashboard-group-header-background);
+  border: 2px solid color-mix(in srgb, var(--card-fg-color) 9%, transparent);
+  color: var(--card-muted-fg-color);
+  transition: background-color 300ms ease, border-color 300ms ease, color 300ms ease;
+}
+
+.editorial-dashboard__pipeline-circle--done {
+  background-color: color-mix(in srgb, var(--dashboard-pipeline-done) 14%, transparent);
+  border-color: var(--dashboard-pipeline-done);
+  color: var(--dashboard-pipeline-done);
+}
+
+.editorial-dashboard__pipeline-circle--active {
+  background-color: color-mix(in srgb, var(--dashboard-publish-accent) 14%, transparent);
+  border-color: var(--dashboard-publish-accent);
+  color: var(--dashboard-publish-accent);
+}
+
+.editorial-dashboard__pipeline-circle--failed {
+  background-color: color-mix(in srgb, var(--dashboard-pipeline-failed) 14%, transparent);
+  border-color: var(--dashboard-pipeline-failed);
+  color: var(--dashboard-pipeline-failed);
+}
+
+.editorial-dashboard__pipeline-node-label {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 14px;
+  margin-top: 6px;
+}
+
+.editorial-dashboard__pipeline-node-detail {
+  font-size: 10px;
+  line-height: 13px;
+  margin-top: 2px;
+  color: var(--card-muted-fg-color);
+}
+
+.editorial-dashboard__pipeline-connector {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  height: 36px;
+}
+
+.editorial-dashboard__pipeline-link {
+  flex: 1 1 auto;
+  min-width: 8px;
+  height: 3px;
+  border-radius: 2px;
   background-color: color-mix(in srgb, var(--card-bg-color) 92%, var(--card-fg-color) 8%);
+  transition: background-color 300ms ease;
 }
 
-.editorial-dashboard__pipeline-segment--done {
+.editorial-dashboard__pipeline-link--done {
   background-color: var(--dashboard-pipeline-done);
 }
 
-.editorial-dashboard__pipeline-segment--active {
+.editorial-dashboard__pipeline-gate {
+  position: relative;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  margin: 0 6px;
+  padding: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  background-color: var(--dashboard-surface-background);
+  border: 2px solid color-mix(in srgb, var(--card-fg-color) 9%, transparent);
+  color: var(--card-muted-fg-color);
+  cursor: pointer;
+  transition: background-color 300ms ease, border-color 300ms ease, color 300ms ease;
+}
+
+.editorial-dashboard__pipeline-gate::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+}
+
+.editorial-dashboard__pipeline-gate:disabled {
+  cursor: not-allowed;
+}
+
+.editorial-dashboard__pipeline-gate--locked {
+  /* The base face above already reads as locked; kept as an explicit
+     modifier so every gate face has a corresponding selector. */
+}
+
+.editorial-dashboard__pipeline-gate--ready {
   background-color: var(--dashboard-publish-accent);
-  animation: editorial-dashboard-pipeline-pulse 1.4s ease-in-out infinite;
+  border-color: var(--dashboard-publish-accent);
+  color: var(--card-bg-color);
+  animation: editorial-dashboard-gate-pulse 1.6s ease-in-out infinite;
 }
 
-.editorial-dashboard__pipeline-segment--failed {
+.editorial-dashboard__pipeline-gate--active {
+  background-color: color-mix(in srgb, var(--dashboard-publish-accent) 14%, transparent);
+  border-color: var(--dashboard-publish-accent);
+  color: var(--dashboard-publish-accent);
+  cursor: default;
+}
+
+.editorial-dashboard__pipeline-gate--done {
+  background-color: var(--dashboard-pipeline-done);
+  border-color: var(--dashboard-pipeline-done);
+  color: var(--card-bg-color);
+}
+
+.editorial-dashboard__pipeline-gate--failed {
   background-color: var(--dashboard-pipeline-failed);
+  border-color: var(--dashboard-pipeline-failed);
+  color: var(--card-bg-color);
 }
 
-@keyframes editorial-dashboard-pipeline-pulse {
+@keyframes editorial-dashboard-gate-pulse {
   0%,
   100% {
-    opacity: 1;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--dashboard-publish-accent) 55%, transparent);
   }
   50% {
-    opacity: 0.45;
+    box-shadow: 0 0 0 7px transparent;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .editorial-dashboard__pipeline-segment--active {
-    animation: none;
+.editorial-dashboard__pipeline-gate:focus-visible {
+  outline: 2px solid var(--card-focus-ring-color);
+  outline-offset: 2px;
+}
+
+.editorial-dashboard__pipeline-spin {
+  animation: editorial-dashboard-pipeline-spin 0.8s linear infinite;
+}
+
+@keyframes editorial-dashboard-pipeline-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
-.editorial-dashboard__pipeline-labels {
-  margin-top: 8px;
-}
-
-.editorial-dashboard__pipeline-label {
-  flex: 1;
-  text-align: center;
-  font-size: 11px;
-  color: var(--card-muted-fg-color);
-}
-
-.editorial-dashboard__pipeline-label--strong {
-  color: var(--card-fg-color);
-  font-weight: 600;
-}
-
-.editorial-dashboard__step-eyebrow {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  font-weight: 600;
-  color: var(--card-muted-fg-color);
-}
-
-.editorial-dashboard__promote-row {
-  padding: 14px 16px;
+.editorial-dashboard__pipeline-detail {
+  padding: 12px 16px;
   border-radius: 6px;
   background-color: var(--dashboard-group-header-background);
 }
 
-.editorial-dashboard__promote-row--locked {
-  opacity: 0.5;
+.editorial-dashboard__pipeline-detail--dimmed {
+  opacity: 0.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editorial-dashboard__pipeline-gate--ready,
+  .editorial-dashboard__pipeline-spin {
+    animation: none;
+  }
 }
 
 .editorial-dashboard__publish-divider {
@@ -328,6 +441,18 @@ a.editorial-dashboard__deployment-status:hover {
     width: auto;
     flex: 0 0 auto;
     text-align: left;
+  }
+
+  .editorial-dashboard__pipeline-node {
+    width: 84px;
+  }
+
+  .editorial-dashboard__pipeline-gate {
+    margin: 0 4px;
+  }
+
+  .editorial-dashboard__pipeline-link {
+    min-width: 6px;
   }
 }
 
