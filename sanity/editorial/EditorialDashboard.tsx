@@ -431,6 +431,15 @@ export function EditorialDashboard() {
   const displaySegments = pipelineDisplaySegments(pipeline.segments)
   const pipelineDetail = pipelineNodeDetail(displaySegments)
   const gateVariant = pipelineGateVariant(displaySegments, pipeline.promote, Boolean(releaseError))
+  // The not-started branch of resolvePromoteRow() deliberately returns no
+  // copy, but the pipeline-detail box below carries its own padding and
+  // background colour -- an unconditionally-rendered box would paint a
+  // visible empty rectangle rather than disappear. `actionUrl` is included
+  // here so the failed-deploy states, whose only body is the run link,
+  // still get their box.
+  const promoteDetailBoxHasBody = Boolean(
+    pipeline.promote.title || pipeline.promote.detail || pipeline.promote.actionUrl,
+  )
 
   const triggerProductionReleaseClick = async () => {
     setReleaseBusy(true)
@@ -773,33 +782,39 @@ export function EditorialDashboard() {
                       </div>
                     </Flex>
 
-                    <Stack
-                      space={2}
-                      className={
-                        pipeline.promote.dimmed
-                          ? 'editorial-dashboard__pipeline-detail editorial-dashboard__pipeline-detail--dimmed'
-                          : 'editorial-dashboard__pipeline-detail'
-                      }
-                    >
-                      <Text size={1} weight="semibold" align="center">
-                        {pipeline.promote.title}
-                      </Text>
-                      <Text size={1} muted align="center">
-                        {pipeline.promote.detail}
-                      </Text>
-                      {pipeline.promote.actionUrl && (
-                        <Flex justify="center">
-                          <a
-                            href={pipeline.promote.actionUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="editorial-dashboard__deployment-status"
-                          >
-                            {pipeline.promote.actionLabel}
-                          </a>
-                        </Flex>
-                      )}
-                    </Stack>
+                    {promoteDetailBoxHasBody && (
+                      <Stack
+                        space={2}
+                        className={
+                          pipeline.promote.dimmed
+                            ? 'editorial-dashboard__pipeline-detail editorial-dashboard__pipeline-detail--dimmed'
+                            : 'editorial-dashboard__pipeline-detail'
+                        }
+                      >
+                        {pipeline.promote.title ? (
+                          <Text size={1} weight="semibold" align="center">
+                            {pipeline.promote.title}
+                          </Text>
+                        ) : null}
+                        {pipeline.promote.detail ? (
+                          <Text size={1} muted align="center">
+                            {pipeline.promote.detail}
+                          </Text>
+                        ) : null}
+                        {pipeline.promote.actionUrl && (
+                          <Flex justify="center">
+                            <a
+                              href={pipeline.promote.actionUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="editorial-dashboard__deployment-status"
+                            >
+                              {pipeline.promote.actionLabel}
+                            </a>
+                          </Flex>
+                        )}
+                      </Stack>
+                    )}
                   </Stack>
                 </section>
 

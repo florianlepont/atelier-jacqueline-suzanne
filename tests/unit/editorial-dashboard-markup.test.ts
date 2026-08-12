@@ -83,3 +83,69 @@ describe('editorial dashboard panel header subtitle gates the not-started clause
     ).toBe(true);
   });
 });
+
+// The not-started state returns no promote copy at all (title and detail
+// are both empty strings), so an always-rendered box would paint an empty
+// padded/tinted rectangle where the design calls for nothing. These tests
+// lock in the guard that skips the whole box when it has no body, and the
+// per-line ternaries that stop it from ever rendering a blank line when one
+// of title/detail is present without the other.
+describe('editorial dashboard pipeline-detail box is skipped entirely when it has no body', () => {
+  const source = readFileSync(COMPONENT_PATH, 'utf-8');
+
+  it('derives promoteDetailBoxHasBody once, next to the other pipeline-derived values', () => {
+    expect(
+      /const promoteDetailBoxHasBody = Boolean\(/.test(source),
+      'expected a single promoteDetailBoxHasBody derivation declared as a Boolean(...) alongside displaySegments/pipelineDetail/gateVariant',
+    ).toBe(true);
+  });
+
+  it('derives the guard from title, detail and actionUrl together', () => {
+    const declarationIndex = source.indexOf('const promoteDetailBoxHasBody = Boolean(');
+    expect(declarationIndex, 'expected to find the promoteDetailBoxHasBody declaration').toBeGreaterThan(-1);
+    const closingParenIndex = source.indexOf(')', declarationIndex);
+    const declarationSlice = source.slice(declarationIndex, closingParenIndex);
+
+    expect(
+      declarationSlice.includes('pipeline.promote.title'),
+      'the guard must reference title',
+    ).toBe(true);
+    expect(
+      declarationSlice.includes('pipeline.promote.detail'),
+      'the guard must reference detail',
+    ).toBe(true);
+    expect(
+      declarationSlice.includes('pipeline.promote.actionUrl'),
+      'dropping the actionUrl term would silently hide the run link in the failed-deploy states, whose title and detail can be present but whose link is the actionable part',
+    ).toBe(true);
+  });
+
+  it('wraps the pipeline-detail Stack itself in the guard, not merely its children', () => {
+    expect(
+      /\{promoteDetailBoxHasBody &&/.test(source),
+      'expected the box itself to be conditionally rendered via {promoteDetailBoxHasBody && ...}',
+    ).toBe(true);
+  });
+
+  it('makes each text line inside the box independently conditional', () => {
+    expect(
+      /pipeline\.promote\.title\s*\?/.test(source),
+      'a state with a title but no detail must not render a blank line inside the box',
+    ).toBe(true);
+    expect(
+      /pipeline\.promote\.detail\s*\?/.test(source),
+      'a state with a detail but no title must not render a blank line inside the box',
+    ).toBe(true);
+  });
+
+  it('keeps the box and its action link intact rather than deleting them', () => {
+    expect(
+      source.includes('editorial-dashboard__pipeline-detail'),
+      'the box was made conditional, not deleted',
+    ).toBe(true);
+    expect(
+      source.includes('pipeline.promote.actionUrl'),
+      'the action link must survive the conditional-rendering change',
+    ).toBe(true);
+  });
+});
