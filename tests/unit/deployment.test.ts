@@ -533,7 +533,7 @@ describe('release pipeline state', () => {
     expect(result.segments.staging).toBe(expectedSegment)
   })
 
-  it('with unpublished drafts pending, tells the maintainer nothing has started and points at « Mettre le site à jour »', () => {
+  it('with unpublished drafts pending, tells the maintainer nothing has started and names what step 2 is waiting on', () => {
     const staging = deploymentState({runs: [], publishedAt, pendingCount: 1})
     const result = releasePipelineState({
       pendingCount: 1,
@@ -545,7 +545,10 @@ describe('release pipeline state', () => {
     })
     expect(result.segments.content).toBe('pending')
     expect(result.promote.title).toBe('Rien n’a encore été lancé.')
-    expect(result.promote.detail).toContain('Mettre le site à jour')
+    expect(result.promote.detail).toBe('L’étape 2 sera disponible une fois le site de test à jour.')
+    // The panel's own header and "Mettre le site à jour" button render
+    // directly above this text, so repeating the instruction here is noise.
+    expect(result.promote.detail).not.toContain('Mettre le site à jour')
     expect(result.promote.dimmed).toBe(true)
     expect(result.promote.buttonDisabled).toBe(true)
   })

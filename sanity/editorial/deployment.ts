@@ -437,11 +437,19 @@ function resolvePromoteRow({
   // in-flight wait on a GitHub run once content is already published. Once
   // the first branch returns, reaching the second implies
   // segments.content === 'done', so that is not restated in its condition.
+  //
+  // The two branches now return the same `detail` and differ only in
+  // `title` -- that is deliberate. The title carries the
+  // not-started-vs-waiting distinction (this one must never read as a
+  // wait), while the detail simply names what step 2 is waiting on, since
+  // the panel's own header and button are already visible directly above.
+  // Do not re-merge these branches on the grounds that they now look
+  // near-identical: doing so reintroduces the misleading-wait copy bug
+  // 260812-f22 fixed.
   if (segments.content !== 'done') {
     return {
       title: 'Rien n’a encore été lancé.',
-      detail:
-        'Commencez par « Mettre le site à jour » ci-dessus : vos modifications seront publiées et le site de test reconstruit.',
+      detail: 'L’étape 2 sera disponible une fois le site de test à jour.',
       buttonLabel: 'Publier sur le site en ligne',
       buttonDisabled: true,
       dimmed: true,
