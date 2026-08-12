@@ -85,6 +85,7 @@ export interface CreateDeploymentMarkerAction {
   actionType: 'sanity.action.document.create'
   publishedId: MarkerDocumentId
   attributes: {
+    _id: MarkerDocumentId
     _type: MarkerDocumentId
     buildSequence: number
     lastTriggeredAt: string
@@ -469,6 +470,7 @@ function markerActions(
         actionType: 'sanity.action.document.create',
         publishedId: markerId,
         attributes: {
+          _id: markerId,
           _type: markerId,
           buildSequence: 1,
           lastTriggeredAt,
