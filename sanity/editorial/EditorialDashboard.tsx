@@ -5,14 +5,20 @@ import {IntentButton, useClient, useHistoryStore, useUserStore} from 'sanity'
 import {IntentLink} from 'sanity/router'
 import {AddIcon} from '@sanity/icons/Add'
 import {BookIcon} from '@sanity/icons/Book'
+import {CheckmarkIcon} from '@sanity/icons/Checkmark'
 import {CheckmarkCircleIcon} from '@sanity/icons/CheckmarkCircle'
 import {ChevronRightIcon} from '@sanity/icons/ChevronRight'
+import {CloseIcon} from '@sanity/icons/Close'
 import {CogIcon} from '@sanity/icons/Cog'
+import {EarthGlobeIcon} from '@sanity/icons/EarthGlobe'
 import {ErrorOutlineIcon} from '@sanity/icons/ErrorOutline'
 import {FolderIcon} from '@sanity/icons/Folder'
 import {ImagesIcon} from '@sanity/icons/Images'
 import {LaunchIcon} from '@sanity/icons/Launch'
+import {LockIcon} from '@sanity/icons/Lock'
+import {PlayIcon} from '@sanity/icons/Play'
 import {PublishIcon} from '@sanity/icons/Publish'
+import {SpinnerIcon} from '@sanity/icons/Spinner'
 import {
   deploymentSubtitle,
   deploymentState,
@@ -24,7 +30,13 @@ import {
   releasePipelineState,
   SITE_PREVIEW_URL,
 } from './deployment'
-import type {DeploymentRun, DeploymentState, PipelineSegmentKind} from './deployment'
+import type {
+  DeploymentRun,
+  DeploymentState,
+  PipelineSegmentKind,
+  ReleasePipelineDisplaySegments,
+  ReleasePipelinePromote,
+} from './deployment'
 import {getDocumentChecks, summarizeChecks} from './checks'
 import {
   attentionPriority,
@@ -426,6 +438,8 @@ export function EditorialDashboard() {
     requestError: releaseError,
   })
   const displaySegments = pipelineDisplaySegments(pipeline.segments)
+  const pipelineDetail = pipelineNodeDetail(displaySegments)
+  const gateVariant = pipelineGateVariant(displaySegments, pipeline.promote, Boolean(releaseError))
 
   const triggerProductionReleaseClick = async () => {
     setReleaseBusy(true)
@@ -628,9 +642,6 @@ export function EditorialDashboard() {
                       tint={metricAccentStyles.primary}
                     />
                     <Stack space={2}>
-                      <Text size={0} muted className="editorial-dashboard__step-eyebrow">
-                        Étape 1
-                      </Text>
                       <Heading as="h2" size={2}>
                         Mettre le site à jour
                       </Heading>
@@ -700,46 +711,84 @@ export function EditorialDashboard() {
 
                 <section aria-label="Progression de la publication">
                   <Stack space={3}>
-                    <Box className="editorial-dashboard__pipeline-bar" aria-hidden="true">
-                      <span
-                        className={`editorial-dashboard__pipeline-segment editorial-dashboard__pipeline-segment--${displaySegments.testSite}`}
-                      />
-                      <span
-                        className={`editorial-dashboard__pipeline-segment editorial-dashboard__pipeline-segment--${displaySegments.liveSite}`}
-                      />
-                    </Box>
-                    <Flex justify="space-between" className="editorial-dashboard__pipeline-labels">
-                      <Text size={0} className={pipelineLabelClassName(displaySegments.testSite)}>
-                        Contenu + site de test
-                      </Text>
-                      <Text size={0} className={pipelineLabelClassName(displaySegments.liveSite)}>
-                        Site en ligne
-                      </Text>
+                    <Flex align="flex-start" className="editorial-dashboard__pipeline">
+                      <div className="editorial-dashboard__pipeline-node">
+                        <span
+                          aria-hidden="true"
+                          className={pipelineCircleClassName(displaySegments.testSite)}
+                        >
+                          {pipelineNodeIcon(displaySegments.testSite, PublishIcon)}
+                        </span>
+                        <Text size={0} className="editorial-dashboard__pipeline-node-label">
+                          Contenu + site de test
+                        </Text>
+                        <Text size={0} muted className="editorial-dashboard__pipeline-node-detail">
+                          {pipelineDetail.node1}
+                        </Text>
+                      </div>
+                      <div className="editorial-dashboard__pipeline-connector">
+                        <span
+                          aria-hidden="true"
+                          className={
+                            displaySegments.testSite === 'done'
+                              ? 'editorial-dashboard__pipeline-link editorial-dashboard__pipeline-link--done'
+                              : 'editorial-dashboard__pipeline-link'
+                          }
+                        />
+                        <button
+                          type="button"
+                          className={`editorial-dashboard__pipeline-gate editorial-dashboard__pipeline-gate--${gateVariant}`}
+                          disabled={pipeline.promote.buttonDisabled}
+                          title={pipeline.promote.buttonLabel}
+                          aria-label={pipeline.promote.buttonLabel}
+                          onClick={() => void triggerProductionReleaseClick()}
+                        >
+                          {gateVariant === 'locked' && <LockIcon />}
+                          {gateVariant === 'ready' && <PlayIcon />}
+                          {gateVariant === 'done' && <CheckmarkIcon />}
+                          {gateVariant === 'failed' && <CloseIcon />}
+                        </button>
+                        <span
+                          aria-hidden="true"
+                          className={
+                            displaySegments.liveSite === 'done'
+                              ? 'editorial-dashboard__pipeline-link editorial-dashboard__pipeline-link--done'
+                              : 'editorial-dashboard__pipeline-link'
+                          }
+                        />
+                      </div>
+                      <div className="editorial-dashboard__pipeline-node">
+                        <span
+                          aria-hidden="true"
+                          className={pipelineCircleClassName(displaySegments.liveSite)}
+                        >
+                          {pipelineNodeIcon(displaySegments.liveSite, EarthGlobeIcon)}
+                        </span>
+                        <Text size={0} className="editorial-dashboard__pipeline-node-label">
+                          Site en ligne
+                        </Text>
+                        <Text size={0} muted className="editorial-dashboard__pipeline-node-detail">
+                          {pipelineDetail.node2}
+                        </Text>
+                      </div>
                     </Flex>
-                    <Flex
-                      align="center"
-                      justify="space-between"
-                      gap={3}
-                      wrap="wrap"
+
+                    <Stack
+                      space={2}
                       className={
                         pipeline.promote.dimmed
-                          ? 'editorial-dashboard__promote-row editorial-dashboard__promote-row--locked'
-                          : 'editorial-dashboard__promote-row'
+                          ? 'editorial-dashboard__pipeline-detail editorial-dashboard__pipeline-detail--dimmed'
+                          : 'editorial-dashboard__pipeline-detail'
                       }
                     >
-                      <Stack space={2} style={{minWidth: 0, flex: '1 1 260px'}}>
-                        <Text size={0} muted className="editorial-dashboard__step-eyebrow">
-                          Étape 2
-                        </Text>
-                        <Text size={1} weight="semibold">
-                          {pipeline.promote.title}
-                        </Text>
-                        <Text size={1} muted>
-                          {pipeline.promote.detail}
-                        </Text>
-                      </Stack>
-                      <Flex align="center" gap={2} wrap="wrap">
-                        {pipeline.promote.actionUrl && (
+                      <Text size={1} weight="semibold" align="center">
+                        {pipeline.promote.title}
+                      </Text>
+                      <Text size={1} muted align="center">
+                        {pipeline.promote.detail}
+                      </Text>
+                      {pipeline.promote.actionUrl && (
+                        <Flex justify="center">
                           <a
                             href={pipeline.promote.actionUrl}
                             target="_blank"
@@ -748,17 +797,9 @@ export function EditorialDashboard() {
                           >
                             {pipeline.promote.actionLabel}
                           </a>
-                        )}
-                        <Button
-                          tone="primary"
-                          text={pipeline.promote.buttonLabel}
-                          disabled={pipeline.promote.buttonDisabled}
-                          loading={releaseBusy}
-                          onClick={() => void triggerProductionReleaseClick()}
-                          style={{minHeight: 44}}
-                        />
-                      </Flex>
-                    </Flex>
+                        </Flex>
+                      )}
+                    </Stack>
                   </Stack>
                 </section>
 
@@ -1225,12 +1266,79 @@ const deploymentDotColors: Record<DashboardTone, string> = {
   critical: '#ef4444',
 }
 
-// Matches the sketch's label emphasis rule: done/active segments read full
-// strength and semibold, everything else stays muted.
-function pipelineLabelClassName(kind: PipelineSegmentKind): string {
-  return kind === 'done' || kind === 'active'
-    ? 'editorial-dashboard__pipeline-label editorial-dashboard__pipeline-label--strong'
-    : 'editorial-dashboard__pipeline-label'
+// Pure visual helpers for the two-node approval-gate pipeline below. Every
+// helper here is a function of already-computed pipeline state; none reads
+// component state or fetches anything (see the plan's scope boundary).
+
+function pipelineCircleClassName(kind: PipelineSegmentKind): string {
+  return kind === 'pending'
+    ? 'editorial-dashboard__pipeline-circle'
+    : `editorial-dashboard__pipeline-circle editorial-dashboard__pipeline-circle--${kind}`
+}
+
+function pipelineNodeIcon(
+  kind: PipelineSegmentKind,
+  Fallback: ComponentType<SVGProps<SVGSVGElement>>,
+) {
+  if (kind === 'active') {
+    return <SpinnerIcon className="editorial-dashboard__pipeline-spin" />
+  }
+  if (kind === 'done') return <CheckmarkIcon />
+  if (kind === 'failed') return <CloseIcon />
+  return <Fallback />
+}
+
+function pipelineNodeDetail(display: ReleasePipelineDisplaySegments): {
+  node1: string
+  node2: string
+} {
+  const node1 =
+    display.testSite === 'active'
+      ? 'GitHub reconstruit le site de test…'
+      : display.testSite === 'done'
+        ? 'Site de test à jour'
+        : display.testSite === 'failed'
+          ? 'Échec de la mise à jour du site de test'
+          : 'Aucune publication effectuée pour le moment'
+
+  const node2 =
+    display.liveSite === 'active'
+      ? 'Publication en cours…'
+      : display.liveSite === 'done'
+        ? 'Site en ligne à jour'
+        : display.liveSite === 'failed'
+          ? 'Échec — ancienne version encore affichée'
+          : display.testSite === 'done'
+            ? 'Prêt à publier'
+            : display.testSite === 'failed'
+              ? 'Bloqué tant que le site de test échoue'
+              : display.testSite === 'active'
+                ? 'En attente du site de test'
+                : 'Aucune publication effectuée pour le moment'
+
+  return {node1, node2}
+}
+
+type PipelineGateVariant = 'locked' | 'ready' | 'active' | 'done' | 'failed'
+
+// Order matters and encodes the two behaviours confirmed twice in review:
+// the running check sits above the disabled check, so a running production
+// release renders this control calm and iconless while the destination
+// node alone carries the spinner; the failure check sits above everything,
+// so a production failure paints this control red at the same instant the
+// destination node does.
+function pipelineGateVariant(
+  display: ReleasePipelineDisplaySegments,
+  promote: ReleasePipelinePromote,
+  requestFailed: boolean,
+): PipelineGateVariant {
+  if (requestFailed || display.liveSite === 'failed' || display.testSite === 'failed') {
+    return 'failed'
+  }
+  if (display.liveSite === 'active') return 'active'
+  if (display.liveSite === 'done') return 'done'
+  if (promote.buttonDisabled) return 'locked'
+  return 'ready'
 }
 
 function DeploymentStatus({state}: {state: DeploymentState}) {
