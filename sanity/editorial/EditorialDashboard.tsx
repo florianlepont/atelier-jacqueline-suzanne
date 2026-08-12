@@ -69,18 +69,10 @@ import type {
   DashboardDocument,
   DashboardRow,
   DashboardTone,
-  PublicationCategory,
   PublicationClient,
   PublicationControllerState,
 } from './dashboardLogic'
 import './EditorialDashboard.css'
-
-const publicationCategoryLabels: Record<PublicationCategory, string> = {
-  modified: 'Modifié',
-  new: 'Nouveau',
-  withdrawal: 'Sera retiré du site',
-  'new-hidden': 'Nouveau, gardé hors ligne',
-}
 
 export function EditorialDashboard() {
   const client = useClient({apiVersion: '2025-08-15'})
@@ -493,7 +485,6 @@ export function EditorialDashboard() {
   })
   const confirmationBatch = publicationState.batch ?? publicationSnapshot
   const publicationPanelHasBody =
-    publicationCard.pairs.length > 0 ||
     publicationCard.blockedRows.length > 0 ||
     (publicationState.phase === 'success' && Boolean(publishedAt)) ||
     publicationState.phase === 'tracking-error' ||
@@ -805,39 +796,6 @@ export function EditorialDashboard() {
 
                 {publicationPanelHasBody && (
                   <Box className="editorial-dashboard__publish-divider" />
-                )}
-
-                {publicationCard.pairs.length > 0 && (
-                  <Stack space={2}>
-                    {publicationCard.pairs.map((pair) => (
-                      <Flex
-                        key={pair.id}
-                        align="center"
-                        justify="space-between"
-                        gap={3}
-                        wrap="wrap"
-                      >
-                        <IntentLink
-                          intent="edit"
-                          params={{id: pair.id, type: pair.draft._type}}
-                          style={{color: 'inherit', textDecoration: 'none'}}
-                        >
-                          <Text size={1} weight="semibold">
-                            {pair.title}
-                          </Text>
-                        </IntentLink>
-                        <Badge
-                          tone={
-                            pair.category === 'withdrawal' || pair.category === 'new-hidden'
-                              ? 'caution'
-                              : 'primary'
-                          }
-                        >
-                          {publicationCategoryLabels[pair.category]}
-                        </Badge>
-                      </Flex>
-                    ))}
-                  </Stack>
                 )}
 
                 {publicationCard.blockedRows.length > 0 && (
