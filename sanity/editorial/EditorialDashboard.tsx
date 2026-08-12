@@ -52,10 +52,10 @@ import {
   formatActivityDate,
   formatRelativeDate,
   pluralize,
-  preflightForConfirmation,
   preparePublicationBatch,
   publicationCardState,
   publicationError,
+  publishAfterPreflight,
   PRODUCTION_RELEASE_MARKER_QUERY,
   PUBLIC_DOCUMENTS_QUERY,
   PUBLIC_DOCUMENTS_QUERY_PARAMS,
@@ -89,7 +89,6 @@ export function EditorialDashboard() {
   const [publicationState, setPublicationState] = useState<PublicationControllerState>({
     phase: 'idle',
   })
-  const [confirmationOpen, setConfirmationOpen] = useState(false)
   const [publishedAt, setPublishedAt] = useState<string>()
   const [productionRuns, setProductionRuns] = useState<DeploymentRun[]>([])
   const [productionDeploymentError, setProductionDeploymentError] = useState<unknown>()
@@ -489,32 +488,28 @@ export function EditorialDashboard() {
   const publicationCard = publicationCardState(publicationSnapshot, {
     busy: publicationBusy,
     trackingFailed: publicationTrackingFailed,
-    confirmationOpen,
   })
-  const confirmationBatch = publicationState.batch ?? publicationSnapshot
   const publicationPanelHasBody =
     publicationCard.blockedRows.length > 0 ||
     (publicationState.phase === 'success' && Boolean(publishedAt)) ||
     publicationState.phase === 'tracking-error' ||
-    publicationState.phase === 'error'
+    publicationState.phase === 'error' ||
+    (publicationState.phase === 'confirming' && Boolean(publicationState.error))
 
-  const requestPublication = async () => {
-    const batch = await preflightForConfirmation(publicationController)
-    if (batch) setConfirmationOpen(true)
-  }
-
-  const confirmPublication = async () => {
+  // The one-click contract: one gesture runs the content-quality gate and,
+  // only if it passes, publishes -- there is no confirmation step between
+  // the two anymore. This button publishes into Sanity and rebuilds the
+  // site de test only; the round gate button between the two pipeline
+  // nodes below is the step that actually makes anything public.
+  const runPublication = async () => {
     try {
-      const result = await publicationController.publish()
-      if (result.publishedAt) {
+      const result = await publishAfterPreflight(publicationController)
+      if (result?.publishedAt) {
         setPublishedAt((current) => latestValidTimestamp(current, result.publishedAt))
       }
-      setConfirmationOpen(false)
     } catch {
-      setConfirmationOpen(
-        publicationController.state.phase === 'confirming' &&
-          Boolean(publicationController.state.batch?.ready),
-      )
+      // The controller owns the user-facing error state (see
+      // refreshPublicationTracking() immediately below for the same pattern).
     }
   }
 
@@ -657,57 +652,24 @@ export function EditorialDashboard() {
                       </Text>
                     </Stack>
                   </Flex>
-                  {publicationCard.dialogOpen ? (
-                    <Card padding={3} radius={2} tone="caution" style={{flex: '1 1 320px'}}>
-                      <Stack space={3}>
-                        <Stack space={2}>
-                          <Text size={1} weight="semibold">
-                            Publier maintenant sur le site public ?
-                          </Text>
-                          <Text size={1}>
-                            {confirmationBatch.total}{' '}
-                            {pluralize(
-                              confirmationBatch.total,
-                              'contenu sera visible',
-                              'contenus seront visibles',
-                            )}{' '}
-                            par tout le monde.
-                          </Text>
-                        </Stack>
-                        {publicationState.phase === 'confirming' && publicationState.error && (
-                          <Card padding={3} radius={2} tone="critical">
-                            <Text size={1}>{publicationState.error}</Text>
-                          </Card>
-                        )}
-                        <Flex gap={2} justify="flex-end" wrap="wrap">
-                          <Button
-                            text="Annuler"
-                            mode="bleed"
-                            disabled={publicationBusy}
-                            onClick={() => setConfirmationOpen(false)}
-                            style={{minHeight: 44}}
-                          />
-                          <Button
-                            tone="primary"
-                            text={publicationState.phase === 'publishing' ? 'Publication…' : 'Confirmer'}
-                            loading={publicationBusy}
-                            disabled={publicationBusy}
-                            onClick={() => void confirmPublication()}
-                            style={{minHeight: 44}}
-                          />
-                        </Flex>
-                      </Stack>
-                    </Card>
-                  ) : (
-                    <Button
-                      tone="primary"
-                      text={publicationBusy ? 'Vérification…' : 'Mettre le site à jour'}
-                      disabled={publicationCard.buttonDisabled}
-                      loading={publicationBusy}
-                      onClick={() => void requestPublication()}
-                      style={{minHeight: 44}}
-                    />
-                  )}
+                  <Button
+                    tone="primary"
+                    // One button now spans both halves of the merged operation: the
+                    // gate (preflighting) and the publish/tracking phases that follow
+                    // it. The old label was only ever correct for the first half, when
+                    // a second click on a separate confirm button covered the second.
+                    text={
+                      publicationState.phase === 'preflighting'
+                        ? 'Vérification…'
+                        : publicationBusy
+                          ? 'Publication…'
+                          : 'Mettre le site à jour'
+                    }
+                    disabled={publicationCard.buttonDisabled}
+                    loading={publicationBusy}
+                    onClick={() => void runPublication()}
+                    style={{minHeight: 44}}
+                  />
                 </Flex>
 
                 <section aria-label="Progression de la publication">
@@ -869,6 +831,18 @@ export function EditorialDashboard() {
                   </Card>
                 )}
 
+                {publicationState.phase === 'confirming' && publicationState.error && (
+                  // Re-homes the message the deleted confirmation card used to be the
+                  // only renderer of. It comes from publish()'s fingerprint comparison
+                  // in dashboardLogic.ts, which refuses to publish a batch that changed
+                  // between the gate and the publish call. The message itself already
+                  // tells the editor to click « Mettre le site à jour » again, so this
+                  // card needs no button of its own.
+                  <Card padding={3} radius={2} tone="caution">
+                    <Text size={1}>{publicationState.error}</Text>
+                  </Card>
+                )}
+
                 {publicationState.phase === 'error' && (
                   <Card padding={3} radius={2} tone="critical">
                     <Flex align="center" justify="space-between" gap={3} wrap="wrap">
@@ -880,7 +854,7 @@ export function EditorialDashboard() {
                       </Stack>
                       <Button
                         text="Actualiser et réessayer"
-                        onClick={() => void requestPublication()}
+                        onClick={() => void runPublication()}
                         disabled={publicationBusy}
                       />
                     </Flex>
