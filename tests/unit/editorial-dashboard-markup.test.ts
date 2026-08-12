@@ -203,3 +203,35 @@ describe('editorial dashboard publish button is a single one-click gesture (no c
     ).toBe(true);
   });
 });
+
+// The pipeline visualisation rendered directly above the panel body already
+// reports, live and per-node, that content is published and that the site
+// update is now tracked separately -- the static success sentence was a
+// second, staler copy of the same status. Counting that phase as panel-body
+// content also drew a divider rule above nothing once the sentence was gone.
+// These assertions lock in the removal of both the sentence and its
+// divider-triggering clause.
+describe('editorial dashboard post-publish success state has no duplicated status line', () => {
+  const source = readFileSync(COMPONENT_PATH, 'utf-8');
+
+  it('never renders a success-phase Text block or gates the panel body on it', () => {
+    expect(
+      /publicationState\.phase === 'success'/.test(source),
+      'the success phase must have no renderer and no panel-body clause of its own because the pipeline nodes above already carry that state',
+    ).toBe(false);
+  });
+
+  it('keeps publicationPanelHasBody declared once and consumed once as the divider guard', () => {
+    expect(
+      (source.match(/publicationPanelHasBody/g) ?? []).length,
+      'the divider must stay conditional rather than being deleted or made unconditional',
+    ).toBe(2);
+  });
+
+  it('keeps the tracking-error card retry button intact', () => {
+    expect(
+      source.includes('Actualiser le suivi'),
+      "the tracking-error card's retry button is real actionable content and must survive this removal",
+    ).toBe(true);
+  });
+});

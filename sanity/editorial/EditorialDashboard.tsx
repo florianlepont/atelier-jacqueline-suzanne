@@ -491,7 +491,6 @@ export function EditorialDashboard() {
   })
   const publicationPanelHasBody =
     publicationCard.blockedRows.length > 0 ||
-    (publicationState.phase === 'success' && Boolean(publishedAt)) ||
     publicationState.phase === 'tracking-error' ||
     publicationState.phase === 'error' ||
     (publicationState.phase === 'confirming' && Boolean(publicationState.error))
@@ -804,13 +803,6 @@ export function EditorialDashboard() {
                       ))}
                     </Stack>
                   </Card>
-                )}
-
-                {publicationState.phase === 'success' && publishedAt && (
-                  <Text size={1} weight="semibold">
-                    Contenus publiés dans Sanity. La mise à jour du site est maintenant suivie
-                    séparément.
-                  </Text>
                 )}
 
                 {publicationState.phase === 'tracking-error' && (
