@@ -4,6 +4,7 @@ import {Badge, Box, Button, Card, Flex, Heading, Spinner, Stack, Text} from '@sa
 import {IntentButton, useClient, useHistoryStore, useUserStore} from 'sanity'
 import {IntentLink} from 'sanity/router'
 import {AddIcon} from '@sanity/icons/Add'
+import {AlertCircleIcon} from '@sanity/icons/AlertCircle'
 import {BookIcon} from '@sanity/icons/Book'
 import {CheckmarkCircleIcon} from '@sanity/icons/CheckmarkCircle'
 import {ChevronRightIcon} from '@sanity/icons/ChevronRight'
@@ -13,6 +14,7 @@ import {FolderIcon} from '@sanity/icons/Folder'
 import {ImagesIcon} from '@sanity/icons/Images'
 import {LaunchIcon} from '@sanity/icons/Launch'
 import {PublishIcon} from '@sanity/icons/Publish'
+import {SpinnerIcon} from '@sanity/icons/Spinner'
 import {
   deploymentSubtitle,
   deploymentState,
@@ -401,6 +403,253 @@ export function EditorialDashboard() {
     }
   }
 
+  // Helper function to render the compact publication status panel
+  const renderPublicationStatusPanel = () => {
+    const hasModifications = publicationCard.total > 0
+    const isDeploying = currentDeploymentState.kind === 'deploying' || publicationState.phase === 'publishing'
+    const isWaiting = currentDeploymentState.kind === 'waiting-run'
+    const hasError = 
+      currentDeploymentState.kind === 'failed' || 
+      publicationState.phase === 'error' || 
+      publicationState.phase === 'tracking-error'
+    const isCurrent = currentDeploymentState.kind === 'current' && !hasModifications
+    const isPendingContent = currentDeploymentState.kind === 'pending-content'
+    
+    // Date formatting for the last update
+    const lastUpdateDate = currentDeploymentState.run 
+      ? formatActivityDate(currentDeploymentState.run.updated_at) 
+      : publishedAt
+    
+    // Icon selection based on state
+    const getStatusIcon = () => {
+      if (hasError) return <AlertCircleIcon />
+      if (isDeploying || isWaiting) return <SpinnerIcon />
+      if (hasModifications || isPendingContent) return <PublishIcon />
+      return <CheckmarkCircleIcon />
+    }
+    
+    // Tone/color based on state
+    const getPanelTone = (): 'positive' | 'caution' | 'critical' | 'primary' => {
+      if (hasError) return 'critical'
+      if (isDeploying || isWaiting) return 'primary'
+      if (hasModifications || isPendingContent) return 'caution'
+      return 'positive'
+    }
+    
+    // Main label based on state
+    const getStatusLabel = () => {
+      if (hasError) return currentDeploymentState.label || 'Échec de la mise à jour'
+      if (isDeploying) return 'Déploiement en cours...'
+      if (isWaiting) return currentDeploymentState.label || 'Mise à jour en attente'
+      if (hasModifications) return `${publicationCard.total} ${pluralize(publicationCard.total, 'modification', 'modifications')} à publier`
+      if (isPendingContent) return currentDeploymentState.label || 'Modifications en attente'
+      return 'Site à jour'
+    }
+    
+    // Subtitle/details based on state
+    const getStatusDetail = () => {
+      if (hasError) return currentDeploymentState.detail
+      if (isDeploying) return 'GitHub reconstruit actuellement le site.'
+      if (isWaiting) return currentDeploymentState.detail
+      if (hasModifications) return 'Publiez pour mettre à jour le site en ligne.'
+      if (isPendingContent) return currentDeploymentState.detail
+      if (lastUpdateDate) return `Dernière publication : ${lastUpdateDate}`
+      return 'Tout est synchronisé.'
+    }
+    
+    // Action buttons based on state
+    const renderActions = () => {
+      if (hasError && currentDeploymentState.actionUrl) {
+        return (
+          <Button
+            as="a"
+            href={currentDeploymentState.actionUrl}
+            target="_blank"
+            rel="noreferrer"
+            tone="critical"
+            text={currentDeploymentState.actionLabel || 'Prévenir le mainteneur'}
+            iconRight={LaunchIcon}
+            style={{minHeight: 44}}
+          />
+        )
+      }
+      
+      if (isDeploying && currentDeploymentState.run) {
+        return (
+          <Button
+            as="a"
+            href={currentDeploymentState.run.html_url}
+            target="_blank"
+            rel="noreferrer"
+            tone="primary"
+            text="Voir le déploiement"
+            iconRight={LaunchIcon}
+            style={{minHeight: 44}}
+          />
+        )
+      }
+      
+      if (isWaiting && currentDeploymentState.actionUrl) {
+        return (
+          <Button
+            as="a"
+            href={currentDeploymentState.actionUrl}
+            target="_blank"
+            rel="noreferrer"
+            tone="primary"
+            text={currentDeploymentState.actionLabel || 'Voir les mises à jour'}
+            iconRight={LaunchIcon}
+            style={{minHeight: 44}}
+          />
+        )
+      }
+      
+      if (hasModifications) {
+        return (
+          <Flex gap={2} wrap="wrap">
+            <Button
+              as="a"
+              href={SITE_PREVIEW_URL}
+              target="_blank"
+              rel="noreferrer"
+              mode="ghost"
+              text="Tester sur préprod"
+              iconRight={LaunchIcon}
+              style={{minHeight: 44}}
+            />
+            <Button
+              tone="primary"
+              text="Publier"
+              loading={publicationBusy}
+              disabled={publicationCard.buttonDisabled}
+              onClick={() => void requestPublication()}
+              style={{minHeight: 44}}
+            />
+          </Flex>
+        )
+      }
+      
+      // Default: everything is up to date
+      return (
+        <Button
+          as="a"
+          href={SITE_PREVIEW_URL}
+          target="_blank"
+          rel="noreferrer"
+          mode="ghost"
+          text="Ouvrir le site"
+          iconRight={LaunchIcon}
+          style={{minHeight: 44}}
+        />
+      )
+    }
+    
+    const tone = getPanelTone()
+    
+    return (
+      <Card
+        radius={3}
+        tone="transparent"
+        shadow={1}
+        padding={4}
+        className="editorial-dashboard__publish-panel"
+        style={{
+          borderLeft: `3px solid var(--dashboard-publish-accent, #556bfc)`,
+        }}
+      >
+        <Flex align="center" gap={3} justify="space-between" wrap="wrap">
+          <Flex align="center" gap={3} style={{flex: '1 1 300px', minWidth: 0}}>
+            <Box
+              aria-hidden="true"
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 10,
+                flex: '0 0 auto',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: tone === 'positive' 
+                  ? 'rgba(16, 185, 129, 0.12)' 
+                  : tone === 'caution' 
+                    ? 'rgba(245, 158, 11, 0.14)'
+                    : tone === 'critical'
+                      ? 'rgba(239, 68, 68, 0.13)'
+                      : 'rgba(85, 107, 252, 0.11)',
+                color: tone === 'positive' 
+                  ? '#10b981' 
+                  : tone === 'caution' 
+                    ? '#d97706'
+                    : tone === 'critical'
+                      ? '#dc2626'
+                      : '#556bfc',
+              }}
+            >
+              <Box style={{fontSize: 20, display: 'flex'}}>
+                {getStatusIcon()}
+              </Box>
+            </Box>
+            <Stack space={1} style={{minWidth: 0}}>
+              <Text size={1} weight="semibold" style={{fontSize: 14}}>
+                {getStatusLabel()}
+              </Text>
+              <Text size={1} muted style={{fontSize: 13}}>
+                {getStatusDetail()}
+              </Text>
+            </Stack>
+          </Flex>
+          <Box style={{flex: '0 0 auto'}}>
+            {renderActions()}
+          </Box>
+        </Flex>
+        
+        {/* Keep the confirmation dialog for publication */}
+        {publicationCard.dialogOpen && (
+          <Card padding={3} radius={2} tone="caution" style={{marginTop: 3, flex: '1 1 320px'}}>
+            <Stack space={3}>
+              <Stack space={2}>
+                <Text size={1} weight="semibold">
+                  Publier maintenant sur le site public ?
+                </Text>
+                <Text size={1}>
+                  {confirmationBatch.total}{' '}
+                  {pluralize(
+                    confirmationBatch.total,
+                    'contenu sera visible',
+                    'contenus seront visibles',
+                  )}{' '}
+                  par tout le monde.
+                </Text>
+              </Stack>
+              {publicationState.phase === 'confirming' && publicationState.error && (
+                <Card padding={3} radius={2} tone="critical">
+                  <Text size={1}>{publicationState.error}</Text>
+                </Card>
+              )}
+              <Flex gap={2} justify="flex-end" wrap="wrap">
+                <Button
+                  text="Annuler"
+                  mode="bleed"
+                  disabled={publicationBusy}
+                  onClick={() => setConfirmationOpen(false)}
+                  style={{minHeight: 44}}
+                />
+                <Button
+                  tone="primary"
+                  text={publicationState.phase === 'publishing' ? 'Publication…' : 'Confirmer'}
+                  loading={publicationBusy}
+                  disabled={publicationBusy}
+                  onClick={() => void confirmPublication()}
+                  style={{minHeight: 44}}
+                />
+              </Flex>
+            </Stack>
+          </Card>
+        )}
+      </Card>
+    )
+  }
+
   return (
     <div className="editorial-dashboard__page">
       <Box padding={[3, 4, 5]} style={{maxWidth: 1080, margin: '0 auto'}}>
@@ -426,7 +675,6 @@ export function EditorialDashboard() {
               wrap="wrap"
               className="editorial-dashboard__actions editorial-dashboard__header-side"
             >
-              <DeploymentStatus state={currentDeploymentState} />
               <Button
                 className="editorial-dashboard__header-control editorial-dashboard__header-link"
                 style={{height: 44}}
@@ -493,196 +741,7 @@ export function EditorialDashboard() {
             </Card>
           )}
 
-          {!loading && !error && (
-            <Card
-              radius={3}
-              tone="transparent"
-              shadow={1}
-              padding={[4, 4, 5]}
-              className="editorial-dashboard__publish-panel"
-            >
-              <Stack space={4}>
-                <Flex align="flex-start" justify="space-between" gap={4} wrap="wrap">
-                  <Flex align="center" gap={3} style={{minWidth: 0, flex: '1 1 360px'}}>
-                    <TintChip
-                      icon={PublishIcon}
-                      size={44}
-                      radius={12}
-                      iconSize={24}
-                      tint={metricAccentStyles.primary}
-                    />
-                    <Stack space={2}>
-                      <Heading as="h2" size={2}>
-                        Mettre le site à jour
-                      </Heading>
-                      <Text size={1} muted>
-                        {publicationCard.total === 0
-                          ? 'Aucune modification publique en attente.'
-                          : `${publicationCard.total} ${pluralize(
-                              publicationCard.total,
-                              'contenu modifié',
-                              'contenus modifiés',
-                            )} depuis la dernière mise en ligne.`}
-                      </Text>
-                    </Stack>
-                  </Flex>
-                  {publicationCard.dialogOpen ? (
-                    <Card padding={3} radius={2} tone="caution" style={{flex: '1 1 320px'}}>
-                      <Stack space={3}>
-                        <Stack space={2}>
-                          <Text size={1} weight="semibold">
-                            Publier maintenant sur le site public ?
-                          </Text>
-                          <Text size={1}>
-                            {confirmationBatch.total}{' '}
-                            {pluralize(
-                              confirmationBatch.total,
-                              'contenu sera visible',
-                              'contenus seront visibles',
-                            )}{' '}
-                            par tout le monde.
-                          </Text>
-                        </Stack>
-                        {publicationState.phase === 'confirming' && publicationState.error && (
-                          <Card padding={3} radius={2} tone="critical">
-                            <Text size={1}>{publicationState.error}</Text>
-                          </Card>
-                        )}
-                        <Flex gap={2} justify="flex-end" wrap="wrap">
-                          <Button
-                            text="Annuler"
-                            mode="bleed"
-                            disabled={publicationBusy}
-                            onClick={() => setConfirmationOpen(false)}
-                            style={{minHeight: 44}}
-                          />
-                          <Button
-                            tone="primary"
-                            text={publicationState.phase === 'publishing' ? 'Publication…' : 'Confirmer'}
-                            loading={publicationBusy}
-                            disabled={publicationBusy}
-                            onClick={() => void confirmPublication()}
-                            style={{minHeight: 44}}
-                          />
-                        </Flex>
-                      </Stack>
-                    </Card>
-                  ) : (
-                    <Button
-                      tone="primary"
-                      text={publicationBusy ? 'Vérification…' : 'Mettre le site à jour'}
-                      disabled={publicationCard.buttonDisabled}
-                      loading={publicationBusy}
-                      onClick={() => void requestPublication()}
-                      style={{minHeight: 44}}
-                    />
-                  )}
-                </Flex>
-
-                {publicationPanelHasBody && (
-                  <Box className="editorial-dashboard__publish-divider" />
-                )}
-
-                {publicationCard.pairs.length > 0 && (
-                  <Stack space={2}>
-                    {publicationCard.pairs.map((pair) => (
-                      <Flex
-                        key={pair.id}
-                        align="center"
-                        justify="space-between"
-                        gap={3}
-                        wrap="wrap"
-                      >
-                        <IntentLink
-                          intent="edit"
-                          params={{id: pair.id, type: pair.draft._type}}
-                          style={{color: 'inherit', textDecoration: 'none'}}
-                        >
-                          <Text size={1} weight="semibold">
-                            {pair.title}
-                          </Text>
-                        </IntentLink>
-                        <Badge
-                          tone={
-                            pair.category === 'withdrawal' || pair.category === 'new-hidden'
-                              ? 'caution'
-                              : 'primary'
-                          }
-                        >
-                          {publicationCategoryLabels[pair.category]}
-                        </Badge>
-                      </Flex>
-                    ))}
-                  </Stack>
-                )}
-
-                {publicationCard.blockedRows.length > 0 && (
-                  <Card padding={3} radius={2} tone="critical">
-                    <Stack space={3}>
-                      <Text size={1} weight="semibold">
-                        Le lot entier est bloqué par des informations indispensables.
-                      </Text>
-                      {publicationCard.blockedRows.map((blocked) => (
-                        <IntentLink
-                          key={blocked.id}
-                          intent="edit"
-                          params={{id: blocked.id, type: blocked.type}}
-                          style={{color: 'inherit'}}
-                        >
-                          <Text size={1}>
-                            {blocked.title} — {blocked.reasons.join(' · ')}
-                          </Text>
-                        </IntentLink>
-                      ))}
-                    </Stack>
-                  </Card>
-                )}
-
-                {publicationState.phase === 'success' && publishedAt && (
-                  <Text size={1} weight="semibold">
-                    Contenus publiés dans Sanity. La mise à jour du site est maintenant suivie
-                    séparément.
-                  </Text>
-                )}
-
-                {publicationState.phase === 'tracking-error' && (
-                  <Card padding={3} radius={2} tone="caution">
-                    <Flex align="center" justify="space-between" gap={3} wrap="wrap">
-                      <Stack space={2} style={{minWidth: 0}}>
-                        <Text size={1} weight="semibold">
-                          Contenus publiés dans Sanity; fraîcheur du site non vérifiable.
-                        </Text>
-                        <Text size={1}>{publicationState.error}</Text>
-                      </Stack>
-                      <Button
-                        text="Actualiser le suivi"
-                        onClick={() => void refreshPublicationTracking()}
-                        disabled={publicationBusy}
-                      />
-                    </Flex>
-                  </Card>
-                )}
-
-                {publicationState.phase === 'error' && (
-                  <Card padding={3} radius={2} tone="critical">
-                    <Flex align="center" justify="space-between" gap={3} wrap="wrap">
-                      <Stack space={2} style={{minWidth: 0}}>
-                        <Text size={1} weight="semibold">
-                          La mise en ligne n’a pas abouti. Aucun succès partiel n’est annoncé.
-                        </Text>
-                        <Text size={1}>{publicationState.error}</Text>
-                      </Stack>
-                      <Button
-                        text="Actualiser et réessayer"
-                        onClick={() => void requestPublication()}
-                        disabled={publicationBusy}
-                      />
-                    </Flex>
-                  </Card>
-                )}
-              </Stack>
-            </Card>
-          )}
+          {!loading && !error && renderPublicationStatusPanel()}
 
           {!loading && !error && blockingRows.length > 0 && (
             <Card radius={3} tone="critical" shadow={1} padding={3}>
