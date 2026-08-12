@@ -36,6 +36,8 @@ import type {
   ReleasePipelineDisplaySegments,
   ReleasePipelinePromote,
 } from './deployment'
+import {gateClickAction, nextPreviewedFlag, productionPublishDisabled} from './releaseGate'
+import type {PipelineGateVariant} from './releaseGate'
 import {getDocumentChecks, summarizeChecks} from './checks'
 import {
   attentionPriority,
@@ -95,6 +97,7 @@ export function EditorialDashboard() {
   const [productionReleaseAt, setProductionReleaseAt] = useState<string>('')
   const [releaseBusy, setReleaseBusy] = useState(false)
   const [releaseError, setReleaseError] = useState<string>()
+  const [hasPreviewedStaging, setHasPreviewedStaging] = useState(false)
   const hasDataRef = useRef(false)
   // A client replacement is a lifecycle boundary: the old client's pending
   // inventory responses must never update the new client's dashboard.
@@ -430,6 +433,17 @@ export function EditorialDashboard() {
   const displaySegments = pipelineDisplaySegments(pipeline.segments)
   const pipelineDetail = pipelineNodeDetail(displaySegments)
   const gateVariant = pipelineGateVariant(displaySegments, pipeline.promote, Boolean(releaseError))
+  const gateAction = gateClickAction(gateVariant)
+  const gateLabel = gateAction === 'preview' ? 'Ouvrir le site de test' : pipeline.promote.buttonLabel
+
+  // A preview approves one batch, and any state the pipeline moves into
+  // other than `ready` means the batch changed, so carrying the flag
+  // forward would let an old approval unlock content nobody reviewed. This
+  // effect is the only place that sees every transition, which is why the
+  // reset lives here rather than inside a click handler.
+  useEffect(() => {
+    setHasPreviewedStaging((current) => nextPreviewedFlag(gateVariant, current))
+  }, [gateVariant])
   // The not-started branch of resolvePromoteRow() deliberately returns no
   // copy, but the pipeline-detail box below carries its own padding and
   // background colour -- an unconditionally-rendered box would paint a
@@ -450,6 +464,21 @@ export function EditorialDashboard() {
       setReleaseError(publicationError(reason))
     } finally {
       setReleaseBusy(false)
+    }
+  }
+
+  // The round gate control's own click is now preview-only: it opens the
+  // site de test and records the approval, and never reaches the release
+  // trigger directly. The `failed` variant's retry is the sole exception,
+  // routed through the same shared rule rather than re-derived here.
+  const handleGateClick = () => {
+    if (gateAction === 'preview') {
+      window.open(SITE_PREVIEW_URL, '_blank', 'noopener')
+      setHasPreviewedStaging(true)
+      return
+    }
+    if (gateAction === 'release') {
+      void triggerProductionReleaseClick()
     }
   }
 
@@ -709,9 +738,9 @@ export function EditorialDashboard() {
                           type="button"
                           className={`editorial-dashboard__pipeline-gate editorial-dashboard__pipeline-gate--${gateVariant}`}
                           disabled={pipeline.promote.buttonDisabled}
-                          title={pipeline.promote.buttonLabel}
-                          aria-label={pipeline.promote.buttonLabel}
-                          onClick={() => void triggerProductionReleaseClick()}
+                          title={gateLabel}
+                          aria-label={gateLabel}
+                          onClick={handleGateClick}
                         >
                           {gateVariant === 'locked' && <LockIcon />}
                           {gateVariant === 'ready' && <PlayIcon />}
@@ -772,6 +801,21 @@ export function EditorialDashboard() {
                             >
                               {pipeline.promote.actionLabel}
                             </a>
+                          </Flex>
+                        )}
+                        {gateVariant === 'ready' && (
+                          <Flex justify="center">
+                            <Button
+                              tone="primary"
+                              text="Publier sur le site en ligne"
+                              disabled={productionPublishDisabled({
+                                promoteButtonDisabled: pipeline.promote.buttonDisabled,
+                                hasPreviewedStaging,
+                              })}
+                              loading={releaseBusy}
+                              onClick={() => void triggerProductionReleaseClick()}
+                              style={{minHeight: 44}}
+                            />
                           </Flex>
                         )}
                       </Stack>
@@ -1258,8 +1302,6 @@ function pipelineNodeDetail(display: ReleasePipelineDisplaySegments): {
 
   return {node1, node2}
 }
-
-type PipelineGateVariant = 'locked' | 'ready' | 'active' | 'done' | 'failed'
 
 // Order matters and encodes the two behaviours confirmed twice in review:
 // the running check sits above the disabled check, so a running production
