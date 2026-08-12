@@ -1,0 +1,467 @@
+<meta charset="utf-8">
+<title>Sketch 017 — Dashboard Deploy Pipeline</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --studio-bg: #131521;
+    --studio-page-bg: #16182a;
+    --studio-card-bg: #1c1f30;
+    --studio-card-bg-2: #21243a;
+    --studio-border: rgba(255,255,255,0.09);
+    --studio-fg: #f1f3f6;
+    --studio-muted: #878ea3;
+    --studio-accent: #556bfc;
+    --studio-accent-bg: rgba(85,107,252,0.14);
+    --studio-positive: #10b981;
+    --studio-positive-bg: rgba(16,185,129,0.14);
+    --studio-caution: #d97706;
+    --studio-caution-bg: rgba(245,158,11,0.14);
+    --studio-critical: #ef4444;
+    --studio-critical-bg: rgba(239,68,68,0.14);
+    --studio-neutral-bg: rgba(255,255,255,0.06);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--studio-page-bg);
+    color: var(--studio-fg);
+    font-family: -apple-system, "Inter", system-ui, sans-serif;
+    padding-top: 54px;
+  }
+  #variant-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9998;
+    background: var(--studio-bg); border-bottom: 1px solid var(--studio-border);
+    padding: 10px 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  }
+  .variant-tab {
+    background: transparent; border: 1px solid transparent; color: var(--studio-muted);
+    font-size: 13px; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-family: inherit;
+  }
+  .variant-tab.active { background: var(--studio-card-bg-2); color: var(--studio-fg); border-color: var(--studio-border); }
+  .variant-tab:hover:not(.active) { color: var(--studio-fg); }
+  .nav-sep { width: 1px; height: 20px; background: var(--studio-border); margin: 0 4px; }
+  .state-btn {
+    background: transparent; border: 1px solid var(--studio-border); color: var(--studio-muted);
+    font-size: 12px; padding: 6px 10px; border-radius: 5px; cursor: pointer; font-family: inherit;
+  }
+  .state-btn.active { background: var(--studio-accent-bg); color: var(--studio-accent); border-color: var(--studio-accent); }
+
+  .variant { display: none; }
+  .variant.active { display: block; }
+
+  .stage { max-width: 760px; margin: 40px auto; padding: 0 20px; }
+  .panel {
+    background: var(--studio-card-bg);
+    border: 1px solid var(--studio-border);
+    border-left: 3px solid var(--studio-accent);
+    border-radius: 6px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.04), 0 12px 28px -20px rgba(0,0,0,0.5);
+    padding: 24px 28px 28px;
+  }
+  .panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .panel-head-left { display: flex; align-items: center; gap: 14px; }
+  .icon-chip {
+    width: 44px; height: 44px; border-radius: 12px; flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--studio-accent-bg); color: var(--studio-accent); font-size: 20px;
+  }
+  .panel-title { font-size: 17px; font-weight: 600; margin: 0 0 4px 0; }
+  .panel-sub { font-size: 13px; color: var(--studio-muted); margin: 0; }
+  .btn {
+    border: none; border-radius: 5px; font-family: inherit; font-size: 13px; font-weight: 600;
+    padding: 0 18px; height: 40px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .btn-primary { background: var(--studio-accent); color: white; }
+  .btn-primary:disabled { background: rgba(85,107,252,0.35); color: rgba(255,255,255,0.55); cursor: not-allowed; }
+  .btn-primary:not(:disabled):hover { transform: translateY(-1px); box-shadow: 0 6px 16px -6px rgba(85,107,252,0.6); }
+  .divider { height: 1px; background: var(--studio-border); margin: 20px 0; }
+
+  .spinner {
+    width: 13px; height: 13px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.25); border-top-color: currentColor;
+    animation: spin 0.8s linear infinite; display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .note { font-size: 12px; color: var(--studio-muted); text-align: center; margin-top: 28px; max-width: 620px; margin-left: auto; margin-right: auto; }
+
+  /* ==================== VARIANT A — filling connector ==================== */
+  .pipe-a { display: flex; align-items: center; margin-top: 28px; padding: 0 8px; }
+  .node-a { display: flex; flex-direction: column; align-items: center; text-align: center; width: 160px; flex: 0 0 auto; }
+  .circle-a {
+    width: 56px; height: 56px; border-radius: 50%; flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+    background: var(--studio-card-bg-2); border: 2px solid var(--studio-border); color: var(--studio-muted);
+    transition: all 0.4s ease; position: relative;
+  }
+  .circle-a.done { background: var(--studio-positive-bg); border-color: var(--studio-positive); color: var(--studio-positive); }
+  .circle-a.active { background: var(--studio-accent-bg); border-color: var(--studio-accent); color: var(--studio-accent); }
+  .circle-a.failed { background: var(--studio-critical-bg); border-color: var(--studio-critical); color: var(--studio-critical); }
+  .circle-a.active::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid var(--studio-accent);
+    opacity: 0.5; animation: ring-a 1.4s ease-out infinite;
+  }
+  @keyframes ring-a { 0% { transform: scale(0.85); opacity: 0.6; } 100% { transform: scale(1.25); opacity: 0; } }
+  .node-a-label { font-size: 13px; font-weight: 700; margin-top: 10px; }
+  .node-a-detail { font-size: 11px; color: var(--studio-muted); margin-top: 2px; }
+  .track-a { flex: 1 1 auto; height: 6px; border-radius: 4px; background: var(--studio-neutral-bg); margin: 0 -4px; position: relative; overflow: hidden; top: -22px; }
+  .track-a-fill { position: absolute; inset: 0; width: 0%; background: var(--studio-positive); border-radius: 4px; transition: width 0.7s cubic-bezier(.4,0,.2,1); }
+  .track-a-fill.active { background: linear-gradient(90deg, var(--studio-accent), #7c8cfd, var(--studio-accent)); background-size: 200% 100%; animation: flow-a 1.2s linear infinite; }
+  .track-a-fill.failed { background: var(--studio-critical); }
+  @keyframes flow-a { 0% { background-position: 0% 0; } 100% { background-position: -200% 0; } }
+
+  .gate-a { margin-top: 24px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 18px; border-radius: 8px; background: var(--studio-card-bg-2); transition: opacity 0.3s; }
+  .gate-a.locked { opacity: 0.45; }
+  .gate-a-title { font-size: 13px; font-weight: 600; }
+  .gate-a-detail { font-size: 12px; color: var(--studio-muted); margin-top: 2px; }
+
+  /* ==================== VARIANT B — manual approval gate on the line ==================== */
+  .pipe-b { display: flex; align-items: flex-start; margin-top: 18px; padding: 0 2px; }
+  .node-b { display: flex; flex-direction: column; align-items: center; text-align: center; width: 96px; flex: 0 0 auto; }
+  .circle-b {
+    width: 36px; height: 36px; border-radius: 50%; flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    background: var(--studio-card-bg-2); border: 2px solid var(--studio-border); color: var(--studio-muted);
+    transition: all 0.3s ease;
+  }
+  .circle-b.done { background: var(--studio-positive-bg); border-color: var(--studio-positive); color: var(--studio-positive); }
+  .circle-b.active { background: var(--studio-accent-bg); border-color: var(--studio-accent); color: var(--studio-accent); }
+  .circle-b.failed { background: var(--studio-critical-bg); border-color: var(--studio-critical); color: var(--studio-critical); }
+  .node-b-label { font-size: 11px; font-weight: 700; margin-top: 6px; }
+  .node-b-detail { font-size: 10px; color: var(--studio-muted); margin-top: 1px; }
+
+  .connector-b { flex: 1 1 auto; display: flex; align-items: center; height: 36px; }
+  .link-b { flex: 1 1 auto; height: 3px; background: var(--studio-neutral-bg); border-radius: 2px; transition: background 0.3s ease; }
+  .link-b.done { background: var(--studio-positive); }
+  .gate-b {
+    flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer;
+    background: var(--studio-card-bg); border: 2px solid var(--studio-border); color: var(--studio-muted);
+    margin: 0 5px; transition: all 0.3s ease;
+  }
+  .gate-b.ready { background: var(--studio-accent); border-color: var(--studio-accent); color: white; cursor: pointer; animation: gate-pulse-b 1.6s ease-in-out infinite; }
+  .gate-b.active { background: var(--studio-accent-bg); border-color: var(--studio-accent); color: var(--studio-accent); cursor: default; }
+  .gate-b.done { background: var(--studio-positive); border-color: var(--studio-positive); color: white; cursor: default; }
+  .gate-b.locked { cursor: not-allowed; }
+  .gate-b.failed { background: var(--studio-critical); border-color: var(--studio-critical); color: white; cursor: pointer; }
+  @keyframes gate-pulse-b { 0%,100% { box-shadow: 0 0 0 0 rgba(85,107,252,0.55); } 50% { box-shadow: 0 0 0 7px rgba(85,107,252,0); } }
+  .b-row-detail { margin-top: 16px; padding: 11px 14px; border-radius: 8px; background: var(--studio-card-bg-2); font-size: 12px; color: var(--studio-muted); text-align: center; }
+
+  /* ==================== VARIANT C — vertical animated timeline ==================== */
+  .pipe-c { margin-top: 24px; position: relative; padding-left: 30px; }
+  .pipe-c-line { position: absolute; left: 15px; top: 8px; bottom: 8px; width: 3px; background: var(--studio-neutral-bg); border-radius: 2px; overflow: hidden; }
+  .pipe-c-line-fill { position: absolute; top: 0; left: 0; right: 0; height: 0%; background: var(--studio-positive); transition: height 0.8s cubic-bezier(.4,0,.2,1); }
+  .pipe-c-line-fill.active { background: linear-gradient(180deg, var(--studio-accent), #7c8cfd, var(--studio-accent)); background-size: 100% 200%; animation: flow-c 1.2s linear infinite; }
+  @keyframes flow-c { 0% { background-position: 0 0%; } 100% { background-position: 0 -200%; } }
+  .row-c { display: flex; align-items: flex-start; gap: 16px; padding: 14px 0; position: relative; }
+  .dot-c {
+    position: absolute; left: -30px; top: 14px; width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;
+    background: var(--studio-card-bg-2); border: 2px solid var(--studio-border); color: var(--studio-muted); z-index: 1;
+    transition: all 0.4s ease;
+  }
+  .dot-c.done { background: var(--studio-positive-bg); border-color: var(--studio-positive); color: var(--studio-positive); }
+  .dot-c.active { background: var(--studio-accent-bg); border-color: var(--studio-accent); color: var(--studio-accent); }
+  .dot-c.failed { background: var(--studio-critical-bg); border-color: var(--studio-critical); color: var(--studio-critical); }
+  .card-c { flex: 1; background: var(--studio-card-bg-2); border-radius: 8px; padding: 12px 16px; }
+  .card-c-title { font-size: 13px; font-weight: 700; }
+  .card-c-detail { font-size: 12px; color: var(--studio-muted); margin-top: 2px; }
+  .card-c-action { margin-top: 10px; }
+</style>
+
+<div id="variant-nav">
+  <button class="variant-tab active" onclick="showVariant('a')">A — Ligne qui se remplit</button>
+  <button class="variant-tab" onclick="showVariant('b')">B — Porte d'approbation (CI/CD) ★ Retenu</button>
+  <button class="variant-tab" onclick="showVariant('c')">C — Timeline verticale animée</button>
+  <div class="nav-sep"></div>
+  <button class="state-btn" onclick="setState('never-published', event)">0. Jamais publié</button>
+  <button class="state-btn active" onclick="setState('staging-progress', event)">1. Site de test en cours</button>
+  <button class="state-btn" onclick="setState('ready-for-prod', event)">2. Prêt à publier</button>
+  <button class="state-btn" onclick="setState('prod-progress', event)">3. Publication en cours</button>
+  <button class="state-btn" onclick="setState('all-done', event)">4. Tout à jour</button>
+  <button class="state-btn" onclick="setState('staging-failed', event)">⚠ Échec site de test</button>
+  <button class="state-btn" onclick="setState('production-failed', event)">⚠ Échec publication</button>
+</div>
+
+<!-- ============ VARIANT A — filling connector ============ -->
+<div id="variant-a" class="variant active">
+  <div class="stage">
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-head-left">
+          <div class="icon-chip">↑</div>
+          <div>
+            <p class="panel-title">Mettre le site à jour</p>
+            <p class="panel-sub" id="a-sub">Aucune modification publique en attente.</p>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="a-main-btn">Mettre le site à jour</button>
+      </div>
+      <div class="pipe-a">
+        <div class="node-a">
+          <div class="circle-a" id="a-circle-1">↑</div>
+          <div class="node-a-label">Contenu + site de test</div>
+          <div class="node-a-detail" id="a-detail-1">—</div>
+        </div>
+        <div class="track-a"><div class="track-a-fill" id="a-fill"></div></div>
+        <div class="node-a">
+          <div class="circle-a" id="a-circle-2">🌐</div>
+          <div class="node-a-label">Site en ligne</div>
+          <div class="node-a-detail" id="a-detail-2">—</div>
+        </div>
+      </div>
+      <div class="gate-a locked" id="a-gate">
+        <div>
+          <div class="gate-a-title" id="a-gate-title">En attente du site de test…</div>
+          <div class="gate-a-detail" id="a-gate-detail">L'étape 2 sera disponible une fois le site de test à jour.</div>
+        </div>
+        <button class="btn btn-primary" id="a-gate-btn" disabled>Publier sur le site en ligne</button>
+      </div>
+    </div>
+    <p class="note">Variante A — la ligne entre les deux étapes se remplit de gauche à droite comme une vraie barre de progression de pipeline ; en cours, elle affiche un dégradé animé qui défile. Les cercles s'agrandissent et pulsent quand l'étape est active.</p>
+  </div>
+</div>
+
+<!-- ============ VARIANT B — manual approval gate ============ -->
+<div id="variant-b" class="variant">
+  <div class="stage">
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-head-left">
+          <div class="icon-chip">↑</div>
+          <div>
+            <p class="panel-title">Mettre le site à jour</p>
+            <p class="panel-sub" id="b-sub">Aucune modification publique en attente.</p>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="b-main-btn">Mettre le site à jour</button>
+      </div>
+      <div class="pipe-b">
+        <div class="node-b">
+          <div class="circle-b" id="b-circle-1">↑</div>
+          <div class="node-b-label">Contenu + site de test</div>
+          <div class="node-b-detail" id="b-detail-1">—</div>
+        </div>
+        <div class="connector-b">
+          <div class="link-b" id="b-link-1"></div>
+          <div class="gate-b locked" id="b-gate" title="Publier sur le site en ligne">🔒</div>
+          <div class="link-b" id="b-link-2"></div>
+        </div>
+        <div class="node-b">
+          <div class="circle-b" id="b-circle-2">🌐</div>
+          <div class="node-b-label">Site en ligne</div>
+          <div class="node-b-detail" id="b-detail-2">—</div>
+        </div>
+      </div>
+      <div class="b-row-detail" id="b-row-detail">La porte s'ouvre une fois le site de test confirmé à jour — clique-la pour publier.</div>
+    </div>
+    <p class="note">Variante B — reprend le motif exact des "portes d'approbation manuelle" des pipelines CI/CD (GitHub Actions, GitLab) : un bouton rond posé directement sur la ligne de connexion entre les deux étapes, qui se débloque et pulse quand il devient cliquable.</p>
+  </div>
+</div>
+
+<!-- ============ VARIANT C — vertical animated timeline ============ -->
+<div id="variant-c" class="variant">
+  <div class="stage">
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-head-left">
+          <div class="icon-chip">↑</div>
+          <div>
+            <p class="panel-title">Mettre le site à jour</p>
+            <p class="panel-sub" id="c-sub">Aucune modification publique en attente.</p>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="c-main-btn">Mettre le site à jour</button>
+      </div>
+      <div class="pipe-c">
+        <div class="pipe-c-line"><div class="pipe-c-line-fill" id="c-line-fill"></div></div>
+        <div class="row-c">
+          <div class="dot-c" id="c-dot-1">↑</div>
+          <div class="card-c">
+            <div class="card-c-title">Contenu + site de test</div>
+            <div class="card-c-detail" id="c-detail-1">—</div>
+          </div>
+        </div>
+        <div class="row-c">
+          <div class="dot-c" id="c-dot-2">🌐</div>
+          <div class="card-c">
+            <div class="card-c-title">Site en ligne</div>
+            <div class="card-c-detail" id="c-detail-2">—</div>
+            <div class="card-c-action" id="c-action" style="display:none;">
+              <button class="btn btn-primary" id="c-action-btn">Publier sur le site en ligne</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="note">Variante C — timeline verticale façon historique de déploiement (Vercel/Netlify), avec un trait qui se remplit de haut en bas et un dégradé animé pendant l'exécution. Chaque étape a sa propre carte de détail ; le bouton de publication apparaît dans la carte "Site en ligne" une fois débloqué.</p>
+  </div>
+</div>
+
+<script>
+function showVariant(id) {
+  document.querySelectorAll('.variant').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.variant-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('variant-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+const STATES = {
+  'never-published': {
+    sub: 'Modifications en attente. Rien n’a encore été mis en ligne.',
+    mainBtnText: 'Mettre le site à jour', mainBtnDisabled: false,
+    step1: 'pending', step2: 'pending',
+    detail1: 'Aucune publication effectuée pour le moment', detail2: 'Aucune publication effectuée pour le moment',
+    fill: 0, fillActive: false,
+    gateState: 'locked', gateTitle: 'En attente de la première publication…', gateDetail: 'Le site de test doit être mis à jour au moins une fois avant de pouvoir publier.'
+  },
+  'staging-progress': {
+    sub: '1 contenu modifié depuis la dernière mise en ligne.',
+    mainBtnText: 'Vérification…', mainBtnDisabled: true,
+    step1: 'active', step2: 'pending',
+    detail1: 'GitHub reconstruit le site de test…', detail2: 'En attente du site de test',
+    fill: 30, fillActive: true,
+    gateState: 'locked', gateTitle: 'En attente du site de test…', gateDetail: 'La publication sera disponible une fois le site de test à jour.'
+  },
+  'ready-for-prod': {
+    sub: 'Contenus publiés. Le site de test est à jour.',
+    mainBtnText: 'Mettre le site à jour', mainBtnDisabled: false,
+    step1: 'done', step2: 'pending',
+    detail1: 'Site de test à jour · il y a 1 min', detail2: 'Prêt à publier',
+    fill: 100, fillActive: false,
+    gateState: 'ready', gateTitle: 'Site de test à jour — prêt à publier ?', gateDetail: 'Ouvrez le site de test pour vérifier avant de publier.'
+  },
+  'prod-progress': {
+    sub: 'Contenus publiés. Le site de test est à jour.',
+    mainBtnText: 'Mettre le site à jour', mainBtnDisabled: false,
+    step1: 'done', step2: 'active',
+    detail1: 'Site de test à jour · il y a 4 min', detail2: 'Publication en cours…',
+    fill: 100, fillActive: false, gateFillActive: true,
+    gateState: 'active', gateTitle: 'Publication sur le site en ligne en cours…', gateDetail: 'GitHub construit et envoie le site vers son hébergement définitif.'
+  },
+  'all-done': {
+    sub: 'Aucune modification publique en attente.',
+    mainBtnText: 'Mettre le site à jour', mainBtnDisabled: true,
+    step1: 'done', step2: 'done',
+    detail1: 'Site de test à jour · il y a 7 min', detail2: 'Site en ligne à jour · il y a 2 min',
+    fill: 100, fillActive: false,
+    gateState: 'done', gateTitle: 'Site en ligne à jour', gateDetail: 'Le site en ligne reflète la dernière mise à jour.'
+  },
+  'staging-failed': {
+    sub: '1 contenu modifié depuis la dernière mise en ligne.',
+    mainBtnText: 'Actualiser et réessayer', mainBtnDisabled: false,
+    step1: 'failed', step2: 'pending',
+    detail1: 'Échec de la mise à jour du site de test', detail2: 'Bloqué tant que le site de test échoue',
+    fill: 100, fillActive: false, fillFailed: true,
+    gateState: 'failed-locked', gateTitle: 'Échec de la mise à jour du site de test.', gateDetail: 'La publication reste bloquée tant que le site de test n’est pas à jour.'
+  },
+  'production-failed': {
+    sub: 'Contenus publiés. Le site de test est à jour.',
+    mainBtnText: 'Mettre le site à jour', mainBtnDisabled: false,
+    step1: 'done', step2: 'failed',
+    detail1: 'Site de test à jour · il y a 6 min', detail2: 'Échec — ancienne version encore affichée',
+    fill: 100, fillActive: false, fillFailed: true,
+    gateState: 'failed', gateTitle: 'Échec de la publication sur le site en ligne.', gateDetail: 'Le site de test est à jour, mais l’envoi vers le site en ligne a échoué. Réessayez, ou prévenez le mainteneur.'
+  },
+};
+
+function circleContent(kind, defaultIcon) {
+  if (kind === 'active') return '<span class="spinner"></span>';
+  if (kind === 'failed') return '✕';
+  if (kind === 'done') return '✓';
+  return defaultIcon;
+}
+
+function setState(key, evt) {
+  document.querySelectorAll('.state-btn').forEach(b => b.classList.remove('active'));
+  if (evt) evt.target.classList.add('active');
+  const s = STATES[key];
+  applyStateA(s); applyStateB(s); applyStateC(s);
+}
+
+function applyStateA(s) {
+  document.getElementById('a-sub').textContent = s.sub;
+  const btn = document.getElementById('a-main-btn');
+  btn.textContent = s.mainBtnText; btn.disabled = s.mainBtnDisabled;
+
+  const c1 = document.getElementById('a-circle-1');
+  c1.className = 'circle-a ' + (s.step1 === 'done' ? 'done' : s.step1 === 'active' ? 'active' : s.step1 === 'failed' ? 'failed' : '');
+  c1.innerHTML = circleContent(s.step1, '↑');
+  document.getElementById('a-detail-1').textContent = s.detail1;
+
+  const c2 = document.getElementById('a-circle-2');
+  c2.className = 'circle-a ' + (s.step2 === 'done' ? 'done' : s.step2 === 'active' ? 'active' : s.step2 === 'failed' ? 'failed' : '');
+  c2.innerHTML = circleContent(s.step2, '🌐');
+  document.getElementById('a-detail-2').textContent = s.detail2;
+
+  const fill = document.getElementById('a-fill');
+  fill.style.width = s.fill + '%';
+  fill.className = 'track-a-fill' + (s.gateFillActive ? ' active' : '') + (s.fillFailed ? ' failed' : '');
+
+  const gate = document.getElementById('a-gate');
+  const gateBtn = document.getElementById('a-gate-btn');
+  document.getElementById('a-gate-title').textContent = s.gateTitle;
+  document.getElementById('a-gate-detail').textContent = s.gateDetail;
+  gate.className = 'gate-a' + (s.gateState === 'locked' || s.gateState === 'failed-locked' ? ' locked' : '');
+  gateBtn.disabled = s.gateState !== 'ready';
+  gateBtn.textContent = s.gateState === 'done' ? 'Site en ligne à jour ✓' : (s.gateState === 'active' ? 'Publication en cours…' : 'Publier sur le site en ligne');
+}
+
+function applyStateB(s) {
+  document.getElementById('b-sub').textContent = s.sub;
+  const btn = document.getElementById('b-main-btn');
+  btn.textContent = s.mainBtnText; btn.disabled = s.mainBtnDisabled;
+
+  const c1 = document.getElementById('b-circle-1');
+  c1.className = 'circle-b ' + (s.step1 === 'done' ? 'done' : s.step1 === 'active' ? 'active' : s.step1 === 'failed' ? 'failed' : '');
+  c1.innerHTML = circleContent(s.step1, '↑');
+  document.getElementById('b-detail-1').textContent = s.detail1;
+
+  // Only ONE element shows motion for one action: the destination node
+  // (the 3rd button, left→right) carries the spinner while it's actually
+  // being updated. The gate is the trigger you clicked — once engaged it
+  // goes calm/solid, it does not also spin alongside the node it started.
+  const c2 = document.getElementById('b-circle-2');
+  c2.className = 'circle-b ' + (s.step2 === 'done' ? 'done' : s.step2 === 'active' ? 'active' : s.step2 === 'failed' ? 'failed' : '');
+  c2.innerHTML = circleContent(s.step2, '🌐');
+  document.getElementById('b-detail-2').textContent = s.detail2;
+
+  document.getElementById('b-link-1').className = 'link-b' + (s.step1 === 'done' ? ' done' : '');
+  document.getElementById('b-link-2').className = 'link-b' + (s.step2 === 'done' ? ' done' : '');
+
+  const gate = document.getElementById('b-gate');
+  gate.className = 'gate-b ' + s.gateState.replace('failed-locked', 'failed');
+  const gateIcons = { locked: '🔒', ready: '▶', active: '', done: '✓', failed: '✕', 'failed-locked': '✕' };
+  gate.innerHTML = gateIcons[s.gateState] ?? '🔒';
+  document.getElementById('b-row-detail').textContent = s.gateDetail;
+}
+
+function applyStateC(s) {
+  document.getElementById('c-sub').textContent = s.sub;
+  const btn = document.getElementById('c-main-btn');
+  btn.textContent = s.mainBtnText; btn.disabled = s.mainBtnDisabled;
+
+  const d1 = document.getElementById('c-dot-1');
+  d1.className = 'dot-c ' + (s.step1 === 'done' ? 'done' : s.step1 === 'active' ? 'active' : s.step1 === 'failed' ? 'failed' : '');
+  d1.innerHTML = circleContent(s.step1, '↑');
+  document.getElementById('c-detail-1').textContent = s.detail1;
+
+  const d2 = document.getElementById('c-dot-2');
+  d2.className = 'dot-c ' + (s.step2 === 'done' ? 'done' : s.step2 === 'active' ? 'active' : s.step2 === 'failed' ? 'failed' : '');
+  d2.innerHTML = circleContent(s.step2, '🌐');
+  document.getElementById('c-detail-2').textContent = s.detail2;
+
+  const lineFill = document.getElementById('c-line-fill');
+  lineFill.style.height = (s.step1 === 'done' ? (s.step2 === 'pending' ? '50%' : '100%') : (s.step1 === 'active' ? '15%' : '0%'));
+  lineFill.className = 'pipe-c-line-fill' + (s.gateFillActive ? ' active' : '');
+
+  const action = document.getElementById('c-action');
+  const actionBtn = document.getElementById('c-action-btn');
+  action.style.display = (s.gateState === 'locked') ? 'none' : 'block';
+  actionBtn.disabled = s.gateState !== 'ready';
+  actionBtn.textContent = s.gateState === 'done' ? 'Site en ligne à jour ✓' : (s.gateState === 'active' ? 'Publication en cours…' : 'Publier sur le site en ligne');
+}
+
+setState('staging-progress');
+</script>
