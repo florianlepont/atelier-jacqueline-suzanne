@@ -536,7 +536,7 @@ export function publicationError(reason: unknown): string {
 export class ConfirmationChangedError extends Error {
   constructor() {
     super(
-      'Le lot a changé depuis la confirmation. Vérifiez le nouveau récapitulatif et confirmez à nouveau.',
+      'Le lot a changé pendant la mise à jour. Rien n’a été publié. Vérifiez le récapitulatif actualisé, puis cliquez à nouveau sur « Mettre le site à jour ».',
     )
     this.name = 'ConfirmationChangedError'
   }
@@ -550,16 +550,17 @@ export function batchFingerprint(batch: PublicationBatch): string {
   )
 }
 
+// The third options field and the corresponding return field that used to
+// mirror whether the confirmation card was open were removed with the card
+// itself: the state they mirrored no longer exists. Do not bring either back.
 export function publicationCardState(
   inventory: PublicationBatch,
   {
     busy,
     trackingFailed,
-    confirmationOpen,
   }: {
     busy: boolean
     trackingFailed: boolean
-    confirmationOpen: boolean
   },
 ) {
   return {
@@ -568,7 +569,6 @@ export function publicationCardState(
     blockedRows: inventory.blockedRows,
     buttonDisabled:
       busy || trackingFailed || inventory.total === 0 || inventory.blockedRows.length > 0,
-    dialogOpen: confirmationOpen,
   }
 }
 
@@ -608,6 +608,18 @@ export function createInventoryGenerationGuard<T>() {
   }
 }
 
+// Survives the removal of the confirmation card on purpose. The card gated
+// public/private visibility -- that premise is gone now that "Mettre le
+// site à jour" only publishes into Sanity and rebuilds the site de test.
+// This function gates something unrelated: CONTENT QUALITY. It hands the
+// batch back only when `batch.ready`, and `ready` is false whenever any row
+// is missing an "Indispensable" field. Returning `null` here means nothing
+// may be published -- this is the sole precondition guarding the merged
+// one-click publish helper immediately below, and `publish()`'s own read of
+// `confirmedBatch`, which only `preflight()` sets. Do not inline this away
+// or relax it because the name says "Confirmation" and reads like leftover
+// dialog machinery -- it is not. The name stays exactly as-is so the
+// existing call sites and their tests remain stable.
 export async function preflightForConfirmation(controller: {
   preflight(): Promise<PublicationBatch>
 }): Promise<PublicationBatch | null> {
@@ -617,6 +629,23 @@ export async function preflightForConfirmation(controller: {
   } catch {
     return null
   }
+}
+
+// The whole one-click contract: one gesture, gate first, publish only if the
+// gate passes. `publish()` cannot be called without a preceding `preflight()`
+// -- it reads the private confirmed batch that only `preflight()` sets, and
+// throws "Aucune modification à publier." otherwise. No try/catch here on
+// purpose: a rejection from `publish()` must propagate, because the
+// controller has already recorded the user-facing error state by the time it
+// rejects, and the caller only needs to stop. Returning `null` means the
+// content-quality gate refused and NOTHING was published.
+export async function publishAfterPreflight(controller: {
+  preflight(): Promise<PublicationBatch>
+  publish(): Promise<PublicationResult>
+}): Promise<PublicationResult | null> {
+  const batch = await preflightForConfirmation(controller)
+  if (!batch) return null
+  return controller.publish()
 }
 
 export function createPublicationController({

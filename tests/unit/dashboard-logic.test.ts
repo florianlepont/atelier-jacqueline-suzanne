@@ -737,7 +737,6 @@ describe('publication controller', () => {
     const blockedCard = publicationCardState(preparePublicationBatch(inventory), {
       busy: false,
       trackingFailed: false,
-      confirmationOpen: false,
     });
     expect(client.action).not.toHaveBeenCalled();
     expect(onInventory).toHaveBeenNthCalledWith(1, first);
@@ -748,7 +747,12 @@ describe('publication controller', () => {
     expect(controller.state.phase).toBe('confirming');
     expect(blockedCard.total).toBe(2);
     expect(blockedCard.buttonDisabled).toBe(true);
-    expect(blockedCard.dialogOpen).toBe(false);
+    // The dialog-open field went away with the confirmation card. If this
+    // property reappears on the returned object, the card came back.
+    expect(
+      blockedCard,
+      'publicationCardState() must never carry a dialog-open field again — that state died with the confirmation card',
+    ).not.toHaveProperty('dialogOpen');
     expect(blockedCard.blockedRows).toEqual([
       expect.objectContaining({
         id: 'gallery-incomplete-after-confirmation',
@@ -760,7 +764,6 @@ describe('publication controller', () => {
     const replacementCard = publicationCardState(preparePublicationBatch(inventory), {
       busy: false,
       trackingFailed: false,
-      confirmationOpen: false,
     });
     expect(replacementCard.total).toBe(2);
     expect(replacementCard.pairs.map(({id}) => id)).toEqual([
@@ -769,7 +772,6 @@ describe('publication controller', () => {
     ]);
     expect(replacementCard.blockedRows).toEqual([]);
     expect(replacementCard.buttonDisabled).toBe(false);
-    expect(replacementCard.dialogOpen).toBe(false);
     expect(client.action).not.toHaveBeenCalled();
   });
 
@@ -796,7 +798,6 @@ describe('publication controller', () => {
     const card = publicationCardState(preparePublicationBatch(inventory), {
       busy: false,
       trackingFailed: false,
-      confirmationOpen: false,
     });
     expect(onInventory).toHaveBeenNthCalledWith(1, empty);
     expect(onInventory).toHaveBeenNthCalledWith(2, empty);
@@ -807,7 +808,6 @@ describe('publication controller', () => {
     expect(card.pairs).toEqual([]);
     expect(card.blockedRows).toEqual([]);
     expect(card.buttonDisabled).toBe(true);
-    expect(card.dialogOpen).toBe(false);
     expect(client.action).not.toHaveBeenCalled();
   });
 
