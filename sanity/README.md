@@ -10,8 +10,8 @@ nécessaire.
 2. Modifier les champs. Le Studio sauvegarde le brouillon automatiquement.
 3. Consulter la **Checklist** du document.
 4. Revenir au Tableau de bord : le contenu apparaît dans le lot **Mettre le site à jour**.
-5. Vérifier le récapitulatif, puis publier tout le lot avec **Mettre le site à jour**. Le site de
-   test se met à jour automatiquement.
+5. Depuis le Tableau de bord, un seul clic sur **Mettre le site à jour** publie tout le lot. Le
+   site de test se met à jour automatiquement.
 6. Une fois le site de test confirmé à jour, le bouton rond posé sur la ligne entre les deux
    étapes de la barre de progression se débloque : cliquer sur ce bouton pour envoyer le site vers
    son adresse réelle. Les deux actions sont volontairement séparées : la seconde reste visible
