@@ -268,7 +268,7 @@ describe('deployment marker actions', () => {
         actionType: 'sanity.action.document.create',
         publishedId: 'siteDeployment',
         attributes: {
-          _id: 'siteDeployment',
+          _id: 'drafts.siteDeployment',
           _type: 'siteDeployment',
           buildSequence: 1,
           lastTriggeredAt: '2026-08-11T10:00:00.000Z',
@@ -327,7 +327,7 @@ describe('production release marker actions', () => {
         actionType: 'sanity.action.document.create',
         publishedId: 'siteProductionRelease',
         attributes: {
-          _id: 'siteProductionRelease',
+          _id: 'drafts.siteProductionRelease',
           _type: 'siteProductionRelease',
           buildSequence: 1,
           lastTriggeredAt: '2026-08-11T10:00:00.000Z',
@@ -395,7 +395,7 @@ describe('production release marker actions', () => {
         actionType: 'sanity.action.document.create',
         publishedId: 'siteDeployment',
         attributes: {
-          _id: 'siteDeployment',
+          _id: 'drafts.siteDeployment',
           _type: 'siteDeployment',
           buildSequence: 1,
           lastTriggeredAt: '2026-08-11T10:00:00.000Z',
@@ -438,7 +438,7 @@ describe('production release marker actions', () => {
           actionType: 'sanity.action.document.create',
           publishedId: 'siteProductionRelease',
           attributes: {
-            _id: 'siteProductionRelease',
+            _id: 'drafts.siteProductionRelease',
             _type: 'siteProductionRelease',
             buildSequence: 1,
             lastTriggeredAt: '2026-08-11T12:00:00.000Z',
@@ -524,7 +524,7 @@ describe('publication controller', () => {
           actionType: 'sanity.action.document.create',
           publishedId: 'siteDeployment',
           attributes: {
-            _id: 'siteDeployment',
+            _id: 'drafts.siteDeployment',
             _type: 'siteDeployment',
             buildSequence: 1,
             lastTriggeredAt: expect.any(String),
