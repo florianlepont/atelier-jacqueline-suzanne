@@ -642,6 +642,9 @@ export function EditorialDashboard() {
                               'contenu modifié',
                               'contenus modifiés',
                             )} depuis la dernière mise en ligne.`}
+                        {pipeline.promote.notStarted &&
+                          publicationCard.total > 0 &&
+                          ' Rien n’a été lancé pour l’instant : cliquez sur « Mettre le site à jour » pour démarrer.'}
                       </Text>
                     </Stack>
                   </Flex>

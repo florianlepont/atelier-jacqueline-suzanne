@@ -58,3 +58,28 @@ describe('editorial dashboard pipeline node label/detail render as plain spans, 
     ).toBe(true);
   });
 });
+
+describe('editorial dashboard panel header subtitle gates the not-started clause on the promote row flag', () => {
+  const source = readFileSync(COMPONENT_PATH, 'utf-8');
+
+  it('gates the not-started clause on pipeline.promote.notStarted and publicationCard.total > 0, in the same JSX expression', () => {
+    const headingIndex = source.indexOf('Mettre le site à jour');
+    expect(headingIndex, 'expected to find the panel header heading text').toBeGreaterThan(-1);
+    const closingTextIndex = source.indexOf('</Text>', headingIndex);
+    expect(closingTextIndex, 'expected to find the closing </Text> of the subtitle after the heading').toBeGreaterThan(-1);
+    const subtitleSlice = source.slice(headingIndex, closingTextIndex);
+
+    expect(
+      subtitleSlice.includes('pipeline.promote.notStarted'),
+      'this clause must be gated on the notStarted flag set by resolvePromoteRow() — never a condition re-derived locally in the component, since that flag is only reached after five earlier branches decline',
+    ).toBe(true);
+    expect(
+      subtitleSlice.includes('publicationCard.total > 0'),
+      'the clause needs this extra guard because publicationCard.total comes from a different source (the publication inventory snapshot) than the draftCount driving the pipeline segments, and a rare disagreement between the two must not print this clause right after "Aucune modification publique en attente."',
+    ).toBe(true);
+    expect(
+      subtitleSlice.includes('Rien n’a été lancé pour l’instant'),
+      'expected the not-started clause string to be present in the same subtitle element as its two gating conditions',
+    ).toBe(true);
+  });
+});
