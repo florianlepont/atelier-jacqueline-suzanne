@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-08-04)
 Phase: 05 (Launch & Domain Cutover) — EXECUTING
 Plan: 2 of 6
 Status: Ready to execute
-Last activity: 2026-08-12 - Completed quick task 260812-f22: fixed 4 dashboard pipeline UX issues (label wrapping, misleading initial-state copy, redundant document list, redundant header badge), redeployed Studio — pending user visual confirmation on the live Studio (Phase 05 Wave 4 execution still in progress in parallel)
+Last activity: 2026-08-12 - Completed quick task 260812-fq3: removed excessive node-label margin and redundant not-started copy in the dashboard pipeline UI, redeployed Studio — pending user visual confirmation on the live Studio (Phase 05 Wave 4 execution still in progress in parallel)
 
 ## Performance Metrics
 
@@ -189,6 +189,7 @@ Both prior research-carryover items were resolved during Phase 1 execution:
 | 260812-ca1 | Fix the invisible pipeline progress bar (.editorial-dashboard__pipeline-bar collapsed to zero width inside a non-stretching Sanity UI Stack) — add width:100%, redeploy Studio | 2026-08-12 | 88d5015 | | [260812-ca1-fix-the-invisible-pipeline-progress-bar-](./quick/260812-ca1-fix-the-invisible-pipeline-progress-bar-/) |
 | 260812-dvq | Replace the sketch-016 pipeline UI with sketch 017 Variant B (manual approval gate, CI/CD motif) — two connected nodes + central gate button, redeploy Studio | 2026-08-12 | 9eb7a4c | | [260812-dvq-replace-the-sketch-016-pipeline-ui-in-th](./quick/260812-dvq-replace-the-sketch-016-pipeline-ui-in-th/) |
 | 260812-f22 | Fix 4 dashboard pipeline UX issues found in user testing: label wrapping, misleading initial-state copy, redundant document list, redundant header badge | 2026-08-12 | 6a29af3 | | [260812-f22-fix-4-issues-in-the-new-dashboard-pipeli](./quick/260812-f22-fix-4-issues-in-the-new-dashboard-pipeli/) |
+| 260812-fq3 | Remove excessive node-label margin (leftover reserved 2-line height) and redundant not-started copy in the dashboard pipeline UI | 2026-08-12 | 48fdf01 | | [260812-fq3-fix-excessive-node-label-margin-and-redu](./quick/260812-fq3-fix-excessive-node-label-margin-and-redu/) |
 | 260713-kit | Fix the pink accent panel's view-transition fade — corrected to a sequential handoff (photo morph finishes, then panel fades in cleanly), not overlapping or popping | 2026-07-13 | 2a943ef | | [260713-kit-the-pink-accent-panel-now-appears-only-a](./quick/260713-kit-the-pink-accent-panel-now-appears-only-a/) |
 | 260714-d6h | Improve the Sanity Studio EditorialDashboard "À faire maintenant" panel UI — urgency-distinct priority-section headers (tonal Card + circular tonal count badge) and denser, more scannable attention cards (tonal left accent bar, truncated Manque line, tonal completion badge) | 2026-07-14 | 1a19972 | | [260714-d6h-improve-the-sanity-studio-editorialdashb](./quick/260714-d6h-improve-the-sanity-studio-editorialdashb/) |
 | 260718-qdz | Fix mode-toggle icon color regression on the homepage — restored the carousel-mode white / grid-mode ink color split for the display-mode toggle, silently dropped when Phase 10's SiteHeader refactor replaced the old `.home-header` container-level color rule with narrower per-element overrides | 2026-07-18 | 292488a | | [260718-qdz-fix-mode-toggle-icon-color-regression-on](./quick/260718-qdz-fix-mode-toggle-icon-color-regression-on/) |
