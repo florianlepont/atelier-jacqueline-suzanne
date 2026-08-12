@@ -137,11 +137,21 @@ describe('editorial dashboard pipeline row CSS stays visible (not collapsed to z
     ).toBeLessThan(baseWidth);
   });
 
-  it('reserves a two-line box on the pipeline node label so both nodes keep their detail line on the same baseline', () => {
-    const [labelBlock] = extractRuleBlocks(source, '.editorial-dashboard__pipeline-node-label');
+  it('leaves the pipeline node label at its natural single-line height so the gap to the detail line stays tight', () => {
+    const blocks = extractRuleBlocks(source, '.editorial-dashboard__pipeline-node-label');
     expect(
-      /min-height\s*:\s*\d+px\s*;/.test(labelBlock),
-      'the label needs a fixed min-height so a wrapped two-line label and a one-line label both leave their detail line at the same vertical position, which is what keeps the two nodes aligned and stops the label from colliding with the line below it',
+      blocks,
+      'expected exactly one .editorial-dashboard__pipeline-node-label rule — a second override block elsewhere in the file could reintroduce the reserved height without failing this test',
+    ).toHaveLength(1);
+    const [labelBlock] = blocks;
+
+    expect(
+      /min-height/.test(labelBlock),
+      'the label must NOT declare a min-height: the 152px node column already keeps both labels on one line, so reserving a second line\'s height only produces a visible empty gap before the detail text',
+    ).toBe(false);
+    expect(
+      /text-wrap\s*:\s*balance\s*;/.test(labelBlock),
+      'text-wrap: balance must remain as the safety net for a wrap at some narrower viewport',
     ).toBe(true);
   });
 });
