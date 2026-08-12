@@ -19,6 +19,7 @@ import {
   getRecentDeployments,
   latestValidTimestamp,
   nextDeploymentPollDelay,
+  pipelineDisplaySegments,
   PRODUCTION_WORKFLOW_FILE,
   releasePipelineState,
   SITE_PREVIEW_URL,
@@ -424,6 +425,7 @@ export function EditorialDashboard() {
     busy: releaseBusy,
     requestError: releaseError,
   })
+  const displaySegments = pipelineDisplaySegments(pipeline.segments)
 
   const triggerProductionReleaseClick = async () => {
     setReleaseBusy(true)
@@ -626,6 +628,9 @@ export function EditorialDashboard() {
                       tint={metricAccentStyles.primary}
                     />
                     <Stack space={2}>
+                      <Text size={0} muted className="editorial-dashboard__step-eyebrow">
+                        Étape 1
+                      </Text>
                       <Heading as="h2" size={2}>
                         Mettre le site à jour
                       </Heading>
@@ -693,28 +698,22 @@ export function EditorialDashboard() {
                   )}
                 </Flex>
 
-                <section aria-label="Progression de la mise en ligne">
+                <section aria-label="Progression de la publication">
                   <Stack space={3}>
                     <Box className="editorial-dashboard__pipeline-bar" aria-hidden="true">
                       <span
-                        className={`editorial-dashboard__pipeline-segment editorial-dashboard__pipeline-segment--${pipeline.segments.content}`}
+                        className={`editorial-dashboard__pipeline-segment editorial-dashboard__pipeline-segment--${displaySegments.testSite}`}
                       />
                       <span
-                        className={`editorial-dashboard__pipeline-segment editorial-dashboard__pipeline-segment--${pipeline.segments.staging}`}
-                      />
-                      <span
-                        className={`editorial-dashboard__pipeline-segment editorial-dashboard__pipeline-segment--${pipeline.segments.production}`}
+                        className={`editorial-dashboard__pipeline-segment editorial-dashboard__pipeline-segment--${displaySegments.liveSite}`}
                       />
                     </Box>
                     <Flex justify="space-between" className="editorial-dashboard__pipeline-labels">
-                      <Text size={0} className={pipelineLabelClassName(pipeline.segments.content)}>
-                        Contenu
+                      <Text size={0} className={pipelineLabelClassName(displaySegments.testSite)}>
+                        Contenu + site de test
                       </Text>
-                      <Text size={0} className={pipelineLabelClassName(pipeline.segments.staging)}>
-                        Staging
-                      </Text>
-                      <Text size={0} className={pipelineLabelClassName(pipeline.segments.production)}>
-                        Production
+                      <Text size={0} className={pipelineLabelClassName(displaySegments.liveSite)}>
+                        Site en ligne
                       </Text>
                     </Flex>
                     <Flex
@@ -729,6 +728,9 @@ export function EditorialDashboard() {
                       }
                     >
                       <Stack space={2} style={{minWidth: 0, flex: '1 1 260px'}}>
+                        <Text size={0} muted className="editorial-dashboard__step-eyebrow">
+                          Étape 2
+                        </Text>
                         <Text size={1} weight="semibold">
                           {pipeline.promote.title}
                         </Text>

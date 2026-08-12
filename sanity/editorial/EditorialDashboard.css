@@ -118,6 +118,14 @@
   font-weight: 600;
 }
 
+.editorial-dashboard__step-eyebrow {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 600;
+  color: var(--card-muted-fg-color);
+}
+
 .editorial-dashboard__promote-row {
   padding: 14px 16px;
   border-radius: 6px;
