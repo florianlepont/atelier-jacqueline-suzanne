@@ -6,6 +6,7 @@ import {
   GITHUB_WORKFLOW_URL,
   latestValidTimestamp,
   nextDeploymentPollDelay,
+  pipelineDisplaySegments,
   PRODUCTION_SITE_URL,
   PRODUCTION_WORKFLOW_FILE,
   releasePipelineState,
@@ -281,29 +282,29 @@ describe('deployment-aware dashboard subtitle', () => {
     expect(subtitle).not.toContain('Site à jour')
   })
 
-  it('mentions Staging à jour only for a proven current staging deployment', () => {
+  it('mentions Site de test à jour only for a proven current staging deployment', () => {
     expect(
       deploymentSubtitle({
         kind: 'current',
-        label: 'Staging à jour',
+        label: 'Site de test à jour',
         detail: 'Verified',
         tone: 'positive',
         terminal: true,
         actionUrl: 'https://example.com',
       }),
-    ).toBe('Tous les contenus sont publiés · Staging à jour.')
+    ).toBe('Tous les contenus sont publiés · Site de test à jour.')
   })
 })
 
 describe('deployment state disambiguated by target', () => {
-  it('labels a proven-current staging deployment "Staging à jour" and links to the staging preview URL', () => {
+  it('labels a proven-current staging deployment "Site de test à jour" and links to the staging preview URL', () => {
     const state = deploymentState({runs: [run()], publishedAt, pendingCount: 0})
     expect(state.kind).toBe('current')
-    expect(state.label).toBe('Staging à jour')
+    expect(state.label).toBe('Site de test à jour')
     expect(state.actionUrl).toBe('https://florianlepont.github.io/ajs-website/')
   })
 
-  it('labels a proven-current production deployment "Production à jour" and links to the real domain', () => {
+  it('labels a proven-current production deployment "Site en ligne à jour" and links to the real domain', () => {
     const state = deploymentState({
       runs: [run()],
       publishedAt,
@@ -311,7 +312,7 @@ describe('deployment state disambiguated by target', () => {
       target: 'production',
     })
     expect(state.kind).toBe('current')
-    expect(state.label).toBe('Production à jour')
+    expect(state.label).toBe('Site en ligne à jour')
     expect(state.actionUrl).toBe(PRODUCTION_SITE_URL)
   })
 
@@ -408,6 +409,41 @@ describe('deployment polling cadence', () => {
   })
 })
 
+describe('pipeline display segments', () => {
+  it('merges content+staging into a done testSite only when both are done, and passes production through unchanged as liveSite', () => {
+    expect(
+      pipelineDisplaySegments({content: 'done', staging: 'done', production: 'done'}),
+    ).toEqual({testSite: 'done', liveSite: 'done'})
+  })
+
+  it('reflects an active staging deploy on the merged testSite segment', () => {
+    expect(
+      pipelineDisplaySegments({content: 'done', staging: 'active', production: 'pending'}),
+    ).toEqual({testSite: 'active', liveSite: 'pending'})
+  })
+
+  it('keeps the merged segment pending when only one of content/staging is done', () => {
+    expect(
+      pipelineDisplaySegments({content: 'pending', staging: 'done', production: 'pending'}),
+    ).toEqual({testSite: 'pending', liveSite: 'pending'})
+  })
+
+  it('lets a failed staging deploy win over every other kind on the merged segment', () => {
+    expect(
+      pipelineDisplaySegments({content: 'done', staging: 'failed', production: 'pending'}),
+    ).toEqual({testSite: 'failed', liveSite: 'pending'})
+  })
+
+  it('passes production through verbatim as liveSite regardless of the merged testSite kind', () => {
+    expect(
+      pipelineDisplaySegments({content: 'active', staging: 'active', production: 'active'}).liveSite,
+    ).toBe('active')
+    expect(
+      pipelineDisplaySegments({content: 'failed', staging: 'pending', production: 'failed'}).liveSite,
+    ).toBe('failed')
+  })
+})
+
 describe('release pipeline state', () => {
   const noProductionRelease: DeploymentState = deploymentState({
     runs: [],
@@ -497,7 +533,7 @@ describe('release pipeline state', () => {
     expect(result.segments.staging).toBe(expectedSegment)
   })
 
-  it('with no production release ever recorded, keeps production pending and the row dimmed/disabled/titled "En attente du staging…"', () => {
+  it('with no production release ever recorded, keeps production pending and the row dimmed/disabled/titled "En attente du site de test…"', () => {
     const staging = deploymentState({
       runs: [run({status: 'in_progress', conclusion: null})],
       publishedAt,
@@ -514,7 +550,7 @@ describe('release pipeline state', () => {
     expect(result.segments.production).toBe('pending')
     expect(result.promote.dimmed).toBe(true)
     expect(result.promote.buttonDisabled).toBe(true)
-    expect(result.promote.title).toBe('En attente du staging…')
+    expect(result.promote.title).toBe('En attente du site de test…')
   })
 
   it('with content done, staging done, and no production release, enables the promote button', () => {
@@ -529,8 +565,8 @@ describe('release pipeline state', () => {
     })
     expect(result.promote.dimmed).toBe(false)
     expect(result.promote.buttonDisabled).toBe(false)
-    expect(result.promote.buttonLabel).toBe('Mettre en production')
-    expect(result.promote.title).toBe('Staging vérifié — prêt pour la production ?')
+    expect(result.promote.buttonLabel).toBe('Publier sur le site en ligne')
+    expect(result.promote.title).toBe('Site de test à jour — prêt à publier ?')
   })
 
   it('a release in flight marks the production segment active and disables the button while it runs', () => {
@@ -545,7 +581,7 @@ describe('release pipeline state', () => {
     })
     expect(result.segments.production).toBe('active')
     expect(result.promote.buttonDisabled).toBe(true)
-    expect(result.promote.title).toBe('Mise en production en cours…')
+    expect(result.promote.title).toBe('Publication sur le site en ligne en cours…')
   })
 
   it('a proven-current production run newer than the newest publication marks production done and locks the button', () => {
@@ -574,7 +610,7 @@ describe('release pipeline state', () => {
     })
     expect(result.segments.production).toBe('done')
     expect(result.promote.buttonDisabled).toBe(true)
-    expect(result.promote.title).toBe('Production à jour')
+    expect(result.promote.title).toBe('Site en ligne à jour')
   })
 
   it('a production release older than the newest content publication falls back to pending and re-enables the button', () => {
@@ -603,10 +639,10 @@ describe('release pipeline state', () => {
     })
     expect(result.segments.production).toBe('pending')
     expect(result.promote.buttonDisabled).toBe(false)
-    expect(result.promote.title).toBe('Staging vérifié — prêt pour la production ?')
+    expect(result.promote.title).toBe('Site de test à jour — prêt à publier ?')
   })
 
-  it('a failed staging run disables the button and names the staging stage as the failure', () => {
+  it('a failed staging run disables the button and names the site de test as the failure', () => {
     const staging = deploymentState({
       runs: [run({conclusion: 'failure'})],
       publishedAt,
@@ -623,10 +659,10 @@ describe('release pipeline state', () => {
     expect(result.segments.staging).toBe('failed')
     expect(result.promote.buttonDisabled).toBe(true)
     expect(result.promote.dimmed).toBe(true)
-    expect(result.promote.title.toLowerCase()).toContain('staging')
+    expect(result.promote.title.toLowerCase()).toContain('site de test')
   })
 
-  it('a failed production run enables the button for retry and names the production stage as the failure', () => {
+  it('a failed production run enables the button for retry and names the site en ligne as the failure', () => {
     const productionReleaseAt = '2026-07-29T09:05:00Z'
     const staging = deploymentState({runs: [run()], publishedAt, pendingCount: 0})
     const production = deploymentState({
@@ -653,7 +689,7 @@ describe('release pipeline state', () => {
     })
     expect(result.segments.production).toBe('failed')
     expect(result.promote.buttonDisabled).toBe(false)
-    expect(result.promote.title.toLowerCase()).toContain('production')
+    expect(result.promote.title.toLowerCase()).toContain('site en ligne')
     expect(result.promote.actionUrl).toBe(production.actionUrl)
   })
 

@@ -85,12 +85,12 @@ interface DeploymentTargetConfig {
 
 const deploymentTargetConfig: Record<DeploymentTarget, DeploymentTargetConfig> = {
   staging: {
-    currentLabel: 'Staging à jour',
+    currentLabel: 'Site de test à jour',
     siteUrl: SITE_PREVIEW_URL,
     workflowUrl: GITHUB_WORKFLOW_URL,
   },
   production: {
-    currentLabel: 'Production à jour',
+    currentLabel: 'Site en ligne à jour',
     siteUrl: PRODUCTION_SITE_URL,
     workflowUrl: workflowActionsUrl(PRODUCTION_WORKFLOW_FILE),
   },
@@ -243,7 +243,7 @@ export function deploymentState({
       detail: timedOut
         ? "Aucun déploiement récent n'est apparu après la publication."
         : target === 'production'
-          ? 'GitHub doit encore démarrer le déploiement vers la production.'
+          ? 'GitHub doit encore démarrer l’envoi vers le site en ligne.'
           : 'GitHub doit encore démarrer la reconstruction du site.',
       tone: timedOut ? 'critical' : 'caution',
       terminal: false,
@@ -258,7 +258,7 @@ export function deploymentState({
       label: 'Mise à jour en cours',
       detail:
         target === 'production'
-          ? 'GitHub déploie actuellement le site vers la production.'
+          ? 'GitHub envoie actuellement le site vers le site en ligne.'
           : 'GitHub reconstruit actuellement le site.',
       tone: 'caution',
       terminal: false,
@@ -286,7 +286,7 @@ export function deploymentState({
     label: 'Échec de la mise à jour',
     detail:
       target === 'production'
-        ? 'Les contenus sont publiés dans Sanity, mais le site de production peut encore afficher l’ancienne version.'
+        ? 'Les contenus sont publiés dans Sanity, mais le site en ligne peut encore afficher l’ancienne version.'
         : 'Les contenus sont publiés dans Sanity, mais le site peut encore afficher l’ancienne version.',
     tone: 'critical',
     terminal: true,
@@ -377,7 +377,7 @@ function resolvePromoteRow({
 }): ReleasePipelinePromote {
   if (requestError) {
     return {
-      title: 'La mise en production n’a pas pu démarrer.',
+      title: 'La publication sur le site en ligne n’a pas pu démarrer.',
       detail: requestError,
       buttonLabel: 'Réessayer',
       buttonDisabled: false,
@@ -387,9 +387,9 @@ function resolvePromoteRow({
 
   if (segments.production === 'active') {
     return {
-      title: 'Mise en production en cours…',
-      detail: 'GitHub construit et pousse le site vers OVH.',
-      buttonLabel: 'Déploiement en cours…',
+      title: 'Publication sur le site en ligne en cours…',
+      detail: 'GitHub construit et envoie le site vers son hébergement définitif.',
+      buttonLabel: 'Publication en cours…',
       buttonDisabled: true,
       dimmed: false,
     }
@@ -397,9 +397,9 @@ function resolvePromoteRow({
 
   if (segments.production === 'failed') {
     return {
-      title: 'Échec de la mise en production.',
+      title: 'Échec de la publication sur le site en ligne.',
       detail:
-        'Le staging est à jour, mais le déploiement vers le domaine réel a échoué. Réessayez, ou prévenez le mainteneur.',
+        'Le site de test est à jour, mais l’envoi vers le site en ligne a échoué. Réessayez, ou prévenez le mainteneur.',
       buttonLabel: 'Réessayer',
       buttonDisabled: false,
       dimmed: false,
@@ -410,9 +410,9 @@ function resolvePromoteRow({
 
   if (segments.production === 'done') {
     return {
-      title: 'Production à jour',
-      detail: 'Le site public reflète la dernière publication.',
-      buttonLabel: 'Production à jour ✓',
+      title: 'Site en ligne à jour',
+      detail: 'Le site en ligne reflète la dernière mise à jour.',
+      buttonLabel: 'Site en ligne à jour ✓',
       buttonDisabled: true,
       dimmed: false,
     }
@@ -420,9 +420,9 @@ function resolvePromoteRow({
 
   if (segments.staging === 'failed') {
     return {
-      title: 'Échec du staging.',
-      detail: 'La mise en production reste bloquée jusqu’à ce que le staging réussisse.',
-      buttonLabel: 'Mettre en production',
+      title: 'Échec de la mise à jour du site de test.',
+      detail: 'La publication sur le site en ligne reste bloquée tant que le site de test n’est pas à jour.',
+      buttonLabel: 'Publier sur le site en ligne',
       buttonDisabled: true,
       dimmed: true,
       actionLabel: staging.actionLabel,
@@ -432,18 +432,18 @@ function resolvePromoteRow({
 
   if (segments.content !== 'done' || segments.staging !== 'done') {
     return {
-      title: 'En attente du staging…',
-      detail: 'La production sera disponible une fois le staging confirmé.',
-      buttonLabel: 'Mettre en production',
+      title: 'En attente du site de test…',
+      detail: 'L’étape 2 sera disponible une fois le site de test à jour.',
+      buttonLabel: 'Publier sur le site en ligne',
       buttonDisabled: true,
       dimmed: true,
     }
   }
 
   return {
-    title: 'Staging vérifié — prêt pour la production ?',
-    detail: 'Ouvrez le site de préproduction pour vérifier avant de continuer.',
-    buttonLabel: 'Mettre en production',
+    title: 'Site de test à jour — prêt à publier ?',
+    detail: 'Ouvrez le site de test pour vérifier avant de publier.',
+    buttonLabel: 'Publier sur le site en ligne',
     buttonDisabled: false,
     dimmed: false,
   }
@@ -484,5 +484,36 @@ export function releasePipelineState({
   return {
     segments,
     promote: resolvePromoteRow({segments, staging, production, requestError}),
+  }
+}
+
+// This is the ONLY place the three underlying pipeline stages
+// (content/staging/production) collapse into the two the maintainer sees
+// (site de test / site en ligne). The merged segment can only reach
+// 'failed' via the site-de-test deploy, because releasePipelineState never
+// assigns 'failed' to segments.content -- which is why the action row below
+// the bar can still name which stage broke even though the bar no longer
+// separates them.
+export interface ReleasePipelineDisplaySegments {
+  testSite: PipelineSegmentKind
+  liveSite: PipelineSegmentKind
+}
+
+export function pipelineDisplaySegments(
+  segments: ReleasePipelineSegments,
+): ReleasePipelineDisplaySegments {
+  const {content, staging, production} = segments
+  const testSite: PipelineSegmentKind =
+    content === 'failed' || staging === 'failed'
+      ? 'failed'
+      : content === 'active' || staging === 'active'
+        ? 'active'
+        : content === 'done' && staging === 'done'
+          ? 'done'
+          : 'pending'
+
+  return {
+    testSite,
+    liveSite: production,
   }
 }
