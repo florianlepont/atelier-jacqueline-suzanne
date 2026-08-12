@@ -101,4 +101,46 @@ describe('editorial dashboard pipeline row CSS stays visible (not collapsed to z
       ).toBe(0);
     }
   });
+
+  it('widens the pipeline node column and its narrow-viewport override so the label has room to breathe', () => {
+    const [baseBlock, narrowBlock] = extractRuleBlocks(source, '.editorial-dashboard__pipeline-node');
+    expect(
+      baseBlock,
+      'expected both the base .editorial-dashboard__pipeline-node rule and its @media (max-width: 36em) override',
+    ).toBeDefined();
+    expect(
+      narrowBlock,
+      'expected both the base .editorial-dashboard__pipeline-node rule and its @media (max-width: 36em) override',
+    ).toBeDefined();
+
+    const baseWidthMatch = baseBlock.match(/width\s*:\s*(\d+)px\s*;/);
+    expect(
+      baseWidthMatch,
+      'the base node column must declare a px width',
+    ).not.toBeNull();
+    const baseWidth = Number(baseWidthMatch?.[1]);
+    expect(
+      baseWidth,
+      'the base node column must be at least 140px wide so "Contenu + site de test" has room to breathe without colliding with the detail line beneath it',
+    ).toBeGreaterThanOrEqual(140);
+
+    const narrowWidthMatch = narrowBlock.match(/width\s*:\s*(\d+)px\s*;/);
+    expect(
+      narrowWidthMatch,
+      'the narrow-viewport override must declare a px width',
+    ).not.toBeNull();
+    const narrowWidth = Number(narrowWidthMatch?.[1]);
+    expect(
+      narrowWidth,
+      'the narrow-viewport override must be smaller than the base width — proving it was widened in proportion rather than left at its old value',
+    ).toBeLessThan(baseWidth);
+  });
+
+  it('reserves a two-line box on the pipeline node label so both nodes keep their detail line on the same baseline', () => {
+    const [labelBlock] = extractRuleBlocks(source, '.editorial-dashboard__pipeline-node-label');
+    expect(
+      /min-height\s*:\s*\d+px\s*;/.test(labelBlock),
+      'the label needs a fixed min-height so a wrapped two-line label and a one-line label both leave their detail line at the same vertical position, which is what keeps the two nodes aligned and stops the label from colliding with the line below it',
+    ).toBe(true);
+  });
 });
