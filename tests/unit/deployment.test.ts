@@ -533,7 +533,7 @@ describe('release pipeline state', () => {
     expect(result.segments.staging).toBe(expectedSegment)
   })
 
-  it('with unpublished drafts pending, tells the maintainer nothing has started and names what step 2 is waiting on', () => {
+  it('with unpublished drafts pending, flags the row as not-started so the header can carry that framing, and names step 2\'s precondition itself', () => {
     const staging = deploymentState({runs: [], publishedAt, pendingCount: 1})
     const result = releasePipelineState({
       pendingCount: 1,
@@ -544,13 +544,14 @@ describe('release pipeline state', () => {
       busy: false,
     })
     expect(result.segments.content).toBe('pending')
-    expect(result.promote.title).toBe('Rien n’a encore été lancé.')
-    expect(result.promote.detail).toBe('L’étape 2 sera disponible une fois le site de test à jour.')
+    expect(result.promote.title).toBe('Étape 2 — site en ligne')
+    expect(result.promote.detail).toBe('Disponible une fois le site de test à jour.')
     // The panel's own header and "Mettre le site à jour" button render
     // directly above this text, so repeating the instruction here is noise.
     expect(result.promote.detail).not.toContain('Mettre le site à jour')
     expect(result.promote.dimmed).toBe(true)
     expect(result.promote.buttonDisabled).toBe(true)
+    expect(result.promote.notStarted).toBe(true)
   })
 
   it('with no production release ever recorded, keeps production pending and the row dimmed/disabled/titled "En attente du site de test…"', () => {
@@ -571,6 +572,9 @@ describe('release pipeline state', () => {
     expect(result.promote.dimmed).toBe(true)
     expect(result.promote.buttonDisabled).toBe(true)
     expect(result.promote.title).toBe('En attente du site de test…')
+    // This is the genuine in-flight wait, so the header must not
+    // additionally claim nothing has been started.
+    expect(result.promote.notStarted).toBeFalsy()
   })
 
   it('with content done, staging done, and no production release, enables the promote button', () => {

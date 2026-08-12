@@ -334,6 +334,11 @@ export interface ReleasePipelinePromote {
   buttonLabel: string
   buttonDisabled: boolean
   dimmed: boolean
+  // Set only on the branch below where there are unpublished changes and no
+  // release has been started, so the panel header -- not this row -- can
+  // carry that framing, without the component re-deriving a condition whose
+  // meaning depends on the order of the branches below.
+  notStarted?: boolean
   actionLabel?: string
   actionUrl?: string
 }
@@ -438,21 +443,23 @@ function resolvePromoteRow({
   // the first branch returns, reaching the second implies
   // segments.content === 'done', so that is not restated in its condition.
   //
-  // The two branches now return the same `detail` and differ only in
-  // `title` -- that is deliberate. The title carries the
-  // not-started-vs-waiting distinction (this one must never read as a
-  // wait), while the detail simply names what step 2 is waiting on, since
-  // the panel's own header and button are already visible directly above.
-  // Do not re-merge these branches on the grounds that they now look
-  // near-identical: doing so reintroduces the misleading-wait copy bug
-  // 260812-f22 fixed.
+  // The nothing-has-been-launched-yet framing now lives once, in the panel
+  // header subtitle, gated on `notStarted` below -- not in this row's own
+  // copy. This row only names step 2's precondition, in a shorter sentence
+  // than the genuine in-flight wait below keeps. Do not re-merge these two
+  // branches on the grounds that they now look similar: doing so
+  // reintroduces the misleading-wait copy bug 260812-f22 fixed, and
+  // re-deriving `notStarted` from a locally-computed condition instead of
+  // reading this flag would let the header clause leak into the
+  // production-active/failed/done and staging-failed branches above.
   if (segments.content !== 'done') {
     return {
-      title: 'Rien n’a encore été lancé.',
-      detail: 'L’étape 2 sera disponible une fois le site de test à jour.',
+      title: 'Étape 2 — site en ligne',
+      detail: 'Disponible une fois le site de test à jour.',
       buttonLabel: 'Publier sur le site en ligne',
       buttonDisabled: true,
       dimmed: true,
+      notStarted: true,
     }
   }
 
