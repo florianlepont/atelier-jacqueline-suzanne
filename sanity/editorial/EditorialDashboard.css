@@ -118,6 +118,7 @@
   line-height: 14px;
   margin-top: 8px;
   text-wrap: balance;
+  color: var(--card-fg-color);
 }
 
 .editorial-dashboard__pipeline-node-detail {

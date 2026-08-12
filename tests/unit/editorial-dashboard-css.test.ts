@@ -153,5 +153,9 @@ describe('editorial dashboard pipeline row CSS stays visible (not collapsed to z
       /text-wrap\s*:\s*balance\s*;/.test(labelBlock),
       'text-wrap: balance must remain as the safety net for a wrap at some narrower viewport',
     ).toBe(true);
+    expect(
+      /color\s*:/.test(labelBlock),
+      'the label is no longer wrapped in a Sanity UI Text component, so this stylesheet rule is now the only thing giving it a foreground colour',
+    ).toBe(true);
   });
 });

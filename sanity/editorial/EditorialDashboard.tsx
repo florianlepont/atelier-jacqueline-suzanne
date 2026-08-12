@@ -708,12 +708,20 @@ export function EditorialDashboard() {
                         >
                           {pipelineNodeIcon(displaySegments.testSite, PublishIcon)}
                         </span>
-                        <Text size={0} className="editorial-dashboard__pipeline-node-label">
+                        {/* Plain spans, not Sanity UI's <Text>: in this
+                            project's bundled @sanity/ui version, that
+                            size-zero component lays out a box shorter than
+                            the glyphs it paints (measured: a 6-7px box
+                            around 14px of visible label text), which
+                            swallows the detail's margin-top and makes the
+                            two lines touch. A span styled by the same class
+                            was measured to restore the intended gap. */}
+                        <span className="editorial-dashboard__pipeline-node-label">
                           Contenu + site de test
-                        </Text>
-                        <Text size={0} muted className="editorial-dashboard__pipeline-node-detail">
+                        </span>
+                        <span className="editorial-dashboard__pipeline-node-detail">
                           {pipelineDetail.node1}
-                        </Text>
+                        </span>
                       </div>
                       <div className="editorial-dashboard__pipeline-connector">
                         <span
@@ -753,12 +761,12 @@ export function EditorialDashboard() {
                         >
                           {pipelineNodeIcon(displaySegments.liveSite, EarthGlobeIcon)}
                         </span>
-                        <Text size={0} className="editorial-dashboard__pipeline-node-label">
+                        <span className="editorial-dashboard__pipeline-node-label">
                           Site en ligne
-                        </Text>
-                        <Text size={0} muted className="editorial-dashboard__pipeline-node-detail">
+                        </span>
+                        <span className="editorial-dashboard__pipeline-node-detail">
                           {pipelineDetail.node2}
-                        </Text>
+                        </span>
                       </div>
                     </Flex>
 
