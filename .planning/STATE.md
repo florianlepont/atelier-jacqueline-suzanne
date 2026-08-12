@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-08-04)
 Phase: 05 (Launch & Domain Cutover) — EXECUTING
 Plan: 2 of 6
 Status: Ready to execute
-Last activity: 2026-08-12 - Completed quick task 260812-ca1: fixed the invisible pipeline progress bar (missing width:100% on a flex bar inside a non-stretching Sanity UI Stack), redeployed Studio (Phase 05 Wave 4 execution still in progress in parallel)
+Last activity: 2026-08-12 - Completed quick task 260812-dvq: replaced the dashboard pipeline UI with sketch 017 Variant B (manual approval gate, CI/CD motif), redeployed Studio — pending user visual confirmation on the live Studio (Phase 05 Wave 4 execution still in progress in parallel)
 
 ## Performance Metrics
 
@@ -187,6 +187,7 @@ Both prior research-carryover items were resolved during Phase 1 execution:
 | 260811-w8d | Build the real "Mettre en production" feature per sketch 016 (Variant C) — replaces 260811-v3t's raw auto-deploy with a human-checkpoint-gated Sanity Studio dashboard button | 2026-08-11 | d5b41ae | Verified | [260811-w8d-build-the-real-mettre-en-production-feat](./quick/260811-w8d-build-the-real-mettre-en-production-feat/) |
 | 260812-bj1 | Rework the dashboard's vocabulary and layout (Étape 1/Étape 2 card, "site de test"/"site en ligne", 2-segment bar) so the publish→promote flow reads clearly for Romane | 2026-08-12 | 79b7891 | | [260812-bj1-retravailler-le-vocabulaire-et-la-mise-e](./quick/260812-bj1-retravailler-le-vocabulaire-et-la-mise-e/) |
 | 260812-ca1 | Fix the invisible pipeline progress bar (.editorial-dashboard__pipeline-bar collapsed to zero width inside a non-stretching Sanity UI Stack) — add width:100%, redeploy Studio | 2026-08-12 | 88d5015 | | [260812-ca1-fix-the-invisible-pipeline-progress-bar-](./quick/260812-ca1-fix-the-invisible-pipeline-progress-bar-/) |
+| 260812-dvq | Replace the sketch-016 pipeline UI with sketch 017 Variant B (manual approval gate, CI/CD motif) — two connected nodes + central gate button, redeploy Studio | 2026-08-12 | 9eb7a4c | | [260812-dvq-replace-the-sketch-016-pipeline-ui-in-th](./quick/260812-dvq-replace-the-sketch-016-pipeline-ui-in-th/) |
 | 260713-kit | Fix the pink accent panel's view-transition fade — corrected to a sequential handoff (photo morph finishes, then panel fades in cleanly), not overlapping or popping | 2026-07-13 | 2a943ef | | [260713-kit-the-pink-accent-panel-now-appears-only-a](./quick/260713-kit-the-pink-accent-panel-now-appears-only-a/) |
 | 260714-d6h | Improve the Sanity Studio EditorialDashboard "À faire maintenant" panel UI — urgency-distinct priority-section headers (tonal Card + circular tonal count badge) and denser, more scannable attention cards (tonal left accent bar, truncated Manque line, tonal completion badge) | 2026-07-14 | 1a19972 | | [260714-d6h-improve-the-sanity-studio-editorialdashb](./quick/260714-d6h-improve-the-sanity-studio-editorialdashb/) |
 | 260718-qdz | Fix mode-toggle icon color regression on the homepage — restored the carousel-mode white / grid-mode ink color split for the display-mode toggle, silently dropped when Phase 10's SiteHeader refactor replaced the old `.home-header` container-level color rule with narrower per-element overrides | 2026-07-18 | 292488a | | [260718-qdz-fix-mode-toggle-icon-color-regression-on](./quick/260718-qdz-fix-mode-toggle-icon-color-regression-on/) |
