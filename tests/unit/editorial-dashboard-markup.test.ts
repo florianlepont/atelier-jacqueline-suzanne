@@ -149,3 +149,57 @@ describe('editorial dashboard pipeline-detail box is skipped entirely when it ha
     ).toBe(true);
   });
 });
+
+// The confirmation card asserted a consequence the « Mettre le site à jour »
+// button no longer has -- this session's staging/production pipeline
+// redesign split the one button that used to make content public into two
+// steps, and the button now only publishes into Sanity and rebuilds the
+// site de test. These assertions stop that false premise, and the card that
+// carried it, from being reintroduced.
+describe('editorial dashboard publish button is a single one-click gesture (no confirmation card)', () => {
+  const source = readFileSync(COMPONENT_PATH, 'utf-8');
+
+  it('never asserts that publishing makes content visible to everyone', () => {
+    expect(
+      source.includes('Publier maintenant sur le site public'),
+      'this button only publishes into Sanity and rebuilds the site de test; the round gate button between the two pipeline nodes is the actual goes-public step, so this question line must not exist',
+    ).toBe(false);
+    expect(
+      source.includes('par tout le monde'),
+      'this button only publishes into Sanity and rebuilds the site de test; the round gate button between the two pipeline nodes is the actual goes-public step, so this warning fragment must not exist',
+    ).toBe(false);
+  });
+
+  it('has no dialog-open state and no separate confirm handler', () => {
+    expect(
+      /confirmationOpen|dialogOpen/.test(source),
+      'the confirmation card had its own open/closed state; the merged one-click flow has no intermediate state to hold',
+    ).toBe(false);
+    expect(
+      source.includes('confirmPublication'),
+      'a separate confirm handler would mean two handlers survive the merge — there must be exactly one',
+    ).toBe(false);
+    expect(
+      (source.match(/const runPublication = async/g) ?? []).length,
+      'runPublication must be declared exactly once',
+    ).toBe(1);
+  });
+
+  it('routes through publishAfterPreflight rather than calling publish() directly', () => {
+    expect(
+      source.includes('publishAfterPreflight'),
+      'the component must import and call publishAfterPreflight so the content-quality gate always runs before a publish',
+    ).toBe(true);
+    expect(
+      /publicationController\.publish\(/.test(source),
+      'skipping publishAfterPreflight and calling publish() directly would remove the blocking gate entirely',
+    ).toBe(false);
+  });
+
+  it('gives the confirming-phase changed-batch error a visible renderer', () => {
+    expect(
+      /publicationState\.phase === 'confirming' && publicationState\.error/.test(source),
+      'this message was previously rendered only inside the deleted confirmation card; without a new home a changed-batch refusal becomes an invisible dead click',
+    ).toBe(true);
+  });
+});

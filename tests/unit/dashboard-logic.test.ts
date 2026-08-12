@@ -31,6 +31,7 @@ import {
   preflightForConfirmation,
   publicationCardState,
   publicationError,
+  publishAfterPreflight,
   triggerProductionRelease,
 } from '../../sanity/editorial/dashboardLogic';
 import type {DashboardDocument, DashboardRow} from '../../sanity/editorial/dashboardLogic';
@@ -957,6 +958,84 @@ describe('publication controller', () => {
       preflight: vi.fn().mockRejectedValue(new Error('403 permission denied')),
     };
     await expect(preflightForConfirmation(controller)).resolves.toBeNull();
+  });
+});
+
+// « Mettre le site à jour » is now a single gesture: the gate that used to
+// sit behind a human confirmation is now the ONLY thing between a click and
+// a publish. Both its pass and its refuse behaviours need standing proof,
+// because the confirmation card is gone and cannot catch a regression by
+// merely rendering — this is the test suite doing that job instead.
+describe('publishAfterPreflight (the merged one-click publish handler)', () => {
+  it('publishes in exactly one client.action call when the gate passes', async () => {
+    const raw = [
+      publicationDocument('homePage', 'homePage', {_rev: 'published-home-rev'}),
+      publicationDocument('drafts.homePage', 'homePage', {
+        intro: {fr: 'Bienvenue', en: 'Welcome'},
+      }),
+    ];
+    const client = {
+      fetch: vi
+        .fn()
+        .mockResolvedValueOnce(raw)
+        .mockResolvedValueOnce(raw)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce([{_id: 'homePage', _updatedAt: '2026-07-29T09:00:00Z'}]),
+      action: vi.fn().mockResolvedValue({transactionId: 'tx-merged'}),
+    };
+    const controller = createPublicationController({client});
+
+    const result = await publishAfterPreflight(controller);
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        committed: true,
+        publishedIds: ['homePage'],
+      }),
+    );
+    expect(
+      client.action,
+      'one gesture must produce exactly one publish transaction — a second call would mean the merge reintroduced a double-submit',
+    ).toHaveBeenCalledTimes(1);
+    expect(controller.state.phase).toBe('success');
+  });
+
+  it('publishes nothing and resolves null when a document is missing an Indispensable field', async () => {
+    const client = {
+      fetch: vi.fn().mockResolvedValue([
+        publicationDocument('drafts.gallery-incomplete', 'gallery', {images: []}),
+      ]),
+      action: vi.fn(),
+    };
+    const controller = createPublicationController({client});
+
+    const result = await publishAfterPreflight(controller);
+
+    expect(result).toBeNull();
+    expect(
+      client.action,
+      'removing the confirmation card removed a public/private warning, NOT the content-quality gate — a batch with missing indispensable fields must still publish nothing',
+    ).not.toHaveBeenCalled();
+    expect(controller.state.phase).not.toBe('success');
+    expect(controller.state.phase).not.toBe('committed');
+    expect(controller.state.batch?.ready).toBe(false);
+    expect(controller.state.batch?.blockedRows.map(({id}) => id)).toContain(
+      'gallery-incomplete',
+    );
+  });
+
+  it('fails closed and resolves null when the preflight fetch itself rejects', async () => {
+    const client = {
+      fetch: vi.fn().mockRejectedValue(new Error('network unreachable')),
+      action: vi.fn(),
+    };
+    const controller = createPublicationController({client});
+
+    const result = await publishAfterPreflight(controller);
+
+    expect(result).toBeNull();
+    expect(client.action).not.toHaveBeenCalled();
+    expect(controller.state.phase).toBe('error');
   });
 });
 
