@@ -430,7 +430,25 @@ function resolvePromoteRow({
     }
   }
 
-  if (segments.content !== 'done' || segments.staging !== 'done') {
+  // Two very different situations used to share one branch here. The first
+  // is a not-started state -- there are unpublished drafts and nothing is
+  // running, so the copy must not describe a wait; its only remedy is the
+  // panel's own "Mettre le site à jour" button above. The second is a real
+  // in-flight wait on a GitHub run once content is already published. Once
+  // the first branch returns, reaching the second implies
+  // segments.content === 'done', so that is not restated in its condition.
+  if (segments.content !== 'done') {
+    return {
+      title: 'Rien n’a encore été lancé.',
+      detail:
+        'Commencez par « Mettre le site à jour » ci-dessus : vos modifications seront publiées et le site de test reconstruit.',
+      buttonLabel: 'Publier sur le site en ligne',
+      buttonDisabled: true,
+      dimmed: true,
+    }
+  }
+
+  if (segments.staging !== 'done') {
     return {
       title: 'En attente du site de test…',
       detail: 'L’étape 2 sera disponible une fois le site de test à jour.',

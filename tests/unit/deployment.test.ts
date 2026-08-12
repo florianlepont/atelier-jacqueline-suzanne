@@ -533,6 +533,23 @@ describe('release pipeline state', () => {
     expect(result.segments.staging).toBe(expectedSegment)
   })
 
+  it('with unpublished drafts pending, tells the maintainer nothing has started and points at « Mettre le site à jour »', () => {
+    const staging = deploymentState({runs: [], publishedAt, pendingCount: 1})
+    const result = releasePipelineState({
+      pendingCount: 1,
+      staging,
+      production: noProductionRelease,
+      publishedAt,
+      productionReleaseAt: '',
+      busy: false,
+    })
+    expect(result.segments.content).toBe('pending')
+    expect(result.promote.title).toBe('Rien n’a encore été lancé.')
+    expect(result.promote.detail).toContain('Mettre le site à jour')
+    expect(result.promote.dimmed).toBe(true)
+    expect(result.promote.buttonDisabled).toBe(true)
+  })
+
   it('with no production release ever recorded, keeps production pending and the row dimmed/disabled/titled "En attente du site de test…"', () => {
     const staging = deploymentState({
       runs: [run({status: 'in_progress', conclusion: null})],
