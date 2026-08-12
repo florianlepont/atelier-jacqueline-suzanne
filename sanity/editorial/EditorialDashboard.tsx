@@ -32,7 +32,6 @@ import {
 } from './deployment'
 import type {
   DeploymentRun,
-  DeploymentState,
   PipelineSegmentKind,
   ReleasePipelineDisplaySegments,
   ReleasePipelinePromote,
@@ -547,7 +546,6 @@ export function EditorialDashboard() {
               wrap="wrap"
               className="editorial-dashboard__actions editorial-dashboard__header-side"
             >
-              <DeploymentStatus state={currentDeploymentState} />
               <Button
                 className="editorial-dashboard__header-control editorial-dashboard__header-link"
                 style={{height: 44}}
@@ -1216,14 +1214,6 @@ function ShortcutRow({
   )
 }
 
-const deploymentDotColors: Record<DashboardTone, string> = {
-  default: '#9ca3af',
-  primary: '#556bfc',
-  positive: '#10b981',
-  caution: '#f59e0b',
-  critical: '#ef4444',
-}
-
 // Pure visual helpers for the two-node approval-gate pipeline below. Every
 // helper here is a function of already-computed pipeline state; none reads
 // component state or fetches anything (see the plan's scope boundary).
@@ -1297,58 +1287,6 @@ function pipelineGateVariant(
   if (display.liveSite === 'done') return 'done'
   if (promote.buttonDisabled) return 'locked'
   return 'ready'
-}
-
-function DeploymentStatus({state}: {state: DeploymentState}) {
-  const dateLabel = state.run ? formatActivityDate(state.run.updated_at) : ''
-
-  const content = (
-    <Flex align="center" gap={2} className="editorial-dashboard__deployment-content">
-      <span
-        aria-hidden="true"
-        style={{
-          width: 8,
-          height: 8,
-          borderRadius: '50%',
-          flex: '0 0 auto',
-          backgroundColor: deploymentDotColors[state.tone],
-        }}
-      />
-      <Text
-        size={1}
-        weight="medium"
-        style={{
-          whiteSpace: 'nowrap',
-          fontSize: 13,
-          color: state.tone === 'critical' ? deploymentDotColors.critical : undefined,
-        }}
-      >
-        {state.label}
-      </Text>
-      {dateLabel && (
-        <Text muted size={1} className="editorial-dashboard__deployment-date" style={{fontSize: 13}}>
-          {dateLabel}
-        </Text>
-      )}
-    </Flex>
-  )
-
-  return state.actionLabel ? (
-    <a
-      href={state.actionUrl}
-      target="_blank"
-      rel="noreferrer"
-      title={`${state.detail} ${state.actionLabel}`}
-      aria-label={`${state.label}. ${state.detail} ${state.actionLabel} (nouvel onglet)`}
-      className="editorial-dashboard__deployment-status"
-    >
-      {content}
-    </a>
-  ) : (
-    <div className="editorial-dashboard__deployment-status" title={state.detail}>
-      {content}
-    </div>
-  )
 }
 
 function ContentRow({

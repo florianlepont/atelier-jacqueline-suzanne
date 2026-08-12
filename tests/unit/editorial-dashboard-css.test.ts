@@ -92,6 +92,7 @@ describe('editorial dashboard pipeline row CSS stays visible (not collapsed to z
       'pipeline-label',
       'step-eyebrow',
       'promote-row',
+      'deployment-date',
     ];
     for (const fragment of removedFragments) {
       const occurrences = source.split(fragment).length - 1;

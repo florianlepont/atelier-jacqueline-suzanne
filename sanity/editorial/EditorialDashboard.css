@@ -47,9 +47,9 @@
 
 .editorial-dashboard__publish-panel {
   --dashboard-publish-accent: #556bfc;
-  /* Mirror deploymentDotColors' positive/critical hex values in
-     EditorialDashboard.tsx exactly, so this pipeline's done/failed node and
-     gate colouring and the header deployment status dot never drift apart. */
+  /* These are the pipeline's own success/failure accents, matching the
+     emerald/red tints the dashboard's positive and critical chips already
+     use elsewhere on the page. */
   --dashboard-pipeline-done: #10b981;
   --dashboard-pipeline-failed: #ef4444;
   background-color: var(--dashboard-surface-background);
@@ -277,10 +277,6 @@ a.editorial-dashboard__deployment-status:hover {
   background-color: var(--card-bg-color);
 }
 
-.editorial-dashboard__deployment-date {
-  white-space: nowrap;
-}
-
 .editorial-dashboard__row-link {
   display: block;
   color: inherit;
@@ -427,10 +423,6 @@ a.editorial-dashboard__deployment-status:hover {
     align-items: flex-start;
     flex-direction: column;
     gap: 4px;
-  }
-
-  .editorial-dashboard__deployment-date {
-    white-space: normal;
   }
 
   .editorial-dashboard__activity-heading {
