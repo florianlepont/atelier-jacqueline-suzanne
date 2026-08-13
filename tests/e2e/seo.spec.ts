@@ -49,4 +49,41 @@ test.describe('SEO metadata', () => {
     await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /.+/);
     await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /^https:\/\/cdn\.sanity\.io\//);
   });
+
+  // quick-260811-kog-04: the fr/en gallery and édition detail routes now
+  // share GalleryDetailPage.astro/EditionDetailPage.astro. Each detail page
+  // must still canonicalize to ITSELF, not always to the French one, and
+  // both locales of the same document must agree on the alternate pair.
+  test('gallery detail canonicalizes to itself and shares the same fr/en alternate pair across locales', async ({
+    page,
+  }) => {
+    await page.goto('/galleries/silos/');
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', /\/galleries\/silos\/$/);
+    const frAlternate = await page.locator('link[rel="alternate"][hreflang="fr"]').getAttribute('href');
+    const enAlternateFromFr = await page.locator('link[rel="alternate"][hreflang="en"]').getAttribute('href');
+
+    await page.goto('/en/galleries/silos/');
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      'href',
+      /\/en\/galleries\/silos\/$/,
+    );
+    const frAlternateFromEn = await page.locator('link[rel="alternate"][hreflang="fr"]').getAttribute('href');
+    const enAlternate = await page.locator('link[rel="alternate"][hreflang="en"]').getAttribute('href');
+
+    expect(frAlternateFromEn).toBe(frAlternate);
+    expect(enAlternateFromFr).toBe(enAlternate);
+    expect(frAlternate).toMatch(/\/galleries\/silos\/$/);
+    expect(enAlternate).toMatch(/\/en\/galleries\/silos\/$/);
+  });
+
+  test('édition detail canonicalizes to itself in both locales', async ({page}) => {
+    await page.goto('/editions/rebut/');
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', /\/editions\/rebut\/$/);
+
+    await page.goto('/en/editions/rebut/');
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      'href',
+      /\/en\/editions\/rebut\/$/,
+    );
+  });
 });
