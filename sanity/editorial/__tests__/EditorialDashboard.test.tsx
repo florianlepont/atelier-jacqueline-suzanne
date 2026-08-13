@@ -45,7 +45,7 @@ function dashboardClient({
 
 async function openPublicationConfirmation() {
   await screen.findAllByText("Page d'accueil")
-  fireEvent.click(screen.getByRole('button', {name: 'Mettre le site à jour'}))
+  fireEvent.click(screen.getByRole('button', {name: 'Publier'}))
   await screen.findByText('Publier maintenant sur le site public ?')
 }
 
@@ -124,15 +124,18 @@ describe('EditorialDashboard publication workflow', () => {
     vi.mocked(getRecentDeployments).mockResolvedValue([])
   })
 
-  it('publishes a confirmed batch exactly once and reports Sanity success', async () => {
+  it('publishes a confirmed batch exactly once and closes the confirmation dialog', async () => {
     const client = dashboardClient()
     render(<EditorialDashboard />)
     await openPublicationConfirmation()
 
     fireEvent.click(screen.getByRole('button', {name: 'Confirmer'}))
 
-    await screen.findByText(/Contenus publiés dans Sanity/)
+    await waitFor(() =>
+      expect(screen.queryByText('Publier maintenant sur le site public ?')).toBeNull(),
+    )
     expect(client.action).toHaveBeenCalledOnce()
+    expect(screen.queryByText('Échec de la publication')).toBeNull()
   })
 
   it('keeps confirmation open when the batch changes during final preflight', async () => {
@@ -158,13 +161,19 @@ describe('EditorialDashboard publication workflow', () => {
     await openPublicationConfirmation()
 
     fireEvent.click(screen.getByRole('button', {name: 'Confirmer'}))
+    // The dialog closes on a non-recoverable-from-dialog error; the specific
+    // reason surfaces in the compact status panel instead.
     await screen.findByText('publication refusée')
+    expect(screen.queryByText('Publier maintenant sur le site public ?')).toBeNull()
 
-    fireEvent.click(screen.getByRole('button', {name: 'Actualiser et réessayer'}))
+    // Retrying is the same "Publier" action — the button stays enabled
+    // (only a tracking failure disables it) so clicking it again re-opens
+    // confirmation for another attempt.
+    fireEvent.click(screen.getByRole('button', {name: 'Publier'}))
     await screen.findByText('Publier maintenant sur le site public ?')
     fireEvent.click(screen.getByRole('button', {name: 'Confirmer'}))
 
-    await screen.findByText(/Contenus publiés dans Sanity/)
+    await waitFor(() => expect(screen.queryByText('publication refusée')).toBeNull())
     expect(client.action).toHaveBeenCalledTimes(2)
   })
 
@@ -183,9 +192,17 @@ describe('EditorialDashboard publication workflow', () => {
 
     fireEvent.click(screen.getByRole('button', {name: 'Confirmer'}))
     await screen.findAllByText(/fraîcheur du site non vérifiable/)
-    fireEvent.click(screen.getByRole('button', {name: 'Actualiser le suivi'}))
+    expect(client.action).toHaveBeenCalledOnce()
 
-    await screen.findByText(/La mise à jour du site est maintenant suivie séparément/)
+    // The "Publier" button is disabled while tracking is unverified;
+    // "Réessayer le suivi" is the only wired recovery path.
+    fireEvent.click(screen.getByRole('button', {name: 'Réessayer le suivi'}))
+
+    await waitFor(() =>
+      expect(screen.queryAllByText(/fraîcheur du site non vérifiable/).length).toBe(0),
+    )
+    // Tracking retry re-checks the same commit; it must never re-invoke
+    // the publish action.
     expect(client.action).toHaveBeenCalledOnce()
   })
 })

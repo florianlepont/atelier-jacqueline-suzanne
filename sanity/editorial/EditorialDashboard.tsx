@@ -407,10 +407,12 @@ export function EditorialDashboard() {
     const hasModifications = publicationCard.total > 0
     const isDeploying = currentDeploymentState.kind === 'deploying' || publicationState.phase === 'publishing'
     const isWaiting = currentDeploymentState.kind === 'waiting-run'
-    const hasError = 
-      currentDeploymentState.kind === 'failed' || 
-      publicationState.phase === 'error' || 
-      publicationState.phase === 'tracking-error'
+    const publicationErrorPhase = publicationState.phase === 'error'
+    const trackingErrorPhase = publicationState.phase === 'tracking-error'
+    const hasError =
+      currentDeploymentState.kind === 'failed' ||
+      publicationErrorPhase ||
+      trackingErrorPhase
     const isCurrent = currentDeploymentState.kind === 'current' && !hasModifications
     const isPendingContent = currentDeploymentState.kind === 'pending-content'
     
@@ -437,6 +439,11 @@ export function EditorialDashboard() {
     
     // Main label based on state
     const getStatusLabel = () => {
+      // A failed publish or a failed post-publish tracking check carries its
+      // own reason (publicationState.error); the generic GitHub deployment
+      // label is about a different failure entirely and must not mask it.
+      if (publicationErrorPhase) return 'Échec de la publication'
+      if (trackingErrorPhase) return 'Publication effectuée, suivi indisponible'
       if (hasError) return currentDeploymentState.label || 'Échec de la mise à jour'
       if (isDeploying) return 'Déploiement en cours...'
       if (isWaiting) return currentDeploymentState.label || 'Mise à jour en attente'
@@ -444,9 +451,10 @@ export function EditorialDashboard() {
       if (isPendingContent) return currentDeploymentState.label || 'Modifications en attente'
       return 'Site à jour'
     }
-    
+
     // Subtitle/details based on state
     const getStatusDetail = () => {
+      if (publicationErrorPhase || trackingErrorPhase) return publicationState.error
       if (hasError) return currentDeploymentState.detail
       if (isDeploying) return 'GitHub reconstruit actuellement le site.'
       if (isWaiting) return currentDeploymentState.detail
@@ -458,7 +466,28 @@ export function EditorialDashboard() {
     
     // Action buttons based on state
     const renderActions = () => {
-      if (hasError && currentDeploymentState.actionUrl) {
+      // A failed tracking check still has a real, wired retry path
+      // (refreshPublicationTracking) — surface it here instead of falling
+      // through to the (disabled, since trackingFailed) "Publier" button
+      // below, which would strand the editor with no way forward.
+      if (trackingErrorPhase) {
+        return (
+          <Button
+            tone="critical"
+            text="Réessayer le suivi"
+            loading={publicationBusy}
+            onClick={() => void refreshPublicationTracking()}
+            style={{minHeight: 44}}
+          />
+        )
+      }
+
+      // Only a genuine GitHub deployment failure links out to the workflow —
+      // a publish/tracking error is handled above (or, for a plain publish
+      // error, by re-enabling "Publier" below) and must not be replaced by
+      // a "pending-content" state's unrelated actionUrl (every
+      // DeploymentState variant sets one, including non-failure states).
+      if (currentDeploymentState.kind === 'failed' && currentDeploymentState.actionUrl) {
         return (
           <Button
             as="a"
