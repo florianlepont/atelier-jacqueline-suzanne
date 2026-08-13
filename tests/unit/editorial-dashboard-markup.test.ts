@@ -59,10 +59,16 @@ describe('editorial dashboard pipeline node label/detail render as plain spans, 
   });
 });
 
-describe('editorial dashboard panel header subtitle gates the not-started clause on the promote row flag', () => {
+// This describe used to assert that the not-started clause was inlined into
+// the subtitle JSX. Quick task 260813-g49 moves that whole eight-branch
+// decision into releasePanelSubtitle() in pipelineView.ts, so it could get
+// real behavioural tests instead of an inline ternary in JSX. Re-inlining
+// any branch of it here would put the panel's status narration back outside
+// test coverage.
+describe('editorial dashboard panel header subtitle is wired to releasePanelSubtitle()', () => {
   const source = readFileSync(COMPONENT_PATH, 'utf-8');
 
-  it('gates the not-started clause on pipeline.promote.notStarted and publicationCard.total > 0, in the same JSX expression', () => {
+  it('renders {panelSubtitle} in the subtitle element, with no re-inlined branch logic', () => {
     const headingIndex = source.indexOf('Mettre le site à jour');
     expect(headingIndex, 'expected to find the panel header heading text').toBeGreaterThan(-1);
     const closingTextIndex = source.indexOf('</Text>', headingIndex);
@@ -70,72 +76,96 @@ describe('editorial dashboard panel header subtitle gates the not-started clause
     const subtitleSlice = source.slice(headingIndex, closingTextIndex);
 
     expect(
+      subtitleSlice.includes('{panelSubtitle}'),
+      'the subtitle element must render the single derived string from releasePanelSubtitle(), not an inline ternary',
+    ).toBe(true);
+    expect(
+      subtitleSlice.includes('publicationCard.total'),
+      'the not-started decision moved into releasePanelSubtitle() in pipelineView.ts so it could get real behavioural tests — re-inlining any branch of it here would put the panel status narration back outside test coverage',
+    ).toBe(false);
+    expect(
       subtitleSlice.includes('pipeline.promote.notStarted'),
-      'this clause must be gated on the notStarted flag set by resolvePromoteRow() — never a condition re-derived locally in the component, since that flag is only reached after five earlier branches decline',
+      'same as above: this flag must be passed as an argument to releasePanelSubtitle(), not re-derived or re-checked inline in this JSX',
+    ).toBe(false);
+  });
+
+  it('derives panelSubtitle exactly once from all four required inputs', () => {
+    const matches = Array.from(source.matchAll(/const panelSubtitle = releasePanelSubtitle\(/g));
+    expect(matches, 'expected exactly one panelSubtitle derivation').toHaveLength(1);
+    const declarationIndex = matches[0].index ?? -1;
+    const closingParenIndex = source.indexOf('})', declarationIndex);
+    const declarationSlice = source.slice(declarationIndex, closingParenIndex);
+
+    expect(
+      declarationSlice.includes('segments: pipeline.segments'),
+      'dropping this input would disable every branch keyed on staging/production/content state',
     ).toBe(true);
     expect(
-      subtitleSlice.includes('publicationCard.total > 0'),
-      'the clause needs this extra guard because publicationCard.total comes from a different source (the publication inventory snapshot) than the draftCount driving the pipeline segments, and a rare disagreement between the two must not print this clause right after "Aucune modification publique en attente."',
+      declarationSlice.includes('modifiedCount: publicationCard.total'),
+      'dropping this input would disable the count sentence and the addendum guard',
     ).toBe(true);
     expect(
-      subtitleSlice.includes('Rien n’a été lancé pour l’instant'),
-      'expected the not-started clause string to be present in the same subtitle element as its two gating conditions',
+      declarationSlice.includes('notStarted: pipeline.promote.notStarted'),
+      'dropping this input would silently suppress the not-started addendum',
+    ).toBe(true);
+    expect(
+      declarationSlice.includes('requestError: releaseError'),
+      'dropping this input would disable the highest-priority branch — a release that could not start',
     ).toBe(true);
   });
 });
 
-// The not-started state returns no promote copy at all (title and detail
-// are both empty strings), so an always-rendered box would paint an empty
-// padded/tinted rectangle where the design calls for nothing. These tests
-// lock in the guard that skips the whole box when it has no body, and the
-// per-line ternaries that stop it from ever rendering a blank line when one
-// of title/detail is present without the other.
-describe('editorial dashboard pipeline-detail box is skipped entirely when it has no body', () => {
+// The box now carries only actions -- the failure run link and the
+// ready-state publish button -- never explanatory copy (resolvePromoteRow()
+// returns empty title/detail in every branch by contract). These tests lock
+// in the guard that skips the whole box when it has no actionable body, and
+// that the two actions it carries survive the copy removal.
+describe('editorial dashboard pipeline-detail box carries only actions, and is skipped when it has none', () => {
   const source = readFileSync(COMPONENT_PATH, 'utf-8');
 
-  it('derives promoteDetailBoxHasBody once, next to the other pipeline-derived values', () => {
-    expect(
-      /const promoteDetailBoxHasBody = Boolean\(/.test(source),
-      'expected a single promoteDetailBoxHasBody derivation declared as a Boolean(...) alongside displaySegments/pipelineDetail/gateVariant',
-    ).toBe(true);
+  it('derives promoteActionsBoxHasBody exactly once, as a single expression', () => {
+    const matches = Array.from(source.matchAll(/const promoteActionsBoxHasBody =/g));
+    expect(matches, 'expected exactly one promoteActionsBoxHasBody derivation').toHaveLength(1);
   });
 
-  it('derives the guard from title, detail and actionUrl together', () => {
-    const declarationIndex = source.indexOf('const promoteDetailBoxHasBody = Boolean(');
-    expect(declarationIndex, 'expected to find the promoteDetailBoxHasBody declaration').toBeGreaterThan(-1);
-    const closingParenIndex = source.indexOf(')', declarationIndex);
-    const declarationSlice = source.slice(declarationIndex, closingParenIndex);
+  it('derives the guard from gateVariant === \'ready\' and pipeline.promote.actionUrl', () => {
+    const declarationIndex = source.indexOf('const promoteActionsBoxHasBody =');
+    expect(declarationIndex, 'expected to find the promoteActionsBoxHasBody declaration').toBeGreaterThan(-1);
+    const declarationSlice = source.slice(declarationIndex, declarationIndex + 400);
 
     expect(
-      declarationSlice.includes('pipeline.promote.title'),
-      'the guard must reference title',
-    ).toBe(true);
-    expect(
-      declarationSlice.includes('pipeline.promote.detail'),
-      'the guard must reference detail',
+      declarationSlice.includes("gateVariant === 'ready'"),
+      'this term is the only thing keeping the production-release button mounted now that the copy it used to depend on is gone',
     ).toBe(true);
     expect(
       declarationSlice.includes('pipeline.promote.actionUrl'),
-      'dropping the actionUrl term would silently hide the run link in the failed-deploy states, whose title and detail can be present but whose link is the actionable part',
+      'the failed states have no other body — dropping this term would hide the run link that is their only actionable part',
     ).toBe(true);
   });
 
   it('wraps the pipeline-detail Stack itself in the guard, not merely its children', () => {
     expect(
-      /\{promoteDetailBoxHasBody &&/.test(source),
-      'expected the box itself to be conditionally rendered via {promoteDetailBoxHasBody && ...}',
+      /\{promoteActionsBoxHasBody &&/.test(source),
+      'expected the box itself to be conditionally rendered via {promoteActionsBoxHasBody && ...}',
     ).toBe(true);
   });
 
-  it('makes each text line inside the box independently conditional', () => {
+  it('never references pipeline.promote.title or pipeline.promote.detail anywhere in the component', () => {
     expect(
-      /pipeline\.promote\.title\s*\?/.test(source),
-      'a state with a title but no detail must not render a blank line inside the box',
-    ).toBe(true);
+      source.includes('pipeline.promote.title'),
+      'title is an empty string in every branch by contract — rendering it again is how the copy the user asked to remove creeps back in',
+    ).toBe(false);
     expect(
-      /pipeline\.promote\.detail\s*\?/.test(source),
-      'a state with a detail but no title must not render a blank line inside the box',
-    ).toBe(true);
+      source.includes('pipeline.promote.detail'),
+      'detail is an empty string in every branch by contract — rendering it again is how the copy the user asked to remove creeps back in',
+    ).toBe(false);
+  });
+
+  it('the old identifier promoteDetailBoxHasBody appears nowhere in the file', () => {
+    expect(
+      source.includes('promoteDetailBoxHasBody'),
+      'the box no longer has a "detail" — it has actions; the old identifier must not survive, including in a comment',
+    ).toBe(false);
   });
 
   it('keeps the box and its action link intact rather than deleting them', () => {
@@ -146,6 +176,17 @@ describe('editorial dashboard pipeline-detail box is skipped entirely when it ha
     expect(
       source.includes('pipeline.promote.actionUrl'),
       'the action link must survive the conditional-rendering change',
+    ).toBe(true);
+  });
+
+  it('keeps the ready-state publish button block, the control that triggers a real production release', () => {
+    expect(
+      source.includes('productionPublishDisabled('),
+      'this is the control that triggers a real production release, and it must survive the copy removal',
+    ).toBe(true);
+    expect(
+      source.includes("gateVariant === 'ready'"),
+      'the button must still be gated on the ready variant',
     ).toBe(true);
   });
 });
