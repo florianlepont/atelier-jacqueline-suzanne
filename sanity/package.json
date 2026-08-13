@@ -10,7 +10,9 @@
     "deploy-graphql": "sanity graphql deploy",
     "dev": "sanity dev",
     "start": "sanity start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "vitest run --config vitest.config.ts",
+    "test:coverage": "vitest run --config vitest.config.ts --coverage"
   },
   "keywords": [
     "sanity"
@@ -25,10 +27,15 @@
   },
   "devDependencies": {
     "@sanity/eslint-config-studio": "^6.0.0",
+    "@testing-library/dom": "10.4.1",
+    "@testing-library/react": "16.3.2",
     "@types/react": "^19.2.14",
+    "@vitest/coverage-v8": "4.1.9",
     "eslint": "^9.28",
+    "jsdom": "29.1.1",
     "prettier": "^3.5",
-    "typescript": "^5.8"
+    "typescript": "^5.8",
+    "vitest": "4.1.9"
   },
   "overrides": {
     "@sanity/uuid": "3.0.3",
