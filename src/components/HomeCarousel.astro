@@ -21,7 +21,7 @@
 // and 10-UI-SPEC.md "<SiteHeader> component contract".
 import { getRelativeLocaleUrl } from 'astro:i18n';
 import SiteHeader from './SiteHeader.astro';
-import { INTRO_REVEAL_DISTANCE, wordmarkPhotoFilter, ZOOM_REVEAL_DISTANCE } from '../lib/home-carousel';
+import { wordmarkPhotoFilter } from '../lib/home-carousel';
 
 interface GalleryEntry {
   slug: string;
@@ -124,15 +124,6 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       '--wordmark-photo-filter': wordmarkPhotoFilter(firstGallery.heroTextColor),
       '--current-accent': firstGallery.heroColor ?? 'var(--color-accent)',
       '--current-accent-text': firstGallery.heroTextColor ?? 'var(--color-on-accent)',
-      /* Phase 21 (HOME-14/HOME-15): the phone-width scroll deck's own
-         full-screen zoom wordmark/photo-crossfade layer (below) reads these
-         two custom properties. Deliberately sourced from firstGallery, the
-         SAME gallery whose heroSrc the deck's first slide (Task 2 below)
-         also uses, so the wordmark zoom lands on the exact photo the first
-         slide then shows — no seam between the intro transition and the
-         first real slide. */
-      '--zoom-photo': `url(${firstGallery.heroSrc})`,
-      '--zoom-photo-filter': wordmarkPhotoFilter(firstGallery.heroTextColor),
     }}
   >
     <SiteHeader
@@ -353,165 +344,6 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
       </div>
     </div>
 
-    {/* Phase 21 (HOME-14/HOME-15): the phone-width scroll deck. NEW, parallel
-        markup, sibling to .home-hero/.home-grid above — shown ONLY below
-        767px by a pure CSS media query (Task 3), never a JS markup swap
-        (21-RESEARCH.md Anti-Patterns). This is deliberately NOT a reuse of
-        the carousel's own DOM: that subtree carries progress dashes, an
-        autoplay toggle, peek layers and a hover cursor this mobile view
-        explicitly does not want (D-01/D-16). No motion is wired yet — this
-        task only builds the structure/CSS end-state; plans 21-05/21-06 layer
-        the scroll driver and arrival observer on top.
-        - D-16: the wordmark is intro-only. It lives ONLY in the zoom stage
-          below, once, and no .home-slide repeats it — regular slides show
-          just title + description.
-        - D-10: each slide is a real anchor with a build-time-rendered href,
-          so tapping it opens the gallery via the browser's own click
-          semantics. There is no synthesized openCurrent()/coordinate
-          heuristic here, and therefore no exclusion guard to get wrong —
-          precisely the tap-hijack bug class CR-01 was (fixed separately, in
-          the EXISTING carousel's touchend handler, by plan 21-02).
-        - D-07: exactly one photo per gallery (its own hero/cover photo) —
-          not a multi-photo-per-gallery preview. */}
-    <div class="home-scroll-deck" data-role="scroll-deck">
-      {/* 21-UAT.md round-2 gap 1 (logo duplication) —
-          .planning/debug/homepage-scroll-intro-logo-duplication.md: plan
-          21-10's two stacked, ordinary-flow beats above (each rendering its
-          own separate logomark image at matched static geometry) are
-          replaced here by ONE pinned, scroll-scrubbed intro block
-          containing exactly one logomark that shrinks continuously as the
-          tagline arrives beneath it. This corrects assumption A4 by
-          developer round-2 correction ("le logo se réduise et laisse
-          apparaître le texte de présentation" — one element, one continuous
-          transformation), not a defect fix: the shipped two-beat code
-          implemented A4 exactly as written. A1 (reduced motion gets the
-          intro as static content), A2 (dismissed by scrolling past, nothing
-          else), A3 (no scroll-snap point on the intro) and A5 (ink
-          background, white logomark, localised scroll cue with a gentle
-          drift) all still stand unchanged — only A4's implementation is
-          superseded, and only the layout container/reveal mechanism change,
-          not A5's visual tokens.
-
-          The shape deliberately mirrors the zoom track/stage pair directly
-          below (one sticky stage inside a tall track) and
-          DetailHero.astro's own `.detail-hero__pin` (one photo lerped by
-          one `t`, with dependent content revealed from sub-ranges of that
-          same `t`) — this codebase's own established idiom for a single
-          continuously-scrubbed element with dependent content on sub-ranges
-          of one shared progress value, not a novel mechanism.
-
-          No zoom math changes here: computeZoomProgress (src/lib/
-          home-carousel.ts) keys off .home-scroll-deck__track's own live
-          getBoundingClientRect().top, so replacing the two static beats
-          with this track/stage pair needs zero change to
-          ZOOM_REVEAL_DISTANCE or the zoom track's own height calc below.
-
-          The new risk this plan takes on is the intro-to-zoom boundary this
-          track's bottom edge shares with the zoom track's top edge
-          (adjacent siblings, no margin) — assumption A4 was written
-          specifically to avoid adding a second pinned handoff boundary
-          right before the zoom's own. That risk is paid for by re-deriving
-          BOTH scrubs from live getBoundingClientRect() reads on every
-          painted frame (Task 3), the same rigor plan 21-07 already applied
-          to the zoom-to-slide boundary — no scroll listener, no observer,
-          anywhere in either path. */}
-      <div
-        class="home-scroll-deck__intro-track"
-        data-role="intro-track"
-        data-intro-distance={INTRO_REVEAL_DISTANCE}
-        style={`--intro-reveal-distance: ${INTRO_REVEAL_DISTANCE}px`}
-      >
-        <div class="home-scroll-deck__intro-stage" data-role="intro-stage">
-          <img
-            src={logoWhiteSrc}
-            alt=""
-            aria-hidden="true"
-            class="home-scroll-deck__intro-logo"
-            data-role="intro-logo"
-          />
-          {introBody ? (
-            <p class="home-scroll-deck__intro-body" data-role="intro-body">{introBody}</p>
-          ) : null}
-          {/* Decorative only (aria-hidden) — assumption A2: dismissed by
-              scrolling past, nothing else; no tap/timer affordance. */}
-          <div class="home-scroll-deck__intro-cue" data-role="intro-cue" aria-hidden="true">
-            <span>{isEn ? 'Scroll' : 'Défiler'}</span>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-          </div>
-        </div>
-      </div>
-      <div
-        class="home-scroll-deck__track"
-        data-role="zoom-track"
-        data-reveal-distance={ZOOM_REVEAL_DISTANCE}
-        style={`--zoom-reveal-distance: ${ZOOM_REVEAL_DISTANCE}px`}
-      >
-        <div class="home-scroll-deck__stage" data-role="zoom-stage">
-          <div class="home-scroll-deck__photo" data-role="zoom-photo" aria-hidden="true"></div>
-          <h1 class="home-scroll-deck__wordmark" data-role="zoom-wordmark">
-            <span class="home-scroll-deck__focus-letter" data-role="zoom-focus-letter">A</span>telier<br />Jacqueline<br />Suzanne
-          </h1>
-        </div>
-      </div>
-      <div class="home-scroll-deck__slides" data-role="deck-slides">
-        {galleries.map((gallery, i) => (
-          <a
-            href={getRelativeLocaleUrl(locale, `galleries/${gallery.slug}`)}
-            class="home-slide"
-            data-role="deck-slide"
-            data-index={i}
-            data-hero-color={gallery.heroColor}
-            data-hero-text-color={gallery.heroTextColor}
-            style={{
-              '--slide-accent': gallery.heroColor ?? 'var(--color-accent)',
-              '--slide-accent-text': gallery.heroTextColor ?? 'var(--color-on-accent)',
-            }}
-          >
-            {/* 21-08 (HOME-14, blur-placeholder gap —
-                .planning/debug/homepage-scroll-deck-blur-placeholder-jank.md):
-                the same HOME-09 two-layer blur-up pair .home-hero__photo and
-                .home-grid__tile already use, applied to deck slides for the
-                first time. Mirrors both existing placeholder call sites'
-                exact attribute set: blurSrc source, empty alt, aria-hidden,
-                NO loading attribute — a 24px placeholder must never be
-                deferred, or it stops being a placeholder at all. */}
-            <img
-              src={gallery.blurSrc}
-              alt=""
-              aria-hidden="true"
-              class="home-slide__img home-slide__img-placeholder"
-            />
-            {/* 21-08: three-way priority split by index, replacing the
-                prior first-slide-only eager/high. Index 0 stays eager/high
-                (first paint). Index 1 is ALSO eager, but at LOW fetch
-                priority — it must start downloading at page load so it is
-                already loaded by the time the visitor finishes the
-                wordmark-zoom scrub into slide 0, without competing with
-                slide 0's own paint. Index 2+ stay native-lazy with no
-                fetch-priority hint. Deliberately NOT widened past index 1:
-                eagerly fetching every gallery's full-resolution photo would
-                trade this perceived-latency gap for a real bandwidth/main-
-                thread problem on a phone connection (T-21-08-A). */}
-            <img
-              src={gallery.heroSrc}
-              srcset={gallery.heroSrcSet}
-              sizes="100vw"
-              alt={gallery.alt}
-              loading={i <= 1 ? 'eager' : 'lazy'}
-              decoding="async"
-              fetchpriority={i === 0 ? 'high' : i === 1 ? 'low' : undefined}
-              class="home-slide__img home-slide__img--sharp"
-            />
-            <div class="home-slide__accent">
-              <span class="home-slide__title">{gallery.title}</span>
-              <p class="home-slide__description">{gallery.statement}</p>
-            </div>
-          </a>
-        ))}
-      </div>
-    </div>
 
     {/* Build-time data for the runtime script to read (Lightbox.astro
         precedent) — the script never imports src/lib/sanity, it only reads
@@ -535,6 +367,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
     <script>
       import { computeHoverZone, computeWordmarkBackgroundPosition, computeWordmarkSeamFraction, detectSwipeDirection, pickRandomGalleryIndex, wordmarkPhotoFilter } from '../lib/home-carousel';
+      import type { DesktopHomeMountDetail } from '../client/home-carousel-runtime';
 
       interface GalleryEntry {
         slug: string;
@@ -549,10 +382,16 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         heroTextColor?: string;
       }
 
-      const root = document.querySelector<HTMLElement>('.home[data-display-mode]');
-      const hero = document.querySelector<HTMLElement>('[data-role="home-carousel"]');
-      const grid = document.querySelector<HTMLElement>('[data-role="home-grid"]');
-      const dataEl = document.querySelector<HTMLUListElement>('ul[data-role="home-carousel-data"]');
+      const runtimeRoot = document.querySelector<HTMLElement>('.home[data-display-mode]');
+
+      runtimeRoot?.addEventListener('ajs:mount-desktop-home', (mountEvent) => {
+        const detail = (mountEvent as CustomEvent<DesktopHomeMountDetail>).detail;
+        detail.handled = true;
+        const runtime = detail.scope;
+        const root = runtimeRoot;
+        const hero = root.querySelector<HTMLElement>('[data-role="home-carousel"]');
+        const grid = root.querySelector<HTMLElement>('[data-role="home-grid"]');
+        const dataEl = root.querySelector<HTMLUListElement>('ul[data-role="home-carousel-data"]');
 
       if (root && hero && grid && dataEl) {
         const galleries: GalleryEntry[] = Array.from(dataEl.querySelectorAll('li')).map((li) => ({
@@ -593,36 +432,17 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         const progressDashes = Array.from(hero.querySelectorAll<HTMLButtonElement>('[data-role="progress"] .home-hero__progress-dash'));
         const autoplayToggle = hero.querySelector<HTMLButtonElement>('[data-role="autoplay-toggle"]');
 
-        // HOME-09 (D-03/D-06): grid tiles are server-rendered once and never
-        // re-rendered by render() — a one-time load-listener setup here
-        // (not inside render()) fades each tile's sharp <img> in over its
-        // blurred placeholder as it lazy-loads into view.
-        //
-        // 21-08 (HOME-14, blur-placeholder gap —
-        // .planning/debug/homepage-scroll-deck-blur-placeholder-jank.md):
-        // the phone-width deck slides now render this same two-layer stack
-        // (see the deck slide markup above), so this loop is broadened to
-        // also cover .home-slide__img--sharp — the loop body below is kept
-        // byte-for-byte, only the queried element set grows. This wiring
-        // deliberately lives in this un-gated carousel script, not the
-        // phone-width deck driver script further down: a blur-to-sharp
-        // crossfade is a loading concern, not a motion concern, so it must
-        // keep working for a reduced-motion visitor too (D-15), and must
-        // never be torn down by the deck driver's detach path. The deck
-        // slide images exist in the DOM at every viewport width (the deck
-        // is `display: none` above 767px via CSS, not absent from markup),
-        // so on desktop these listeners simply never have anything to
-        // observe — a harmless no-op, not a leak.
-        const gridTileImgs = Array.from(document.querySelectorAll<HTMLImageElement>('.home-grid__tile-img--sharp'));
-        const deckSlideSharpImgs = Array.from(document.querySelectorAll<HTMLImageElement>('.home-slide__img--sharp'));
-        [...gridTileImgs, ...deckSlideSharpImgs].forEach((img) => {
+        // Grid tiles are server-rendered once and never re-rendered by
+        // render(); their listeners belong to this desktop lifecycle.
+        const gridTileImgs = Array.from(root.querySelectorAll<HTMLImageElement>('.home-grid__tile-img--sharp'));
+        gridTileImgs.forEach((img) => {
           if (img.complete) {
             showSharp(img);
           } else {
-            img.addEventListener('load', () => showSharp(img), { once: true });
+            img.addEventListener('load', () => showSharp(img), { once: true, signal: runtime.signal });
             // A failed fetch never fires 'load' — without this, a broken image
             // leaves the tile stuck on its blurred placeholder forever.
-            img.addEventListener('error', () => showSharp(img), { once: true });
+            img.addEventListener('error', () => showSharp(img), { once: true, signal: runtime.signal });
           }
         });
 
@@ -653,7 +473,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         // Carousel title: names the current slide's sharp photo immediately
         // before the browser's default link navigation proceeds.
         if (titleEl && heroImg) {
-          titleEl.addEventListener('click', () => setCrossDocPhoto(heroImg));
+          titleEl.addEventListener('click', () => setCrossDocPhoto(heroImg), { signal: runtime.signal });
         }
 
         // Grid tiles: attaching to each tile's parent `.home-grid__tile`
@@ -664,21 +484,14 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         gridTileImgs.forEach((img) => {
           const tile = img.closest('.home-grid__tile');
           if (tile) {
-            tile.addEventListener('click', () => setCrossDocPhoto(img));
+            tile.addEventListener('click', () => setCrossDocPhoto(img), { signal: runtime.signal });
           }
         });
 
         let carouselIndex = 0;
-        let timer: ReturnType<typeof setInterval> | null = null;
+        let timer: number | null = null;
         const reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-        // CR-01 fix: this desktop carousel's `data-display-mode` never
-        // actually leaves 'carousel' on a phone — the mode-toggle button
-        // that would flip it to 'grid' is display:none below 767px (see
-        // the `@media (max-width: 767px)` rule further down), so that
-        // dataset check alone can't gate auto-advance off at phone widths.
-        // Matches the identical `(max-width: 767px)` breakpoint the
-        // phone-only scroll-deck script (`mobile`, second <script> block
-        // below) and its CSS already use, byte-for-byte.
+        // Kept as a defensive guard in addition to the outer desktop mount.
         const phoneViewport = window.matchMedia('(max-width: 767px)');
         let autoAdvancePausedByUser = reduceMotionQuery.matches;
         let hasUserChosenAutoplay = false;
@@ -823,7 +636,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         function pumpWordmarkSync() {
           syncWordmarkLayers();
           if (performance.now() < wordmarkSyncUntil) {
-            wordmarkSyncRaf = requestAnimationFrame(pumpWordmarkSync);
+            wordmarkSyncRaf = runtime.requestAnimationFrame(pumpWordmarkSync);
           } else {
             wordmarkSyncRaf = null;
           }
@@ -838,7 +651,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           if (!hoverCapable || reduceMotionQuery.matches) return;
           wordmarkSyncUntil = Math.max(wordmarkSyncUntil, performance.now() + ms);
           if (wordmarkSyncRaf === null) {
-            wordmarkSyncRaf = requestAnimationFrame(pumpWordmarkSync);
+            wordmarkSyncRaf = runtime.requestAnimationFrame(pumpWordmarkSync);
           }
         }
 
@@ -894,7 +707,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
                 // this whole window, so the delay is invisible — it only
                 // defers the SHARP layer's own fade-in, which is exactly
                 // the situation the blur-up mechanic (HOME-09) exists for.
-                window.setTimeout(() => {
+                runtime.setTimeout(() => {
                   showSharp(heroImg);
                   if (heroImg.naturalWidth > 0) {
                     revealWordmarkPhoto();
@@ -1014,7 +827,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           // goToPrev/goToNext/goToIndex — already funnels through) rather
           // than duplicated at each call site.
           if (autoAdvancePausedByUser || phoneViewport.matches || root!.dataset.displayMode !== 'carousel') return;
-          timer = setInterval(() => {
+          timer = runtime.setInterval(() => {
             carouselIndex = (carouselIndex + 1) % galleries.length;
             // quick-260803-bvu (Item 1): auto-advance must always look like
             // a plain crossfade, never the manual peek/drag slide — see the
@@ -1043,7 +856,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
               // window, that recede's own eased transform is forced
               // instant instead — a narrow, low-impact edge case, and only
               // for a single auto-advance tick's window.
-              window.setTimeout(() => {
+              runtime.setTimeout(() => {
                 heroPhoto!.classList.remove('is-auto-snap');
               }, 400);
             } else {
@@ -1075,7 +888,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           } else {
             startAutoAdvance();
           }
-        });
+        }, { signal: runtime.signal });
 
         reduceMotionQuery.addEventListener('change', (event) => {
           if (hasUserChosenAutoplay) return;
@@ -1083,7 +896,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           syncAutoplayControl();
           if (autoAdvancePausedByUser) stopAutoAdvance();
           else startAutoAdvance();
-        });
+        }, { signal: runtime.signal });
 
         // CR-01: a resize/orientation change crossing the 767px breakpoint
         // (e.g. rotating a tablet, or a desktop window narrowed past it)
@@ -1094,7 +907,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         phoneViewport.addEventListener('change', () => {
           if (phoneViewport.matches) stopAutoAdvance();
           else startAutoAdvance();
-        });
+        }, { signal: runtime.signal });
 
         function showCarousel() {
           root!.dataset.displayMode = 'carousel';
@@ -1113,8 +926,8 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           if (hoverCapable) resetPeek();
         }
 
-        hero.addEventListener('focusin', stopAutoAdvance);
-        hero.addEventListener('focusout', startAutoAdvance);
+        hero.addEventListener('focusin', stopAutoAdvance, { signal: runtime.signal });
+        hero.addEventListener('focusout', startAutoAdvance, { signal: runtime.signal });
 
         // quick-260725-dcg (Fix 3): resets the 6000ms countdown (and, via
         // startAutoAdvance()'s own setFillPaused/restartFill calls, re-syncs
@@ -1156,7 +969,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             // works) from this mouse-click focus (blurred immediately, so
             // the timer resumes via `focusout`).
             if (!dash.matches(':focus-visible')) dash.blur();
-          });
+          }, { signal: runtime.signal });
         });
 
         // Direct request: arrow-key navigation, only while the carousel
@@ -1178,7 +991,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             event.preventDefault();
             goToNext();
           }
-        });
+        }, { signal: runtime.signal });
 
         // Direct request: swipe support on mobile. touchstart/touchend
         // (not touchmove) — only the net horizontal distance matters, and
@@ -1197,7 +1010,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           if (!touch) return;
           touchStartX = touch.clientX;
           touchStartY = touch.clientY;
-        }, { passive: true });
+        }, { passive: true, signal: runtime.signal });
         // quick-260726-u97: mobile tap-to-open — extends this SAME handler
         // (not a second touch listener) so it composes cleanly with the
         // swipe it already detects. A genuine tap (negligible movement on
@@ -1232,7 +1045,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
           if (Math.abs(deltaX) <= TAP_MAX_MOVEMENT && Math.abs(deltaY) <= TAP_MAX_MOVEMENT) {
             openCurrent();
           }
-        }, { passive: true });
+        }, { passive: true, signal: runtime.signal });
 
         // D3: reuses the current slide's title link — its href AND its
         // existing click listener (which already calls setCrossDocPhoto())
@@ -1406,7 +1219,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 
           const relevantLayer = direction === 'next' ? peekNext : peekPrev;
           let done = false;
-          let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+          let fallbackTimer: number | null = null;
 
           // Single-shot: guarded by `done` so transitionend and the
           // fallback timer can never both run it.
@@ -1452,10 +1265,10 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             finish();
           }
 
-          relevantLayer?.addEventListener('transitionend', onTransitionEnd);
+          relevantLayer?.addEventListener('transitionend', onTransitionEnd, { signal: runtime.signal });
           // 420ms transition + slack — guarantees finish() always runs even
           // if the transitionend event never fires (e.g. a null layer).
-          fallbackTimer = setTimeout(finish, 480);
+          fallbackTimer = runtime.setTimeout(finish, 480);
         }
 
         if (hoverCapable && heroPhoto) {
@@ -1504,7 +1317,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
               cursorEl.dataset.zone = zone;
             }
             updatePeek();
-          });
+          }, { signal: runtime.signal });
 
           heroPhoto.addEventListener('mouseenter', () => {
             heroPhoto.classList.add('is-cursor-active');
@@ -1514,7 +1327,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             // commitEdge()'s full-slide targets) so those keep the 420ms
             // ease.
             heroPhoto.classList.add('is-tracking');
-          });
+          }, { signal: runtime.signal });
 
           heroPhoto.addEventListener('mouseleave', () => {
             heroPhoto.classList.remove('is-cursor-active');
@@ -1536,7 +1349,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             // would fight it. finish()'s own render()->resetPeek() call
             // handles the neutral reset once the commit completes.
             if (!committing) resetPeek();
-          });
+          }, { signal: runtime.signal });
 
           // Desktop click: center zone opens the current gallery, edge
           // zones commit the in-progress peek to a full slide then swap
@@ -1555,7 +1368,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
             } else {
               openCurrent();
             }
-          });
+          }, { signal: runtime.signal });
         }
 
         // D-01/D-02/D-03: a single stateful button — its aria-label always
@@ -1590,7 +1403,7 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
              swap. The carousel's in-gallery photo motion remains unchanged;
              only the unreliable grid/carousel morph is removed. */
           mutate();
-        });
+        }, { signal: runtime.signal });
 
         // quick-260725-tqs (Item 6, Part C): land on the gallery requested
         // by DetailHero's scroll-up-to-return gesture (?carousel=<slug>).
@@ -1650,8 +1463,8 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         // actually been painted — a single rAF can still land before paint,
         // so a double rAF is used (the first schedules the frame the browser
         // paints the override in, the second runs after that paint).
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
+        runtime.requestAnimationFrame(() => {
+          runtime.requestAnimationFrame(() => {
             root!.classList.remove('is-accent-init');
           });
         });
@@ -1661,702 +1474,48 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
         // at different viewport widths (see the mobile-width overrides
         // above), so a stale computed --wordmark-bg-size/-position from a
         // previous width would drift out of alignment.
-        let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+        let resizeTimer: number | null = null;
         window.addEventListener('resize', () => {
           if (resizeTimer) clearTimeout(resizeTimer);
-          resizeTimer = setTimeout(syncWordmarkLayers, 100);
+          resizeTimer = runtime.setTimeout(syncWordmarkLayers, 100);
+        }, { signal: runtime.signal });
+        runtime.addCleanup(() => {
+          pendingHeroLoadCtrl?.abort();
+          if (namedCrossDocPhoto) namedCrossDocPhoto.style.viewTransitionName = '';
+          root.classList.remove('is-accent-init', 'has-wordmark-photo');
+          heroPhoto?.classList.remove('is-cursor-active', 'is-over-controls', 'is-tracking', 'is-opening');
+          document.documentElement.classList.remove('mobile-home-arrival-past');
         });
       }
+      });
     </script>
 
     <script>
-      // Phase 21 (HOME-15, D-01/D-02/D-03/D-04/D-12/D-15): the wordmark-to-
-      // photo zoom driver — a SECOND, independent <script> block from the
-      // carousel's own above. That script's swipe/hover/mode-toggle logic is
-      // entirely inert below 767px now, and mixing the two would couple two
-      // independently-gated concerns; this driver has its own reduced-
-      // motion/phone-width gate and lifecycle instead.
-      //
-      // Ported from DetailHero.astro's pinned scroll-scrubbed driver (lines
-      // 198-322), breakpoint direction inverted (max-width: 767px, not
-      // min-width: 768px) and a scale/opacity payload instead of a
-      // width/position tween. Progress is derived from the zoom track's own
-      // getBoundingClientRect().top (D-02) — never a bounded div's scrollTop,
-      // which was sketch-only scaffolding for side-by-side variant
-      // comparison. The actual math (progress/scale/opacity/focus-origin) is
-      // imported from src/lib/home-carousel.ts (plan 21-01), never
-      // re-implemented inline here.
-      //
-      // Reversibility (D-04) is free: the zoom state is a pure function of
-      // live scroll position, not a played animation, so scrolling back up
-      // smoothly reverses the whole effect with no extra code.
-      //
-      // Plan 21-07 (`21-UAT.md` gap 2, root-caused in
-      // `.planning/debug/homepage-scroll-zoom-handoff-glitch.md`): this
-      // driver originally ported DetailHero.astro's `scroll`-event-listener
-      // pattern verbatim, carrying forward its latent assumption that
-      // `scroll` events fire densely and promptly enough to keep JS-driven
-      // visual state in lockstep with the composited scroll position. That
-      // assumption held on desktop (mouse-wheel/trackpad input, no touch
-      // momentum, no coincident scroll-snap boundary at DetailHero's own
-      // completion point) but broke on real iOS Safari: touch-momentum
-      // scrolling plus this deck's `scroll-snap-stop: always` boundary
-      // landing exactly at the zoom's own completion offset caused `scroll`
-      // dispatch (and separately, plan 21-06's `IntersectionObserver`
-      // arrival callback) to be throttled/coalesced past the moment native
-      // `position: sticky` had already released — producing a stale,
-      // mid-crossfade frame overlapping the already-arrived first slide.
-      // The driver below therefore polls live geometry every painted frame
-      // instead of waiting on either event. `DetailHero.astro` itself is
-      // deliberately NOT changed by this plan — it is desktop-only, has no
-      // touch momentum, and has no snap boundary at its own completion
-      // point, so the original assumption still holds there.
-      import {
-        ZOOM_REVEAL_DISTANCE,
-        INTRO_REVEAL_DISTANCE,
-        computeZoomProgress,
-        computeWordmarkZoomState,
-        computeIntroProgress,
-        computeIntroScrubState,
-        computeFocusOrigin,
-        computeSlideVisibleRatio,
-        computeArrivalRevealed,
-      } from '../lib/home-carousel';
+      const root = document.querySelector<HTMLElement>('.home[data-display-mode]');
+      const desktop = window.matchMedia('(min-width: 768px)');
+      let cleanup: (() => void) | null = null;
+      let generation = 0;
 
-      const root = document.querySelector<HTMLElement>('.home');
-      const deckRoot = document.querySelector<HTMLElement>('[data-role="scroll-deck"]');
-      const track = deckRoot?.querySelector<HTMLElement>('[data-role="zoom-track"]') ?? null;
-      const wordmark = deckRoot?.querySelector<HTMLElement>('[data-role="zoom-wordmark"]') ?? null;
-      const focusLetter = deckRoot?.querySelector<HTMLElement>('[data-role="zoom-focus-letter"]') ?? null;
-      const photoLayer = deckRoot?.querySelector<HTMLElement>('[data-role="zoom-photo"]') ?? null;
-      // Plan 21-06 (HOME-14, D-09/D-13/D-14): resolved alongside the other
-      // deck element lookups. An empty array (no galleries, or the deck
-      // itself absent) is a safe no-op for every arrival branch below.
-      const slides = deckRoot ? Array.from(deckRoot.querySelectorAll<HTMLElement>('[data-role="deck-slide"]')) : [];
-      // Phase 21, plan 21-13 (21-UAT.md round-2 gap 1): the pinned intro's
-      // own elements, resolved the same optional way as track/wordmark/
-      // focusLetter/photoLayer above — but deliberately NOT added to the
-      // `if (root && deckRoot && ...)` guard below, so a missing intro
-      // (e.g. an older cached build with no intro markup) can never stop
-      // the zoom driver from attaching. introBodyEl is legitimately absent
-      // whenever the Sanity intro field is empty (see the markup's own
-      // `introBody ?` conditional) — every write to it below is
-      // individually null-guarded rather than folded into one
-      // all-or-nothing check.
-      const introTrack = deckRoot?.querySelector<HTMLElement>('[data-role="intro-track"]') ?? null;
-      const introLogo = deckRoot?.querySelector<HTMLElement>('[data-role="intro-logo"]') ?? null;
-      const introBodyEl = deckRoot?.querySelector<HTMLElement>('[data-role="intro-body"]') ?? null;
-      const introCue = deckRoot?.querySelector<HTMLElement>('[data-role="intro-cue"]') ?? null;
+      async function syncDesktopRuntime() {
+        const requestedGeneration = ++generation;
+        cleanup?.();
+        cleanup = null;
+        if (!root || !desktop.matches) return;
 
-      const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
-      // Pitfall 2: this exact 767px value must match the CSS's own
-      // `@media (max-width: 767px)` gate byte-for-byte — a stray 768px
-      // (or min-width) would make the JS activate at a different width
-      // than the CSS that shows the markup this driver depends on.
-      // 21-11: hoisted out of the driver guard below (both queries were
-      // previously declared inside it) so this one declaration of each can
-      // be shared with the viewport-height sync block immediately below,
-      // which must run whether or not the deck's full element set is
-      // present.
-      const mobile = matchMedia('(max-width: 767px)');
-
-      // 21-11 (HOME-14/HOME-15, 21-UAT.md round-2 gap 4 —
-      // .planning/debug/homepage-scroll-still-not-fullscreen.md): a
-      // self-contained sizing sync, deliberately OUTSIDE the motion
-      // driver's `if (root && deckRoot && ...)` guard below — mirrors
-      // DetailHero.astro's own scroll-hint block (lines ~220-233), which is
-      // kept outside its reveal-driver guard for the same reason: it must
-      // never depend on that driver's element set being complete. `root`
-      // (`.home`) is the only element this needs.
-      //
-      // D-15 exemption: this is deliberately NOT gated on `reduceMotion`,
-      // unlike every scroll-linked driver elsewhere in this file. D-15's
-      // convention is "no scroll-linked JS attaches at all" for a
-      // reduced-motion visitor — but nothing here animates, reads scroll
-      // position, or drives a transform. It only mirrors the browser's own
-      // reported viewport size into a custom property, once per genuine
-      // size change, so a reduced-motion phone visitor still gets correct
-      // full-screen coverage (gap 4's failed truth says "at any point", not
-      // "while the motion driver happens to be attached").
-      //
-      // Declared at module scope (NOT nested inside an `if (root) {...}`
-      // block) so the driver guard below — a separate block — can also
-      // call it as frame()'s first statement (item 4). The function guards
-      // itself on `root` internally instead, which is what "guarded only
-      // on root being present" means here: it is always safe to call, and
-      // callers never need their own `if (root)` check around it.
-      const DECK_VH_SENTINEL = -1;
-      let lastDeckVh = DECK_VH_SENTINEL;
-
-      function syncDeckViewportHeight() {
-        if (!root) return;
-        if (!mobile.matches) {
-          // UI-02: nothing at 768px and above may carry the property.
-          root.style.removeProperty('--deck-vh');
-          lastDeckVh = DECK_VH_SENTINEL;
-          return;
-        }
-        // T-21-11-B: under pinch-zoom, visualViewport reports the
-        // zoomed-in visible area, which would collapse every full-screen
-        // deck box to a fraction of the screen. Falling back to
-        // window.innerHeight whenever the reported scale exceeds ~1.01
-        // keeps the deck sized to the actual screen, not the zoomed
-        // fragment of it.
-        const vv = window.visualViewport;
-        const height = vv && vv.scale <= 1.01 ? vv.height : window.innerHeight;
-        // T-21-11-A: only write on a genuine (>=1px) change, so Safari's
-        // toolbar-collapse animation — which can report sub-pixel height
-        // deltas on some frames — does not force a style write (and the
-        // resulting synchronous layout, see the frame() call site below)
-        // on every single frame.
-        if (Math.abs(height - lastDeckVh) < 1) return;
-        lastDeckVh = height;
-        root.style.setProperty('--deck-vh', `${height}px`);
+        const { mountDesktopHomeCarousel } = await import('../client/home-carousel-runtime');
+        if (requestedGeneration !== generation || !desktop.matches) return;
+        cleanup = mountDesktopHomeCarousel(root);
       }
 
-      syncDeckViewportHeight();
-      if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', syncDeckViewportHeight, { passive: true });
-        window.visualViewport.addEventListener('scroll', syncDeckViewportHeight, { passive: true });
-      }
-      mobile.addEventListener('change', syncDeckViewportHeight);
-
-      // Every element above is optional — a silent no-op if the deck is
-      // absent (e.g. the zero-galleries empty state, which never renders
-      // `.home` at all), mirroring the existing script's own
-      // `if (root && hero && grid && dataEl)` idiom.
-      if (root && deckRoot && track && wordmark && focusLetter && photoLayer) {
-        // Plan 21-06 (HOME-14, D-09/D-13/D-14) originally used a single
-        // high (~0.98) symmetric threshold here — the same number to show
-        // AND hide a gallery's description, evaluated fresh on every
-        // painted frame. Plan 21-15 (`21-UAT.md` round-2 gap 2, gallery
-        // half, root-caused in
-        // `.planning/debug/homepage-scroll-text-reveal-too-fast.md`)
-        // replaced it: a single frame below that number — from an
-        // unreliable `scroll-snap: proximity` stop (Pitfall 6, see the
-        // snap-type rule below) or simply the settle spring of a
-        // successful snap — re-hid text the 180ms reveal transition had
-        // only just finished bringing in. Plan 21-11's live-viewport slide
-        // sizing (`--deck-vh`) made this worse still: it collapsed the
-        // tolerance band the old number quietly relied on (see
-        // `ARRIVAL_REVEAL_THRESHOLD`'s own docstring in
-        // `src/lib/home-carousel.ts`). The fix is a two-level latch
-        // (`computeArrivalRevealed`, imported above) whose only state is
-        // the class list itself — `wasRevealed`, read from
-        // `target.classList` on the line above the toggle below, exactly
-        // as the old code already did for the accent rising-edge guard —
-        // so no new per-frame state exists. The reveal side
-        // (`ARRIVAL_REVEAL_THRESHOLD`) must stay above 0.5: every deck
-        // slide is one viewport tall and they are contiguous, so two
-        // adjacent slides' visible ratios sum to at most 1, and a
-        // threshold above 0.5 guarantees at most one slide can be "arrived"
-        // at any scroll position — the property D-09's live accent and the
-        // 21-08 next-slide warm both depend on. This is assumption A8,
-        // pending the real-device confirmation this plan's own Task 3
-        // carries.
-        //
-        // A consequence worth knowing before it surprises anyone: after
-        // plan 21-12's pull-up, the first slide's top edge reaches the
-        // pinned stage's release point within the last ~9% of the zoom
-        // scrub, so the first slide now latches revealed slightly BEFORE
-        // zoom completion rather than exactly at it. This is invisible and
-        // harmless — plan 21-12 made the stage opaque and stacked above
-        // the slides for precisely that span, so the first slide's accent
-        // panel is covered until the stage retires — and its only real
-        // effect is that D-09's accent write and the 21-08 warm both fire
-        // a few dozen pixels earlier, which for the warm is a small
-        // improvement. Do not "fix" it.
-        // Tracks whether applyArrival() itself is the one that wrote the
-        // live accent, so clearInlineStyles() only ever removes what THIS
-        // driver set (see its own comment for why unconditional removal
-        // would be unsafe).
-        let arrivalAccentWritten = false;
-
-        // Plan 21-07: replaces onArrival(entries), the IntersectionObserver
-        // callback. Takes no arguments — reads window.innerHeight once, then
-        // for each slide computes its own LIVE getBoundingClientRect() and
-        // derives the arrival ratio via computeSlideVisibleRatio (plan
-        // 21-07/src/lib/home-carousel.ts) instead of waiting on a browser-
-        // batched intersection callback. The rising-edge guard (wasRevealed)
-        // is carried forward verbatim — it is load-bearing for HOME-16's
-        // per-visit random starting accent and must not be simplified away.
-        // 21-08 (HOME-14, blur-placeholder gap —
-        // .planning/debug/homepage-scroll-deck-blur-placeholder-jank.md):
-        // starts the NEXT slide's sharp photo downloading the moment THIS
-        // slide arrives, so a normal, unhurried scroll pace finds it
-        // already loading well ahead of arrival — bounded to exactly one
-        // promotion per arrival (T-21-08-A). Idempotent per image: bails
-        // immediately if there is no next slide, if its sharp layer is
-        // missing, or if it is already loaded/already promoted — the
-        // `loading === 'lazy'` check is the deferral flag itself, and it is
-        // naturally self-clearing once flipped to 'eager', so this can
-        // never re-promote (or re-fetch) the same image twice. This warm
-        // never runs for a reduced-motion visitor — this whole driver never
-        // attaches under that query (D-15) — and that is acceptable: a
-        // reduced-motion visitor already gets Task 1's placeholder
-        // crossfade on every slide, the two eager-loaded slides from
-        // markup, and the browser's native lazy threshold for the rest;
-        // there is no motion-paced "about to arrive" moment for this warm
-        // to anticipate there.
-        function warmNextSlide(index: number) {
-          const nextSlide = slides[index + 1];
-          if (!nextSlide) return;
-          const img = nextSlide.querySelector<HTMLImageElement>('.home-slide__img--sharp');
-          if (!img || img.classList.contains('is-loaded')) return;
-          if (img.loading === 'lazy') {
-            img.loading = 'eager';
-            img.fetchPriority = 'low';
-          }
-        }
-
-        // Phase 21, plan 21-13 (21-UAT.md round-2 gap 1, third `missing`
-        // item): iterates `slides` again, not a combined
-        // intro-plus-slides array — the intro is no longer an arrival
-        // target at all as of this plan. Plan 21-10 folded the two static
-        // intro beats into this same per-frame pass because their tagline
-        // reveal used the identical binary-threshold mechanism slide
-        // descriptions do; this plan replaces that mechanism for the intro
-        // entirely with a continuous scroll-scrubbed value
-        // (applyIntroScrub(), below) — a continuous scrub and a
-        // visibility-threshold toggle are different mechanisms, and mixing
-        // them is what produced two logos and an unreadable tagline in the
-        // first place (see .planning/debug/
-        // homepage-scroll-intro-logo-duplication.md). Per-element body is
-        // otherwise unchanged: ratio from computeSlideVisibleRatio against
-        // the live rect and window.innerHeight, comparison against
-        // computeArrivalRevealed (plan 21-15), wasRevealed captured before
-        // the toggle and fed INTO the latch call itself, and the class
-        // toggled in both directions.
-        function applyArrival() {
-          // 21-11/WR-01: match --deck-vh's own source rather than reading
-          // window.innerHeight independently. rect.height below is CSS-sized
-          // from var(--deck-vh, 100svh), whose value is lastDeckVh (written
-          // by syncDeckViewportHeight(), which frame() already calls before
-          // applyArrival() on this same frame) — falling back to
-          // window.innerHeight only when the deck-vh cache doesn't apply
-          // (desktop, where syncDeckViewportHeight() clears it to the
-          // sentinel) keeps the ratio's denominator from disagreeing with
-          // the value that actually sized the slide during Mobile Safari's
-          // toolbar-collapse animation.
-          const viewportHeight = mobile.matches && lastDeckVh !== DECK_VH_SENTINEL ? lastDeckVh : window.innerHeight;
-          slides.forEach((target) => {
-            const rect = target.getBoundingClientRect();
-            const ratio = computeSlideVisibleRatio(rect, viewportHeight);
-            // The reveal is a live, two-directional state (arrives AND
-            // departs, contrast GalleryGrid.astro's one-shot reveal) — D-14
-            // — so scrolling back up must hide the description again. Read
-            // order: ratio, then previous state, then the toggle — the
-            // latch itself is what gives that previous state one frame of
-            // memory (plan 21-15, `21-UAT.md` round-2 gap 2).
-            const wasRevealed = target.classList.contains('is-revealed');
-            const reached = computeArrivalRevealed(ratio, wasRevealed);
-            // WR-02: classList.toggle() always re-serializes and writes the
-            // `class` attribute, even when membership doesn't change — it is
-            // NOT a no-op write when the value is unchanged (unlike
-            // applyProgress()'s/applyIntroScrub()'s plain `t === last...`
-            // guards above, which this mirrors). Gating on an actual
-            // transition preserves the "zero style writes when stationary"
-            // invariant (T-21-07-A) for a fully settled page.
-            if (reached !== wasRevealed) {
-              target.classList.toggle('is-revealed', reached);
-            }
-
-            // T-21-10-A / HOME-16 (CR-01 fix): every element in `slides`
-            // carries a data-index attribute, so this guard is no longer
-            // strictly needed to exclude a non-slide arrival target — but
-            // it stays load-bearing for a SECOND, still-live reason: only
-            // write the live accent on the rising edge (just became
-            // arrived), never on every frame. Gating on data-index rather
-            // than data-hero-color matters: a gallery using Sanity's
-            // "palette automatique" option legitimately has no heroColor
-            // set, but it still has data-index — gating on heroColor
-            // presence would silently skip this whole block (and therefore
-            // the next-slide warm below) for that ordinary content-editing
-            // path.
-            if (reached && !wasRevealed && target.dataset.index !== undefined) {
-              root!.style.setProperty('--current-accent', target.dataset.heroColor || 'var(--color-accent)');
-              root!.style.setProperty('--current-accent-text', target.dataset.heroTextColor || 'var(--color-on-accent)');
-              arrivalAccentWritten = true;
-              // 21-08/21-10: the next-slide warm below is called ONLY from
-              // this rising-edge branch, never unconditionally inside the
-              // forEach above — applyArrival() runs on every painted frame
-              // (plan 21-07), so an unguarded call here would touch the
-              // same element up to sixty times a second. This warm exists
-              // specifically to close 21-UAT.md's blur-placeholder gap
-              // (missing preload/priority hint for the upcoming slide).
-              // The call below receives the slide's OWN index read from its
-              // own data-index attribute, matching its position in `slides`
-              // now that the array holds only real slides.
-              const slideIndex = Number(target.dataset.index);
-              if (!Number.isNaN(slideIndex)) warmNextSlide(slideIndex);
-            }
-          });
-        }
-
-        // Pitfall 4: the "A" glyph's real rendered position shifts once
-        // Unbounded finishes loading (vs. a system-sans fallback) — this
-        // function only computes from whatever rects are live RIGHT NOW;
-        // callers are responsible for re-invoking it after document.fonts
-        // has settled (see below) and on resize/orientationchange.
-        function syncFocusOrigin() {
-          const wordmarkRect = wordmark!.getBoundingClientRect();
-          const focusRect = focusLetter!.getBoundingClientRect();
-          const origin = computeFocusOrigin(wordmarkRect, focusRect);
-          if (!origin) return;
-          wordmark!.style.transformOrigin = `${origin.originX}% ${origin.originY}%`;
-        }
-
-        function onProgress(t: number) {
-          const state = computeWordmarkZoomState(t);
-          wordmark!.style.transform = `scale(${state.scale})`;
-          wordmark!.style.opacity = String(state.wordmarkOpacity);
-          photoLayer!.style.opacity = String(state.photoOpacity);
-          // Sole driver of D-12's header hide (CSS already declared by plan
-          // 21-04): 'true' while the zoom is still scrubbing, flipped to the
-          // completed value ('false', still PRESENT — not removed) once
-          // progress reaches 1, so the header fades back in once the zoom
-          // finishes.
-          root!.setAttribute('data-zoom-active', t < 1 ? 'true' : 'false');
-        }
-
-        function clearInlineStyles() {
-          // Every property onProgress() writes above has a matching removal
-          // here, so the CSS end-state (reduced-motion / desktop media
-          // queries) can fully take over the instant this driver detaches —
-          // copy this 1:1 whenever onProgress() gains a new write.
-          //
-          // Deliberate exception: the 21-08 next-slide photo warm above has
-          // no matching undo here. Starting a photo download is not a
-          // reversible inline style, and cancelling or re-deferring an
-          // in-flight fetch on detach would be strictly worse for the
-          // visitor than letting it finish — this is a one-way promotion,
-          // not part of the reversible progress/arrival visual state the
-          // rest of this function resets.
-          //
-          // 21-11: `--deck-vh` is ALSO deliberately excluded here, for a
-          // similar reason. This function releases only what the MOTION
-          // driver itself wrote; the sizing sync (above, outside this
-          // guard) is a separate, longer-lived concern with its own
-          // `mobile.matches` branch deciding when the property is present
-          // or absent, and that decision must survive a reduced-motion or
-          // desktop-gate detach of THIS driver unchanged. Do not "complete"
-          // the 1:1 removal list above by adding it here.
-          wordmark!.style.removeProperty('transform');
-          wordmark!.style.removeProperty('transform-origin');
-          wordmark!.style.removeProperty('opacity');
-          photoLayer!.style.removeProperty('opacity');
-          root!.removeAttribute('data-zoom-active');
-          // 21-10 (21-UAT.md gap 1): data-intro-active — its removal
-          // belongs in this same "every write has a matching removal here"
-          // list regardless of which measurement now feeds it (21-13:
-          // the intro track's own bottom edge, not the zoom track's top).
-          root!.removeAttribute('data-intro-active');
-          // Phase 21, plan 21-13 (T-21-13-B): the pinned intro's own three
-          // per-frame writes (applyIntroScrub(), below) — each individually
-          // null-guarded the same way its own write is, since introBodyEl
-          // is legitimately absent when the Sanity intro field is empty.
-          // Getting this wrong is not cosmetic: a desktop resize or a
-          // reduced-motion change would otherwise leave the logomark frozen
-          // at its last scrubbed scale and the tagline at its last
-          // scrubbed opacity/offset for a visitor whose CSS end state says
-          // both should be at rest and fully visible.
-          if (introLogo) introLogo.style.removeProperty('transform');
-          if (introBodyEl) {
-            introBodyEl.style.removeProperty('opacity');
-            introBodyEl.style.removeProperty('transform');
-          }
-          if (introCue) introCue.style.removeProperty('opacity');
-          // Same re-attach-must-always-paint reasoning as lastProgress
-          // below, for applyIntroScrub()'s own change-detection cache.
-          lastIntroProgress = INTRO_PROGRESS_SENTINEL;
-
-          // Plan 21-06 (HOME-14, D-13/D-14/D-15): under reduced motion the
-          // CSS end state already makes every description permanently
-          // visible on its own (21-04's `@media (prefers-reduced-motion:
-          // reduce)` block), so the arrival class is reset here rather than
-          // left stale from a prior attach — harmless no-op removal when it
-          // was never set (e.g. this driver's very first, desktop-only
-          // setup() call, before the loop has ever run). Phase 21, plan
-          // 21-13: iterates `slides` again (not a combined
-          // intro-plus-slides array) — the intro is no longer an arrival
-          // target at all, see applyArrival()'s own comment.
-          slides.forEach((target) => target.classList.remove('is-revealed'));
-
-          // Only ever clears the two accent custom properties if THIS
-          // driver actually wrote them. Unconditionally removing
-          // --current-accent/--current-accent-text here would clobber the
-          // carousel's own render()/HOME-16 random-start accent the very
-          // first time this function runs on desktop (detach is the branch
-          // that always executes on initial load there) — a stale
-          // driver-written accent left behind after detaching would
-          // otherwise silently override what the rest of the page computed.
-          if (arrivalAccentWritten) {
-            root!.style.removeProperty('--current-accent');
-            root!.style.removeProperty('--current-accent-text');
-            arrivalAccentWritten = false;
-          }
-
-          // Plan 21-07: reset the progress cache too, so a later re-attach
-          // cannot skip its first paint by comparing computeProgress()'s
-          // first live read against a stale value from before this detach.
-          lastProgress = PROGRESS_SENTINEL;
-
-          // WR-02 fix: same reasoning as lastProgress above, for
-          // applyIntroActive()'s own change-detection cache — a later
-          // re-attach must always paint data-intro-active's correct state
-          // on its first frame, not skip it by comparing against a stale
-          // value left over from before this detach.
-          introActive = null;
-        }
-
-        // 21-11: reduceMotion and mobile are now declared once, hoisted
-        // above this driver guard (see the sizing sync block above), so
-        // both the sync and this driver share the same two matchMedia
-        // instances rather than each creating their own.
-
-        let rafId: number | null = null;
-        let driverAttached = false;
-
-        // Phase 21, plan 21-13 (21-UAT.md round-2 gap 1): applyIntroActive()
-        // now derives from the INTRO track's own bottom edge, not the zoom
-        // track's top — plan 21-10's original "two readings of the SAME
-        // measurement" reasoning (this function and computeProgress() both
-        // reading the zoom track's rect) is superseded, because the intro
-        // now has its own track (Task 2) and inferring its state from the
-        // zoom track's rect would be an inference where a direct
-        // measurement is available. The two are still equal by construction
-        // — the intro track's bottom edge IS the zoom track's top edge,
-        // adjacent siblings with no margin — so this is a clarity and
-        // correctness improvement, not a behaviour change. Guarded on the
-        // intro track existing; the change-detection cache and its reset in
-        // clearInlineStyles() are both unchanged.
-        let introActive: boolean | null = null;
-        function applyIntroActive(introTrackBottom: number) {
-          if (!introTrack) return;
-          // 'true' while the intro track's own bottom edge hasn't yet
-          // reached the viewport top — the intro is still occupying or
-          // partly occupying the screen. Removed (not just set to 'false')
-          // once that edge reaches or passes the viewport top, matching
-          // data-zoom-active's own "absent by default" shape above.
-          const active = introTrackBottom > 0;
-          if (active === introActive) return;
-          introActive = active;
-          if (active) {
-            root!.setAttribute('data-intro-active', 'true');
-          } else {
-            root!.removeAttribute('data-intro-active');
-          }
-        }
-
-        function computeProgress(): number {
-          const trackTop = track!.getBoundingClientRect().top;
-          return computeZoomProgress(trackTop, ZOOM_REVEAL_DISTANCE);
-        }
-
-        // Plan 21-07: a value no real progress fraction (always in [0,1])
-        // can equal, so the very first frame after a (re-)attach always
-        // paints regardless of what the last-seen progress was before.
-        const PROGRESS_SENTINEL = -1;
-        let lastProgress = PROGRESS_SENTINEL;
-
-        // Thin wrapper around onProgress(): short-circuits when the measured
-        // progress hasn't changed since last frame, so a stationary page
-        // performs zero style writes per frame (T-21-07-A), only the two
-        // cheap rect reads inside computeProgress()/applyArrival(). This is
-        // intentional PLAIN equality, not an epsilon — the value only
-        // changes when the measured rect changes, so the exact endpoints (0
-        // and 1) are still always reached and written; onProgress()'s own
-        // body is untouched.
-        function applyProgress(t: number) {
-          if (t === lastProgress) return;
-          lastProgress = t;
-          onProgress(t);
-        }
-
-        // Phase 21, plan 21-13 (21-UAT.md round-2 gap 1, T-21-13-A/B/C/D):
-        // the pinned intro's own per-frame scrub pass. Returns immediately
-        // when the intro track is absent — a missing intro must never stop
-        // the zoom from attaching (see the lookups above).
-        //
-        // Takes ONE getBoundingClientRect() of the intro track per frame and
-        // uses BOTH of its edges — the top feeds computeIntroProgress(), the
-        // bottom feeds applyIntroActive() — never two separate rect reads.
-        // Same discipline plan 21-10 established for the intro-active/
-        // zoom-progress pair and for the same reason.
-        //
-        // T-21-13-D: the intro-active flag is updated on EVERY frame,
-        // BEFORE the progress short-circuit below — this is the one place
-        // this pass may not mirror applyProgress() blindly. Progress sits
-        // pinned at exactly 1 for the whole sticky release, while the
-        // flag's own condition (the track's bottom edge) keeps changing
-        // across it, so a progress-keyed short-circuit would freeze the
-        // attribute at its last mid-scrub value for the entire release —
-        // and once plan 21-14 makes that attribute the header logomark's
-        // only hide condition, a permanently suppressed header for the
-        // rest of the visit.
-        //
-        // T-21-13-A: STYLE writes (not the intro-active flag above) are
-        // short-circuited against a module-local last-progress cache, the
-        // same sentinel shape applyProgress() uses above, preserving the
-        // "zero style writes when stationary" invariant plan 21-07
-        // established (T-21-07-A). Every write is transform/opacity only,
-        // so it stays compositor-friendly (T-21-13-A).
-        const INTRO_PROGRESS_SENTINEL = -1;
-        let lastIntroProgress = INTRO_PROGRESS_SENTINEL;
-        function applyIntroScrub() {
-          if (!introTrack) return;
-          const rect = introTrack.getBoundingClientRect();
-          applyIntroActive(rect.bottom);
-          const t = computeIntroProgress(rect.top, INTRO_REVEAL_DISTANCE);
-          if (t === lastIntroProgress) return;
-          lastIntroProgress = t;
-          const state = computeIntroScrubState(t);
-          // introBodyEl is legitimately absent when the Sanity intro field
-          // is empty — each write below is individually null-guarded
-          // rather than folded into one all-or-nothing check.
-          if (introLogo) introLogo.style.transform = `scale(${state.logoScale})`;
-          if (introBodyEl) {
-            introBodyEl.style.opacity = String(state.taglineOpacity);
-            introBodyEl.style.transform = `translateY(${state.taglineTranslateY}px)`;
-          }
-          if (introCue) introCue.style.opacity = String(state.cueOpacity);
-        }
-
-        // Plan 21-07: the single continuously-running rAF loop that
-        // replaces both the `scroll`-event-driven update and the
-        // IntersectionObserver arrival reveal. Progress AND arrival are both
-        // re-derived from live getBoundingClientRect() on every painted
-        // frame while attached — nothing here may be gated on a scroll
-        // event or an observer callback, which is the entire mechanism fix
-        // for `21-UAT.md` gap 2 (see
-        // `.planning/debug/homepage-scroll-zoom-handoff-glitch.md`). Order
-        // matters and is deliberate: sizing first, then the intro (which
-        // comes first in the document), then the zoom, then arrival — so
-        // within any single frame the intro scrub, the crossfade/header
-        // state and the reveal state are always consistent with each
-        // other. Phase 21, plan 21-13: both the intro scrub and the zoom
-        // progress are re-derived from live rects inside this ONE frame,
-        // with no scroll listener and no observer anywhere in either path
-        // — that is the entire mitigation for the new intro-to-zoom
-        // boundary being the risk assumption A4 was written to avoid, and
-        // it is the same mechanism plan 21-07 used to fix the
-        // zoom-to-slide boundary.
-        function frame() {
-          // 21-11: must run FIRST, before computeProgress()'s own
-          // getBoundingClientRect() read. A `--deck-vh` write changes the
-          // height of every deck box; getBoundingClientRect() forces a
-          // synchronous layout flush, so writing the property earlier in
-          // the same frame means that flush — and every rect this frame
-          // then reads — already reflects it. Writing it after (or
-          // deferring it to a separate rAF) would compute this frame's
-          // progress and arrival against the PREVIOUS frame's box heights,
-          // reintroducing gap 4 one frame at a time during a toolbar
-          // animation. The 1px change-detection cache inside
-          // syncDeckViewportHeight() means this forced reflow only happens
-          // on frames where the viewport genuinely changed size — on a
-          // stationary frame it is a same-value read, no write, no extra
-          // reflow.
-          syncDeckViewportHeight();
-          applyIntroScrub();
-          applyProgress(computeProgress());
-          applyArrival();
-          rafId = requestAnimationFrame(frame);
-        }
-
-        // Mirrors src/pages/404.astro's tick()/startPointerLoop()/
-        // stopPointerLoop() pair — this repo's own existing
-        // continuously-running rAF loop with an explicit start/stop
-        // lifecycle — rather than inventing a new shape.
-        function startLoop() {
-          if (driverAttached) return;
-          driverAttached = true;
-          // Reset so the first frame after attach always paints, even if an
-          // identical progress value was last seen before a prior detach.
-          lastProgress = PROGRESS_SENTINEL;
-          rafId = requestAnimationFrame(frame);
-        }
-
-        function stopLoop() {
-          if (!driverAttached) return;
-          driverAttached = false;
-          // Cancelling without nulling the id (or nulling without
-          // cancelling) is exactly the leak that would let a detached
-          // driver keep repainting on desktop (T-21-07-A) — both must
-          // happen together.
-          if (rafId !== null) {
-            cancelAnimationFrame(rafId);
-            rafId = null;
-          }
-        }
-
-        function setup() {
-          if (reduceMotion.matches || !mobile.matches) {
-            stopLoop();
-            clearInlineStyles();
-          } else {
-            // Plan 21-07: if requestAnimationFrame isn't available at all,
-            // there is no mechanism left to drive the reveal — fall back to
-            // always-visible descriptions (mirrors GalleryGrid.astro's own
-            // JS-without-IntersectionObserver branch, which this replaces)
-            // and never start the loop.
-            if (typeof requestAnimationFrame !== 'function') {
-              slides.forEach((slide) => slide.classList.add('is-revealed'));
-              // Phase 21, plan 21-13: mirrors what the reduced-motion CSS
-              // block does declaratively, for the one route that has
-              // neither the CSS query nor a running loop. Without this the
-              // tagline's CSS rest state (opacity 0) would leave it
-              // permanently invisible, since nothing else would ever write
-              // it. The logomark needs no explicit action here — its
-              // unstyled rest state (no transform ever written) IS the
-              // static end state.
-              if (introBodyEl) {
-                introBodyEl.style.opacity = '1';
-                introBodyEl.style.transform = 'none';
-              }
-              return;
-            }
-            syncFocusOrigin();
-            // No separate "run one pass immediately" call is needed here —
-            // startLoop() resets lastProgress to its sentinel and schedules
-            // a frame, which paints the correct state on the very next
-            // animation frame, covering a mid-page reload or a resize/
-            // orientationchange crossing the gate while already scrolled.
-            startLoop();
-          }
-        }
-
-        setup();
-        reduceMotion.addEventListener('change', setup);
-        mobile.addEventListener('change', setup);
-
-        // Pitfall 4: re-measure the focus origin once the real Unbounded
-        // font has actually swapped in, only while the driver is currently
-        // attached (driverAttached also implies reduced-motion doesn't match
-        // and phone width does) — measuring while the display font is still
-        // a system-sans fallback produces a visibly wrong anchor.
-        if (document.fonts) {
-          document.fonts.ready.then(() => {
-            if (driverAttached) syncFocusOrigin();
-          });
-        }
-
-        // Reused verbatim from DetailHero.astro's own resize-debounce idiom
-        // rather than introducing a ResizeObserver. The loop itself no
-        // longer needs a forced repaint here — it already re-reads live
-        // geometry every frame — but setup() must still re-run on
-        // resize/orientationchange to re-evaluate the media-query gate and
-        // re-measure the focus origin.
-        let resizeTimer: ReturnType<typeof setTimeout> | null = null;
-        window.addEventListener('resize', () => {
-          if (resizeTimer) clearTimeout(resizeTimer);
-          resizeTimer = setTimeout(setup, 100);
-        });
-        window.addEventListener('orientationchange', () => {
-          if (resizeTimer) clearTimeout(resizeTimer);
-          resizeTimer = setTimeout(setup, 100);
-        });
-      }
+      desktop.addEventListener('change', syncDesktopRuntime);
+      document.addEventListener('astro:before-swap', () => {
+        generation += 1;
+        cleanup?.();
+        cleanup = null;
+      }, { once: true });
+      void syncDesktopRuntime();
     </script>
+
   </section>
 )}
 
@@ -3777,762 +2936,6 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     }
   }
 
-  /* Phase 21 (HOME-14/HOME-15): the phone-width scroll deck's own CSS.
-     Deliberately placed last, after the 359px block above, so source order
-     alone gates every override below at phone width — no extra
-     specificity tricks are needed beyond the media query itself. Task 2
-     already built the markup (unstyled, visible at every width); this
-     section is what actually retires the carousel/grid/toggle below 767px
-     and styles the deck. See
-     .claude/skills/sketch-findings-ajs-website/references/homepage-motion.md
-     and 21-UI-SPEC.md "Layout & Structure Contract"/"Motion & Interaction
-     Contract" for the full design rationale — this comment only records
-     the CSS-specific decisions. No motion is wired here: plans 21-05/21-06
-     layer the scroll driver and arrival observer on top of this static
-     end-state. */
-  .home-scroll-deck {
-    display: none;
-  }
-
-  @media (max-width: 767px) {
-    /* D-01/D-16/success criterion 1: the deck fully replaces the carousel/
-       grid/toggle below 767px — a pure CSS gate, never a JS markup swap
-       (21-RESEARCH.md Anti-Patterns). `.home-toggle` is this file's own
-       scoped class (the button is slotted into <SiteHeader> via its
-       `extra` slot but authored here), so this file's scoped selector
-       reaches it without a :global() wrapper. */
-    .home-hero,
-    .home-grid,
-    .home-toggle {
-      display: none;
-    }
-
-    .home-scroll-deck {
-      display: block;
-    }
-
-    /* 21-11 (HOME-14/HOME-15, 21-UAT.md round-2 gap 4 —
-       .planning/debug/homepage-scroll-still-not-fullscreen.md), superseding
-       plan 21-09's convention below: 21-09 converted every viewport-height
-       length in this deck (track, stage, wordmark padding, slide height)
-       from `dvh` to `100svh`, optimising for "never LARGER than the
-       screen" — but the reported defect (this gap) was the box being
-       SMALLER than the screen. `svh` is a static lower bound: it always
-       resolves to Mobile Safari's SMALLEST content area (toolbar fully
-       expanded). A sticky full-bleed section sized to that constant
-       undershoots by exactly the retracted-chrome height for as long as
-       the chrome is retracted — which is the NORMAL state during active
-       scrolling, not an edge case. The uncovered strip fell through to
-       `body`'s literal-white background: the white bar at the top, and a
-       matching white gap at the bottom.
-
-       `.home-hero__photo` (this same file, ~L2483) is this repo's own
-       cited precedent for correct viewport-height sizing, and it was never
-       an exact height — it is `min-height: 100svh; max-height: 100vh`, a
-       RANGE. Plan 21-09 borrowed the unit but not the shape. This plan
-       (21-11) supplies the missing piece with the same shape's intent, via
-       a live-synced source instead of a second static bound: every
-       `100svh` below becomes `var(--deck-vh, 100svh)`, where `--deck-vh`
-       (written by `syncDeckViewportHeight()` in the <script> block above)
-       mirrors the browser's CURRENT visible viewport height every frame.
-       The box now tracks the real, live screen instead of either static
-       extreme. The `100svh` fallback inside every `var()` remains
-       load-bearing and mandatory: it is what the deck resolves to pre-JS,
-       with JS disabled, and — because the sync removes the property above
-       767px — it is also what keeps these rules sane if the media gate is
-       ever crossed mid-session.
-
-       Still deliberately NOT done here: `viewport-fit=cover` /
-       `env(safe-area-inset-*)`. Plan 21-09 rejected that on purpose for
-       its site-wide blast radius (opts the WHOLE SITE into rendering under
-       the status bar, requiring safe-area padding on every page's chrome
-       — far beyond this gap, and UI-02 forbids changes outside the
-       phone-width homepage), and that rejection still stands. */
-
-    /* 21-UAT.md round-2 gap 1 (logo duplication, 21-13) —
-       .planning/debug/homepage-scroll-intro-logo-duplication.md. Positioned
-       immediately before .home-scroll-deck__track below so source order
-       matches visual/DOM order — the intro track's bottom edge IS the zoom
-       track's top edge (adjacent siblings, no margin). No `min-width: 768px`
-       rule is needed here — .home-scroll-deck's own `display: none` base
-       rule (above, outside this media query) already makes this subtree
-       desktop-inert for free, exactly like every other element in it.
-
-       Assumption A4 (21-10-PLAN.md) is SUPERSEDED by developer correction:
-       one pinned, scroll-scrubbed logomark replaces the two ordinary-flow
-       beats that used to live here. A1 (reduced motion = static content),
-       A2 (dismissed by scrolling past), A3 (no scroll-snap point) and A5
-       (ink background, white logomark, drifting cue) all still stand — see
-       the markup comment above for the full mapping.
-
-       Assumption A3 continued here, now structurally motivated rather than
-       merely prudent: NO scroll-snap-align/scroll-snap-stop on the track or
-       the stage — the intro is a free-scrub region of exactly the kind
-       21-RESEARCH.md Pitfall 6 made the zoom track snap-free to protect,
-       and adding a snap point here risks the same page-wide proximity-snap
-       conflict that reasoning already rules out. */
-    .home-scroll-deck__intro-track {
-      /* 21-11's live-viewport-height term, plus the intro's own reveal
-         distance (WR-01 pattern below) — mirrors the zoom track's own
-         height calc exactly one rule group below. This term and the
-         stage's height term (next rule) MUST resolve from the SAME
-         viewport-height expression, or the sticky release stops coinciding
-         with intro progress reaching 1 — the identical invariant the zoom
-         track's own comment already warns about, inherited here verbatim. */
-      height: calc(var(--deck-vh, 100svh) + var(--intro-reveal-distance, 900px));
-    }
-
-    .home-scroll-deck__intro-stage {
-      position: sticky;
-      top: 0;
-      /* Same invariant as the track's height term above — change both
-         together, never one alone. */
-      height: var(--deck-vh, 100svh);
-      overflow: hidden;
-      /* 21-10 Task 3's original reasoning for this 3-row grid still holds
-         even with a single stage instead of two beats: a naive flex column
-         with `justify-content: center` would centre the WHOLE stack (logo +
-         tagline + cue), so the logo's own vertical position would shift
-         whenever the tagline's height changes across the scrub (0 lines
-         before the sub-range starts, 1-2 lines once it arrives). A 3-row
-         grid with the logo in the fixed middle `auto` row, sandwiched
-         between two `minmax(0, 1fr)` spacer rows, decouples the logo's
-         position from row 3's content entirely: `minmax(0, 1fr)` (not a
-         bare `1fr`) overrides each spacer row's content-based automatic
-         minimum to 0, so the two spacer rows stay exactly equal regardless
-         of what renders in row 3 — the logo is always precisely centred. */
-      display: grid;
-      grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
-      justify-items: center;
-      align-items: center;
-      gap: var(--space-lg);
-      padding-inline: var(--space-lg);
-      /* Assumption A5 (21-10-PLAN.md, still standing): ink background,
-         continuous with the deck's own paint floor
-         (.home-scroll-deck__photo/.home-slide, plan 21-09) and the
-         phone-only theme-color meta tag (plan 21-09) — an ink intro screen
-         never reintroduces the white-strip status-bar problem plan 21-09
-         closed. A white logomark is required for contrast on ink, hence
-         logoWhiteSrc below (not logoBlackSrc). */
-      background-color: var(--color-ink);
-      color: #FFFFFF;
-      text-align: center;
-    }
-
-    .home-scroll-deck__intro-logo {
-      /* Fixed middle row — its own vertical centre is therefore independent
-         of whatever renders in row 3 below it (see the stage rule's
-         comment). NO transform and NO transition here: the driver
-         (Task 3) writes the shrink transform inline every frame, and a
-         transition on a property written every frame turns a scrub into a
-         permanently-lagging catch-up animation that never matches scroll
-         position — the exact desynchronised-handoff defect class plan
-         21-07 eliminated, reintroduced at this new boundary. This is the
-         single easiest way to reintroduce a visible defect in this plan —
-         do not add either property back. */
-      grid-row: 2;
-      width: 40vw;
-      max-width: 220px;
-      height: auto;
-      display: block;
-    }
-
-    /* D-13's locked VALUES (opacity 0 to 1, translateY 8px to 0) are fully
-       preserved here — only the driving mechanism changes, from a 180ms CSS
-       transition to scroll position (Task 3's computeIntroScrubState). The
-       rest state below (opacity 0, translateY 8px) matches that function's
-       own clamped-floor literal exactly, since it is what a visitor sees
-       before the driver's first painted frame. NO transition property: the
-       tagline's opacity/transform are written every frame by the driver,
-       and the same catch-up-animation defect the logo comment above
-       describes applies here too — .home-slide__description keeps its own
-       180ms transition, because slide descriptions are still class-toggled
-       and are plan 21-15's subject, not this plan's. */
-    .home-scroll-deck__intro-body {
-      grid-row: 3;
-      align-self: start;
-      max-width: 52ch;
-      font-size: 14px;
-      line-height: 1.4;
-      opacity: 0;
-      transform: translateY(8px);
-    }
-
-    .home-scroll-deck__intro-cue {
-      /* Row 3, the BOTTOM of the spacer row (21-13: moved from `start` to
-         `end` so the cue sits near the bottom edge of the screen instead of
-         colliding with the tagline, which now shares this cell). The cue
-         and the tagline never compete visually: cueOpacity is driven to 0
-         by the first 20% of the scrub (computeIntroScrubState), well before
-         the tagline's own sub-range even starts at 25%. */
-      grid-row: 3;
-      align-self: end;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--space-xs);
-      font-family: var(--font-sans);
-      font-size: 12px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      /* Assumption A5: a gentle, slow, small vertical drift — an
-         affordance, not a flourish. Suppressed entirely under reduced
-         motion below (assumption A1). */
-      animation: home-scroll-deck-intro-cue-drift 1.8s ease-in-out infinite;
-    }
-
-    @keyframes home-scroll-deck-intro-cue-drift {
-      0%, 100% {
-        transform: translateY(0);
-      }
-      50% {
-        transform: translateY(6px);
-      }
-    }
-
-    /* Track: tall enough to host the full zoom scrub before the first real
-       slide arrives. WR-01 fix: CSS cannot import the TS
-       ZOOM_REVEAL_DISTANCE constant (src/lib/home-carousel.ts, 21-01)
-       directly, so the frontmatter above writes it into the
-       `--zoom-reveal-distance` custom property (and the
-       `data-reveal-distance` attribute, for tests/debugging) on the track
-       element itself — this is the single source of truth the constant
-       now drives, rather than a second, independently-hand-maintained
-       900px literal. The `900px` fallback below only matters if the
-       inline custom property is ever absent (e.g. a future markup
-       refactor drops it); it is not meant to require independent upkeep
-       any more. */
-    .home-scroll-deck__track {
-      /* 21-11: unit changed from bare `100svh` to `var(--deck-vh, 100svh)`
-         (see the convention comment above); the `+ var(--zoom-reveal-
-         distance, 900px)` term is untouched, so the track/stage delta
-         stays exactly the reveal distance regardless of which value the
-         viewport-height term resolves to. */
-      height: calc(var(--deck-vh, 100svh) + var(--zoom-reveal-distance, 900px));
-    }
-
-    /* 21-09/21-11: this MUST carry the SAME viewport-height expression as
-       the track's own term above (both `var(--deck-vh, 100svh)` now). The
-       sticky release point is the algebraic difference between the
-       track's height and this stage's height — if the two ever used
-       different viewport-height terms, the release would stop coinciding
-       with zoom progress reaching 1, which is precisely the
-       desynchronised-handoff class of bug plan 21-07 just eliminated. The
-       existing WR-01 e2e case (rendered reveal distance vs the exported
-       constant) and 21-09's track-minus-stage-delta case both guard this
-       invariant — change both heights together, never one alone. */
-    .home-scroll-deck__stage {
-      position: sticky;
-      top: 0;
-      height: var(--deck-vh, 100svh);
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* 21-12 (21-UAT.md round-2 gap 3 —
-       .planning/debug/homepage-scroll-cover-photo-doubled.md): closes the
-       full-viewport-height dead zone that used to sit between zoom
-       completion and the first slide's own snap point. Before this plan
-       the sticky stage above released — exactly where zoom progress
-       reached 1 — a full deck viewport height ABOVE the first slide's snap
-       point, because the slides wrapper (below) still occupied the
-       crossfade layer's full trailing layout height after its opacity
-       animation finished. Scrolling through that zone showed this stage's
-       cover/center crop of the first gallery's hero photo finishing its
-       exit directly above the first slide's own cover crop of the SAME
-       photo — a hard seam where the same photograph appeared twice.
-
-       The fix (this rule group, plus the pull-up on
-       .home-scroll-deck__slides below): pull the slides wrapper up by
-       exactly one deck viewport height so the first slide's snap point
-       coincides with this stage's release point instead, and make this
-       stage opaque, explicitly stacked, and retired the instant the zoom
-       completes — see this plan's own geometry note for the full
-       before/after arithmetic.
-
-       Accepted side effect (Task 2 item 3): the first slide's snap point
-       now sits D px (not V + D px) after the track's top, within
-       proximity-snap range of the scrub's tail, so a resting scroll
-       position in the last ~250-400px of the zoom can be pulled forward to
-       completion. Deliberate, not a regression — it removes the ability to
-       rest mid-zoom in a half-scaled state and firms up arrival at the
-       first slide; scroll-snap-type itself is unchanged
-       (21-RESEARCH.md Pitfall 6 stays intact).
-
-       Every rule in this group (here and on .home-scroll-deck__slides
-       below) is keyed on the attribute only the motion driver ever writes
-       — presence alone for the pull-up, its completed value for the hide
-       below — so reduced motion, desktop and pre-JS rendering never see it
-       written at all and every rule here is inert by construction under
-       those conditions. Do not add a reduced-motion counterpart to
-       "complete" this block. */
-    .home-scroll-deck__stage {
-      /* Deliberately the SAME token body already paints
-         (--color-dominant), so the wordmark screen's rendered appearance
-         is pixel-identical to today's. This is a no-op visually and
-         load-bearing structurally: with the slides pulled up below, the
-         first slide now sits behind this stage for almost the whole
-         scrub, and a see-through stage would let that photo show through
-         the wordmark screen. Plan 21-09's reason for leaving the stage
-         unpainted (keeping the wordmark screen's exact appearance for the
-         unsupported-engine and photo-load-failure fallbacks
-         critical.smoke.spec.ts guards) is fully preserved by choosing
-         this exact token rather than a new colour. */
-      background-color: var(--color-dominant);
-      /* The slides are later siblings and are position: relative, so
-         plain paint order would otherwise put them above this stage now
-         that geometry alone no longer keeps them fully offscreen for most
-         of the scrub. The header's own z-index: 5 (the
-         .home :global(.site-header) rule further up this file) is
-         unaffected and still wins, so D-12's hide/show behaviour is
-         untouched. */
-      z-index: 1;
-    }
-
-    /* Fires the instant progress reaches 1, at which moment the first
-       slide is already filling the viewport with the same photograph at
-       the same crop, so the swap is imperceptible. NO transition of any
-       kind: any intermediate opacity here is precisely the doubled-photo
-       frame this plan exists to remove, so a fade would be actively
-       wrong. visibility (not opacity alone) is required so this stage
-       also stops hit-testing, letting taps reach the first slide's own
-       anchor (D-10) once the zoom is done. Scrolling back up restores the
-       stage on the same frame progress drops back below 1, giving D-04's
-       reversibility a seamless boundary because the crossfade layer is
-       still fully opaque at that instant. */
-    .home[data-zoom-active='false'] .home-scroll-deck__stage {
-      visibility: hidden;
-    }
-
-    /* End-state crossfade target (t=0.85->1.0, driven by plan 21-05's
-       zoom driver) — a plain, uncut photo, so the extreme ~8.5x scale
-       never has to render a flawless text-clip cutout entirely on its
-       own. Rest state is fully transparent. */
-    .home-scroll-deck__photo {
-      position: absolute;
-      inset: 0;
-      /* 21-09 paint floor (21-UAT.md gap 4): this surface is a photograph
-         once opacity animates toward 1, so a non-white floor is safe here
-         — it is invisible in the normal case (the photo always covers it)
-         and only ever shows in the transient strip Safari's toolbar
-         animation can momentarily expose. Deliberately scoped to THIS
-         element only, not the pinned stage or the deck root — see
-         .home-scroll-deck__stage above, which stays without a
-         background-color so the pre-zoom wordmark screen keeps its exact
-         white appearance (needed for the unsupported-engine wordmark
-         fallback color and the photo-load-failure fallback
-         critical.smoke.spec.ts guards). A white strip over a white screen
-         isn't what was reported — the bar is only perceptible against a
-         photo, which is exactly where this floor goes. */
-      background-color: var(--color-ink);
-      background-image: var(--zoom-photo);
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-      opacity: 0;
-    }
-
-    .home-scroll-deck__wordmark {
-      font-family: var(--font-display);
-      text-transform: uppercase;
-      line-height: 0.92;
-      font-weight: 900;
-      text-align: center;
-      margin: 0;
-      /* Same per-line clamp the existing mobile hero wordmark uses
-         (verbatim, not retuned — see .home-hero__wordmark's own 767px
-         override above). */
-      font-size: clamp(36px, 9.8vw, 50px);
-      /* HOME-15/success criterion 4: "full-screen" describes the wordmark's
-         own BOX, not its glyph ink — reusing the hero wordmark's compact
-         clamp (above) for legible letterforms would size the h1 to only
-         ~106px tall at a 393px viewport, well short of the 40%-of-viewport
-         floor 21-04-PLAN.md's own Task 1 spec locks in. Generous
-         viewport-relative block padding (not a bigger font-size, and not
-         flex/grid on the h1 itself, which would break the plain <br>-based
-         "Atelier/Jacqueline/Suzanne" line breaks the span+text-node markup
-         above depends on) grows the box to comfortably clear that floor
-         while keeping the actual letterforms at the same reused clamp size,
-         symmetric top/bottom padding keeps them centered inside the taller
-         box. [Rule 1 auto-fix — see 21-04-SUMMARY.md Deviations.]
-         21-09: unit changed from `dvh` to `svh` (21-UAT.md gap 4 — see the
-         convention comment above `.home-scroll-deck__track`); the numeric
-         value (20) is unchanged. 21-11: expression changed again, from the
-         bare `20svh` to `calc(var(--deck-vh, 100svh) * 0.2)` — same
-         convention comment — preserving the exact 0.2 (20%) numeric
-         proportion of whichever viewport-height value the expression
-         resolves to. This does NOT move the locked 60%/40%
-         viewport-coverage floor 21-04-PLAN.md's Task 1 spec locks in —
-         Playwright's fixed-viewport test environment resolves the
-         fallback `100svh` and the live `--deck-vh` identically at a fixed
-         viewport size (no live toolbar animation to diverge over), so the
-         existing full-screen wordmark geometry e2e case still holds. */
-      padding-block: calc(var(--deck-vh, 100svh) * 0.2);
-      padding-inline: 5vw;
-      position: relative;
-      will-change: transform, opacity;
-      /* The full-screen wordmark's own box IS the photo's box here (unlike
-         the carousel wordmark) — no computeWordmarkBackgroundPosition-style
-         alignment math is needed (21-RESEARCH.md Pitfall 5). Unsupported-
-         engine fallback: a solid, readable color outside the @supports
-         block below. */
-      background-image: var(--zoom-photo);
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-      color: var(--current-accent-text, var(--color-on-accent));
-    }
-
-    @supports (background-clip: text) or (-webkit-background-clip: text) {
-      /* Safari warning (21-RESEARCH.md Pitfall 3, mirrors the existing
-         carousel wordmark's own comment above verbatim): extra paint
-         layers (a second background, a box-shadow, a text stroke)
-         combined with a text-clipped background produce raster seams on
-         Safari, especially at this scroll-driven scale's extreme end.
-         Exactly ONE filter declaration, no other paint layer — the
-         t=0.85->1.0 crossfade to the plain photo layer above is the
-         safety net for a less-than-flawless cutout at ~8.5x, not this
-         rule. */
-      .home-scroll-deck__wordmark {
-        -webkit-background-clip: text;
-        background-clip: text;
-      }
-
-      /* Mirrors .home-grid__wordmark's own @supports block above verbatim
-         (as instructed) — gated behind the SAME .home.has-wordmark-photo
-         class the carousel's <script> already toggles once the first
-         gallery's hero <img> confirms a successful load, not applied
-         unconditionally. [Rule 1 auto-fix — see 21-04-SUMMARY.md
-         Deviations: an unconditional transparent color/fill here would
-         leave the wordmark permanently invisible if the underlying photo
-         request ever fails, since --zoom-photo has no other load-success
-         signal of its own; --zoom-photo/--zoom-photo-filter are sourced
-         from this SAME first gallery (Task 2), so has-wordmark-photo's
-         existing load-success state is exactly the right gate to reuse.] */
-      .home.has-wordmark-photo .home-scroll-deck__wordmark {
-        color: transparent;
-        -webkit-text-fill-color: transparent;
-        filter: var(--zoom-photo-filter);
-      }
-    }
-
-    .home-scroll-deck__focus-letter {
-      /* Measurable box for plan 21-05's live transform-origin math only —
-         must not change the rendered wordmark's appearance in any way. */
-      display: inline-block;
-    }
-
-    /* .home-scroll-deck__slides (the wrapper) deliberately carries no
-       scroll-snap-type of its own — the html:has() rule in the is:global
-       block below owns it, scoped so the zoom track above stays entirely
-       outside the snap container (21-RESEARCH.md Pitfall 6).
-
-       21-12 pull-up (21-UAT.md round-2 gap 3 —
-       .planning/debug/homepage-scroll-cover-photo-doubled.md): removes
-       this wrapper's inherited trailing viewport height of layout so the
-       first slide's own snap point coincides with .home-scroll-deck__stage
-       above's release point — see that rule's own comment block for the
-       full before/after arithmetic and the accepted proximity-snap side
-       effect. Gated on the attribute the motion driver writes being
-       PRESENT AT ALL (any value), not on either specific value. MUST use
-       the identical viewport-height expression the stage's own height
-       above uses: if the two ever diverge, the first slide's snap point
-       stops coinciding with the release point and the dead zone silently
-       returns at a fraction of its old size, which is far harder to
-       notice than the current full-viewport version. */
-    .home[data-zoom-active] .home-scroll-deck__slides {
-      margin-top: calc(-1 * var(--deck-vh, 100svh));
-    }
-
-    .home-slide {
-      display: block;
-      position: relative;
-      /* 21-09: unit changed from `dvh` to `svh` (21-UAT.md gap 4 — see the
-         convention comment above `.home-scroll-deck__track`). 21-11:
-         expression changed again, from bare `100svh` to
-         `var(--deck-vh, 100svh)` — same convention comment. A slide sized
-         to the LIVE visible viewport height is what lets
-         computeSlideVisibleRatio (plan 21-07) reach its arrival threshold
-         reliably on a real phone at every point in the toolbar's
-         collapse/expand animation, rather than momentarily measuring
-         against a box permanently pinned to the smallest extreme. */
-      height: var(--deck-vh, 100svh);
-      scroll-snap-align: start;
-      scroll-snap-stop: always;
-      /* 21-09 paint floor (21-UAT.md gap 4): scoped to this photo-bearing
-         surface only (see .home-scroll-deck__photo's matching comment
-         above for the full reasoning) — invisible in the normal case,
-         only shows in the transient strip the toolbar animation can
-         expose. */
-      background-color: var(--color-ink);
-      color: var(--slide-accent-text, var(--color-on-accent));
-      text-decoration: none;
-    }
-
-    .home-slide:focus-visible {
-      outline: 2px solid var(--color-accent);
-      outline-offset: var(--focus-ring-offset);
-    }
-
-    .home-slide__img {
-      position: absolute;
-      inset: 0;
-      object-fit: cover;
-      width: 100%;
-      height: 100%;
-    }
-
-    /* HOME-09 (21-08, blur-placeholder gap —
-       .planning/debug/homepage-scroll-deck-blur-placeholder-jank.md): the
-       exact same two-layer opacity crossfade mechanism
-       .home-hero__img--sharp and .home-grid__tile-img--sharp already use,
-       reused verbatim (260ms ease, opacity 0 -> 1) rather than retuned. Both
-       .home-slide__img-placeholder and .home-slide__img--sharp above
-       already inherit .home-slide__img's absolute fill/object-fit, so no
-       extra positioning rule is needed here (unlike .home-grid__tile-img,
-       whose base rule isn't itself absolutely positioned). No explicit
-       z-index is added: the sharp <img> is the placeholder's very next
-       sibling and neither it nor .home-slide__accent sets a z-index, so
-       plain DOM order already puts the sharp layer on top once it fades
-       in. */
-    .home-slide__img--sharp {
-      opacity: 0;
-      transition: opacity 260ms ease;
-    }
-
-    .home-slide__img--sharp.is-loaded {
-      opacity: 1;
-    }
-
-    /* Mobile variant of the accent panel (D-06) — a full-width, bottom-
-       anchored band, not the desktop corner-card geometry
-       .home-hero__accent/.home-grid__tile-copy use. */
-    .home-slide__accent {
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      width: 100%;
-      padding: var(--space-lg);
-      background-color: var(--slide-accent, var(--color-accent));
-      color: var(--slide-accent-text, var(--color-on-accent));
-    }
-
-    /* Reused verbatim from .home-grid__tile-title above (D-13) — always
-       visible; the title itself is never part of the reveal. */
-    .home-slide__title {
-      display: -webkit-box;
-      font-family: var(--font-display);
-      font-size: 32px;
-      font-weight: var(--weight-semibold);
-      line-height: 1.2;
-      min-height: calc(1.2em * 2);
-      overflow: hidden;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
-    }
-
-    /* Reused verbatim from .home-grid__tile-description above (D-13) — the
-       reveal values themselves (opacity/translateY/180ms ease) are locked;
-       do not retune. `is-revealed` is declared here and toggled by plan
-       21-06's arrival observer. Plan 21-15 (`21-UAT.md` round-2 gap 2)
-       confirmed the transition itself was never the defect — being told to
-       run backwards a frame after running forwards was; do not "fix" gap 2
-       a second time by retuning these locked values. */
-    .home-slide__description {
-      display: -webkit-box;
-      min-height: calc(1.4em * 3);
-      margin-top: var(--space-sm);
-      max-width: 52ch;
-      overflow: hidden;
-      font-size: 14px;
-      line-height: 1.4;
-      opacity: 0;
-      transform: translateY(8px);
-      transition: opacity 180ms ease, transform 180ms ease;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 3;
-    }
-
-    .home-slide.is-revealed .home-slide__description {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    /* D-12: qualified with both the .home ancestor and both header variant
-       classes inside :global() so this beats .site-header--transparent's
-       own position: absolute (SiteHeader.astro's transparent-variant
-       rule) regardless of which variant a future change might render here.
-       Stacking above the deck is already guaranteed by the header's own
-       z-index: 5 (the .home :global(.site-header) rule above, near the top
-       of this style block), which nothing in the deck sets or contests. */
-    .home :global(.site-header--solid),
-    .home :global(.site-header--transparent) {
-      position: fixed;
-      transition: opacity 300ms ease, visibility 0s linear 300ms;
-    }
-
-    /* 21-14 (21-UAT.md round-2 gap 5): companion transition for the
-       header's own logo anchor, carrying the SAME opacity transition and
-       the SAME delayed visibility transition the header itself declares
-       immediately above — copied deliberately, not invented, so the logo
-       anchor fades with the identical timing the whole header already uses
-       when the intro's suppression rule (further below) toggles it, rather
-       than popping instantly. The delayed visibility transition is what
-       keeps that fade readable in both directions. */
-    .home :global(.site-header--solid .logo-mark),
-    .home :global(.site-header--transparent .logo-mark) {
-      transition: opacity 300ms ease, visibility 0s linear 300ms;
-    }
-
-    /* data-zoom-active is absent by default — only plan 21-05's zoom
-       driver ever writes it — so the header stays visible pre-JS, with JS
-       disabled, and under reduced motion. That default is load-bearing for
-       the reduced-motion route plan 21-03's tests rely on. Visibility only
-       flips to hidden once the opacity transition above finishes, so the
-       header reads as fading out rather than vanishing abruptly.
-
-       21-14 (21-UAT.md round-2 gap 5) `:not([data-intro-active])` addendum
-       — a Task 3 discovery, not part of Task 1's original scope, recorded
-       here because it lives in the exact rule Task 1 already touched.
-       computeZoomProgress/onProgress clamp the zoom's own progress to 0
-       for ANY trackTop >= 0 — this was harmless pre-21-10 (the zoom track
-       WAS the deck's first child, so trackTop==0 at rest meant "the
-       wordmark IS on screen", the correct moment to hide the header) but
-       is no longer equivalent now that the pinned intro (21-13) sits
-       ahead of it: at scroll 0 the zoom track can be a full intro's-worth
-       of pixels below the viewport, yet `data-zoom-active` still reads
-       'true' the instant the driver's first frame runs (confirmed live:
-       `data-zoom-active='true'` AND `data-intro-active='true'`
-       simultaneously at scroll 0) — so without this addendum, restoring
-       D-12's hide scope to `data-zoom-active` alone (Task 1) would still
-       leave the header hidden throughout the whole intro, silently
-       reopening gap 5 the moment Task 1's own intro-active fix landed.
-       `data-intro-active`'s own presence is exactly the raw geometric
-       signal (the intro track's bottom edge, i.e. the zoom track's own
-       top edge, hasn't yet reached the viewport top — 21-13's
-       applyIntroActive()) this rule needs and `data-zoom-active` alone
-       does not carry: gating the hide on its ABSENCE defers the header
-       hide until the zoom has genuinely, visually engaged, without
-       touching computeProgress()/onProgress()'s attribute VALUE at all —
-       both other data-zoom-active consumers in this file (the
-       collapsed-dead-zone stage/slides rules, 21-12) are untouched, since
-       neither reads data-intro-active. */
-    .home[data-zoom-active='true']:not([data-intro-active]) :global(.site-header--solid),
-    .home[data-zoom-active='true']:not([data-intro-active]) :global(.site-header--transparent) {
-      opacity: 0;
-      visibility: hidden;
-    }
-
-    /* 21-14 (21-UAT.md round-2 gap 5 —
-       .planning/debug/homepage-scroll-nav-unreachable-at-start.md):
-       restores D-12's header-hide scope to data-zoom-active alone — exactly
-       what shipped before plan 21-10 and exactly what D-12 decided. Plan
-       21-10 had widened the rule above to hide the WHOLE header while that
-       same attribute was set, reasoning (its own comment, superseded
-       here) that "the small top-left header logo would render
-       simultaneously with the new large centred intro logomark." Round-2
-       UAT overturns that judgment, not the observation: the developer's
-       own wording — "Le hamburger de navigation devrait au moins
-       apparaître au tout début" (the hamburger, at the very start) — asks
-       for navigation to be reachable from arrival, not for the header's
-       own logomark to return alongside the intro's. The collision plan
-       21-10 named is real, and sharper after plan 21-13's redesign (the
-       intro logomark now shrinks to ~45% of its start size across the
-       scrub, much closer to the header logomark's own size than either
-       static beat ever was) — so instead of re-hiding the whole header,
-       this rule suppresses ONLY the header's own logo anchor for the
-       duration of the intro (assumption A7, 21-14-PLAN.md), leaving the
-       hamburger, the language switcher and the rest of the header's hit
-       area reachable throughout. The `:global()` closes INSIDE the
-       `.logo-mark` descendant chain (not before it) deliberately: Astro
-       re-scopes anything written after a `:global()` closes, and a
-       re-scoped class from another component (SiteHeader.astro) would
-       match nothing — that trap would make this rule silently inert.
-       Opacity is paired with visibility (not opacity alone) so the
-       suppressed anchor also drops out of hit-testing and the
-       accessibility tree — an invisible-but-still-clickable anchor sitting
-       over the top-left of the intro would be a tap-hijack surface and a
-       phantom link in the a11y tree, the identical reasoning the
-       zoom-keyed hide above already documents for the whole header.
-       data-intro-active is still absent by default and still written only
-       by the deck driver (unchanged by this plan), so the header AND its
-       logo anchor are both fully visible pre-JS, with JS disabled, at
-       768px and above, and under reduced motion — the default the
-       reduced-motion route in mobile-nav.spec.ts, accessibility.spec.ts
-       and critical.smoke.spec.ts depends on. This rule is now the
-       attribute's ONLY consumer anywhere in the codebase — deleting it
-       without a replacement would leave a flag nothing reads. */
-    .home[data-intro-active='true'] :global(.site-header--solid .logo-mark),
-    .home[data-intro-active='true'] :global(.site-header--transparent .logo-mark) {
-      opacity: 0;
-      visibility: hidden;
-    }
-  }
-
-  /* Phase 21 (D-15): the reduced-motion end state. Every description is
-     permanently visible with no observer running (plan 21-06 gates its
-     own attachment behind this identical matchMedia check, so there is
-     nothing left to reveal on scroll). The is:global block above disables
-     scroll-snap-type under this same query. The zoom wordmark and photo
-     layer need NO rule here at all — their unconditional rest state
-     (wordmark visible at scale 1, photo layer at opacity 0) IS the static
-     full-screen wordmark this reduced-motion end state requires, since
-     plan 21-05's driver never attaches under this query either. */
-  @media (max-width: 767px) and (prefers-reduced-motion: reduce) {
-    .home-slide__description {
-      opacity: 1;
-      transform: none;
-    }
-
-    /* Assumption A1 (21-10-PLAN.md, still standing after 21-13's pinned-
-       intro redesign): the intro is content, not motion, so a
-       reduced-motion visitor still gets it — the tagline is permanently
-       visible (no reveal) and the cue's drift is suppressed. The driver
-       (Task 3) never attaches under this query at all, so no inline write
-       to the logomark's transform or the tagline's opacity/transform ever
-       happens — the logomark therefore needs NO rule of its own here,
-       because its unstyled rest state (no transform) IS the static end
-       state a reduced-motion visitor should see. The track also keeps its
-       full height under reduced motion for the same reason the zoom track
-       already does: a static pinned stage scrolled past is this site's
-       established reduced-motion treatment for a scrub region, not an
-       oversight. The header is deliberately NOT hidden here: D-12's
-       header-hide is entirely JS-attribute-driven (data-zoom-active/
-       data-intro-active, Task 3), and this driver never attaches at all
-       under this query (D-15's established convention), so the header
-       staying visible falls out of that convention for free rather than
-       being a new rule — this keeps mobile-nav.spec.ts/accessibility.spec.ts/
-       critical.smoke.spec.ts's existing reduced-motion route to an
-       interactive header intact. */
-    .home-scroll-deck__intro-body {
-      opacity: 1;
-      transform: none;
-    }
-
-    .home-scroll-deck__intro-cue {
-      animation: none;
-    }
-  }
-
-  /* WR-03: a phone-width visitor with JavaScript disabled and no
-     reduced-motion preference gets neither of the two things above that
-     ever move .home-scroll-deck__intro-body off its opacity: 0 rest
-     state — applyIntroScrub() (Task 3) requires JS to attach at all, and
-     the reduced-motion override immediately above only fires when the
-     OS/browser reports that preference. `(scripting: none)` targets
-     exactly that remaining gap, so the real, Sanity-authored tagline copy
-     (siteCopy.homepageIntro) is never permanently invisible. Mirrors the
-     reduced-motion override's own end-state values (opacity 1, transform
-     none) rather than inventing a new one. */
-  @media (max-width: 767px) and (scripting: none) {
-    .home-scroll-deck__intro-body {
-      opacity: 1;
-      transform: none;
-    }
-  }
 
 </style>
 
@@ -4564,53 +2967,6 @@ const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
     }
   }
 
-  /* Phase 21 (HOME-14/HOME-15): phone-width scroll snap for pages that
-     actually render the deck. `html:has(.home-scroll-deck)` — not a bare
-     `html` rule — so this snap type never leaks onto About/Contact/
-     gallery/édition pages, which don't render this markup. The page
-     itself is the scroll container (D-08 requires scrolling past the last
-     slide into the footer, so a nested scroller is out of the question),
-     and the zoom track above is a deliberately non-snapping 900px scrub
-     region that a strict snap mode would fight (21-RESEARCH.md Pitfall 6)
-     — `proximity` (not `mandatory`) keeps D-04's free scrub intact while
-     each slide's own `scroll-snap-stop: always` still prevents a fling
-     from skipping a gallery. This is the "exact snap-scroll CSS technique"
-     21-CONTEXT.md left open for planning to decide, not a change to any
-     locked decision.
-
-     Plan 21-15, assumption A9: `21-UAT.md` round-2 gap 2's second
-     `missing` item asked whether this deck needs a firmer snap guarantee
-     than `proximity` provides on iOS. It WAS reconsidered and deliberately
-     declined, not silently skipped. `mandatory` is the only firmer mode,
-     and the page itself is the scroll container (D-08 requires scrolling
-     past the last slide into the real footer, so a nested scroller that
-     could scope `scroll-snap-type` more narrowly is out of the question).
-     Under `mandatory` the browser must always come to rest on a snap
-     point, but the intro track (plan 21-13) and this zoom track are both
-     tall, deliberately snap-point-free free-scrub regions — the visitor
-     could no longer rest anywhere inside either of them, and the page
-     would fling from the top straight to the first slide, destroying
-     D-04's scrubbable, reversible zoom. So the snap mode stays here, and
-     the gallery-description reveal was made robust to an unreliable stop
-     instead of demanding a reliable one (see `computeArrivalRevealed` in
-     `src/lib/home-carousel.ts` and its call site above) — which also
-     covers the case where iOS snaps correctly but the reveal threshold is
-     only crossed during the settle spring. */
-  @media (max-width: 767px) {
-    html:has(.home-scroll-deck) {
-      scroll-snap-type: y proximity;
-    }
-  }
-
-  /* Phase 21 (D-15): the reduced-motion end state. No JS observer runs
-     under this query (plan 21-06 gates its own attachment behind the
-     identical matchMedia check), so every description must already be in
-     its final revealed state and the free-scrub snap must be fully off. */
-  @media (max-width: 767px) and (prefers-reduced-motion: reduce) {
-    html:has(.home-scroll-deck) {
-      scroll-snap-type: none;
-    }
-  }
 
   /* SiteHeader keeps its own named snapshot for cross-document navigation.
      The homepage's internal grid/carousel switch deliberately has no
