@@ -98,11 +98,16 @@ describe('deployment freshness state machine', () => {
     const remotePublication = '2026-07-29T09:02:00.000Z'
     const reference = latestValidTimestamp(localPublication, remotePublication)
     expect(reference).toBe(remotePublication)
+    // This test is about timestamp SELECTION, so it pins an explicit `now`
+    // (30s after the reference timestamp) rather than inheriting the
+    // three-minute timeout's verdict from the wall clock -- without now the
+    // real clock makes this fixture months stale and timedOut silently true.
     expect(
       deploymentState({
         runs: [run({created_at: '2026-07-29T09:01:00Z'})],
         publishedAt: reference,
         pendingCount: 0,
+        now: new Date('2026-07-29T09:02:30Z'),
       }).kind,
     ).toBe('waiting-run')
   })
@@ -250,16 +255,124 @@ describe('deployment freshness state machine', () => {
     expect(state.run?.id).toBe(2)
   })
 
-  it('surfaces the not-started timeout after three minutes', () => {
+  it('surfaces the not-started timeout after three minutes as a failed kind, so the stage turns red instead of staying blue forever', () => {
     const state = deploymentState({
       runs: [],
       publishedAt,
       pendingCount: 0,
       now: new Date('2026-07-29T09:03:01Z'),
     })
-    expect(state.kind).toBe('waiting-run')
+    expect(state.kind).toBe('failed')
     expect(state.label).toBe('Mise à jour non démarrée')
     expect(state.actionLabel).toBe('Prévenir le mainteneur')
+    // Every other field stays byte-identical to the pre-change behaviour.
+    expect(state.detail).toBe("Aucun déploiement récent n'est apparu après la publication.")
+    expect(state.tone).toBe('critical')
+    // terminal stays false so a late-appearing run can still self-heal the
+    // state back to 'deploying'/'current' instead of being stranded red.
+    expect(state.terminal).toBe(false)
+  })
+})
+
+describe('not-started timeout boundary and segment mapping', () => {
+  it('stays the waiting kind one second before three minutes, and turns failed exactly at the three-minute boundary, for the staging target', () => {
+    const beforeTimeout = deploymentState({
+      runs: [],
+      publishedAt,
+      pendingCount: 0,
+      now: new Date('2026-07-29T09:02:59Z'),
+    })
+    const atTimeout = deploymentState({
+      runs: [],
+      publishedAt,
+      pendingCount: 0,
+      now: new Date('2026-07-29T09:03:00Z'),
+    })
+    expect(beforeTimeout.kind).toBe('waiting-run')
+    expect(atTimeout.kind).toBe('failed')
+
+    // The whole point: blue while it may still be starting, red once it
+    // demonstrably never did.
+    const beforeResult = releasePipelineState({
+      pendingCount: 0,
+      staging: beforeTimeout,
+      production: deploymentState({runs: [], publishedAt: '', pendingCount: 0, target: 'production'}),
+      publishedAt,
+      productionReleaseAt: '',
+      busy: false,
+    })
+    const atResult = releasePipelineState({
+      pendingCount: 0,
+      staging: atTimeout,
+      production: deploymentState({runs: [], publishedAt: '', pendingCount: 0, target: 'production'}),
+      publishedAt,
+      productionReleaseAt: '',
+      busy: false,
+    })
+    expect(beforeResult.segments.staging).toBe('active')
+    expect(atResult.segments.staging).toBe('failed')
+  })
+
+  it('stays the waiting kind one second before three minutes, and turns failed exactly at the three-minute boundary, for the production target', () => {
+    const beforeTimeout = deploymentState({
+      runs: [],
+      publishedAt,
+      pendingCount: 0,
+      now: new Date('2026-07-29T09:02:59Z'),
+      target: 'production',
+    })
+    const atTimeout = deploymentState({
+      runs: [],
+      publishedAt,
+      pendingCount: 0,
+      now: new Date('2026-07-29T09:03:00Z'),
+      target: 'production',
+    })
+    expect(beforeTimeout.kind).toBe('waiting-run')
+    expect(atTimeout.kind).toBe('failed')
+
+    const staging = deploymentState({runs: [run()], publishedAt, pendingCount: 0})
+    // productionReleaseAt set equal to publishedAt so isProductionReleaseStale()
+    // does not override the result with 'pending'.
+    const beforeResult = releasePipelineState({
+      pendingCount: 0,
+      staging,
+      production: beforeTimeout,
+      publishedAt,
+      productionReleaseAt: publishedAt,
+      busy: false,
+    })
+    const atResult = releasePipelineState({
+      pendingCount: 0,
+      staging,
+      production: atTimeout,
+      publishedAt,
+      productionReleaseAt: publishedAt,
+      busy: false,
+    })
+    expect(beforeResult.segments.production).toBe('active')
+    expect(atResult.segments.production).toBe('failed')
+  })
+
+  it('a run that WAS found and is genuinely mid-flight still reports the deploying kind and maps to the active segment, even well past three minutes — production releases can legitimately run five-plus minutes, and this proves the two branches were not folded together', () => {
+    const state = deploymentState({
+      runs: [run({status: 'in_progress', conclusion: null})],
+      publishedAt,
+      pendingCount: 0,
+      now: new Date('2026-07-29T09:10:00Z'),
+    })
+    expect(state.kind).toBe('deploying')
+
+    const staging = state
+    const result = releasePipelineState({
+      pendingCount: 0,
+      staging,
+      production: deploymentState({runs: [], publishedAt: '', pendingCount: 0, target: 'production'}),
+      publishedAt,
+      productionReleaseAt: '',
+      busy: false,
+    })
+    expect(result.segments.staging).toBe('active')
   })
 })
 
