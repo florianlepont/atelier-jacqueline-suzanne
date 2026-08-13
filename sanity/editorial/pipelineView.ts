@@ -9,7 +9,11 @@
 // make this module unimportable from the root Vitest project. Only
 // type-only imports are allowed.
 
-import type {PipelineSegmentKind, ReleasePipelineDisplaySegments} from './deployment'
+import type {
+  PipelineSegmentKind,
+  ReleasePipelineDisplaySegments,
+  ReleasePipelineSegments,
+} from './deployment'
 import type {PipelineGateVariant} from './releaseGate'
 
 // This is a presentational modifier, deliberately NOT a fifth
@@ -77,4 +81,87 @@ export function pipelineNodeDetail(
 // element rather than render a blank line.
 export function pipelineGateCaption(variant: PipelineGateVariant): string {
   return variant === 'ready' ? 'Aperçu du site de test' : ''
+}
+
+// The panel header subtitle is now the single narrator of release status:
+// the box under the pipeline was emptied of all copy at the user's explicit
+// request (« je ne veux plus aucun texte dans cette zone, à aucune étape du
+// process »), so this one sentence at the top of the panel is the only
+// place the dashboard says which stage is currently happening.
+//
+// Branch order IS the contract. The order encodes what the maintainer most
+// needs to know first: a release that could not start, then one in flight,
+// then failures, then the ordinary content/staging progression. Once
+// branches 1-4 decline, production is neither active nor failed, so
+// branches 7 and 8 only ever see 'done' or 'pending' -- which is why the
+// eight branches are exhaustive without a default catch-all beyond branch 8.
+export function releasePanelSubtitle({
+  segments,
+  modifiedCount,
+  notStarted = false,
+  requestError,
+}: {
+  segments: ReleasePipelineSegments
+  modifiedCount: number
+  notStarted?: boolean
+  requestError?: string
+}): string {
+  // Branch 1 deliberately does not interpolate the error. This line is
+  // user-facing and calm; the technical string is developer-facing detail
+  // and does not belong here.
+  if (requestError) {
+    return 'La publication sur le site en ligne n’a pas pu démarrer.'
+  }
+
+  if (segments.production === 'active') {
+    return 'Publication sur le site en ligne en cours…'
+  }
+
+  if (segments.production === 'failed') {
+    return 'Échec de la publication sur le site en ligne — réessayez.'
+  }
+
+  if (segments.staging === 'failed') {
+    return 'Échec de la mise à jour du site de test.'
+  }
+
+  // Branch 5 is a verbatim move of the logic that used to live in the panel
+  // header JSX, and is deliberately UNCHANGED behaviour: the count
+  // sentence, the zero-count sentence and the not-started addendum all keep
+  // their existing wording and their existing double guard. The
+  // `modifiedCount > 0` guard exists alongside `notStarted` because the two
+  // values come from different sources (the publication inventory snapshot
+  // vs. the draft count driving the segments), and a rare disagreement
+  // between them must not print the addendum right after the "nothing
+  // pending" sentence.
+  if (segments.content !== 'done') {
+    // The plural rule is inlined rather than imported from
+    // dashboardLogic.ts's pluralize(). That module imports `@sanity/icons`
+    // and two sibling modules, and pulling it into this module's import
+    // graph would break the dependency-free rule this file's header states.
+    // The inlined rule (`> 1` takes the plural) mirrors pluralize() exactly
+    // -- the two must stay in step.
+    const base =
+      modifiedCount === 0
+        ? 'Aucune modification publique en attente.'
+        : `${modifiedCount} ${modifiedCount > 1 ? 'contenus modifiés' : 'contenu modifié'} depuis la dernière mise en ligne.`
+    const addendum =
+      notStarted && modifiedCount > 0
+        ? ' Rien n’a été lancé pour l’instant : cliquez sur « Mettre le site à jour » pour démarrer.'
+        : ''
+    return `${base}${addendum}`
+  }
+
+  // Branch 6 replaces copy that used step numbering. The step-numbering
+  // framing (« étape 1 » / « étape 2 ») was deliberately removed earlier in
+  // this session and must not come back.
+  if (segments.staging !== 'done') {
+    return 'Mise à jour du site de test en cours…'
+  }
+
+  if (segments.production !== 'done') {
+    return 'Site de test à jour — prêt à publier sur le site en ligne.'
+  }
+
+  return 'Aucune modification publique en attente.'
 }
