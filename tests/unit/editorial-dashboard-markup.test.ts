@@ -128,19 +128,19 @@ describe('editorial dashboard pipeline-detail box carries only actions, and is s
     expect(matches, 'expected exactly one promoteActionsBoxHasBody derivation').toHaveLength(1);
   });
 
-  it('derives the guard from gateVariant === \'ready\' and pipeline.promote.actionUrl', () => {
+  it('derives the guard from pipeline.promote.actionUrl alone, with no ready-variant comparison', () => {
     const declarationIndex = source.indexOf('const promoteActionsBoxHasBody =');
     expect(declarationIndex, 'expected to find the promoteActionsBoxHasBody declaration').toBeGreaterThan(-1);
     const declarationSlice = source.slice(declarationIndex, declarationIndex + 400);
 
     expect(
-      declarationSlice.includes("gateVariant === 'ready'"),
-      'this term is the only thing keeping the production-release button mounted now that the copy it used to depend on is gone',
-    ).toBe(true);
-    expect(
       declarationSlice.includes('pipeline.promote.actionUrl'),
       'the failed states have no other body — dropping this term would hide the run link that is their only actionable part',
     ).toBe(true);
+    expect(
+      declarationSlice.includes("gateVariant === 'ready'"),
+      'the control that term kept mounted moved to the top of the panel, so leaving the term here would mount an empty box in the ready state',
+    ).toBe(false);
   });
 
   it('wraps the pipeline-detail Stack itself in the guard, not merely its children', () => {
@@ -179,15 +179,17 @@ describe('editorial dashboard pipeline-detail box carries only actions, and is s
     ).toBe(true);
   });
 
-  it('keeps the ready-state publish button block, the control that triggers a real production release', () => {
+  it('the control that triggers a real production release has MOVED to the top of the panel — the box\'s own body no longer contains a button', () => {
+    const guardIndex = source.indexOf('{promoteActionsBoxHasBody && (');
+    expect(guardIndex, 'expected to find the promoteActionsBoxHasBody-guarded block').toBeGreaterThan(-1);
+    const closingStackIndex = source.indexOf('</Stack>', guardIndex);
+    expect(closingStackIndex, 'expected to find the closing </Stack> of the guarded block').toBeGreaterThan(-1);
+    const boxSlice = source.slice(guardIndex, closingStackIndex);
+
     expect(
-      source.includes('productionPublishDisabled('),
-      'this is the control that triggers a real production release, and it must survive the copy removal',
-    ).toBe(true);
-    expect(
-      source.includes("gateVariant === 'ready'"),
-      'the button must still be gated on the ready variant',
-    ).toBe(true);
+      boxSlice.includes('<Button'),
+      'the merged top button is now the only control that starts a production release; a second one here would resurrect the two-button design the user rejected',
+    ).toBe(false);
   });
 });
 
@@ -324,15 +326,110 @@ describe('editorial dashboard release gate is wired through the shared releaseGa
     ).toBe(true);
   });
 
-  it('gates the publish button on ready and on the shared disabled rule, with the label appearing exactly once', () => {
+  it('gates the merged release action on productionPublishDisabled, and the go-live label appears nowhere in the component source', () => {
     expect(
       source.includes('productionPublishDisabled('),
-      'the new button is the only control that starts a production release from this panel, so its disabled rule must come from the tested helper rather than an inline condition',
+      'the merged top button is the only control that starts a production release from this panel, so its disabled rule must come from the tested helper rather than an inline condition',
     ).toBe(true);
+    // The label now belongs to the tested helper, exactly as the gate
+    // caption literal already does, so a state that should not offer the
+    // production release cannot silently grow the label back inline.
     expect(
       (source.match(/Publier sur le site en ligne/g) ?? []).length,
-      'a second occurrence of this label means it leaked into another gate state or into a comment',
-    ).toBe(1);
+      'this literal now lives exclusively in releaseActionButtonState() in pipelineView.ts -- any occurrence here means the label leaked back into the component',
+    ).toBe(0);
+  });
+});
+
+// This panel now has a single action button whose label, tone, disabled
+// state and click target evolve with the workflow, driven end to end by
+// releaseActionButtonState() in pipelineView.ts and routed through
+// handleReleaseActionClick to the two unchanged existing handlers. The
+// RULES themselves are unit-tested directly in
+// tests/unit/pipeline-view.test.ts; what cannot be reached from `node` is
+// the JSX/derivation WIRING that connects those rules to the actual button.
+describe('editorial dashboard merged release action button is wired through releaseActionButtonState()', () => {
+  const source = readFileSync(COMPONENT_PATH, 'utf-8');
+
+  it('derives releaseAction exactly once from releaseActionButtonState(', () => {
+    const matches = Array.from(source.matchAll(/const releaseAction = releaseActionButtonState\(/g));
+    expect(matches, 'expected exactly one releaseAction derivation').toHaveLength(1);
+  });
+
+  it('passes all seven required inputs to the derivation', () => {
+    const declarationIndex = source.indexOf('const releaseAction = releaseActionButtonState(');
+    expect(declarationIndex, 'expected to find the releaseAction declaration').toBeGreaterThan(-1);
+    const closingParenIndex = source.indexOf('})', declarationIndex);
+    const declarationSlice = source.slice(declarationIndex, closingParenIndex);
+
+    expect(
+      declarationSlice.includes('gateVariant,'),
+      'dropping gateVariant would break the ready-state and active-release branches',
+    ).toBe(true);
+    expect(
+      declarationSlice.includes('publicationBusy,'),
+      'dropping publicationBusy would let the button become clickable while a publish is running',
+    ).toBe(true);
+    expect(
+      declarationSlice.includes('preflighting: publicationPreflighting,'),
+      'dropping this would silently fall back to the plain publish label during preflight',
+    ).toBe(true);
+    expect(
+      declarationSlice.includes('releaseBusy,'),
+      'dropping releaseBusy would leave the button idle during the trigger request window',
+    ).toBe(true);
+    expect(
+      declarationSlice.includes('modifiedCount: publicationCard.total,'),
+      'dropping modifiedCount would break the drafts-pending branch and its enabled/disabled state',
+    ).toBe(true);
+    expect(
+      declarationSlice.includes('publishButtonDisabled: publicationCard.buttonDisabled,'),
+      'dropping this would let a blocked or tracking-failed batch publish anyway',
+    ).toBe(true);
+    expect(
+      declarationSlice.includes('productionPublishDisabled({'),
+      'this is the preview-before-publish gate itself — dropping it would let one click publish to production without a recorded site-de-test review',
+    ).toBe(true);
+    expect(
+      declarationSlice.includes('hasPreviewedStaging,'),
+      'the preview-before-publish gate reads this flag; dropping it defeats the gate',
+    ).toBe(true);
+  });
+
+  it('renders the top button entirely from the derived releaseAction', () => {
+    expect(source.includes('tone={releaseAction.tone}'), 'expected the button tone to come from releaseAction').toBe(true);
+    expect(source.includes('text={releaseAction.label}'), 'expected the button text to come from releaseAction').toBe(true);
+    expect(source.includes('disabled={releaseAction.disabled}'), 'expected the button disabled state to come from releaseAction').toBe(true);
+    expect(source.includes('loading={releaseAction.loading}'), 'expected the button loading state to come from releaseAction').toBe(true);
+    expect(source.includes('onClick={handleReleaseActionClick}'), 'expected the button click handler to be handleReleaseActionClick').toBe(true);
+  });
+
+  it('the preflight label literal appears nowhere in the component source, proving the label ternary really moved into the helper', () => {
+    expect(
+      source.includes('Vérification…'),
+      'this literal now lives exclusively in releaseActionButtonState() -- its presence here would mean the label ternary was duplicated rather than moved',
+    ).toBe(false);
+  });
+
+  it('calls triggerProductionReleaseClick exactly twice: the gate\'s failed-variant retry, and the merged button\'s release routing', () => {
+    expect(
+      (source.match(/void triggerProductionReleaseClick\(\)/g) ?? []).length,
+      'a count of one means either the bottom button removal or the gate retry was lost; a count above two means a new, unaccounted-for way to start a production release was added',
+    ).toBe(2);
+  });
+
+  it('calls runPublication exactly twice: the merged button\'s publish routing, and the error-card retry button\'s own direct call', () => {
+    expect(
+      (source.match(/void runPublication\(\)/g) ?? []).length,
+      'expected exactly two call sites — the merged button routes through handleReleaseActionClick, and the error-card retry keeps its own direct call',
+    ).toBe(2);
+  });
+
+  it('keeps the panel heading static while the button evolves', () => {
+    expect(
+      /<Heading as="h2" size=\{2\}>\s*Mettre le site à jour\s*<\/Heading>/.test(source),
+      'the panel title stays fixed while the button below it evolves with the workflow — this heading is also the anchor the subtitle test slices from',
+    ).toBe(true);
   });
 });
 

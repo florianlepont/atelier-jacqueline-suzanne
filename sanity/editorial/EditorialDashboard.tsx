@@ -42,6 +42,7 @@ import {
   pipelineCircleClassName,
   pipelineGateCaption,
   pipelineNodeDetail,
+  releaseActionButtonState,
   releasePanelSubtitle,
 } from './pipelineView'
 import {getDocumentChecks, summarizeChecks} from './checks'
@@ -455,23 +456,19 @@ export function EditorialDashboard() {
   // paints a visible empty rectangle rather than disappearing. That was
   // always the reason for this guard.
   //
-  // Its body is now exclusively actionable: the failure run link, and the
-  // production-release button in the ready state. It never carries
-  // explanatory copy -- resolvePromoteRow() returns empty title/detail in
-  // every branch, and the panel header subtitle is the single narrator of
-  // release status.
+  // Its body is now exactly one thing: the run link for a failed staging or
+  // production deploy. It carries no explanatory copy (resolvePromoteRow()
+  // returns empty title/detail in every branch) and no button any more.
   //
-  // The `ready` term is load-bearing and must not be dropped: it is what
-  // keeps the only control that starts a real production release mounted.
-  // Deriving this guard from title/detail again -- as it was before --
-  // makes that button silently vanish, because the copy it used to depend
-  // on no longer exists.
+  // The `actionUrl` term is load-bearing and is the only term left: the
+  // failed states have no other body, and losing it hides the run link that
+  // is their only actionable part -- the sole route a maintainer has to the
+  // GitHub Actions page for a broken deploy.
   //
-  // The `actionUrl` term is equally load-bearing: the failed-staging and
-  // failed-production states have no other body, and losing it hides the
-  // run link that is their only actionable part.
-  const promoteActionsBoxHasBody =
-    gateVariant === 'ready' || Boolean(pipeline.promote.actionUrl)
+  // The ready-state term that used to sit here is gone on purpose: the
+  // control it kept mounted moved to the top of the panel and is now the
+  // panel's single evolving button.
+  const promoteActionsBoxHasBody = Boolean(pipeline.promote.actionUrl)
 
   const triggerProductionReleaseClick = async () => {
     setReleaseBusy(true)
@@ -532,6 +529,7 @@ export function EditorialDashboard() {
   const publicationBusy = ['preflighting', 'publishing', 'committed', 'refreshing'].includes(
     publicationState.phase,
   )
+  const publicationPreflighting = publicationState.phase === 'preflighting'
   const publicationTrackingFailed = publicationState.phase === 'tracking-error'
   const publicationCard = publicationCardState(publicationSnapshot, {
     busy: publicationBusy,
@@ -553,6 +551,27 @@ export function EditorialDashboard() {
     modifiedCount: publicationCard.total,
     notStarted: pipeline.promote.notStarted,
     requestError: releaseError,
+  })
+  // This panel now has a single action button whose label, tone, disabled
+  // state and click target all evolve with the workflow, because the
+  // maintainer expected the greyed update button to become the go-live
+  // button rather than a second button appearing below the pipeline. The
+  // five-branch decision lives in releaseActionButtonState() so it has real
+  // behavioural tests instead of a stack of ternaries in JSX. The two
+  // underlying actions remain technically distinct -- publishing drafts and
+  // triggering a production release are different Sanity Actions API calls
+  // with different consequences -- only the UI is merged.
+  const releaseAction = releaseActionButtonState({
+    gateVariant,
+    publicationBusy,
+    preflighting: publicationPreflighting,
+    releaseBusy,
+    modifiedCount: publicationCard.total,
+    publishButtonDisabled: publicationCard.buttonDisabled,
+    productionPublishBlocked: productionPublishDisabled({
+      promoteButtonDisabled: pipeline.promote.buttonDisabled,
+      hasPreviewedStaging,
+    }),
   })
   const publicationPanelHasBody =
     publicationCard.blockedRows.length > 0 ||
@@ -586,6 +605,21 @@ export function EditorialDashboard() {
     } catch {
       // The controller owns the user-facing state. This catch prevents a
       // tracking refresh failure from escaping as an unhandled rejection.
+    }
+  }
+
+  // The merged button routes to one of two existing, unchanged handlers
+  // depending on which stage it currently represents. The `inert` action is
+  // a real outcome rather than a fallthrough -- combined with the button's
+  // own `disabled` flag it is the second of two independent guards on the
+  // preview-before-publish rule.
+  const handleReleaseActionClick = () => {
+    if (releaseAction.action === 'publish') {
+      void runPublication()
+      return
+    }
+    if (releaseAction.action === 'release') {
+      void triggerProductionReleaseClick()
     }
   }
 
@@ -708,21 +742,14 @@ export function EditorialDashboard() {
                     </Stack>
                   </Flex>
                   <Button
-                    tone="primary"
-                    // One button now spans both halves of the merged operation: the
-                    // gate (preflighting) and the publish/tracking phases that follow
-                    // it. The old label was only ever correct for the first half, when
-                    // a second click on a separate confirm button covered the second.
-                    text={
-                      publicationState.phase === 'preflighting'
-                        ? 'Vérification…'
-                        : publicationBusy
-                          ? 'Publication…'
-                          : 'Mettre le site à jour'
-                    }
-                    disabled={publicationCard.buttonDisabled}
-                    loading={publicationBusy}
-                    onClick={() => void runPublication()}
+                    tone={releaseAction.tone}
+                    // This button now spans the whole workflow -- the
+                    // draft-publish half AND the production-release half.
+                    // Its previous comment described only the first half.
+                    text={releaseAction.label}
+                    disabled={releaseAction.disabled}
+                    loading={releaseAction.loading}
+                    onClick={handleReleaseActionClick}
                     style={{minHeight: 44}}
                   />
                 </Flex>
@@ -825,21 +852,6 @@ export function EditorialDashboard() {
                             >
                               {pipeline.promote.actionLabel}
                             </a>
-                          </Flex>
-                        )}
-                        {gateVariant === 'ready' && (
-                          <Flex justify="center">
-                            <Button
-                              tone="primary"
-                              text="Publier sur le site en ligne"
-                              disabled={productionPublishDisabled({
-                                promoteButtonDisabled: pipeline.promote.buttonDisabled,
-                                hasPreviewedStaging,
-                              })}
-                              loading={releaseBusy}
-                              onClick={() => void triggerProductionReleaseClick()}
-                              style={{minHeight: 44}}
-                            />
                           </Flex>
                         )}
                       </Stack>
