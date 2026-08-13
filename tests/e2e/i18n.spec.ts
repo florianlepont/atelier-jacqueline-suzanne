@@ -71,6 +71,81 @@ test.describe('locale content', () => {
   });
 });
 
+test.describe('homepage structural contract parity (quick-260811-kog-02)', () => {
+  // src/pages/index.astro and src/pages/en/index.astro used to duplicate
+  // an entire page implementation; both now render through the shared
+  // HomePage.astro + buildHomePageModel(). These assert that unification
+  // didn't quietly merge or cross-wire the two locales' public contracts.
+
+  test('each homepage canonicalizes to itself, and both list the same fr/en/x-default alternates', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', /\/$/);
+    const frAlternateFr = await page.locator('link[rel="alternate"][hreflang="fr"]').getAttribute('href');
+    const frAlternateEn = await page.locator('link[rel="alternate"][hreflang="en"]').getAttribute('href');
+
+    await page.goto('/en/');
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', /\/en\/$/);
+    const enAlternateFr = await page.locator('link[rel="alternate"][hreflang="fr"]').getAttribute('href');
+    const enAlternateEn = await page.locator('link[rel="alternate"][hreflang="en"]').getAttribute('href');
+
+    // The alternate set itself (which URL is "the French one", which is
+    // "the English one") must not depend on which locale is currently
+    // being viewed.
+    expect(enAlternateFr).toBe(frAlternateFr);
+    expect(enAlternateEn).toBe(frAlternateEn);
+    expect(frAlternateFr).toMatch(/\/$/);
+    expect(frAlternateFr).not.toMatch(/\/en\/$/);
+    expect(frAlternateEn).toMatch(/\/en\/$/);
+  });
+
+  test('?view=grid persists the grid view on both locales', async ({ page }) => {
+    await page.goto('/?view=grid');
+    await expect(page.locator('.home-grid')).toBeVisible();
+    await expect(page.locator('[data-role="home-carousel"]')).toBeHidden();
+
+    await page.goto('/en/?view=grid');
+    await expect(page.locator('.home-grid')).toBeVisible();
+    await expect(page.locator('[data-role="home-carousel"]')).toBeHidden();
+  });
+
+  test('the French homepage never shows English-only nav copy, and vice versa', async ({ page }) => {
+    await page.goto('/');
+    const frBody = await page.locator('body').innerText();
+    expect(frBody).not.toContain('About');
+    expect(frBody).not.toContain('Photographer');
+
+    await page.goto('/en/');
+    const enBody = await page.locator('body').innerText();
+    expect(enBody).not.toContain('À propos');
+    expect(enBody).not.toContain('Photographe');
+  });
+
+  test('both locales list the same gallery slugs, each linked through its own locale-prefixed path', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    const frLinks = await page.locator('a[href*="/galleries/"]').evaluateAll((links) =>
+      links.map((link) => (link as HTMLAnchorElement).getAttribute('href')),
+    );
+
+    await page.goto('/en/');
+    const enLinks = await page.locator('a[href*="/galleries/"]').evaluateAll((links) =>
+      links.map((link) => (link as HTMLAnchorElement).getAttribute('href')),
+    );
+
+    expect(frLinks.length).toBeGreaterThan(0);
+    expect(enLinks.length).toBeGreaterThan(0);
+    expect(frLinks.some((href) => href?.startsWith('/en/'))).toBe(false);
+    expect(enLinks.every((href) => href?.startsWith('/en/galleries/'))).toBe(true);
+
+    const frSlugs = frLinks.map((href) => href?.replace(/^\/galleries\//, '')).sort();
+    const enSlugs = enLinks.map((href) => href?.replace(/^\/en\/galleries\//, '')).sort();
+    expect(enSlugs).toEqual(frSlugs);
+  });
+});
+
 test.describe('switcher', () => {
   test('clicking the switcher from "/" navigates to "/en/"', async ({ page }) => {
     await page.goto('/');
