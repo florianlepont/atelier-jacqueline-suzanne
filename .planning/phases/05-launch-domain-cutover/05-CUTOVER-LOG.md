@@ -119,4 +119,63 @@ None. The smoke check passed on the first attempt with 0 failures, and every add
 
 The only thing flagged for attention, not failure: `05-05-SUMMARY.md` had noted the HTTPS certificate served immediately post-cutover was OVH's shared cluster certificate rather than a domain-specific one, expected to auto-resolve within hours. This task's bonus TLS check (see Automated verification above) confirms it has: the certificate now correctly presents `CN=atelierjacquelinesuzanne.fr`. This is recorded as a resolved follow-up, not an issue requiring action.
 
-**Task 2 and Task 3 of this plan are not yet executed.** The remaining sections (`## Manual verification`, `## Success criteria`, `## Deviations from plan`, `## Follow-ups`) will be added once Task 2's checkpoint (real mail delivery, cross-origin staging submission, and the visual sweep) is resolved by the maintainer.
+All Task 3 sections below (`## Manual verification`, `## Success criteria`, `## Deviations from plan`, `## Follow-ups`) are complete.
+
+---
+
+## Manual verification
+
+Task 2's checkpoint was presented to the maintainer (Florian) alongside Task 1's automated evidence above. The maintainer's replies, verbatim:
+
+> "A - pass
+> B - pass
+> c - Non tout est bon
+> D - pass"
+
+followed, on a specific follow-up about which folder the test message landed in, by: **"Boîte de réception"** (inbox).
+
+Mapped to the four `<resume-signal>` items:
+
+**(a) Real end-to-end mail delivery (D-07).** A real message was submitted through `https://atelierjacquelinesuzanne.fr/contact/`. The maintainer confirmed it arrived at the confirmed recipient mailbox (`contact@atelierjacquelinesuzanne.fr`) **in the inbox, not spam** — the SPF hard-fail deliverability risk flagged in this plan's `<interface_context>` (`v=spf1 include:mx.ovh.com -all`) did not materialize. No `Reply-To:` or delivery problem was reported.
+
+**(b) Cross-origin submission from staging.** The maintainer confirmed the form at `https://florianlepont.github.io/ajs-website/contact/` submitted successfully cross-origin to production `contact.php`, with no CORS error and the same French success message as the production form. This is the check deferred here from plan `05-02`, and the reason D-03 keeps GitHub Pages alive: it proves the exact-match allow-origin allowlist admits the staging origin.
+
+**(c) The old site is gone, and the new one looks right.** The maintainer's reply was "Non, tout est bon" — no page looked wrong across the sweep (both locale homepages, a gallery detail page, `/editions/`, `/about/`, `/mentions-legales/`, the phone-width homepage). No Myportfolio content was found anywhere.
+
+**(d) http→https, no directory listing, and the site's own 404.** The maintainer confirmed: plain `http://atelierjacquelinesuzanne.fr/` redirects to `https://`; `https://atelierjacquelinesuzanne.fr/_astro/` does not list directory contents; and a missing path renders the site's own 404 design rather than Apache's default. (Task 1's automated transcript above independently confirms the same custom-404 and http→https behaviour at the header level, so this is doubly evidenced.)
+
+**(4) Decision: the launch is accepted.** No blocking items were found. Per D-06, no DNS rollback was warranted or considered — Task 1 had already proven MX intact, and nothing in Task 2 was mail-related.
+
+---
+
+## Success criteria
+
+| # | ROADMAP Phase 5 criterion | Evidence |
+|---|---|---|
+| 1 | Visiting `atelierjacquelinesuzanne.fr` serves the new site, not the old Myportfolio site | Task 1's smoke-check identity + reachability probes (15/15 PASS, see `## Automated verification` above) and the `## Before / after` header capture (`server: Varnish` → `server: Apache`, `404` → `200`); confirmed visually by the maintainer in Task 2 item (c) across both locale homepages, a gallery detail page, `/editions/`, `/about/`, `/mentions-legales/`, and a phone-width check, with no Myportfolio content found anywhere |
+| 2 | The domain's existing MX/Zimbra mail service continues to work after cutover | `diff <(dig +short MX ...) <(sort 05-mx-baseline.txt)` produced no output (byte-identical), both immediately post-cutover (`05-DNS-BASELINE.md`) and again at this plan's Task 1, two days later; a real message submitted through the live form was confirmed delivered to the inbox of `contact@atelierjacquelinesuzanne.fr` in Task 2 item (a) |
+| 3 | The cutover was rehearsed/verified before the production switch (staging alias tested, TTLs lowered in advance) | Plan `05-04`'s staging rehearsal (`BASE=/ajs-website/ SKIP_PHP=1 npm run test:smoke -- https://florianlepont.github.io`) exited 0, and the same script was proven to correctly fail against the still-Myportfolio production domain before cutover; plan `05-05` Task 2 lowered the apex/`www` TTLs from 3600s to 60s and waited out the old TTL before making the DNS edit, per `05-DNS-RUNBOOK.md` Section 2 |
+
+---
+
+## Deviations from plan
+
+RESEARCH.md flagged four assumptions (A2–A5) as needing live confirmation. Verdicts:
+
+- **A2 — `wlixcc/SFTP-Deploy-Action`'s exact version and input names.** Confirmed accurate: `deploy-ovh.yml` pins `wlixcc/SFTP-Deploy-Action@a5ccb9c6211a94cc59404f0fdb2a9936a6dfee64` (`v1.2.6`) with input names `server`/`username`/`ssh_password`/`sftp_only`/`local_path`/`remote_path` exactly as assumed. No re-pin was needed. Three unrelated hiccups occurred during plan `05-05`'s deploy dispatches (a stale Web3Forms mock in an out-of-scope e2e test, OVH's pre-provisioned default `index.html` blocking the first SFTP overwrite, and a workaround step's own `SSHPASS` environment-variable-name bug) — none were caused by the action itself; full detail already recorded in `05-05-SUMMARY.md` Deviations, not repeated here.
+- **A3 — OVH's exact webroot subpath.** Confirmed accurate: `/home/atelihu/www`, verified directly via the OVH Multisite panel's "Dossier racine" column (`05-05-SUMMARY.md` key-decisions) — matched the assumption exactly, no correction needed.
+- **A4 — the production contact mailbox is the correct live Zimbra mailbox.** Confirmed by this plan's own Task 2: a real message sent through the live form was independently confirmed delivered to `contact@atelierjacquelinesuzanne.fr`'s inbox.
+- **A5 — self-approval is not blocked when the same GitHub user both dispatches a `workflow_dispatch` run and is the Required reviewer on its target environment.** Confirmed not blocked: `05-DNS-BASELINE.md`'s run log shows "build passed, approved" on each of the four `deploy-ovh.yml` dispatches in plan `05-05`, all self-approved by the same maintainer who triggered them. No deadlock occurred and the typed-confirmation fallback was never needed.
+
+One risk explicitly flagged for this plan's Task 2 did not materialize: the apex SPF hard-fail (`v=spf1 include:mx.ovh.com -all`) raised a real possibility that the test message would land in spam. It did not — the message landed in the inbox on the first attempt.
+
+No other deviation from `05-06-PLAN.md` itself occurred: Task 1's smoke check passed on the first attempt with zero retries, and Task 2 surfaced no blocking items.
+
+---
+
+## Follow-ups
+
+- **Restore the apex and `www` `A` record TTLs to 3600s**, once the site has been stable for about a day — deliberately deferred per `05-DNS-RUNBOOK.md` Section 6 and left unticked there. As of this log, the site has been stable for two days with a clean re-verification, so this is now safe to do; it just has not been done yet. Original value: **3600s** (both records, per `05-DNS-BASELINE.md`).
+- **Remove the one-time `deploy-ovh.yml` workaround step** (the stale-OVH-default-`index.html` deletion added in plan `05-05`, commit `54cd8c9`/`b550b9e`) in a small follow-up commit, now that it has served its one-time provisioning-time purpose. Flagged as safe cleanup in `05-05-SUMMARY.md`, not urgent.
+
+No SPF/deliverability hardening follow-up is recorded: the real test message landed in the inbox, not spam, so the flagged risk did not surface as an actual problem.
