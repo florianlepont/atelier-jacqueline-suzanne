@@ -558,7 +558,7 @@ describe('release pipeline state', () => {
     expect(result.promote.buttonLabel).toBe('Publier sur le site en ligne')
   })
 
-  it('with no production release ever recorded, keeps production pending and the row dimmed/disabled/titled "En attente du site de test…"', () => {
+  it('with no production release ever recorded, keeps production pending and the row dimmed and disabled, with no copy of its own', () => {
     const staging = deploymentState({
       runs: [run({status: 'in_progress', conclusion: null})],
       publishedAt,
@@ -575,7 +575,8 @@ describe('release pipeline state', () => {
     expect(result.segments.production).toBe('pending')
     expect(result.promote.dimmed).toBe(true)
     expect(result.promote.buttonDisabled).toBe(true)
-    expect(result.promote.title).toBe('En attente du site de test…')
+    expect(result.promote.title).toBe('')
+    expect(result.promote.detail).toBe('')
     // This is the genuine in-flight wait, so the header must not
     // additionally claim nothing has been started.
     expect(result.promote.notStarted).toBeFalsy()
@@ -594,7 +595,8 @@ describe('release pipeline state', () => {
     expect(result.promote.dimmed).toBe(false)
     expect(result.promote.buttonDisabled).toBe(false)
     expect(result.promote.buttonLabel).toBe('Publier sur le site en ligne')
-    expect(result.promote.title).toBe('Site de test à jour — prêt à publier ?')
+    expect(result.promote.title).toBe('')
+    expect(result.promote.detail).toBe('')
   })
 
   it('a release in flight marks the production segment active and disables the button while it runs', () => {
@@ -609,7 +611,9 @@ describe('release pipeline state', () => {
     })
     expect(result.segments.production).toBe('active')
     expect(result.promote.buttonDisabled).toBe(true)
-    expect(result.promote.title).toBe('Publication sur le site en ligne en cours…')
+    expect(result.promote.title).toBe('')
+    expect(result.promote.detail).toBe('')
+    expect(result.promote.buttonLabel).toBe('Publication en cours…')
   })
 
   it('a proven-current production run newer than the newest publication marks production done and locks the button', () => {
@@ -750,10 +754,11 @@ describe('release pipeline state', () => {
     })
     expect(result.segments.production).toBe('pending')
     expect(result.promote.buttonDisabled).toBe(false)
-    expect(result.promote.title).toBe('Site de test à jour — prêt à publier ?')
+    expect(result.promote.title).toBe('')
+    expect(result.promote.detail).toBe('')
   })
 
-  it('a failed staging run disables the button and names the site de test as the failure', () => {
+  it('a failed staging run disables the button, dims the row, and keeps the staging run link as its only body', () => {
     const staging = deploymentState({
       runs: [run({conclusion: 'failure'})],
       publishedAt,
@@ -770,10 +775,13 @@ describe('release pipeline state', () => {
     expect(result.segments.staging).toBe('failed')
     expect(result.promote.buttonDisabled).toBe(true)
     expect(result.promote.dimmed).toBe(true)
-    expect(result.promote.title.toLowerCase()).toContain('site de test')
+    expect(result.promote.title).toBe('')
+    expect(result.promote.detail).toBe('')
+    // The link is now the ONLY body this state's box has.
+    expect(result.promote.actionUrl).toBe(staging.actionUrl)
   })
 
-  it('a failed production run enables the button for retry and names the site en ligne as the failure', () => {
+  it('a failed production run enables the button for retry and keeps the production run link as its only body', () => {
     const productionReleaseAt = '2026-07-29T09:05:00Z'
     const staging = deploymentState({runs: [run()], publishedAt, pendingCount: 0})
     const production = deploymentState({
@@ -800,11 +808,17 @@ describe('release pipeline state', () => {
     })
     expect(result.segments.production).toBe('failed')
     expect(result.promote.buttonDisabled).toBe(false)
-    expect(result.promote.title.toLowerCase()).toContain('site en ligne')
+    expect(result.promote.title).toBe('')
+    expect(result.promote.detail).toBe('')
     expect(result.promote.actionUrl).toBe(production.actionUrl)
+    expect(result.promote.buttonLabel).toBe('Réessayer')
   })
 
-  it('a trigger request error wins over every other row state and is surfaced verbatim with an enabled retry button', () => {
+  // The "surfaced verbatim" premise this case used to assert is now false:
+  // the raw technical request-error string is deliberately not shown to the
+  // maintainer any more. The header subtitle says the release could not
+  // start, and the retry lives on the round gate button.
+  it('a trigger request error wins over every other row state and leaves an enabled retry, with no copy of its own', () => {
     const productionReleaseAt = '2026-07-29T09:05:00Z'
     const staging = deploymentState({runs: [run()], publishedAt, pendingCount: 0})
     const production = deploymentState({
@@ -829,7 +843,165 @@ describe('release pipeline state', () => {
       busy: false,
       requestError: 'GitHub a refusé la requête (403).',
     })
-    expect(result.promote.detail).toBe('GitHub a refusé la requête (403).')
+    expect(result.promote.title).toBe('')
+    expect(result.promote.detail).toBe('')
+    expect(result.promote.buttonLabel).toBe('Réessayer')
     expect(result.promote.buttonDisabled).toBe(false)
+  })
+
+  // Locks the contract of the whole function: no branch may carry
+  // explanatory copy, in any of the eight reachable states. The discriminator
+  // assertion on each case is what stops this sweep from silently degenerating
+  // into eight copies of the same state.
+  it('carries no explanatory copy in any branch, across all eight release states', () => {
+    const failedStaging = deploymentState({
+      runs: [run({conclusion: 'failure'})],
+      publishedAt,
+      pendingCount: 0,
+    })
+    const failedProduction = deploymentState({
+      runs: [run({conclusion: 'failure'})],
+      publishedAt,
+      pendingCount: 0,
+      target: 'production',
+    })
+    const currentStaging = deploymentState({runs: [run()], publishedAt, pendingCount: 0})
+    const activeStaging = deploymentState({
+      runs: [run({status: 'in_progress', conclusion: null})],
+      publishedAt,
+      pendingCount: 0,
+    })
+    const provenCurrentProduction = deploymentState({
+      runs: [
+        run({
+          created_at: '2026-07-29T09:05:01Z',
+          run_started_at: '2026-07-29T09:05:03Z',
+          updated_at: '2026-07-29T09:06:00Z',
+        }),
+      ],
+      publishedAt: '2026-07-29T09:05:00Z',
+      pendingCount: 0,
+      target: 'production',
+    })
+
+    const cases: Array<{
+      name: string
+      args: Parameters<typeof releasePipelineState>[0]
+      discriminator: (result: ReturnType<typeof releasePipelineState>) => void
+    }> = [
+      {
+        name: 'requestError set',
+        args: {
+          pendingCount: 0,
+          staging: currentStaging,
+          production: noProductionRelease,
+          publishedAt,
+          productionReleaseAt: '',
+          busy: false,
+          requestError: 'GitHub a refusé la requête (403).',
+        },
+        discriminator: (result) => {
+          expect(result.promote.buttonLabel).toBe('Réessayer')
+          expect(result.promote.buttonDisabled).toBe(false)
+        },
+      },
+      {
+        name: 'production active via busy: true',
+        args: {
+          pendingCount: 0,
+          staging: currentStaging,
+          production: noProductionRelease,
+          publishedAt,
+          productionReleaseAt: '',
+          busy: true,
+        },
+        discriminator: (result) => expect(result.segments.production).toBe('active'),
+      },
+      {
+        name: 'production failed',
+        args: {
+          pendingCount: 0,
+          staging: currentStaging,
+          production: failedProduction,
+          publishedAt,
+          productionReleaseAt: '2026-07-29T09:05:00Z',
+          busy: false,
+        },
+        discriminator: (result) => expect(result.segments.production).toBe('failed'),
+      },
+      {
+        name: 'production done',
+        args: {
+          pendingCount: 0,
+          staging: currentStaging,
+          production: provenCurrentProduction,
+          publishedAt,
+          productionReleaseAt: '2026-07-29T09:05:00Z',
+          busy: false,
+        },
+        discriminator: (result) => expect(result.segments.production).toBe('done'),
+      },
+      {
+        name: 'staging failed',
+        args: {
+          pendingCount: 0,
+          staging: failedStaging,
+          production: noProductionRelease,
+          publishedAt,
+          productionReleaseAt: '',
+          busy: false,
+        },
+        discriminator: (result) => expect(result.segments.staging).toBe('failed'),
+      },
+      {
+        name: 'content pending',
+        args: {
+          pendingCount: 1,
+          staging: currentStaging,
+          production: noProductionRelease,
+          publishedAt,
+          productionReleaseAt: '',
+          busy: false,
+        },
+        discriminator: (result) => expect(result.promote.notStarted).toBe(true),
+      },
+      {
+        name: 'staging active with content done',
+        args: {
+          pendingCount: 0,
+          staging: activeStaging,
+          production: noProductionRelease,
+          publishedAt,
+          productionReleaseAt: '',
+          busy: false,
+        },
+        discriminator: (result) => {
+          expect(result.segments.staging).toBe('active')
+          expect(result.segments.content).toBe('done')
+        },
+      },
+      {
+        name: 'ready',
+        args: {
+          pendingCount: 0,
+          staging: currentStaging,
+          production: noProductionRelease,
+          publishedAt,
+          productionReleaseAt: '',
+          busy: false,
+        },
+        discriminator: (result) => {
+          expect(result.promote.buttonDisabled).toBe(false)
+          expect(result.promote.dimmed).toBe(false)
+        },
+      },
+    ]
+
+    for (const {name, args, discriminator} of cases) {
+      const result = releasePipelineState(args)
+      discriminator(result)
+      expect(result.promote.title, `${name}: title must be empty`).toBe('')
+      expect(result.promote.detail, `${name}: detail must be empty`).toBe('')
+    }
   })
 })
