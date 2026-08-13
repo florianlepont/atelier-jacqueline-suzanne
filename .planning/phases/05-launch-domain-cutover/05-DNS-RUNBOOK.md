@@ -115,7 +115,7 @@ These are almost always a wrong webroot path, a missing `.htaccess`, or DNS prop
 
 ## Section 6 — Post-cutover
 
-- [ ] Once the site has been stable for a day, raise the apex and `www` `A` record TTLs back to their original values (recorded in Section 1's `dig +noall +answer A` capture). **Deliberately left unticked** — the site has been stable since the 2026-08-11 cutover and this plan's Task 1/Task 2 verification (two days, no issues found), but the TTL raise itself has not yet been performed. Original value to restore: **3600s** (apex `A`, per `05-DNS-BASELINE.md`; the `www` `A` record shares the same original TTL). See `## Follow-ups` in `05-CUTOVER-LOG.md`.
+- [x] Once the site has been stable for a day, raise the apex and `www` `A` record TTLs back to their original values (recorded in Section 1's `dig +noall +answer A` capture). **Restored** — the apex and `www` `A` records have been raised back to their original TTL of 3600s in the OVH control panel. Verified via `dig +noall +answer A atelierjacquelinesuzanne.fr @ns16.ovh.net`, `dig +noall +answer A www.atelierjacquelinesuzanne.fr @ns16.ovh.net`, and the same two queries against `@dns16.ovh.net` — all four returning TTL 3600 — cross-checked via the public resolver `1.1.1.1` with the same result. MX (`mx1`/`mx2`/`mx3.mail.ovh.net`) and the SPF TXT (`v=spf1 include:mx.ovh.com -all`) were independently reconfirmed unchanged at the same time. Original value restored: **3600s** (apex `A`, per `05-DNS-BASELINE.md`; the `www` `A` record shares the same original TTL). See `## Follow-ups` in `05-CUTOVER-LOG.md`.
 - [x] GitHub Pages stays live permanently as pre-production per D-03 — it is **not** retired by this cutover.
 - [x] Note for future reference: the OVH deploy workflow has no SSH shell, so it never deletes stale files from the webroot. If the webroot ever needs pruning, that is a manual SFTP cleanup, not something this runbook or the deploy pipeline does automatically.
 
@@ -140,4 +140,4 @@ These are almost always a wrong webroot path, a missing `.htaccess`, or DNS prop
 - [x] Section 4: one real end-to-end contact-form message confirmed delivered
 - [x] Section 4: OVH Diagnostic column confirms propagation
 - [x] Section 4: old Myportfolio content confirmed gone from the homepage
-- [ ] Section 6: TTLs raised back to original values (after a day of stability) — **deliberately deferred**, see Section 6 note above and `05-CUTOVER-LOG.md` Follow-ups. Original TTL: 3600s.
+- [x] Section 6: TTLs raised back to original values (after a day of stability) — **restored**, verified via `dig` against both authoritative nameservers (`ns16.ovh.net`, `dns16.ovh.net`) plus the public resolver `1.1.1.1`, all showing TTL 3600; MX/SPF reconfirmed unchanged. See Section 6 note above and `05-CUTOVER-LOG.md` Follow-ups. Original TTL: 3600s.
