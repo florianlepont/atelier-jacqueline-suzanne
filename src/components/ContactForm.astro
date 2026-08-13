@@ -47,6 +47,19 @@ const submissionErrorMessage =
     ? `Something went wrong. Please try again, or email me directly at ${publicEmail}.`
     : `Une erreur est survenue. RÃ©essayez, ou Ã©crivez-moi directement Ã  ${publicEmail}.`;
 
+// DIAGNOSTIC-10 (quick-260811-kog-06): without a Web3Forms key the form must
+// not attempt a network request at all, and must not claim to have sent
+// anything -- it must say plainly that it isn't wired up yet and offer a
+// real mailto: to the same public address already used above. This is
+// deliberately worded differently from submissionErrorMessage (which
+// implies a send was attempted and failed) since no attempt is made here.
+// `PUBLIC_WEB3FORMS_ACCESS_KEY` resolves to an empty string, not undefined,
+// when unset, matching the falsy check the runtime script below performs.
+const accessKey = import.meta.env.PUBLIC_WEB3FORMS_ACCESS_KEY ?? '';
+const unavailableMessagePrefix =
+  locale === 'en' ? "This contact form isn't active yet. Please email me directly at " : "Ce formulaire de contact n'est pas encore actif. Ã‰crivez-moi directement Ã  ";
+const unavailableMessageHtml = `${unavailableMessagePrefix}<a href="mailto:${publicEmail}">${publicEmail}</a>.`;
+
 const errNameBlank = locale === 'en' ? 'Please enter your name.' : 'Merci dâ€™indiquer votre nom.';
 const errEmailBlank = locale === 'en' ? 'Please enter your email.' : 'Merci dâ€™indiquer votre e-mail.';
 const errEmailInvalid =
@@ -65,6 +78,8 @@ const errMessageBlank = locale === 'en' ? 'Please enter a message.' : 'Merci dâ€
   data-err-email-blank={errEmailBlank}
   data-err-email-invalid={errEmailInvalid}
   data-err-message-blank={errMessageBlank}
+  data-access-key={accessKey}
+  data-unavailable-message-html={unavailableMessageHtml}
   class="contact-form"
   novalidate
 >
@@ -128,6 +143,7 @@ const errMessageBlank = locale === 'en' ? 'Please enter a message.' : 'Merci dâ€
     const errEmailBlank = form.dataset.errEmailBlank ?? '';
     const errEmailInvalid = form.dataset.errEmailInvalid ?? '';
     const errMessageBlank = form.dataset.errMessageBlank ?? '';
+    const unavailableMessageHtml = form.dataset.unavailableMessageHtml ?? '';
     let isSubmitting = false;
 
     function clearErrors() {
@@ -146,6 +162,16 @@ const errMessageBlank = locale === 'en' ? 'Please enter a message.' : 'Merci dâ€
     // would otherwise silently point at an undefined custom property.
     function renderSubmissionError() {
       statusEl!.textContent = errorMessage;
+      statusEl!.classList.add('contact-form__status--error');
+    }
+
+    // DIAGNOSTIC-10: distinct from renderSubmissionError -- no send was
+    // attempted, so this must not read as "we tried and it failed". The
+    // message is build-time-computed markup (never user input), so setting
+    // innerHTML here is safe and is the only way to render a real, clickable
+    // mailto: link inside this aria-live region.
+    function renderUnavailable() {
+      statusEl!.innerHTML = unavailableMessageHtml;
       statusEl!.classList.add('contact-form__status--error');
     }
 
@@ -197,6 +223,16 @@ const errMessageBlank = locale === 'en' ? 'Please enter a message.' : 'Merci dâ€
 
       if (hasError) return;
 
+      // DIAGNOSTIC-10: re-read after local validation/honeypot, before any
+      // network call -- an empty key means Web3Forms was never configured
+      // for this deployment, and the form must say so honestly rather than
+      // attempt (and fail) a request or silently claim success.
+      const accessKey = form.dataset.accessKey ?? '';
+      if (!accessKey) {
+        renderUnavailable();
+        return;
+      }
+
       isSubmitting = true;
       setSubmitting(true);
       try {
@@ -204,7 +240,7 @@ const errMessageBlank = locale === 'en' ? 'Please enter a message.' : 'Merci dâ€
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            access_key: import.meta.env.PUBLIC_WEB3FORMS_ACCESS_KEY,
+            access_key: accessKey,
             name,
             email,
             message,

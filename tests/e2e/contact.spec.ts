@@ -10,6 +10,18 @@ import { test, expect } from '@playwright/test';
 
 const WEB3FORMS_URL = 'https://api.web3forms.com/submit';
 
+// quick-260811-kog-06: with no PUBLIC_WEB3FORMS_ACCESS_KEY set in this test
+// build, data-access-key resolves empty and the form short-circuits before
+// ever reaching fetch (DIAGNOSTIC-10). Tests exercising the network/response
+// path inject this clearly-fake value into the DOM first -- never a real
+// key, and never read from an env var or fixture that could accidentally
+// hold one.
+async function injectFakeAccessKey(page: import('@playwright/test').Page) {
+  await page.locator('#contact-form').evaluate((form: HTMLFormElement) => {
+    form.dataset.accessKey = 'test-fake-access-key-do-not-use';
+  });
+}
+
 test.describe('contact form success', () => {
   test('submitting valid input shows the inline FR success message without navigating away (CONT-01, D-09)', async ({
     page,
@@ -23,6 +35,7 @@ test.describe('contact form success', () => {
     );
 
     await page.goto('/contact/');
+    await injectFakeAccessKey(page);
     const urlBefore = page.url();
 
     await page.getByLabel(/^nom$/i).fill('Jeanne Dupont');
@@ -46,6 +59,7 @@ test.describe('contact form success', () => {
     );
 
     await page.goto('/en/contact/');
+    await injectFakeAccessKey(page);
     const urlBefore = page.url();
 
     await page.getByLabel(/^name$/i).fill('Jane Doe');
@@ -56,6 +70,82 @@ test.describe('contact form success', () => {
     const status = page.locator('[data-role="form-status"]');
     await expect(status).toHaveText(/thank you, your message has been sent/i);
     expect(page.url()).toBe(urlBefore);
+  });
+});
+
+// DIAGNOSTIC-10 (quick-260811-kog-06): this test build sets no
+// PUBLIC_WEB3FORMS_ACCESS_KEY, so data-access-key is empty by default here
+// -- exactly the deployed-without-a-key state. These tests deliberately do
+// NOT call injectFakeAccessKey, and prove the honest, no-network fallback
+// on both locales without inventing or reading any real secret.
+test.describe('contact form without a configured Web3Forms key (DIAGNOSTIC-10)', () => {
+  test('fr: valid input never reaches the network and shows a mailto fallback, not a false success', async ({
+    page,
+  }) => {
+    let requestFired = false;
+    await page.route(WEB3FORMS_URL, (route) => {
+      requestFired = true;
+      return route.abort();
+    });
+
+    await page.goto('/contact/');
+    await page.getByLabel(/^nom$/i).fill('Jeanne Dupont');
+    await page.getByLabel(/^e-mail$/i).fill('jeanne@example.com');
+    await page.getByLabel(/^message$/i).fill('Bonjour, je souhaite vous contacter.');
+    await page.getByRole('button', { name: /envoyer le message/i }).click();
+
+    const status = page.locator('[data-role="form-status"]');
+    await expect(status).not.toHaveText(/bien été envoyé/i);
+    await expect(status).toContainText(/n['’]est pas encore actif/i);
+    const mailtoLink = status.locator('a[href^="mailto:"]');
+    await expect(mailtoLink).toHaveCount(1);
+    await expect(mailtoLink).toHaveAttribute('href', /^mailto:contact@atelierjacquelinesuzanne\.fr$/);
+    expect(requestFired).toBe(false);
+  });
+
+  test('en: valid input never reaches the network and shows a mailto fallback, not a false success', async ({
+    page,
+  }) => {
+    let requestFired = false;
+    await page.route(WEB3FORMS_URL, (route) => {
+      requestFired = true;
+      return route.abort();
+    });
+
+    await page.goto('/en/contact/');
+    await page.getByLabel(/^name$/i).fill('Jane Doe');
+    await page.getByLabel(/^email$/i).fill('jane@example.com');
+    await page.getByLabel(/^message$/i).fill('Hello, I would like to get in touch.');
+    await page.getByRole('button', { name: /send message/i }).click();
+
+    const status = page.locator('[data-role="form-status"]');
+    await expect(status).not.toHaveText(/has been sent/i);
+    await expect(status).toContainText(/isn['’]t active yet/i);
+    const mailtoLink = status.locator('a[href^="mailto:"]');
+    await expect(mailtoLink).toHaveCount(1);
+    await expect(mailtoLink).toHaveAttribute('href', /^mailto:contact@atelierjacquelinesuzanne\.fr$/);
+    expect(requestFired).toBe(false);
+  });
+
+  test('the honeypot check still runs before the no-key fallback (bot traffic never sees the mailto either)', async ({
+    page,
+  }) => {
+    let requestFired = false;
+    await page.route(WEB3FORMS_URL, (route) => {
+      requestFired = true;
+      return route.abort();
+    });
+
+    await page.goto('/contact/');
+    await page.getByLabel(/^nom$/i).fill('Jeanne Dupont');
+    await page.getByLabel(/^e-mail$/i).fill('jeanne@example.com');
+    await page.getByLabel(/^message$/i).fill('Bonjour, je souhaite vous contacter.');
+    await page.locator('input[name="website"]').fill('bot');
+    await page.getByRole('button', { name: /envoyer le message/i }).click();
+
+    const status = page.locator('[data-role="form-status"]');
+    await expect(status).toHaveText(/merci, votre message a bien été envoyé/i);
+    expect(requestFired).toBe(false);
   });
 });
 
@@ -136,6 +226,7 @@ test.describe('contact form validation', () => {
 test.describe('contact form submission failures', () => {
   const fillValidForm = async (page: import('@playwright/test').Page) => {
     await page.goto('/contact/');
+    await injectFakeAccessKey(page);
     await page.getByLabel(/^nom$/i).fill('Jeanne Dupont');
     await page.getByLabel(/^e-mail$/i).fill('jeanne@example.com');
     await page.getByLabel(/^message$/i).fill('Bonjour, je souhaite vous contacter.');

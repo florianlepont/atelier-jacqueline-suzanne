@@ -35,7 +35,7 @@ Names only — never commit real values, tokens, or keys. `.env` is gitignored; 
 | `SANITY_PROJECT_ID` | required (build) | Sanity project id for build-time content fetch. |
 | `SANITY_DATASET` | required (build) | Sanity dataset name (e.g. `production`). |
 | `SANITY_API_READ_TOKEN` | required (build) | Sanity read token used at build time. |
-| `PUBLIC_WEB3FORMS_ACCESS_KEY` | contact form | Currently unprovisioned / deferred to the Phase 5 OVH cutover — the contact form is non-functional until it is set. |
+| `PUBLIC_WEB3FORMS_ACCESS_KEY` | contact form | Currently unprovisioned / deferred to the Phase 5 OVH cutover. Web3Forms is a transitional, optional integration, not a hosting decision — Phase 5 still owns the eventual migration to OVH PHP `mail()`. Without this key, the form makes no network request and shows an honest, localized "not active yet" message with a `mailto:` fallback to the public address instead of silently failing (quick-260811-kog-06/DIAGNOSTIC-10). |
 | `SITE_URL` | optional (build) | Canonical site origin; defaults to `https://florianlepont.github.io`. |
 | `ASTRO_BASE` | optional (build) | Base path; defaults to `/`; set `/ajs-website/` for the GitHub Pages staging build. |
 

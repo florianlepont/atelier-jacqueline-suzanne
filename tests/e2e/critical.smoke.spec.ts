@@ -36,11 +36,42 @@ test.describe('critical cross-browser smoke', () => {
       route.fulfill({status: 200, contentType: 'application/json', body: '{"success":true}'}),
     )
     await page.goto('/contact/')
+    // quick-260811-kog-06: this test build sets no PUBLIC_WEB3FORMS_ACCESS_KEY,
+    // so the form now short-circuits before fetch (DIAGNOSTIC-10) unless a
+    // clearly-fake key is injected — see tests/e2e/contact.spec.ts for the
+    // full no-key/fake-key contract; this file only smoke-tests the happy path.
+    await page.locator('#contact-form').evaluate((form: HTMLFormElement) => {
+      form.dataset.accessKey = 'test-fake-access-key-do-not-use'
+    })
     await page.getByLabel(/^nom$/i).fill('Jeanne Dupont')
     await page.getByLabel(/^e-mail$/i).fill('jeanne@example.com')
     await page.getByLabel(/^message$/i).fill('Bonjour')
     await page.getByRole('button', {name: /envoyer/i}).click()
     await expect(page.locator('[data-role="form-status"]')).toContainText(/merci/i)
+  })
+
+  // DIAGNOSTIC-10: the deployed-without-a-key state itself (no fake key
+  // injected here on purpose) must never hit the network on any tested
+  // engine, including WebKit — this file is the only place webkit-mobile
+  // coverage happens (playwright.config.ts scopes that project to
+  // **/*.smoke.spec.ts only). The full fr/en/mailto assertions live in
+  // tests/e2e/contact.spec.ts (chromium-only); this is deliberately the one
+  // representative check, not a duplicate of that whole describe block.
+  test('contact form without a configured key never reaches the network, on every tested engine', async ({
+    page,
+  }) => {
+    let requestFired = false
+    await page.route('https://api.web3forms.com/submit', (route) => {
+      requestFired = true
+      return route.abort()
+    })
+    await page.goto('/contact/')
+    await page.getByLabel(/^nom$/i).fill('Jeanne Dupont')
+    await page.getByLabel(/^e-mail$/i).fill('jeanne@example.com')
+    await page.getByLabel(/^message$/i).fill('Bonjour')
+    await page.getByRole('button', {name: /envoyer/i}).click()
+    await expect(page.locator('[data-role="form-status"]')).not.toContainText(/merci/i)
+    expect(requestFired).toBe(false)
   })
 
   test('native dialog opens, navigates, closes, and restores focus', async ({page}) => {
