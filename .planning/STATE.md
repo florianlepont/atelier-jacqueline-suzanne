@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 current_phase: 05
-current_phase_name: Launch & Domain Cutover
+current_phase_name: launch-domain-cutover
 status: executing
 stopped_at: Phase 5 planned — 6 plans, 4 waves, verification passed
-last_updated: "2026-08-11T14:16:50.728Z"
-last_activity: 2026-08-11
+last_updated: "2026-08-13T14:43:45.389Z"
+last_activity: 2026-08-13
 last_activity_desc: Phase 05 execution started
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 6
-  completed_plans: 1
+  completed_plans: 5
   percent: 0
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-04)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; v1.3 adds a non-transactional Éditions showcase; checkout still follows in the future v1.x shop milestone.)
-**Current focus:** Phase 05 — Launch & Domain Cutover
+**Current focus:** Phase 05 — launch-domain-cutover
 
 ## Current Position
 
-Phase: 05 (Launch & Domain Cutover) — EXECUTING
-Plan: 2 of 6
-Status: Ready to execute
-Last activity: 2026-08-13 - Completed quick task 260813-gw2: merged the dashboard's two publish buttons ("Mettre le site à jour" and "Publier sur le site en ligne") into a single control whose label/tone/disabled/loading/click-target evolve through the workflow (new tested `releaseActionButtonState()` helper, 5 ordered branches), following the user's explicit "one button that evolves" preference over two separate controls; the preview-before-publish safety gate is preserved and now double-enforced (disabled flag AND inert click routing). Also fixed a real, separately-confirmed bug found while investigating a user report: `deploymentState()`'s no-qualified-run branch stayed `'waiting-run'` (blue/active) forever if a deploy never started, indistinguishable from one genuinely in progress — now reassigns to `'failed'` (red) at the existing 3-minute timeout, with `terminal` kept false so a late-appearing run still self-heals. Live GitHub Actions data confirmed the specific run the user watched legitimately took ~5.5 minutes and did succeed. Caught and corrected one plan inconsistency before execution (a button tone that would have shown green/"success" while a release outcome was still unknown, clashing with the pipeline node's blue "active" state). 559/559 tests green, Studio redeployed, pending user's live visual confirmation (Phase 05 Wave 4 execution still in progress in parallel)
+Phase: 05 (launch-domain-cutover) — EXECUTING
+Plan: 1 of 6
+Status: Executing Phase 05
+Last activity: 2026-08-13 — Phase 05 execution started
 
 ## Performance Metrics
 
