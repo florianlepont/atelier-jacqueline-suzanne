@@ -38,7 +38,12 @@ import type {
 } from './deployment'
 import {gateClickAction, nextPreviewedFlag, productionPublishDisabled} from './releaseGate'
 import type {PipelineGateVariant} from './releaseGate'
-import {pipelineCircleClassName, pipelineGateCaption, pipelineNodeDetail} from './pipelineView'
+import {
+  pipelineCircleClassName,
+  pipelineGateCaption,
+  pipelineNodeDetail,
+  releasePanelSubtitle,
+} from './pipelineView'
 import {getDocumentChecks, summarizeChecks} from './checks'
 import {
   attentionPriority,
@@ -445,15 +450,28 @@ export function EditorialDashboard() {
   useEffect(() => {
     setHasPreviewedStaging((current) => nextPreviewedFlag(gateVariant, current))
   }, [gateVariant])
-  // The not-started branch of resolvePromoteRow() deliberately returns no
-  // copy, but the pipeline-detail box below carries its own padding and
-  // background colour -- an unconditionally-rendered box would paint a
-  // visible empty rectangle rather than disappear. `actionUrl` is included
-  // here so the failed-deploy states, whose only body is the run link,
-  // still get their box.
-  const promoteDetailBoxHasBody = Boolean(
-    pipeline.promote.title || pipeline.promote.detail || pipeline.promote.actionUrl,
-  )
+  // The box carries its own padding and background, so it must not render
+  // at all when it has nothing inside -- an unconditionally-rendered box
+  // paints a visible empty rectangle rather than disappearing. That was
+  // always the reason for this guard.
+  //
+  // Its body is now exclusively actionable: the failure run link, and the
+  // production-release button in the ready state. It never carries
+  // explanatory copy -- resolvePromoteRow() returns empty title/detail in
+  // every branch, and the panel header subtitle is the single narrator of
+  // release status.
+  //
+  // The `ready` term is load-bearing and must not be dropped: it is what
+  // keeps the only control that starts a real production release mounted.
+  // Deriving this guard from title/detail again -- as it was before --
+  // makes that button silently vanish, because the copy it used to depend
+  // on no longer exists.
+  //
+  // The `actionUrl` term is equally load-bearing: the failed-staging and
+  // failed-production states have no other body, and losing it hides the
+  // run link that is their only actionable part.
+  const promoteActionsBoxHasBody =
+    gateVariant === 'ready' || Boolean(pipeline.promote.actionUrl)
 
   const triggerProductionReleaseClick = async () => {
     setReleaseBusy(true)
@@ -525,6 +543,17 @@ export function EditorialDashboard() {
   // publish.
   const hasModifiedContent = publicationCard.total > 0
   const pipelineDetail = pipelineNodeDetail(displaySegments, hasModifiedContent)
+  // This one line is now the only place the dashboard narrates which stage
+  // of the release is currently happening, because the box under the
+  // pipeline was emptied at the user's explicit request. The eight-branch
+  // decision lives in releasePanelSubtitle() so it has real behavioural
+  // tests instead of an eight-way ternary in JSX.
+  const panelSubtitle = releasePanelSubtitle({
+    segments: pipeline.segments,
+    modifiedCount: publicationCard.total,
+    notStarted: pipeline.promote.notStarted,
+    requestError: releaseError,
+  })
   const publicationPanelHasBody =
     publicationCard.blockedRows.length > 0 ||
     publicationState.phase === 'tracking-error' ||
@@ -674,16 +703,7 @@ export function EditorialDashboard() {
                         Mettre le site à jour
                       </Heading>
                       <Text size={1} muted>
-                        {publicationCard.total === 0
-                          ? 'Aucune modification publique en attente.'
-                          : `${publicationCard.total} ${pluralize(
-                              publicationCard.total,
-                              'contenu modifié',
-                              'contenus modifiés',
-                            )} depuis la dernière mise en ligne.`}
-                        {pipeline.promote.notStarted &&
-                          publicationCard.total > 0 &&
-                          ' Rien n’a été lancé pour l’instant : cliquez sur « Mettre le site à jour » pour démarrer.'}
+                        {panelSubtitle}
                       </Text>
                     </Stack>
                   </Flex>
@@ -786,7 +806,7 @@ export function EditorialDashboard() {
                       </div>
                     </Flex>
 
-                    {promoteDetailBoxHasBody && (
+                    {promoteActionsBoxHasBody && (
                       <Stack
                         space={2}
                         className={
@@ -795,16 +815,6 @@ export function EditorialDashboard() {
                             : 'editorial-dashboard__pipeline-detail'
                         }
                       >
-                        {pipeline.promote.title ? (
-                          <Text size={1} weight="semibold" align="center">
-                            {pipeline.promote.title}
-                          </Text>
-                        ) : null}
-                        {pipeline.promote.detail ? (
-                          <Text size={1} muted align="center">
-                            {pipeline.promote.detail}
-                          </Text>
-                        ) : null}
                         {pipeline.promote.actionUrl && (
                           <Flex justify="center">
                             <a

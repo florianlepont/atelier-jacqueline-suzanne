@@ -94,8 +94,20 @@ describe('nextPreviewedFlag', () => {
   });
 });
 
-describe('the ready promote row carries copy, so the new button has a home to render into', () => {
-  it('resolves buttonDisabled=false with non-empty title/detail once staging is current and no release is in flight', () => {
+// This describe used to assert the OPPOSITE contract (see git history): the
+// ready promote row carried non-empty title/detail because the publish
+// button rendered inside a box whose existence was derived from that copy.
+// Quick task 260813-g49 emptied the copy in every branch of
+// resolvePromoteRow() and re-derives the box's guard from
+// `gateVariant === 'ready'` and `Boolean(pipeline.promote.actionUrl)`
+// instead (see EditorialDashboard.tsx's `promoteActionsBoxHasBody`).
+// Re-deriving the guard from title/detail again — as it was before — would
+// make the only control that starts a real production release silently
+// unreachable, because the copy it used to depend on no longer exists.
+// Reachability is now guarded structurally and asserted in
+// tests/unit/editorial-dashboard-markup.test.ts.
+describe('the ready promote row carries no copy, and the publish button no longer depends on any', () => {
+  it('resolves buttonDisabled=false with empty title/detail once staging is current and no release is in flight', () => {
     const noProductionRelease = deploymentState({
       runs: [],
       publishedAt: '',
@@ -118,12 +130,12 @@ describe('the ready promote row carries copy, so the new button has a home to re
       'the ready branch of resolvePromoteRow() must leave the promote row enabled',
     ).toBe(false);
     expect(
-      result.promote.title.length > 0,
-      'the new publish button renders inside the pipeline-detail box, and that box is skipped entirely when the promote row has no title/detail/actionUrl — an empty title here would make the button unreachable',
-    ).toBe(true);
+      result.promote.title,
+      'title is empty in every branch by contract — see tests/unit/editorial-dashboard-markup.test.ts for the guard that keeps the publish button reachable without it',
+    ).toBe('');
     expect(
-      result.promote.detail.length > 0,
-      'same as title: emptying this copy would make the pipeline-detail box (and therefore the new button) unreachable',
-    ).toBe(true);
+      result.promote.detail,
+      'detail is empty in every branch by contract — see tests/unit/editorial-dashboard-markup.test.ts for the guard that keeps the publish button reachable without it',
+    ).toBe('');
   });
 });

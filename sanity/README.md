@@ -90,8 +90,10 @@ ligne.
 
 Le bouton central reste verrouillé jusqu’à ce que le site de test soit confirmé à jour, devient
 alors cliquable — et porte alors une petite légende nommant le site de test qu’il ouvre —, s’éteint
-pendant que la publication est en cours, puis affiche une coche une fois terminée. En cas d’échec,
-un message sous la barre précise quelle étape a échoué.
+pendant que la publication est en cours, puis affiche une coche une fois terminée. Le statut de la
+mise en ligne — y compris l’étape en échec le cas échéant — est signalé par la petite ligne sous le
+titre **Mettre le site à jour**, en haut du bloc ; la zone sous la barre de progression ne porte
+jamais de texte explicatif, seulement des boutons et des liens.
 
 ## Collections photo
 

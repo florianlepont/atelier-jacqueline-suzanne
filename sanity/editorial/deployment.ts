@@ -369,6 +369,26 @@ function isProductionReleaseStale(publishedAt: string, productionReleaseAt: stri
   return publishedTime > releaseTime
 }
 
+// This function returns no explanatory copy in any branch. `title` and
+// `detail` are always empty strings, in every state.
+//
+// The panel header subtitle is now the single narrator of release status --
+// one sentence at the top of the panel describing whichever stage is
+// currently happening. It is computed by `releasePanelSubtitle()` in
+// `pipelineView.ts` (added by Task 2 of this plan). Look there for the copy.
+//
+// The user's instruction was explicit: no text in the box under the
+// pipeline at any stage of the process. Do not restore a title or a detail
+// on any branch.
+//
+// The two fields are deliberately KEPT on `ReleasePipelinePromote` rather
+// than deleted, because the tests asserting they are empty in all eight
+// states are what stop copy from being reintroduced here. Do not "clean up"
+// the interface by removing them.
+//
+// The raw `requestError` string is deliberately no longer surfaced in the
+// UI. It is developer-facing detail, and the user-facing line only needs to
+// say the release could not start.
 function resolvePromoteRow({
   segments,
   staging,
@@ -382,8 +402,8 @@ function resolvePromoteRow({
 }): ReleasePipelinePromote {
   if (requestError) {
     return {
-      title: 'La publication sur le site en ligne n’a pas pu démarrer.',
-      detail: requestError,
+      title: '',
+      detail: '',
       buttonLabel: 'Réessayer',
       buttonDisabled: false,
       dimmed: false,
@@ -392,8 +412,8 @@ function resolvePromoteRow({
 
   if (segments.production === 'active') {
     return {
-      title: 'Publication sur le site en ligne en cours…',
-      detail: 'GitHub construit et envoie le site vers son hébergement définitif.',
+      title: '',
+      detail: '',
       buttonLabel: 'Publication en cours…',
       buttonDisabled: true,
       dimmed: false,
@@ -402,9 +422,8 @@ function resolvePromoteRow({
 
   if (segments.production === 'failed') {
     return {
-      title: 'Échec de la publication sur le site en ligne.',
-      detail:
-        'Le site de test est à jour, mais l’envoi vers le site en ligne a échoué. Réessayez, ou prévenez le mainteneur.',
+      title: '',
+      detail: '',
       buttonLabel: 'Réessayer',
       buttonDisabled: false,
       dimmed: false,
@@ -429,8 +448,8 @@ function resolvePromoteRow({
 
   if (segments.staging === 'failed') {
     return {
-      title: 'Échec de la mise à jour du site de test.',
-      detail: 'La publication sur le site en ligne reste bloquée tant que le site de test n’est pas à jour.',
+      title: '',
+      detail: '',
       buttonLabel: 'Publier sur le site en ligne',
       buttonDisabled: true,
       dimmed: true,
@@ -470,8 +489,8 @@ function resolvePromoteRow({
 
   if (segments.staging !== 'done') {
     return {
-      title: 'En attente du site de test…',
-      detail: 'L’étape 2 sera disponible une fois le site de test à jour.',
+      title: '',
+      detail: '',
       buttonLabel: 'Publier sur le site en ligne',
       buttonDisabled: true,
       dimmed: true,
@@ -479,8 +498,8 @@ function resolvePromoteRow({
   }
 
   return {
-    title: 'Site de test à jour — prêt à publier ?',
-    detail: 'Ouvrez le site de test pour vérifier avant de publier.',
+    title: '',
+    detail: '',
     buttonLabel: 'Publier sur le site en ligne',
     buttonDisabled: false,
     dimmed: false,
