@@ -78,12 +78,20 @@ Une fois la publication vers le site en ligne déclenchée, les mêmes statuts a
 Site en ligne, jusqu’à **Site en ligne à jour**.
 
 Sous le bouton **Mettre le site à jour**, une barre de progression montre deux étapes
-(« Contenu + site de test » et « Site en ligne ») reliées par une ligne dont le centre porte le
-bouton de publication. Chaque étape devient verte une fois à jour, tourne pendant son exécution et
-devient rouge en cas d’échec. Le bouton central reste verrouillé jusqu’à ce que le site de test
-soit confirmé à jour, devient alors cliquable, s’éteint pendant que la publication est en cours,
-puis affiche une coche une fois terminée. En cas d’échec, un message sous la barre précise quelle
-étape a échoué.
+(« Studio » et « Site en ligne ») reliées par une ligne dont le centre porte le bouton de
+publication. Chaque étape devient verte une fois à jour, tourne pendant son exécution et devient
+rouge en cas d’échec. Tant que des modifications enregistrées ne sont pas encore publiées, l’étape
+**Studio** devient bleue et affiche « Contenu modifié — prêt à être publié ».
+
+Tant qu’il existe des modifications non publiées, l’étape **Site en ligne** n’est jamais affichée
+comme à jour, même si le site en ligne lui-même n’a pas changé — c’est volontaire, pour que
+l’indicateur décrive toujours le dernier contenu enregistré plutôt que l’état réel du site en
+ligne.
+
+Le bouton central reste verrouillé jusqu’à ce que le site de test soit confirmé à jour, devient
+alors cliquable — et porte alors une petite légende nommant le site de test qu’il ouvre —, s’éteint
+pendant que la publication est en cours, puis affiche une coche une fois terminée. En cas d’échec,
+un message sous la barre précise quelle étape a échoué.
 
 ## Collections photo
 
