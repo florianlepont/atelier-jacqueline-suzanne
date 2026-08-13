@@ -1,4 +1,18 @@
 import {createClient} from '@sanity/client'
+import {getBuildCached} from './build-cache'
+import {
+  sanitizeAboutPage,
+  sanitizeContactPage,
+  sanitizeEdition,
+  sanitizeEditions,
+  sanitizeEditionsPage,
+  sanitizeGalleries,
+  sanitizeGallery,
+  sanitizeHomePage,
+  sanitizeSiteSettings,
+  warnForSanityIssues,
+  type SanitizationResult,
+} from './sanity-validation'
 
 /**
  * Build-time only Sanity client.
@@ -42,6 +56,7 @@ export interface LocaleString {
 
 export interface SanityImage {
   asset: {_ref: string}
+  crop?: {top: number; bottom: number; left: number; right: number}
   hotspot?: {x: number; y: number; height: number; width: number}
 }
 
@@ -65,6 +80,7 @@ export interface SiteSettings {
 }
 
 const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{
+  _id,
   siteTitle,
   navLabels,
   footerText,
@@ -76,8 +92,13 @@ const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{
  * Returns `null` if the document has not been published yet.
  */
 export async function getSiteSettings(): Promise<SiteSettings | null> {
-  const result = await sanityClient.fetch<SiteSettings | null>(SITE_SETTINGS_QUERY)
-  return result ?? null
+  return fetchSanitized(
+    'getSiteSettings',
+    null,
+    'siteSettings',
+    () => sanityClient.fetch<unknown>(SITE_SETTINGS_QUERY),
+    sanitizeSiteSettings,
+  )
 }
 
 /**
@@ -150,11 +171,11 @@ const IMAGES_WITH_DIMENSIONS_PROJECTION = /* groq */ `images[]{
   }`
 
 const GALLERIES_QUERY = /* groq */ `*[_type == "gallery" && ${PUBLISHED_GALLERY_FILTER}] | order(orderRank) {
-  title, "slug": slug.current, statement, heroColor, publicationStatus, "showOnHomePage": coalesce(showOnHomePage, true), "isVisible": coalesce(isVisible, true), seo, ${IMAGES_WITH_DIMENSIONS_PROJECTION}
+  _id, title, "slug": slug.current, statement, heroColor, publicationStatus, "showOnHomePage": coalesce(showOnHomePage, true), "isVisible": coalesce(isVisible, true), seo, ${IMAGES_WITH_DIMENSIONS_PROJECTION}
 }`
 
 const GALLERY_BY_SLUG_QUERY = /* groq */ `*[_type == "gallery" && slug.current == $slug && ${PUBLISHED_GALLERY_FILTER}][0]{
-  title, "slug": slug.current, statement, heroColor, publicationStatus, "showOnHomePage": coalesce(showOnHomePage, true), "isVisible": coalesce(isVisible, true), seo, ${IMAGES_WITH_DIMENSIONS_PROJECTION}
+  _id, title, "slug": slug.current, statement, heroColor, publicationStatus, "showOnHomePage": coalesce(showOnHomePage, true), "isVisible": coalesce(isVisible, true), seo, ${IMAGES_WITH_DIMENSIONS_PROJECTION}
 }`
 
 /**
@@ -197,11 +218,11 @@ export interface Edition {
 const PUBLISHED_EDITION_FILTER = /* groq */ `publicationStatus == "published"`
 
 const EDITIONS_QUERY = /* groq */ `*[_type == "edition" && ${PUBLISHED_EDITION_FILTER}] | order(orderRank) {
-  title, "slug": slug.current, statement, ${IMAGES_WITH_DIMENSIONS_PROJECTION}, pageCount, printRun, dimensions, publicationStatus, relatedGallery->{title, "slug": slug.current}
+  _id, title, "slug": slug.current, statement, ${IMAGES_WITH_DIMENSIONS_PROJECTION}, pageCount, printRun, dimensions, publicationStatus, relatedGallery->{title, "slug": slug.current}
 }`
 
 const EDITION_BY_SLUG_QUERY = /* groq */ `*[_type == "edition" && slug.current == $slug && ${PUBLISHED_EDITION_FILTER}][0]{
-  title, "slug": slug.current, statement, ${IMAGES_WITH_DIMENSIONS_PROJECTION}, pageCount, printRun, dimensions, publicationStatus, relatedGallery->{title, "slug": slug.current}
+  _id, title, "slug": slug.current, statement, ${IMAGES_WITH_DIMENSIONS_PROJECTION}, pageCount, printRun, dimensions, publicationStatus, relatedGallery->{title, "slug": slug.current}
 }`
 
 export interface AboutPage {
@@ -243,13 +264,15 @@ export interface ContactPage {
 }
 
 const HOME_PAGE_QUERY = /* groq */ `*[_id == "homePage"][0]{
+  _id,
   intro,
   seo
 }`
 
-const EDITIONS_PAGE_QUERY = /* groq */ `*[_id == "editionsPage"][0]{ intro }`
+const EDITIONS_PAGE_QUERY = /* groq */ `*[_id == "editionsPage"][0]{ _id, intro }`
 
 const ABOUT_PAGE_QUERY = /* groq */ `*[_id == "aboutPage"][0]{
+  _id,
   biography,
   practice,
   medium,
@@ -259,6 +282,7 @@ const ABOUT_PAGE_QUERY = /* groq */ `*[_id == "aboutPage"][0]{
 }`
 
 const CONTACT_PAGE_QUERY = /* groq */ `*[_id == "contactPage"][0]{
+  _id,
   intro,
   publicEmail,
   location,
@@ -273,7 +297,13 @@ const CONTACT_PAGE_QUERY = /* groq */ `*[_id == "contactPage"][0]{
  * maintained by `@sanity/orderable-document-list`).
  */
 export async function getGalleries(): Promise<Gallery[]> {
-  return (await sanityClient.fetch<Gallery[] | null>(GALLERIES_QUERY)) ?? []
+  return fetchSanitized(
+    'getGalleries',
+    null,
+    'gallery',
+    () => sanityClient.fetch<unknown>(GALLERIES_QUERY),
+    sanitizeGalleries,
+  )
 }
 
 /**
@@ -282,8 +312,13 @@ export async function getGalleries(): Promise<Gallery[]> {
  * (WR-03 null-safety).
  */
 export async function getGallery(slug: string): Promise<Gallery | null> {
-  const result = await sanityClient.fetch<Gallery | null>(GALLERY_BY_SLUG_QUERY, {slug})
-  return result ?? null
+  return fetchSanitized(
+    'getGallery',
+    {slug},
+    'gallery',
+    () => sanityClient.fetch<unknown>(GALLERY_BY_SLUG_QUERY, {slug}),
+    sanitizeGallery,
+  )
 }
 
 /**
@@ -291,7 +326,13 @@ export async function getGallery(slug: string): Promise<Gallery | null> {
  * manually-set drag-reorder order (`orderRank`, mirrors `getGalleries`).
  */
 export async function getEditions(): Promise<Edition[]> {
-  return (await sanityClient.fetch<Edition[] | null>(EDITIONS_QUERY)) ?? []
+  return fetchSanitized(
+    'getEditions',
+    null,
+    'edition',
+    () => sanityClient.fetch<unknown>(EDITIONS_QUERY),
+    sanitizeEditions,
+  )
 }
 
 /**
@@ -301,26 +342,65 @@ export async function getEditions(): Promise<Edition[]> {
  * (ASVS V5 — mirrors `getGallery`).
  */
 export async function getEdition(slug: string): Promise<Edition | null> {
-  const result = await sanityClient.fetch<Edition | null>(EDITION_BY_SLUG_QUERY, {slug})
-  return result ?? null
+  return fetchSanitized(
+    'getEdition',
+    {slug},
+    'edition',
+    () => sanityClient.fetch<unknown>(EDITION_BY_SLUG_QUERY, {slug}),
+    sanitizeEdition,
+  )
 }
 
 export async function getAboutPage(): Promise<AboutPage | null> {
-  const result = await sanityClient.fetch<AboutPage | null>(ABOUT_PAGE_QUERY)
-  return result ?? null
+  return fetchSanitized(
+    'getAboutPage',
+    null,
+    'aboutPage',
+    () => sanityClient.fetch<unknown>(ABOUT_PAGE_QUERY),
+    sanitizeAboutPage,
+  )
 }
 
 export async function getHomePage(): Promise<HomePage | null> {
-  const result = await sanityClient.fetch<HomePage | null>(HOME_PAGE_QUERY)
-  return result ?? null
+  return fetchSanitized(
+    'getHomePage',
+    null,
+    'homePage',
+    () => sanityClient.fetch<unknown>(HOME_PAGE_QUERY),
+    sanitizeHomePage,
+  )
 }
 
 export async function getEditionsPage(): Promise<EditionsPage | null> {
-  const result = await sanityClient.fetch<EditionsPage | null>(EDITIONS_PAGE_QUERY)
-  return result ?? null
+  return fetchSanitized(
+    'getEditionsPage',
+    null,
+    'editionsPage',
+    () => sanityClient.fetch<unknown>(EDITIONS_PAGE_QUERY),
+    sanitizeEditionsPage,
+  )
 }
 
 export async function getContactPage(): Promise<ContactPage | null> {
-  const result = await sanityClient.fetch<ContactPage | null>(CONTACT_PAGE_QUERY)
-  return result ?? null
+  return fetchSanitized(
+    'getContactPage',
+    null,
+    'contactPage',
+    () => sanityClient.fetch<unknown>(CONTACT_PAGE_QUERY),
+    sanitizeContactPage,
+  )
+}
+
+function fetchSanitized<T>(
+  getterName: string,
+  parameters: unknown,
+  documentType: string,
+  fetchValue: () => Promise<unknown>,
+  sanitize: (value: unknown) => SanitizationResult<T>,
+): Promise<T> {
+  return getBuildCached(getterName, parameters, async () => {
+    const result = sanitize(await fetchValue())
+    if (result.issues.length > 0) warnForSanityIssues(documentType, result.issues)
+    return result.value
+  })
 }

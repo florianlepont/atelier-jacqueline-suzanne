@@ -199,6 +199,45 @@ for (const token of wholeWordCommerceTokens) {
   }
 }
 
+// quick-260811-kog-04: gallery/édition detail pages now render through
+// shared *DetailPage.astro components fed by pure model builders
+// (buildGalleryDetailModel/buildEditionDetailModel). A model builder bug
+// that lets a hero/grid image URL get built from an absent value (the
+// exact class of bug found and fixed while writing that plan's unit
+// tests — buildEditionDetailModel would previously throw, or in a less
+// defensive language would silently emit a URL containing the literal
+// string "undefined") must fail the build, not just the unit suite, since
+// that suite can't see the real Sanity dataset's actual document shapes.
+const detailHtmlFiles = htmlFiles.filter((file) => {
+  const rel = relative(dist.pathname, file).split('/')
+  return rel.includes('galleries') || rel.includes('editions')
+})
+const editionsOverviewPaths = new Set(['editions/index.html', 'en/editions/index.html'])
+
+for (const file of detailHtmlFiles) {
+  const relFile = relative(dist.pathname, file)
+  if (editionsOverviewPaths.has(relFile)) continue // overview pages have no single hero
+
+  const html = await readFile(file, 'utf8')
+
+  const heroMatch = html.match(/<img[^>]*class="detail-hero__img"[^>]*>/)
+  if (!heroMatch) {
+    failures.push(`${relFile} has no renderable detail-hero__img element`)
+  } else {
+    const srcMatch = heroMatch[0].match(/\ssrc="([^"]*)"/)
+    if (!srcMatch || !srcMatch[1] || !srcMatch[1].startsWith('http')) {
+      failures.push(`${relFile}'s hero image has no valid absolute src`)
+    }
+  }
+
+  const mediaAttributes = html.matchAll(/\s(?:src|srcset)="([^"]*)"/g)
+  for (const [, value] of mediaAttributes) {
+    if (value.includes('undefined')) {
+      failures.push(`${relFile} contains a media URL built from an absent value: ${value}`)
+    }
+  }
+}
+
 if (failures.length) {
   throw new Error(`Static artifact verification failed:\n- ${failures.join('\n- ')}`)
 }

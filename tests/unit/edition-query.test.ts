@@ -1,4 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  resetBuildCacheForTests,
+  setBuildCacheEnabledForTests,
+} from '../../src/lib/build-cache';
 
 // RED (Wave 0): src/lib/sanity.ts's getEditions/getEdition exports do not
 // exist yet — they are built in Plan 12-01 Task 2. Importing them now yields
@@ -12,6 +16,10 @@ process.env.SANITY_PROJECT_ID ??= 'test-project';
 process.env.SANITY_DATASET ??= 'test-dataset';
 
 const fetchMock = vi.fn();
+const validImage = {
+  asset: { _ref: 'image-edition-1200x800-jpg' },
+  alt: { fr: 'Une édition', en: 'An edition' },
+};
 
 vi.mock('@sanity/client', () => ({
   createClient: () => ({ fetch: fetchMock }),
@@ -23,6 +31,7 @@ describe('getEditions', () => {
   });
 
   afterEach(() => {
+    resetBuildCacheForTests();
     vi.clearAllMocks();
   });
 
@@ -32,7 +41,7 @@ describe('getEditions', () => {
         title: 'Rebut',
         slug: 'rebut',
         statement: { fr: 'a', en: 'b' },
-        images: [],
+        images: [validImage],
         pageCount: 50,
         printRun: 2,
         dimensions: { width: 21, height: 29.7, unit: 'cm' },
@@ -50,6 +59,47 @@ describe('getEditions', () => {
     fetchMock.mockResolvedValueOnce(null);
     const { getEditions } = await import('../../src/lib/sanity');
     await expect(getEditions()).resolves.toEqual([]);
+  });
+
+  it('filters editions missing title, slug or a renderable image', async () => {
+    fetchMock.mockResolvedValueOnce([
+      { title: '', slug: 'untitled', images: [validImage] },
+      { title: 'No slug', slug: '', images: [validImage] },
+      { title: 'No image', slug: 'no-image', images: [] },
+      { title: 'Renderable', slug: 'renderable', images: [validImage] },
+    ]);
+
+    const { getEditions } = await import('../../src/lib/sanity');
+    await expect(getEditions()).resolves.toEqual([
+      {
+        title: 'Renderable',
+        slug: 'renderable',
+        statement: { fr: '', en: '' },
+        images: [validImage],
+        pageCount: 0,
+        printRun: 0,
+        dimensions: { width: 0, height: 0, unit: 'cm' },
+      },
+    ]);
+  });
+
+  it('shares the collection fetch during a production build', async () => {
+    setBuildCacheEnabledForTests(true);
+    const editions = [
+      {
+        title: 'Rebut',
+        slug: 'rebut',
+        images: [validImage],
+        pageCount: 48,
+        printRun: 100,
+        dimensions: { width: 21, height: 29.7, unit: 'cm' },
+      },
+    ];
+    fetchMock.mockResolvedValueOnce(editions);
+
+    const { getEditions } = await import('../../src/lib/sanity');
+    await Promise.all([getEditions(), getEditions()]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('fetches with a GROQ query ordered by orderRank', async () => {
@@ -149,7 +199,7 @@ describe('getEditions', () => {
         title: 'Rebut',
         slug: 'rebut',
         statement: { fr: 'a', en: 'b' },
-        images: [],
+        images: [validImage],
         pageCount: 50,
         printRun: 2,
         dimensions: { width: 21, height: 29.7, unit: 'cm' },
@@ -182,7 +232,7 @@ describe('getEditions', () => {
         title: 'Silos',
         slug: 'silos',
         statement: { fr: 'a', en: 'b' },
-        images: [],
+        images: [validImage],
         pageCount: 40,
         printRun: 1,
         dimensions: { width: 21, height: 29.7, unit: 'cm' },
@@ -202,6 +252,7 @@ describe('getEdition', () => {
   });
 
   afterEach(() => {
+    resetBuildCacheForTests();
     vi.clearAllMocks();
   });
 
@@ -221,6 +272,24 @@ describe('getEdition', () => {
     const result = await getEdition('rebut');
 
     expect(result).toBeNull();
+  });
+
+  it('returns null when the detail document is not renderable', async () => {
+    fetchMock.mockResolvedValueOnce({ title: 'Rebut', slug: 'rebut', images: [] });
+
+    const { getEdition } = await import('../../src/lib/sanity');
+    await expect(getEdition('rebut')).resolves.toBeNull();
+  });
+
+  it('isolates detail cache entries by slug', async () => {
+    setBuildCacheEnabledForTests(true);
+    fetchMock
+      .mockResolvedValueOnce({ title: 'Rebut', slug: 'rebut', images: [validImage] })
+      .mockResolvedValueOnce({ title: 'Silos', slug: 'silos', images: [validImage] });
+
+    const { getEdition } = await import('../../src/lib/sanity');
+    await Promise.all([getEdition('rebut'), getEdition('rebut'), getEdition('silos')]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it('fetches with a GROQ query matching slug.current == $slug and a bound slug parameter', async () => {

@@ -1,3 +1,4 @@
+import {readFileSync} from 'node:fs'
 import {afterEach, describe, expect, it, vi} from 'vitest'
 import {
   deploymentState,
@@ -1116,5 +1117,92 @@ describe('release pipeline state', () => {
       expect(result.promote.title, `${name}: title must be empty`).toBe('')
       expect(result.promote.detail, `${name}: detail must be empty`).toBe('')
     }
+  })
+})
+
+// quick-260811-kog-06: DIAGNOSTIC-06 (Sanity not reproducible) and
+// DIAGNOSTIC-05 (root lint absent from CI). These are static config/CI
+// checks, not deployment-run parsing logic — grouped in this file per the
+// plan's own file list rather than a new one, but kept in their own
+// describe block. Deliberately no YAML-parsing library import (the plan's
+// own threat model forbids adding a new package here): GitHub Actions step
+// names always appear as a `- name: ...` line in this repo's workflow, so a
+// single, consistently-applied regex extracts the ordered step list
+// precisely enough to assert relative ordering, without the ambiguity of an
+// unstructured substring search anywhere in the file.
+describe('Sanity version pin and CI gate ordering (DIAGNOSTIC-05/06)', () => {
+  const sanityPackageJson = JSON.parse(readFileSync('sanity/package.json', 'utf8'))
+  const sanityLockfile = JSON.parse(readFileSync('sanity/package-lock.json', 'utf8'))
+  const sanityCliSource = readFileSync('sanity/sanity.cli.ts', 'utf8')
+  const workflowSource = readFileSync('.github/workflows/deploy.yml', 'utf8')
+
+  it('sanity/package.json declares the sanity dependency as exactly 6.6.0 (no range)', () => {
+    expect(sanityPackageJson.dependencies.sanity).toBe('6.6.0')
+  })
+
+  it('sanity/package-lock.json resolves the sanity package to exactly 6.6.0', () => {
+    expect(sanityLockfile.packages['node_modules/sanity'].version).toBe('6.6.0')
+  })
+
+  it('sanity/sanity.cli.ts disables Studio auto-updates', () => {
+    // Deliberately not eval'd/dynamically imported (this is TypeScript
+    // config source, not something to execute in a test process) — the
+    // `deployment: {...}` block is small and its own single source of
+    // truth, so slicing exactly that block and checking it contains the
+    // false literal (and not the true one) is precise, not an ambiguous
+    // whole-file substring search.
+    const deploymentBlockMatch = sanityCliSource.match(/deployment:\s*\{([\s\S]*?)\n\s*\},?\n/)
+    expect(deploymentBlockMatch).not.toBeNull()
+    const deploymentBlock = deploymentBlockMatch![1]
+    expect(deploymentBlock).toMatch(/autoUpdates:\s*false/)
+    expect(deploymentBlock).not.toMatch(/autoUpdates:\s*true/)
+  })
+
+  function stepNamesInOrder(yaml: string): string[] {
+    return [...yaml.matchAll(/^\s*-\s+name:\s*(.+)$/gm)].map(([, name]) => name.trim())
+  }
+
+  it('deploy.yml runs root lint before root typecheck and root build', () => {
+    const steps = stepNamesInOrder(workflowSource)
+    const lintIndex = steps.findIndex((name) => name === 'Lint (root)')
+    const typecheckIndex = steps.findIndex((name) => name.startsWith('Type-check'))
+    const buildIndex = steps.findIndex((name) => name.startsWith('Build (test artifact'))
+
+    expect(lintIndex).toBeGreaterThanOrEqual(0)
+    expect(typecheckIndex).toBeGreaterThan(lintIndex)
+    expect(buildIndex).toBeGreaterThan(lintIndex)
+  })
+
+  it('deploy.yml runs the Studio coverage suite before Studio build and before deploy', () => {
+    expect(workflowSource).toContain('npm --prefix sanity run test:coverage')
+
+    const studioStepIndex = [...workflowSource.matchAll(/^\s*-\s+name:\s*(.+)$/gm)]
+      .map(([, name], index) => ({name: name.trim(), index}))
+      .find((step) => step.name.startsWith('Lint, test, and build Sanity Studio'))
+    expect(studioStepIndex).toBeDefined()
+
+    const studioStepBody = workflowSource.slice(
+      workflowSource.indexOf('Lint, test, and build Sanity Studio'),
+    )
+    const lintPos = studioStepBody.indexOf('npm --prefix sanity run lint')
+    const coveragePos = studioStepBody.indexOf('npm --prefix sanity run test:coverage')
+    const buildPos = studioStepBody.indexOf('npm --prefix sanity run build')
+
+    expect(lintPos).toBeGreaterThanOrEqual(0)
+    expect(coveragePos).toBeGreaterThan(lintPos)
+    expect(buildPos).toBeGreaterThan(coveragePos)
+
+    const deployPos = workflowSource.indexOf('actions/deploy-pages@v4')
+    expect(deployPos).toBeGreaterThan(workflowSource.indexOf('npm --prefix sanity run test:coverage'))
+  })
+
+  it('deploy.yml still installs both lockfiles with npm ci before invoking either project\'s scripts', () => {
+    const rootCiPos = workflowSource.indexOf('run: npm ci')
+    const sanityCiPos = workflowSource.indexOf('run: npm ci --prefix sanity')
+    const firstScriptPos = workflowSource.indexOf('npm --prefix sanity run lint')
+
+    expect(rootCiPos).toBeGreaterThanOrEqual(0)
+    expect(sanityCiPos).toBeGreaterThan(rootCiPos)
+    expect(firstScriptPos).toBeGreaterThan(sanityCiPos)
   })
 })

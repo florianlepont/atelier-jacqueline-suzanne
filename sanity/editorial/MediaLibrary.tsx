@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useMemo, useState} from 'react'
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {Badge, Box, Button, Card, Flex, Grid, Heading, Spinner, Stack, Text} from '@sanity/ui'
 import {useClient} from 'sanity'
 import {IntentLink} from 'sanity/router'
@@ -56,6 +56,17 @@ export function MediaLibrary() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null)
+  // Guards every state update below against firing after unmount: `refresh`
+  // is invoked both by the mount effect and directly by the "Actualiser"
+  // button, so a plain effect-cleanup flag (scoped to one call) can't cover
+  // a manual refresh still in flight when the component unmounts.
+  const mountedRef = useRef(true)
+  useEffect(
+    () => () => {
+      mountedRef.current = false
+    },
+    [],
+  )
 
   const refresh = useCallback(() => {
     setLoading(true)
@@ -63,13 +74,17 @@ export function MediaLibrary() {
     client
       .fetch<MediaPayload>(mediaQuery, {}, {perspective: 'raw'})
       .then((result) => {
+        if (!mountedRef.current) return
         setPayload(result)
         setUpdatedAt(new Date())
       })
-      .catch((reason: unknown) =>
-        setError(reason instanceof Error ? reason.message : 'Erreur inconnue'),
-      )
-      .finally(() => setLoading(false))
+      .catch((reason: unknown) => {
+        if (!mountedRef.current) return
+        setError(reason instanceof Error ? reason.message : 'Erreur inconnue')
+      })
+      .finally(() => {
+        if (mountedRef.current) setLoading(false)
+      })
   }, [client])
 
   useEffect(() => refresh(), [refresh])

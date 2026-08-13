@@ -1,0 +1,53 @@
+---
+// Shared bilingual édition detail page. src/pages/editions/[slug].astro and
+// src/pages/en/editions/[slug].astro used to duplicate this entire
+// frontmatter script (only import depth, locale, and a handful of localized
+// strings differed) — both now call this component, which builds the
+// render model once via buildEditionDetailModel() and renders the
+// already-shared EditionDetailBody (quick-260727-the) inside BaseLayout
+// (quick-260811-kog-04).
+//
+// Édition has NO seo field/group (confirmed absent from
+// sanity/schemas/edition.ts), so unlike GalleryDetailPage.astro this
+// component passes no structuredData/noIndex to BaseLayout — matching the
+// pre-existing behavior of both fr/en route files before extraction.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import EditionDetailBody from './EditionDetailBody.astro';
+import { buildEditionDetailModel } from '../lib/page-models';
+import type { Edition } from '../lib/sanity';
+
+interface Props {
+  edition: Edition;
+  locale: 'fr' | 'en';
+}
+
+const { edition, locale } = Astro.props;
+
+const model = buildEditionDetailModel({ edition, locale });
+---
+
+<BaseLayout
+  title={model.seoTitle}
+  description={model.seoDescription}
+  socialImage={model.socialImage}
+  headerVariant="transparent"
+>
+  <EditionDetailBody
+    leadPhotoSrc={model.leadPhotoSrc}
+    leadPhotoSrcSet={model.leadPhotoSrcSet}
+    leadPhotoAlt={model.leadPhotoAlt}
+    title={edition.title}
+    formatText={model.formatText}
+    total={model.total}
+    heroAriaLabel={model.heroAriaLabel}
+    heroIndex={model.heroIndex}
+    caption={model.heroCaption}
+    statement={model.statement}
+    scrollHintLabel={model.scrollHintLabel}
+    overviewHref={model.overviewHref}
+    relatedLink={model.relatedLink}
+    gridItems={model.gridItems}
+    lightboxImages={edition.images ?? []}
+    locale={locale}
+  />
+</BaseLayout>

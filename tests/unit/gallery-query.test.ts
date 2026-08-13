@@ -1,4 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  resetBuildCacheForTests,
+  setBuildCacheEnabledForTests,
+} from '../../src/lib/build-cache';
 
 // RED (Wave 0): src/lib/sanity.ts's getGalleries/getGallery exports do not
 // exist yet — they are built in Plan 02-01 Task 3. Importing them now yields
@@ -12,6 +16,10 @@ process.env.SANITY_PROJECT_ID ??= 'test-project';
 process.env.SANITY_DATASET ??= 'test-dataset';
 
 const fetchMock = vi.fn();
+const validImage = {
+  asset: { _ref: 'image-rebut-1200x800-jpg' },
+  alt: { fr: 'Une photographie', en: 'A photograph' },
+};
 
 vi.mock('@sanity/client', () => ({
   createClient: () => ({ fetch: fetchMock }),
@@ -23,6 +31,7 @@ describe('getGalleries', () => {
   });
 
   afterEach(() => {
+    resetBuildCacheForTests();
     vi.clearAllMocks();
   });
 
@@ -32,7 +41,7 @@ describe('getGalleries', () => {
         title: 'Rebut',
         slug: 'rebut',
         statement: { fr: 'a', en: 'b' },
-        images: [],
+        images: [validImage],
       },
     ];
     fetchMock.mockResolvedValueOnce(galleries);
@@ -47,6 +56,41 @@ describe('getGalleries', () => {
     fetchMock.mockResolvedValueOnce(null);
     const { getGalleries } = await import('../../src/lib/sanity');
     await expect(getGalleries()).resolves.toEqual([]);
+  });
+
+  it('filters documents missing title, slug or a renderable image', async () => {
+    fetchMock.mockResolvedValueOnce([
+      { title: '', slug: 'untitled', images: [validImage] },
+      { title: 'No slug', slug: '', images: [validImage] },
+      { title: 'No image', slug: 'no-image', images: [] },
+      { title: 'Broken image', slug: 'broken', images: [{ asset: {} }] },
+      { title: 'Renderable', slug: 'renderable', images: [validImage] },
+    ]);
+
+    const { getGalleries } = await import('../../src/lib/sanity');
+    await expect(getGalleries()).resolves.toEqual([
+      {
+        title: 'Renderable',
+        slug: 'renderable',
+        statement: { fr: '', en: '' },
+        images: [validImage],
+      },
+    ]);
+  });
+
+  it('shares the collection fetch during a production build', async () => {
+    setBuildCacheEnabledForTests(true);
+    const galleries = [
+      { title: 'Rebut', slug: 'rebut', statement: { fr: 'a', en: 'b' }, images: [validImage] },
+    ];
+    fetchMock.mockResolvedValueOnce(galleries);
+
+    const { getGalleries } = await import('../../src/lib/sanity');
+    await expect(Promise.all([getGalleries(), getGalleries()])).resolves.toEqual([
+      galleries,
+      galleries,
+    ]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('fetches with a GROQ query ordered by orderRank', async () => {
@@ -107,6 +151,7 @@ describe('getGallery', () => {
   });
 
   afterEach(() => {
+    resetBuildCacheForTests();
     vi.clearAllMocks();
   });
 
@@ -126,6 +171,28 @@ describe('getGallery', () => {
     const result = await getGallery('rebut');
 
     expect(result).toBeNull();
+  });
+
+  it('returns null when the detail document is not renderable', async () => {
+    fetchMock.mockResolvedValueOnce({
+      title: 'Rebut',
+      slug: 'rebut',
+      images: [{ asset: {} }],
+    });
+
+    const { getGallery } = await import('../../src/lib/sanity');
+    await expect(getGallery('rebut')).resolves.toBeNull();
+  });
+
+  it('isolates detail cache entries by slug', async () => {
+    setBuildCacheEnabledForTests(true);
+    fetchMock
+      .mockResolvedValueOnce({ title: 'Rebut', slug: 'rebut', images: [validImage] })
+      .mockResolvedValueOnce({ title: 'Silos', slug: 'silos', images: [validImage] });
+
+    const { getGallery } = await import('../../src/lib/sanity');
+    await Promise.all([getGallery('rebut'), getGallery('rebut'), getGallery('silos')]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it('fetches with a GROQ query matching slug.current == $slug', async () => {

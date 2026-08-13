@@ -35,6 +35,7 @@ test.describe('mobile homepage arrival', () => {
       await expect(page.locator('[data-role="prototype-scroll-cue"]')).toHaveText(path === '/' ? 'Défiler' : 'Scroll');
       await expect(page.locator('.homepage-legacy [data-role="home-carousel"]')).toBeHidden();
       await expect(page.locator('.homepage-legacy [data-role="home-grid"]')).toBeHidden();
+      await expect(page.locator('[data-role="scroll-deck"]')).toHaveCount(0);
     });
 
     test(`${path} keeps Paysage alone after the description before the series`, async ({ page }) => {

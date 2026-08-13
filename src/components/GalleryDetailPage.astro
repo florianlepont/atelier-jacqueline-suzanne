@@ -1,0 +1,54 @@
+---
+// Shared bilingual gallery detail page. src/pages/galleries/[slug].astro and
+// src/pages/en/galleries/[slug].astro used to duplicate this entire
+// frontmatter script (only import depth, locale, and two localized strings
+// differed) — both now call this component, which builds the render model
+// once via buildGalleryDetailModel() and renders the already-shared
+// GalleryDetailBody (quick-260727-the) inside BaseLayout
+// (quick-260811-kog-04).
+import BaseLayout from '../layouts/BaseLayout.astro';
+import GalleryDetailBody from './GalleryDetailBody.astro';
+import { buildGalleryDetailModel } from '../lib/page-models';
+import type { Gallery } from '../lib/sanity';
+
+interface Props {
+  gallery: Gallery;
+  locale: 'fr' | 'en';
+}
+
+const { gallery, locale } = Astro.props;
+
+const model = buildGalleryDetailModel({
+  gallery,
+  locale,
+  pageUrl: Astro.url.toString(),
+});
+---
+
+<BaseLayout
+  title={model.seoTitle}
+  description={model.seoDescription}
+  socialImage={model.socialImage}
+  noIndex={model.noIndex}
+  structuredData={model.structuredData as unknown as Record<string, unknown>}
+  headerVariant="transparent"
+  mobileNav={true}
+>
+  <GalleryDetailBody
+    leadPhotoSrc={model.heroSrc}
+    leadPhotoSrcSet={model.leadPhotoSrcSet}
+    leadPhotoAlt={model.heroAlt}
+    title={gallery.title}
+    total={model.total}
+    heroAriaLabel={model.heroAriaLabel}
+    heroIndex={model.heroIndex}
+    statement={model.statement}
+    scrollHintLabel={model.scrollHintLabel}
+    carouselReturnHref={model.carouselReturnHref}
+    accent={model.accent}
+    accentText={model.accentText}
+    gridItems={model.gridItems}
+    lightboxImages={gallery.images}
+    locale={locale}
+  />
+</BaseLayout>

@@ -1,0 +1,131 @@
+---
+// Shared bilingual homepage (D-08–D-12): the real gallery entry point — hero
+// carousel + grid toggle. Only galleries with real migrated photos appear
+// (D-12 — filtered generically by `images.length > 0`, not a hardcoded slug
+// denylist). The homepage intro and navigation copy come from the dedicated
+// homePage singleton, with live-copy fallbacks.
+//
+// src/pages/index.astro and src/pages/en/index.astro used to duplicate this
+// entire component byte-for-byte except for the locale literal and two
+// locale-specific strings (quick-260811-kog-02). They're now thin adapters
+// that just pick a locale and render this component; all fetching,
+// SEO/JSON-LD computation (via buildHomePageModel), and responsive
+// composition live here once.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import HomeCarousel from './HomeCarousel.astro';
+import MobileHomePrototype from './MobileHomePrototype.astro';
+import { getGalleries, getHomePage, getSiteSettings } from '../lib/sanity';
+import { buildHomePageModel } from '../lib/home-page-model';
+import type { Locale } from '../lib/site-config';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+
+const [siteSettings, homePage, galleries] = await Promise.all([
+  getSiteSettings(),
+  getHomePage(),
+  getGalleries(),
+]);
+
+const model = buildHomePageModel({
+  locale,
+  homePage,
+  siteSettings,
+  galleries,
+  pageUrl: Astro.url.toString(),
+});
+
+const assetBase = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '');
+---
+
+<BaseLayout
+  title={model.seoTitle}
+  description={model.seoDescription}
+  socialImage={model.seoImage}
+  noIndex={model.noIndex}
+  structuredData={model.structuredData as unknown as Record<string, unknown>}
+  headerVariant="none"
+  phoneFullBleed={true}
+  phoneCanvasColor={model.galleries[0]?.heroColor ?? '#A6FD29'}
+>
+  {/* Desktop keeps the established carousel/grid. Phones now use the
+      dedicated arrival + series flow that was validated separately during
+      mobile UAT; both trees are breakpoint-gated, and only one nav drawer
+      is rendered on a phone. */}
+  <div class="homepage-legacy">
+    <HomeCarousel locale={locale} galleries={model.galleries} siteCopy={model.siteCopy} mobileNav />
+  </div>
+  <div class="homepage-mobile">
+    <MobileHomePrototype
+      locale={locale}
+      galleries={model.galleries.map((gallery) => ({
+        slug: gallery.slug,
+        title: gallery.title,
+        imageSrc: gallery.heroSrc,
+        imageSrcSet: gallery.heroSrcSet,
+        alt: gallery.alt,
+        accent: gallery.heroColor ?? '#FF3B94',
+        accentText: gallery.heroTextColor ?? '#1A1A1A',
+      }))}
+      siteTitle={model.siteTitle}
+      homepageIntro={model.siteCopy.homepageIntro}
+      editionsLabel={model.siteCopy.editionsLabel}
+      aboutLabel={model.siteCopy.aboutLabel}
+      contactLabel={model.siteCopy.contactLabel}
+      instagramUrl={model.siteCopy.instagramUrl}
+      instagramLabel={model.siteCopy.instagramLabel}
+      logoBlackSrc={`${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`}
+      logoWhiteSrc={`${assetBase}/logos/AJS_Brutalist_White_Transparent.png`}
+      showHeader={false}
+    />
+  </div>
+</BaseLayout>
+
+<style is:global>
+  .homepage-mobile { display: none; }
+
+  @media (max-width: 767px) {
+    .homepage-mobile { display: block; }
+
+    .homepage-legacy .home {
+      height: 0;
+      min-height: 0;
+      overflow: visible;
+      background: transparent;
+    }
+
+    .homepage-legacy .home > :not(.site-header):not(.mobile-nav-panel) {
+      display: none !important;
+    }
+
+    .homepage-legacy .home .site-header {
+      position: fixed;
+      z-index: 3;
+      width: 100%;
+      padding-top: calc(var(--space-sm) + env(safe-area-inset-top));
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+
+    .homepage-legacy .home .site-header .logo-mark {
+      visibility: visible !important;
+    }
+
+    .homepage-legacy .home .home-toggle {
+      display: none;
+    }
+
+    html:not(.mobile-home-arrival-past) .homepage-legacy .home .logo-mark {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-6px);
+    }
+  }
+
+  @media (min-width: 768px) {
+    .homepage-mobile { display: none; }
+  }
+</style>
