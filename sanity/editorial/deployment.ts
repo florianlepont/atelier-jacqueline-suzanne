@@ -413,10 +413,14 @@ function resolvePromoteRow({
     }
   }
 
+  // Empty is the intended contract here, not an oversight: node 2's own
+  // detail line already reads "Site en ligne à jour" directly above this
+  // box, and the gate button already shows a checkmark, so a third copy of
+  // that status was pure noise. Do not restore this copy.
   if (segments.production === 'done') {
     return {
-      title: 'Site en ligne à jour',
-      detail: 'Le site en ligne reflète la dernière mise à jour.',
+      title: '',
+      detail: '',
       buttonLabel: 'Site en ligne à jour ✓',
       buttonDisabled: true,
       dimmed: false,
@@ -503,11 +507,32 @@ export function releasePipelineState({
   const content: PipelineSegmentKind = pendingCount === 0 ? 'done' : 'pending'
   const stagingSegment = deploymentSegmentKind(staging.kind)
   const stale = isProductionReleaseStale(publishedAt, productionReleaseAt)
+  // Clicking « Mettre le site à jour » publishes Sanity drafts and rebuilds
+  // the site de test only. While any draft is unpublished, neither the site
+  // de test nor the site en ligne includes the newest saved edits, so
+  // neither may be painted as up to date.
+  //
+  // The accepted tradeoff, confirmed explicitly by the maintainer: an
+  // unrelated minor edit anywhere in Sanity immediately turns the « Site en
+  // ligne » indicator non-green even though the currently-live production
+  // site is technically fine. This is deliberate, not a bug — simplicity of
+  // understanding was chosen over technical precision.
+  //
+  // Failure visibility is carved out on purpose: a genuinely FAILED
+  // production run reports 'failed' even while drafts are pending, checked
+  // BEFORE the pendingCount rule. The pending-draft rule exists to stop a
+  // stale "done" from reading as current — it must never also swallow a
+  // real failure and its retry button.
+  const productionKind = deploymentSegmentKind(production.kind)
   const productionSegment: PipelineSegmentKind = busy
     ? 'active'
-    : stale
-      ? 'pending'
-      : deploymentSegmentKind(production.kind)
+    : productionKind === 'failed'
+      ? 'failed'
+      : pendingCount > 0
+        ? 'pending'
+        : stale
+          ? 'pending'
+          : productionKind
 
   const segments: ReleasePipelineSegments = {
     content,
