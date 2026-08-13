@@ -41,7 +41,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 04.1: Design System & Homepage Refresh (INSERTED)** - Adopt the imported design system's rebrand and rebuild the homepage per the imported prototype (completed 2026-07-10)
 - [x] **Phase 04.2: Social Media Links (INSERTED)** - Instagram link visible in the footer and on the About/Contact page (completed 2026-07-10)
 - [x] **Phase 04.3: Homepage Refinements (INSERTED)** - Logo hover crossfade, single gallery-browsing entry point, icon-based mode toggle, mobile hero fix, three-line wordmark, clickable gallery names (completed 2026-07-12)
-- [ ] **Phase 5: Launch & Domain Cutover** - The new site is live at atelierjacquelinesuzanne.fr, replacing the old Myportfolio site
+- [x] **Phase 5: Launch & Domain Cutover** - The new site is live at atelierjacquelinesuzanne.fr, replacing the old Myportfolio site (completed 2026-08-13)
 - [x] **Phase 6: Homepage View-Mode Toggle, Grid Hero & Wordmark Cutout** - Unified carousel/grid toggle button, grid view's hero becomes the first grid tile, and the wordmark gets a transparent photo-cutout treatment (completed 2026-07-13)
 - [x] **Phase 7: Homepage Quick Fixes & Mobile Hero Correctness** - Instagram icon in the header nav, square toggle border, and a fix for the mobile full-bleed hero regression (completed 2026-07-13)
 - [x] **Phase 8: Gallery Descriptions** - Each gallery's own description text replaces the generic byline under its title, and reveals on hover in grid mode (completed 2026-07-14)
@@ -79,7 +79,7 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
   2. Any existing email service tied to the domain (MX records) continues to work after cutover.
   3. The DNS cutover was rehearsed/verified (e.g., staging alias tested, TTLs lowered in advance) before the production switch.
 
-**Plans:** 5/6 plans executed
+**Plans:** 6/6 plans complete
 
 Plans:
 **Wave 1**
@@ -98,7 +98,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 05-06-PLAN.md — post-cutover verification: smoke check + MX diff, real mail delivery, launch evidence log (wave 4)
+- [x] 05-06-PLAN.md — post-cutover verification: smoke check + MX diff, real mail delivery, launch evidence log (wave 4)
 
 ### v1.1 Homepage Refinements (Phase 6) — SHIPPED 2026-07-13
 
@@ -141,7 +141,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 2. Portfolio Galleries | 4/4 | Complete    | 2026-07-07 |
 | 3. About & Contact | 3/3 | Complete    | 2026-07-08 |
 | 4. Legal & Compliance | 3/3 | Complete    | 2026-07-08 |
-| 5. Launch & Domain Cutover | 5/6 | In Progress|  |
+| 5. Launch & Domain Cutover | 6/6 | Complete    | 2026-08-13 |
 | 6. Homepage View-Mode Toggle, Grid Hero & Wordmark Cutout | 1/1 | Complete   | 2026-07-13 |
 | 7. Homepage Quick Fixes & Mobile Hero Correctness | 2/2 | Complete    | 2026-07-13 |
 | 8. Gallery Descriptions | 1/1 | Complete   | 2026-07-14 |
