@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-08-04)
 Phase: 6 — homepage view mode toggle, grid hero & wordmark cutout
 Plan: Not started
 Status: Executing Phase 05
-Last activity: 2026-08-13 — Phase 05 complete, transitioned to Phase 6
+Last activity: 2026-08-13 - Completed quick task 260813-nyq: Remove the one-time SFTP workaround step from deploy-ovh.yml (added in plan 05-05 to delete OVH's pre-provisioned stale index.html) now that the real deploy has overwritten it and Phase 5 verification confirmed the site is stable
 
 ## Performance Metrics
 
@@ -192,6 +192,7 @@ Both prior research-carryover items were resolved during Phase 1 execution:
 | 260812-f22 | Fix 4 dashboard pipeline UX issues found in user testing: label wrapping, misleading initial-state copy, redundant document list, redundant header badge | 2026-08-12 | 6a29af3 | | [260812-f22-fix-4-issues-in-the-new-dashboard-pipeli](./quick/260812-f22-fix-4-issues-in-the-new-dashboard-pipeli/) |
 | 260812-fq3 | Remove excessive node-label margin (leftover reserved 2-line height) and redundant not-started copy in the dashboard pipeline UI | 2026-08-12 | 48fdf01 | | [260812-fq3-fix-excessive-node-label-margin-and-redu](./quick/260812-fq3-fix-excessive-node-label-margin-and-redu/) |
 | 260812-h3i | Fix a verified @sanity/ui Text box-height bug causing pipeline node label/detail text to visually touch (swap to plain spans); move not-started framing into the header subtitle | 2026-08-12 | 9f99716 | | [260812-h3i-fix-sanity-ui-text-box-height-bug-in-pip](./quick/260812-h3i-fix-sanity-ui-text-box-height-bug-in-pip/) |
+| 260813-nyq | Remove the one-time SFTP workaround step from deploy-ovh.yml (added in plan 05-05 to delete OVH's pre-provisioned stale index.html) now that the real deploy has overwritten it and Phase 5 verification confirmed the site is stable | 2026-08-13 | 89af1fa | | [260813-nyq-remove-the-one-time-sftp-workaround-step](./quick/260813-nyq-remove-the-one-time-sftp-workaround-step/) |
 | 260812-lvt | Remove the dangling "Étape 2" title/detail from the not-started pipeline state (inconsistent with the current numbering-free UI); skip rendering an empty detail box | 2026-08-12 | 3f8bdb0 | | [260812-lvt-remove-the-inconsistent-tape-2-title-det](./quick/260812-lvt-remove-the-inconsistent-tape-2-title-det/) |
 | 260812-mev | Remove the outdated "publish to the public site" confirmation dialog (premise false post staging/prod split); merge into single-click publish, preserving the preflight checklist gate | 2026-08-12 | 3070b3b | | [260812-mev-remove-the-outdated-public-confirmation-](./quick/260812-mev-remove-the-outdated-public-confirmation-/) |
 | 260812-ncd | Fix a live, user-blocking bug: marker document create action was missing attributes._id (Sanity Actions API requirement), causing real publish to fail | 2026-08-12 | 5cd60ad | | [260812-ncd-fix-missing-attributes-id-on-marker-docu](./quick/260812-ncd-fix-missing-attributes-id-on-marker-docu/) |
