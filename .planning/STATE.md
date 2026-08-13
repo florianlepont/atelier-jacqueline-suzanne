@@ -366,6 +366,8 @@ Items acknowledged and deferred at v1.6 milestone close finalization on 2026-08-
 | seed | SEED-001 (redirect to contact CTA at end of photo/series) | dormant — forward-looking idea, no trigger condition met yet, not blocking |
 | seed | SEED-002 (cross-link gallery ↔ its associated édition) | dormant — same as above |
 
+The 6 stale `260722-*` quick-task directories listed above (compact-sanity-document-layout, improve-contact-page, normalize-sanity-form-spacing, rebalance-contact-typography, refine-contact-details, remove-redundant-sanity-fieldsets) were deleted today (2026-08-13) via quick task `260813-v0t`, rather than being carried forward and re-acknowledged a seventh time. This resolves the prediction in RETROSPECTIVE.md's Cross-Milestone Trends "Top Lessons" item 3.
+
 ## Session Continuity
 
 Last session: 2026-08-11T14:15:22.081Z
