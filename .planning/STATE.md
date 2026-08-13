@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-08-04)
 Phase: Milestone v1.7 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-08-13 — Milestone v1.7 completed and archived
+Last activity: 2026-08-13 - Completed quick task 260813-v0t: deleted the 6 stale never-executed quick-task planning directories, resolving RETROSPECTIVE.md's Top Lessons #3 prediction by deletion rather than a seventh acknowledgment
 
 ## Performance Metrics
 
@@ -193,6 +193,7 @@ Both prior research-carryover items were resolved during Phase 1 execution:
 | 260812-h3i | Fix a verified @sanity/ui Text box-height bug causing pipeline node label/detail text to visually touch (swap to plain spans); move not-started framing into the header subtitle | 2026-08-12 | 9f99716 | | [260812-h3i-fix-sanity-ui-text-box-height-bug-in-pip](./quick/260812-h3i-fix-sanity-ui-text-box-height-bug-in-pip/) |
 | 260813-nyq | Remove the one-time SFTP workaround step from deploy-ovh.yml (added in plan 05-05 to delete OVH's pre-provisioned stale index.html) now that the real deploy has overwritten it and Phase 5 verification confirmed the site is stable | 2026-08-13 | 89af1fa | | [260813-nyq-remove-the-one-time-sftp-workaround-step](./quick/260813-nyq-remove-the-one-time-sftp-workaround-step/) |
 | 260813-oc9 | Record DNS TTL restoration to 3600s as resolved in 05-DNS-RUNBOOK.md and 05-CUTOVER-LOG.md, with dig verification against authoritative OVH nameservers | 2026-08-13 | 1ef81c2 | | [260813-oc9-record-dns-ttl-restoration-to-3600s-as-r](./quick/260813-oc9-record-dns-ttl-restoration-to-3600s-as-r/) |
+| 260813-v0t | Delete the 6 stale never-executed quick-task planning directories (260722 Sanity/Contact plans), acknowledged as dead at 6 consecutive milestone closes without cleanup | 2026-08-13 | 04dc3b9 | | [260813-v0t-delete-the-6-stale-never-executed-quick-](./quick/260813-v0t-delete-the-6-stale-never-executed-quick-/) |
 | 260812-lvt | Remove the dangling "Étape 2" title/detail from the not-started pipeline state (inconsistent with the current numbering-free UI); skip rendering an empty detail box | 2026-08-12 | 3f8bdb0 | | [260812-lvt-remove-the-inconsistent-tape-2-title-det](./quick/260812-lvt-remove-the-inconsistent-tape-2-title-det/) |
 | 260812-mev | Remove the outdated "publish to the public site" confirmation dialog (premise false post staging/prod split); merge into single-click publish, preserving the preflight checklist gate | 2026-08-12 | 3070b3b | | [260812-mev-remove-the-outdated-public-confirmation-](./quick/260812-mev-remove-the-outdated-public-confirmation-/) |
 | 260812-ncd | Fix a live, user-blocking bug: marker document create action was missing attributes._id (Sanity Actions API requirement), causing real publish to fail | 2026-08-12 | 5cd60ad | | [260812-ncd-fix-missing-attributes-id-on-marker-docu](./quick/260812-ncd-fix-missing-attributes-id-on-marker-docu/) |
