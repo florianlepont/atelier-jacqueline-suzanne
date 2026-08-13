@@ -237,8 +237,38 @@ export function deploymentState({
       )
     }
     const timedOut = now.getTime() - publishedAtTime >= 3 * 60_000
+    // `deploymentSegmentKind()` maps 'waiting-run' to the 'active' segment
+    // and 'failed' to the 'failed' segment. Before this change, a deploy
+    // that never started and a deploy still legitimately running rendered
+    // identically -- blue and spinning, forever -- because that mapping
+    // branches on `kind` only and never on `tone`, even though this branch
+    // had already been reporting `tone: 'critical'` for three minutes. A
+    // maintainer had no visual way to tell "still deploying normally" from
+    // "something is wrong and needs attention".
+    //
+    // `terminal` deliberately stays `false`. Polling continues at
+    // 15-second intervals, so if the run finally appears the state
+    // self-heals to 'deploying' and then 'current'. Flipping `terminal` to
+    // `true` here would slow the poll to five minutes and strand a
+    // recoverable state as permanently red.
+    //
+    // This timeout is about a run never APPEARING, never about a run
+    // taking long to FINISH. The branch below, `qualifiedRun.status !==
+    // 'completed'` -> `kind: 'deploying'`, is what covers a run that was
+    // found and is genuinely mid-flight, and it is untouched. A real
+    // production release observed on 2026-08-13 took about 5.5 minutes end
+    // to end and must stay blue for all of it.
+    //
+    // Reassigning this branch's kind also flips the round gate for a
+    // timed-out STAGING deploy from locked to a red retry, because
+    // `pipelineGateVariant()` keys on the merged display segment. That is
+    // the same path a genuinely-failed staging run already takes today,
+    // not a new mechanism.
+    //
+    // The `DeploymentStateKind` union is unchanged: this reassigns an
+    // existing value in one branch and adds nothing.
     return {
-      kind: 'waiting-run',
+      kind: timedOut ? 'failed' : 'waiting-run',
       label: timedOut ? 'Mise à jour non démarrée' : 'Mise à jour en attente',
       detail: timedOut
         ? "Aucun déploiement récent n'est apparu après la publication."
