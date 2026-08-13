@@ -12,10 +12,12 @@ nécessaire.
 4. Revenir au Tableau de bord : le contenu apparaît dans le lot **Mettre le site à jour**.
 5. Depuis le Tableau de bord, un seul clic sur **Mettre le site à jour** publie tout le lot. Le
    site de test se met à jour automatiquement.
-6. Une fois le site de test confirmé à jour, le bouton rond posé sur la ligne entre les deux
-   étapes de la barre de progression se débloque : cliquer sur ce bouton pour envoyer le site vers
-   son adresse réelle. Les deux actions sont volontairement séparées : la seconde reste visible
-   mais verrouillée jusqu’à ce que la première ait abouti.
+6. Une fois le site de test confirmé à jour, cliquer sur le bouton rond posé sur la ligne entre
+   les deux étapes de la barre de progression pour ouvrir le site de test et confirmer qu’il est
+   passé en revue. Le bouton du bloc, au-dessus de la barre, affiche alors **« Publier sur le site
+   en ligne »** : cliquer dessus pour envoyer le site vers son adresse réelle. Les deux actions
+   sont volontairement séparées : le bouton du bloc montre toujours la prochaine étape à venir,
+   mais reste grisé tant que le site de test n’a pas été passé en revue.
 
 Les fiches de contenu n’ont volontairement pas de bouton de publication. Un brouillon ne
 devient public qu’avec l’action globale **Mettre le site à jour** du Tableau de bord.
@@ -67,7 +69,9 @@ publication avec les exécutions GitHub suivantes :
 - **Site de test à jour** : une exécution créée après la publication a réussi ;
 - **Échec de la mise à jour** : Sanity est publié, mais le site peut encore afficher l’ancienne
   version ;
-- **Mise à jour non démarrée** : aucune exécution n’est apparue après trois minutes ;
+- **Mise à jour non démarrée** : aucune exécution n’est apparue après trois minutes ; l’étape
+  concernée passe alors au rouge, exactement comme un échec, pour la distinguer d’une mise à jour
+  encore réellement en cours — c’est le moment d’ouvrir le lien et de prévenir le mainteneur ;
 - **État temporairement indisponible** : le Tableau de bord ne peut pas prouver la fraîcheur du
   site.
 
@@ -77,23 +81,27 @@ prévenir le mainteneur. Ne pas republier plusieurs fois sans avoir identifié l
 Une fois la publication vers le site en ligne déclenchée, les mêmes statuts apparaissent pour le
 Site en ligne, jusqu’à **Site en ligne à jour**.
 
-Sous le bouton **Mettre le site à jour**, une barre de progression montre deux étapes
-(« Studio » et « Site en ligne ») reliées par une ligne dont le centre porte le bouton de
-publication. Chaque étape devient verte une fois à jour, tourne pendant son exécution et devient
-rouge en cas d’échec. Tant que des modifications enregistrées ne sont pas encore publiées, l’étape
-**Studio** devient bleue et affiche « Contenu modifié — prêt à être publié ».
+Sous le bouton du bloc de publication — un seul bouton, dont le texte change selon l’étape en
+cours (« Mettre le site à jour », « Publier sur le site en ligne », ou « Publication… » pendant
+qu’une mise en ligne est en cours) —, une barre de progression montre deux étapes (« Studio » et
+« Site en ligne ») reliées par une ligne dont le centre porte le bouton rond. Chaque étape devient
+verte une fois à jour, tourne pendant son exécution et devient rouge en cas d’échec. Tant que des
+modifications enregistrées ne sont pas encore publiées, l’étape **Studio** devient bleue et affiche
+« Contenu modifié — prêt à être publié ».
 
 Tant qu’il existe des modifications non publiées, l’étape **Site en ligne** n’est jamais affichée
 comme à jour, même si le site en ligne lui-même n’a pas changé — c’est volontaire, pour que
 l’indicateur décrive toujours le dernier contenu enregistré plutôt que l’état réel du site en
 ligne.
 
-Le bouton central reste verrouillé jusqu’à ce que le site de test soit confirmé à jour, devient
+Le bouton rond central reste verrouillé jusqu’à ce que le site de test soit confirmé à jour, devient
 alors cliquable — et porte alors une petite légende nommant le site de test qu’il ouvre —, s’éteint
 pendant que la publication est en cours, puis affiche une coche une fois terminée. Le statut de la
 mise en ligne — y compris l’étape en échec le cas échéant — est signalé par la petite ligne sous le
-titre **Mettre le site à jour**, en haut du bloc ; la zone sous la barre de progression ne porte
-jamais de texte explicatif, seulement des boutons et des liens.
+titre **Mettre le site à jour**, en haut du bloc. La zone sous la barre de progression ne porte
+jamais de texte explicatif et ne contient plus de bouton : elle ne porte qu’un lien, qui n’apparaît
+qu’en cas d’échec, vers l’exécution GitHub Actions concernée — le bouton de publication vit
+désormais en haut du bloc.
 
 ## Collections photo
 
