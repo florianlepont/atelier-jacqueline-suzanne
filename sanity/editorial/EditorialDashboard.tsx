@@ -38,6 +38,7 @@ import type {
 } from './deployment'
 import {gateClickAction, nextPreviewedFlag, productionPublishDisabled} from './releaseGate'
 import type {PipelineGateVariant} from './releaseGate'
+import {pipelineCircleClassName, pipelineGateCaption, pipelineNodeDetail} from './pipelineView'
 import {getDocumentChecks, summarizeChecks} from './checks'
 import {
   attentionPriority,
@@ -431,10 +432,10 @@ export function EditorialDashboard() {
     requestError: releaseError,
   })
   const displaySegments = pipelineDisplaySegments(pipeline.segments)
-  const pipelineDetail = pipelineNodeDetail(displaySegments)
   const gateVariant = pipelineGateVariant(displaySegments, pipeline.promote, Boolean(releaseError))
   const gateAction = gateClickAction(gateVariant)
   const gateLabel = gateAction === 'preview' ? 'Ouvrir le site de test' : pipeline.promote.buttonLabel
+  const gateCaption = pipelineGateCaption(gateVariant)
 
   // A preview approves one batch, and any state the pipeline moves into
   // other than `ready` means the batch changed, so carrying the flag
@@ -518,6 +519,12 @@ export function EditorialDashboard() {
     busy: publicationBusy,
     trackingFailed: publicationTrackingFailed,
   })
+  // Reads the same publication-inventory signal that drives the panel's
+  // « X contenu(s) modifié(s) » subtitle, so the node and the sentence above
+  // it can never disagree about whether there is something waiting to
+  // publish.
+  const hasModifiedContent = publicationCard.total > 0
+  const pipelineDetail = pipelineNodeDetail(displaySegments, hasModifiedContent)
   const publicationPanelHasBody =
     publicationCard.blockedRows.length > 0 ||
     publicationState.phase === 'tracking-error' ||
@@ -706,7 +713,7 @@ export function EditorialDashboard() {
                       <div className="editorial-dashboard__pipeline-node">
                         <span
                           aria-hidden="true"
-                          className={pipelineCircleClassName(displaySegments.testSite)}
+                          className={pipelineCircleClassName(displaySegments.testSite, hasModifiedContent)}
                         >
                           {pipelineNodeIcon(displaySegments.testSite, PublishIcon)}
                         </span>
@@ -719,42 +726,49 @@ export function EditorialDashboard() {
                             two lines touch. A span styled by the same class
                             was measured to restore the intended gap. */}
                         <span className="editorial-dashboard__pipeline-node-label">
-                          Contenu + site de test
+                          Studio
                         </span>
                         <span className="editorial-dashboard__pipeline-node-detail">
                           {pipelineDetail.node1}
                         </span>
                       </div>
                       <div className="editorial-dashboard__pipeline-connector">
-                        <span
-                          aria-hidden="true"
-                          className={
-                            displaySegments.testSite === 'done'
-                              ? 'editorial-dashboard__pipeline-link editorial-dashboard__pipeline-link--done'
-                              : 'editorial-dashboard__pipeline-link'
-                          }
-                        />
-                        <button
-                          type="button"
-                          className={`editorial-dashboard__pipeline-gate editorial-dashboard__pipeline-gate--${gateVariant}`}
-                          disabled={pipeline.promote.buttonDisabled}
-                          title={gateLabel}
-                          aria-label={gateLabel}
-                          onClick={handleGateClick}
-                        >
-                          {gateVariant === 'locked' && <LockIcon />}
-                          {gateVariant === 'ready' && <PlayIcon />}
-                          {gateVariant === 'done' && <CheckmarkIcon />}
-                          {gateVariant === 'failed' && <CloseIcon />}
-                        </button>
-                        <span
-                          aria-hidden="true"
-                          className={
-                            displaySegments.liveSite === 'done'
-                              ? 'editorial-dashboard__pipeline-link editorial-dashboard__pipeline-link--done'
-                              : 'editorial-dashboard__pipeline-link'
-                          }
-                        />
+                        <div className="editorial-dashboard__pipeline-connector-track">
+                          <span
+                            aria-hidden="true"
+                            className={
+                              displaySegments.testSite === 'done'
+                                ? 'editorial-dashboard__pipeline-link editorial-dashboard__pipeline-link--done'
+                                : 'editorial-dashboard__pipeline-link'
+                            }
+                          />
+                          <button
+                            type="button"
+                            className={`editorial-dashboard__pipeline-gate editorial-dashboard__pipeline-gate--${gateVariant}`}
+                            disabled={pipeline.promote.buttonDisabled}
+                            title={gateLabel}
+                            aria-label={gateLabel}
+                            onClick={handleGateClick}
+                          >
+                            {gateVariant === 'locked' && <LockIcon />}
+                            {gateVariant === 'ready' && <PlayIcon />}
+                            {gateVariant === 'done' && <CheckmarkIcon />}
+                            {gateVariant === 'failed' && <CloseIcon />}
+                          </button>
+                          <span
+                            aria-hidden="true"
+                            className={
+                              displaySegments.liveSite === 'done'
+                                ? 'editorial-dashboard__pipeline-link editorial-dashboard__pipeline-link--done'
+                                : 'editorial-dashboard__pipeline-link'
+                            }
+                          />
+                        </div>
+                        {gateCaption && (
+                          <span className="editorial-dashboard__pipeline-gate-caption">
+                            {gateCaption}
+                          </span>
+                        )}
                       </div>
                       <div className="editorial-dashboard__pipeline-node">
                         <span
@@ -1254,12 +1268,6 @@ function ShortcutRow({
 // helper here is a function of already-computed pipeline state; none reads
 // component state or fetches anything (see the plan's scope boundary).
 
-function pipelineCircleClassName(kind: PipelineSegmentKind): string {
-  return kind === 'pending'
-    ? 'editorial-dashboard__pipeline-circle'
-    : `editorial-dashboard__pipeline-circle editorial-dashboard__pipeline-circle--${kind}`
-}
-
 function pipelineNodeIcon(
   kind: PipelineSegmentKind,
   Fallback: ComponentType<SVGProps<SVGSVGElement>>,
@@ -1270,37 +1278,6 @@ function pipelineNodeIcon(
   if (kind === 'done') return <CheckmarkIcon />
   if (kind === 'failed') return <CloseIcon />
   return <Fallback />
-}
-
-function pipelineNodeDetail(display: ReleasePipelineDisplaySegments): {
-  node1: string
-  node2: string
-} {
-  const node1 =
-    display.testSite === 'active'
-      ? 'GitHub reconstruit le site de test…'
-      : display.testSite === 'done'
-        ? 'Site de test à jour'
-        : display.testSite === 'failed'
-          ? 'Échec de la mise à jour du site de test'
-          : 'Aucune publication effectuée pour le moment'
-
-  const node2 =
-    display.liveSite === 'active'
-      ? 'Publication en cours…'
-      : display.liveSite === 'done'
-        ? 'Site en ligne à jour'
-        : display.liveSite === 'failed'
-          ? 'Échec — ancienne version encore affichée'
-          : display.testSite === 'done'
-            ? 'Prêt à publier'
-            : display.testSite === 'failed'
-              ? 'Bloqué tant que le site de test échoue'
-              : display.testSite === 'active'
-                ? 'En attente du site de test'
-                : 'Aucune publication effectuée pour le moment'
-
-  return {node1, node2}
 }
 
 // Order matters and encodes the two behaviours confirmed twice in review:
