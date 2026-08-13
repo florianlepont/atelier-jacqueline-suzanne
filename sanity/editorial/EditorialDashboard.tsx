@@ -4,7 +4,6 @@ import {Badge, Box, Button, Card, Flex, Heading, Spinner, Stack, Text} from '@sa
 import {IntentButton, useClient, useHistoryStore, useUserStore} from 'sanity'
 import {IntentLink} from 'sanity/router'
 import {AddIcon} from '@sanity/icons/Add'
-import {AlertCircleIcon} from '@sanity/icons/AlertCircle'
 import {BookIcon} from '@sanity/icons/Book'
 import {CheckmarkCircleIcon} from '@sanity/icons/CheckmarkCircle'
 import {ChevronRightIcon} from '@sanity/icons/ChevronRight'
@@ -422,7 +421,7 @@ export function EditorialDashboard() {
     
     // Icon selection based on state
     const getStatusIcon = () => {
-      if (hasError) return <AlertCircleIcon />
+      if (hasError) return <ErrorOutlineIcon />
       if (isDeploying || isWaiting) return <SpinnerIcon />
       if (hasModifications || isPendingContent) return <PublishIcon />
       return <CheckmarkCircleIcon />
