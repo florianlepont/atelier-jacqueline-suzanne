@@ -165,3 +165,156 @@ export function releasePanelSubtitle({
 
   return 'Aucune modification publique en attente.'
 }
+
+// The tone this button may show. Deliberately two-valued, NOT
+// 'primary' | 'positive' | 'critical' -- a 'critical' tone would only ever
+// mean a retry, and retry stays exclusively on the round gate (see branch 5
+// below). An unreachable third union member would invite exactly the second
+// retry control the plan forbids, so it is left out entirely rather than
+// added and merely never returned.
+export type ReleaseActionButtonTone = 'primary' | 'positive'
+
+// 'inert' matches the vocabulary GateClickAction in releaseGate.ts already
+// uses for "this click does nothing".
+export type ReleaseActionButtonAction = 'publish' | 'release' | 'inert'
+
+export interface ReleaseActionButtonState {
+  label: string
+  disabled: boolean
+  loading: boolean
+  tone: ReleaseActionButtonTone
+  action: ReleaseActionButtonAction
+}
+
+// This panel now has a single action button whose label, tone, disabled
+// state and click target all evolve with the workflow, because the
+// maintainer expected the greyed "Mettre le site à jour" button to BECOME
+// "Publier sur le site en ligne" as the workflow advances, instead of a
+// second button appearing in a box below the pipeline once the site de test
+// is ready. Branch order IS the contract, and it encodes what the
+// maintainer is currently DOING rather than what the pipeline currently
+// shows -- that is the whole point of the merge.
+//
+// All four labels already exist verbatim elsewhere in the codebase; this
+// helper introduces zero new user-facing copy.
+export function releaseActionButtonState({
+  gateVariant,
+  publicationBusy,
+  preflighting,
+  releaseBusy,
+  modifiedCount,
+  publishButtonDisabled,
+  productionPublishBlocked,
+}: {
+  gateVariant: PipelineGateVariant
+  publicationBusy: boolean
+  preflighting: boolean
+  releaseBusy: boolean
+  modifiedCount: number
+  publishButtonDisabled: boolean
+  productionPublishBlocked: boolean
+}): ReleaseActionButtonState {
+  // Branch 1: publishing drafts wins over everything. `disabled: true` is
+  // hardcoded rather than forwarding `publishButtonDisabled` -- this is
+  // provably identical to today's behaviour, not a change:
+  // `publicationCardState()` already sets `buttonDisabled` to
+  // `busy || trackingFailed || total === 0 || blockedRows.length > 0`, so it
+  // is always true while `publicationBusy` holds. Hardcoding states the
+  // intent (a running publish is never clickable) instead of relying on a
+  // term of an expression owned by another module.
+  if (publicationBusy) {
+    return {
+      label: preflighting ? 'Vérification…' : 'Publication…',
+      disabled: true,
+      loading: true,
+      tone: 'primary',
+      action: 'inert',
+    }
+  }
+
+  // Branch 2 is the NEW behaviour the top button gains: until now only the
+  // removed bottom button and the round gate reflected the
+  // production-release phase. `releaseBusy` covers the few hundred
+  // milliseconds of the trigger request; `gateVariant === 'active'` covers
+  // the minutes-long observed run that follows -- both must be here, since
+  // the real run observed today took about 5.5 minutes and `releaseBusy`
+  // alone would leave the button idle for nearly all of it. The tone here
+  // is deliberately 'primary', NOT 'positive' like branch 3 below: the
+  // outcome of an in-flight release is still unknown, and 'positive' already
+  // has an established meaning of "succeeded" in this codebase
+  // (`deploymentState()` sets `tone: 'positive'` only once
+  // `qualifiedRun.conclusion === 'success'`), so using it here would claim
+  // success before it happened. It would also visually contradict node 2's
+  // own circle, which stays the blue `--active` face for the entire
+  // duration of this same branch -- two elements describing the identical
+  // in-flight state must not disagree in colour.
+  if (releaseBusy || gateVariant === 'active') {
+    return {
+      label: 'Publication…',
+      disabled: true,
+      loading: true,
+      tone: 'primary',
+      action: 'inert',
+    }
+  }
+
+  // Branch 3 double-guards the preview approval: it sets BOTH
+  // `disabled: true` and `action: 'inert'` when `productionPublishBlocked`
+  // is true. This is the deliberate preview-before-publish safety gate
+  // built earlier in this session at the maintainer's explicit request, and
+  // it is the only thing standing between a single click and a real
+  // production release, so one mis-wire in the component must not be enough
+  // to defeat it. The button still shows its TARGET label while disabled --
+  // that is the point of the merge, telling the maintainer what the next
+  // step will be.
+  //
+  // Branch 3 sitting above branch 4 is deliberate and has a visible
+  // consequence worth recording: `gateVariant` derives from the dashboard's
+  // `draftCount`, while `modifiedCount` derives from the publication
+  // inventory snapshot. The two refresh independently, so a brief
+  // disagreement is possible where drafts appear as pending while the gate
+  // still reads ready. In that window the button offers the production
+  // release of the staging build the maintainer already previewed, which is
+  // safe, and it self-corrects within one refresh, because a non-zero draft
+  // count moves `segments.content` to pending, which locks the gate and
+  // returns the button to branch 4.
+  if (gateVariant === 'ready') {
+    return {
+      label: 'Publier sur le site en ligne',
+      disabled: productionPublishBlocked,
+      loading: false,
+      tone: 'positive',
+      action: productionPublishBlocked ? 'inert' : 'release',
+    }
+  }
+
+  // Branch 4: drafts pending, ordinary update flow.
+  if (modifiedCount > 0) {
+    return {
+      label: 'Mettre le site à jour',
+      disabled: publishButtonDisabled,
+      loading: false,
+      tone: 'primary',
+      action: publishButtonDisabled ? 'inert' : 'publish',
+    }
+  }
+
+  // Branch 5 (fallback) covers 'locked', 'done' and 'failed' alike.
+  // 'failed' is deliberately NOT a branch of its own: retry lives
+  // exclusively on the round gate, which `gateClickAction('failed')` routes
+  // to a release retry. A second retry affordance here was explicitly
+  // ruled out, and the tone union has no 'critical' member precisely so one
+  // cannot be added by accident.
+  //
+  // Module rule respected here: `productionPublishBlocked` arrives as a
+  // plain boolean because calling `productionPublishDisabled()` in this
+  // file would mean importing `./releaseGate` for a value, and this file's
+  // header restricts it to type-only imports.
+  return {
+    label: 'Mettre le site à jour',
+    disabled: true,
+    loading: false,
+    tone: 'primary',
+    action: 'inert',
+  }
+}

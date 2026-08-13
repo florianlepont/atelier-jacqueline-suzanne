@@ -3,6 +3,7 @@ import {
   pipelineCircleClassName,
   pipelineGateCaption,
   pipelineNodeDetail,
+  releaseActionButtonState,
   releasePanelSubtitle,
 } from '../../sanity/editorial/pipelineView';
 import type { PipelineSegmentKind, ReleasePipelineSegments } from '../../sanity/editorial/deployment';
@@ -263,5 +264,250 @@ describe('releasePanelSubtitle', () => {
       requestError: 'GitHub a refusé la requête (403).',
     });
     expect(result).not.toContain('403');
+  });
+});
+
+describe('releaseActionButtonState', () => {
+  const state = (
+    overrides: Partial<{
+      gateVariant: PipelineGateVariant;
+      publicationBusy: boolean;
+      preflighting: boolean;
+      releaseBusy: boolean;
+      modifiedCount: number;
+      publishButtonDisabled: boolean;
+      productionPublishBlocked: boolean;
+    }> = {},
+  ) => ({
+    gateVariant: 'locked' as PipelineGateVariant,
+    publicationBusy: false,
+    preflighting: false,
+    releaseBusy: false,
+    modifiedCount: 0,
+    publishButtonDisabled: false,
+    productionPublishBlocked: false,
+    ...overrides,
+  });
+
+  // State cases
+
+  it('publicationBusy + preflighting returns the preflight label, disabled, loading, primary, inert', () => {
+    expect(releaseActionButtonState(state({ publicationBusy: true, preflighting: true }))).toEqual({
+      label: 'Vérification…',
+      disabled: true,
+      loading: true,
+      tone: 'primary',
+      action: 'inert',
+    });
+  });
+
+  it('publicationBusy without preflighting returns the publish label, disabled, loading, primary, inert', () => {
+    expect(releaseActionButtonState(state({ publicationBusy: true }))).toEqual({
+      label: 'Publication…',
+      disabled: true,
+      loading: true,
+      tone: 'primary',
+      action: 'inert',
+    });
+  });
+
+  it('releaseBusy alone returns the publish label, disabled, loading, primary, inert — tone is primary, not positive, since the release has not yet succeeded and positive is reserved for the ready-to-publish CTA', () => {
+    expect(releaseActionButtonState(state({ releaseBusy: true }))).toEqual({
+      label: 'Publication…',
+      disabled: true,
+      loading: true,
+      tone: 'primary',
+      action: 'inert',
+    });
+  });
+
+  it("gateVariant 'active' with releaseBusy false matches releaseBusy's result — this is the minutes-long window of a real production run, and the tone must match branch 1's and node 2's --active circle for the whole duration", () => {
+    expect(releaseActionButtonState(state({ gateVariant: 'active' }))).toEqual({
+      label: 'Publication…',
+      disabled: true,
+      loading: true,
+      tone: 'primary',
+      action: 'inert',
+    });
+  });
+
+  it("gateVariant 'ready' with productionPublishBlocked false returns the go-live label, enabled, primary CTA in positive tone, action release", () => {
+    expect(releaseActionButtonState(state({ gateVariant: 'ready' }))).toEqual({
+      label: 'Publier sur le site en ligne',
+      disabled: false,
+      loading: false,
+      tone: 'positive',
+      action: 'release',
+    });
+  });
+
+  it("gateVariant 'ready' with productionPublishBlocked true is the single most important case in the file: same label, but disabled AND inert — the deliberate preview-before-publish gate", () => {
+    const result = releaseActionButtonState(
+      state({ gateVariant: 'ready', productionPublishBlocked: true }),
+    );
+    expect(result.label).toBe('Publier sur le site en ligne');
+    expect(result.disabled).toBe(true);
+    expect(result.action).toBe('inert');
+  });
+
+  it("gateVariant 'locked', modifiedCount 3, publishButtonDisabled false returns the update label, enabled, action publish, tone primary", () => {
+    expect(
+      releaseActionButtonState(state({ gateVariant: 'locked', modifiedCount: 3, publishButtonDisabled: false })),
+    ).toEqual({
+      label: 'Mettre le site à jour',
+      disabled: false,
+      loading: false,
+      tone: 'primary',
+      action: 'publish',
+    });
+  });
+
+  it('publishButtonDisabled true still disables the update label — blocked rows and tracking errors still disable the publish exactly as they do today', () => {
+    expect(
+      releaseActionButtonState(state({ gateVariant: 'locked', modifiedCount: 3, publishButtonDisabled: true })),
+    ).toEqual({
+      label: 'Mettre le site à jour',
+      disabled: true,
+      loading: false,
+      tone: 'primary',
+      action: 'inert',
+    });
+  });
+
+  it("gateVariant 'locked', modifiedCount 0 returns the update label, disabled, inert, not loading — the narrow transitional window the user was NOT complaining about", () => {
+    expect(releaseActionButtonState(state({ gateVariant: 'locked', modifiedCount: 0 }))).toEqual({
+      label: 'Mettre le site à jour',
+      disabled: true,
+      loading: false,
+      tone: 'primary',
+      action: 'inert',
+    });
+  });
+
+  it("gateVariant 'done', modifiedCount 0 returns the idle default once everything has shipped", () => {
+    expect(releaseActionButtonState(state({ gateVariant: 'done', modifiedCount: 0 }))).toEqual({
+      label: 'Mettre le site à jour',
+      disabled: true,
+      loading: false,
+      tone: 'primary',
+      action: 'inert',
+    });
+  });
+
+  it("gateVariant 'failed', modifiedCount 0 stays on the ordinary disabled update label — retry belongs to the round gate alone, this button must not grow a second retry", () => {
+    expect(releaseActionButtonState(state({ gateVariant: 'failed', modifiedCount: 0 }))).toEqual({
+      label: 'Mettre le site à jour',
+      disabled: true,
+      loading: false,
+      tone: 'primary',
+      action: 'inert',
+    });
+  });
+
+  it("gateVariant 'failed', modifiedCount 2, publishButtonDisabled false still offers the ordinary publish action — a failure does not suspend the drafts-pending behaviour", () => {
+    expect(
+      releaseActionButtonState(state({ gateVariant: 'failed', modifiedCount: 2, publishButtonDisabled: false })),
+    ).toEqual({
+      label: 'Mettre le site à jour',
+      disabled: false,
+      loading: false,
+      tone: 'primary',
+      action: 'publish',
+    });
+  });
+
+  // Priority cases: assert the ORDER explicitly, each setting up two or
+  // more competing conditions.
+
+  it('publicationBusy + preflighting + releaseBusy + ready: branch 1 wins, and its PREFLIGHT label is the only field distinguishing it from branch 2 once both share tone primary', () => {
+    const result = releaseActionButtonState(
+      state({ publicationBusy: true, preflighting: true, releaseBusy: true, gateVariant: 'ready' }),
+    );
+    expect(result.label).toBe('Vérification…');
+  });
+
+  it('releaseBusy + ready: branch 2 wins — publish label, not the go-live label', () => {
+    const result = releaseActionButtonState(state({ releaseBusy: true, gateVariant: 'ready' }));
+    expect(result.label).toBe('Publication…');
+    expect(result.action).toBe('inert');
+  });
+
+  it("gateVariant 'active' + modifiedCount 5: branch 2 wins over branch 4", () => {
+    const result = releaseActionButtonState(state({ gateVariant: 'active', modifiedCount: 5 }));
+    expect(result.label).toBe('Publication…');
+    expect(result.action).toBe('inert');
+  });
+
+  it("gateVariant 'ready' + modifiedCount 4 + publishButtonDisabled false: branch 3 wins — the go-live label, not the update label. This is the transient disagreement window between the draft count and the inventory snapshot, and it self-corrects", () => {
+    const result = releaseActionButtonState(
+      state({ gateVariant: 'ready', modifiedCount: 4, publishButtonDisabled: false }),
+    );
+    expect(result.label).toBe('Publier sur le site en ligne');
+  });
+
+  it("gateVariant 'failed' + modifiedCount 0 falls through to branch 5 rather than producing any retry label or tone", () => {
+    const result = releaseActionButtonState(state({ gateVariant: 'failed', modifiedCount: 0 }));
+    expect(result.label).toBe('Mettre le site à jour');
+    expect(result.tone).toBe('primary');
+    expect(result.action).toBe('inert');
+  });
+
+  // Invariant cases: a small matrix over all five gateVariant values
+  // crossed with the relevant boolean combinations.
+
+  const allVariants: PipelineGateVariant[] = ['locked', 'ready', 'active', 'done', 'failed'];
+  const booleanCombos = [
+    { publicationBusy: false, releaseBusy: false, modifiedCount: 0, publishButtonDisabled: false, productionPublishBlocked: false },
+    { publicationBusy: false, releaseBusy: false, modifiedCount: 3, publishButtonDisabled: false, productionPublishBlocked: false },
+    { publicationBusy: false, releaseBusy: false, modifiedCount: 3, publishButtonDisabled: true, productionPublishBlocked: false },
+    { publicationBusy: false, releaseBusy: false, modifiedCount: 0, publishButtonDisabled: false, productionPublishBlocked: true },
+    { publicationBusy: true, releaseBusy: false, modifiedCount: 0, publishButtonDisabled: false, productionPublishBlocked: false },
+    { publicationBusy: false, releaseBusy: true, modifiedCount: 0, publishButtonDisabled: false, productionPublishBlocked: false },
+  ];
+
+  const matrix: ReturnType<typeof state>[] = [];
+  for (const gateVariant of allVariants) {
+    for (const combo of booleanCombos) {
+      matrix.push(state({ gateVariant, preflighting: false, ...combo }));
+    }
+  }
+
+  it("tone is 'positive' if and only if gateVariant === 'ready' (branch 3); every other reachable combination returns 'primary' — 'positive' is this codebase's established succeeded signal, so it may only ever describe the safe, deliberate call-to-action of a release not yet started, never an in-flight or uncertain one, and never a failure or retry", () => {
+    for (const input of matrix) {
+      const result = releaseActionButtonState(input);
+      if (result.tone === 'positive') {
+        expect(input.gateVariant).toBe('ready');
+      } else {
+        expect(result.tone).toBe('primary');
+      }
+    }
+  });
+
+  it('loading is never true while disabled is false — a spinning button that still looks clickable invites a double-trigger', () => {
+    for (const input of matrix) {
+      const result = releaseActionButtonState(input);
+      if (result.loading) {
+        expect(result.disabled).toBe(true);
+      }
+    }
+  });
+
+  it("action 'release' is returned ONLY when gateVariant === 'ready' and productionPublishBlocked is false — the machine-checked form of the preview-before-publish rule, the strongest guard in the file", () => {
+    for (const input of matrix) {
+      const result = releaseActionButtonState(input);
+      if (result.action === 'release') {
+        expect(input.gateVariant).toBe('ready');
+        expect(input.productionPublishBlocked).toBe(false);
+      }
+    }
+  });
+
+  it("action 'publish' is never returned when modifiedCount === 0 — publishing an empty batch is a dead click", () => {
+    for (const input of matrix) {
+      const result = releaseActionButtonState(input);
+      if (result.action === 'publish') {
+        expect(input.modifiedCount).not.toBe(0);
+      }
+    }
   });
 });
