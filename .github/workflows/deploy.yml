@@ -46,10 +46,23 @@ jobs:
       - name: Install Sanity Studio dependencies
         run: npm ci --prefix sanity
 
-      - name: Lint and build Sanity Studio
+      # DIAGNOSTIC-04/08 (quick-260811-kog-05/06): Studio's own coverage gate
+      # (per-file 60/50/60/60 floor via scripts/check-tsx-coverage.mjs, plus
+      # Vitest's global 75/65/75/75 threshold) now runs here, between lint
+      # and build, so a Studio component regression fails CI the same way a
+      # root regression does — this suite did not exist in CI until now.
+      - name: Lint, test, and build Sanity Studio
         run: |
           npm --prefix sanity run lint
+          npm --prefix sanity run test:coverage
           npm --prefix sanity run build
+
+      # DIAGNOSTIC-05 (quick-260811-kog-06): root lint was previously absent
+      # from CI entirely — a lint-only regression could reach GitHub Pages
+      # undetected. Runs before typecheck/build, mirroring the Studio gate
+      # above.
+      - name: Lint (root)
+        run: npm run lint
 
       # BLOCKING gate: a type error inside .astro frontmatter (or any .ts
       # source) fails the run and prevents deploy. Runs before any build so
