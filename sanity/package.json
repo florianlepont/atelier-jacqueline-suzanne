@@ -12,7 +12,7 @@
     "start": "sanity start",
     "lint": "eslint .",
     "test": "vitest run --config vitest.config.ts",
-    "test:coverage": "vitest run --config vitest.config.ts --coverage"
+    "test:coverage": "vitest run --config vitest.config.ts --coverage && node scripts/check-tsx-coverage.mjs"
   },
   "keywords": [
     "sanity"
