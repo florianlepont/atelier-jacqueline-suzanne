@@ -106,6 +106,19 @@
   color: var(--dashboard-publish-accent);
 }
 
+/* This face intentionally shares its declarations with the in-progress
+   face above: the difference between "something is running" and
+   "something is waiting for you" is carried by the ICON (a spinning
+   spinner vs a static publish glyph), not by hue. Kept as its own rule
+   block rather than merged into a comma-grouped selector with --active,
+   because the CSS test's extractRuleBlocks() matches a selector only
+   when `{` follows it directly. */
+.editorial-dashboard__pipeline-circle--modified {
+  background-color: color-mix(in srgb, var(--dashboard-publish-accent) 14%, transparent);
+  border-color: var(--dashboard-publish-accent);
+  color: var(--dashboard-publish-accent);
+}
+
 .editorial-dashboard__pipeline-circle--failed {
   background-color: color-mix(in srgb, var(--dashboard-pipeline-failed) 14%, transparent);
   border-color: var(--dashboard-pipeline-failed);
@@ -132,7 +145,18 @@
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
+}
+
+/* The row that used to be the connector itself, so the two link spans and
+   the round gate keep their exact current geometry. The height moved here
+   from .editorial-dashboard__pipeline-connector so the connector can grow
+   by the caption's height without stretching the links. */
+.editorial-dashboard__pipeline-connector-track {
+  display: flex;
+  align-items: center;
+  width: 100%;
   height: 36px;
 }
 
@@ -223,6 +247,21 @@
 .editorial-dashboard__pipeline-gate:focus-visible {
   outline: 2px solid var(--card-focus-ring-color);
   outline-offset: 2px;
+}
+
+/* Font-size/line-height/colour deliberately match
+   .editorial-dashboard__pipeline-node-detail so the caption reads as part
+   of the same row of small explanatory text; margin-top matches the node
+   label's so it aligns with the two labels either side. The max-width
+   keeps a long caption from stretching the connector at narrow viewports. */
+.editorial-dashboard__pipeline-gate-caption {
+  margin-top: 8px;
+  max-width: 132px;
+  font-size: 10px;
+  line-height: 13px;
+  text-align: center;
+  text-wrap: balance;
+  color: var(--card-muted-fg-color);
 }
 
 .editorial-dashboard__pipeline-spin {

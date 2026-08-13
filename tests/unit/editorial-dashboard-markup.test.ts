@@ -294,3 +294,89 @@ describe('editorial dashboard release gate is wired through the shared releaseGa
     ).toBe(1);
   });
 });
+
+// This session's follow-up rewires node 1's label/circle and the round
+// gate's caption through the newly-extracted pipelineView.ts helpers. The
+// RULES themselves are unit-tested directly in
+// tests/unit/pipeline-view.test.ts; what cannot be reached from `node` is
+// the JSX/derivation WIRING that connects those rules to the actual markup.
+describe('editorial dashboard pipeline node 1 is relabelled and wired through pipelineView helpers', () => {
+  const source = readFileSync(COMPONENT_PATH, 'utf-8');
+
+  it('node 1\'s label span renders exactly "Studio", and the old label literal appears nowhere in the component source', () => {
+    expect(
+      /<span className="editorial-dashboard__pipeline-node-label">\s*Studio\s*<\/span>/.test(source),
+      'expected node 1\'s label span to render exactly "Studio"',
+    ).toBe(true);
+    expect(
+      source.includes('Contenu + site de test'),
+      'the old label named an implementation pairing rather than the tool Romane opens, and the maintainer found it unclear -- it must not survive anywhere, including in a comment',
+    ).toBe(false);
+  });
+
+  it('derives hasModifiedContent from publicationCard.total > 0 exactly once', () => {
+    expect(
+      (source.match(/const hasModifiedContent = publicationCard\.total > 0/g) ?? []).length,
+      'expected a single hasModifiedContent derivation reading the same publication-inventory signal as the panel subtitle',
+    ).toBe(1);
+  });
+
+  it('passes hasModifiedContent to node 1\'s circle only, never node 2\'s', () => {
+    expect(
+      source.includes('pipelineCircleClassName(displaySegments.testSite, hasModifiedContent)'),
+      'node 1 is the only node that gets the modified-content treatment',
+    ).toBe(true);
+    expect(
+      source.includes('pipelineCircleClassName(displaySegments.liveSite)'),
+      'node 2 must call the helper with a single argument -- the modified treatment is node 1 only',
+    ).toBe(true);
+  });
+
+  it('calls pipelineNodeDetail with the modified-content boolean', () => {
+    expect(
+      source.includes('pipelineNodeDetail(displaySegments, hasModifiedContent)'),
+      'expected pipelineNodeDetail to be called with the shared hasModifiedContent flag',
+    ).toBe(true);
+  });
+
+  it('imports pipelineCircleClassName and pipelineNodeDetail from the extracted module, with no local re-declaration', () => {
+    expect(
+      source.includes("from './pipelineView'"),
+      'expected the component to import the extracted pipeline helpers',
+    ).toBe(true);
+    expect(
+      /function pipelineCircleClassName/.test(source),
+      're-inlining this helper here removes its behavioural test coverage in tests/unit/pipeline-view.test.ts',
+    ).toBe(false);
+    expect(
+      /function pipelineNodeDetail/.test(source),
+      're-inlining this helper here removes its behavioural test coverage in tests/unit/pipeline-view.test.ts',
+    ).toBe(false);
+  });
+
+  it('derives the gate caption from the shared helper and renders it in its own span, gated on truthiness', () => {
+    expect(
+      source.includes('editorial-dashboard__pipeline-gate-caption'),
+      'expected a dedicated caption class distinct from the gate button class',
+    ).toBe(true);
+    expect(
+      source.includes('{gateCaption &&'),
+      'the caption must be conditionally rendered on the helper\'s truthiness, so states with no caption render no element at all',
+    ).toBe(true);
+    expect(
+      source.includes("'Aperçu du site de test'"),
+      'the caption literal belongs to the tested pipelineGateCaption() helper, not hard-coded inline in the JSX -- otherwise a state that should render no caption could not be trusted to stay that way',
+    ).toBe(false);
+  });
+
+  it('keeps the connector track and the gate button className template intact', () => {
+    expect(
+      source.includes('editorial-dashboard__pipeline-connector-track'),
+      'the two links and the gate must stay wrapped in their own track row so the caption can sit beneath without disturbing them',
+    ).toBe(true);
+    expect(
+      source.includes('`editorial-dashboard__pipeline-gate editorial-dashboard__pipeline-gate--${gateVariant}`'),
+      'the gate button className template must keep its exact shape -- an existing test locates the button by this substring',
+    ).toBe(true);
+  });
+});

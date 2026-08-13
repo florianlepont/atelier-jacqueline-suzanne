@@ -56,6 +56,65 @@ describe('editorial dashboard pipeline row CSS stays visible (not collapsed to z
       /flex\s*:\s*1\s+1\s+auto\s*;/.test(block),
       'documents WHY the row needs its own width: a zero flex-basis connector contributes no intrinsic width to a flex container',
     ).toBe(true);
+    expect(
+      /flex-direction\s*:\s*column\s*;/.test(block),
+      'the connector became a two-row column so the caption can sit under the gate without stretching the connecting lines',
+    ).toBe(true);
+  });
+
+  it('.editorial-dashboard__pipeline-circle--modified is declared exactly once, uses the shared accent token and declares no animation or hard-coded colour', () => {
+    const blocks = extractRuleBlocks(source, '.editorial-dashboard__pipeline-circle--modified');
+    expect(
+      blocks,
+      'expected exactly one .editorial-dashboard__pipeline-circle--modified rule',
+    ).toHaveLength(1);
+    const [block] = blocks;
+    expect(
+      block.includes('var(--dashboard-publish-accent)'),
+      'the modified face must reuse the existing publish accent token',
+    ).toBe(true);
+    expect(
+      /animation\s*:/.test(block),
+      'this is the static "waiting for your action" face -- a pulse or spin here would make it indistinguishable from the in-progress face, whose only differentiator is the icon',
+    ).toBe(false);
+    expect(
+      /#[0-9a-fA-F]{3,8}/.test(block),
+      'the pipeline\'s accents are tokens, and a hard-coded hue here would drift from the panel\'s left border',
+    ).toBe(false);
+  });
+
+  it('.editorial-dashboard__pipeline-connector-track is declared exactly once and declares height: 36px and display: flex', () => {
+    const blocks = extractRuleBlocks(source, '.editorial-dashboard__pipeline-connector-track');
+    expect(
+      blocks,
+      'expected exactly one .editorial-dashboard__pipeline-connector-track rule',
+    ).toHaveLength(1);
+    const [block] = blocks;
+    expect(
+      /height\s*:\s*36px\s*;/.test(block),
+      'the caption moved the height off the connector, and losing it here collapses the link/gate row',
+    ).toBe(true);
+    expect(
+      /display\s*:\s*flex\s*;/.test(block),
+      'the track row needs its flex layout to keep the two link spans and the gate side by side',
+    ).toBe(true);
+  });
+
+  it('.editorial-dashboard__pipeline-gate-caption is declared exactly once and gives the plain span its own type scale and colour', () => {
+    const blocks = extractRuleBlocks(source, '.editorial-dashboard__pipeline-gate-caption');
+    expect(
+      blocks,
+      'expected exactly one .editorial-dashboard__pipeline-gate-caption rule',
+    ).toHaveLength(1);
+    const [block] = blocks;
+    expect(
+      /font-size\s*:/.test(block),
+      'the caption is a plain span with no Sanity UI wrapper, so this rule is the only thing giving it type scale -- the same reason the node label rule carries its own colour',
+    ).toBe(true);
+    expect(
+      /color\s*:/.test(block),
+      'the caption is a plain span with no Sanity UI wrapper, so this rule is the only thing giving it colour -- the same reason the node label rule carries its own colour',
+    ).toBe(true);
   });
 
   it('declares all five gate modifier selectors exactly once each', () => {
@@ -122,7 +181,7 @@ describe('editorial dashboard pipeline row CSS stays visible (not collapsed to z
     const baseWidth = Number(baseWidthMatch?.[1]);
     expect(
       baseWidth,
-      'the base node column must be at least 140px wide so "Contenu + site de test" has room to breathe without colliding with the detail line beneath it',
+      'the base node column must be at least 140px wide so a two-line detail such as "Contenu modifié — prêt à être publié" sitting under a short label has room to breathe without colliding, on both nodes',
     ).toBeGreaterThanOrEqual(140);
 
     const narrowWidthMatch = narrowBlock.match(/width\s*:\s*(\d+)px\s*;/);

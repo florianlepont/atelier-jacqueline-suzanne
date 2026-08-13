@@ -638,7 +638,90 @@ describe('release pipeline state', () => {
     })
     expect(result.segments.production).toBe('done')
     expect(result.promote.buttonDisabled).toBe(true)
-    expect(result.promote.title).toBe('Site en ligne à jour')
+    // Empty is the intended contract here, not an oversight: this state
+    // renders no detail box at all because node 2 and the gate checkmark
+    // already carry the status.
+    expect(result.promote.title).toBe('')
+    expect(result.promote.detail).toBe('')
+    // The locked gate's accessible name survives even though the copy was
+    // emptied.
+    expect(result.promote.buttonLabel).toBe('Site en ligne à jour ✓')
+  })
+
+  it('an unpublished draft anywhere stops the live site reading as up to date, even with a proven-current, non-stale production release', () => {
+    const productionReleaseAt = '2026-07-29T09:05:00Z'
+    const staging = deploymentState({runs: [run()], publishedAt, pendingCount: 0})
+    const production = deploymentState({
+      runs: [
+        run({
+          created_at: '2026-07-29T09:05:01Z',
+          run_started_at: '2026-07-29T09:05:03Z',
+          updated_at: '2026-07-29T09:06:00Z',
+        }),
+      ],
+      publishedAt: productionReleaseAt,
+      pendingCount: 0,
+      target: 'production',
+    })
+    expect(production.kind).toBe('current')
+    const result = releasePipelineState({
+      pendingCount: 1,
+      staging,
+      production,
+      publishedAt,
+      productionReleaseAt,
+      busy: false,
+    })
+    // The release is newer than publishedAt, so isProductionReleaseStale is
+    // not the cause -- the ONLY thing forcing 'pending' is the unpublished
+    // draft.
+    expect(result.segments.production).toBe('pending')
+  })
+
+  it('something genuinely in flight always outranks the pending-draft rule', () => {
+    const staging = deploymentState({runs: [run()], publishedAt, pendingCount: 0})
+    const result = releasePipelineState({
+      pendingCount: 1,
+      staging,
+      production: noProductionRelease,
+      publishedAt,
+      productionReleaseAt: '',
+      busy: true,
+    })
+    // Otherwise a running release would visibly regress to a waiting state
+    // the moment anyone saved a draft.
+    expect(result.segments.production).toBe('active')
+  })
+
+  it('a real failure must stay visible and actionable regardless of unrelated pending drafts', () => {
+    const productionReleaseAt = '2026-07-29T09:05:00Z'
+    const staging = deploymentState({runs: [run()], publishedAt, pendingCount: 0})
+    const production = deploymentState({
+      runs: [
+        run({
+          conclusion: 'failure',
+          created_at: '2026-07-29T09:05:01Z',
+          run_started_at: '2026-07-29T09:05:03Z',
+          updated_at: '2026-07-29T09:06:00Z',
+        }),
+      ],
+      publishedAt: productionReleaseAt,
+      pendingCount: 0,
+      target: 'production',
+    })
+    expect(production.kind).toBe('failed')
+    const result = releasePipelineState({
+      pendingCount: 1,
+      staging,
+      production,
+      publishedAt,
+      productionReleaseAt,
+      busy: false,
+    })
+    // The pending-draft rule governs the done<->pending boundary only, never
+    // the failed state -- so the retry affordance survives.
+    expect(result.segments.production).toBe('failed')
+    expect(result.promote.buttonLabel).toBe('Réessayer')
   })
 
   it('a production release older than the newest content publication falls back to pending and re-enables the button', () => {
