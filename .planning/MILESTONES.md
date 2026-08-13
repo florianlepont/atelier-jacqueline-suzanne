@@ -1,5 +1,20 @@
 # Milestones
 
+## v1.7 Launch & Domain Cutover (Shipped: 2026-08-13)
+
+**Phases completed:** 1 phases, 6 plans, 18 tasks
+
+**Key accomplishments:**
+
+- PHP `mail()` contact endpoint (CORS-allowlisted, honeypot-gated, CRLF-hardened) replacing the never-provisioned Web3Forms integration, plus `.htaccess` hardening and build-artifact guarantees that both actually ship to OVH while staying off GitHub Pages.
+- Repointed ContactForm.astro's fetch call from the never-provisioned Web3Forms relay to a build-configurable `contact.php` target, switching the request body to raw FormData so no CORS preflight fires when the permanently-alive GitHub Pages staging site calls it cross-origin.
+- Built a workflow_dispatch-only GitHub Actions workflow that runs every existing staging quality gate, prints a build recap, pauses on a GitHub Environment approval gate, and pushes `dist/` (including the dotfile `.htaccess`) to OVH over SFTP using a commit-SHA-pinned third-party action — locked in place by 13 CI assertions. Nothing was dispatched or fired at production.
+- A bash smoke-check script (`npm run test:smoke`) proving reachability, custom-404, identity, canonical-origin, PHP-endpoint, and MX-preservation for any origin, rehearsed clean against live GitHub Pages staging and proven to correctly fail against the still-Myportfolio production domain — plus a six-section, checkbox-able DNS cutover runbook with a named rollback trigger.
+- Executed the DNS cutover: production SFTP deploy to OVH (after fixing a stale e2e mock and a stale-remote-file conflict) and the apex/www A-record repoint, with MX/SPF/NS provably unchanged throughout.
+- Closed the phase: recorded the maintainer's Task 2 checkpoint answers (real mail delivered to the inbox, cross-origin staging submission succeeded, nothing looked wrong, http/directory-listing/404 all correct), then wrote the cutover log's remaining four sections and ticked the DNS runbook — LAUNCH-01's evidence record is complete.
+
+---
+
 ## v1.6 Mobile Experience Redesign (Shipped: 2026-08-11)
 
 **Phases completed:** 2 phases, 21 plans, 56 tasks

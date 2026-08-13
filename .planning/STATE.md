@@ -1,14 +1,13 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: MVP
-current_phase: 6
-current_phase_name: homepage view mode toggle, grid hero & wordmark cutout
-status: executing
-stopped_at: Phase 5 context gathered
-last_updated: "2026-08-13T15:12:01.574Z"
+milestone: v1.7
+milestone_name: Launch & Domain Cutover
+current_phase: null
+status: Awaiting next milestone
+stopped_at: Milestone v1.7 complete
+last_updated: "2026-08-13T19:59:08.855Z"
 last_activity: 2026-08-13
-last_activity_desc: Phase 05 complete, transitioned to Phase 6
+last_activity_desc: Milestone v1.7 completed and archived
 progress:
   total_phases: 1
   completed_phases: 1
@@ -24,14 +23,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-04)
 
 **Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; v1.3 adds a non-transactional Éditions showcase; checkout still follows in the future v1.x shop milestone.)
-**Current focus:** Phase 05 — launch-domain-cutover
+**Current focus:** Planning next milestone — v1.0 through v1.7 all shipped
 
 ## Current Position
 
-Phase: 6 — homepage view mode toggle, grid hero & wordmark cutout
-Plan: Not started
-Status: Executing Phase 05
-Last activity: 2026-08-13 - Completed quick task 260813-oc9: Record DNS TTL restoration to 3600s as resolved in 05-DNS-RUNBOOK.md and 05-CUTOVER-LOG.md, with dig verification against authoritative OVH nameservers — Phase 5 has no remaining open items
+Phase: Milestone v1.7 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-08-13 — Milestone v1.7 completed and archived
 
 ## Performance Metrics
 
@@ -354,6 +353,18 @@ Items acknowledged and deferred at v1.6 milestone close on 2026-08-11 (`/gsd-com
 | quick_task | 260722-remove-redundant-sanity-fieldsets | missing (still unexecuted, still superseded — see v1.4/v1.5 notes above) |
 
 Note on the 9 `homepage-scroll-*` debug sessions above: all confirmed root-caused and closed via specific plans within this same session. Never moved to `.planning/debug/resolved/` because that auto-move (execute-phase.md's `close_parent_artifacts` step) only fires for decimal phases (X.Y) — Phase 21 is an integer phase, so the move never triggered. A tooling gap, not neglect; recorded here rather than silently acknowledged.
+
+Items acknowledged and deferred at v1.6 milestone close finalization on 2026-08-13 (the same v1.6 close from 2026-08-11 above was left unfinished pending Phase 5/LAUNCH-01, which was out of v1.6's own gate but still open in ROADMAP.md; `/gsd-complete-milestone` pre-close audit re-run now shows 20 open items — the same 17 from 2026-08-11 unchanged, plus 1 new stale quick task and 2 new seeds; user chose "Acknowledge all, proceed"):
+
+| Category | Item | Status |
+|----------|------|--------|
+| debug | knowledge-base | unknown (same persistent false positive noted at every close since v1.3 — the resolved-sessions index file itself, not a live investigation) |
+| debug | 9× `homepage-scroll-*` sessions | unchanged from the 2026-08-11 v1.6 note above — all diagnosed/CONFIRMED, all closed by named gap-closure plans |
+| uat_gap | Phase 21: 21-UAT.md | unchanged — superseded, 0 pending scenarios |
+| quick_task | 260722-compact-sanity-document-layout / improve-contact-page / normalize-sanity-form-spacing / rebalance-contact-typography / refine-contact-details / remove-redundant-sanity-fieldsets | unchanged from v1.4/v1.5/v1.6 notes above — still unexecuted, still superseded |
+| quick_task | 260811-ggn-regrouper-le-déclenchement-github-après-... | missing (PLAN.md exists, no SUMMARY.md — planned, never executed; superseded by the dashboard "Mettre en production" feature that actually shipped via 260811-v3t/260811-w8d and the subsequent 260812/260813 dashboard quick tasks, which cover the same Sanity-publish-triggers-deploy territory this plan targeted) |
+| seed | SEED-001 (redirect to contact CTA at end of photo/series) | dormant — forward-looking idea, no trigger condition met yet, not blocking |
+| seed | SEED-002 (cross-link gallery ↔ its associated édition) | dormant — same as above |
 
 ## Session Continuity
 
