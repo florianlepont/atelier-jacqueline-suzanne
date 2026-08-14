@@ -1,64 +1,11 @@
 import {defineField, defineType} from 'sanity'
+import {localeStringField, localeTextField} from './lib/localeField'
 
-/**
- * Locale-aware string pair: a single field carrying both FR and EN values.
- * Reused for every chrome/copy field this singleton exposes (D-09).
- */
-function localeStringField(
-  name: string,
-  title: string,
-  hidden = false,
-  group?: string,
-  description?: string,
-) {
-  return defineField({
-    name,
-    title,
-    type: 'object',
-    hidden,
-    group,
-    description,
-    options: {columns: 2},
-    fields: [
-      defineField({
-        name: 'fr',
-        title: 'Français',
-        type: 'string',
-        validation: (rule) => rule.required().error('La version française est obligatoire.'),
-      }),
-      defineField({
-        name: 'en',
-        title: 'Anglais',
-        type: 'string',
-        validation: (rule) => rule.required().error('La version anglaise est obligatoire.'),
-      }),
-    ],
-  })
-}
-
-function localeTextField(name: string, title: string, hidden = false) {
-  return defineField({
-    name,
-    title,
-    type: 'object',
-    hidden,
-    fields: [
-      defineField({
-        name: 'fr',
-        title: 'Français',
-        type: 'text',
-        rows: 3,
-        validation: (rule) => rule.required(),
-      }),
-      defineField({
-        name: 'en',
-        title: 'Anglais',
-        type: 'text',
-        rows: 3,
-        validation: (rule) => rule.required(),
-      }),
-    ],
-  })
+// Reused for every chrome/copy field this singleton exposes (D-09), preserving
+// this file's original validation message wording via frError/enError.
+const NAV_ERRORS = {
+  frError: 'La version française est obligatoire.',
+  enError: 'La version anglaise est obligatoire.',
 }
 
 export const siteSettings = defineType({
@@ -82,13 +29,13 @@ export const siteSettings = defineType({
     {name: 'seo', title: 'SEO'},
   ],
   fields: [
-    localeStringField(
-      'siteTitle',
-      'Nom du site',
-      false,
-      'identity',
-      "Utilisé dans l'onglet du navigateur et lors des partages.",
-    ),
+    localeStringField({
+      name: 'siteTitle',
+      title: 'Nom du site',
+      group: 'identity',
+      description: "Utilisé dans l'onglet du navigateur et lors des partages.",
+      ...NAV_ERRORS,
+    }),
     defineField({
       name: 'navLabels',
       title: 'Libellés du menu',
@@ -97,82 +44,20 @@ export const siteSettings = defineType({
       description: 'Libellés affichés dans le menu principal, sur toutes les pages du site.',
       options: {columns: 2},
       fields: [
-        defineField({
-          name: 'home',
-          title: 'Home label',
-          type: 'object',
-          fields: [
-            defineField({
-              name: 'fr',
-              title: 'French',
-              type: 'string',
-              validation: (rule) => rule.required(),
-            }),
-            defineField({
-              name: 'en',
-              title: 'English',
-              type: 'string',
-              validation: (rule) => rule.required(),
-            }),
-          ],
-          hidden: true,
-        }),
-        defineField({
-          name: 'galleries',
-          title: 'Galleries label',
-          type: 'object',
-          fields: [
-            defineField({
-              name: 'fr',
-              title: 'French',
-              type: 'string',
-              validation: (rule) => rule.required(),
-            }),
-            defineField({
-              name: 'en',
-              title: 'English',
-              type: 'string',
-              validation: (rule) => rule.required(),
-            }),
-          ],
-          hidden: true,
-        }),
-        defineField({
-          name: 'about',
-          title: 'Lien À propos',
-          type: 'object',
-          fields: [
-            defineField({name: 'fr', title: 'Français', type: 'string'}),
-            defineField({name: 'en', title: 'Anglais', type: 'string'}),
-          ],
-        }),
-        defineField({
-          name: 'contact',
-          title: 'Lien Contact',
-          type: 'object',
-          fields: [
-            defineField({name: 'fr', title: 'Français', type: 'string'}),
-            defineField({name: 'en', title: 'Anglais', type: 'string'}),
-          ],
-        }),
-        defineField({
-          name: 'editions',
-          title: 'Lien Éditions',
-          type: 'object',
-          fields: [
-            defineField({name: 'fr', title: 'Français', type: 'string'}),
-            defineField({name: 'en', title: 'Anglais', type: 'string'}),
-          ],
-        }),
+        localeStringField({name: 'home', title: 'Home label', hidden: true}),
+        localeStringField({name: 'galleries', title: 'Galleries label', hidden: true}),
+        localeStringField({name: 'about', title: 'Lien À propos', required: false}),
+        localeStringField({name: 'contact', title: 'Lien Contact', required: false}),
+        localeStringField({name: 'editions', title: 'Lien Éditions', required: false}),
       ],
     }),
-    localeStringField(
-      'footerText',
-      'Texte de copyright',
-      false,
-      'footer',
-      'Texte affiché en bas de toutes les pages du site.',
-    ),
+    localeStringField({
+      name: 'footerText',
+      title: 'Texte de copyright',
+      group: 'footer',
+      description: 'Texte affiché en bas de toutes les pages du site.',
+      ...NAV_ERRORS,
+    }),
     defineField({
       name: 'defaultSeo',
       title: 'SEO par défaut',
@@ -182,9 +67,9 @@ export const siteSettings = defineType({
     }),
     // Obsolete text fields stay addressable during migration, but are hidden
     // and no longer queried by the site.
-    localeStringField('welcomeHeading', 'Legacy welcome heading', true),
-    localeTextField('welcomeBody', 'Legacy welcome body', true),
-    localeTextField('homepageIntro', 'Legacy homepage introduction', true),
+    localeStringField({name: 'welcomeHeading', title: 'Legacy welcome heading', hidden: true, ...NAV_ERRORS}),
+    localeTextField({name: 'welcomeBody', title: 'Legacy welcome body', hidden: true}),
+    localeTextField({name: 'homepageIntro', title: 'Legacy homepage introduction', hidden: true}),
   ],
   preview: {
     select: {title: 'siteTitle.fr'},

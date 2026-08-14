@@ -1,62 +1,36 @@
 ---
 // French Contact page (CONT-01, CONT-02): mounts the ContactForm island
 // (via ContactPageBody) at the bottom of BaseLayout's body, passing
-// `locale` as a build-time prop. Mirrors src/pages/about.astro's
-// hardcoded-content page shape; only import depth and copy differ from
-// src/pages/en/contact.astro.
+// `locale` as a build-time prop. Mirrors src/pages/en/contact.astro — only
+// locale and import depth differ; the render model lives in
+// src/lib/page-models.ts's buildContactPageModel().
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ContactPageBody from '../components/ContactPageBody.astro';
 import { getContactPage } from '../lib/sanity';
-import { fullSizeUrl } from '../lib/image';
+import { buildContactPageModel } from '../lib/page-models';
 
 const locale = 'fr' as const;
-const contact = await getContactPage();
-const intro = contact?.intro?.fr ?? 'Une question, une envie de collaboration ? Écrivez-moi.';
-const publicEmail = contact?.publicEmail ?? 'contact@atelierjacquelinesuzanne.fr';
-const location = contact?.location?.fr;
-const availability = contact?.availability?.fr;
-const professionalLinks = (contact?.professionalLinks ?? []).filter((link) => link.url && link.label?.fr);
-const instagramLink = professionalLinks.find((link) => link.url?.includes('instagram.com'));
-const otherProfessionalLinks = professionalLinks.filter((link) => link !== instagramLink);
-const seoTitle = contact?.seo?.title?.fr ?? 'Contact — Atelier Jacqueline Suzanne';
-const seoDescription = contact?.seo?.description?.fr ?? intro;
-const socialImage = contact?.seo?.image ? fullSizeUrl(contact.seo.image, 1200) : undefined;
-const structuredData = {
-  '@context': 'https://schema.org',
-  '@type': 'ContactPage',
-  name: 'Contact',
-  description: intro,
-  mainEntity: {
-    '@type': 'Person',
-    name: 'Romane Lepont',
-    email: publicEmail,
-  },
-};
-
-const instagramLinkResolved = instagramLink
-  ? { url: instagramLink.url ?? '', label: instagramLink.label?.fr ?? '' }
-  : null;
-const otherLinks = otherProfessionalLinks.map((link) => ({ url: link.url ?? '', label: link.label?.fr ?? '' }));
+const model = buildContactPageModel({ contact: await getContactPage(), locale });
 ---
 
 <BaseLayout
-  title={seoTitle}
-  description={seoDescription}
-  socialImage={socialImage}
-  noIndex={contact?.seo?.noIndex}
-  structuredData={structuredData}
+  title={model.seoTitle}
+  description={model.seoDescription}
+  socialImage={model.socialImage}
+  noIndex={model.noIndex}
+  structuredData={model.structuredData as unknown as Record<string, unknown>}
 >
   <ContactPageBody
     locale={locale}
-    intro={intro}
-    publicEmail={publicEmail}
-    location={location}
-    availability={availability}
-    instagramLink={instagramLinkResolved}
-    otherLinks={otherLinks}
-    emailLabel={"E-mail"}
-    formHeading={"Écrivez-moi"}
-    formSubheading={"Je vous répondrai dès que possible."}
-    newTabHint={" (nouvelle fenêtre)"}
+    intro={model.intro}
+    publicEmail={model.publicEmail}
+    location={model.location}
+    availability={model.availability}
+    instagramLink={model.instagramLink}
+    otherLinks={model.otherLinks}
+    emailLabel={model.emailLabel}
+    formHeading={model.formHeading}
+    formSubheading={model.formSubheading}
+    newTabHint={model.newTabHint}
   />
 </BaseLayout>

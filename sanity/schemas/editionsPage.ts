@@ -1,4 +1,5 @@
 import {defineField, defineType} from 'sanity'
+import {localeTextField} from './lib/localeField'
 
 // quick-260801-id4: mirrors homePage.ts's shape (same locale-text-field
 // pattern for the intro, same shared `seo` field for search/share
@@ -25,30 +26,15 @@ export const editionsPage = defineType({
     {name: 'seo', title: 'SEO'},
   ],
   fields: [
-    defineField({
+    localeTextField({
       name: 'intro',
       title: 'Introduction de la page Éditions',
-      type: 'object',
       group: 'content',
       description:
         'Court texte descriptif affiché aux visiteurs sous le titre de la page Éditions.',
-      options: {columns: 2},
-      fields: [
-        defineField({
-          name: 'fr',
-          title: 'Français',
-          type: 'text',
-          rows: 4,
-          validation: (rule) => rule.required().error("L'introduction française est obligatoire."),
-        }),
-        defineField({
-          name: 'en',
-          title: 'Anglais',
-          type: 'text',
-          rows: 4,
-          validation: (rule) => rule.required().error("L'introduction anglaise est obligatoire."),
-        }),
-      ],
+      rows: 4,
+      frError: "L'introduction française est obligatoire.",
+      enError: "L'introduction anglaise est obligatoire.",
     }),
     defineField({
       name: 'seo',

@@ -24,7 +24,14 @@ export default getViteConfig({
       // otherwise sit at 0% forever, silently dragging down this project's
       // aggregate. Production includes stay instrumented; only this
       // generated/test-support path is excluded.
-      exclude: ['sanity/editorial/test/**'],
+      //
+      // useDeploymentPolling.ts is a React hook (useState/useEffect), not
+      // pure logic like its sibling modules here -- it can only execute
+      // inside a React render, which this project's environment: 'node'
+      // run cannot provide. It's exercised instead by sanity/'s own
+      // jsdom + Testing Library suite (useDeploymentPolling.test.ts),
+      // which this coverage run has no visibility into.
+      exclude: ['sanity/editorial/test/**', 'sanity/editorial/useDeploymentPolling.ts'],
       thresholds: {
         statements: 80,
         branches: 75,

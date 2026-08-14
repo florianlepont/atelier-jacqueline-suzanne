@@ -31,9 +31,17 @@ vi.mock('@sanity/ui', async () => {
   }
 })
 
-vi.mock('sanity', async () => {
+vi.mock('sanity', async (importOriginal) => {
   const {TestButton, sanityTestState} = await import('./mocks')
+  // defineField/defineType/defineArrayMember are real (not stubbed): they're
+  // pure identity builders with no Studio/React dependency, so schemas/'s
+  // own tests (sanity/schemas/__tests__/) can exercise real schema-building
+  // helpers under this same setup file without a separate mock surface.
+  const actual = await importOriginal<typeof import('sanity')>()
   return {
+    defineArrayMember: actual.defineArrayMember,
+    defineField: actual.defineField,
+    defineType: actual.defineType,
     IntentButton: TestButton,
     useClient: () => sanityTestState.client,
     useEditState: () => sanityTestState.editState,

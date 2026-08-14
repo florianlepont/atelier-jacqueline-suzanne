@@ -7,54 +7,30 @@
 // h1), but the grid itself is a genuinely new pattern — there is no
 // gallery-page equivalent to mirror (12-PATTERNS.md).
 // Mirrors src/pages/en/editions/index.astro — only import depth and locale
-// differ.
+// differ; the render model lives in src/lib/page-models.ts's
+// buildEditionsIndexModel().
 //
 // quick-260727-the: the shared markup + style block + grouping logic live
-// in EditionsOverviewBody.astro; this file keeps only data-fetch + tile
-// resolution.
+// in EditionsOverviewBody.astro; this file keeps only data-fetch + model.
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import EditionsOverviewBody from '../../components/EditionsOverviewBody.astro';
 import { getEditions, getEditionsPage } from '../../lib/sanity';
-import { getRelativeLocaleUrl } from 'astro:i18n';
-import { previewPanelUrl, responsiveThumbnailSrcSet } from '../../lib/image';
-import { resolveEditionsIntro } from '../../lib/site-config';
-import { pickHeroIndex } from '../../lib/image-orientation';
+import { buildEditionsIndexModel } from '../../lib/page-models';
 
-const locale = 'fr' as const;
-const editionsPage = await getEditionsPage();
-const intro = resolveEditionsIntro(editionsPage, locale);
-
-// quick-260801-kgh: mirrors src/pages/index.astro's own homepage tile
-// derivation — filter out any édition with no photo (prevents
-// builder.image(undefined) on an incomplete document) before deriving each
-// tile's cover from pickHeroIndex, exactly like a gallery cover.
-const tiles = (await getEditions())
-  .filter((edition) => (edition.images ?? []).length > 0)
-  .map((edition) => {
-    const cover = edition.images[pickHeroIndex(edition.images)];
-    return {
-      href: getRelativeLocaleUrl(locale, `editions/${edition.slug}`),
-      imgSrc: previewPanelUrl(cover, 680),
-      imgSrcset: responsiveThumbnailSrcSet(cover),
-      alt: cover.alt?.[locale] ?? '',
-      title: edition.title,
-      statement: edition.statement?.[locale] ?? '',
-      format: `Édition imprimée · ${edition.pageCount} pages · Tirage ${edition.printRun}`,
-    };
-  });
-
-const seoTitle = 'Éditions — Atelier Jacqueline Suzanne';
-const seoDescription =
-  "Découvrez les éditions papier de Romane Lepont — zines et livres publiés par l'Atelier Jacqueline Suzanne.";
+const model = buildEditionsIndexModel({
+  editionsPage: await getEditionsPage(),
+  editions: await getEditions(),
+  locale: 'fr',
+});
 ---
 
-<BaseLayout title={seoTitle} description={seoDescription}>
+<BaseLayout title={model.seoTitle} description={model.seoDescription}>
   <EditionsOverviewBody
-    heading={"Éditions"}
-    intro={intro}
-    tiles={tiles}
-    emptyHeading={"Éditions à venir"}
-    emptyBody={"De nouvelles éditions seront bientôt visibles ici. Revenez prochainement."}
-    viewEditionLabel={" — Voir l'édition"}
+    heading={model.heading}
+    intro={model.intro}
+    tiles={model.tiles}
+    emptyHeading={model.emptyHeading}
+    emptyBody={model.emptyBody}
+    viewEditionLabel={model.viewEditionLabel}
   />
 </BaseLayout>

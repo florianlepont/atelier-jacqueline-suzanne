@@ -1165,7 +1165,7 @@ describe('Sanity version pin and CI gate ordering (DIAGNOSTIC-05/06)', () => {
   it('deploy.yml runs root lint before root typecheck and root build', () => {
     const steps = stepNamesInOrder(workflowSource)
     const lintIndex = steps.findIndex((name) => name === 'Lint (root)')
-    const typecheckIndex = steps.findIndex((name) => name.startsWith('Type-check'))
+    const typecheckIndex = steps.findIndex((name) => name === 'Type-check (astro check)')
     const buildIndex = steps.findIndex((name) => name.startsWith('Build (test artifact'))
 
     expect(lintIndex).toBeGreaterThanOrEqual(0)

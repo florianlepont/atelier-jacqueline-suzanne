@@ -289,16 +289,19 @@ function groupPublicVersions(documents: DashboardDocument[]) {
 }
 
 export function pairPublicDocuments(documents: DashboardDocument[]): PublicationPair[] {
-  return Array.from(groupPublicVersions(documents), ([id, versions]) => {
-    if (!versions.draft) return null
-    return {
-      id,
-      draft: versions.draft,
-      published: versions.published,
-      category: publicationCategory(versions.draft, versions.published),
-      title: documentTitle(versions.draft),
-    }
-  }).filter((pair): pair is PublicationPair => pair !== null)
+  return Array.from(
+    groupPublicVersions(documents),
+    ([id, versions]): PublicationPair | null => {
+      if (!versions.draft) return null
+      return {
+        id,
+        draft: versions.draft,
+        published: versions.published,
+        category: publicationCategory(versions.draft, versions.published),
+        title: documentTitle(versions.draft),
+      }
+    },
+  ).filter((pair): pair is PublicationPair => pair !== null)
 }
 
 function collectStrongReferenceIds(
@@ -463,7 +466,7 @@ function markerActions(
   markerId: MarkerDocumentId,
   marker: DeploymentMarker | null | undefined,
   lastTriggeredAt: string,
-): DocumentAction[] {
+): (CreateDeploymentMarkerAction | EditDeploymentMarkerAction | PublishDeploymentMarkerAction)[] {
   if (!marker) {
     return [
       {

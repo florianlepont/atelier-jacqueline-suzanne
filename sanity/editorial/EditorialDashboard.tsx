@@ -22,20 +22,18 @@ import {SpinnerIcon} from '@sanity/icons/Spinner'
 import {
   deploymentSubtitle,
   deploymentState,
-  getRecentDeployments,
   latestValidTimestamp,
-  nextDeploymentPollDelay,
   pipelineDisplaySegments,
   PRODUCTION_WORKFLOW_FILE,
   releasePipelineState,
   SITE_PREVIEW_URL,
 } from './deployment'
 import type {
-  DeploymentRun,
   PipelineSegmentKind,
   ReleasePipelineDisplaySegments,
   ReleasePipelinePromote,
 } from './deployment'
+import {useDeploymentPolling} from './useDeploymentPolling'
 import {gateClickAction, nextPreviewedFlag, productionPublishDisabled} from './releaseGate'
 import type {PipelineGateVariant} from './releaseGate'
 import {
@@ -88,8 +86,6 @@ export function EditorialDashboard() {
   const userStore = useUserStore()
   const [documents, setDocuments] = useState<DashboardDocument[]>([])
   const [activities, setActivities] = useState<Record<string, DashboardActivity>>({})
-  const [deploymentRuns, setDeploymentRuns] = useState<DeploymentRun[]>([])
-  const [deploymentError, setDeploymentError] = useState<unknown>()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showAllActivity, setShowAllActivity] = useState(false)
@@ -99,8 +95,6 @@ export function EditorialDashboard() {
     phase: 'idle',
   })
   const [publishedAt, setPublishedAt] = useState<string>()
-  const [productionRuns, setProductionRuns] = useState<DeploymentRun[]>([])
-  const [productionDeploymentError, setProductionDeploymentError] = useState<unknown>()
   const [productionReleaseAt, setProductionReleaseAt] = useState<string>('')
   const [releaseBusy, setReleaseBusy] = useState(false)
   const [releaseError, setReleaseError] = useState<string>()
@@ -292,60 +286,17 @@ export function EditorialDashboard() {
     .filter((value): value is string => Boolean(value) && Number.isFinite(new Date(value).getTime()))
     .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0]
   const publishedReference = latestValidTimestamp(publishedAt, lastPublishedDocumentAt)
+  const {runs: deploymentRuns, error: deploymentError} = useDeploymentPolling({
+    referenceTimestamp: publishedReference,
+    pendingCount: draftCount,
+    missingReferenceError: new Error('Aucune publication de référence disponible'),
+  })
   const currentDeploymentState = deploymentState({
     runs: deploymentRuns,
     publishedAt: publishedReference,
     pendingCount: draftCount,
     error: deploymentError,
   })
-
-  // GitHub Actions changes independently from Sanity. Poll immediately, then
-  // quickly while a post-publication run is expected and more slowly once the
-  // state is terminal. Cleanup aborts both the request and the pending timer.
-  useEffect(() => {
-    if (!publishedReference) {
-      setDeploymentRuns([])
-      setDeploymentError(new Error('Aucune publication de référence disponible'))
-      return undefined
-    }
-
-    const controller = new AbortController()
-    let cancelled = false
-    let timer: ReturnType<typeof setTimeout> | undefined
-
-    const load = async () => {
-      try {
-        const runs = await getRecentDeployments(controller.signal)
-        if (cancelled) return
-        setDeploymentRuns(runs)
-        setDeploymentError(undefined)
-        const nextState = deploymentState({
-          runs,
-          publishedAt: publishedReference,
-          pendingCount: draftCount,
-        })
-        const elapsedMs = Math.max(0, Date.now() - new Date(publishedReference).getTime())
-        timer = setTimeout(
-          () => void load(),
-          nextDeploymentPollDelay({elapsedMs, terminal: nextState.terminal, firstPoll: false}),
-        )
-      } catch (reason) {
-        if (cancelled || (reason instanceof DOMException && reason.name === 'AbortError')) return
-        setDeploymentError(reason)
-        timer = setTimeout(() => void load(), 5 * 60_000)
-      }
-    }
-
-    timer = setTimeout(
-      () => void load(),
-      nextDeploymentPollDelay({elapsedMs: 0, terminal: false, firstPoll: true}),
-    )
-    return () => {
-      cancelled = true
-      controller.abort()
-      clearTimeout(timer)
-    }
-  }, [draftCount, publishedReference])
 
   // Seeds the production release timestamp from the persisted marker, so the
   // pipeline survives a reload or a second browser tab rather than living
@@ -372,54 +323,12 @@ export function EditorialDashboard() {
     }
   }, [client, refreshKey])
 
-  // Structural copy of the staging polling effect above, tracking the
-  // production workflow instead. It never polls a workflow for a release
-  // that was never requested.
-  useEffect(() => {
-    if (!productionReleaseAt) {
-      setProductionRuns([])
-      setProductionDeploymentError(undefined)
-      return undefined
-    }
-
-    const controller = new AbortController()
-    let cancelled = false
-    let timer: ReturnType<typeof setTimeout> | undefined
-
-    const load = async () => {
-      try {
-        const runs = await getRecentDeployments(controller.signal, PRODUCTION_WORKFLOW_FILE)
-        if (cancelled) return
-        setProductionRuns(runs)
-        setProductionDeploymentError(undefined)
-        const nextState = deploymentState({
-          runs,
-          publishedAt: productionReleaseAt,
-          pendingCount: 0,
-          target: 'production',
-        })
-        const elapsedMs = Math.max(0, Date.now() - new Date(productionReleaseAt).getTime())
-        timer = setTimeout(
-          () => void load(),
-          nextDeploymentPollDelay({elapsedMs, terminal: nextState.terminal, firstPoll: false}),
-        )
-      } catch (reason) {
-        if (cancelled || (reason instanceof DOMException && reason.name === 'AbortError')) return
-        setProductionDeploymentError(reason)
-        timer = setTimeout(() => void load(), 5 * 60_000)
-      }
-    }
-
-    timer = setTimeout(
-      () => void load(),
-      nextDeploymentPollDelay({elapsedMs: 0, terminal: false, firstPoll: true}),
-    )
-    return () => {
-      cancelled = true
-      controller.abort()
-      clearTimeout(timer)
-    }
-  }, [productionReleaseAt])
+  const {runs: productionRuns, error: productionDeploymentError} = useDeploymentPolling({
+    referenceTimestamp: productionReleaseAt,
+    pendingCount: 0,
+    workflowFile: PRODUCTION_WORKFLOW_FILE,
+    target: 'production',
+  })
 
   const currentProductionDeploymentState = deploymentState({
     runs: productionRuns,

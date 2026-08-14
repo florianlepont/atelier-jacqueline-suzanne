@@ -1,49 +1,37 @@
 ---
-// English About page: mirrors the French Sanity-managed page.
+// English About page: mirrors the French Sanity-managed page. Only locale
+// and import depth differ; the render model lives in
+// src/lib/page-models.ts's buildAboutPageModel().
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import AboutPageBody from '../../components/AboutPageBody.astro';
 import { getAboutPage, getSiteSettings } from '../../lib/sanity';
-import { resolveSiteCopy } from '../../lib/site-config';
-import { fullSizeUrl } from '../../lib/image';
+import { buildAboutPageModel } from '../../lib/page-models';
 
-const siteCopy = resolveSiteCopy(await getSiteSettings(), 'en');
-const about = await getAboutPage();
-const biography = about?.biography?.en ?? "Romane's biography will be available here soon.";
-const practice = about?.practice?.en ?? "Information about Romane's studio and practice is coming soon.";
-const medium = about?.medium?.en ?? 'Details on medium and technique are coming soon.';
-const seoTitle = about?.seo?.title?.en ?? 'About — Atelier Jacqueline Suzanne';
-const seoDescription = about?.seo?.description?.en ?? biography;
-const socialImage = about?.seo?.image ? fullSizeUrl(about.seo.image, 1200) : undefined;
-const portraitImage = about?.image;
-const exhibitionImage = about?.exhibitionImage;
-const structuredData = {
-  '@context': 'https://schema.org',
-  '@type': 'Person',
-  name: 'Romane Lepont',
-  jobTitle: 'Photographer',
-  description: biography,
-  url: Astro.url.toString(),
-  sameAs: [siteCopy.instagramUrl],
-};
+const model = buildAboutPageModel({
+  about: await getAboutPage(),
+  siteSettings: await getSiteSettings(),
+  locale: 'en',
+  pageUrl: Astro.url.toString(),
+});
 ---
 
 <BaseLayout
-  title={seoTitle}
-  description={seoDescription}
-  socialImage={socialImage}
-  noIndex={about?.seo?.noIndex}
-  structuredData={structuredData}
+  title={model.seoTitle}
+  description={model.seoDescription}
+  socialImage={model.socialImage}
+  noIndex={model.noIndex}
+  structuredData={model.structuredData as unknown as Record<string, unknown>}
 >
   <AboutPageBody
-    heading={"About"}
-    studioPracticeHeading={"Studio & practice"}
-    mediumTechniqueHeading={"Medium & technique"}
-    biography={biography}
-    practice={practice}
-    medium={medium}
-    portraitImage={portraitImage}
-    portraitAlt={portraitImage?.alt?.en ?? ''}
-    exhibitionImage={exhibitionImage}
-    exhibitionAlt={exhibitionImage?.alt?.en ?? ''}
+    heading={model.heading}
+    studioPracticeHeading={model.studioPracticeHeading}
+    mediumTechniqueHeading={model.mediumTechniqueHeading}
+    biography={model.biography}
+    practice={model.practice}
+    medium={model.medium}
+    portraitImage={model.portraitImage}
+    portraitAlt={model.portraitAlt}
+    exhibitionImage={model.exhibitionImage}
+    exhibitionAlt={model.exhibitionAlt}
   />
 </BaseLayout>

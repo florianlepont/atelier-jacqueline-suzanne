@@ -1,4 +1,5 @@
 import {defineField, defineType} from 'sanity'
+import {localeTextField} from './lib/localeField'
 
 const defaultIntro = {
   fr: 'Le site présente le travail photographique de Romane Lepont à travers ses différentes séries et éditions.',
@@ -15,30 +16,15 @@ export const homePage = defineType({
     {name: 'seo', title: 'SEO'},
   ],
   fields: [
-    defineField({
+    localeTextField({
       name: 'intro',
       title: "Introduction de la page d'accueil",
-      type: 'object',
       group: 'content',
       description:
         "Court texte affiché aux visiteurs dans le panneau coloré de la page d'accueil.",
-      options: {columns: 2},
-      fields: [
-        defineField({
-          name: 'fr',
-          title: 'Français',
-          type: 'text',
-          rows: 5,
-          validation: (rule) => rule.required().error("L'introduction française est obligatoire."),
-        }),
-        defineField({
-          name: 'en',
-          title: 'Anglais',
-          type: 'text',
-          rows: 5,
-          validation: (rule) => rule.required().error("L'introduction anglaise est obligatoire."),
-        }),
-      ],
+      rows: 5,
+      frError: "L'introduction française est obligatoire.",
+      enError: "L'introduction anglaise est obligatoire.",
     }),
     defineField({
       name: 'seo',

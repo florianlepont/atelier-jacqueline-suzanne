@@ -1,47 +1,18 @@
 import {defineArrayMember, defineField, defineType} from 'sanity'
+import {localeStringField, localeTextField} from './lib/localeField'
 
 function localizedString(name: string, title: string) {
-  return defineField({
-    name,
-    title,
-    type: 'object',
-    options: {columns: 2},
-    fields: [
-      defineField({name: 'fr', title: 'Français', type: 'string'}),
-      defineField({name: 'en', title: 'Anglais', type: 'string'}),
-    ],
-  })
+  return localeStringField({name, title, required: false})
 }
 
 function localizedText(name: string, title: string, required = false) {
-  return defineField({
+  return localeTextField({
     name,
     title,
-    type: 'object',
-    options: {columns: 2},
-    validation: required
-      ? (rule) => rule.required().error('Renseigner ce texte en français et en anglais.')
-      : undefined,
-    fields: [
-      defineField({
-        name: 'fr',
-        title: 'Français',
-        type: 'text',
-        rows: 3,
-        validation: required
-          ? (rule) => rule.required().error('Le texte français est obligatoire.')
-          : undefined,
-      }),
-      defineField({
-        name: 'en',
-        title: 'Anglais',
-        type: 'text',
-        rows: 3,
-        validation: required
-          ? (rule) => rule.required().error('Le texte anglais est obligatoire.')
-          : undefined,
-      }),
-    ],
+    required,
+    objectError: required ? 'Renseigner ce texte en français et en anglais.' : undefined,
+    frError: 'Le texte français est obligatoire.',
+    enError: 'Le texte anglais est obligatoire.',
   })
 }
 

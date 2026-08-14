@@ -10,8 +10,9 @@ import {describe, expect, it} from 'vitest';
 process.env.SANITY_PROJECT_ID ??= 'test-project';
 process.env.SANITY_DATASET ??= 'test-dataset';
 
-const {buildGalleryDetailModel, buildEditionDetailModel} = await import('../../src/lib/page-models');
-import type {Edition, Gallery} from '../../src/lib/sanity';
+const {buildAboutPageModel, buildContactPageModel, buildEditionDetailModel, buildEditionsIndexModel, buildGalleryDetailModel} =
+  await import('../../src/lib/page-models');
+import type {AboutPage, ContactPage, Edition, EditionsPage, Gallery, SiteSettings} from '../../src/lib/sanity';
 
 const image = (overrides: Partial<Gallery['images'][number]> = {}) => ({
   asset: {_ref: 'image-cover-1200x800-jpg'},
@@ -200,5 +201,189 @@ describe('buildEditionDetailModel', () => {
       locale: 'fr',
     });
     expect(model.formatText).not.toContain('undefined');
+  });
+});
+
+const aboutPage = (overrides: Partial<AboutPage> = {}): AboutPage => ({
+  biography: {fr: 'Biographie FR', en: 'Biography EN'},
+  practice: {fr: 'Pratique FR', en: 'Practice EN'},
+  medium: {fr: 'Médium FR', en: 'Medium EN'},
+  ...overrides,
+});
+
+const siteSettings = (overrides: Partial<SiteSettings> = {}): SiteSettings => ({
+  siteTitle: {fr: 'Atelier Jacqueline Suzanne', en: 'Atelier Jacqueline Suzanne'},
+  navLabels: {
+    about: {fr: 'À propos', en: 'About'},
+    contact: {fr: 'Contact', en: 'Contact'},
+    editions: {fr: 'Éditions', en: 'Editions'},
+  },
+  footerText: {fr: '', en: ''},
+  ...overrides,
+});
+
+const contactPage = (overrides: Partial<ContactPage> = {}): ContactPage => ({
+  intro: {fr: 'Intro FR', en: 'Intro EN'},
+  publicEmail: 'contact@atelierjacquelinesuzanne.fr',
+  ...overrides,
+});
+
+describe('buildAboutPageModel', () => {
+  it('produces the same non-localized data for fr and en, diverging only on localized text/labels', () => {
+    const shared = {about: aboutPage(), siteSettings: siteSettings()};
+    const fr = buildAboutPageModel({...shared, locale: 'fr', pageUrl: PAGE_URL_FR});
+    const en = buildAboutPageModel({...shared, locale: 'en', pageUrl: PAGE_URL_EN});
+
+    expect(fr.heading).toBe('À propos');
+    expect(en.heading).toBe('About');
+    expect(fr.biography).toBe('Biographie FR');
+    expect(en.biography).toBe('Biography EN');
+    expect(fr.structuredData.jobTitle).toBe('Photographe');
+    expect(en.structuredData.jobTitle).toBe('Photographer');
+    expect(fr.structuredData.url).toBe(PAGE_URL_FR);
+    expect(en.structuredData.url).toBe(PAGE_URL_EN);
+    expect(fr.structuredData.sameAs).toEqual(en.structuredData.sameAs);
+  });
+
+  it('falls back to locale-specific placeholder copy when about is absent', () => {
+    const model = buildAboutPageModel({
+      about: null,
+      siteSettings: null,
+      locale: 'fr',
+      pageUrl: PAGE_URL_FR,
+    });
+    expect(model.biography).toContain('bientôt disponible');
+    expect(model.practice).toContain('venir');
+    expect(model.medium).toContain('venir');
+    expect(model.seoTitle).toBe('À propos — Atelier Jacqueline Suzanne');
+    expect(model.seoDescription).toBe(model.biography);
+    expect(model.portraitAlt).toBe('');
+    expect(model.exhibitionAlt).toBe('');
+  });
+
+  it('prefers seo.title/description/image and passes noIndex through when present', () => {
+    const model = buildAboutPageModel({
+      about: aboutPage({
+        seo: {title: {fr: 'Titre SEO'}, description: {fr: 'Description SEO'}, noIndex: true},
+      }),
+      siteSettings: siteSettings(),
+      locale: 'fr',
+      pageUrl: PAGE_URL_FR,
+    });
+    expect(model.seoTitle).toBe('Titre SEO');
+    expect(model.seoDescription).toBe('Description SEO');
+    expect(model.noIndex).toBe(true);
+  });
+
+  it('resolves portrait/exhibition image alt text per locale', () => {
+    const model = buildAboutPageModel({
+      about: aboutPage({
+        image: {asset: {_ref: 'portrait-jpg'}, alt: {fr: 'Portrait FR', en: 'Portrait EN'}},
+        exhibitionImage: {asset: {_ref: 'exhibition-jpg'}, alt: {fr: 'Expo FR', en: 'Expo EN'}},
+      }),
+      siteSettings: null,
+      locale: 'en',
+      pageUrl: PAGE_URL_EN,
+    });
+    expect(model.portraitAlt).toBe('Portrait EN');
+    expect(model.exhibitionAlt).toBe('Expo EN');
+  });
+});
+
+describe('buildContactPageModel', () => {
+  it('produces the same non-localized data for fr and en, diverging only on localized text/labels', () => {
+    const shared = {contact: contactPage()};
+    const fr = buildContactPageModel({...shared, locale: 'fr'});
+    const en = buildContactPageModel({...shared, locale: 'en'});
+
+    expect(fr.intro).toBe('Intro FR');
+    expect(en.intro).toBe('Intro EN');
+    expect(fr.publicEmail).toBe(en.publicEmail);
+    expect(fr.emailLabel).toBe('E-mail');
+    expect(en.emailLabel).toBe('Email');
+    expect(fr.formHeading).toBe('Écrivez-moi');
+    expect(en.formHeading).toBe('Send a message');
+    expect(fr.structuredData.mainEntity.email).toBe(en.structuredData.mainEntity.email);
+  });
+
+  it('falls back to a placeholder intro and the default public email when contact is absent', () => {
+    const model = buildContactPageModel({contact: null, locale: 'fr'});
+    expect(model.intro).toContain('collaboration');
+    expect(model.publicEmail).toBe('contact@atelierjacquelinesuzanne.fr');
+    expect(model.location).toBeUndefined();
+    expect(model.availability).toBeUndefined();
+    expect(model.instagramLink).toBeNull();
+    expect(model.otherLinks).toEqual([]);
+  });
+
+  it('extracts the Instagram link separately from other professional links, dropping links missing a URL or the current locale label', () => {
+    const model = buildContactPageModel({
+      contact: contactPage({
+        professionalLinks: [
+          {label: {fr: 'Instagram', en: 'Instagram'}, url: 'https://www.instagram.com/ajs_romanelepont/'},
+          {label: {fr: 'Portfolio', en: 'Portfolio'}, url: 'https://example.com/portfolio'},
+          {label: {fr: 'Sans URL', en: 'No URL'}, url: undefined},
+          {label: {en: 'No FR label'}, url: 'https://example.com/no-fr-label'},
+        ],
+      }),
+      locale: 'fr',
+    });
+    expect(model.instagramLink).toEqual({url: 'https://www.instagram.com/ajs_romanelepont/', label: 'Instagram'});
+    expect(model.otherLinks).toEqual([{url: 'https://example.com/portfolio', label: 'Portfolio'}]);
+  });
+
+  it('prefers seo.title/description/image and passes noIndex through when present', () => {
+    const model = buildContactPageModel({
+      contact: contactPage({
+        seo: {title: {fr: 'Titre SEO'}, description: {fr: 'Description SEO'}, noIndex: true},
+      }),
+      locale: 'fr',
+    });
+    expect(model.seoTitle).toBe('Titre SEO');
+    expect(model.seoDescription).toBe('Description SEO');
+    expect(model.noIndex).toBe(true);
+  });
+});
+
+describe('buildEditionsIndexModel', () => {
+  it('produces the same non-localized data for fr and en, diverging only on localized text/labels', () => {
+    const shared = {editionsPage: {intro: {fr: 'Intro FR', en: 'Intro EN'}} as EditionsPage, editions: [edition()]};
+    const fr = buildEditionsIndexModel({...shared, locale: 'fr'});
+    const en = buildEditionsIndexModel({...shared, locale: 'en'});
+
+    expect(fr.heading).toBe('Éditions');
+    expect(en.heading).toBe('Editions');
+    expect(fr.intro).toBe('Intro FR');
+    expect(en.intro).toBe('Intro EN');
+    expect(fr.tiles.map((tile) => tile.imgSrc)).toEqual(en.tiles.map((tile) => tile.imgSrc));
+    expect(fr.tiles[0].format).toContain('Tirage');
+    expect(en.tiles[0].format).toContain('Edition of');
+  });
+
+  it('falls back to the shared default intro when editionsPage is absent', () => {
+    const model = buildEditionsIndexModel({editionsPage: null, editions: [], locale: 'fr'});
+    expect(model.intro).toContain('objets imprimés');
+  });
+
+  it('filters out any édition with no photos (D-02/quick-260801-kgh)', () => {
+    const model = buildEditionsIndexModel({
+      editionsPage: null,
+      editions: [edition(), edition({slug: 'sans-photo', images: []})],
+      locale: 'fr',
+    });
+    expect(model.tiles).toHaveLength(1);
+    expect(model.tiles[0].href).toMatch(/\/editions\/rebut\/?$/);
+  });
+
+  it('derives each tile from its own cover image and locale-specific statement/format text', () => {
+    const model = buildEditionsIndexModel({
+      editionsPage: null,
+      editions: [edition({title: 'Silos', pageCount: 40, printRun: 100})],
+      locale: 'en',
+    });
+    expect(model.tiles).toHaveLength(1);
+    expect(model.tiles[0].title).toBe('Silos');
+    expect(model.tiles[0].statement).toBe('Statement EN');
+    expect(model.tiles[0].format).toBe('Printed edition · 40 pages · Edition of 100');
   });
 });

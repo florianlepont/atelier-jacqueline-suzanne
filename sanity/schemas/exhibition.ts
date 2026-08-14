@@ -1,4 +1,5 @@
 import {defineField, defineType} from 'sanity'
+import {localeTextField} from './lib/localeField'
 
 export const exhibition = defineType({
   name: 'exhibition',
@@ -40,16 +41,12 @@ export const exhibition = defineType({
       group: 'essential',
       validation: (rule) => rule.uri({scheme: ['http', 'https']}),
     }),
-    defineField({
+    localeTextField({
       name: 'description',
       title: 'Description',
-      type: 'object',
       group: 'content',
-      options: {columns: 2},
-      fields: [
-        defineField({name: 'fr', title: 'Français', type: 'text', rows: 5}),
-        defineField({name: 'en', title: 'Anglais', type: 'text', rows: 5}),
-      ],
+      required: false,
+      rows: 5,
     }),
     defineField({
       name: 'image',

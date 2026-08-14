@@ -1,27 +1,13 @@
 import {defineField, defineType} from 'sanity'
+import {localeAltField, localeTextField} from './lib/localeField'
 
 function localizedText(name: string, title: string, rows = 5) {
-  return defineField({
+  return localeTextField({
     name,
     title,
-    type: 'object',
-    options: {columns: 2},
-    fields: [
-      defineField({
-        name: 'fr',
-        title: 'Français',
-        type: 'text',
-        rows,
-        validation: (rule) => rule.required().error('Le texte français est obligatoire.'),
-      }),
-      defineField({
-        name: 'en',
-        title: 'Anglais',
-        type: 'text',
-        rows,
-        validation: (rule) => rule.required().error('Le texte anglais est obligatoire.'),
-      }),
-    ],
+    rows,
+    frError: 'Le texte français est obligatoire.',
+    enError: 'Le texte anglais est obligatoire.',
   })
 }
 
@@ -33,29 +19,7 @@ function editorialImage(name: string, title: string, description: string) {
     group: 'content',
     description,
     options: {hotspot: true},
-    fields: [
-      defineField({
-        name: 'alt',
-        title: "Description de l'image (accessibilité)",
-        type: 'object',
-        options: {columns: 2},
-        validation: (rule) => rule.required().error("La description de l'image est obligatoire."),
-        fields: [
-          defineField({
-            name: 'fr',
-            title: 'Français',
-            type: 'string',
-            validation: (rule) => rule.required().error('La description française est obligatoire.'),
-          }),
-          defineField({
-            name: 'en',
-            title: 'Anglais',
-            type: 'string',
-            validation: (rule) => rule.required().error('La description anglaise est obligatoire.'),
-          }),
-        ],
-      }),
-    ],
+    fields: [localeAltField()],
   })
 }
 

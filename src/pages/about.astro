@@ -1,50 +1,38 @@
 ---
 // French About page: biography/practice content is managed by the published
-// Sanity aboutPage singleton, with safe build-time fallbacks.
+// Sanity aboutPage singleton, with safe build-time fallbacks. Mirrors
+// src/pages/en/about.astro — only locale and import depth differ; the
+// render model lives in src/lib/page-models.ts's buildAboutPageModel().
 import BaseLayout from '../layouts/BaseLayout.astro';
 import AboutPageBody from '../components/AboutPageBody.astro';
 import { getAboutPage, getSiteSettings } from '../lib/sanity';
-import { resolveSiteCopy } from '../lib/site-config';
-import { fullSizeUrl } from '../lib/image';
+import { buildAboutPageModel } from '../lib/page-models';
 
-const siteCopy = resolveSiteCopy(await getSiteSettings(), 'fr');
-const about = await getAboutPage();
-const biography = about?.biography?.fr ?? 'Le texte de présentation de Romane sera bientôt disponible ici.';
-const practice = about?.practice?.fr ?? "Informations sur l'atelier et la pratique de Romane à venir prochainement.";
-const medium = about?.medium?.fr ?? 'Précisions sur le médium et la technique à venir.';
-const seoTitle = about?.seo?.title?.fr ?? 'À propos — Atelier Jacqueline Suzanne';
-const seoDescription = about?.seo?.description?.fr ?? biography;
-const socialImage = about?.seo?.image ? fullSizeUrl(about.seo.image, 1200) : undefined;
-const portraitImage = about?.image;
-const exhibitionImage = about?.exhibitionImage;
-const structuredData = {
-  '@context': 'https://schema.org',
-  '@type': 'Person',
-  name: 'Romane Lepont',
-  jobTitle: 'Photographe',
-  description: biography,
-  url: Astro.url.toString(),
-  sameAs: [siteCopy.instagramUrl],
-};
+const model = buildAboutPageModel({
+  about: await getAboutPage(),
+  siteSettings: await getSiteSettings(),
+  locale: 'fr',
+  pageUrl: Astro.url.toString(),
+});
 ---
 
 <BaseLayout
-  title={seoTitle}
-  description={seoDescription}
-  socialImage={socialImage}
-  noIndex={about?.seo?.noIndex}
-  structuredData={structuredData}
+  title={model.seoTitle}
+  description={model.seoDescription}
+  socialImage={model.socialImage}
+  noIndex={model.noIndex}
+  structuredData={model.structuredData as unknown as Record<string, unknown>}
 >
   <AboutPageBody
-    heading={"À propos"}
-    studioPracticeHeading={"Atelier & pratique"}
-    mediumTechniqueHeading={"Médium & technique"}
-    biography={biography}
-    practice={practice}
-    medium={medium}
-    portraitImage={portraitImage}
-    portraitAlt={portraitImage?.alt?.fr ?? ''}
-    exhibitionImage={exhibitionImage}
-    exhibitionAlt={exhibitionImage?.alt?.fr ?? ''}
+    heading={model.heading}
+    studioPracticeHeading={model.studioPracticeHeading}
+    mediumTechniqueHeading={model.mediumTechniqueHeading}
+    biography={model.biography}
+    practice={model.practice}
+    medium={model.medium}
+    portraitImage={model.portraitImage}
+    portraitAlt={model.portraitAlt}
+    exhibitionImage={model.exhibitionImage}
+    exhibitionAlt={model.exhibitionAlt}
   />
 </BaseLayout>

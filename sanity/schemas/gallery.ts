@@ -1,6 +1,7 @@
 import {defineArrayMember, defineField, defineType} from 'sanity'
 import {orderRankField} from '@sanity/orderable-document-list'
 import {HERO_COLOR_OPTIONS, HeroColorInput} from './HeroColorInput'
+import {localeAltField, localeTextField} from './lib/localeField'
 import {PublishedPageLinks} from './PublishedPageLinks'
 
 // Sanity list previews intentionally expose only selected array positions,
@@ -13,46 +14,6 @@ const previewImageKeys = Object.fromEntries(
     `images.${index}._key`,
   ]),
 )
-
-/**
- * Locale-aware text pair, copied verbatim from `siteSettings.ts`'s
- * `localeTextField` helper (no shared schema-lib module exists yet to import
- * it from — see 02-PATTERNS.md's guidance to duplicate the shape inline).
- */
-function localeTextField(name: string, title: string, group?: string) {
-  return defineField({
-    name,
-    title,
-    type: 'object',
-    group,
-    description: 'Renseigner les deux langues avant de publier.',
-    options: {columns: 2},
-    fields: [
-      defineField({
-        name: 'fr',
-        title: 'Français',
-        type: 'text',
-        rows: 5,
-        validation: (rule) =>
-          rule
-            .required()
-            .max(700)
-            .error('Le texte français est obligatoire et ne doit pas dépasser 700 caractères.'),
-      }),
-      defineField({
-        name: 'en',
-        title: 'Anglais',
-        type: 'text',
-        rows: 5,
-        validation: (rule) =>
-          rule
-            .required()
-            .max(700)
-            .error('Le texte anglais est obligatoire et ne doit pas dépasser 700 caractères.'),
-      }),
-    ],
-  })
-}
 
 export const gallery = defineType({
   name: 'gallery',
@@ -118,7 +79,14 @@ export const gallery = defineType({
       options: {source: 'title'},
       validation: (rule) => rule.required().error("L'adresse de la page est obligatoire."),
     }),
-    localeTextField('statement', 'Texte de présentation', 'content'),
+    localeTextField({
+      name: 'statement',
+      title: 'Texte de présentation',
+      group: 'content',
+      rows: 5,
+      maxLength: 700,
+      description: 'Renseigner les deux langues avant de publier.',
+    }),
     defineField({
       name: 'showOnHomePage',
       title: "Afficher sur la page d'accueil",
@@ -163,32 +131,9 @@ export const gallery = defineType({
           // assetRequired() closes that gap.
           validation: (rule) => rule.required().assetRequired(),
           fields: [
-            defineField({
-              name: 'alt',
-              title: "Description de l'image (accessibilité)",
-              type: 'object',
-              description:
-                "Décrire brièvement ce que montre l'image pour les personnes qui ne peuvent pas la voir.",
-              options: {columns: 2},
-              validation: (rule) =>
-                rule.required().error("La description de l'image est obligatoire."),
-              fields: [
-                defineField({
-                  name: 'fr',
-                  title: 'Français',
-                  type: 'string',
-                  validation: (rule) =>
-                    rule.required().error('La description française est obligatoire.'),
-                }),
-                defineField({
-                  name: 'en',
-                  title: 'Anglais',
-                  type: 'string',
-                  validation: (rule) =>
-                    rule.required().error('La description anglaise est obligatoire.'),
-                }),
-              ],
-            }),
+            localeAltField(
+              "Décrire brièvement ce que montre l'image pour les personnes qui ne peuvent pas la voir.",
+            ),
             defineField({
               name: 'rights',
               title: 'Crédits et droits',

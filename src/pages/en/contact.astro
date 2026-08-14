@@ -1,59 +1,34 @@
 ---
 // English Contact page (CONT-01, CONT-02): identical structure to
-// src/pages/contact.astro; only import depth and copy differ.
+// src/pages/contact.astro; only locale and import depth differ. The render
+// model lives in src/lib/page-models.ts's buildContactPageModel().
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ContactPageBody from '../../components/ContactPageBody.astro';
 import { getContactPage } from '../../lib/sanity';
-import { fullSizeUrl } from '../../lib/image';
+import { buildContactPageModel } from '../../lib/page-models';
 
 const locale = 'en' as const;
-const contact = await getContactPage();
-const intro = contact?.intro?.en ?? 'A question, or an idea for a collaboration? Get in touch.';
-const publicEmail = contact?.publicEmail ?? 'contact@atelierjacquelinesuzanne.fr';
-const location = contact?.location?.en;
-const availability = contact?.availability?.en;
-const professionalLinks = (contact?.professionalLinks ?? []).filter((link) => link.url && link.label?.en);
-const instagramLink = professionalLinks.find((link) => link.url?.includes('instagram.com'));
-const otherProfessionalLinks = professionalLinks.filter((link) => link !== instagramLink);
-const seoTitle = contact?.seo?.title?.en ?? 'Contact — Atelier Jacqueline Suzanne';
-const seoDescription = contact?.seo?.description?.en ?? intro;
-const socialImage = contact?.seo?.image ? fullSizeUrl(contact.seo.image, 1200) : undefined;
-const structuredData = {
-  '@context': 'https://schema.org',
-  '@type': 'ContactPage',
-  name: 'Contact',
-  description: intro,
-  mainEntity: {
-    '@type': 'Person',
-    name: 'Romane Lepont',
-    email: publicEmail,
-  },
-};
-
-const instagramLinkResolved = instagramLink
-  ? { url: instagramLink.url ?? '', label: instagramLink.label?.en ?? '' }
-  : null;
-const otherLinks = otherProfessionalLinks.map((link) => ({ url: link.url ?? '', label: link.label?.en ?? '' }));
+const model = buildContactPageModel({ contact: await getContactPage(), locale });
 ---
 
 <BaseLayout
-  title={seoTitle}
-  description={seoDescription}
-  socialImage={socialImage}
-  noIndex={contact?.seo?.noIndex}
-  structuredData={structuredData}
+  title={model.seoTitle}
+  description={model.seoDescription}
+  socialImage={model.socialImage}
+  noIndex={model.noIndex}
+  structuredData={model.structuredData as unknown as Record<string, unknown>}
 >
   <ContactPageBody
     locale={locale}
-    intro={intro}
-    publicEmail={publicEmail}
-    location={location}
-    availability={availability}
-    instagramLink={instagramLinkResolved}
-    otherLinks={otherLinks}
-    emailLabel={"Email"}
-    formHeading={"Send a message"}
-    formSubheading={"I’ll get back to you as soon as possible."}
-    newTabHint={" (opens in new tab)"}
+    intro={model.intro}
+    publicEmail={model.publicEmail}
+    location={model.location}
+    availability={model.availability}
+    instagramLink={model.instagramLink}
+    otherLinks={model.otherLinks}
+    emailLabel={model.emailLabel}
+    formHeading={model.formHeading}
+    formSubheading={model.formSubheading}
+    newTabHint={model.newTabHint}
   />
 </BaseLayout>

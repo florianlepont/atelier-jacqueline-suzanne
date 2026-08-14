@@ -57,6 +57,15 @@ jobs:
           npm --prefix sanity run test:coverage
           npm --prefix sanity run build
 
+      # BLOCKING gate: a type error anywhere in sanity/'s production source
+      # (editorial dashboard, schemas, structure) fails the run. Scoped to
+      # tsconfig.typecheck.json, which excludes __tests__/test files — those
+      # have a separate, pre-existing type-inference quirk unrelated to
+      # production code (see CreditsManager.test.tsx) and are intentionally
+      # out of scope for this gate.
+      - name: Type-check Sanity Studio
+        run: npm --prefix sanity run typecheck
+
       # DIAGNOSTIC-05 (quick-260811-kog-06): root lint was previously absent
       # from CI entirely — a lint-only regression could reach GitHub Pages
       # undetected. Runs before typecheck/build, mirroring the Studio gate

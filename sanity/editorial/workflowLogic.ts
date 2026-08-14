@@ -1,4 +1,4 @@
-export type EditorialTone = 'default' | 'primary' | 'success' | 'warning'
+export type EditorialTone = 'primary' | 'success' | 'warning'
 
 export interface EditorialBadge {
   label: string

@@ -2,53 +2,30 @@
 // English Éditions overview — EN twin of src/pages/editions/index.astro.
 // Only import depth (one level deeper, per the fr-root/en-prefix
 // convention) and locale differ; see the FR file for structural comments.
+// The render model lives in src/lib/page-models.ts's
+// buildEditionsIndexModel().
 //
 // quick-260727-the: the shared markup + style block + grouping logic live
-// in EditionsOverviewBody.astro; this file keeps only data-fetch + tile
-// resolution.
+// in EditionsOverviewBody.astro; this file keeps only data-fetch + model.
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import EditionsOverviewBody from '../../../components/EditionsOverviewBody.astro';
 import { getEditions, getEditionsPage } from '../../../lib/sanity';
-import { getRelativeLocaleUrl } from 'astro:i18n';
-import { previewPanelUrl, responsiveThumbnailSrcSet } from '../../../lib/image';
-import { resolveEditionsIntro } from '../../../lib/site-config';
-import { pickHeroIndex } from '../../../lib/image-orientation';
+import { buildEditionsIndexModel } from '../../../lib/page-models';
 
-const locale = 'en' as const;
-const editionsPage = await getEditionsPage();
-const intro = resolveEditionsIntro(editionsPage, locale);
-
-// quick-260801-kgh: mirrors src/pages/en/index.astro's own homepage tile
-// derivation — filter out any édition with no photo (prevents
-// builder.image(undefined) on an incomplete document) before deriving each
-// tile's cover from pickHeroIndex, exactly like a gallery cover.
-const tiles = (await getEditions())
-  .filter((edition) => (edition.images ?? []).length > 0)
-  .map((edition) => {
-    const cover = edition.images[pickHeroIndex(edition.images)];
-    return {
-      href: getRelativeLocaleUrl(locale, `editions/${edition.slug}`),
-      imgSrc: previewPanelUrl(cover, 680),
-      imgSrcset: responsiveThumbnailSrcSet(cover),
-      alt: cover.alt?.[locale] ?? '',
-      title: edition.title,
-      statement: edition.statement?.[locale] ?? '',
-      format: `Printed edition · ${edition.pageCount} pages · Edition of ${edition.printRun}`,
-    };
-  });
-
-const seoTitle = 'Editions — Atelier Jacqueline Suzanne';
-const seoDescription =
-  "Discover Romane Lepont's paper editions — zines and books published by Atelier Jacqueline Suzanne.";
+const model = buildEditionsIndexModel({
+  editionsPage: await getEditionsPage(),
+  editions: await getEditions(),
+  locale: 'en',
+});
 ---
 
-<BaseLayout title={seoTitle} description={seoDescription}>
+<BaseLayout title={model.seoTitle} description={model.seoDescription}>
   <EditionsOverviewBody
-    heading={"Editions"}
-    intro={intro}
-    tiles={tiles}
-    emptyHeading={"Editions coming soon"}
-    emptyBody={"New editions will appear here shortly. Check back soon."}
-    viewEditionLabel={" — View edition"}
+    heading={model.heading}
+    intro={model.intro}
+    tiles={model.tiles}
+    emptyHeading={model.emptyHeading}
+    emptyBody={model.emptyBody}
+    viewEditionLabel={model.viewEditionLabel}
   />
 </BaseLayout>

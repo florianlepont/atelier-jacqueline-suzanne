@@ -71,10 +71,26 @@ jobs:
       - name: Install Sanity Studio dependencies
         run: npm ci --prefix sanity
 
-      - name: Lint and build Sanity Studio
+      # Mirrors staging's gate exactly (D-XX: production never skips a gate
+      # staging enforces) — test:coverage runs between lint and build here
+      # too, not just on GitHub Pages.
+      - name: Lint, test, and build Sanity Studio
         run: |
           npm --prefix sanity run lint
+          npm --prefix sanity run test:coverage
           npm --prefix sanity run build
+
+      # BLOCKING gate, same as staging: a type error inside sanity/'s
+      # production source fails the run before any build is attempted.
+      # Scoped to tsconfig.typecheck.json (excludes __tests__/test files,
+      # which have a separate, pre-existing, out-of-scope type quirk).
+      - name: Type-check Sanity Studio
+        run: npm --prefix sanity run typecheck
+
+      # Mirrors staging's root lint gate (previously present only on
+      # GitHub Pages) — production never skips a gate staging enforces.
+      - name: Lint (root)
+        run: npm run lint
 
       # BLOCKING gate, same as staging: a type error inside .astro
       # frontmatter (or any .ts source) fails the run before any build
