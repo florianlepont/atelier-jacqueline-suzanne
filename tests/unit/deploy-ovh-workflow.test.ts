@@ -12,6 +12,17 @@ const ovhWorkflow = await readFile(
   'utf8',
 );
 const pagesWorkflow = await readFile(new URL('../../.github/workflows/deploy.yml', import.meta.url), 'utf8');
+// The install/lint/typecheck and e2e/coverage gates both workflows need were
+// extracted into these two composite actions to remove their duplication
+// (audit remediation) — this is where their actual commands now live.
+const sharedGatesAction = await readFile(
+  new URL('../../.github/actions/lint-typecheck-and-install/action.yml', import.meta.url),
+  'utf8',
+);
+const sharedE2eAction = await readFile(
+  new URL('../../.github/actions/e2e-and-unit-tests/action.yml', import.meta.url),
+  'utf8',
+);
 
 describe('.github/workflows/deploy-ovh.yml', () => {
   it('exists and is non-empty', () => {
@@ -106,10 +117,21 @@ describe('.github/workflows/deploy-ovh.yml', () => {
   });
 
   it('runs every blocking gate the staging pipeline runs', () => {
-    expect(ovhWorkflow).toContain('npm run typecheck');
-    expect(ovhWorkflow).toContain('npx playwright test');
-    expect(ovhWorkflow).toContain('npm run test:coverage');
+    // Root typecheck/lint and Studio lint/coverage/typecheck now live in the
+    // shared composite action both workflows invoke (see below); e2e and
+    // root coverage likewise live in the shared e2e composite action.
+    // test:artifact remains a direct, one-line step in each workflow.
+    expect(sharedGatesAction).toContain('npm run typecheck');
+    expect(sharedE2eAction).toContain('npx playwright test');
+    expect(sharedE2eAction).toContain('npm run test:coverage');
     expect(ovhWorkflow).toContain('npm run test:artifact');
+  });
+
+  it('delegates its install/lint/typecheck and e2e/coverage gates to the same composite actions deploy.yml uses', () => {
+    expect(ovhWorkflow).toContain('uses: ./.github/actions/lint-typecheck-and-install');
+    expect(ovhWorkflow).toContain('uses: ./.github/actions/e2e-and-unit-tests');
+    expect(pagesWorkflow).toContain('uses: ./.github/actions/lint-typecheck-and-install');
+    expect(pagesWorkflow).toContain('uses: ./.github/actions/e2e-and-unit-tests');
   });
 });
 

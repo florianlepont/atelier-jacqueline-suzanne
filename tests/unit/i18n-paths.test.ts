@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getSwitcherHref, stripBasePath } from '../../src/lib/i18n-paths';
+import { getAssetBase, getSwitcherHref, stripBasePath } from '../../src/lib/i18n-paths';
 
 // RED (Wave 0): src/lib/i18n-paths.ts does not exist yet — it is built in
 // Plan 04. This import failure is the intended failing state for this task;
@@ -46,5 +46,23 @@ describe('stripBasePath', () => {
 
   it('leaves the path untouched if it does not start with the configured base', () => {
     expect(stripBasePath('/other-site/en/', '/ajs-website/')).toBe('/other-site/en/');
+  });
+});
+
+// getAssetBase() reads import.meta.env.BASE_URL directly (unlike
+// stripBasePath, which takes base as a parameter specifically to stay
+// testable under any base -- see that function's own doc comment), so it
+// can only be exercised here under whichever BASE_URL this Vitest run
+// itself resolves to. That's still enough to catch a broken trailing-slash
+// regex, which is the actual regression class this guards against (it was
+// previously copy-pasted into 4 separate call sites).
+describe('getAssetBase', () => {
+  it('never ends in a trailing slash, whatever the current BASE_URL is', () => {
+    expect(getAssetBase().endsWith('/')).toBe(false);
+  });
+
+  it('matches BASE_URL with exactly one trailing slash removed', () => {
+    const rawBase = import.meta.env.BASE_URL ?? '/';
+    expect(getAssetBase()).toBe(rawBase.replace(/\/$/, ''));
   });
 });

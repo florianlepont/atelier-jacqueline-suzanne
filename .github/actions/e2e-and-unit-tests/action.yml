@@ -1,0 +1,39 @@
+name: Playwright e2e and Vitest coverage
+description: >
+  Shared suffix for both deploy workflows: install/cache Playwright browsers,
+  then run the e2e and unit-test-with-coverage gates that must pass
+  identically in staging and production. Extracted from
+  deploy.yml/deploy-ovh.yml to remove duplication between them. Must run
+  after the workflow's own build step, which stays inline in each caller
+  (staging and production build with different base paths/env vars).
+runs:
+  using: composite
+  steps:
+    - name: Cache Playwright browsers
+      id: playwright-cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+
+    - name: Install Playwright browsers
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: npx playwright install --with-deps chromium webkit
+
+    # OS-level browser deps are not stored in ~/.cache/ms-playwright, so
+    # they must still be installed even when the browser binary cache hits.
+    - name: Install Playwright OS dependencies (cache hit)
+      if: steps.playwright-cache.outputs.cache-hit == 'true'
+      shell: bash
+      run: npx playwright install-deps chromium webkit
+
+    # BLOCKING gate: a test failure fails the run and prevents deploy.
+    - name: Run Playwright e2e tests
+      shell: bash
+      run: npx playwright test
+
+    # BLOCKING gate.
+    - name: Run Vitest unit tests with coverage thresholds
+      shell: bash
+      run: npm run test:coverage

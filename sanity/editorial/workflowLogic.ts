@@ -39,6 +39,8 @@ export const CHECKLIST_ENABLED_TYPES = [
   'exhibition',
 ] as const
 
+export const checklistEnabledTypeSet = new Set<string>(CHECKLIST_ENABLED_TYPES)
+
 export const PUBLIC_DOCUMENT_LABELS: Record<PublicSiteDocumentType, string> = {
   siteSettings: 'Réglages du site',
   homePage: 'Accueil',

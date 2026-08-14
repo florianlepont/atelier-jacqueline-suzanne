@@ -22,6 +22,19 @@ export function stripBasePath(path: string, base: string): string {
   return base !== '/' && path.startsWith(base) ? path.slice(base.length - 1) : path;
 }
 
+/**
+ * Astro's configured base with any trailing slash removed (e.g.
+ * "/ajs-website" on GitHub Pages, "" at the real domain root) — the shape
+ * every asset/link path prefix on this site needs, since they all start
+ * their own leading "/". Extracted here (rather than each call site
+ * re-deriving it) after this exact one-line expression had been copied
+ * identically into HomeCarousel.astro, BaseLayout.astro, HomePage.astro, and
+ * 404.astro.
+ */
+export function getAssetBase(): string {
+  return (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '');
+}
+
 export function getSwitcherHref(currentPath: string, targetLocale: 'fr' | 'en'): string {
   // Strip Astro's configured `base` before computing the slug:
   // `Astro.url.pathname` reflects the deployed base-prefixed path, but
@@ -35,13 +48,12 @@ export function getSwitcherHref(currentPath: string, targetLocale: 'fr' | 'en'):
   // recover the shared slug.
   const slug = baseRelativePath.replace(/^\/en\//, '/').replace(/^\//, '').replace(/\/$/, '');
 
-  // Missing-counterpart fallback (D-04, forward-looking to Phase 2+): if the
-  // current page has no published translation in the target locale, send
-  // the visitor to that locale's homepage instead of emitting a broken/404
-  // link. Phase 1 only has a homepage, so every slug is treated as having a
-  // counterpart today — later phases (galleries, About/Contact, Legal) should
-  // replace `hasTranslatedCounterpart` with a real content-collection lookup
-  // as pages that may exist in only one locale are introduced.
+  // Missing-counterpart fallback (D-04): if the current page has no
+  // published translation in the target locale, send the visitor to that
+  // locale's homepage instead of emitting a broken/404 link. Every real
+  // content page has both locales today (see hasTranslatedCounterpart's own
+  // doc comment) — this fallback exists for the 404 page and for any future
+  // content type that's deliberately allowed to ship in a single locale.
   const targetSlug = hasTranslatedCounterpart(slug, targetLocale) ? slug : '';
   const relative = getRelativeLocaleUrl(targetLocale, targetSlug);
 
@@ -56,9 +68,12 @@ export function getSwitcherHref(currentPath: string, targetLocale: 'fr' | 'en'):
 }
 
 /**
- * Placeholder existence check. Always `true` in Phase 1 (only the homepage
- * exists, and it exists in both locales) — replace with a real per-page
- * lookup once Phase 2+ content can genuinely be missing a translation.
+ * Existence check for the language switcher. Always `true` for real content:
+ * every Sanity document type (gallery, edition, about/contact/editions-page,
+ * siteSettings) requires both `fr` and `en` for its localized fields — the
+ * content model itself makes a page existing in only one locale impossible,
+ * not a phase-specific placeholder. Revisit only if a future content type
+ * is deliberately allowed to ship in a single locale.
  *
  * WR-06 exception: the 404 page is not real content with a per-locale
  * counterpart route — naively swapping its "404" slug produces a nonsensical

@@ -1,0 +1,61 @@
+name: Install dependencies, lint, and type-check
+description: >
+  Shared prefix for both deploy workflows (Node setup through root
+  typecheck): identical in staging and production so neither can skip a gate
+  the other enforces. Extracted from deploy.yml/deploy-ovh.yml to remove
+  ~40 lines of duplication between them. The caller must check out the repo
+  (actions/checkout) BEFORE this step — a local composite action can't be
+  resolved until the repo containing it is already on disk.
+runs:
+  using: composite
+  steps:
+    - name: Set up Node 22
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: npm
+        cache-dependency-path: |
+          package-lock.json
+          sanity/package-lock.json
+
+    - name: Install dependencies
+      shell: bash
+      run: npm ci
+
+    - name: Install Sanity Studio dependencies
+      shell: bash
+      run: npm ci --prefix sanity
+
+    # DIAGNOSTIC-04/08 (quick-260811-kog-05/06): Studio's own coverage gate
+    # (per-file 60/50/60/60 floor via scripts/check-tsx-coverage.mjs, plus
+    # Vitest's global 75/65/75/75 threshold) runs here, between lint and
+    # build, so a Studio component regression fails CI the same way a root
+    # regression does.
+    - name: Lint, test, and build Sanity Studio
+      shell: bash
+      run: |
+        npm --prefix sanity run lint
+        npm --prefix sanity run test:coverage
+        npm --prefix sanity run build
+
+    # BLOCKING gate: a type error anywhere in sanity/'s production source
+    # (editorial dashboard, schemas, structure) fails the run. Scoped to
+    # tsconfig.typecheck.json, which excludes __tests__/test files — those
+    # have a separate, pre-existing type-inference quirk unrelated to
+    # production code (see CreditsManager.test.tsx) and are intentionally
+    # out of scope for this gate.
+    - name: Type-check Sanity Studio
+      shell: bash
+      run: npm --prefix sanity run typecheck
+
+    # DIAGNOSTIC-05 (quick-260811-kog-06): root lint — a lint-only regression
+    # must not reach either deploy target undetected.
+    - name: Lint (root)
+      shell: bash
+      run: npm run lint
+
+    # BLOCKING gate: a type error inside .astro frontmatter (or any .ts
+    # source) fails the run before any build is attempted.
+    - name: Type-check (astro check)
+      shell: bash
+      run: npm run typecheck

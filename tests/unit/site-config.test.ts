@@ -1,5 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
+  COLOR_INK,
   DEFAULT_INSTAGRAM_URL,
   getHeroTextColor,
   normalizeHeroColor,
@@ -102,5 +104,20 @@ describe('homepage hero colors', () => {
     expect(getHeroTextColor(normalizeHeroColor('pink')!)).toBe('#1A1A1A');
     expect(getHeroTextColor(normalizeHeroColor('teal')!)).toBe('#1A1A1A');
     expect(getHeroTextColor(normalizeHeroColor('lime')!)).toBe('#1A1A1A');
+  });
+});
+
+describe('COLOR_INK stays in lockstep with BaseLayout.astro\'s --gray-900 (WR-01)', () => {
+  // COLOR_INK exists so plain TS/JS code needing this exact ink value (e.g.
+  // getHeroTextColor's fallback above) doesn't re-type the hex literal --
+  // but the single source of truth for the color itself is still the CSS
+  // custom property in BaseLayout.astro's `:root` block. Nothing but this
+  // test previously verified the two stay equal; a future rebrand touching
+  // only one side would otherwise pass silently.
+  it('matches the --gray-900 value declared in BaseLayout.astro', () => {
+    const layoutSource = readFileSync('src/layouts/BaseLayout.astro', 'utf8');
+    const match = layoutSource.match(/--gray-900:\s*(#[0-9A-Fa-f]{6});/);
+    expect(match).not.toBeNull();
+    expect(COLOR_INK).toBe(match![1]);
   });
 });

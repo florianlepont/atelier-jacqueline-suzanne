@@ -104,6 +104,9 @@ export function EditorialDashboard() {
   // inventory responses must never update the new client's dashboard.
   const inventoryGenerationGuard = useMemo(
     () => createInventoryGenerationGuard<DashboardDocument[]>(),
+    // `client` is intentionally the recreation trigger, not a value the
+    // factory reads: it forces a brand-new guard instance on every client
+    // replacement (see the comment above), which is the whole point here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [client],
   )

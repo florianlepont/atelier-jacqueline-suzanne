@@ -31,53 +31,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Node 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            sanity/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Sanity Studio dependencies
-        run: npm ci --prefix sanity
-
-      # DIAGNOSTIC-04/08 (quick-260811-kog-05/06): Studio's own coverage gate
-      # (per-file 60/50/60/60 floor via scripts/check-tsx-coverage.mjs, plus
-      # Vitest's global 75/65/75/75 threshold) now runs here, between lint
-      # and build, so a Studio component regression fails CI the same way a
-      # root regression does — this suite did not exist in CI until now.
-      - name: Lint, test, and build Sanity Studio
-        run: |
-          npm --prefix sanity run lint
-          npm --prefix sanity run test:coverage
-          npm --prefix sanity run build
-
-      # BLOCKING gate: a type error anywhere in sanity/'s production source
-      # (editorial dashboard, schemas, structure) fails the run. Scoped to
-      # tsconfig.typecheck.json, which excludes __tests__/test files — those
-      # have a separate, pre-existing type-inference quirk unrelated to
-      # production code (see CreditsManager.test.tsx) and are intentionally
-      # out of scope for this gate.
-      - name: Type-check Sanity Studio
-        run: npm --prefix sanity run typecheck
-
-      # DIAGNOSTIC-05 (quick-260811-kog-06): root lint was previously absent
-      # from CI entirely — a lint-only regression could reach GitHub Pages
-      # undetected. Runs before typecheck/build, mirroring the Studio gate
-      # above.
-      - name: Lint (root)
-        run: npm run lint
-
-      # BLOCKING gate: a type error inside .astro frontmatter (or any .ts
-      # source) fails the run and prevents deploy. Runs before any build so
-      # type errors surface fast, before spending time on the build/e2e steps.
-      - name: Type-check (astro check)
-        run: npm run typecheck
+      - name: Install dependencies, lint, and type-check
+        uses: ./.github/actions/lint-typecheck-and-install
 
       # Build once WITHOUT the GitHub Pages base path so the existing
       # Playwright/Vitest suite (which asserts root-relative paths like "/"
@@ -97,29 +52,8 @@ jobs:
       - name: Verify root static artifact
         run: npm run test:artifact
 
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
-
-      - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium webkit
-
-      # OS-level browser deps are not stored in ~/.cache/ms-playwright, so
-      # they must still be installed even when the browser binary cache hits.
-      - name: Install Playwright OS dependencies (cache hit)
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium webkit
-
-      # BLOCKING gate: a test failure fails the run and prevents deploy.
-      - name: Run Playwright e2e tests
-        run: npx playwright test
-
-      - name: Run Vitest unit tests with coverage thresholds
-        run: npm run test:coverage
+      - name: Playwright e2e and Vitest coverage
+        uses: ./.github/actions/e2e-and-unit-tests
 
       # Rebuild WITH the GitHub Pages project-page base path so all baked
       # href/asset URLs in the deployed artifact are subpath-correct. This is

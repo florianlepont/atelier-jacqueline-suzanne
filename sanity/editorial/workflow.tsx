@@ -6,8 +6,8 @@ import type {
 } from 'sanity'
 import {useDocumentPane} from 'sanity/structure'
 import {getDocumentChecks, summarizeChecks} from './checks'
-import {checklistEnabledTypes} from './DocumentChecklist'
 import {
+  checklistEnabledTypeSet as checklistEnabledTypes,
   collectionStatusBadge,
   completenessBadge,
   filterDocumentActions,

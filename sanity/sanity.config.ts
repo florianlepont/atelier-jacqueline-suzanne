@@ -8,11 +8,15 @@ import {schemaTypes} from './schemas'
 import {structure} from './schemas/structure'
 import {EditorialDashboard} from './editorial/EditorialDashboard'
 import {resolveActions, resolveBadges} from './editorial/workflow'
-import {checklistEnabledTypes, checklistInspector} from './editorial/DocumentChecklist'
+import {checklistInspector} from './editorial/DocumentChecklist'
 import {openSitePageInspector} from './editorial/OpenSitePage'
 import {MediaLibrary} from './editorial/MediaLibrary'
 import {StudioLayout} from './editorial/StudioLayout'
-import {INTERNAL_SYSTEM_DOCUMENT_TYPES, PUBLIC_SINGLETON_TYPES} from './editorial/workflowLogic'
+import {
+  checklistEnabledTypeSet as checklistEnabledTypes,
+  INTERNAL_SYSTEM_DOCUMENT_TYPES,
+  PUBLIC_SINGLETON_TYPES,
+} from './editorial/workflowLogic'
 
 export default defineConfig({
   name: 'default',

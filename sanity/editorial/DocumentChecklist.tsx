@@ -4,7 +4,6 @@ import {useEditState} from 'sanity'
 import type {DocumentInspector, DocumentInspectorComponent} from 'sanity'
 import {getDocumentChecks, summarizeChecks} from './checks'
 import {compactCheckLabel} from './dashboardLogic'
-import {CHECKLIST_ENABLED_TYPES} from './workflowLogic'
 
 const colors = {
   complete: '#2BD69F',
@@ -198,10 +197,6 @@ const ChecklistPanel: DocumentInspectorComponent = ({documentId, documentType}) 
     </div>
   )
 }
-
-// Every schema type that previously carried a "Checklist" view tab
-// (schemas/structure.ts's editorViews/galleryViews/checklistViews).
-export const checklistEnabledTypes = new Set<string>(CHECKLIST_ENABLED_TYPES)
 
 export const checklistInspector: DocumentInspector = {
   name: 'checklist',

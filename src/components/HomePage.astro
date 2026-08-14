@@ -17,6 +17,7 @@ import MobileHomePrototype from './MobileHomePrototype.astro';
 import { getGalleries, getHomePage, getSiteSettings } from '../lib/sanity';
 import { buildHomePageModel } from '../lib/home-page-model';
 import type { Locale } from '../lib/site-config';
+import { getAssetBase } from '../lib/i18n-paths';
 
 interface Props {
   locale: Locale;
@@ -38,7 +39,7 @@ const model = buildHomePageModel({
   pageUrl: Astro.url.toString(),
 });
 
-const assetBase = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '');
+const assetBase = getAssetBase();
 ---
 
 <BaseLayout

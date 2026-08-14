@@ -1,3 +1,5 @@
+import {checklistEnabledTypeSet} from './workflowLogic'
+
 export type EditorialDocument = Record<string, unknown>
 
 export interface CheckItem {
@@ -223,19 +225,8 @@ export function getDocumentChecks(schemaType: string, value: EditorialDocument):
   return []
 }
 
-const CHECKLIST_TYPES = new Set([
-  'siteSettings',
-  'homePage',
-  'editionsPage',
-  'aboutPage',
-  'contactPage',
-  'gallery',
-  'edition',
-  'exhibition',
-])
-
 export function hasBlockingChecklist(schemaType: string): boolean {
-  return CHECKLIST_TYPES.has(schemaType)
+  return checklistEnabledTypeSet.has(schemaType)
 }
 
 export function summarizeChecks(checks: CheckItem[]) {

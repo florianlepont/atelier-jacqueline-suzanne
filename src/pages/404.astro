@@ -18,6 +18,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { getGalleries } from '../lib/sanity';
 import { fullSizeUrl, responsiveImageSrcSet } from '../lib/image';
 import { pickHeroIndex } from '../lib/image-orientation';
+import { getAssetBase } from '../lib/i18n-paths';
 
 // CR-01 (Phase 1 review): astro:i18n's URL helpers are the only thing that
 // apply the deployed `base` (e.g. "/ajs-website/" on GitHub Pages) to a
@@ -34,7 +35,7 @@ const enHome = getRelativeLocaleUrl('en', '');
 // variant unconditionally: the radial scrim below guarantees contrast
 // against every pool photo, so no per-photo dominant-color analysis or
 // logoBlackSrc is needed.
-const assetBase = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '');
+const assetBase = getAssetBase();
 const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
 
 // Pattern 1 (16-RESEARCH.md): build-time photo-pool sourcing, reusing

@@ -1135,6 +1135,15 @@ describe('Sanity version pin and CI gate ordering (DIAGNOSTIC-05/06)', () => {
   const sanityLockfile = JSON.parse(readFileSync('sanity/package-lock.json', 'utf8'))
   const sanityCliSource = readFileSync('sanity/sanity.cli.ts', 'utf8')
   const workflowSource = readFileSync('.github/workflows/deploy.yml', 'utf8')
+  const ovhWorkflowSource = readFileSync('.github/workflows/deploy-ovh.yml', 'utf8')
+  // The install/lint/typecheck gates deploy.yml and deploy-ovh.yml both need
+  // were extracted into this composite action to remove their duplication
+  // (audit remediation) — it's now the single source of truth for their
+  // relative ordering, shared by both workflows.
+  const sharedGatesSource = readFileSync(
+    '.github/actions/lint-typecheck-and-install/action.yml',
+    'utf8',
+  )
 
   it('sanity/package.json declares the sanity dependency as exactly 6.6.0 (no range)', () => {
     expect(sanityPackageJson.dependencies.sanity).toBe('6.6.0')
@@ -1162,27 +1171,38 @@ describe('Sanity version pin and CI gate ordering (DIAGNOSTIC-05/06)', () => {
     return [...yaml.matchAll(/^\s*-\s+name:\s*(.+)$/gm)].map(([, name]) => name.trim())
   }
 
-  it('deploy.yml runs root lint before root typecheck and root build', () => {
-    const steps = stepNamesInOrder(workflowSource)
+  it('both deploy workflows delegate their install/lint/typecheck gates to the shared composite action', () => {
+    // Proves the audit-flagged ~40-line duplication between deploy.yml and
+    // deploy-ovh.yml was actually removed, not just reworded.
+    expect(workflowSource).toContain('uses: ./.github/actions/lint-typecheck-and-install')
+    expect(ovhWorkflowSource).toContain('uses: ./.github/actions/lint-typecheck-and-install')
+    expect(workflowSource).toContain('uses: ./.github/actions/e2e-and-unit-tests')
+    expect(ovhWorkflowSource).toContain('uses: ./.github/actions/e2e-and-unit-tests')
+  })
+
+  it('the shared composite action runs root lint before root typecheck', () => {
+    const steps = stepNamesInOrder(sharedGatesSource)
     const lintIndex = steps.findIndex((name) => name === 'Lint (root)')
     const typecheckIndex = steps.findIndex((name) => name === 'Type-check (astro check)')
-    const buildIndex = steps.findIndex((name) => name.startsWith('Build (test artifact'))
 
     expect(lintIndex).toBeGreaterThanOrEqual(0)
     expect(typecheckIndex).toBeGreaterThan(lintIndex)
-    expect(buildIndex).toBeGreaterThan(lintIndex)
   })
 
-  it('deploy.yml runs the Studio coverage suite before Studio build and before deploy', () => {
-    expect(workflowSource).toContain('npm --prefix sanity run test:coverage')
+  it('deploy.yml builds the test artifact only after the shared install/lint/typecheck gates', () => {
+    const steps = stepNamesInOrder(workflowSource)
+    const gatesIndex = steps.findIndex((name) => name === 'Install dependencies, lint, and type-check')
+    const buildIndex = steps.findIndex((name) => name.startsWith('Build (test artifact'))
 
-    const studioStepIndex = [...workflowSource.matchAll(/^\s*-\s+name:\s*(.+)$/gm)]
-      .map(([, name], index) => ({name: name.trim(), index}))
-      .find((step) => step.name.startsWith('Lint, test, and build Sanity Studio'))
-    expect(studioStepIndex).toBeDefined()
+    expect(gatesIndex).toBeGreaterThanOrEqual(0)
+    expect(buildIndex).toBeGreaterThan(gatesIndex)
+  })
 
-    const studioStepBody = workflowSource.slice(
-      workflowSource.indexOf('Lint, test, and build Sanity Studio'),
+  it('the shared composite action runs the Studio coverage suite before Studio build', () => {
+    expect(sharedGatesSource).toContain('npm --prefix sanity run test:coverage')
+
+    const studioStepBody = sharedGatesSource.slice(
+      sharedGatesSource.indexOf('Lint, test, and build Sanity Studio'),
     )
     const lintPos = studioStepBody.indexOf('npm --prefix sanity run lint')
     const coveragePos = studioStepBody.indexOf('npm --prefix sanity run test:coverage')
@@ -1191,15 +1211,20 @@ describe('Sanity version pin and CI gate ordering (DIAGNOSTIC-05/06)', () => {
     expect(lintPos).toBeGreaterThanOrEqual(0)
     expect(coveragePos).toBeGreaterThan(lintPos)
     expect(buildPos).toBeGreaterThan(coveragePos)
-
-    const deployPos = workflowSource.indexOf('actions/deploy-pages@v4')
-    expect(deployPos).toBeGreaterThan(workflowSource.indexOf('npm --prefix sanity run test:coverage'))
   })
 
-  it('deploy.yml still installs both lockfiles with npm ci before invoking either project\'s scripts', () => {
-    const rootCiPos = workflowSource.indexOf('run: npm ci')
-    const sanityCiPos = workflowSource.indexOf('run: npm ci --prefix sanity')
-    const firstScriptPos = workflowSource.indexOf('npm --prefix sanity run lint')
+  it('deploy.yml deploys only after the shared e2e/coverage gate', () => {
+    const deployPos = workflowSource.indexOf('actions/deploy-pages@v4')
+    const gatePos = workflowSource.indexOf('uses: ./.github/actions/e2e-and-unit-tests')
+
+    expect(gatePos).toBeGreaterThanOrEqual(0)
+    expect(deployPos).toBeGreaterThan(gatePos)
+  })
+
+  it('the shared composite action installs both lockfiles with npm ci before invoking either project\'s scripts', () => {
+    const rootCiPos = sharedGatesSource.indexOf('run: npm ci')
+    const sanityCiPos = sharedGatesSource.indexOf('run: npm ci --prefix sanity')
+    const firstScriptPos = sharedGatesSource.indexOf('npm --prefix sanity run lint')
 
     expect(rootCiPos).toBeGreaterThanOrEqual(0)
     expect(sanityCiPos).toBeGreaterThan(rootCiPos)

@@ -22,6 +22,7 @@
 import { getRelativeLocaleUrl } from 'astro:i18n';
 import SiteHeader from './SiteHeader.astro';
 import { wordmarkPhotoFilter } from '../lib/home-carousel';
+import { getAssetBase } from '../lib/i18n-paths';
 
 interface GalleryEntry {
   slug: string;
@@ -108,7 +109,7 @@ const initialDisplayMode = Astro.url.searchParams.get('view') === 'grid' ? 'grid
 // bare root-relative "/logos/..." src 404s under the GitHub Pages deploy's
 // ASTRO_BASE=/ajs-website/ subpath (.github/workflows/deploy.yml), even
 // though every <a href> here is already base-safe via getRelativeLocaleUrl.
-const assetBase = (import.meta.env.BASE_URL ?? '/').replace(/\/$/, '');
+const assetBase = getAssetBase();
 const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
 const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
 ---

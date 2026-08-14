@@ -33,7 +33,7 @@ const { locale, publicEmail = 'contact@atelierjacquelinesuzanne.fr' } = Astro.pr
 // 05-02-PLAN.md: same-origin '/contact.php' on the OVH production build;
 // overridden to an absolute URL for the permanently-alive GitHub Pages
 // build (D-03), which has no PHP runtime, via PUBLIC_CONTACT_ENDPOINT.
-const contactEndpoint = resolveContactEndpoint(import.meta.env.PUBLIC_CONTACT_ENDPOINT as string | undefined);
+const contactEndpoint = resolveContactEndpoint(import.meta.env.PUBLIC_CONTACT_ENDPOINT);
 
 const nameLabel = locale === 'en' ? 'Name' : 'Nom';
 const emailLabel = locale === 'en' ? 'Email' : 'E-mail';
