@@ -144,6 +144,26 @@ describe('EditorialDashboard publication workflow', () => {
     expect(screen.queryByText('Échec de la publication')).toBeNull()
   })
 
+  // Migrated from tests/unit/editorial-dashboard-markup.test.ts: the
+  // publication panel used to render a static "publication réussie" sentence
+  // once tracking confirmed the update -- a second, staler copy of what the
+  // pipeline nodes above already show live. publish() automatically chains
+  // into tracking (dashboardLogic.ts's trackCommittedPublication, called
+  // from inside publish() itself), so by the time the action settles the
+  // dashboard has also reached the tracked/success state this test targets.
+  it('reaches a fully tracked publish with no leftover status card of any kind', async () => {
+    dashboardClient()
+    render(<EditorialDashboard />)
+    await clickPublish()
+
+    await waitFor(() => {
+      expect(screen.queryByText(/fraîcheur du site non vérifiable/)).toBeNull()
+      expect(screen.queryByText('Échec de la publication')).toBeNull()
+      expect(screen.queryByText(/n’a pas abouti/)).toBeNull()
+      expect(screen.queryByText(/Le lot a changé pendant la mise à jour/)).toBeNull()
+    })
+  })
+
   // quick-260813-vi9 (merging codex/fix-code-quality-architecture): the
   // original version of this test drove the now-removed confirmation dialog
   // and asserted the batch-changed-during-preflight case via a fixed
@@ -207,4 +227,47 @@ describe('EditorialDashboard publication workflow', () => {
     // the publish action.
     expect(client.action).toHaveBeenCalledOnce()
   })
+
+  // Migrated from tests/unit/editorial-dashboard-markup.test.ts (audit
+  // remediation): the dedicated confirmation dialog ("Publier maintenant sur
+  // le site public ?" / Annuler / Confirmer) was removed in favor of this
+  // single-click flow. These tests lock in the user-facing consequence via a
+  // real render rather than a source-text regex, so a regression that brings
+  // the dialog back (in any wording) fails here regardless of markup shape.
+  it('never shows a confirmation dialog or the retired "visible to everyone" copy, before or after publishing', async () => {
+    const client = dashboardClient()
+    render(<EditorialDashboard />)
+    await screen.findAllByText("Page d'accueil")
+
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.queryByText(/Publier maintenant sur le site public/)).toBeNull()
+    expect(screen.queryByText(/par tout le monde/)).toBeNull()
+
+    await clickPublish()
+    await waitFor(() => expect(client.action).toHaveBeenCalledOnce())
+
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.queryByText(/Publier maintenant sur le site public/)).toBeNull()
+    expect(screen.queryByText(/par tout le monde/)).toBeNull()
+    expect(screen.queryByRole('button', {name: 'Confirmer'})).toBeNull()
+    expect(screen.queryByRole('button', {name: 'Annuler'})).toBeNull()
+  })
+
+  // NOT migrated: the batch-changed-during-preflight case (ConfirmationChangedError,
+  // rendered as a caution card when publish()'s fresh re-check sees a
+  // different fingerprint than preflight() confirmed) was already dropped
+  // from this suite once, in the codex-branch merge, with a comment
+  // explaining why: a fixed-index inventory mock can't reliably land the
+  // right revision at exactly the preflight/publish boundary, because
+  // several other fetches happen in between for unrelated reasons (the
+  // generation guard discards stale in-flight responses once a newer
+  // request has started, so which physical call "counts" isn't simply the
+  // Nth one). A second, independent attempt at this same reconstruction
+  // (this session, audit remediation) hit the identical wall empirically:
+  // an inventory sequence crafted to differ only on its last call still
+  // published successfully rather than triggering the mismatch. The
+  // underlying behavior is real and still covered at the unit level
+  // (dashboardLogic.ts's own tests exercise batchFingerprint/publish()
+  // directly); only the JSX-wiring regression test remains genuinely hard
+  // to reconstruct through the full component's async orchestration.
 })

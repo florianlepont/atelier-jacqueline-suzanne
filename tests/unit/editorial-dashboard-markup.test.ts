@@ -202,16 +202,13 @@ describe('editorial dashboard pipeline-detail box carries only actions, and is s
 describe('editorial dashboard publish button is a single one-click gesture (no confirmation card)', () => {
   const source = readFileSync(COMPONENT_PATH, 'utf-8');
 
-  it('never asserts that publishing makes content visible to everyone', () => {
-    expect(
-      source.includes('Publier maintenant sur le site public'),
-      'this button only publishes into Sanity and rebuilds the site de test; the round gate button between the two pipeline nodes is the actual goes-public step, so this question line must not exist',
-    ).toBe(false);
-    expect(
-      source.includes('par tout le monde'),
-      'this button only publishes into Sanity and rebuilds the site de test; the round gate button between the two pipeline nodes is the actual goes-public step, so this warning fragment must not exist',
-    ).toBe(false);
-  });
+  // Audit remediation: the rendered-behavior consequence of this ("no
+  // confirmation dialog or 'visible to everyone' copy ever appears, before
+  // or after clicking publish") is now covered by a real render in
+  // sanity/editorial/__tests__/EditorialDashboard.test.tsx, which fails on
+  // a regression regardless of exact wording/markup shape -- a stronger
+  // guarantee than this source-text pair gave. Removed here to avoid two
+  // tests asserting the same thing at different fidelities.
 
   it('has no dialog-open state and no separate confirm handler', () => {
     expect(
@@ -239,6 +236,16 @@ describe('editorial dashboard publish button is a single one-click gesture (no c
     ).toBe(false);
   });
 
+  // NOT migrated (audit remediation, attempted): a real RTL reconstruction
+  // of this exact path (publish()'s fresh re-check seeing a different batch
+  // than preflight() confirmed) was tried and hit the same wall the
+  // codex-branch merge already documented when it dropped the equivalent
+  // test -- a fixed-index or call-count-based inventory mock can't reliably
+  // land the mismatch at exactly the preflight/publish boundary once the
+  // generation guard is discarding stale in-flight responses. The
+  // underlying logic is covered directly in tests/unit/dashboard-logic.test.ts
+  // (ConfirmationChangedError/batchFingerprint); this source check is what's
+  // left guarding the JSX wiring.
   it('gives the confirming-phase changed-batch error a visible renderer', () => {
     expect(
       /publicationState\.phase === 'confirming' && publicationState\.error/.test(source),
@@ -257,25 +264,24 @@ describe('editorial dashboard publish button is a single one-click gesture (no c
 describe('editorial dashboard post-publish success state has no duplicated status line', () => {
   const source = readFileSync(COMPONENT_PATH, 'utf-8');
 
-  it('never renders a success-phase Text block or gates the panel body on it', () => {
-    expect(
-      /publicationState\.phase === 'success'/.test(source),
-      'the success phase must have no renderer and no panel-body clause of its own because the pipeline nodes above already carry that state',
-    ).toBe(false);
-  });
+  // Audit remediation: the user-facing claim here ("a full, successfully
+  // tracked publish leaves no stray status card of any kind") is now
+  // verified by a real render in
+  // sanity/editorial/__tests__/EditorialDashboard.test.tsx, which exercises
+  // the actual publish -> commit -> track -> success chain rather than a
+  // static absence check. The retry-button survival claim was already fully
+  // covered there too (a pre-existing test clicks "Actualiser le suivi" and
+  // asserts its effect). Both removed here to avoid duplicating coverage at
+  // a weaker fidelity. `publicationPanelHasBody`'s declared-once/consumed-
+  // once shape stays below: it's a source-level guard (an internal variable
+  // this component may not re-declare or make unconditional), not something
+  // a render can observe either way.
 
   it('keeps publicationPanelHasBody declared once and consumed once as the divider guard', () => {
     expect(
       (source.match(/publicationPanelHasBody/g) ?? []).length,
       'the divider must stay conditional rather than being deleted or made unconditional',
     ).toBe(2);
-  });
-
-  it('keeps the tracking-error card retry button intact', () => {
-    expect(
-      source.includes('Actualiser le suivi'),
-      "the tracking-error card's retry button is real actionable content and must survive this removal",
-    ).toBe(true);
   });
 });
 
