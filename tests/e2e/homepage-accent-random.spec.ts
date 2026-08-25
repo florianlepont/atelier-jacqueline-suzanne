@@ -31,6 +31,45 @@ async function currentAccent(page: import('@playwright/test').Page): Promise<str
   );
 }
 
+// A gallery's accent comes from its own explicit heroColor (schemas/gallery.ts's
+// heroColor field) OR falls back to the automatic per-index ACCENTS palette
+// (home-carousel-runtime.ts) when left unset — an intentional, supported
+// state ("Palette automatique" in the Studio), not an error. `heroColor`
+// read straight off the data attribute is therefore not always the correct
+// expected accent. Rather than duplicate the fallback palette's specific
+// CSS custom properties here (and risk drifting out of sync with them),
+// resolve the true expected accent by clicking straight to that gallery and
+// reading what the app itself renders — the same click-driven path "the
+// per-gallery accent still follows carousel position" already proves
+// correct. Reloads first so a stubbed Math.random from an earlier
+// addInitScript doesn't leave the page mid-transition from a different
+// forced starting gallery.
+async function resolveExpectedAccent(page: import('@playwright/test').Page, index: number): Promise<string> {
+  await page.reload();
+  const dashes = page.locator('.home-hero__progress-dash');
+  const count = await dashes.count();
+  // goToIndex() (home-carousel-runtime.ts) is a no-op when the clicked
+  // dash is already carouselIndex — and a fresh reload always starts on
+  // gallery 0. Clicking dash 0 straight after reload would therefore
+  // never actually navigate, silently leaving --current-accent holding
+  // whatever the unrelated per-visit random-starting-accent (HOME-16)
+  // happened to pick instead of gallery 0's own resolved colour.
+  // Detouring through a different dash first forces a real navigation
+  // for the final click regardless of which index is requested.
+  if (count > 1) {
+    const detour = (index + 1) % count;
+    await dashes.nth(detour).click();
+    await expect(dashes.nth(detour)).toHaveAttribute('aria-current', 'true');
+  }
+  await dashes.nth(index).click();
+  // Waiting for aria-current (auto-retrying) proves render()'s navigation
+  // handling for this click has actually run before --current-accent is
+  // read — a bare click() resolves as soon as the event dispatches, which
+  // can race the handler that sets both.
+  await expect(dashes.nth(index)).toHaveAttribute('aria-current', 'true');
+  return currentAccent(page);
+}
+
 test.describe('homepage random starting accent (HOME-16, D-05)', () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
@@ -44,7 +83,9 @@ test.describe('homepage random starting accent (HOME-16, D-05)', () => {
 
     const entries = await readDataEntries(page);
     expect(entries.length).toBeGreaterThan(0);
-    await expect.poll(() => currentAccent(page)).toBe(entries[0].heroColor);
+    const initialAccent = await currentAccent(page);
+    const expectedAccent = await resolveExpectedAccent(page, 0);
+    expect(initialAccent).toBe(expectedAccent);
   });
 
   test('a forced highest random value starts the accent on the LAST gallery\'s heroColor', async ({ page }) => {
@@ -56,16 +97,37 @@ test.describe('homepage random starting accent (HOME-16, D-05)', () => {
     const entries = await readDataEntries(page);
     test.skip(entries.length < 2, 'needs at least 2 homepage galleries to prove a non-first pick');
 
-    const last = entries[entries.length - 1];
-    const accent = await currentAccent(page);
-    expect(accent).toBe(last.heroColor);
-    expect(accent).not.toBe(entries[0].heroColor);
+    // Per this file's own header comment, randomizing the accent never
+    // changes which gallery's photo/title/index-label shows first — only
+    // the backdrop colour varies. So the only thing to prove here is that
+    // the accent shown matches the LAST gallery's own resolved colour, not
+    // that some other gallery got selected (nothing else could indicate
+    // that: the index label always reads "01 / N"). A "differs from the
+    // first gallery's colour" assertion previously lived here too, but with
+    // more galleries than the 5-value ACCENTS palette, a gallery left on
+    // "Palette automatique" can legitimately collide with another gallery's
+    // colour — that's correct behaviour given real content, not a sign the
+    // wrong value was picked, so it's not asserted.
+    const initialAccent = await currentAccent(page);
+    const lastAccent = await resolveExpectedAccent(page, entries.length - 1);
+    expect(initialAccent).toBe(lastAccent);
   });
 
   test('the randomly-picked accent never leaves the existing five-value palette', async ({ page }) => {
     await page.goto('/');
     const entries = await readDataEntries(page);
-    const palette = new Set(entries.map((e) => e.heroColor));
+
+    // Build the TRUE resolved palette (accent as actually rendered per
+    // gallery), not raw heroColor text: a gallery with heroColor left unset
+    // (Sanity Studio's "Palette automatique" state) reads as an empty
+    // string from the data attribute, but the app still renders a real
+    // accent for it via the automatic per-index fallback (see
+    // resolveExpectedAccent above) — still bounded to the same five-value
+    // ACCENTS palette either way.
+    const palette = new Set<string>();
+    for (let i = 0; i < entries.length; i++) {
+      palette.add(await resolveExpectedAccent(page, i));
+    }
 
     // Deliberately uses the real, unmocked Math.random across 6 reloads —
     // this is the one test in the file that proves membership under actual
@@ -78,6 +140,13 @@ test.describe('homepage random starting accent (HOME-16, D-05)', () => {
     // add flake risk, not coverage.
     for (let i = 0; i < 6; i++) {
       await page.reload();
+      // The random accent's one-time transition-suppression class
+      // (.is-accent-init) is removed once the picked colour has actually
+      // painted (see "the initial-paint transition suppression is
+      // released" below) — waiting for that proves the random pick has
+      // landed before reading it, instead of racing the dynamically
+      // imported carousel module's init.
+      await expect.poll(() => page.locator('.home').getAttribute('class')).not.toContain('is-accent-init');
       const accent = await currentAccent(page);
       expect(palette.has(accent)).toBe(true);
     }
@@ -117,8 +186,14 @@ test.describe('homepage random starting accent (HOME-16, D-05)', () => {
     const entries = await readDataEntries(page);
     test.skip(entries.length < 2, 'needs at least 2 homepage galleries to advance to a second one');
 
+    // Resolve gallery 1's own accent independently first (see
+    // resolveExpectedAccent above for why raw heroColor isn't a safe
+    // oracle), then reproduce the actual click-to-advance flow and compare.
+    const expectedAccent = await resolveExpectedAccent(page, 1);
+
+    await page.goto('/');
     await page.locator('[data-role="progress"] .home-hero__progress-dash[data-index="1"]').click();
-    await expect.poll(() => currentAccent(page)).toBe(entries[1].heroColor);
+    await expect.poll(() => currentAccent(page)).toBe(expectedAccent);
   });
 
   test('the initial-paint transition suppression is released', async ({ page }) => {
