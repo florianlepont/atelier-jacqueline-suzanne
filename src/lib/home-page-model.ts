@@ -17,6 +17,30 @@ const JOB_TITLE: Record<Locale, string> = {
 
 const DEFAULT_SITE_TITLE = 'Atelier Jacqueline Suzanne'
 
+// 260825-hl7 (bug 2): extracted so both buildHomePageModel (below) and
+// getHomeGalleryIndex share the exact same predicate — previously this
+// filter existed only inline inside buildHomePageModel's own .filter() call,
+// with no way for a caller outside this module to ask "would this gallery
+// even appear on the homepage?" without duplicating the condition.
+export function isHomeVisibleGallery(gallery: Gallery): boolean {
+  return gallery.showOnHomePage !== false && gallery.images.length > 0
+}
+
+/**
+ * The 0-based position `slug` would render at among homepage-visible
+ * galleries, in the same order buildHomePageModel produces — the index
+ * basis src/lib/page-models.ts's buildGalleryDetailModel needs so a gallery
+ * left on "Palette automatique" resolves the SAME automatic accent on its
+ * own detail page as it shows on the homepage carousel (260825-hl7 bug 2).
+ * Returns -1 when the gallery is absent from the homepage-visible list
+ * (showOnHomePage: false, no images, or the slug isn't found at all) —
+ * callers must not treat -1 as a valid array index.
+ */
+export function getHomeGalleryIndex(galleries: Gallery[], slug: string): number {
+  const visible = galleries.filter(isHomeVisibleGallery)
+  return visible.findIndex((gallery) => gallery.slug === slug)
+}
+
 export interface HomePageGalleryModel {
   slug: string
   title: string
@@ -94,7 +118,7 @@ export function buildHomePageModel({
   }
 
   const galleryModels: HomePageGalleryModel[] = galleries
-    .filter((gallery) => gallery.showOnHomePage !== false && gallery.images.length > 0)
+    .filter(isHomeVisibleGallery)
     .map((gallery) => {
       const cover = gallery.images[pickHeroIndex(gallery.images)]
       const heroColor = normalizeHeroColor(gallery.heroColor)

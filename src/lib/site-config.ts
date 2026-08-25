@@ -59,6 +59,48 @@ export function resolveEditionsIntro(page: EditionsPage | null, locale: Locale) 
   return page?.intro?.[locale] || DEFAULT_EDITIONS_INTRO[locale]
 }
 
+// 260825-hl7 (bug 2): the automatic accent palette used whenever a gallery
+// has no explicit heroColor set in Studio ("Palette automatique"). Defined
+// exactly once here so both the client-side homepage carousel
+// (src/client/home-carousel-runtime.ts) and the build-time gallery detail
+// model (src/lib/page-models.ts) resolve the SAME accent for the same
+// gallery — previously these were two independent, never-synchronized
+// implementations (the homepage cycled this array per carousel index; the
+// detail page fell back to a hardcoded lime hex regardless of index).
+// Values are copied verbatim, in order, from the array that used to live
+// inline in home-carousel-runtime.ts.
+//
+// D-2 (260825-hl7-PLAN.md): these are CSS custom-property REFERENCE strings
+// (e.g. 'var(--color-accent)'), not resolved hex literals. `--color-accent`
+// resolves to `--pink-600` (#D6327C), which is NOT the same as
+// HERO_COLORS.pink (#FF3B94) below — hex-ifying this palette would silently
+// change the homepage's shipped rendering. Passing the same var(...) string
+// through to both pages' inline custom properties makes them resolve
+// against the same :root tokens in BaseLayout.astro, byte-identically.
+// Consequence: this automatic path must NOT be routed through
+// getHeroTextColor() (which cannot parse a var() string) — each entry
+// carries its own correct paired text color directly.
+export const AUTOMATIC_ACCENTS: ReadonlyArray<{bg: string; text: string}> = [
+  {bg: 'var(--color-accent)', text: 'var(--color-on-accent)'},
+  {bg: 'var(--palette-purple)', text: '#FFFFFF'},
+  {bg: 'var(--palette-teal)', text: 'var(--color-ink)'},
+  {bg: 'var(--palette-lime)', text: 'var(--color-ink)'},
+  {bg: 'var(--palette-plum)', text: '#FFFFFF'},
+] as const
+
+/**
+ * Resolve the automatic accent for a 0-based index, cycling generically for
+ * N galleries (not hardcoded to the palette's own length). A negative,
+ * `NaN`, or non-finite index falls back to entry 0 rather than throwing or
+ * returning `undefined` — this is the safe default used both when a gallery
+ * has no known homepage position (homeIndex === -1) and defensively for any
+ * other out-of-range input.
+ */
+export function resolveAutomaticAccent(index: number): {bg: string; text: string} {
+  if (!Number.isFinite(index) || index < 0) return AUTOMATIC_ACCENTS[0]
+  return AUTOMATIC_ACCENTS[Math.trunc(index) % AUTOMATIC_ACCENTS.length]
+}
+
 /** Resolve only named colors from the site's decorative design-system palette. */
 export function normalizeHeroColor(value?: string): string | undefined {
   return value && Object.prototype.hasOwnProperty.call(HERO_COLORS, value)

@@ -1,7 +1,13 @@
 import type {AboutPage, ContactPage, Edition, EditionsPage, Gallery, SiteSettings} from './sanity';
 import {fullSizeUrl, previewPanelUrl, responsiveImageSrcSet, responsiveThumbnailSrcSet} from './image';
 import {pickHeroIndex} from './image-orientation';
-import {getHeroTextColor, normalizeHeroColor, resolveEditionsIntro, resolveSiteCopy} from './site-config';
+import {
+  getHeroTextColor,
+  normalizeHeroColor,
+  resolveAutomaticAccent,
+  resolveEditionsIntro,
+  resolveSiteCopy,
+} from './site-config';
 import {getRelatedGalleryLink} from './related-gallery';
 import type {RelatedGalleryLink} from './related-gallery';
 import {getRelativeLocaleUrl} from 'astro:i18n';
@@ -77,7 +83,12 @@ export interface GalleryDetailModel {
   socialImage: string;
   noIndex: boolean | undefined;
   accent: string;
-  accentText: '#1A1A1A' | '#FFFFFF';
+  // 260825-hl7 (bug 2): widened from the '#1A1A1A' | '#FFFFFF' union — the
+  // automatic-accent path (D-2) now supplies a CSS custom-property
+  // reference string (e.g. 'var(--color-ink)'), not always one of those two
+  // resolved hex literals. The explicit-heroColor path still only ever
+  // produces those two exact values via getHeroTextColor().
+  accentText: string;
   gridItems: GalleryGridItem[];
   structuredData: GalleryDetailStructuredData;
   total: number;
@@ -97,10 +108,18 @@ export function buildGalleryDetailModel({
   gallery,
   locale,
   pageUrl,
+  homeIndex,
 }: {
   gallery: Gallery;
   locale: Locale;
   pageUrl: string;
+  // 260825-hl7 (bug 2, D-3): REQUIRED, not optional-with-default. A default
+  // would let a missing locale-route wiring silently degrade to palette
+  // entry 0 with no signal; required makes `npm run typecheck` fail loudly
+  // if either galleries/[slug].astro twin is not updated to supply it. Pass
+  // the gallery's 0-based homepage-visible position (getHomeGalleryIndex),
+  // or -1 if the gallery isn't homepage-visible.
+  homeIndex: number;
 }): GalleryDetailModel {
   // WR-03: statement is Studio-required (fr/en) per 02-01's schema
   // validation, but a document written outside the Studio's publish-time
@@ -124,8 +143,19 @@ export function buildGalleryDetailModel({
   const seoTitle = gallery.seo?.title?.[locale] ?? `${gallery.title} — Atelier Jacqueline Suzanne`;
   const seoDescription = gallery.seo?.description?.[locale] ?? statement;
   const socialImage = fullSizeUrl(gallery.seo?.image ?? heroImage, 1200);
-  const accent = normalizeHeroColor(gallery.heroColor) ?? '#A6FD29';
-  const accentText = getHeroTextColor(accent);
+  // 260825-hl7 (bug 2, D-2): an explicit heroColor wins and keeps
+  // getHeroTextColor() for its paired text color (unchanged behavior). A
+  // gallery left on "Palette automatique" (heroColor unset) now resolves
+  // from the SAME shared AUTOMATIC_ACCENTS palette the homepage carousel
+  // uses, indexed by this gallery's own homepage position — the automatic
+  // path deliberately does NOT route through getHeroTextColor(), since its
+  // input can be an unresolvable var(...) reference string; each palette
+  // entry already carries its own correct paired text color.
+  const explicitAccent = normalizeHeroColor(gallery.heroColor);
+  const accent: string = explicitAccent ?? resolveAutomaticAccent(homeIndex >= 0 ? homeIndex : 0).bg;
+  const accentText: string = explicitAccent
+    ? getHeroTextColor(explicitAccent)
+    : resolveAutomaticAccent(homeIndex >= 0 ? homeIndex : 0).text;
 
   const gridItems = buildGridItems(gallery.images, heroIndex, total, locale, false);
 
