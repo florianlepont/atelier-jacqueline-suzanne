@@ -6,6 +6,7 @@ import {
   pickRandomGalleryIndex,
   wordmarkPhotoFilter,
 } from '../lib/home-carousel';
+import {resolveAutomaticAccent} from '../lib/site-config';
 
 export interface HomeRuntimeScope {
   readonly signal: AbortSignal;
@@ -113,17 +114,13 @@ export function mountDesktopHomeCarousel(root: HTMLElement): () => void {
     heroTextColor: li.dataset.heroTextColor || undefined,
   }));
 
-  // ACCENTS cycles generically via index % ACCENTS.length (RESEARCH.md
-  // Open Question 3) — written for N galleries, not hardcoded to 2,
-  // so it extends correctly once more galleries migrate. bg/text pairs
-  // per the prototype's ACCENTS array (plan interfaces block).
-  const ACCENTS: Array<{ bg: string; text: string }> = [
-    { bg: 'var(--color-accent)', text: 'var(--color-on-accent)' },
-    { bg: 'var(--palette-purple)', text: '#FFFFFF' },
-    { bg: 'var(--palette-teal)', text: 'var(--color-ink)' },
-    { bg: 'var(--palette-lime)', text: 'var(--color-ink)' },
-    { bg: 'var(--palette-plum)', text: '#FFFFFF' },
-  ];
+  // 260825-hl7 (bug 2): the automatic accent palette used to be a local
+  // array here (cycling generically via index % ACCENTS.length — RESEARCH.md
+  // Open Question 3, written for N galleries, not hardcoded to 2). It now
+  // lives once in src/lib/site-config.ts (resolveAutomaticAccent) so the
+  // gallery detail page's build-time accent fallback resolves the exact
+  // same value for the exact same homepage index — see that module's own
+  // doc comment for the full rationale.
   const heroImg = hero.querySelector<HTMLImageElement>('[data-role="hero-image"]');
   const heroPlaceholderImg = hero.querySelector<HTMLImageElement>('[data-role="hero-image-placeholder"]');
   const indexLabel = hero.querySelector<HTMLElement>('[data-role="index-label"]');
@@ -378,7 +375,7 @@ export function mountDesktopHomeCarousel(root: HTMLElement): () => void {
     // the independent blur placeholder is the only painted image.
     root!.classList.remove('has-wordmark-photo');
     root!.style.setProperty('--wordmark-photo', 'none');
-    const fallbackAccent = ACCENTS[carouselIndex % ACCENTS.length];
+    const fallbackAccent = resolveAutomaticAccent(carouselIndex);
     const accent = gallery.heroColor
       ? { bg: gallery.heroColor, text: gallery.heroTextColor ?? 'var(--color-on-accent)' }
       : fallbackAccent;
@@ -1158,7 +1155,7 @@ export function mountDesktopHomeCarousel(root: HTMLElement): () => void {
   root!.classList.add('is-accent-init');
   const randomIndex = pickRandomGalleryIndex(galleries.length);
   const randomGallery = galleries[randomIndex];
-  const randomFallback = ACCENTS[randomIndex % ACCENTS.length];
+  const randomFallback = resolveAutomaticAccent(randomIndex);
   const randomAccent = randomGallery?.heroColor
     ? { bg: randomGallery.heroColor, text: randomGallery.heroTextColor ?? 'var(--color-on-accent)' }
     : randomFallback;

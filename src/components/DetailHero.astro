@@ -647,7 +647,18 @@ const {
     top: 50%;
     right: var(--space-2xl);
     transform: translateY(-50%);
-    max-width: 420px;
+    /* 260825-hl7 (BUG-01): widened from a flat 420px, which was narrower
+       than several real gallery titles (e.g. "Trousseau" measures 505px at
+       this font size) and forced them to overflow past the panel and the
+       window edge with no wrap. Measured live at 1280x800 and 1600x900
+       (260825-hl7-SUMMARY.md): the settled photo's own `right: 45%` leaves
+       a free region of (100% - 45% - space-2xl) on the right, roughly
+       528px at 1280x800 — the fixed 512px cap sits inside that with a
+       margin, while the 40vw term keeps the panel from ever growing wide
+       enough to reach the photo at narrower desktop widths (below 1280,
+       the overflow-wrap safety net below takes over instead of a
+       guaranteed one-line fit). */
+    max-width: min(512px, 40vw);
     text-align: left;
     color: var(--detail-hero-desktop-accent-text);
     opacity: 0;
@@ -670,6 +681,16 @@ const {
     line-height: 1.02;
     font-weight: var(--weight-semibold);
     color: inherit;
+    /* 260825-hl7 (BUG-01): never-overflow safety net for an unbreakable
+       word wider than the panel (matches the existing precedent in
+       PageTitleHeader.astro). On the base rule so it applies at every
+       breakpoint, mobile included. This is a safety net, not the everyday
+       rendering — the max-width widening above is what keeps today's
+       real titles on one line; this only engages for a hypothetical
+       future title too wide even for that. Deliberately NOT
+       word-break: break-all, which would break short titles at arbitrary
+       points too. */
+    overflow-wrap: break-word;
   }
 
   .detail-hero__statement {

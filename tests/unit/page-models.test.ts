@@ -12,6 +12,7 @@ process.env.SANITY_DATASET ??= 'test-dataset';
 
 const {buildAboutPageModel, buildContactPageModel, buildEditionDetailModel, buildEditionsIndexModel, buildGalleryDetailModel} =
   await import('../../src/lib/page-models');
+import {getHeroTextColor, resolveAutomaticAccent} from '../../src/lib/site-config';
 import type {AboutPage, ContactPage, Edition, EditionsPage, Gallery, SiteSettings} from '../../src/lib/sanity';
 
 const image = (overrides: Partial<Gallery['images'][number]> = {}) => ({
@@ -45,7 +46,7 @@ const PAGE_URL_EN = 'https://atelierjacquelinesuzanne.fr/en/galleries/paysages/'
 
 describe('buildGalleryDetailModel', () => {
   it('produces the same non-localized data for fr and en, diverging only on localized text/labels/URLs', () => {
-    const shared = {gallery: gallery()};
+    const shared = {gallery: gallery(), homeIndex: 0};
     const fr = buildGalleryDetailModel({...shared, locale: 'fr', pageUrl: PAGE_URL_FR});
     const en = buildGalleryDetailModel({...shared, locale: 'en', pageUrl: PAGE_URL_EN});
 
@@ -72,6 +73,7 @@ describe('buildGalleryDetailModel', () => {
       gallery: gallery({images: [image(), image(), image()]}),
       locale: 'fr',
       pageUrl: PAGE_URL_FR,
+      homeIndex: 0,
     });
     expect(model.total).toBe(3);
     expect(model.gridItems).toHaveLength(2);
@@ -83,6 +85,7 @@ describe('buildGalleryDetailModel', () => {
       gallery: gallery({seo: undefined}),
       locale: 'fr',
       pageUrl: PAGE_URL_FR,
+      homeIndex: 0,
     });
     expect(model.seoTitle).toBe('Paysages — Atelier Jacqueline Suzanne');
     expect(model.seoDescription).toBe('Déclaration FR');
@@ -102,6 +105,7 @@ describe('buildGalleryDetailModel', () => {
       }),
       locale: 'fr',
       pageUrl: PAGE_URL_FR,
+      homeIndex: 0,
     });
     expect(model.seoTitle).toBe('Titre SEO');
     expect(model.seoDescription).toBe('Description SEO');
@@ -113,18 +117,54 @@ describe('buildGalleryDetailModel', () => {
       gallery: gallery({statement: {} as never}),
       locale: 'en',
       pageUrl: PAGE_URL_EN,
+      homeIndex: 0,
     });
     expect(model.statement).toBe('');
   });
 
-  it('falls back to the default lime accent when the gallery has no recognized hero color', () => {
+  // 260825-hl7 bug 2: a gallery with no recognized hero color ("Palette
+  // automatique") must resolve to the SAME shared automatic-accent palette
+  // the homepage carousel uses, indexed by its homepage position — not a
+  // hardcoded lime hex independent of that index.
+  it('falls back to resolveAutomaticAccent(homeIndex) when the gallery has no recognized hero color', () => {
+    const expected = resolveAutomaticAccent(3);
     const model = buildGalleryDetailModel({
       gallery: gallery({heroColor: undefined}),
       locale: 'fr',
       pageUrl: PAGE_URL_FR,
+      homeIndex: 3,
     });
-    expect(model.accent).toBe('#A6FD29');
-    expect(model.accentText).toBeTruthy();
+    expect(model.accent).toBe(expected.bg);
+    expect(model.accentText).toBe(expected.text);
+  });
+
+  it('falls back to resolveAutomaticAccent(0) (not a crash) when homeIndex is -1 (gallery hidden from the homepage)', () => {
+    const expected = resolveAutomaticAccent(0);
+    const model = buildGalleryDetailModel({
+      gallery: gallery({heroColor: undefined}),
+      locale: 'fr',
+      pageUrl: PAGE_URL_FR,
+      homeIndex: -1,
+    });
+    expect(model.accent).toBe(expected.bg);
+    expect(model.accentText).toBe(expected.text);
+  });
+
+  it('an explicit heroColor ignores homeIndex entirely (unchanged behavior)', () => {
+    const model = buildGalleryDetailModel({
+      gallery: gallery({heroColor: 'teal'}),
+      locale: 'fr',
+      pageUrl: PAGE_URL_FR,
+      homeIndex: 3,
+    });
+    const differentIndexModel = buildGalleryDetailModel({
+      gallery: gallery({heroColor: 'teal'}),
+      locale: 'fr',
+      pageUrl: PAGE_URL_FR,
+      homeIndex: 1,
+    });
+    expect(model.accent).toBe(differentIndexModel.accent);
+    expect(model.accentText).toBe(getHeroTextColor(model.accent));
   });
 
   it('carouselReturnHref includes the gallery slug as a ?carousel= query param', () => {
@@ -132,6 +172,7 @@ describe('buildGalleryDetailModel', () => {
       gallery: gallery({slug: 'brume'}),
       locale: 'fr',
       pageUrl: PAGE_URL_FR,
+      homeIndex: 0,
     });
     expect(model.carouselReturnHref).toContain('?carousel=brume');
   });

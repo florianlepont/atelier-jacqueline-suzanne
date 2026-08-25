@@ -14,14 +14,20 @@ import type { Gallery } from '../lib/sanity';
 interface Props {
   gallery: Gallery;
   locale: 'fr' | 'en';
+  // 260825-hl7 (bug 2): this component only ever receives ONE gallery, so
+  // it cannot derive its own homepage position — both locale routes compute
+  // it via getHomeGalleryIndex (they have the full ordered gallery list in
+  // scope from getStaticPaths) and pass it through here.
+  homeIndex: number;
 }
 
-const { gallery, locale } = Astro.props;
+const { gallery, locale, homeIndex } = Astro.props;
 
 const model = buildGalleryDetailModel({
   gallery,
   locale,
   pageUrl: Astro.url.toString(),
+  homeIndex,
 });
 ---
 

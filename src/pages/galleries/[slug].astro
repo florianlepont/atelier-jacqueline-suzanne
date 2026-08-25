@@ -5,16 +5,17 @@
 import type { GetStaticPaths } from 'astro';
 import GalleryDetailPage from '../../components/GalleryDetailPage.astro';
 import { getGalleries } from '../../lib/sanity';
+import { getHomeGalleryIndex } from '../../lib/home-page-model';
 
 export const getStaticPaths = (async () => {
   const galleries = await getGalleries();
   return galleries.map((gallery) => ({
     params: { slug: gallery.slug },
-    props: { gallery },
+    props: { gallery, homeIndex: getHomeGalleryIndex(galleries, gallery.slug) },
   }));
 }) satisfies GetStaticPaths;
 
-const { gallery } = Astro.props;
+const { gallery, homeIndex } = Astro.props;
 ---
 
-<GalleryDetailPage gallery={gallery} locale="fr" />
+<GalleryDetailPage gallery={gallery} locale="fr" homeIndex={homeIndex} />
