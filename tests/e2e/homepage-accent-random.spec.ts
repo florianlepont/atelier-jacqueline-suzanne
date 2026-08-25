@@ -8,11 +8,18 @@ import { test, expect } from '@playwright/test';
 // off the page's own `data-hero-*` attributes rather than hardcoding a hex
 // value or a gallery count, so this spec survives future Sanity content
 // changes.
+//
+// quick-260825-kt3: the random starting accent applies to fresh landings
+// only — a return navigation via a MATCHED `?carousel=<slug>` must instead
+// preserve the returned-to gallery's own resolved accent (see "a matched
+// ?carousel= return keeps the returned-to gallery's own accent" below).
 
 interface DataEntry {
   heroColor: string;
   heroTextColor: string;
   heroSrc: string;
+  slug: string;
+  title: string;
 }
 
 async function readDataEntries(page: import('@playwright/test').Page): Promise<DataEntry[]> {
@@ -21,6 +28,8 @@ async function readDataEntries(page: import('@playwright/test').Page): Promise<D
       heroColor: (li as HTMLElement).dataset.heroColor ?? '',
       heroTextColor: (li as HTMLElement).dataset.heroTextColor ?? '',
       heroSrc: (li as HTMLElement).dataset.heroSrc ?? '',
+      slug: (li as HTMLElement).dataset.slug ?? '',
+      title: (li as HTMLElement).dataset.title ?? '',
     })),
   );
 }
@@ -205,5 +214,69 @@ test.describe('homepage random starting accent (HOME-16, D-05)', () => {
       .locator('[data-role="accent-panel"]')
       .evaluate((el) => getComputedStyle(el).transitionDuration);
     expect(transitionDuration).not.toBe('0s');
+  });
+
+  test('a matched ?carousel= return keeps the returned-to gallery\'s own accent', async ({ page }) => {
+    await page.goto('/');
+    const entries = await readDataEntries(page);
+    test.skip(entries.length < 2, 'needs at least 2 homepage galleries for a non-first target to be meaningful');
+
+    // Target a NON-ZERO index: gallery 0's accent is also what the
+    // pre-mount server-rendered markup shows, so a target of 0 could pass
+    // without the runtime's ?carousel= handling ever having run.
+    const t = 1;
+    const targetAccent = await resolveExpectedAccent(page, t);
+
+    // Find a fixture index r (r !== t) whose resolved accent DIFFERS from
+    // t's — r is the value the random pick below will be forced to, so a
+    // pre-fix failure (override still winning) is loud rather than a
+    // palette coincidence.
+    let r = -1;
+    for (let i = 0; i < entries.length; i++) {
+      if (i === t) continue;
+      const candidateAccent = await resolveExpectedAccent(page, i);
+      if (candidateAccent !== targetAccent) {
+        r = i;
+        break;
+      }
+    }
+    test.skip(r < 0, 'every gallery resolves to the same accent — no differing fixture index available');
+    const rAccent = await resolveExpectedAccent(page, r);
+    expect(rAccent).not.toBe(targetAccent);
+
+    const count = entries.length;
+    // Force the random pick to land exactly on r: Math.floor(random * count)
+    // === r for random === (r + 0.5) / count. Installed AFTER the oracle
+    // work above so resolveExpectedAccent's own reload/click resolution
+    // above ran against real randomness, exactly as the existing tests
+    // assume.
+    await page.addInitScript(
+      ({ forcedIndex, galleryCount }) => {
+        Math.random = () => (forcedIndex + 0.5) / galleryCount;
+      },
+      { forcedIndex: r, galleryCount: count },
+    );
+
+    await page.goto('/?carousel=' + entries[t].slug);
+
+    // Wait for the progress dash at index t to carry aria-current="true"
+    // (set only by render(), whereas the server-rendered markup marks dash
+    // 0 instead) — proves the runtime mounted and landed on the requested
+    // gallery before any colour is read.
+    const dashes = page.locator('.home-hero__progress-dash');
+    await expect(dashes.nth(t)).toHaveAttribute('aria-current', 'true');
+
+    // Strict (non-polling) read: render() and the override both write
+    // synchronously within the same mount block, so there is no transient
+    // window in which a correct value could be sampled before a wrong one
+    // overwrites it — polling would mask exactly the ordering this case
+    // exists to pin.
+    const accent = await currentAccent(page);
+    expect(accent).toBe(targetAccent);
+
+    // The requested gallery must still be the one displayed — fails loudly
+    // if a future change makes the fix accidentally alter carouselIndex.
+    const carousel = page.locator('[data-role="home-carousel"]');
+    await expect(carousel.locator('[data-role="gallery-title"]')).toHaveText(entries[t].title.toUpperCase());
   });
 });

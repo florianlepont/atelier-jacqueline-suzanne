@@ -1115,10 +1115,14 @@ export function mountDesktopHomeCarousel(root: HTMLElement): () => void {
   // build a DOM/attribute selector string, so the untrusted URL param
   // can never become a selector-injection sink. An unknown/absent
   // slug harmlessly leaves carouselIndex at its default (0).
+  let landedOnRequestedGallery = false;
   const requested = new URLSearchParams(window.location.search).get('carousel');
   if (requested) {
     const i = galleries.findIndex((g) => g.slug === requested);
-    if (i >= 0) carouselIndex = i;
+    if (i >= 0) {
+      carouselIndex = i;
+      landedOnRequestedGallery = true;
+    }
   }
 
   render();
@@ -1152,25 +1156,40 @@ export function mountDesktopHomeCarousel(root: HTMLElement): () => void {
   // from gallery 0's own data; overriding it from the randomly-picked
   // gallery's (different) text color would apply the wrong photo's
   // brightness heuristic to gallery 0's actual photo.
-  root!.classList.add('is-accent-init');
-  const randomIndex = pickRandomGalleryIndex(galleries.length);
-  const randomGallery = galleries[randomIndex];
-  const randomFallback = resolveAutomaticAccent(randomIndex);
-  const randomAccent = randomGallery?.heroColor
-    ? { bg: randomGallery.heroColor, text: randomGallery.heroTextColor ?? 'var(--color-on-accent)' }
-    : randomFallback;
-  root!.style.setProperty('--current-accent', randomAccent.bg);
-  root!.style.setProperty('--current-accent-text', randomAccent.text);
-  if (accentPanel) accentPanel.style.color = randomAccent.text;
-  // Releases the transition suppression only after the new colour has
-  // actually been painted — a single rAF can still land before paint,
-  // so a double rAF is used (the first schedules the frame the browser
-  // paints the override in, the second runs after that paint).
-  runtime.requestAnimationFrame(() => {
+  //
+  // quick-260825-kt3: this whole block is skipped when
+  // landedOnRequestedGallery is true. A matched ?carousel= return is a
+  // continuation of the detail page the visitor just left (via
+  // DetailHero's scroll-up-to-return gesture), so its accent must stay
+  // the returned-to gallery's own — never a randomly-picked one.
+  // render() above has already painted exactly that correct accent for
+  // galleries[carouselIndex], so skipping this block leaves it standing
+  // untouched; no replacement accent logic is needed on that path. The
+  // transition-suppression class add/remove pair correctly lives INSIDE
+  // this guard too: on the skipped path there is only ONE paint
+  // (render()'s), so there is no second colour here to suppress a
+  // transition for.
+  if (!landedOnRequestedGallery) {
+    root!.classList.add('is-accent-init');
+    const randomIndex = pickRandomGalleryIndex(galleries.length);
+    const randomGallery = galleries[randomIndex];
+    const randomFallback = resolveAutomaticAccent(randomIndex);
+    const randomAccent = randomGallery?.heroColor
+      ? { bg: randomGallery.heroColor, text: randomGallery.heroTextColor ?? 'var(--color-on-accent)' }
+      : randomFallback;
+    root!.style.setProperty('--current-accent', randomAccent.bg);
+    root!.style.setProperty('--current-accent-text', randomAccent.text);
+    if (accentPanel) accentPanel.style.color = randomAccent.text;
+    // Releases the transition suppression only after the new colour has
+    // actually been painted — a single rAF can still land before paint,
+    // so a double rAF is used (the first schedules the frame the browser
+    // paints the override in, the second runs after that paint).
     runtime.requestAnimationFrame(() => {
-      root!.classList.remove('is-accent-init');
+      runtime.requestAnimationFrame(() => {
+        root!.classList.remove('is-accent-init');
+      });
     });
-  });
+  }
 
   // Re-align the wordmark cutout on resize — both the hero photo's
   // rendered size and the wordmark's own position within it change
