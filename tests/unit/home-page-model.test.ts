@@ -12,8 +12,12 @@ import type {buildHomePageModel as BuildHomePageModel} from '../../src/lib/home-
 process.env.SANITY_PROJECT_ID ??= 'test-project';
 process.env.SANITY_DATASET ??= 'test-dataset';
 
-const {buildHomePageModel} = (await import('../../src/lib/home-page-model')) as {
+const {buildHomePageModel, getHomeGalleryIndex, isHomeVisibleGallery} = (await import(
+  '../../src/lib/home-page-model'
+)) as {
   buildHomePageModel: typeof BuildHomePageModel;
+  getHomeGalleryIndex: (galleries: Gallery[], slug: string) => number;
+  isHomeVisibleGallery: (gallery: Gallery) => boolean;
 };
 
 const image = (overrides: Partial<Gallery['images'][number]> = {}) => ({
@@ -210,5 +214,66 @@ describe('buildHomePageModel', () => {
       }),
     ).not.toThrow();
     expect(typeof buildHomePageModel).toBe('function');
+  });
+});
+
+describe('isHomeVisibleGallery (260825-hl7 bug 2: extracted homepage-visibility predicate)', () => {
+  it('is true for a gallery with images and showOnHomePage not explicitly false', () => {
+    expect(isHomeVisibleGallery(gallery())).toBe(true);
+    expect(isHomeVisibleGallery(gallery({showOnHomePage: true}))).toBe(true);
+  });
+
+  it('is false when showOnHomePage is explicitly false', () => {
+    expect(isHomeVisibleGallery(gallery({showOnHomePage: false}))).toBe(false);
+  });
+
+  it('is false when the gallery has no images', () => {
+    expect(isHomeVisibleGallery(gallery({images: []}))).toBe(false);
+  });
+});
+
+describe('getHomeGalleryIndex (260825-hl7 bug 2: shared index basis for the detail-page accent fallback)', () => {
+  it('returns the 0-based position among homepage-visible galleries only', () => {
+    const galleries = [
+      gallery({slug: 'first'}),
+      gallery({slug: 'hidden', showOnHomePage: false}),
+      gallery({slug: 'second'}),
+    ];
+    expect(getHomeGalleryIndex(galleries, 'first')).toBe(0);
+    expect(getHomeGalleryIndex(galleries, 'second')).toBe(1);
+  });
+
+  it('returns -1 for a gallery excluded from the homepage (showOnHomePage: false)', () => {
+    const galleries = [gallery({slug: 'first'}), gallery({slug: 'hidden', showOnHomePage: false})];
+    expect(getHomeGalleryIndex(galleries, 'hidden')).toBe(-1);
+  });
+
+  it('returns -1 for a gallery with no images', () => {
+    const galleries = [gallery({slug: 'first'}), gallery({slug: 'empty', images: []})];
+    expect(getHomeGalleryIndex(galleries, 'empty')).toBe(-1);
+  });
+
+  it('returns -1 for a slug not present in the list at all', () => {
+    const galleries = [gallery({slug: 'first'})];
+    expect(getHomeGalleryIndex(galleries, 'does-not-exist')).toBe(-1);
+  });
+
+  it('produces the same index buildHomePageModel would render that gallery at (order-preserving parity)', () => {
+    const galleries = [
+      gallery({slug: 'a'}),
+      gallery({slug: 'b', showOnHomePage: false}),
+      gallery({slug: 'c'}),
+      gallery({slug: 'd'}),
+    ];
+    const model = buildHomePageModel({
+      locale: 'fr',
+      pageUrl: PAGE_URL_FR,
+      homePage: homePage(),
+      siteSettings: siteSettings(),
+      galleries,
+    });
+    model.galleries.forEach((g, i) => {
+      expect(getHomeGalleryIndex(galleries, g.slug)).toBe(i);
+    });
   });
 });

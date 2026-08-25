@@ -1,10 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
+  AUTOMATIC_ACCENTS,
   COLOR_INK,
   DEFAULT_INSTAGRAM_URL,
   getHeroTextColor,
   normalizeHeroColor,
+  resolveAutomaticAccent,
   resolveEditionsIntro,
   resolveHomepageIntro,
   resolveSiteCopy,
@@ -104,6 +106,51 @@ describe('homepage hero colors', () => {
     expect(getHeroTextColor(normalizeHeroColor('pink')!)).toBe('#1A1A1A');
     expect(getHeroTextColor(normalizeHeroColor('teal')!)).toBe('#1A1A1A');
     expect(getHeroTextColor(normalizeHeroColor('lime')!)).toBe('#1A1A1A');
+  });
+});
+
+describe('resolveAutomaticAccent (260825-hl7 bug 2: single shared automatic palette)', () => {
+  // These five entries must stay byte-identical to the ACCENTS array that
+  // previously lived inline in home-carousel-runtime.ts lines 120-126 — the
+  // homepage's visual output must not change when the palette moves here.
+  const EXPECTED_ORDER: Array<{ bg: string; text: string }> = [
+    { bg: 'var(--color-accent)', text: 'var(--color-on-accent)' },
+    { bg: 'var(--palette-purple)', text: '#FFFFFF' },
+    { bg: 'var(--palette-teal)', text: 'var(--color-ink)' },
+    { bg: 'var(--palette-lime)', text: 'var(--color-ink)' },
+    { bg: 'var(--palette-plum)', text: '#FFFFFF' },
+  ];
+
+  it('returns the five palette entries in the exact original order, character-for-character', () => {
+    EXPECTED_ORDER.forEach((expected, index) => {
+      expect(resolveAutomaticAccent(index)).toEqual(expected);
+    });
+  });
+
+  it('cycles: index 5 wraps back to entry 0', () => {
+    expect(resolveAutomaticAccent(5)).toEqual(resolveAutomaticAccent(0));
+    expect(resolveAutomaticAccent(10)).toEqual(resolveAutomaticAccent(0));
+  });
+
+  it('falls back to entry 0 (not undefined) for negative or non-finite indices', () => {
+    expect(resolveAutomaticAccent(-1)).toEqual(resolveAutomaticAccent(0));
+    expect(resolveAutomaticAccent(Number.NaN)).toEqual(resolveAutomaticAccent(0));
+    expect(resolveAutomaticAccent(Number.POSITIVE_INFINITY)).toEqual(resolveAutomaticAccent(0));
+  });
+
+  it('every var(--token) reference in the palette names a custom property actually declared in BaseLayout.astro\'s :root block', () => {
+    const layoutSource = readFileSync('src/layouts/BaseLayout.astro', 'utf8');
+    const rootMatch = layoutSource.match(/:root\s*{([\s\S]*?)}/);
+    expect(rootMatch).not.toBeNull();
+    const rootBlock = rootMatch![1];
+
+    for (const entry of AUTOMATIC_ACCENTS) {
+      for (const value of [entry.bg, entry.text]) {
+        const tokenMatch = value.match(/^var\((--[\w-]+)\)$/);
+        if (!tokenMatch) continue; // plain hex literals (e.g. '#FFFFFF') are not tokens
+        expect(rootBlock).toMatch(new RegExp(`${tokenMatch[1]}\\s*:`));
+      }
+    }
   });
 });
 

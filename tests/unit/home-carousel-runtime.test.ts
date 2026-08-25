@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
 import { mountDesktopHomeCarousel } from '../../src/client/home-carousel-runtime';
 
@@ -68,5 +69,22 @@ describe('mountDesktopHomeCarousel', () => {
     cleanup();
     expect(() => cleanup()).not.toThrow();
     expect(() => cleanup()).not.toThrow();
+  });
+});
+
+describe('home-carousel-runtime imports the shared automatic-accent palette (260825-hl7 bug 2)', () => {
+  // Positive readFileSync source assertion (not a behavioral test): proves
+  // the single-source-of-truth link between this file and
+  // src/lib/site-config.ts survives future edits -- if this import is ever
+  // reverted to a local ACCENTS array, this test fails loudly rather than
+  // letting the homepage and gallery detail page silently drift apart again.
+  it('imports resolveAutomaticAccent from ../lib/site-config', () => {
+    const source = readFileSync('src/client/home-carousel-runtime.ts', 'utf8');
+    expect(source).toMatch(/import\s*\{[^}]*resolveAutomaticAccent[^}]*\}\s*from\s*['"]\.\.\/lib\/site-config['"]/);
+  });
+
+  it('no longer defines a local ACCENTS array', () => {
+    const source = readFileSync('src/client/home-carousel-runtime.ts', 'utf8');
+    expect(source).not.toMatch(/const ACCENTS:/);
   });
 });
