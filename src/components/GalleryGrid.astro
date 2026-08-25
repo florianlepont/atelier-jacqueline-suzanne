@@ -391,16 +391,28 @@ if (layout === 'bento') {
   /* Overrides the shared `.tile img` absolute-fill/cover rule above: the
      masonry tile's img must flow at its own intrinsic height (not
      position: absolute inset: 0) so `column-count` can measure real tile
-     heights, and `object-fit: contain` here is the never-crop guarantee —
-     the caller supplies an uncropped src whose intrinsic ratio equals
-     `--ar`, so contain fits exactly and can never crop. */
+     heights. The box IS sized to the photo's real ratio (`--ar`, derived
+     from Sanity's `dimensions.width/height` via `buildGridItems`), but two
+     independent rounding sources (260825-hl7 bug 3) make the match
+     approximate rather than exact: Sanity's `.fit('max')` transform
+     (src/lib/image.ts) computes the served image's height by integer
+     rounding off the requested width, and the browser separately rounds
+     any `aspect-ratio` box to a device pixel during layout. Under
+     `object-fit: contain` either rounding gap becomes visible PADDING
+     inside the img box, which reveals `.tile`'s `background:
+     var(--color-ink)` as a near-black fringe along one edge. Under `cover`
+     the same sub-pixel gap is absorbed as an imperceptible crop instead —
+     visually indistinguishable from an exact fit — and the tile background
+     becomes structurally unreachable. Still inherits the base `.tile img`
+     rule's `transition: transform 0.3s ease`, which drives the hover-zoom
+     on both galleries' and éditions' masonry tiles. */
   .gallery-grid--masonry .tile img {
     position: static;
     display: block;
     width: 100%;
     height: auto;
     aspect-ratio: var(--ar, 1);
-    object-fit: contain;
+    object-fit: cover;
   }
 
   @media (max-width: 800px) {

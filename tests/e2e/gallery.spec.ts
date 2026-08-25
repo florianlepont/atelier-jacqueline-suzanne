@@ -194,18 +194,19 @@ test.describe('lightbox', () => {
 });
 
 // quick-260724-oep: galleries no longer use the bento layout — the grid now
-// renders as an uncropped native-aspect-ratio masonry (CSS multi-column),
-// driven by real per-image dimensions. quick-260803-jby later moved
-// édition detail pages onto this same masonry mode too (see
-// edition.spec.ts's own masonry describe block), so gallery and édition
-// detail pages now render the identical masonry contract — each is still
-// verified independently here and there because they are two different
-// pages sharing one component, not because their layout mode still
-// differs.
+// renders as a native-aspect-ratio masonry (CSS multi-column), driven by
+// real per-image dimensions. quick-260803-jby later moved édition detail
+// pages onto this same masonry mode too (see edition.spec.ts's own masonry
+// describe block), so gallery and édition detail pages now render the
+// identical masonry contract — each is still verified independently here
+// and there because they are two different pages sharing one component,
+// not because their layout mode still differs. 260825-hl7 (BUG-03) changed
+// the masonry tile img rule from object-fit: contain to cover — see
+// GalleryGrid.astro's own comment on that rule for why.
 test.describe('gallery grid masonry layout', () => {
   test.use({ viewport: { width: 1280, height: 900 } });
 
-  test('gallery grid renders as a multi-column masonry with uncropped, real-aspect-ratio tiles', async ({
+  test('gallery grid renders as a multi-column masonry with real-aspect-ratio tiles', async ({
     page,
   }) => {
     await page.goto('/');
@@ -236,8 +237,10 @@ test.describe('gallery grid masonry layout', () => {
       const imageCount = await gridImages.count();
       for (let i = 0; i < imageCount; i += 1) {
         const image = gridImages.nth(i);
+        // 260825-hl7 (BUG-03): masonry tiles now render object-fit: cover
+        // (was contain) — see this describe block's own comment above.
         const objectFit = await image.evaluate((el) => getComputedStyle(el).objectFit);
-        expect(objectFit).not.toBe('cover');
+        expect(objectFit).toBe('cover');
         const aspectRatio = await image.evaluate((el) => getComputedStyle(el).aspectRatio);
         expect(aspectRatio).not.toBe('auto');
       }
@@ -457,8 +460,8 @@ test.describe('gallery hero reduced-motion (sketch 005)', () => {
   // objectFit="contain" no-crop escape hatch — the gallery hero now always
   // renders object-fit: cover, matching the homepage carousel/grid crop
   // exactly (explicit user reversal after seeing objectFit="contain" live).
-  // The masonry grid below stays uncropped and is proven separately by the
-  // 'gallery grid masonry layout' describe block further down this file.
+  // The masonry grid below is proven separately by the 'gallery grid
+  // masonry layout' describe block further down this file.
   test('the gallery hero renders object-fit: cover (crop reverted, no letterboxing)', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
@@ -990,7 +993,11 @@ test.describe('cross-document view-transition name gating — mobile (sketch 006
 // pages now render the SAME masonry mode. Each is still verified
 // independently below because they are two different pages sharing one
 // component, not because their layout mode still differs. The bento
-// branch retains no caller after this change.
+// branch retains no caller after this change. 260825-hl7 (BUG-03) later
+// changed the masonry rule's own object-fit from contain back to cover
+// (a sub-pixel rounding gap under contain exposed the tile's ink
+// background as a near-black fringe) — masonry tiles below now assert
+// `cover`, not `contain`.
 test.describe('gallery + édition thumbnail tiles render with no frame (PORT-05, D-04/D-05)', () => {
   test.use({ viewport: { width: 1280, height: 900 } });
 
@@ -1027,8 +1034,11 @@ test.describe('gallery + édition thumbnail tiles render with no frame (PORT-05,
     expect(firstTileBackground).toBe('rgb(26, 26, 26)');
 
     const firstTileImg = tiles.first().locator('img');
+    // 260825-hl7 (BUG-03): masonry tiles now render object-fit: cover (was
+    // contain), which is exactly what keeps the tile's own ink background
+    // (asserted above) structurally unreachable.
     const objectFit = await firstTileImg.evaluate((el) => getComputedStyle(el).objectFit);
-    expect(objectFit).toBe('contain');
+    expect(objectFit).toBe('cover');
 
     // The tile is lazily loaded — poll until the img has actually decoded a
     // real image before measuring, or the ratio check below would race a
@@ -1073,7 +1083,7 @@ test.describe('gallery + édition thumbnail tiles render with no frame (PORT-05,
     }
   });
 
-  test('édition detail (masonry, quick-260803-jby): every tile has 0px borders and shows the photo whole, uncropped, flush with no exposed background', async ({
+  test('édition detail (masonry, quick-260803-jby): every tile has 0px borders and shows the photo flush, with no exposed background', async ({
     page,
   }) => {
     await page.goto('/editions/');
@@ -1102,8 +1112,11 @@ test.describe('gallery + édition thumbnail tiles render with no frame (PORT-05,
     }
 
     const firstTileImg = tiles.first().locator('img');
+    // 260825-hl7 (BUG-03): masonry tiles now render object-fit: cover (was
+    // contain) — see the 'gallery grid masonry layout' describe block's
+    // own comment further up this file.
     const objectFit = await firstTileImg.evaluate((el) => getComputedStyle(el).objectFit);
-    expect(objectFit).toBe('contain');
+    expect(objectFit).toBe('cover');
 
     // Same img-vs-tile flush check the gallery masonry sub-test above
     // performs: this is precisely what the owner reported (a visible dark

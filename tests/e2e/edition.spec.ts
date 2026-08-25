@@ -269,8 +269,13 @@ test.describe('editions hero crops identically to a gallery hero (quick-260803-j
 // replaces the mechanism instead of patching it again: éditions now render
 // the same masonry layout gallery detail pages already use, where each
 // tile's box IS the photo's own shape (driven by a real per-photo
-// aspectRatio), so `object-fit: contain` fits edge to edge with nothing left
-// over to expose a background on any side.
+// aspectRatio). 260825-hl7 (BUG-03) later changed this masonry rule's
+// `object-fit` from `contain` to `cover`: the box's CSS aspect-ratio and the
+// served photo's real ratio only match approximately (two independent
+// sub-pixel rounding sources — see GalleryGrid.astro's own comment), and
+// under `contain` that tiny gap became padding that exposed `.tile`'s ink
+// background as a visible fringe. `cover` absorbs the same gap as an
+// imperceptible crop instead, so every tile is still flush edge-to-edge.
 async function pollHoverZoomScale(img: import('@playwright/test').Locator) {
   await expect
     .poll(async () => {
@@ -286,11 +291,14 @@ async function pollHoverZoomScale(img: import('@playwright/test').Locator) {
 // Measures every tile in the currently-loaded page's `.gallery-grid` and
 // asserts the full masonry contract: masonry class present, zero bento
 // groups, multi-column flow, and — for every tile — a static-positioned,
-// uncropped img whose rendered ratio matches the photo's own natural ratio
-// and whose bounding box is flush with its tile's on all four edges (the
-// assertion that literally encodes the owner's complaint: no tile
-// background can be visible around any photo). Returns the number of tiles
-// actually measured so callers can prove the loop was never vacuous.
+// object-fit: cover img (260825-hl7 BUG-03: an imperceptible crop that
+// absorbs the sub-pixel rounding gap between the CSS aspect-ratio box and
+// the photo's real ratio) whose rendered ratio still closely matches the
+// photo's own natural ratio, and whose bounding box is flush with its
+// tile's on all four edges (the assertion that literally encodes the
+// owner's complaint: no tile background can be visible around any photo).
+// Returns the number of tiles actually measured so callers can prove the
+// loop was never vacuous.
 async function assertGridIsFlushMasonry(page: import('@playwright/test').Page): Promise<number> {
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
 
@@ -343,7 +351,9 @@ async function assertGridIsFlushMasonry(page: import('@playwright/test').Page): 
 
   for (const m of measurements) {
     expect(m.position).toBe('static');
-    expect(m.objectFit).not.toBe('cover');
+    // 260825-hl7 (BUG-03): masonry tiles now render object-fit: cover (was
+    // contain) — see the describe block's own comment above.
+    expect(m.objectFit).toBe('cover');
     expect(m.aspectRatio).not.toBe('auto');
     expect(Math.abs(m.clientRatio - m.naturalRatio) / m.naturalRatio).toBeLessThan(0.01);
     expect(Math.abs(m.top)).toBeLessThan(0.5);
@@ -355,10 +365,10 @@ async function assertGridIsFlushMasonry(page: import('@playwright/test').Page): 
   return measurements.length;
 }
 
-test.describe('editions masonry grid photos uncropped and flush (quick-260803-jby)', () => {
+test.describe('editions masonry grid photos flush, no exposed background (quick-260803-jby, 260825-hl7)', () => {
   test.use({ viewport: { width: 1280, height: 900 } });
 
-  test('every published édition (fr): masonry grid, no bento groups, every tile flush and uncropped at its own natural ratio', async ({
+  test('every published édition (fr): masonry grid, no bento groups, every tile flush at its own natural ratio', async ({
     page,
   }) => {
     await page.goto('/editions/');
