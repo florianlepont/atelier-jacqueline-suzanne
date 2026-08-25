@@ -323,7 +323,14 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
     --color-accent: var(--pink-600);
     --color-ink: var(--gray-900);
     --color-border: #E3E1DE;
-    --color-on-accent: var(--gray-900); /* D-01/UI-SPEC Color: ink, not white, on accent-pink fills */
+    /* 260825-g2l: white, not ink, on accent-pink fills. Quick task
+       260720-nm3 darkened --pink-600 from #FF3B94 to #D6327C specifically
+       to clear 4.56:1 for WHITE text against it -- but never updated this
+       token, which was calibrated (D-01/UI-SPEC Color) against the
+       original, lighter pink. Ink against the darkened pink measures only
+       3.81:1, failing WCAG AA. This supersedes the original D-01/UI-SPEC
+       ink pairing. */
+    --color-on-accent: var(--gray-0);
     --color-link: var(--color-accent);
     --color-link-hover: var(--color-accent);
     --color-focus-ring: var(--color-accent);
