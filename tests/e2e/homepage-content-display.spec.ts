@@ -19,7 +19,16 @@ test.describe('collection statements on the homepage', () => {
     await page.goto('/');
     await page.getByRole('button', {name: 'Grille'}).click();
 
-    const tile = page.locator('a.home-grid__tile').first();
+    // gallery `statement` is optional (no validation.required() in
+    // sanity/schemas/gallery.ts), so the FIRST tile may legitimately render
+    // no description — find the first tile that actually has one instead of
+    // assuming tile 0 does.
+    const tiles = page.locator('a.home-grid__tile');
+    const descriptions = await tiles.locator('.home-grid__tile-description').allTextContents();
+    const tileIndex = descriptions.findIndex((text) => text.trim().length > 0);
+    test.skip(tileIndex === -1, 'no published gallery has a statement set');
+
+    const tile = tiles.nth(tileIndex);
     const description = tile.locator('.home-grid__tile-description');
     await expect(description).toHaveText(/.+/);
     await tile.hover();
@@ -192,7 +201,16 @@ test.describe('grid-tile title alignment (260718-rhv)', () => {
       return titles.length > 0 && Array.from(titles).every((title) => title.getBoundingClientRect().height > 0);
     });
 
-    const tile = page.locator('a.home-grid__tile').first();
+    // This test's whole point is proving that clearing a NON-EMPTY
+    // description doesn't move the title, so (mirroring the hover test
+    // above) it must target a tile that genuinely has one — gallery
+    // `statement` is optional, and the first tile may already render none.
+    const tiles = page.locator('a.home-grid__tile');
+    const descriptions = await tiles.locator('.home-grid__tile-description').allTextContents();
+    const tileIndex = descriptions.findIndex((text) => text.trim().length > 0);
+    test.skip(tileIndex === -1, 'no published gallery has a statement set');
+
+    const tile = tiles.nth(tileIndex);
 
     const beforeOffset = await tile.evaluate((el) => {
       const title = el.querySelector<HTMLElement>('.home-grid__tile-title')!;
@@ -227,13 +245,25 @@ test.describe('grid-tile title two-line clamp (quick-260803-bvu, Item 3)', () =>
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
 
-    const title = page.locator('.home-grid__tile-title', { hasText: 'Victorian' });
+    // The real intent is the clamp/wrap contract itself, not any specific
+    // gallery's title text — compute the longest rendered title at runtime
+    // rather than matching a hardcoded name, so renaming or removing "The
+    // Victorian Tea room" gallery in Sanity Studio never breaks this test.
+    const titles = page.locator('.home-grid__tile-title');
+    const titleCount = await titles.count();
+    expect(titleCount).toBeGreaterThan(0);
+    const texts = await titles.allTextContents();
+    let longestIndex = 0;
+    for (let index = 1; index < texts.length; index += 1) {
+      if (texts[index].length > texts[longestIndex].length) longestIndex = index;
+    }
+
+    const title = titles.nth(longestIndex);
     await expect(title).toBeVisible();
 
     const info = await title.evaluate((el) => {
       const cs = getComputedStyle(el);
       return {
-        text: el.textContent,
         scrollHeight: el.scrollHeight,
         clientHeight: el.clientHeight,
         lineClamp: cs.getPropertyValue('-webkit-line-clamp'),
@@ -241,9 +271,11 @@ test.describe('grid-tile title two-line clamp (quick-260803-bvu, Item 3)', () =>
       };
     });
 
-    expect(info.text).toBe('The Victorian Tea room');
     // Wrapping is allowed (not forced onto a single nowrap line) and the
-    // 2-line clamp reserves enough height that nothing overflows/clips.
+    // 2-line clamp reserves enough height that nothing overflows/clips. If
+    // the longest title happens to be short enough to sit on one line,
+    // these same bounds still hold (a shorter box never overflows a taller
+    // reserved height) — no skip guard is needed.
     expect(info.whiteSpace).not.toBe('nowrap');
     expect(info.lineClamp).toBe('2');
     expect(info.scrollHeight).toBeLessThanOrEqual(info.clientHeight + 1);

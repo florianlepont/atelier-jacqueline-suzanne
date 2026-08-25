@@ -146,10 +146,19 @@ test.describe('carousel progress fill (quick-260725-dcg)', () => {
     await page.goto('/');
 
     const dashes = page.locator('.home-hero__progress-dash');
-    await dashes.nth(2).click();
+    const dashCount = await dashes.count();
+    // The last dash is guaranteed to differ from the first whenever more
+    // than one exists, and — unlike a fixed index — reordering or removing
+    // galleries in Sanity Studio can never change which dash this targets.
+    test.skip(dashCount < 2, 'needs at least 2 galleries to navigate to a differing dash');
+    const targetIndex = dashCount - 1;
 
-    await expect(dashes.nth(2)).toHaveClass(/is-filling/);
-    const nameOnCurrent = await dashes.nth(2).evaluate((el) => getComputedStyle(el, '::after').animationName);
+    await dashes.nth(targetIndex).click();
+
+    await expect(dashes.nth(targetIndex)).toHaveClass(/is-filling/);
+    const nameOnCurrent = await dashes
+      .nth(targetIndex)
+      .evaluate((el) => getComputedStyle(el, '::after').animationName);
     expect(nameOnCurrent).toContain('home-progress-fill');
 
     const nameOnFirst = await dashes.nth(0).evaluate((el) => getComputedStyle(el, '::after').animationName);
