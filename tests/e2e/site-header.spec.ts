@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { firstGalleryHref } from './helpers/content';
 
 // Phase 10 Plan 01, Task 1 (HOME-10/D-01/D-03) — Wave 0 RED contract for the
 // shared <SiteHeader> component on non-homepage pages (About/Contact). This
@@ -43,19 +44,31 @@ test.describe('Shared SiteHeader — Instagram nav link on non-homepage pages (H
   });
 });
 
-test.describe('Shared SiteHeader — mobile fit at 393px (HOME-10, Pitfall 1)', () => {
-  for (const path of ['/about/', '/contact/', '/galleries/silos/']) {
-    test(`${path}: no horizontal page overflow at a 393px viewport`, async ({ page }) => {
-      await page.setViewportSize({ width: 393, height: 800 });
-      await page.goto(path);
+async function assertNoHorizontalOverflowAt393(page: import('@playwright/test').Page, path: string) {
+  await page.setViewportSize({ width: 393, height: 800 });
+  await page.goto(path);
 
-      const overflow = await page.evaluate(() => ({
-        scrollWidth: document.documentElement.scrollWidth,
-        innerWidth: window.innerWidth,
-      }));
-      expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.innerWidth);
+  const overflow = await page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    innerWidth: window.innerWidth,
+  }));
+  expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.innerWidth);
+}
+
+test.describe('Shared SiteHeader — mobile fit at 393px (HOME-10, Pitfall 1)', () => {
+  for (const path of ['/about/', '/contact/']) {
+    test(`${path}: no horizontal page overflow at a 393px viewport`, async ({ page }) => {
+      await assertNoHorizontalOverflowAt393(page, path);
     });
   }
+
+  // The first published gallery détail route cannot stay in the static
+  // array above — deriving it per-run means removing/renaming/reordering
+  // galleries in Sanity Studio never breaks this check.
+  test('gallery detail: no horizontal page overflow at a 393px viewport', async ({ page }) => {
+    const href = await firstGalleryHref(page, 'fr');
+    await assertNoHorizontalOverflowAt393(page, href);
+  });
 });
 
 // Phase 13 (EDN-01, D-02/D-05) — re-measured with the desktop-only
@@ -67,19 +80,32 @@ test.describe('Shared SiteHeader — mobile fit at 393px (HOME-10, Pitfall 1)', 
 // (max-width: 359px) trims (padding/gap/font-size) already applied to the
 // other three nav links proved sufficient at 320px — no D-03 abbreviation
 // was needed (see 13-01-SUMMARY.md).
-test.describe('Shared SiteHeader — mobile fit at 320px with 4 nav links (EDN-01, D-02)', () => {
-  for (const path of ['/about/', '/', '/galleries/silos/']) {
-    test(`${path}: no horizontal page overflow at the narrowest supported (320px) viewport`, async ({ page }) => {
-      await page.setViewportSize({ width: 320, height: 700 });
-      await page.goto(path);
+async function assertNoHorizontalOverflowAt320(page: import('@playwright/test').Page, path: string) {
+  await page.setViewportSize({ width: 320, height: 700 });
+  await page.goto(path);
 
-      const overflow = await page.evaluate(() => ({
-        scrollWidth: document.documentElement.scrollWidth,
-        innerWidth: window.innerWidth,
-      }));
-      expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.innerWidth);
+  const overflow = await page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    innerWidth: window.innerWidth,
+  }));
+  expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.innerWidth);
+}
+
+test.describe('Shared SiteHeader — mobile fit at 320px with 4 nav links (EDN-01, D-02)', () => {
+  for (const path of ['/about/', '/']) {
+    test(`${path}: no horizontal page overflow at the narrowest supported (320px) viewport`, async ({ page }) => {
+      await assertNoHorizontalOverflowAt320(page, path);
     });
   }
+
+  // The first published gallery détail route cannot stay in the static
+  // array above — see the 393px block's identical derivation rationale.
+  test('gallery detail: no horizontal page overflow at the narrowest supported (320px) viewport', async ({
+    page,
+  }) => {
+    const href = await firstGalleryHref(page, 'fr');
+    await assertNoHorizontalOverflowAt320(page, href);
+  });
 });
 
 // Phase 13 Plan 02 (EDN-01, D-02, SC #5, gap-closure) — regression coverage
@@ -289,7 +315,8 @@ test.describe('Shared chrome — contextual neutral link colors', () => {
   });
 
   test('transparent gallery header links and language switcher match the header white color', async ({ page }) => {
-    await page.goto('/galleries/silos/');
+    const href = await firstGalleryHref(page, 'fr');
+    await page.goto(href);
 
     const colors = await page.locator('[data-role="site-header"]').evaluate((header) => ({
       header: getComputedStyle(header).color,

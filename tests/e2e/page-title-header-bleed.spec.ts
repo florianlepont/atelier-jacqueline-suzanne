@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { firstGalleryHref } from './helpers/content';
 
 // Phase 19 Plan 02 (UI-01, D-04, D-05) — the regression net for the
 // PageTitleHeader halftone bleed fix, written BEFORE the risky CSS change
@@ -133,10 +134,11 @@ test.describe('site-wide horizontal overflow guard (UI-01 D-05)', () => {
     }
   });
 
-  test('gallery detail (/galleries/silos/) has no horizontal overflow at 320/375/768/1280/1920', async ({ page }) => {
+  test('gallery detail has no horizontal overflow at 320/375/768/1280/1920', async ({ page }) => {
+    const href = await firstGalleryHref(page, 'fr');
     for (const width of WIDTHS) {
       await page.setViewportSize({ width, height: 900 });
-      await page.goto('/galleries/silos/');
+      await page.goto(href);
       const overflow = await page.evaluate(() => ({
         scrollWidth: document.documentElement.scrollWidth,
         clientWidth: document.documentElement.clientWidth,
@@ -221,10 +223,11 @@ test.describe('sticky pin regression guard (UI-01 D-05)', () => {
     }).toPass();
   });
 
-  test('gallery detail (/galleries/silos/) — .detail-hero__pin computes position:sticky and holds at the viewport top while scrolling', async ({
+  test('gallery detail — .detail-hero__pin computes position:sticky and holds at the viewport top while scrolling', async ({
     page,
   }) => {
-    await page.goto('/galleries/silos/');
+    const href = await firstGalleryHref(page, 'fr');
+    await page.goto(href);
 
     const pin = page.locator('.detail-hero__pin');
     await expect(pin).toBeVisible();

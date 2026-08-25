@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import {expect, test} from '@playwright/test'
+import {firstGalleryHref} from './helpers/content'
 
 async function reachMobileHeader(page: import('@playwright/test').Page, path: '/' | '/en/') {
   await page.setViewportSize({width: 393, height: 852})
@@ -16,7 +17,6 @@ for (const path of [
   '/',
   '/about/',
   '/contact/',
-  '/galleries/silos/',
   '/mentions-legales/',
   '/editions/',
   '/confidentialite/',
@@ -44,6 +44,21 @@ test('the first published édition détail page has no serious or critical autom
   expect(href).toBeTruthy()
 
   await page.goto(href!)
+  const results = await new AxeBuilder({page}).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
+  const blocking = results.violations.filter(
+    (violation) => violation.impact === 'serious' || violation.impact === 'critical',
+  )
+  expect(blocking, blocking.map((violation) => `${violation.id}: ${violation.help}`).join('\n')).toEqual([])
+})
+
+// Gallery détail routes also need a REAL slug (same reasoning as above) --
+// this used to sit in the static array as a hardcoded slug, which broke CI
+// whenever that specific gallery was removed or renamed in Sanity Studio.
+test('the first published gallery détail page has no serious or critical automated accessibility violations', async ({
+  page,
+}) => {
+  const href = await firstGalleryHref(page, 'fr')
+  await page.goto(href)
   const results = await new AxeBuilder({page}).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
   const blocking = results.violations.filter(
     (violation) => violation.impact === 'serious' || violation.impact === 'critical',

@@ -1,4 +1,5 @@
 import {test, expect} from '@playwright/test';
+import {firstGalleryHref, firstEditionHref} from './helpers/content';
 
 test.describe('SEO metadata', () => {
   test('homepage emits social and search metadata', async ({page}) => {
@@ -57,33 +58,47 @@ test.describe('SEO metadata', () => {
   test('gallery detail canonicalizes to itself and shares the same fr/en alternate pair across locales', async ({
     page,
   }) => {
-    await page.goto('/galleries/silos/');
-    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', /\/galleries\/silos\/$/);
+    const frHref = await firstGalleryHref(page, 'fr');
+    const slug = frHref.match(/\/galleries\/([^/]+)\/?$/)?.[1];
+    expect(slug).toBeTruthy();
+
+    await page.goto(frHref);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      'href',
+      new RegExp(`/galleries/${slug}/$`),
+    );
     const frAlternate = await page.locator('link[rel="alternate"][hreflang="fr"]').getAttribute('href');
     const enAlternateFromFr = await page.locator('link[rel="alternate"][hreflang="en"]').getAttribute('href');
 
-    await page.goto('/en/galleries/silos/');
+    await page.goto(`/en/galleries/${slug}/`);
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       'href',
-      /\/en\/galleries\/silos\/$/,
+      new RegExp(`/en/galleries/${slug}/$`),
     );
     const frAlternateFromEn = await page.locator('link[rel="alternate"][hreflang="fr"]').getAttribute('href');
     const enAlternate = await page.locator('link[rel="alternate"][hreflang="en"]').getAttribute('href');
 
     expect(frAlternateFromEn).toBe(frAlternate);
     expect(enAlternateFromFr).toBe(enAlternate);
-    expect(frAlternate).toMatch(/\/galleries\/silos\/$/);
-    expect(enAlternate).toMatch(/\/en\/galleries\/silos\/$/);
+    expect(frAlternate).toMatch(new RegExp(`/galleries/${slug}/$`));
+    expect(enAlternate).toMatch(new RegExp(`/en/galleries/${slug}/$`));
   });
 
   test('édition detail canonicalizes to itself in both locales', async ({page}) => {
-    await page.goto('/editions/rebut/');
-    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', /\/editions\/rebut\/$/);
+    const frHref = await firstEditionHref(page, 'fr');
+    const slug = frHref.match(/\/editions\/([^/]+)\/?$/)?.[1];
+    expect(slug).toBeTruthy();
 
-    await page.goto('/en/editions/rebut/');
+    await page.goto(frHref);
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       'href',
-      /\/en\/editions\/rebut\/$/,
+      new RegExp(`/editions/${slug}/$`),
+    );
+
+    await page.goto(`/en/editions/${slug}/`);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      'href',
+      new RegExp(`/en/editions/${slug}/$`),
     );
   });
 });
