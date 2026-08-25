@@ -421,9 +421,16 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
 
   /* Must live in the base stylesheet (rather than a child component) so it
      paints before iOS Safari takes the under-page snapshot for its floating
-     toolbar. */
-  body.has-phone-canvas main {
-    background: var(--phone-canvas-color);
+     toolbar. 260825-jvm: gated to the same max-width: 767px breakpoint as
+     the head `<style is:inline set:html>` block above, which colours the
+     same phone-canvas concept — without this gate the rule applied at every
+     viewport width, overriding main's own dominant background (see the
+     @media (min-width: 768px) rule above) and leaking a gallery accent
+     through empty desktop grid cells. */
+  @media (max-width: 767px) {
+    body.has-phone-canvas main {
+      background: var(--phone-canvas-color);
+    }
   }
 
   /* D-06: links render as full pink text, not ink-text-plus-underline. */
