@@ -1,4 +1,5 @@
 import {expect, test} from '@playwright/test'
+import {firstGalleryHref} from './helpers/content'
 
 test.describe('critical cross-browser smoke', () => {
   test('homepage prototype wordmark stays readable while the sharp photo is unavailable', async ({page}) => {
@@ -47,7 +48,8 @@ test.describe('critical cross-browser smoke', () => {
   })
 
   test('native dialog opens, navigates, closes, and restores focus', async ({page}) => {
-    await page.goto('/galleries/silos/')
+    const href = await firstGalleryHref(page, 'fr')
+    await page.goto(href)
     const trigger = page.locator('[data-gallery-thumb]').first()
     await trigger.click()
     const dialog = page.locator('dialog[open]')

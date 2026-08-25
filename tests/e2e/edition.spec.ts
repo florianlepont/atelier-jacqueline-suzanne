@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { firstGalleryHref } from './helpers/content';
 
 // These routes are live: `/editions/`, `/en/editions/` render the
 // sketch-010-B2-approved "Cursor Preview" flat text-row index (index
@@ -499,7 +500,8 @@ test.describe('editions hero cross-document transition scoping (Item 4, quick-26
       .evaluate((el) => getComputedStyle(el).viewTransitionName);
     expect(editionName).toBe('none');
 
-    await page.goto('/galleries/silos/');
+    const galleryHref = await firstGalleryHref(page, 'fr');
+    await page.goto(galleryHref);
     const galleryName = await page
       .locator('.detail-hero__img')
       .evaluate((el) => getComputedStyle(el).viewTransitionName);
