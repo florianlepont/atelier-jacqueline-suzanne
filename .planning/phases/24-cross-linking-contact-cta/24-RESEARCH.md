@@ -275,7 +275,7 @@ No frameworks/libraries changed state here — this is entirely internal-pattern
 | A1 | GROQ dereference (`->`) does not recurse into a target document's own reference fields unless explicitly projected, so no circular-fetch risk exists between `gallery.relatedEdition` and `edition.relatedGallery` | Architecture Patterns, Pattern 1 | Low — this is standard, well-documented GROQ behavior and is already implicitly relied upon by the existing shipped `relatedGallery->{...}` projection; if wrong, the failure mode would be an oversized/slow build-time query, not incorrect data or a build break, and would surface immediately in local `npm run build` |
 | A2 | The installed Astro version is `^7.1.4` per `package.json`, though CLAUDE.md's Technology Stack table states `7.0.6` | Standard Stack | Negligible — cosmetic drift between documentation and lockfile; does not affect any pattern in this phase. Planner should run `npm ls astro` if precision matters, but no phase task depends on the exact patch version |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 None. CONTEXT.md's own flagged risk (DetailHero scroll-track interaction) was fully investigated and resolved (Pitfall 3). The two other CONTEXT.md "verify at research/planning time" items (page delegation structure, footer/hideFooter state) were both directly verified against current source (Pitfalls 4 and the System Architecture Diagram / route files read in this session).
 

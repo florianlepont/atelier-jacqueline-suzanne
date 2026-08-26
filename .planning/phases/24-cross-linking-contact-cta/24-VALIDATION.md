@@ -2,8 +2,8 @@
 phase: 24
 slug: cross-linking-contact-cta
 status: draft
-nyquist_compliant: false
-wave_0_complete: false
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-08-26
 ---
 
@@ -54,9 +54,9 @@ created: 2026-08-26
 
 ## Wave 0 Requirements
 
-- [ ] Confirm whether a dedicated `tests/unit/sanity-validation.test.ts` file exists to extend for the shared-sanitizer regression guard, or whether `sanitizeGalleryDocument`/`sanitizeEditionDocument` sanitization is currently only exercised indirectly via `gallery-query.test.ts`/`edition-query.test.ts` (`grep -rl sanitizeGalleryDocument tests/`)
-- [ ] Decide (Claude's Discretion, per CONTEXT.md) whether the reverse-link helper is a generalized `related-gallery.ts` extension or a new sibling `related-edition.ts` file — determines whether the unit test file is `related-gallery.test.ts` (extended) or a new `related-edition.test.ts`
-- [ ] Framework install: none — Vitest and Playwright are already fully configured for this exact class of change (mirrors `edition-query.test.ts` and `edition.spec.ts`'s existing EDN-08 coverage almost exactly)
+- [x] Confirm whether a dedicated `tests/unit/sanity-validation.test.ts` file exists to extend for the shared-sanitizer regression guard — **resolved during planning:** the file exists on disk; `24-01-PLAN.md` Task 2 extends its `describe('gallery and edition sanitizers')` block with the leak-guard assertions (RESEARCH.md Pitfall 1)
+- [x] Decide (Claude's Discretion, per CONTEXT.md) whether the reverse-link helper is a generalized `related-gallery.ts` extension or a new sibling file — **resolved during planning:** `24-01-PLAN.md`'s `<discretion_resolutions>` block locks in a parallel file, `src/lib/related-edition.ts` with its own `RelatedEditionLink` type; `related-gallery.ts` stays untouched (out-of-scope per REQUIREMENTS.md), so the unit test file is a new `tests/unit/related-edition.test.ts`, not an extension
+- [x] Framework install: none — Vitest and Playwright are already fully configured for this exact class of change (mirrors `edition-query.test.ts` and `edition.spec.ts`'s existing EDN-08 coverage almost exactly)
 
 ---
 
@@ -71,11 +71,11 @@ created: 2026-08-26
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 90s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies — confirmed by gsd-plan-checker across all 5 plans (24-01 through 24-05)
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify — plans run 2-3 tasks each, each with its own verify command
+- [x] Wave 0 covers all MISSING references — all three Wave 0 items resolved above
+- [x] No watch-mode flags
+- [x] Feedback latency < 90s
+- [x] `nyquist_compliant: true` set in frontmatter
 
 **Approval:** pending
