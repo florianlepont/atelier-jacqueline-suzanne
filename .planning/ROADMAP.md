@@ -105,21 +105,35 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
 **UI hint**: yes
 
 ### Phase 24: Cross-Linking & Contact CTA
+
 **Goal**: Visitors browsing Portfolio galleries and Éditions get two small navigation improvements — a way to move from a gallery to its associated Édition (closing the missing reverse direction of the v1.3 gallery↔édition cross-link), and a contact CTA at the end of every gallery's and édition's photo sequence, standing in for a sales flow that doesn't exist yet.
 **Depends on**: Phase 2 (Portfolio galleries) and Phase 11-13 (Éditions content model, data-fetch layer, nav) — all already shipped; EDN-08's forward `relatedGallery` field (v1.3) is the field this phase's reverse lookup queries against. No new milestone-internal dependency (single-phase milestone).
 **Requirements**: EDN-12, CONT-04, UI-03
 **Success Criteria** (what must be TRUE):
+
   1. Visitor viewing a Portfolio gallery detail page that has an associated Édition (via the existing `relatedGallery` field, EDN-08) sees a link to that Édition and can navigate to it
   2. Visitor viewing a Portfolio gallery detail page with no associated Édition sees no broken, empty, or dead-end cross-link element — the absence is handled cleanly, not a regression
   3. Visitor reaching the end of a gallery's photo sequence, and separately the end of an édition's photo sequence, sees a CTA prompting them to contact Romane and can click through to the Contact page
   4. Both the gallery→édition cross-link and the contact CTA render correctly and introduce no regressions to the existing gallery/édition layouts, confirmed clean at phone widths (≤767px, the mobile viewport class) and at desktop/tablet widths — matching this project's documented mobile-vs-desktop/tablet viewport classes and its history of phone-specific work leaking into desktop (v1.6)
+
 **Plans**: 5 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 24-01-PLAN.md — EDN-12 content model: `relatedEdition` Sanity field, GROQ projections, sanitizer (+ édition exclusion), `getRelatedEditionLink()` helper (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 24-02-PLAN.md — Render models: `GalleryDetailModel.relatedLink` + contact CTA href/label on both detail models (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 24-03-PLAN.md — Gallery detail page: reverse cross-link (top) + contact CTA (bottom) + cross-viewport e2e (wave 3)
 - [ ] 24-04-PLAN.md — Édition detail page: contact CTA (bottom) + D-09 two-weight e2e guard (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 24-05-PLAN.md — Sanity content checkpoint, EDN-12 presence assertion, UI-03 dual-viewport UAT (wave 4, has checkpoints)
 
 **UI hint**: yes

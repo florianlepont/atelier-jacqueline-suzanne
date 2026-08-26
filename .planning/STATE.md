@@ -4,9 +4,9 @@ milestone: v1.8
 milestone_name: Cross-linking & Contact CTA
 current_phase: 24
 current_phase_name: Cross-Linking & Contact CTA
-status: planning
-stopped_at: Phase 24 context gathered
-last_updated: "2026-08-26T18:14:28.424Z"
+status: executing
+stopped_at: Phase 24 UI-SPEC approved
+last_updated: "2026-08-26T18:52:49.937Z"
 last_activity: 2026-08-26
 last_activity_desc: "ROADMAP.md created for v1.8 (single Phase 24: Cross-Linking & Contact CTA, covering EDN-12/CONT-04/UI-03); REQUIREMENTS.md traceability updated, 3/3 v1.8 requirements mapped, 0 orphans"
 progress:
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-08-04)
 
 Phase: 24 of 24 (Cross-Linking & Contact CTA) — not yet planned
 Plan: — (phase not yet planned)
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-08-26 — ROADMAP.md created for v1.8 (single Phase 24: Cross-Linking & Contact CTA, covering EDN-12/CONT-04/UI-03); REQUIREMENTS.md traceability updated, 3/3 v1.8 requirements mapped, 0 orphans
 
 ## Performance Metrics
@@ -393,10 +393,10 @@ The 6 stale `260722-*` quick-task directories listed above (compact-sanity-docum
 
 ## Session Continuity
 
-**Resume file:** .planning/phases/24-cross-linking-contact-cta/24-CONTEXT.md
+**Resume file:** .planning/phases/24-cross-linking-contact-cta/24-UI-SPEC.md
 
-Last session: 2026-08-26T18:14:28.404Z
-Stopped at: Phase 24 context gathered
+Last session: 2026-08-26T18:32:32.937Z
+Stopped at: Phase 24 UI-SPEC approved
 
 **Next up:** Plan Phase 24 with `/gsd-plan-phase 24`. Phase 24 covers all 3 v1.8 requirements (EDN-12, CONT-04, UI-03): a reverse gallery→édition cross-link on the Portfolio gallery detail page, a contact CTA at the end of every gallery's and édition's photo sequence, and an explicit mobile (≤767px) + desktop/tablet verification pass for both. v1.0 through v1.7 remain shipped and archived; the site is live in production at atelierjacquelinesuzanne.fr. The v1.x Shop/Checkout wave (Stripe, stock, shipping/VAT, commerce legal, Exhibitions) remains separately scoped, not part of v1.8.
 
