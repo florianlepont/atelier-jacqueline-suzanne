@@ -19,7 +19,7 @@ import type { Page } from '@playwright/test';
 //   3. Does not require toggling the homepage into grid mode first.
 //
 // Hrefs are returned exactly as they appear in the markup (including any
-// `ASTRO_BASE` prefix such as `/ajs-website/`) so callers can hand them
+// `ASTRO_BASE` prefix such as `/atelier-jacqueline-suzanne/`) so callers can hand them
 // straight to `page.goto()`.
 
 export type ContentLocale = 'fr' | 'en';

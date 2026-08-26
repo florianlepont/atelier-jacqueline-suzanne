@@ -29,7 +29,7 @@ A bilingual (French/English) website for Romane Lepont's photography and artisti
 | Technology | Version | Purpose | Notes |
 |------------|---------|---------|-------|
 | **Astro** | 7.0.6 | Static site framework — `output: 'static'` in astro.config.mjs, with NO server-rendering integration installed | The config explicitly excludes the Cloudflare adapter, the Node adapter, and the Workers deploy CLI, because OVH Web Hosting is a zero-compute Apache file host. Zero-JS-by-default; built-in i18n. |
-| **GitHub Pages** | — (platform) | Staging host — current public site, deployed by GitHub Actions | Project-page base path `/ajs-website/` injected via `ASTRO_BASE` at build time; live at https://florianlepont.github.io/ajs-website/. |
+| **GitHub Pages** | — (platform) | Staging host — current public site, deployed by GitHub Actions | Project-page base path `/atelier-jacqueline-suzanne/` injected via `ASTRO_BASE` at build time; live at https://florianlepont.github.io/atelier-jacqueline-suzanne/. |
 | **OVH Web Hosting** | — (platform, Phase 5, not yet cut over) | Production host; ultimately serves the real domain atelierjacquelinesuzanne.fr | Free tier, static files uploaded over SFTP; zero request-time compute, which is WHY the build is static-only. |
 | **Sanity** (Content Lake + Studio) | `@sanity/client` 7.23.0 / `@sanity/image-url` 2.1.1 / Studio `sanity` ^6.4.0 | Headless CMS for galleries, About, site settings, agenda | Content fetched at BUILD time (published perspective only). Studio is the separate `sanity/` subproject with its own package.json. |
 | **astro:i18n** (built-in, Astro 7 core) | — | fr/en locale routing | French served at root, English under `/en/`, no Accept-Language auto-redirect. |

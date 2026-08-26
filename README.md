@@ -45,7 +45,7 @@ Names only — never commit real values, tokens, or keys. `.env` is gitignored; 
 | `SANITY_DATASET` | required (build) | Sanity dataset name (e.g. `production`). |
 | `SANITY_API_READ_TOKEN` | required (build) | Sanity read token used at build time. |
 | `SITE_URL` | optional (build) | Canonical site origin; defaults to `https://florianlepont.github.io`. |
-| `ASTRO_BASE` | optional (build) | Base path; defaults to `/`; set `/ajs-website/` for the GitHub Pages staging build. |
+| `ASTRO_BASE` | optional (build) | Base path; defaults to `/`; set `/atelier-jacqueline-suzanne/` for the GitHub Pages staging build. |
 | `PUBLIC_CONTACT_ENDPOINT` | optional (build) | Contact form POST target; defaults to the same-origin path `/contact.php`. Must be set to the absolute production URL (`https://atelierjacquelinesuzanne.fr/contact.php`) for the GitHub Pages staging build, since that host cannot execute PHP. |
 
 Note: the `sanity/` Studio has its own env (`SANITY_STUDIO_PREVIEW_URL`) documented in `sanity/README.md`.
@@ -78,8 +78,8 @@ This project has two deploy targets. Do not confuse them.
 |---|---|---|
 | Trigger | Automatic on push to `main`, and on the Sanity `sanity-content-published` webhook | Automatic on the dedicated `production-deploy-requested` event fired by the editor's `Publier sur le site en ligne` click in Sanity Studio (no approval); manual dispatch otherwise (Required-reviewer approval) — a code commit to `main` never deploys here |
 | Workflow | `.github/workflows/deploy.yml` | `.github/workflows/deploy-ovh.yml` |
-| Base path | `/ajs-website/` | Root (`/`) |
-| URL | https://florianlepont.github.io/ajs-website/ | https://atelierjacquelinesuzanne.fr |
+| Base path | `/atelier-jacqueline-suzanne/` | Root (`/`) |
+| URL | https://florianlepont.github.io/atelier-jacqueline-suzanne/ | https://atelierjacquelinesuzanne.fr |
 
 Both deploy workflows run the full blocking gate set (lint, typecheck, Playwright e2e, Vitest coverage) before publishing anything.
 
@@ -111,10 +111,10 @@ Before `deploy-ovh.yml` can be run, these six things must be configured once:
    - Trigger on **Create** and **Update**.
    - Dataset: `production`.
    - Filter on the release-marker document type: `_type == "siteProductionRelease"`.
-   - HTTP method: `POST` to `https://api.github.com/repos/florianlepont/ajs-website/dispatches`.
+   - HTTP method: `POST` to `https://api.github.com/repos/florianlepont/atelier-jacqueline-suzanne/dispatches`.
    - Body (projection) producing the event this repo's workflow now listens for: `{"event_type": "production-deploy-requested"}`.
    - Headers: `Accept: application/vnd.github+json`, `Content-Type: application/json`, and a bearer `Authorization` header.
-   - The token is a **fine-grained GitHub PAT** scoped to this single repo (`florianlepont/ajs-website`) with `Contents: Read and write` and an expiry date. It lives **ONLY** in this webhook's header configuration in Sanity's dashboard — it must never be committed to this repository, written into any workflow file, or pasted anywhere else.
+   - The token is a **fine-grained GitHub PAT** scoped to this single repo (`florianlepont/atelier-jacqueline-suzanne`) with `Contents: Read and write` and an expiry date. It lives **ONLY** in this webhook's header configuration in Sanity's dashboard — it must never be committed to this repository, written into any workflow file, or pasted anywhere else.
    - Verification note: the **existing** webhook driving the staging event (`sanity-content-published`) almost certainly filters on the *other* marker document type (`siteDeployment`). Open it, confirm its shape, and mirror it for the new webhook rather than editing it — staging must keep its own trigger untouched.
 
 ### Production deploy: how to run one

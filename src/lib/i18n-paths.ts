@@ -11,7 +11,7 @@ import { getRelativeLocaleUrl } from 'astro:i18n';
  * `getRelativeLocaleUrl()`.
  */
 /**
- * Strips Astro's configured `base` (e.g. "/ajs-website/" on GitHub Pages)
+ * Strips Astro's configured `base` (e.g. "/atelier-jacqueline-suzanne/" on GitHub Pages)
  * from a pathname. Extracted as a pure, standalone function (WR-04) so it
  * can be unit-tested directly under a non-root base without needing to
  * fight Vite's static replacement of `import.meta.env.BASE_URL` inside a
@@ -24,7 +24,7 @@ export function stripBasePath(path: string, base: string): string {
 
 /**
  * Astro's configured base with any trailing slash removed (e.g.
- * "/ajs-website" on GitHub Pages, "" at the real domain root) — the shape
+ * "/atelier-jacqueline-suzanne" on GitHub Pages, "" at the real domain root) — the shape
  * every asset/link path prefix on this site needs, since they all start
  * their own leading "/". Extracted here (rather than each call site
  * re-deriving it) after this exact one-line expression had been copied
@@ -40,7 +40,7 @@ export function getSwitcherHref(currentPath: string, targetLocale: 'fr' | 'en'):
   // `Astro.url.pathname` reflects the deployed base-prefixed path, but
   // `getRelativeLocaleUrl()` below re-applies the base itself — without
   // stripping it first, a non-root base produces a doubled path (e.g.
-  // "/ajs-website/ajs-website"). No-op when base is "/".
+  // "/atelier-jacqueline-suzanne/atelier-jacqueline-suzanne"). No-op when base is "/".
   const base = import.meta.env.BASE_URL ?? '/';
   const baseRelativePath = stripBasePath(currentPath, base);
 

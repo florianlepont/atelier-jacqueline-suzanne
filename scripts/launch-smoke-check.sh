@@ -18,7 +18,7 @@
 #   scripts/launch-smoke-check.sh [origin]
 #
 # Env vars:
-#   BASE        Path prefix, default "/". Set to "/ajs-website/" to probe the
+#   BASE        Path prefix, default "/". Set to "/atelier-jacqueline-suzanne/" to probe the
 #               GitHub Pages project-page build.
 #   SKIP_PHP    Set to "1" to skip the PHP contact.php probes (e.g. GitHub
 #               Pages, which has no PHP runtime and no longer publishes
@@ -31,7 +31,7 @@
 #
 # Examples:
 #   # Staging rehearsal (GitHub Pages, no PHP runtime, known-good origin):
-#   BASE=/ajs-website/ SKIP_PHP=1 npm run test:smoke -- https://florianlepont.github.io
+#   BASE=/atelier-jacqueline-suzanne/ SKIP_PHP=1 npm run test:smoke -- https://florianlepont.github.io
 #
 #   # Production run, post-cutover, with MX preservation checked:
 #   MX_BASELINE=.planning/phases/05-launch-domain-cutover/mx-baseline.txt \

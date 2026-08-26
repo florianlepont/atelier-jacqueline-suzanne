@@ -64,7 +64,7 @@ jobs:
           SANITY_PROJECT_ID: ${{ secrets.SANITY_PROJECT_ID }}
           SANITY_DATASET: ${{ secrets.SANITY_DATASET }}
           SANITY_API_READ_TOKEN: ${{ secrets.SANITY_API_READ_TOKEN }}
-          ASTRO_BASE: /ajs-website/
+          ASTRO_BASE: /atelier-jacqueline-suzanne/
           # GitHub Pages has no PHP runtime and is served from a different
           # origin than production, so this staging build must POST
           # cross-origin to the real contact.php endpoint (D-03: this
@@ -77,7 +77,7 @@ jobs:
       # path entirely. Any bare href="/" or href="/en/" in this base-prefixed
       # build is wrong by construction: every real link on this site must go
       # through an Astro i18n URL helper, which always emits the configured
-      # base ("/ajs-website/..." here, never a bare root-relative path).
+      # base ("/atelier-jacqueline-suzanne/..." here, never a bare root-relative path).
       - name: Check for un-prefixed links (base-path regression guard)
         run: |
           if grep -rE 'href="/"|href="/en/"' dist/; then
@@ -88,11 +88,11 @@ jobs:
       - name: Verify GitHub Pages static artifact
         run: npm run test:artifact
         env:
-          EXPECTED_BASE: /ajs-website/
+          EXPECTED_BASE: /atelier-jacqueline-suzanne/
 
       # GitHub Pages has no PHP runtime, so it would otherwise serve
       # contact.php as a downloadable source file at
-      # https://florianlepont.github.io/ajs-website/contact.php, publishing
+      # https://florianlepont.github.io/atelier-jacqueline-suzanne/contact.php, publishing
       # the endpoint's internals. This is production-only (05-01-PLAN.md
       # Task 3C) and runs after artifact verification so that step still
       # sees the file, but before the artifact is uploaded/published.

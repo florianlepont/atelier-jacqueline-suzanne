@@ -52,7 +52,7 @@ export const DEFAULT_CONTACT_ENDPOINT = '/contact.php';
  * production build the endpoint is same-origin, so a relative path is
  * correct. But D-03 (05-CONTEXT.md) keeps GitHub Pages alive permanently as
  * a pre-production environment, and that build is served from a different
- * origin under a `/ajs-website/` base — a relative path there would resolve
+ * origin under a `/atelier-jacqueline-suzanne/` base — a relative path there would resolve
  * against the GitHub Pages host, which has no PHP runtime. So the Pages
  * build overrides this with an absolute URL at build time via
  * `PUBLIC_CONTACT_ENDPOINT`.
