@@ -144,4 +144,36 @@ describe('.github/workflows/deploy.yml', () => {
     expect(pagesWorkflow).toContain('push:');
     expect(pagesWorkflow).toContain('repository_dispatch:');
   });
+
+  it('publishes the hosted Sanity Studio as the final step, gated behind push and every blocking gate (D-01, D-02)', () => {
+    // Invokes the Studio publish script.
+    expect(pagesWorkflow).toContain('npm --prefix sanity run deploy');
+
+    // Authenticated from a secret, never a literal.
+    expect(pagesWorkflow).toContain('SANITY_AUTH_TOKEN: ${{ secrets.SANITY_AUTH_TOKEN }}');
+
+    // Push-gated only (D-02) — the `secrets` context is not valid inside a
+    // step-level `if:`, so this condition must reference only the event name.
+    expect(pagesWorkflow).toMatch(/if:\s*github\.event_name == 'push'/);
+
+    // Ordering (D-01): the publish step sits after every existing blocking
+    // gate AND after the GitHub Pages deploy itself.
+    const publishIndex = pagesWorkflow.indexOf('npm --prefix sanity run deploy');
+    const sharedGatesIndex = pagesWorkflow.indexOf('uses: ./.github/actions/lint-typecheck-and-install');
+    const sharedE2eIndex = pagesWorkflow.indexOf('uses: ./.github/actions/e2e-and-unit-tests');
+    const deployPagesIndex = pagesWorkflow.indexOf('uses: actions/deploy-pages@v4');
+    expect(publishIndex).toBeGreaterThan(-1);
+    expect(sharedGatesIndex).toBeGreaterThan(-1);
+    expect(sharedE2eIndex).toBeGreaterThan(-1);
+    expect(deployPagesIndex).toBeGreaterThan(-1);
+    expect(publishIndex).toBeGreaterThan(sharedGatesIndex);
+    expect(publishIndex).toBeGreaterThan(sharedE2eIndex);
+    expect(publishIndex).toBeGreaterThan(deployPagesIndex);
+  });
+
+  it('does not weaken any pre-existing blocking gate when the Studio publish step is added', () => {
+    expect(sharedGatesAction).toContain('npm --prefix sanity run typecheck');
+    expect(pagesWorkflow).toContain('uses: actions/upload-pages-artifact@v3');
+    expect(pagesWorkflow).toContain('ASTRO_BASE: /atelier-jacqueline-suzanne/');
+  });
 });

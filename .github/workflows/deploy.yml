@@ -107,3 +107,41 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      # Closes the manual-publish gap diagnosed in
+      # .planning/debug/resolved/preprod-site-404-after-rename.md: the hosted
+      # Studio previously had no CI path and could only be refreshed by
+      # someone running `sanity deploy` by hand — which had already gone
+      # stale once (a dead pre-rename GitHub Pages URL baked into the live
+      # Studio's "Voir sur le site" button).
+      #
+      # Runs on every push to `main`, not only pushes touching `sanity/`
+      # (D-02): the Studio's SITE_PREVIEW_URL depends on this workflow's own
+      # base path too, so a `sanity/**` paths filter would reintroduce the
+      # exact staleness risk this step exists to remove. It intentionally
+      # does NOT run on the repository_dispatch content-publish event, since
+      # a content publish cannot change Studio source code.
+      #
+      # Last step in the job (D-01): the Studio links to the site that must
+      # already be live, and this position inherits every blocking gate
+      # (Studio lint/coverage/build/typecheck, root lint/typecheck, both
+      # artifact verifications, Playwright, Vitest coverage) for free.
+      #
+      # If SANITY_AUTH_TOKEN is missing, this step warns and exits 0 instead
+      # of failing the run (D-03) — deliberately different from the
+      # fail-loud `Guard: SFTP credentials are present` step in
+      # deploy-ovh.yml. That guard protects an irreversible production
+      # upload; this one protects an idempotent, re-runnable Studio publish
+      # that cannot be set up until this workflow change has already landed
+      # (Claude cannot create repository secrets). Once the secret exists, a
+      # genuine publish failure still fails the run loudly.
+      - name: Publish the hosted Sanity Studio
+        if: github.event_name == 'push'
+        env:
+          SANITY_AUTH_TOKEN: ${{ secrets.SANITY_AUTH_TOKEN }}
+        run: |
+          if [ -z "${SANITY_AUTH_TOKEN}" ]; then
+            echo "::warning::SANITY_AUTH_TOKEN repository secret is not set — skipping hosted Sanity Studio publish. Add it under repo Settings > Secrets and variables > Actions (see README.md for setup steps)."
+            exit 0
+          fi
+          npm --prefix sanity run deploy

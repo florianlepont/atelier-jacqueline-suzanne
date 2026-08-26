@@ -85,6 +85,24 @@ Both deploy workflows run the full blocking gate set (lint, typecheck, Playwrigh
 
 GitHub Pages stays alive permanently as a pre-production environment after the domain cutover — it is not retired. It is useful for previewing future changes before they reach the real domain, at no extra cost.
 
+### Sanity Studio: published automatically
+
+The hosted Studio at https://atelier-jacqueline-suzanne.sanity.studio/ is republished automatically by `.github/workflows/deploy.yml`, as the final step of every push to `main` — after the GitHub Pages deploy and after every blocking gate has passed.
+
+It does **not** republish on the `sanity-content-published` content webhook, since a content publish can't change Studio source code.
+
+It republishes on *every* push to `main`, not only pushes that touch `sanity/`: the Studio build already runs on every push anyway, and a paths filter would reintroduce the exact staleness risk this step exists to remove.
+
+To force a republish without a code change, re-run the last `deploy.yml` run from the Actions tab. Running `npm run deploy` from `sanity/` locally still works but is no longer the expected path.
+
+If the repository secret below is missing, the site still deploys and the run stays green, but the run carries a warning annotation and the live Studio silently stays on its previous bundle.
+
+**One-time setup — repository secret `SANITY_AUTH_TOKEN`:**
+
+1. Create the token: https://www.sanity.io/manage → project `gwz8iug4` → API → Tokens → Add API token. Give it the `Deploy Studio` role if offered, otherwise `Editor`.
+2. Add it as a **repository-level** secret (not scoped to an environment): `gh secret set SANITY_AUTH_TOKEN`.
+3. This must be a distinct token from the existing read-only `SANITY_API_READ_TOKEN` — reusing that read token will fail the publish.
+
 ### Production deploy: the two paths
 
 - **Content path (editor-gated).** Romane publishes in Studio → the content webhook fires and rebuilds GitHub Pages staging only → the dashboard's pipeline bar shows staging going green → she opens staging and checks it herself → she clicks `Publier sur le site en ligne` → that publishes an internal release-marker document → a second Sanity webhook fires the production-release event → deploy-ovh.yml runs every blocking gate and deploys to the real domain with no GitHub approval pause, because her click already was the human checkpoint and she has no GitHub access to give a second one.
