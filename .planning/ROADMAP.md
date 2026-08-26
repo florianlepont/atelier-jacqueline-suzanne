@@ -116,12 +116,12 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
   3. Visitor reaching the end of a gallery's photo sequence, and separately the end of an édition's photo sequence, sees a CTA prompting them to contact Romane and can click through to the Contact page
   4. Both the gallery→édition cross-link and the contact CTA render correctly and introduce no regressions to the existing gallery/édition layouts, confirmed clean at phone widths (≤767px, the mobile viewport class) and at desktop/tablet widths — matching this project's documented mobile-vs-desktop/tablet viewport classes and its history of phone-specific work leaking into desktop (v1.6)
 
-**Plans**: 5 plans
+**Plans**: 1/5 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 24-01-PLAN.md — EDN-12 content model: `relatedEdition` Sanity field, GROQ projections, sanitizer (+ édition exclusion), `getRelatedEditionLink()` helper (wave 1)
+- [x] 24-01-PLAN.md — EDN-12 content model: `relatedEdition` Sanity field, GROQ projections, sanitizer (+ édition exclusion), `getRelatedEditionLink()` helper (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -170,7 +170,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 21. Homepage Scroll Experience | 15/15 | Complete   | 2026-08-10 |
 | 22. Gallery & Édition Scroll Navigation | 0/0 | Cancelled | 2026-08-10 |
 | 23. About Portrait Placement & Milestone Regression Close | 0/0 | Complete (direct commit) | 2026-08-10 |
-| 24. Cross-Linking & Contact CTA | 0/5 | Planned | - |
+| 24. Cross-Linking & Contact CTA | 1/5 | In Progress|  |
 
 ## Milestone Scope Note
 
