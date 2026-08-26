@@ -232,6 +232,18 @@ function sanitizeGalleryDocument(value: unknown): SanitizationResult<Gallery | n
   if (record.seo !== undefined && (!seo || seoNeedsCleaning(record.seo))) {
     issues.push(issue('seo.cleaned', value))
   }
+  const relatedEditionRecord = asRecord(record.relatedEdition)
+  const relatedEditionTitle = nonEmptyString(relatedEditionRecord?.title)
+  const relatedEditionSlug = nonEmptyString(relatedEditionRecord?.slug)
+  const relatedEdition =
+    relatedEditionTitle && relatedEditionSlug
+      ? {title: relatedEditionTitle, slug: relatedEditionSlug}
+      : record.relatedEdition === null
+        ? null
+        : undefined
+  if (record.relatedEdition !== undefined && record.relatedEdition !== null && !relatedEdition) {
+    issues.push(issue('relatedEdition.removed', value))
+  }
 
   return {
     value: {
@@ -248,6 +260,7 @@ function sanitizeGalleryDocument(value: unknown): SanitizationResult<Gallery | n
         ? {showOnHomePage: record.showOnHomePage}
         : {}),
       ...(seo ? {seo} : {}),
+      ...(relatedEdition !== undefined ? {relatedEdition} : {}),
     },
     issues,
   }
@@ -289,12 +302,19 @@ function sanitizeEditionDocument(value: unknown): SanitizationResult<Edition | n
     base.issues.push(issue('relatedGallery.removed', value))
   }
 
-  const {heroColor: _heroColor, isVisible: _isVisible, showOnHomePage: _showOnHomePage, seo: _seo, ...shared} =
-    base.value
+  const {
+    heroColor: _heroColor,
+    isVisible: _isVisible,
+    showOnHomePage: _showOnHomePage,
+    seo: _seo,
+    relatedEdition: _relatedEdition,
+    ...shared
+  } = base.value
   void _heroColor
   void _isVisible
   void _showOnHomePage
   void _seo
+  void _relatedEdition
 
   return {
     value: {
