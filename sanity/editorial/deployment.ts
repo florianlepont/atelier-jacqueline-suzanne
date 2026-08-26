@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 export const SITE_PREVIEW_URL =
-  import.meta.env.SANITY_STUDIO_PREVIEW_URL || 'https://florianlepont.github.io/ajs-website/'
+  import.meta.env.SANITY_STUDIO_PREVIEW_URL || 'https://florianlepont.github.io/atelier-jacqueline-suzanne/'
 
 // The two GitHub Actions workflow files this module can track: staging
 // (GitHub Pages, rebuilt on every content publish) and production (OVH,
@@ -12,11 +12,11 @@ export const PRODUCTION_WORKFLOW_FILE = 'deploy-ovh.yml'
 export const PRODUCTION_SITE_URL = 'https://atelierjacquelinesuzanne.fr'
 
 export function workflowActionsUrl(workflowFile: string): string {
-  return `https://github.com/florianlepont/ajs-website/actions/workflows/${workflowFile}`
+  return `https://github.com/florianlepont/atelier-jacqueline-suzanne/actions/workflows/${workflowFile}`
 }
 
 export function workflowRunsUrl(workflowFile: string): string {
-  return `https://api.github.com/repos/florianlepont/ajs-website/actions/workflows/${workflowFile}/runs?per_page=10`
+  return `https://api.github.com/repos/florianlepont/atelier-jacqueline-suzanne/actions/workflows/${workflowFile}/runs?per_page=10`
 }
 
 export const GITHUB_WORKFLOW_URL = workflowActionsUrl(STAGING_WORKFLOW_FILE)
