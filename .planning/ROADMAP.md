@@ -113,7 +113,15 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
   2. Visitor viewing a Portfolio gallery detail page with no associated Édition sees no broken, empty, or dead-end cross-link element — the absence is handled cleanly, not a regression
   3. Visitor reaching the end of a gallery's photo sequence, and separately the end of an édition's photo sequence, sees a CTA prompting them to contact Romane and can click through to the Contact page
   4. Both the gallery→édition cross-link and the contact CTA render correctly and introduce no regressions to the existing gallery/édition layouts, confirmed clean at phone widths (≤767px, the mobile viewport class) and at desktop/tablet widths — matching this project's documented mobile-vs-desktop/tablet viewport classes and its history of phone-specific work leaking into desktop (v1.6)
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [ ] 24-01-PLAN.md — EDN-12 content model: `relatedEdition` Sanity field, GROQ projections, sanitizer (+ édition exclusion), `getRelatedEditionLink()` helper (wave 1)
+- [ ] 24-02-PLAN.md — Render models: `GalleryDetailModel.relatedLink` + contact CTA href/label on both detail models (wave 2)
+- [ ] 24-03-PLAN.md — Gallery detail page: reverse cross-link (top) + contact CTA (bottom) + cross-viewport e2e (wave 3)
+- [ ] 24-04-PLAN.md — Édition detail page: contact CTA (bottom) + D-09 two-weight e2e guard (wave 3)
+- [ ] 24-05-PLAN.md — Sanity content checkpoint, EDN-12 presence assertion, UI-03 dual-viewport UAT (wave 4, has checkpoints)
+
 **UI hint**: yes
 
 ## Progress
@@ -148,7 +156,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 21. Homepage Scroll Experience | 15/15 | Complete   | 2026-08-10 |
 | 22. Gallery & Édition Scroll Navigation | 0/0 | Cancelled | 2026-08-10 |
 | 23. About Portrait Placement & Milestone Regression Close | 0/0 | Complete (direct commit) | 2026-08-10 |
-| 24. Cross-Linking & Contact CTA | 0/TBD | Not started | - |
+| 24. Cross-Linking & Contact CTA | 0/5 | Planned | - |
 
 ## Milestone Scope Note
 
