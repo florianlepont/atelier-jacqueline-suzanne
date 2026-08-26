@@ -64,7 +64,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 21: Homepage Scroll Experience** - On phone-width viewports, the carousel/grid toggle is replaced by one continuous scroll-driven view opening on a full-screen wordmark that zooms through its letterforms into the first gallery photo, with on-arrival description reveals; desktop/tablet unchanged (reopened 2026-08-05 — UAT Test 1 found four major gaps on a live iPhone test: a missing pre-zoom logo/tagline intro beat the locked decisions never specified, a desynchronised zoom-to-slide handoff frame, deck slides missing the site's own HOME-09 blur-up placeholder, and a white bar at the iOS status bar from raw dynamic-viewport sizing plus no theme-color; gap-closure plans 21-07 through 21-10 added — see 21-UAT.md) (completed 2026-08-08; reopened again 2026-08-09 — UAT round 2 found five more live-device gaps on the same HomeCarousel scroll-deck: duplicated intro logo, unreadable text-reveal timing, a doubled cover photo, a persistent white bar top/bottom, and an unreachable nav hamburger; gap-closure plans 21-11 through 21-15 closed all five plus a scoped code review (21-REVIEW.md) — see 21-UAT.md) (superseded 2026-08-10, commit `6c51695` — the phone-width homepage was rebuilt as `MobileHomePrototype.astro` outside the plan/execute cycle, replacing HomeCarousel's scroll-deck at ≤767px; HomeCarousel's scroll-deck code remains in the codebase, correct and tested, but is unreachable at that viewport; the pending round-3 real-device UAT this phase left open is superseded, not completed; closed on 6c51695 as the authoritative final state per explicit user direction — mechanical reconciliation, not a re-verification against 21-CONTEXT.md's locked decisions)
 - [x] **Phase 22: Gallery & Édition Scroll Navigation** - CANCELLED 2026-08-10, explicit user decision — not implemented. Was scoped to retire the click-to-open Lightbox on Gallery/Édition detail pages for scroll-driven full-photo navigation, plus a legible non-backdrop treatment for the Édition intro text/primary photo (PORT-07, EDN-10, EDN-11). No plans were ever created for this phase.
 - [x] **Phase 23: About Portrait Placement & Milestone Regression Close** - On phone-width viewports, the About page's portrait photo moves to an improved position, and the milestone closes with a confirmed desktop/tablet regression sweep across every page touched (delivered via direct commit `6c51695`, 2026-08-10, outside the plan/execute cycle — no formal plans were created; portrait float-right with text wrap on mobile, order-swapped on desktop, confirmed in the diff; UI-02's regression sweep accepted complete per explicit user direction, not independently re-verified by this session) (completed 2026-08-10)
-- [ ] **Phase 24: Cross-Linking & Contact CTA** - Visitors on a Portfolio gallery detail page can navigate to its associated Édition, and visitors reaching the end of any gallery's or édition's photo sequence see a CTA prompting them to contact Romane — both verified clean on mobile and desktop/tablet
+- [x] **Phase 24: Cross-Linking & Contact CTA** - Visitors on a Portfolio gallery detail page can navigate to its associated Édition, and visitors reaching the end of any gallery's or édition's photo sequence see a CTA prompting them to contact Romane — both verified clean on mobile and desktop/tablet (completed 2026-08-26)
 
 ## Phase Details
 
@@ -116,7 +116,7 @@ Full phase details (goals, dependencies, requirements, success criteria, wave/pl
   3. Visitor reaching the end of a gallery's photo sequence, and separately the end of an édition's photo sequence, sees a CTA prompting them to contact Romane and can click through to the Contact page
   4. Both the gallery→édition cross-link and the contact CTA render correctly and introduce no regressions to the existing gallery/édition layouts, confirmed clean at phone widths (≤767px, the mobile viewport class) and at desktop/tablet widths — matching this project's documented mobile-vs-desktop/tablet viewport classes and its history of phone-specific work leaking into desktop (v1.6)
 
-**Plans**: 4/5 plans executed
+**Plans**: 5/5 plans complete
 
 Plans:
 **Wave 1**
@@ -134,7 +134,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 24-05-PLAN.md — Sanity content checkpoint, EDN-12 presence assertion, UI-03 dual-viewport UAT (wave 4, has checkpoints)
+- [x] 24-05-PLAN.md — Sanity content checkpoint, EDN-12 presence assertion, UI-03 dual-viewport UAT (wave 4, has checkpoints)
 
 **UI hint**: yes
 
@@ -170,7 +170,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 21. Homepage Scroll Experience | 15/15 | Complete   | 2026-08-10 |
 | 22. Gallery & Édition Scroll Navigation | 0/0 | Cancelled | 2026-08-10 |
 | 23. About Portrait Placement & Milestone Regression Close | 0/0 | Complete (direct commit) | 2026-08-10 |
-| 24. Cross-Linking & Contact CTA | 4/5 | In Progress|  |
+| 24. Cross-Linking & Contact CTA | 5/5 | Complete   | 2026-08-26 |
 
 ## Milestone Scope Note
 
