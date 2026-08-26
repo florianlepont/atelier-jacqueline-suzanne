@@ -170,3 +170,13 @@ None — no external service configuration required. (Note: the `.env` values us
 ---
 *Phase: 24-cross-linking-contact-cta*
 *Completed: 2026-08-26*
+
+## Self-Check: PASSED
+
+- FOUND: `src/components/EditionDetailBody.astro`
+- FOUND: `src/components/EditionDetailPage.astro`
+- FOUND: `tests/e2e/edition.spec.ts`
+- FOUND: `.planning/phases/24-cross-linking-contact-cta/24-04-SUMMARY.md`
+- FOUND commit: `9c03d9a` (feat — CONT-04 CTA render)
+- FOUND commit: `118f272` (test — e2e coverage)
+- FOUND commit: `9205738` (docs — plan summary)
