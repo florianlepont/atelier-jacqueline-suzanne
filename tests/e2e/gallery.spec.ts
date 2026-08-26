@@ -1380,17 +1380,17 @@ test.describe('gallery contact CTA (CONT-04)', () => {
 // EDN-12 (D-01, D-02, D-03): a gallery detail page shows the reverse
 // cross-link to its associated édition ONLY when one is set (D-02) — the
 // count must always be 0 or 1, never more, for every published gallery.
-// IMPORTANT: no gallery in the currently-published content can carry
-// `relatedEdition` yet (the Sanity Studio field is only populated and
-// published by plan 24-05's blocking content checkpoint), so this block
-// deliberately does NOT assert that at least one gallery HAS the link —
-// that would be a false negative against today's real content. It proves
-// the conditional-render contract (zero-or-one, never a broken element)
-// and, whenever the link IS present, full href/copy/style correctness at
-// both viewport classes (UI-03). Plan 24-05 converts this into a hard
-// presence assertion once content exists.
+// Plan 24-05's blocking content checkpoint published a real reverse
+// `relatedEdition` reference on a homepage-visible gallery, so this
+// assertion is now load-bearing: it fails if no gallery in the walk
+// carries the cross-link, which is the intended signal a future content
+// removal (or a regression in the render chain) SHOULD trip. It also
+// proves the conditional-render contract (zero-or-one, never a broken
+// element) for every other gallery, full href/copy/style correctness
+// whenever the link IS present, and that the link actually navigates to
+// the édition it references, at both viewport classes (UI-03).
 test.describe('gallery reverse edition cross-link (EDN-12)', () => {
-  test('every gallery shows zero or one related-edition link, correct when present, at both viewports', async ({
+  test('every gallery shows zero or one related-edition link, at least one carries it, correct when present, navigable, at both viewports', async ({
     page,
   }) => {
     const hrefs = await discoverGalleryHrefsForCta(page);
@@ -1420,6 +1420,15 @@ test.describe('gallery reverse edition cross-link (EDN-12)', () => {
       }
     }
 
+    // Hard presence assertion (24-05): at least one published, homepage-visible
+    // gallery must carry the reverse cross-link now that Sanity content exists.
+    // A gallery hidden from the homepage grid would never be walked above, and
+    // a future removal of the relatedEdition reference SHOULD fail this test.
+    expect(
+      foundHref !== null,
+      'expected at least one gallery to carry a .gallery-detail__related link now that Sanity content has been published (24-05)',
+    ).toBe(true);
+
     if (foundHref) {
       await page.setViewportSize({ width: 1280, height: 900 });
       await page.goto(foundHref);
@@ -1428,6 +1437,35 @@ test.describe('gallery reverse edition cross-link (EDN-12)', () => {
         return { display: style.display, borderTopWidth: style.borderTopWidth };
       });
       expect(desktopStyles).toEqual({ display: 'inline-flex', borderTopWidth: '2px' });
+
+      // Click-through: the link must actually navigate to the édition it
+      // references, not just render with a plausible-looking href.
+      await page.locator('.gallery-detail__related').click();
+      await expect(page).toHaveURL(/\/editions\/[^/]+\/?$/);
     }
+  });
+});
+
+// CONT-04 / EDN-12 (UI-03, 24-05): the gallery detail scroll track — the
+// same >= 300px headroom PORT-06 (above) pins on a gallery with no CTA —
+// must still hold once the CTA's added height is present. RESEARCH.md
+// Pitfall 3 proves this at the code level: DetailHero's reveal progress
+// reads only `.detail-hero`'s own getBoundingClientRect().top against a
+// fixed REVEAL_DISTANCE=900, and the scroll-up-to-return gesture arms on
+// an absolute `window.scrollY >= ENGAGE_DISTANCE (300)` — neither depends
+// on total document height, so content added after the grid can only ever
+// increase available scroll room. This guard exists so a future unrelated
+// CSS change (not this phase's own work) cannot silently erode that room.
+test.describe('gallery detail scroll-track safety with contact CTA present (CONT-04/EDN-12, UI-03)', () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test('desktop scroll track is still >= 300px with the contact CTA rendered', async ({ page }) => {
+    const hrefs = await discoverGalleryHrefsForCta(page);
+    await page.goto(hrefs[0]);
+
+    await expect(page.locator('.gallery-detail__contact-cta')).toHaveCount(1);
+
+    const track = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+    expect(track).toBeGreaterThanOrEqual(300);
   });
 });
