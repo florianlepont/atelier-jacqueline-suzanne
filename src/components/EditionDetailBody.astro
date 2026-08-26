@@ -31,6 +31,8 @@ interface Props {
   relatedLink: { href: string; text: string } | null;
   gridItems: GalleryGridItem[];
   lightboxImages: GalleryImage[];
+  contactCtaHref: string;
+  contactCtaLabel: string;
   locale: 'fr' | 'en';
 }
 
@@ -50,6 +52,8 @@ const {
   relatedLink,
   gridItems,
   lightboxImages,
+  contactCtaHref,
+  contactCtaLabel,
   locale,
 } = Astro.props;
 ---
@@ -103,6 +107,17 @@ const {
         `layout` prop comment for why its bento default is no longer the
         mechanism either real caller relies on. */}
     {gridItems.length > 0 && <GalleryGrid items={gridItems} layout="masonry" />}
+    {/* CONT-04: unconditional contact CTA, last child of .edition-detail__content,
+        after the grid — D-07. Shares structure/copy/styling with the gallery-page
+        CTA (one shared string, D-06); its own .edition-detail__ scoped class names
+        cannot cascade onto the sibling .edition-detail__related link above (D-09). */}
+    <div class="edition-detail__contact-cta-zone">
+      <div class="edition-detail__contact-cta-rule"></div>
+      <a class="edition-detail__contact-cta" href={contactCtaHref}>
+        {contactCtaLabel}
+        <span class="edition-detail__contact-cta-arrow" aria-hidden="true">→</span>
+      </a>
+    </div>
   </div>
 </div>
 <Lightbox images={lightboxImages} locale={locale} />
@@ -158,5 +173,47 @@ const {
       max-width: 100%;
       margin: 0 0 var(--space-xl);
     }
+  }
+
+  /* CONT-04: contact CTA closing the photo sequence, sketch 018 Variant B.
+     Literal 20px/600/1.25 values are pinned to the sketch's own reference,
+     not the numerically-coincidental --text-heading-* tokens (UI-SPEC.md). */
+  .edition-detail__contact-cta-zone {
+    padding-top: var(--space-2xl);
+  }
+
+  .edition-detail__contact-cta-rule {
+    border-top: 1px solid var(--pink-600);
+    width: 48px;
+    margin-bottom: var(--space-md);
+  }
+
+  .edition-detail__contact-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--color-ink);
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 1.25;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+  }
+
+  .edition-detail__contact-cta-arrow {
+    color: var(--pink-600);
+    font-size: 20px;
+    transition: transform 0.15s ease;
+  }
+
+  .edition-detail__contact-cta:hover,
+  .edition-detail__contact-cta:focus-visible {
+    border-bottom-color: var(--color-ink);
+  }
+
+  .edition-detail__contact-cta:hover .edition-detail__contact-cta-arrow,
+  .edition-detail__contact-cta:focus-visible .edition-detail__contact-cta-arrow {
+    transform: translateX(4px);
   }
 </style>

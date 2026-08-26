@@ -48,6 +48,8 @@ const model = buildEditionDetailModel({ edition, locale });
     relatedLink={model.relatedLink}
     gridItems={model.gridItems}
     lightboxImages={edition.images ?? []}
+    contactCtaHref={model.contactCtaHref}
+    contactCtaLabel={model.contactCtaLabel}
     locale={locale}
   />
 </BaseLayout>
