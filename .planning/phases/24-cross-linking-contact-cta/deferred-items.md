@@ -3,6 +3,18 @@
 Out-of-scope discoveries logged per the executor's scope-boundary rule (only auto-fix issues
 directly caused by the current task's own changes; log everything else here instead of fixing).
 
+**Update (Task 3 closeout, fresh worktree `agent-a2632f615dbd1f634`):** Items 1 and 3 below were
+observed in a *different, prior* worktree that had a partial/missing install. This closeout agent
+ran in a fresh worktree that started with zero `node_modules` anywhere (root and `sanity/`) and no
+`.env`, ran `npm install`, `npm --prefix sanity install`, and copied `.env` from the main checkout
+(read-only copy of an already-existing local file, not a new credential), then re-ran the plan's
+full `<verification>` block end-to-end. Every command passed clean, including
+`tests/unit/dashboard-logic.test.ts` (which needs `sanity/node_modules`) and `npm run build` (which
+needs real Sanity credentials). Both root causes were environment/install-provisioning gaps, not
+code defects — this confirms the "suggested follow-up" for items 1 and 3 below. Item 2 (the stale
+`stash@{0}` entry) is untouched by this agent — it was never accessed from this worktree — and still
+needs an orchestrator/human decision with visibility into all concurrently active worktrees.
+
 ## 1. `tests/unit/dashboard-logic.test.ts` fails in this worktree — pre-existing, unrelated to 24-05
 
 **Discovered during:** Task 2's `npm run test:unit` verification pass.
