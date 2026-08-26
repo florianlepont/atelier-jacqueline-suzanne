@@ -10,6 +10,8 @@ import {
 } from './site-config';
 import {getRelatedGalleryLink} from './related-gallery';
 import type {RelatedGalleryLink} from './related-gallery';
+import {getRelatedEditionLink} from './related-edition';
+import type {RelatedEditionLink} from './related-edition';
 import {getRelativeLocaleUrl} from 'astro:i18n';
 import type {GalleryGridItem} from '../components/GalleryGrid.astro';
 
@@ -89,6 +91,11 @@ export interface GalleryDetailModel {
   // resolved hex literals. The explicit-heroColor path still only ever
   // produces those two exact values via getHeroTextColor().
   accentText: string;
+  // EDN-12: reverse direction of EditionDetailModel.relatedLink (below) — a
+  // gallery's optional link back to the édition of the same photo
+  // collection, when one exists. `null` is the common case: most galleries
+  // have no linked édition (D-02).
+  relatedLink: RelatedEditionLink | null;
   gridItems: GalleryGridItem[];
   structuredData: GalleryDetailStructuredData;
   total: number;
@@ -157,6 +164,8 @@ export function buildGalleryDetailModel({
     ? getHeroTextColor(explicitAccent)
     : resolveAutomaticAccent(homeIndex >= 0 ? homeIndex : 0).text;
 
+  const relatedLink = getRelatedEditionLink(gallery.relatedEdition, locale);
+
   const gridItems = buildGridItems(gallery.images, heroIndex, total, locale, false);
 
   const structuredData: GalleryDetailStructuredData = {
@@ -191,6 +200,7 @@ export function buildGalleryDetailModel({
     noIndex: gallery.seo?.noIndex,
     accent,
     accentText,
+    relatedLink,
     gridItems,
     structuredData,
     total,
