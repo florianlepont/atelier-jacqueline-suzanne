@@ -163,3 +163,14 @@ None — no external service configuration required.
 ---
 *Phase: 24-cross-linking-contact-cta*
 *Completed: 2026-08-26*
+
+## Self-Check: PASSED
+
+- FOUND: `src/components/GalleryDetailBody.astro`
+- FOUND: `src/components/GalleryDetailPage.astro`
+- FOUND: `tests/e2e/gallery.spec.ts`
+- FOUND: `.planning/phases/24-cross-linking-contact-cta/24-03-SUMMARY.md`
+- FOUND commit: c0421c4 (feat — EDN-12 reverse cross-link)
+- FOUND commit: aede2fa (feat — CONT-04 contact CTA)
+- FOUND commit: 4af52da (test — cross-viewport e2e coverage)
+- FOUND commit: af3d8a9 (docs — plan completion)
