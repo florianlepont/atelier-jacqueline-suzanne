@@ -1,12 +1,21 @@
 # Atelier Jacqueline Suzanne — Website
 
-Bilingual (fr/en) static Astro site with a Sanity CMS, for Romane Lepont's photography.
+## About the project
+
+This is the custom-built bilingual (French/English) website for Atelier Jacqueline Suzanne, the practice of photographer Romane Lepont. It presents her photographic galleries, her Éditions, an about/contact page, and her exhibition agenda.
+
+Content — galleries, Éditions, agenda entries, page copy — is authored and published by the photographer herself through a headless CMS, without touching the codebase. The site replaces a paid, hosted SaaS portfolio builder (Myportfolio) with a custom build designed to run at near-zero recurring cost. A shop with real checkout is planned as a future milestone; it is not part of the current build.
+
+## Technical highlights
+
+- **Static output, no server runtime** — Astro 7 builds to static HTML (`output: 'static'`, no SSR adapter) because the production host (OVH shared hosting, already owned) offers zero request-time compute. The architecture is deliberately shaped to need none, and ships zero JS by default.
+- **Headless CMS, build-time content** — Sanity powers galleries, Éditions, About, and agenda content, fetched at build time rather than queried at runtime. The non-technical site owner publishes content through the Studio; a publish triggers a rebuild rather than a live database call.
+- **Built-in i18n routing** — French served at the root, English under `/en/`, via Astro's native `astro:i18n`, keeping the bilingual requirement out of custom routing code.
+- **Blocking CI gates before every deploy** — GitHub Actions runs lint, typecheck, unit tests (with coverage thresholds), and end-to-end browser tests across both the site and the separate Sanity Studio subproject before anything ships.
+- **Two deploy targets, different roles** — GitHub Pages is a permanently-live staging/preview environment; OVH is the production host serving the real domain, with production releases triggered by the photographer's own publish action in Studio rather than by a code push.
+- **Near-zero cost by design** — free hosting/CMS tiers plus an already-owned domain and host, targeting ~0-5€/month recurring cost as an explicit constraint, not an accident.
 
 For full project context, decisions, and constraints, see [`.planning/PROJECT.md`](.planning/PROJECT.md) and [`CLAUDE.md`](CLAUDE.md).
-
-## Stack
-
-Astro 7 static output (no SSR adapter), content from Sanity fetched at build time, bilingual fr/en. Deployed to GitHub Pages (staging) and OVH (production, Phase 5).
 
 ## Repo layout
 
