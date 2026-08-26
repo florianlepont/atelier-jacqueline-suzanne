@@ -14,21 +14,31 @@
 // not just a trade/brand name — "Romane Lepont, exerçant sous le nom
 // commercial « Atelier Jacqueline Suzanne »".
 //
-// Address/phone (D-09, RESOLVED): Romane has no professional address or
-// phone line on file yet. Shipped as explicit, clearly-marked `.placeholder`
-// pending fields — never fabricated, never silently omitted.
+// Address/phone (D-09, superseded 2026-08-26 by quick task 260826-r78): the
+// site's editorial activity is declared non-professional under LCEN Article
+// 1-1, II — which lets an individual substitute the identity already on file
+// with their host for their own personal address/phone, rather than
+// publishing the latter. Florian holds the actual OVH hosting account (see
+// README.md "Author" / CLAUDE.md), so his identity — not Romane's — is what
+// is genuinely on file with the host; the page discloses that fact directly
+// rather than implying an inaccurate "given privately to the host" claim
+// about Romane specifically. No phone number is published for either party.
 //
-// Hosting (D-07): names OVH as the confirmed Phase-5 end-state host, even
-// though the site is still actually live on GitHub Pages today. Address/RCS/
-// APE details verified directly against OVH's own live mentions-légales page
-// (ovhcloud.com/fr/terms-and-conditions/) during this task — that page does
-// not itself publish a phone number for OVH SAS, so none is asserted here
-// (04-RESEARCH.md Assumption A2 delta, recorded in 04-01-SUMMARY.md).
+// Hosting (D-07): OVH is now the actual, live production host — Phase 5/v1.7
+// shipped 2026-08-13, the site no longer lives on GitHub Pages in production
+// (GitHub Pages remains a separate pre-production staging environment per
+// D-03). Address/RCS/APE details verified directly against OVH's own live
+// mentions-légales page (ovhcloud.com/fr/terms-and-conditions/) during the
+// original Phase 4 task — that page does not itself publish a phone number
+// for OVH SAS, so none is asserted here (04-RESEARCH.md Assumption A2 delta,
+// recorded in 04-01-SUMMARY.md).
 //
-// Business status (D-10, RESOLVED): Romane has not filed any business
-// registration — her activity is occasional and, by her own account, below
-// the threshold that would trigger a registration obligation. This is NOT
-// the "SIRET en cours d'attribution" (filed, pending issuance) case.
+// Business status (D-10, superseded 2026-08-26): now framed explicitly as
+// non-professional (not just "non immatriculée"), matching the LCEN Art.
+// 1-1, II classification above. Re-evaluate this entire block once the v1.x
+// Shop/Checkout milestone ships real commerce — LCEN Section I (professional
+// editor) will then unambiguously apply and this page will need Romane's own
+// real address/phone, plus new CGV pages.
 import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
@@ -37,11 +47,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     <h1>Mentions légales</h1>
 
     <h2>Éditeur du site</h2>
-    <p>Romane Lepont, exerçant sous le nom commercial « Atelier Jacqueline Suzanne ».</p>
+    <p>Romane Lepont, exerçant sous le nom commercial « Atelier Jacqueline Suzanne », à titre non professionnel.</p>
     <p>Directeur de la publication : Romane Lepont.</p>
     <p>E-mail : contact@atelierjacquelinesuzanne.fr</p>
-    <p class="placeholder">Adresse : à compléter.</p>
-    <p class="placeholder">Téléphone : à compléter.</p>
+    <p>
+      Le site étant édité à titre non professionnel, l'adresse et le numéro de téléphone
+      personnels de l'éditrice ne sont pas publiés, conformément à l'article 1-1, II de la loi
+      n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique.
+    </p>
+    <p>
+      Le site est hébergé via le compte d'hébergement OVH de Florian Lepont, domicilié au [adresse retirée].
+    </p>
 
     <h2>Hébergement</h2>
     <p>
@@ -50,9 +66,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     </p>
 
     <h2>Statut</h2>
-    <p class="placeholder">
-      Statut : activité individuelle, non immatriculée — activité occasionnelle en dessous du
-      seuil imposant l'immatriculation.
+    <p>
+      Statut : activité individuelle à titre non professionnel — activité occasionnelle en
+      dessous du seuil imposant l'immatriculation.
     </p>
   </div>
 </BaseLayout>

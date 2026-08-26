@@ -26,7 +26,7 @@ test.describe('mentions légales page content', () => {
     await expect(main).toContainText('Romane Lepont');
     await expect(main).toContainText('Atelier Jacqueline Suzanne');
     await expect(main).toContainText('OVH');
-    await expect(main).toContainText('activité individuelle, non immatriculée');
+    await expect(main).toContainText('activité individuelle à titre non professionnel');
   });
 
   test('English legal notice page renders identity, hosting, and status sections at "/en/mentions-legales/"', async ({
@@ -39,7 +39,7 @@ test.describe('mentions légales page content', () => {
 
     const main = page.locator('main');
     await expect(main).toContainText('Romane Lepont');
-    await expect(main).toContainText('not registered');
+    await expect(main).toContainText('non-professional basis');
   });
 
   test('Mentions légales copy differs between the French and English pages', async ({ page }) => {

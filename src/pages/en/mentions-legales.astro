@@ -5,8 +5,9 @@
 // its long-standing pre-2024 citation; do not cite the old, abolished
 // numbering here, 04-RESEARCH.md Pitfall 2). Identical layout and legal content
 // to src/pages/mentions-legales.astro (see that file's frontmatter comment
-// for the full D-07/D-08/D-09/D-10 rationale); only import depth and copy
-// differ. Slug is deliberately identical to the FR page (RESEARCH.md
+// for the full D-07/D-08/D-09/D-10 rationale, including the 2026-08-26
+// non-professional-activity/OVH-account-holder update); only import depth
+// and copy differ. Slug is deliberately identical to the FR page (RESEARCH.md
 // Pitfall 1) — getSwitcherHref() only strips/re-adds the "/en/" prefix, it
 // does not translate slugs.
 import BaseLayout from '../../layouts/BaseLayout.astro';
@@ -17,11 +18,17 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     <h1>Legal notice</h1>
 
     <h2>Site publisher</h2>
-    <p>Romane Lepont, trading as « Atelier Jacqueline Suzanne ».</p>
+    <p>Romane Lepont, trading as « Atelier Jacqueline Suzanne », on a non-professional basis.</p>
     <p>Publication director: Romane Lepont.</p>
     <p>Email: contact@atelierjacquelinesuzanne.fr</p>
-    <p class="placeholder">Address: to be completed.</p>
-    <p class="placeholder">Phone: to be completed.</p>
+    <p>
+      As the site is published on a non-professional basis, the publisher's personal address and
+      phone number are not published here, in accordance with Article 1-1, II of French law
+      n° 2004-575 of 21 June 2004 for confidence in the digital economy (LCEN).
+    </p>
+    <p>
+      The site is hosted via the OVH hosting account of Florian Lepont, residing at [adresse retirée].
+    </p>
 
     <h2>Hosting</h2>
     <p>
@@ -30,9 +37,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     </p>
 
     <h2>Status</h2>
-    <p class="placeholder">
-      Status: individual activity, not registered — occasional activity below the threshold
-      requiring business registration.
+    <p>
+      Status: individual activity on a non-professional basis — occasional activity below the
+      threshold requiring business registration.
     </p>
   </div>
 </BaseLayout>
