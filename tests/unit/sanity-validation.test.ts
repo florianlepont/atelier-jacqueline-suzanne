@@ -177,6 +177,67 @@ describe('gallery and edition sanitizers', () => {
     expect(sanitizeEdition({...valid, images: []}).value).toBeNull()
     expect(sanitizeEditions([valid, {...valid, slug: ''}]).value).toHaveLength(1)
   })
+
+  it('EDN-12: preserves a populated relatedEdition on a gallery intact', () => {
+    const result = sanitizeGallery({
+      title: 'Rebut',
+      slug: 'rebut',
+      images: [renderableImage],
+      relatedEdition: {title: 'Rebut', slug: 'rebut'},
+    })
+    expect(result.value?.relatedEdition).toEqual({title: 'Rebut', slug: 'rebut'})
+  })
+
+  it('EDN-12: preserves an explicit null relatedEdition on a gallery', () => {
+    const result = sanitizeGallery({
+      title: 'Rebut',
+      slug: 'rebut',
+      images: [renderableImage],
+      relatedEdition: null,
+    })
+    expect(result.value?.relatedEdition).toBeNull()
+  })
+
+  it('EDN-12: leaves relatedEdition key absent on a gallery when the field is absent from input', () => {
+    const result = sanitizeGallery({
+      title: 'Rebut',
+      slug: 'rebut',
+      images: [renderableImage],
+    })
+    expect(result.value).not.toHaveProperty('relatedEdition')
+  })
+
+  it('EDN-12: drops a partially-dereferenced relatedEdition and records a diagnostic issue', () => {
+    const result = sanitizeGallery({
+      title: 'Rebut',
+      slug: 'rebut',
+      images: [renderableImage],
+      relatedEdition: {title: 'Rebut'},
+    })
+    expect(result.value).not.toHaveProperty('relatedEdition')
+    expect(result.issues).toContainEqual(
+      expect.objectContaining({code: 'relatedEdition.removed'}),
+    )
+  })
+
+  // RESEARCH.md Pitfall 1: sanitizeEditionDocument uses sanitizeGalleryDocument
+  // as its shared base (via an object spread) -- without an explicit
+  // destructure exclusion, any gallery-only field added to the base function
+  // silently leaks onto every Edition, which has no such field in its schema
+  // or its TypeScript interface. This test guards that exclusion.
+  it('EDN-12: never leaks relatedEdition onto an Edition (shared-base leak guard)', () => {
+    const validEdition = {
+      title: 'Silos',
+      slug: 'silos',
+      statement: {fr: 'Texte', en: 'Statement'},
+      images: [renderableImage],
+      pageCount: 48,
+      printRun: 100,
+      dimensions: {width: 21, height: 29.7, unit: 'cm'},
+    }
+    const result = sanitizeEdition({...validEdition, relatedEdition: {title: 'X', slug: 'x'}})
+    expect(result.value).not.toHaveProperty('relatedEdition')
+  })
 })
 
 describe('safe diagnostics', () => {
