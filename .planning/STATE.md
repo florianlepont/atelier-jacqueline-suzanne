@@ -2,9 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: Cross-linking & Contact CTA
+current_phase: 24
+current_phase_name: Cross-Linking & Contact CTA
 status: planning
-last_updated: "2026-08-26T20:15:00.000Z"
+stopped_at: Phase 24 context gathered
+last_updated: "2026-08-26T18:14:28.424Z"
 last_activity: 2026-08-26
+last_activity_desc: "ROADMAP.md created for v1.8 (single Phase 24: Cross-Linking & Contact CTA, covering EDN-12/CONT-04/UI-03); REQUIREMENTS.md traceability updated, 3/3 v1.8 requirements mapped, 0 orphans"
 progress:
   total_phases: 1
   completed_phases: 0
@@ -389,8 +393,10 @@ The 6 stale `260722-*` quick-task directories listed above (compact-sanity-docum
 
 ## Session Continuity
 
-Last session: 2026-08-26
-Stopped at: v1.8 ROADMAP.md created (single Phase 24: Cross-Linking & Contact CTA) — ready to plan, not yet planned
+**Resume file:** .planning/phases/24-cross-linking-contact-cta/24-CONTEXT.md
+
+Last session: 2026-08-26T18:14:28.404Z
+Stopped at: Phase 24 context gathered
 
 **Next up:** Plan Phase 24 with `/gsd-plan-phase 24`. Phase 24 covers all 3 v1.8 requirements (EDN-12, CONT-04, UI-03): a reverse gallery→édition cross-link on the Portfolio gallery detail page, a contact CTA at the end of every gallery's and édition's photo sequence, and an explicit mobile (≤767px) + desktop/tablet verification pass for both. v1.0 through v1.7 remain shipped and archived; the site is live in production at atelierjacquelinesuzanne.fr. The v1.x Shop/Checkout wave (Stripe, stock, shipping/VAT, commerce legal, Exhibitions) remains separately scoped, not part of v1.8.
 
