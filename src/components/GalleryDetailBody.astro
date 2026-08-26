@@ -27,6 +27,8 @@ interface Props {
   relatedLink: { href: string; text: string } | null;
   gridItems: GalleryGridItem[];
   lightboxImages: GalleryImage[];
+  contactCtaHref: string;
+  contactCtaLabel: string;
   locale: 'fr' | 'en';
 }
 
@@ -46,6 +48,8 @@ const {
   relatedLink,
   gridItems,
   lightboxImages,
+  contactCtaHref,
+  contactCtaLabel,
   locale,
 } = Astro.props;
 ---
@@ -79,6 +83,13 @@ const {
       </a>
     )}
     {gridItems.length > 0 && <GalleryGrid items={gridItems} layout="masonry" />}
+    <div class="gallery-detail__contact-cta-zone">
+      <div class="gallery-detail__contact-cta-rule"></div>
+      <a class="gallery-detail__contact-cta" href={contactCtaHref}>
+        {contactCtaLabel}
+        <span class="gallery-detail__contact-cta-arrow" aria-hidden="true">→</span>
+      </a>
+    </div>
   </div>
 </div>
 <Lightbox images={lightboxImages} locale={locale} />
@@ -130,5 +141,45 @@ const {
       max-width: 100%;
       margin: 0 0 var(--space-xl);
     }
+  }
+
+  /* CONT-04: contact CTA closing the photo sequence, sketch 018 Variant B. */
+  .gallery-detail__contact-cta-zone {
+    padding-top: var(--space-2xl);
+  }
+
+  .gallery-detail__contact-cta-rule {
+    border-top: 1px solid var(--pink-600);
+    width: 48px;
+    margin-bottom: var(--space-md);
+  }
+
+  .gallery-detail__contact-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--color-ink);
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 1.25;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+  }
+
+  .gallery-detail__contact-cta-arrow {
+    color: var(--pink-600);
+    font-size: 20px;
+    transition: transform 0.15s ease;
+  }
+
+  .gallery-detail__contact-cta:hover,
+  .gallery-detail__contact-cta:focus-visible {
+    border-bottom-color: var(--color-ink);
+  }
+
+  .gallery-detail__contact-cta:hover .gallery-detail__contact-cta-arrow,
+  .gallery-detail__contact-cta:focus-visible .gallery-detail__contact-cta-arrow {
+    transform: translateX(4px);
   }
 </style>
