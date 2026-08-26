@@ -1,19 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.7
-milestone_name: Launch & Domain Cutover
-current_phase: null
-status: Awaiting next milestone
-stopped_at: Milestone v1.7 complete
-last_updated: "2026-08-13T19:59:08.855Z"
-last_activity: 2026-08-13
-last_activity_desc: Milestone v1.7 completed and archived
+milestone: v1.8
+milestone_name: Cross-linking & Contact CTA
+status: planning
+last_updated: "2026-08-26T17:44:33.342Z"
+last_activity: 2026-08-26
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 6
-  completed_plans: 6
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -27,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-08-04)
 
 ## Current Position
 
-Phase: Milestone v1.7 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-08-26 - Completed quick task 260826-r78: resolved the mentions-légales address/phone placeholders (unfilled since Phase 4, live in prod since v1.7) by declaring the site's activity non-professional under LCEN Art. 1-1 II and naming Florian (the real OVH account holder) with his real address instead — a deliberate departure from Phase 4's original professional-activity classification, flagged for re-evaluation once v1.x commerce ships.
+Status: Defining requirements
+Last activity: 2026-08-26 — Milestone v1.8 started
 
 ## Performance Metrics
 

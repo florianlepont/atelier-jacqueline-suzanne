@@ -8,9 +8,17 @@ A bilingual (French/English) website for Romane Lepont's photography and artisti
 
 Visitors can browse Romane's photographic work and buy a piece (print, original, book, or merch) through a real, working checkout — everything else supports that. **Delivered in two milestones**: v1 replaces the current site fast with portfolio/about/contact so the old Myportfolio site can be retired sooner; v1.x adds exhibitions, the shop, and checkout on top of that foundation.
 
-## Current Milestone: none — awaiting next milestone
+## Current Milestone: v1.8 Cross-linking & Contact CTA
 
-v1.7 shipped 2026-08-13 (see archived brief below) — the site is now live at atelierjacquelinesuzanne.fr, fully replacing the old Myportfolio site. Only the v1.x wave (Exhibitions, Shop, Checkout, Shipping, commerce Legal) remains open, not yet roadmapped — its requirements live in this document's own Active section below (no separate REQUIREMENTS.md currently exists; it is recreated fresh by `/gsd-new-milestone` when that wave is next scoped). Next milestone not yet scoped — run `/gsd-new-milestone` to start one.
+**Goal:** Close two small backlog seeds — a post-gallery/série contact CTA and bidirectional gallery↔édition cross-linking — verified clean on both mobile and desktop.
+
+**Target features:**
+- A CTA prompting the visitor to contact Romane, shown at the end of each photo/série (gallery), standing in for a sales flow that doesn't exist yet (SEED-001)
+- A link from a Portfolio gallery detail page back to its associated Édition — the reverse of the `relatedGallery` cross-link Phase 13/v1.3 already shipped (édition→gallery only) (SEED-002)
+
+**Key context:** Both features must be verified clean on both mobile and desktop — this project has a documented history of phone-specific layouts diverging from desktop/tablet (v1.6's UI-02 requirement), so cross-viewport regression checking is an explicit success criterion here, not an assumption. The v1.x Shop/Checkout wave (Stripe, stock, shipping/VAT, commerce legal, Exhibitions) remains a separate, larger, not-yet-scoped milestone — out of scope for v1.8.
+
+v1.7 shipped 2026-08-13 (see archived brief below) — the site is now live at atelierjacquelinesuzanne.fr, fully replacing the old Myportfolio site.
 
 <details>
 <summary>Archived: v1.7 Launch & Domain Cutover milestone brief (shipped 2026-08-13)</summary>
