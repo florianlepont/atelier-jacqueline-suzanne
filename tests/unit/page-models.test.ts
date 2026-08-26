@@ -176,6 +176,58 @@ describe('buildGalleryDetailModel', () => {
     });
     expect(model.carouselReturnHref).toContain('?carousel=brume');
   });
+
+  // EDN-12 (D-01, D-02): the reverse gallery -> édition cross-link.
+  it('resolves relatedEdition into a link when populated (fr), and null when absent', () => {
+    const withRelated = buildGalleryDetailModel({
+      gallery: gallery({relatedEdition: {title: 'Rebut', slug: 'rebut'}}),
+      locale: 'fr',
+      pageUrl: PAGE_URL_FR,
+      homeIndex: 0,
+    });
+    expect(withRelated.relatedLink).not.toBeNull();
+    expect(withRelated.relatedLink!.href).toMatch(/\/editions\/rebut\/?$/);
+    expect(withRelated.relatedLink!.text).toBe("Voir l'édition « Rebut »");
+
+    const withoutKey = buildGalleryDetailModel({
+      gallery: gallery(),
+      locale: 'fr',
+      pageUrl: PAGE_URL_FR,
+      homeIndex: 0,
+    });
+    expect(withoutKey.relatedLink).toBeNull();
+
+    const withExplicitNull = buildGalleryDetailModel({
+      gallery: gallery({relatedEdition: null}),
+      locale: 'fr',
+      pageUrl: PAGE_URL_FR,
+      homeIndex: 0,
+    });
+    expect(withExplicitNull.relatedLink).toBeNull();
+  });
+
+  it('resolves relatedEdition into a locale-correct href for en', () => {
+    const model = buildGalleryDetailModel({
+      gallery: gallery({relatedEdition: {title: 'Rebut', slug: 'rebut'}}),
+      locale: 'en',
+      pageUrl: PAGE_URL_EN,
+      homeIndex: 0,
+    });
+    expect(model.relatedLink!.href).toMatch(/\/en\/editions\/rebut\/?$/);
+  });
+
+  // CONT-04 (D-04, D-05, D-06): contact CTA href + label.
+  it('emits a locale-correct, base-path-safe contact CTA href and label', () => {
+    const fr = buildGalleryDetailModel({gallery: gallery(), locale: 'fr', pageUrl: PAGE_URL_FR, homeIndex: 0});
+    expect(fr.contactCtaHref).toMatch(/\/contact\/?$/);
+    expect(fr.contactCtaLabel).toBe('Intéressé·e par une pièce ? Contactez-nous');
+    expect(fr.contactCtaLabel).not.toContain('→');
+
+    const en = buildGalleryDetailModel({gallery: gallery(), locale: 'en', pageUrl: PAGE_URL_EN, homeIndex: 0});
+    expect(en.contactCtaHref).toMatch(/\/en\/contact\/?$/);
+    expect(en.contactCtaLabel).toBe('Interested in a piece? Get in touch');
+    expect(en.contactCtaLabel).not.toContain('→');
+  });
 });
 
 describe('buildEditionDetailModel', () => {
@@ -242,6 +294,24 @@ describe('buildEditionDetailModel', () => {
       locale: 'fr',
     });
     expect(model.formatText).not.toContain('undefined');
+  });
+
+  // CONT-04 (D-04, D-05, D-06): contact CTA href + label, byte-identical to
+  // the gallery model's copy for the same locale — one shared string, no
+  // per-page contextual wording.
+  it('emits a locale-correct, base-path-safe contact CTA href and label, identical to the gallery model', () => {
+    const fr = buildEditionDetailModel({edition: edition(), locale: 'fr'});
+    expect(fr.contactCtaHref).toMatch(/\/contact\/?$/);
+    expect(fr.contactCtaLabel).not.toContain('→');
+
+    const en = buildEditionDetailModel({edition: edition(), locale: 'en'});
+    expect(en.contactCtaHref).toMatch(/\/en\/contact\/?$/);
+    expect(en.contactCtaLabel).not.toContain('→');
+
+    const galleryFr = buildGalleryDetailModel({gallery: gallery(), locale: 'fr', pageUrl: PAGE_URL_FR, homeIndex: 0});
+    const galleryEn = buildGalleryDetailModel({gallery: gallery(), locale: 'en', pageUrl: PAGE_URL_EN, homeIndex: 0});
+    expect(fr.contactCtaLabel).toBe(galleryFr.contactCtaLabel);
+    expect(en.contactCtaLabel).toBe(galleryEn.contactCtaLabel);
   });
 });
 
