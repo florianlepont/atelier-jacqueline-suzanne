@@ -27,6 +27,18 @@ const SCROLL_HINT_LABEL: Record<Locale, string> = {
   en: 'Scroll',
 };
 
+// CONT-04 (D-05, D-06): the shared contact-CTA label shown at the end of
+// every gallery AND édition detail page. Tone is direct and
+// purchase-oriented, "us"-framed rather than naming Romane, and the copy is
+// deliberately identical across both page types — do not add per-page
+// contextual variants. The trailing arrow glyph is NOT part of this label:
+// it is rendered separately as decorative, aria-hidden markup by the body
+// components.
+const CONTACT_CTA_LABEL: Record<Locale, string> = {
+  fr: 'Intéressé·e par une pièce ? Contactez-nous',
+  en: 'Interested in a piece? Get in touch',
+};
+
 function buildGridItems(
   images: Gallery['images'],
   heroIndex: number,
@@ -99,6 +111,8 @@ export interface GalleryDetailModel {
   gridItems: GalleryGridItem[];
   structuredData: GalleryDetailStructuredData;
   total: number;
+  contactCtaHref: string;
+  contactCtaLabel: string;
 }
 
 /**
@@ -165,6 +179,8 @@ export function buildGalleryDetailModel({
     : resolveAutomaticAccent(homeIndex >= 0 ? homeIndex : 0).text;
 
   const relatedLink = getRelatedEditionLink(gallery.relatedEdition, locale);
+  const contactCtaHref = getRelativeLocaleUrl(locale, 'contact');
+  const contactCtaLabel = CONTACT_CTA_LABEL[locale];
 
   const gridItems = buildGridItems(gallery.images, heroIndex, total, locale, false);
 
@@ -204,6 +220,8 @@ export function buildGalleryDetailModel({
     gridItems,
     structuredData,
     total,
+    contactCtaHref,
+    contactCtaLabel,
   };
 }
 
@@ -224,6 +242,8 @@ export interface EditionDetailModel {
   scrollHintLabel: string;
   relatedLink: RelatedGalleryLink | null;
   gridItems: GalleryGridItem[];
+  contactCtaHref: string;
+  contactCtaLabel: string;
 }
 
 const HERO_CAPTION: Record<Locale, string> = {
@@ -294,6 +314,8 @@ export function buildEditionDetailModel({
   const scrollHintLabel = SCROLL_HINT_LABEL[locale];
 
   const relatedLink = getRelatedGalleryLink(edition.relatedGallery, locale);
+  const contactCtaHref = getRelativeLocaleUrl(locale, 'contact');
+  const contactCtaLabel = CONTACT_CTA_LABEL[locale];
 
   const gridItems = buildGridItems(images, heroIndex, total, locale, true);
 
@@ -314,6 +336,8 @@ export function buildEditionDetailModel({
     scrollHintLabel,
     relatedLink,
     gridItems,
+    contactCtaHref,
+    contactCtaLabel,
   };
 }
 
