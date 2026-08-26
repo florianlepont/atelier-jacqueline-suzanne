@@ -151,6 +151,10 @@ export interface Gallery {
   publicationStatus?: 'preparation' | 'published' | 'archived'
   showOnHomePage?: boolean
   seo?: SeoSettings
+  // EDN-12: optional, unidirectional cross-link target — dereferenced from
+  // the `relatedEdition` reference field (sanity/schemas/gallery.ts). Null
+  // or absent for galleries with no linked édition (the common case today).
+  relatedEdition?: { title: string; slug: string } | null
   images: GalleryImage[] // D-09: images[0] is always the cover
 }
 
@@ -171,11 +175,11 @@ const IMAGES_WITH_DIMENSIONS_PROJECTION = /* groq */ `images[]{
   }`
 
 const GALLERIES_QUERY = /* groq */ `*[_type == "gallery" && ${PUBLISHED_GALLERY_FILTER}] | order(orderRank) {
-  _id, title, "slug": slug.current, statement, heroColor, publicationStatus, "showOnHomePage": coalesce(showOnHomePage, true), "isVisible": coalesce(isVisible, true), seo, ${IMAGES_WITH_DIMENSIONS_PROJECTION}
+  _id, title, "slug": slug.current, statement, heroColor, publicationStatus, "showOnHomePage": coalesce(showOnHomePage, true), "isVisible": coalesce(isVisible, true), seo, ${IMAGES_WITH_DIMENSIONS_PROJECTION}, relatedEdition->{title, "slug": slug.current}
 }`
 
 const GALLERY_BY_SLUG_QUERY = /* groq */ `*[_type == "gallery" && slug.current == $slug && ${PUBLISHED_GALLERY_FILTER}][0]{
-  _id, title, "slug": slug.current, statement, heroColor, publicationStatus, "showOnHomePage": coalesce(showOnHomePage, true), "isVisible": coalesce(isVisible, true), seo, ${IMAGES_WITH_DIMENSIONS_PROJECTION}
+  _id, title, "slug": slug.current, statement, heroColor, publicationStatus, "showOnHomePage": coalesce(showOnHomePage, true), "isVisible": coalesce(isVisible, true), seo, ${IMAGES_WITH_DIMENSIONS_PROJECTION}, relatedEdition->{title, "slug": slug.current}
 }`
 
 /**

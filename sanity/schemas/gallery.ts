@@ -24,6 +24,7 @@ export const gallery = defineType({
     {name: 'photos', title: 'Photos', default: true},
     {name: 'publication', title: 'Visibilité'},
     {name: 'content', title: 'Présentation'},
+    {name: 'relatedCollection', title: 'Édition liée'},
     {name: 'homepage', title: 'Couleur'},
     {name: 'seo', title: 'SEO'},
   ],
@@ -86,6 +87,20 @@ export const gallery = defineType({
       rows: 5,
       maxLength: 700,
       description: 'Renseigner les deux langues avant de publier.',
+    }),
+    // EDN-12: optional, unidirectional cross-link to a related Éditions
+    // édition (reverse of edition.ts's `relatedGallery`, e.g. the "Rebut"
+    // gallery/collection and the "Rebut" édition/book are the same
+    // underlying subject). No validation rule -- most galleries will never
+    // set this field.
+    defineField({
+      name: 'relatedEdition',
+      title: 'Édition liée (optionnel)',
+      type: 'reference',
+      group: 'relatedCollection',
+      to: [{type: 'edition'}],
+      description:
+        'Lien optionnel vers l\'édition qui présente la même collection de photos sous forme imprimée, lorsqu\'elle existe. Exemple : la collection photo « Rebut » et l\'édition « Rebut » (le livre imprimé) sont le même sujet — renseigner ce champ affiche un lien vers l\'édition sur la page de la collection. Laisser vide s\'il n\'existe pas d\'édition correspondante.',
     }),
     defineField({
       name: 'showOnHomePage',

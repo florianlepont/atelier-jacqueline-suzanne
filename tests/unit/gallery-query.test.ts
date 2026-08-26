@@ -143,6 +143,53 @@ describe('getGalleries', () => {
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('"dimensions": asset->metadata.dimensions'));
   });
 
+  // EDN-12: relatedEdition must be dereferenced in GALLERIES_QUERY because
+  // the gallery detail page receives its `gallery` prop from getGalleries()
+  // via getStaticPaths, NOT from getGallery() — this is the load-bearing
+  // projection for the reverse cross-link UI.
+  it('projects relatedEdition', async () => {
+    fetchMock.mockResolvedValueOnce([]);
+
+    const { getGalleries } = await import('../../src/lib/sanity');
+    await getGalleries();
+
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('relatedEdition'));
+  });
+
+  it('returns a populated relatedEdition intact (EDN-12 fixture passthrough, no live dataset write)', async () => {
+    const galleries = [
+      {
+        title: 'Rebut',
+        slug: 'rebut',
+        statement: { fr: 'a', en: 'b' },
+        images: [validImage],
+        relatedEdition: { title: 'Rebut', slug: 'rebut' },
+      },
+    ];
+    fetchMock.mockResolvedValueOnce(galleries);
+
+    const { getGalleries } = await import('../../src/lib/sanity');
+    const result = await getGalleries();
+
+    expect(result[0].relatedEdition).toEqual({ title: 'Rebut', slug: 'rebut' });
+  });
+
+  it('resolves without error when relatedEdition is null (the common empty case)', async () => {
+    const galleries = [
+      {
+        title: 'Silos',
+        slug: 'silos',
+        statement: { fr: 'a', en: 'b' },
+        images: [validImage],
+        relatedEdition: null,
+      },
+    ];
+    fetchMock.mockResolvedValueOnce(galleries);
+
+    const { getGalleries } = await import('../../src/lib/sanity');
+    await expect(getGalleries()).resolves.toEqual(galleries);
+  });
+
 });
 
 describe('getGallery', () => {
@@ -202,6 +249,19 @@ describe('getGallery', () => {
     await getGallery('rebut');
 
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('slug.current == $slug'), {
+      slug: 'rebut',
+    });
+  });
+
+  // EDN-12: API parity with GALLERIES_QUERY — getGallery() has zero call
+  // sites today, but the by-slug query should still dereference relatedEdition.
+  it('projects relatedEdition', async () => {
+    fetchMock.mockResolvedValueOnce(null);
+
+    const { getGallery } = await import('../../src/lib/sanity');
+    await getGallery('rebut');
+
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('relatedEdition'), {
       slug: 'rebut',
     });
   });
