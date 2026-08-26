@@ -8,7 +8,12 @@ A bilingual (French/English) website for Romane Lepont's photography and artisti
 
 Visitors can browse Romane's photographic work and buy a piece (print, original, book, or merch) through a real, working checkout — everything else supports that. **Delivered in two milestones**: v1 replaces the current site fast with portfolio/about/contact so the old Myportfolio site can be retired sooner; v1.x adds exhibitions, the shop, and checkout on top of that foundation.
 
-## Current Milestone: v1.8 Cross-linking & Contact CTA
+## Current Milestone: None — awaiting `/gsd-new-milestone`
+
+v1.0 through v1.8 are all shipped and archived. The site is live in production at atelierjacquelinesuzanne.fr with the full portfolio, About, Contact, Éditions showcase, bidirectional gallery↔édition cross-linking, and a universal end-of-sequence contact CTA. The only remaining scope is the v1.x Shop/Checkout wave (Exhibitions, Shop, Checkout, Shipping, commerce Legal) — tracked but not yet roadmapped, see Requirements → Active below.
+
+<details>
+<summary>Archived: v1.8 Cross-linking & Contact CTA milestone brief (shipped 2026-08-26)</summary>
 
 **Goal:** Close two small backlog seeds — a post-gallery/série contact CTA and bidirectional gallery↔édition cross-linking — verified clean on both mobile and desktop.
 
@@ -18,7 +23,9 @@ Visitors can browse Romane's photographic work and buy a piece (print, original,
 
 **Key context:** Both features must be verified clean on both mobile and desktop — this project has a documented history of phone-specific layouts diverging from desktop/tablet (v1.6's UI-02 requirement), so cross-viewport regression checking is an explicit success criterion here, not an assumption. The v1.x Shop/Checkout wave (Stripe, stock, shipping/VAT, commerce legal, Exhibitions) remains a separate, larger, not-yet-scoped milestone — out of scope for v1.8.
 
-v1.7 shipped 2026-08-13 (see archived brief below) — the site is now live at atelierjacquelinesuzanne.fr, fully replacing the old Myportfolio site.
+**Result:** 3/3 requirements shipped (EDN-12, CONT-04, UI-03), Phase 24, 5/5 plans, 12/12 verification must-haves passed. Full evidence at `.planning/milestones/v1.8-ROADMAP.md` and `.planning/MILESTONES.md`.
+
+</details>
 
 <details>
 <summary>Archived: v1.7 Launch & Domain Cutover milestone brief (shipped 2026-08-13)</summary>
@@ -292,4 +299,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-26 after Phase 24 (v1.8 Cross-linking & Contact CTA) execution. 3/3 requirements delivered (EDN-12, CONT-04, UI-03) — the reverse gallery↔édition cross-link and the universal contact CTA are both live, verified clean at phone and desktop/tablet widths. This closes backlog seeds SEED-001/SEED-002. All roadmapped work (v1.0 through v1.8) is now shipped. Next: `/gsd-complete-milestone` to formally archive v1.8, then `/gsd-new-milestone` to scope the v1.x wave (Exhibitions, Shop, Checkout, Shipping, commerce Legal).*
+*Last updated: 2026-08-26 after the v1.8 (Cross-linking & Contact CTA) milestone was formally archived via `/gsd-complete-milestone`. 3/3 requirements delivered (EDN-12, CONT-04, UI-03) — the reverse gallery↔édition cross-link and the universal contact CTA are both live, verified clean at phone and desktop/tablet widths. This closes backlog seeds SEED-001/SEED-002, both now marked `status: implemented` in `.planning/seeds/`. All roadmapped work (v1.0 through v1.8) is now shipped and archived — see `.planning/milestones/v1.8-ROADMAP.md` and `.planning/MILESTONES.md`. Next: `/gsd-new-milestone` to scope the v1.x wave (Exhibitions, Shop, Checkout, Shipping, commerce Legal).*

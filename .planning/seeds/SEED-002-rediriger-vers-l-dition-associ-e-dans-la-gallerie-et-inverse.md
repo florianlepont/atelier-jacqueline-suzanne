@@ -1,10 +1,12 @@
 ---
 id: SEED-002
-status: dormant
+status: implemented
 planted: 2026-08-11
 planted_during: v1.6 (closed) — awaiting next milestone
 trigger_when: when relevant
 scope: unknown
+implemented: 2026-08-26
+implemented_during: v1.8 Cross-linking & Contact CTA — Phase 24 (requirement EDN-12)
 ---
 
 # SEED-002: rediriger vers l'édition associée dans la gallerie et inversement
@@ -33,6 +35,10 @@ This seed will surface during `/gsd-new-milestone` when the milestone scope matc
 - `sanity/schemas/gallery.ts` — where a `relatedEdition` field would need to be added for the reverse direction
 - `src/components/GalleryDetailBody.astro` or the gallery detail route — where the reverse link would need to render
 - `.planning/milestones/v1.6-REQUIREMENTS.md` (EDN-08 entry) and `PROJECT.md` Key Decisions table — prior documentation of the original, deliberately one-way scope decision (Phase 11, D-01/D-03)
+
+## Resolution
+
+Shipped 2026-08-26 as EDN-12 (v1.8, Phase 24). A new optional `relatedEdition` reference field on the `gallery` Sanity schema, plus its own GROQ projection/sanitizer/link helper, closes the reverse direction of EDN-08's existing édition→gallery cross-link. Real content published: the `silos` gallery now links to the `silos` édition. See `.planning/phases/24-cross-linking-contact-cta/` and `.planning/milestones/v1.8-ROADMAP.md`.
 
 ## Notes
 

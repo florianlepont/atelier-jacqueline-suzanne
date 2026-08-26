@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: Cross-linking & Contact CTA
-current_phase: 24
-status: executing
+current_phase: 8
+status: Awaiting next milestone
 stopped_at: Phase 24 UI-SPEC approved
-last_updated: "2026-08-26T20:22:39.333Z"
+last_updated: "2026-08-26T20:29:04.346Z"
 last_activity: 2026-08-26
-last_activity_desc: Phase 24 complete
+last_activity_desc: Milestone v1.8 completed and archived
 progress:
   total_phases: 1
   completed_phases: 1
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-08-04)
 
 ## Current Position
 
-Phase: 24
-Plan: Not started
-Status: Executing Phase 24
-Last activity: 2026-08-26 — Phase 24 complete
+Phase: Milestone v1.8 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-08-26 — Milestone v1.8 completed and archived
 
 ## Performance Metrics
 
@@ -392,15 +392,25 @@ Items acknowledged and deferred at v1.6 milestone close finalization on 2026-08-
 
 The 6 stale `260722-*` quick-task directories listed above (compact-sanity-document-layout, improve-contact-page, normalize-sanity-form-spacing, rebalance-contact-typography, refine-contact-details, remove-redundant-sanity-fieldsets) were deleted today (2026-08-13) via quick task `260813-v0t`, rather than being carried forward and re-acknowledged a seventh time. This resolves the prediction in RETROSPECTIVE.md's Cross-Milestone Trends "Top Lessons" item 3.
 
+Items acknowledged and deferred at v1.8 milestone close on 2026-08-26 (`/gsd-complete-milestone` pre-close audit, 13 open items; SEED-001/SEED-002 resolved rather than deferred — see below — the remaining 11 acknowledged, unchanged from the v1.6/v1.7 notes above):
+
+| Category | Item | Status |
+|----------|------|--------|
+| debug | knowledge-base | unknown (same persistent false positive noted at every close since v1.3 — the resolved-sessions index file itself, not a live investigation) |
+| debug | 9× `homepage-scroll-*` sessions | unchanged from the 2026-08-11 v1.6 note above — all diagnosed/CONFIRMED, all closed by named gap-closure plans |
+| quick_task | 260811-ggn-regrouper-le-déclenchement-github-après-... | unchanged — still missing (PLAN.md exists, no SUMMARY.md), still superseded by the shipped dashboard "Mettre en production" feature |
+
+**Resolved, not deferred:** SEED-001 and SEED-002 (both still listed as "dormant" in the v1.6/v1.7 close notes above) are exactly the two backlog seeds this milestone was scoped to close. Both shipped in Phase 24 (SEED-001 → CONT-04, SEED-002 → EDN-12) and their seed files (`.planning/seeds/SEED-001-*.md`, `.planning/seeds/SEED-002-*.md`) are now marked `status: implemented` with a Resolution section, rather than being carried forward a third time.
+
 ## Session Continuity
 
-**Resume file:** .planning/phases/24-cross-linking-contact-cta/24-UI-SPEC.md
+**Resume file:** .planning/MILESTONES.md
 
-Last session: 2026-08-26T18:32:32.937Z
-Stopped at: Phase 24 UI-SPEC approved
+Last session: 2026-08-26T22:29:04.346Z
+Stopped at: v1.8 milestone complete and archived
 
-**Next up:** Plan Phase 24 with `/gsd-plan-phase 24`. Phase 24 covers all 3 v1.8 requirements (EDN-12, CONT-04, UI-03): a reverse gallery→édition cross-link on the Portfolio gallery detail page, a contact CTA at the end of every gallery's and édition's photo sequence, and an explicit mobile (≤767px) + desktop/tablet verification pass for both. v1.0 through v1.7 remain shipped and archived; the site is live in production at atelierjacquelinesuzanne.fr. The v1.x Shop/Checkout wave (Stripe, stock, shipping/VAT, commerce legal, Exhibitions) remains separately scoped, not part of v1.8.
+**Next up:** Scope the next milestone with `/gsd-new-milestone`. v1.0 through v1.8 are all shipped and archived; the site is live in production at atelierjacquelinesuzanne.fr with the reverse gallery↔édition cross-link (EDN-12) and universal end-of-sequence contact CTA (CONT-04) both live. The v1.x Shop/Checkout wave (Stripe, stock, shipping/VAT, commerce legal, Exhibitions) remains the only unscoped work — tracked in REQUIREMENTS.md's v2 section (soon to be archived to `.planning/milestones/v1.8-REQUIREMENTS.md`) — and is the natural candidate for the next milestone.
 
 ## Operator Next Steps
 
-- Plan Phase 24 with /gsd-plan-phase 24
+- Start the next milestone with /gsd-new-milestone

@@ -1,5 +1,19 @@
 # Milestones
 
+## v1.8 Cross-linking & Contact CTA (Shipped: 2026-08-26)
+
+**Phases completed:** 1 phases, 5 plans, 13 tasks
+
+**Key accomplishments:**
+
+- Reverse gallery-to-édition cross-link data layer: Sanity reference field, GROQ dereference projection, tri-state sanitization, and a pure `getRelatedEditionLink()` helper — zero UI change, fully proven by 15 new unit tests.
+- Both `GalleryDetailModel` and `EditionDetailModel` now carry a base-path-safe, locale-correct contact CTA (href + one shared fr/en label), and `GalleryDetailModel` gains the EDN-12 reverse cross-link to its related édition — all resolved in `page-models.ts`, none hardcoded in a component.
+- Gallery detail pages now render EDN-12's conditional reverse cross-link to the associated édition at the top of the content area, and CONT-04's unconditional contact CTA (sketch 018 Variant B styling) at the end of the photo sequence, both proven at 390px and 1280px via new Playwright coverage.
+- Every édition detail page now ends its photo sequence with the same pink-hairline, 20px Unbounded contact CTA the gallery pages use, proven by e2e at 390px and 1280px in both locales, with a D-09 computed-style guard confirming the shipped EDN-08 related-gallery link above it keeps its 14px bordered treatment untouched.
+- All three tasks complete. Task 1 (Sanity content + Studio deploy), Task 2 (hard e2e presence assertion + scroll-track guard), and Task 3 (UI-03 cross-viewport human sign-off) are done. Phase 24 is closed.
+
+---
+
 ## v1.7 Launch & Domain Cutover (Shipped: 2026-08-13)
 
 **Phases completed:** 1 phases, 6 plans, 18 tasks
