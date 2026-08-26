@@ -387,11 +387,10 @@ The 6 stale `260722-*` quick-task directories listed above (compact-sanity-docum
 
 ## Session Continuity
 
-Last session: 2026-08-11T14:15:22.081Z
-Stopped at: Phase 5 context gathered
-Resume file: .planning/phases/05-launch-domain-cutover/05-CONTEXT.md
+Last session: 2026-08-26
+Stopped at: Milestone v1.7 complete — no phase in progress
 
-**Next up:** Phase 21 (Homepage Scroll Experience — HOME-14, HOME-15) is ready to plan via `/gsd-plan-phase 21` — the milestone's biggest, riskiest, sketch-explored centerpiece, depending on Phase 20's now-shipped accent-color mechanism. Phase 5 (Launch & Domain Cutover) remains open and deliberately deferred whenever launch is next prioritized. One non-blocking carryover: `20-REVIEW.md`'s unfixed Critical finding on `HomeCarousel.astro`'s touch handler (see Blockers/Concerns).
+**Next up:** No active milestone. v1.0 through v1.7 are all shipped and archived (see `.planning/ROADMAP.md`); the site is live in production at atelierjacquelinesuzanne.fr. Start the next milestone with `/gsd-new-milestone` — the main remaining scope from the original project goal is the deferred v1.x Shop/Checkout milestone (Stripe, stock tracking, EU/France shipping+VAT, CGV), per `CLAUDE.md`'s "Deferred to v1.x" section.
 
 ## Operator Next Steps
 
