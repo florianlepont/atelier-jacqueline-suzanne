@@ -9,15 +9,15 @@ Requirements for the v1.8 milestone (Cross-linking & Contact CTA). Each maps to 
 
 ### Éditions
 
-- [ ] **EDN-12**: Visitor viewing a Portfolio gallery detail page can navigate to its associated Édition, if one exists (reverse of the existing édition→gallery link, EDN-08/v1.3)
+- [x] **EDN-12**: Visitor viewing a Portfolio gallery detail page can navigate to its associated Édition, if one exists (reverse of the existing édition→gallery link, EDN-08/v1.3)
 
 ### Contact
 
-- [ ] **CONT-04**: Visitor sees a CTA prompting them to contact Romane at the end of each Portfolio gallery's and Édition's photo sequence, standing in for a sales flow that doesn't exist yet
+- [x] **CONT-04**: Visitor sees a CTA prompting them to contact Romane at the end of each Portfolio gallery's and Édition's photo sequence, standing in for a sales flow that doesn't exist yet
 
 ### UI Quality
 
-- [ ] **UI-03**: EDN-12 and CONT-04 render correctly and are verified clean on both mobile and desktop/tablet viewports, with no regressions to existing layouts in either viewport class
+- [x] **UI-03**: EDN-12 and CONT-04 render correctly and are verified clean on both mobile and desktop/tablet viewports, with no regressions to existing layouts in either viewport class
 
 ## v2 Requirements
 
@@ -48,11 +48,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| EDN-12 | Phase 24 | Pending |
-| CONT-04 | Phase 24 | Pending |
-| UI-03 | Phase 24 | Pending |
+| EDN-12 | Phase 24 | Complete |
+| CONT-04 | Phase 24 | Complete |
+| UI-03 | Phase 24 | Complete |
 
 **Coverage:**
+
 - v1.8 requirements: 3 total
 - Mapped to phases: 3
 - Unmapped: 0 ✓

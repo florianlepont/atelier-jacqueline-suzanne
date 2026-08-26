@@ -170,7 +170,7 @@ Note: Phase 6 (v1.1) is intended to execute before Phase 5's domain cutover per 
 | 21. Homepage Scroll Experience | 15/15 | Complete   | 2026-08-10 |
 | 22. Gallery & Édition Scroll Navigation | 0/0 | Cancelled | 2026-08-10 |
 | 23. About Portrait Placement & Milestone Regression Close | 0/0 | Complete (direct commit) | 2026-08-10 |
-| 24. Cross-Linking & Contact CTA | 5/5 | Complete   | 2026-08-26 |
+| 24. Cross-Linking & Contact CTA | 5/5 | Complete    | 2026-08-26 |
 
 ## Milestone Scope Note
 
