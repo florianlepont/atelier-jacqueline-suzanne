@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sketch 018 — Contact CTA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../themes/default.css" />
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding-top: 52px;
+    background: var(--gray-0);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- variant tab bar ---------- */
+  #variant-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9998;
+    background: var(--gray-0); border-bottom: var(--border-hairline) solid var(--color-border);
+    padding: 8px 16px; display: flex; gap: 8px; align-items: center;
+    font-family: var(--font-sans); font-size: 13px;
+  }
+  .variant-tab {
+    border: var(--border-hairline) solid var(--color-border); background: var(--gray-0);
+    color: var(--color-ink); padding: 8px 14px; cursor: pointer; font-weight: 600;
+    border-radius: var(--radius-none); transition: all 0.15s ease;
+  }
+  .variant-tab:hover { border-color: var(--color-ink); }
+  .variant-tab.active { background: var(--color-ink); color: var(--gray-0); border-color: var(--color-ink); }
+  .variant-tab .star { color: var(--pink-600); }
+  .variant-tab.active .star { color: var(--gray-0); }
+
+  .variant { display: none; }
+  .variant.active { display: block; }
+
+  .intro {
+    max-width: 720px; margin: 0 auto; padding: 32px 24px 8px;
+    font-size: 14px; line-height: 1.5; color: #555;
+  }
+  .intro strong { color: var(--color-ink); }
+
+  .stage-label {
+    max-width: 1180px; margin: 40px auto 12px; padding: 0 24px;
+    font-family: var(--font-display); font-weight: 600; font-size: 13px;
+    text-transform: uppercase; letter-spacing: 0.06em; color: #999;
+  }
+
+  /* ---------- device frames ---------- */
+  .frames {
+    max-width: 1180px; margin: 0 auto 64px; padding: 0 24px;
+    display: flex; gap: 32px; align-items: flex-start; flex-wrap: wrap;
+  }
+  .frame {
+    border: var(--border-hairline) solid var(--color-border);
+    background: var(--gray-0);
+    overflow: hidden;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.04);
+  }
+  .frame__label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: #999; margin-bottom: 8px; font-weight: 600;
+  }
+  .frame--mobile { width: 375px; }
+  .frame--mobile .frame__viewport { height: 560px; overflow-y: auto; }
+  .frame--desktop { width: 720px; }
+  .frame--desktop .frame__viewport { height: 560px; overflow-y: auto; }
+
+  /* ---------- fake page content (grid tail) ---------- */
+  .page-tail { padding: 0 0 0; }
+  .related-link-row { padding: 24px 24px 0; }
+  .related-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    min-height: var(--tap-target-min);
+    color: var(--color-ink); font-size: var(--text-label-size); font-weight: 600;
+    text-decoration: none; border-bottom: 1px solid transparent;
+  }
+  .related-link:hover { border-bottom-color: var(--color-ink); }
+
+  .grid-tail {
+    padding: 24px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;
+  }
+  .frame--desktop .grid-tail { grid-template-columns: repeat(3, 1fr); }
+  .thumb {
+    aspect-ratio: 3/4; background: repeating-linear-gradient(135deg, #ececea, #ececea 10px, #e2e0dc 10px, #e2e0dc 20px);
+  }
+
+  .cta-zone { padding: 8px 24px 40px; }
+
+  /* Variant A — Discret (mirrors .editions-index__cta / .edition-detail__related exactly) */
+  .cta--a {
+    display: inline-flex; align-items: center; gap: 6px;
+    min-height: var(--tap-target-min);
+    color: var(--color-ink); font-size: var(--text-label-size); font-weight: 600;
+    text-decoration: none; margin-top: var(--space-md);
+    border-bottom: 1px solid transparent;
+  }
+  .cta--a:hover { border-bottom-color: var(--color-ink); }
+  .cta--a .arrow { color: var(--pink-600); transition: transform 0.15s ease; }
+  .cta--a:hover .arrow { transform: translateX(3px); }
+
+  /* Variant B — Renforcé (same family, hairline rule + bigger type + more air) */
+  .cta-zone--b { padding-top: var(--space-2xl); }
+  .cta--b-rule { border-top: 1px solid var(--pink-600); width: 48px; margin-bottom: var(--space-md); }
+  .cta--b {
+    display: inline-flex; align-items: center; gap: 10px;
+    color: var(--color-ink); font-family: var(--font-display); font-weight: 600;
+    font-size: 20px; line-height: 1.25; text-decoration: none;
+    border-bottom: 1px solid transparent;
+  }
+  .cta--b:hover { border-bottom-color: var(--color-ink); }
+  .cta--b .arrow { color: var(--pink-600); font-size: 20px; transition: transform 0.15s ease; }
+  .cta--b:hover .arrow { transform: translateX(4px); }
+
+  /* Variant C — Encadré (hairline box, sharp corners, no fill) */
+  .cta-zone--c { padding-top: var(--space-xl); }
+  .cta--c {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    border: 1px solid var(--color-ink); border-radius: var(--radius-none);
+    padding: 18px 20px; text-decoration: none; color: var(--color-ink);
+    transition: all 0.15s ease;
+  }
+  .cta--c:hover { border-color: var(--pink-600); background: rgba(214,50,124,0.03); }
+  .cta--c .cta--c__text { font-family: var(--font-display); font-weight: 600; font-size: 16px; }
+  .cta--c .arrow { color: var(--pink-600); font-size: 20px; transition: transform 0.15s ease; flex-shrink: 0; }
+  .cta--c:hover .arrow { transform: translateX(4px); }
+
+  .compare-note {
+    max-width: 1180px; margin: 0 auto 24px; padding: 0 24px;
+    font-size: 13px; color: #777; line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<div id="variant-nav">
+  <button class="variant-tab active" onclick="showVariant('a')">A: Discret</button>
+  <button class="variant-tab" onclick="showVariant('b')">B: Renforcé <span class="star">★</span> Selected</button>
+  <button class="variant-tab" onclick="showVariant('c')">C: Encadré</button>
+</div>
+
+<div class="intro">
+  <strong>Sketch 018</strong> — poids visuel du CTA contact en fin de page galerie/édition, et sa cohabitation avec le lien « voir la collection » existant (haut de page édition). Le lien related-gallery reste au même traitement discret dans les 3 variantes — seul le nouveau CTA change de poids. Faites défiler chaque cadre pour voir la fin de page réelle.
+</div>
+
+<!-- ============ VARIANT A ============ -->
+<div id="variant-a" class="variant active">
+  <div class="stage-label">Fin de page — Galerie (pas de related-link, hideFooter=true)</div>
+  <div class="frames">
+    <div class="frame frame--mobile">
+      <div class="frame__viewport">
+        <div class="page-tail">
+          <div class="grid-tail">
+            <div class="thumb"></div><div class="thumb"></div>
+            <div class="thumb"></div><div class="thumb"></div>
+          </div>
+          <div class="cta-zone">
+            <a class="cta--a" href="#">Intéressé·e par une pièce ? Contactez-nous <span class="arrow" aria-hidden="true">→</span></a>
+          </div>
+        </div>
+      </div>
+      <div style="padding:8px 12px;"><span class="frame__label">Mobile · 375px</span></div>
+    </div>
+    <div class="frame frame--desktop">
+      <div class="frame__viewport">
+        <div class="page-tail">
+          <div class="grid-tail">
+            <div class="thumb"></div><div class="thumb"></div><div class="thumb"></div>
+            <div class="thumb"></div><div class="thumb"></div><div class="thumb"></div>
+          </div>
+          <div class="cta-zone">
+            <a class="cta--a" href="#">Intéressé·e par une pièce ? Contactez-nous <span class="arrow" aria-hidden="true">→</span></a>
+          </div>
+        </div>
+      </div>
+      <div style="padding:8px 12px;"><span class="frame__label">Desktop · 720px</span></div>
+    </div>
+  </div>
+
+  <div class="stage-label">Fin de page — Édition (related-link en haut + CTA en bas)</div>
+  <div class="frames">
+    <div class="frame frame--mobile">
+      <div class="frame__viewport">
+        <div class="page-tail">
+          <div class="related-link-row">
+            <a class="related-link" href="#">Voir la collection « Rebut » <span class="arrow" style="color:var(--pink-600)" aria-hidden="true">→</span></a>
+          </div>
+          <div class="grid-tail">
+            <div class="thumb"></div><div class="thumb"></div>
+            <div class="thumb"></div><div class="thumb"></div>
+          </div>
+          <div class="cta-zone">
+            <a class="cta--a" href="#">Intéressé·e par une pièce ? Contactez-nous <span class="arrow" aria-hidden="true">→</span></a>
+          </div>
+        </div>
+      </div>
+      <div style="padding:8px 12px;"><span class="frame__label">Mobile · 375px</span></div>
+    </div>
+    <div class="frame frame--desktop">
+      <div class="frame__viewport">
+        <div class="page-tail">
+          <div class="related-link-row">
+            <a class="related-link" href="#">Voir la collection « Rebut » <span class="arrow" style="color:var(--pink-600)" aria-hidden="true">→</span></a>
+          </div>
+          <div class="grid-tail">
+            <div class="thumb"></div><div class="thumb"></div><div class="thumb"></div>
+            <div class="thumb"></div><div class="thumb"></div><div class="thumb"></div>
+          </div>
+          <div class="cta-zone">
+            <a class="cta--a" href="#">Intéressé·e par une pièce ? Contactez-nous <span class="arrow" aria-hidden="true">→</span></a>
+          </div>
+        </div>
+      </div>
+      <div style="padding:8px 12px;"><span class="frame__label">Desktop · 720px</span></div>
+    </div>
+  </div>
+  <div class="compare-note">A = traitement identique à l'existant (.editions-index__cta / .edition-detail__related) : lien texte 14px semibold, pas de séparation visuelle du reste du contenu.</div>
+</div>
+
+<!-- ============ VARIANT B ============ -->
+<div id="variant-b" class="variant">
+  <div class="stage-label">Fin de page — Galerie (pas de related-link, hideFooter=true)</div>
+  <div class="frames">
+    <div class="frame frame--mobile">
+      <div class="frame__viewport">
+        <div class="page-tail">
+          <div class="grid-tail">
+            <div class="thumb"></div><div class="thumb"></div>
+            <div class="thumb"></div><div class="thumb"></div>
+          </div>
+          <div class="cta-zone cta-zone--b">
+            <div class="cta--b-rule"></div>
+            <a class="cta--b" href="#">Intéressé·e par une pièce ?<br>Contactez-nous <span class="arrow" aria-hidden="true">→</span></a>
+          </div>
+        </div>
+      </div>
+      <div style="padding:8px 12px;"><span class="frame__label">Mobile · 375px</span></div>
+    </div>
+    <div class="frame frame--desktop">
+      <div class="frame__viewport">
+        <div class="page-tail">
+          <div class="grid-tail">
+            <div class="thumb"></div><div class="thumb"></div><div class="thumb"></div>
+            <div class="thumb"></div><div class="thumb"></div><div class="thumb"></div>
+          </div>
+          <div class="cta-zone cta-zone--b">
+            <div class="cta--b-rule"></div>
+            <a class="cta--b" href="#">Intéressé·e par une pièce ? Contactez-nous <span class="arrow" aria-hidden="true">→</span></a>
+          </div>
+        </div>
+      </div>
+      <div style="padding:8px 12px;"><span class="frame__label">Desktop · 720px</span></div>
+    </div>
+  </div>
+
+  <div class="stage-label">Fin de page — Édition (related-link en haut + CTA en bas)</div>
+  <div class="frames">
+    <div class="frame frame--mobile">
+      <div class="frame__viewport">
+        <div class="page-tail">
+          <div class="related-link-row">
+            <a class="related-link" href="#">Voir la collection « Rebut » <span class="arrow" style="color:var(--pink-600)" aria-hidden="true">→</span></a>
+          </div>
+          <div class="grid-tail">
+            <div class="thumb"></div><div class="thumb"></div>
+            <div class="thumb"></div><div class="thumb"></div>
+          </div>
+          <div class="cta-zone cta-zone--b">
+            <div class="cta--b-rule"></div>
+            <a class="cta--b" href="#">Intéressé·e par une pièce ?<br>Contactez-nous <span class="arrow" aria-hidden="true">→</span></a>
+          </div>
+        </div>
+      </div>
+      <div style="padding:8px 12px;"><span class="frame__label">Mobile · 375px</span></div>
+    </div>
+    <div class="frame frame--desktop">
+      <div class="frame__viewport">
+        <div class="page-tail">
+          <div class="related-link-row">
+            <a class="related-link" href="#">Voir la collection « Rebut » <span class="arrow" style="color:var(--pink-600)" aria-hidden="true">→</span></a>
+          </div>
+          <div class="grid-tail">
+            <div class="thumb"></div><div class="thumb"></div><div class="thumb"></div>
+            <div class="thumb"></div><div class="thumb"></div><div class="thumb"></div>
+          </div>
+          <div class="cta-zone cta-zone--b">
+            <div class="cta--b-rule"></div>
+            <a class="cta--b" href="#">Intéressé·e par une pièce ? Contactez-nous <span class="arrow" aria-hidden="true">→</span></a>
+          </div>
+        </div>
+      </div>
+      <div style="padding:8px 12px;"><span class="frame__label">Desktop · 720px</span></div>
+    </div>
+  </div>
+  <div class="compare-note">B = même famille (lien texte + flèche), mais plus de présence : typo display 20px, filet rose fin au-dessus qui marque une rupture/clôture de page, plus d'air avant.</div>
+</div>
+
+<!-- ============ VARIANT C ============ -->
+<div id="variant-c" class="variant">
+  <div class="stage-label">Fin de page — Galerie (pas de related-link, hideFooter=true)</div>
+  <div class="frames">
+    <div class="frame frame--mobile">
+      <div class="frame__viewport">
+        <div class="page-tail">
+          <div class="grid-tail">
+            <div class="thumb"></div><div class="thumb"></div>
+            <div class="thumb"></div><div class="thumb"></div>
+          </div>
+          <div class="cta-zone cta-zone--c">
+            <a class="cta--c" href="#">
+              <span class="cta--c__text">Intéressé·e par une pièce ?<br>Contactez-nous</span>
+              <span class="arrow" aria-hidden="true">→</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div style="padding:8px 12px;"><span class="frame__label">Mobile · 375px</span></div>
+    </div>
+    <div class="frame frame--desktop">
+      <div class="frame__viewport">
+        <div class="page-tail">
+          <div class="grid-tail">
+            <div class="thumb"></div><div class="thumb"></div><div class="thumb"></div>
+            <div class="thumb"></div><div class="thumb"></div><div class="thumb"></div>
+          </div>
+          <div class="cta-zone cta-zone--c">
+            <a class="cta--c" href="#">
+              <span class="cta--c__text">Intéressé·e par une pièce ? Contactez-nous</span>
+              <span class="arrow" aria-hidden="true">→</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div style="padding:8px 12px;"><span class="frame__label">Desktop · 720px</span></div>
+    </div>
+  </div>
+
+  <div class="stage-label">Fin de page — Édition (related-link en haut + CTA en bas)</div>
+  <div class="frames">
+    <div class="frame frame--mobile">
+      <div class="frame__viewport">
+        <div class="page-tail">
+          <div class="related-link-row">
+            <a class="related-link" href="#">Voir la collection « Rebut » <span class="arrow" style="color:var(--pink-600)" aria-hidden="true">→</span></a>
+          </div>
+          <div class="grid-tail">
+            <div class="thumb"></div><div class="thumb"></div>
+            <div class="thumb"></div><div class="thumb"></div>
+          </div>
+          <div class="cta-zone cta-zone--c">
+            <a class="cta--c" href="#">
+              <span class="cta--c__text">Intéressé·e par une pièce ?<br>Contactez-nous</span>
+              <span class="arrow" aria-hidden="true">→</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div style="padding:8px 12px;"><span class="frame__label">Mobile · 375px</span></div>
+    </div>
+    <div class="frame frame--desktop">
+      <div class="frame__viewport">
+        <div class="page-tail">
+          <div class="related-link-row">
+            <a class="related-link" href="#">Voir la collection « Rebut » <span class="arrow" style="color:var(--pink-600)" aria-hidden="true">→</span></a>
+          </div>
+          <div class="grid-tail">
+            <div class="thumb"></div><div class="thumb"></div><div class="thumb"></div>
+            <div class="thumb"></div><div class="thumb"></div><div class="thumb"></div>
+          </div>
+          <div class="cta-zone cta-zone--c">
+            <a class="cta--c" href="#">
+              <span class="cta--c__text">Intéressé·e par une pièce ? Contactez-nous</span>
+              <span class="arrow" aria-hidden="true">→</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div style="padding:8px 12px;"><span class="frame__label">Desktop · 720px</span></div>
+    </div>
+  </div>
+  <div class="compare-note">C = encadré hairline (1px, angles droits, pas de fond plein), le lien devient un petit module autonome — bordure vire rose au survol.</div>
+</div>
+
+<div id="sketch-tools" style="position:fixed;bottom:12px;right:12px;z-index:9999;font-family:system-ui;font-size:12px;background:rgba(0,0,0,0.7);color:white;padding:8px 12px;border-radius:8px;opacity:0.4;transition:opacity 0.2s;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.4'">
+  Sketch 018 · Contact CTA
+</div>
+
+<script>
+function showVariant(id) {
+  document.querySelectorAll('.variant').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.variant-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('variant-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+
+</body>
+</html>
