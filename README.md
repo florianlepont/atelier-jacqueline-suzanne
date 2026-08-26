@@ -81,6 +81,8 @@ This project has two deploy targets. Do not confuse them.
 | Base path | `/ajs-website/` | Root (`/`) |
 | URL | https://florianlepont.github.io/ajs-website/ | https://atelierjacquelinesuzanne.fr |
 
+Both deploy workflows run the full blocking gate set (lint, typecheck, Playwright e2e, Vitest coverage) before publishing anything.
+
 Per D-03, GitHub Pages stays alive permanently as a pre-production environment after the domain cutover — it is not retired. It is useful for previewing future changes before they reach the real domain, at no extra cost.
 
 ### Production deploy: the two paths
@@ -136,6 +138,8 @@ npm run dev
 
 Studio runs at http://localhost:3333. See [`sanity/README.md`](sanity/README.md) for the editor workflow (in French, for Romane).
 
-## Deployment
+## Author
 
-Push to `main` → GitHub Actions builds, runs Playwright + Vitest as a blocking gate, and deploys to GitHub Pages. A Sanity publish fires a webhook that triggers a rebuild. See the `## Deployments` section above for current production deploy behavior.
+**Florian Lepont**
+
+[LinkedIn](https://www.linkedin.com/in/florianlepont/)
