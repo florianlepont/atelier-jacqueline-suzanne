@@ -84,10 +84,10 @@ describe('GitHub deployment reads', () => {
 
   it('builds runs and actions URLs for a given workflow file', () => {
     expect(workflowRunsUrl(PRODUCTION_WORKFLOW_FILE)).toBe(
-      'https://api.github.com/repos/florianlepont/ajs-website/actions/workflows/deploy-ovh.yml/runs?per_page=10',
+      'https://api.github.com/repos/florianlepont/atelier-jacqueline-suzanne/actions/workflows/deploy-ovh.yml/runs?per_page=10',
     )
     expect(workflowActionsUrl(PRODUCTION_WORKFLOW_FILE)).toBe(
-      'https://github.com/florianlepont/ajs-website/actions/workflows/deploy-ovh.yml',
+      'https://github.com/florianlepont/atelier-jacqueline-suzanne/actions/workflows/deploy-ovh.yml',
     )
     expect(workflowActionsUrl(STAGING_WORKFLOW_FILE)).toBe(GITHUB_WORKFLOW_URL)
   })
@@ -415,7 +415,7 @@ describe('deployment state disambiguated by target', () => {
     const state = deploymentState({runs: [run()], publishedAt, pendingCount: 0})
     expect(state.kind).toBe('current')
     expect(state.label).toBe('Site de test à jour')
-    expect(state.actionUrl).toBe('https://florianlepont.github.io/ajs-website/')
+    expect(state.actionUrl).toBe('https://florianlepont.github.io/atelier-jacqueline-suzanne/')
   })
 
   it('labels a proven-current production deployment "Site en ligne à jour" and links to the real domain', () => {

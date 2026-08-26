@@ -28,7 +28,7 @@ describe('OpenSitePage', () => {
     render(createElement(OpenSitePanel, {documentId: 'homePage', documentType: 'homePage', onClose}))
 
     const link = screen.getByRole('link', {name: /Ouvrir la page du site/}) as HTMLAnchorElement
-    expect(link.getAttribute('href')).toBe('https://florianlepont.github.io/ajs-website/')
+    expect(link.getAttribute('href')).toBe('https://florianlepont.github.io/atelier-jacqueline-suzanne/')
     fireEvent.click(link)
     expect(onClose).toHaveBeenCalledOnce()
   })
@@ -44,7 +44,7 @@ describe('OpenSitePage', () => {
 
     const link = screen.getByRole('link', {name: /Ouvrir la page du site/}) as HTMLAnchorElement
     expect(link.getAttribute('href')).toBe(
-      'https://florianlepont.github.io/ajs-website/galleries/paysages/',
+      'https://florianlepont.github.io/atelier-jacqueline-suzanne/galleries/paysages/',
     )
   })
 

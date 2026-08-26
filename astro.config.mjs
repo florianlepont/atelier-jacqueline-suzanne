@@ -12,7 +12,7 @@ export default defineConfig({
   // @astrojs/node, or any other SSR-enabling package.
   output: 'static',
   // Conditional base path (D-12/D-13): defaults to "/" for local dev and the
-  // eventual OVH production root. Set ASTRO_BASE=/ajs-website/ at build time
+  // eventual OVH production root. Set ASTRO_BASE=/atelier-jacqueline-suzanne/ at build time
   // to target GitHub Pages' project-page subpath for Phase 1 staging.
   base: process.env.ASTRO_BASE || '/',
   i18n: {

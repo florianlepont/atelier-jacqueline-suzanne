@@ -15,7 +15,7 @@ import { getRelativeLocaleUrl } from 'astro:i18n';
  *
  * Mirrors the style of src/lib/i18n-paths.ts — a pure function importing
  * `getRelativeLocaleUrl` from `astro:i18n` so Astro's configured `base`
- * (e.g. `/ajs-website/` on GitHub Pages) is applied automatically, which is
+ * (e.g. `/atelier-jacqueline-suzanne/` on GitHub Pages) is applied automatically, which is
  * what keeps this href passing CI's un-prefixed-link grep guard.
  *
  * Defensive-null contract (D-02): a reference to an unpublished or archived

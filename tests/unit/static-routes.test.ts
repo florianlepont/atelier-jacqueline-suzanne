@@ -12,13 +12,13 @@ import {
 describe('static route helpers', () => {
   it('normalizes root and project-page bases', () => {
     expect(normalizeBase('/')).toBe('/')
-    expect(normalizeBase('ajs-website')).toBe('/ajs-website/')
-    expect(normalizeBase('/ajs-website/')).toBe('/ajs-website/')
+    expect(normalizeBase('atelier-jacqueline-suzanne')).toBe('/atelier-jacqueline-suzanne/')
+    expect(normalizeBase('/atelier-jacqueline-suzanne/')).toBe('/atelier-jacqueline-suzanne/')
   })
 
   it('builds absolute URLs without duplicate slashes', () => {
-    expect(siteUrl(new URL('https://example.com'), '/ajs-website/', 'en/about/')).toBe(
-      'https://example.com/ajs-website/en/about/',
+    expect(siteUrl(new URL('https://example.com'), '/atelier-jacqueline-suzanne/', 'en/about/')).toBe(
+      'https://example.com/atelier-jacqueline-suzanne/en/about/',
     )
   })
 
@@ -43,8 +43,8 @@ describe('static route helpers', () => {
   })
 
   it('builds a base-aware robots file', () => {
-    expect(buildRobotsText(new URL('https://example.com'), '/ajs-website')).toContain(
-      'Sitemap: https://example.com/ajs-website/sitemap.xml',
+    expect(buildRobotsText(new URL('https://example.com'), '/atelier-jacqueline-suzanne')).toContain(
+      'Sitemap: https://example.com/atelier-jacqueline-suzanne/sitemap.xml',
     )
   })
 
