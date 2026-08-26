@@ -57,9 +57,12 @@ coverage:
   - id: D3
     description: "Florian creates the SANITY_AUTH_TOKEN repository secret and confirms a real CI run publishes the Studio end-to-end (Task 3, blocking human checkpoint)"
     requirement: "CI-01"
-    verification: []
+    verification:
+      - kind: other
+        ref: "CI run https://github.com/florianlepont/atelier-jacqueline-suzanne/actions/runs/33019231851 — 'Publish the hosted Sanity Studio' step logged 'Success! Studio deployed to https://atelier-jacqueline-suzanne.sanity.studio/', all other gates green"
+        status: pass
     human_judgment: true
-    rationale: "Creating a Sanity robot token and a GitHub repository secret requires credentialed dashboard access Claude does not have. This is a genuine external-setup step that only Florian can perform and confirm."
+    rationale: "Creating a Sanity robot token and a GitHub repository secret requires credentialed dashboard access Claude does not have. This is a genuine external-setup step that only Florian can perform and confirm. First token attempt failed (Unauthorized — missing sanity.project/deployStudio, deploySchema grants; Editor role insufficient); reissued with Administrator-level permissions, then verified via a fresh CI run."
 
 duration: ~25min
 completed: 2026-08-26
@@ -126,9 +129,9 @@ None. `npm ci` and `npm ci --prefix sanity` were run locally (this worktree had 
 Full verbatim instructions are in `260826-wx6-PLAN.md` Task 3 `<how-to-verify>`.
 
 ## Next Phase Readiness
-- Tasks 1 and 2 are complete, committed, and verified (unit suite: 719/719 passing; lint: clean; YAML: valid, confirmed with `js-yaml`).
-- The workflow change is safe to land on `main` even before the secret exists — the missing-secret path was designed specifically so this commit does not turn CI red or block the site deploy (D-03).
-- Blocked on Florian completing Task 3's checkpoint (secret creation + confirmed end-to-end CI run) before this quick task can be considered fully closed.
+- All 3 tasks complete. Tasks 1 and 2 committed and verified (unit suite: 719/719 passing; lint: clean; YAML: valid, confirmed with `js-yaml`).
+- Task 3 closed 2026-08-26: Florian created `SANITY_AUTH_TOKEN`, first attempt lacked the `deployStudio`/`deploySchema` grants (Unauthorized — Editor role insufficient), reissued with Administrator-level permissions. A fresh CI run (33019231851, triggered by empty commit `589587c` after a `--failed` rerun hit an unrelated GitHub Pages duplicate-artifact issue) confirmed every gate green including `Success! Studio deployed to https://atelier-jacqueline-suzanne.sanity.studio/`.
+- Quick task fully closed. The staleness class that caused `preprod-site-404-after-rename` cannot recur silently.
 
 ---
 *Phase: quick-260826-wx6*
