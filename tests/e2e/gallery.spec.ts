@@ -1282,3 +1282,152 @@ test.describe('gallery detail hero statement renders in full, no clamp, no clipp
     }
   });
 });
+
+// CONT-04 / EDN-12 (UI-03: dual-viewport requirement) share the same
+// runtime discovery mechanism — a single 1280x900 pass over the homepage
+// grid (mirroring the PORT-06 block above) to collect real gallery hrefs,
+// reused for navigation at both viewport classes. No gallery slug is ever
+// written as a literal string below, per
+// tests/unit/e2e-content-fragility.test.ts's guard.
+async function discoverGalleryHrefsForCta(page: import('@playwright/test').Page) {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Grille' }).click();
+  const hrefs = await page
+    .locator('a.home-grid__tile')
+    .evaluateAll((els) => els.map((el) => el.getAttribute('href')).filter((href): href is string => Boolean(href)));
+  expect(hrefs.length).toBeGreaterThan(0);
+  return hrefs;
+}
+
+// CONT-04 (D-04, D-07, D-08): every gallery detail page ends its photo
+// sequence with the contact CTA — no conditional/sold-state logic, links
+// to the locale's contact route, matches sketch 018 Variant B's confirmed
+// styling (D-08's "no filled button" guard included), and renders after
+// the grid (D-07 DOM-order proof) at both the phone (390x844) and desktop
+// (1280x900) viewport classes (UI-03).
+test.describe('gallery contact CTA (CONT-04)', () => {
+  test('CTA renders after the grid, links to the contact route, and matches D-08 styling, at both viewports', async ({
+    page,
+  }) => {
+    const hrefs = await discoverGalleryHrefsForCta(page);
+    const firstHref = hrefs[0];
+
+    for (const viewport of [
+      { width: 390, height: 844 },
+      { width: 1280, height: 900 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto(firstHref);
+
+      const cta = page.locator('.gallery-detail__contact-cta');
+      await expect(cta).toHaveCount(1);
+      await expect(cta).toBeVisible();
+      await expect(cta).toHaveAttribute('href', /\/contact\/?$/);
+      await expect(cta).toContainText(/Contactez-nous/);
+
+      const ctaStyles = await cta.evaluate((link) => {
+        const style = getComputedStyle(link);
+        return {
+          fontSize: style.fontSize,
+          fontWeight: style.fontWeight,
+          fontFamily: style.fontFamily,
+          backgroundColor: style.backgroundColor,
+        };
+      });
+      expect(ctaStyles.fontSize).toBe('20px');
+      expect(ctaStyles.fontWeight).toBe('600');
+      expect(ctaStyles.fontFamily).toContain('Unbounded');
+      expect(ctaStyles.backgroundColor).toBe('rgba(0, 0, 0, 0)');
+
+      const ruleStyles = await page.locator('.gallery-detail__contact-cta-rule').evaluate((rule) => {
+        const style = getComputedStyle(rule);
+        return { borderTopWidth: style.borderTopWidth, borderTopColor: style.borderTopColor };
+      });
+      expect(ruleStyles.borderTopWidth).toBe('1px');
+      expect(ruleStyles.borderTopColor).toBe('rgb(214, 50, 124)');
+
+      const arrowColor = await page
+        .locator('.gallery-detail__contact-cta-arrow')
+        .evaluate((arrow) => getComputedStyle(arrow).color);
+      expect(arrowColor).toBe('rgb(214, 50, 124)');
+
+      // D-07: the CTA zone follows the grid in DOM order — the CTA is
+      // literally the end of the photo sequence, not merely styled to
+      // look that way.
+      const ctaFollowsGrid = await page.evaluate(() => {
+        const grid = document.querySelector('.gallery-grid');
+        const zone = document.querySelector('.gallery-detail__contact-cta-zone');
+        if (!grid || !zone) return null;
+        return Boolean(grid.compareDocumentPosition(zone) & Node.DOCUMENT_POSITION_FOLLOWING);
+      });
+      expect(ctaFollowsGrid).toBe(true);
+    }
+  });
+
+  test('en: CTA text mirrors the fr direction ("Get in touch")', async ({ page }) => {
+    const hrefs = await discoverGalleryHrefsForCta(page);
+    const slugMatch = hrefs[0].match(/\/galleries\/([^/]+)\/?$/);
+    const slug = slugMatch?.[1];
+    expect(slug).toBeTruthy();
+
+    await page.goto(`/en/galleries/${slug}/`);
+    const cta = page.locator('.gallery-detail__contact-cta');
+    await expect(cta).toContainText(/Get in touch/);
+  });
+});
+
+// EDN-12 (D-01, D-02, D-03): a gallery detail page shows the reverse
+// cross-link to its associated édition ONLY when one is set (D-02) — the
+// count must always be 0 or 1, never more, for every published gallery.
+// IMPORTANT: no gallery in the currently-published content can carry
+// `relatedEdition` yet (the Sanity Studio field is only populated and
+// published by plan 24-05's blocking content checkpoint), so this block
+// deliberately does NOT assert that at least one gallery HAS the link —
+// that would be a false negative against today's real content. It proves
+// the conditional-render contract (zero-or-one, never a broken element)
+// and, whenever the link IS present, full href/copy/style correctness at
+// both viewport classes (UI-03). Plan 24-05 converts this into a hard
+// presence assertion once content exists.
+test.describe('gallery reverse edition cross-link (EDN-12)', () => {
+  test('every gallery shows zero or one related-edition link, correct when present, at both viewports', async ({
+    page,
+  }) => {
+    const hrefs = await discoverGalleryHrefsForCta(page);
+
+    let foundHref: string | null = null;
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    for (const href of hrefs) {
+      await page.goto(href);
+      const related = page.locator('.gallery-detail__related');
+      const count = await related.count();
+      expect(count === 0 || count === 1, `${href}: expected 0 or 1 .gallery-detail__related, got ${count}`).toBe(
+        true,
+      );
+
+      if (count === 1) {
+        foundHref = href;
+        await expect(related).toBeVisible();
+        await expect(related).toHaveAttribute('href', /\/editions\/[^/]+\/?$/);
+        await expect(related).toContainText(/Voir l'édition/);
+
+        const styles = await related.evaluate((link) => {
+          const style = getComputedStyle(link);
+          return { display: style.display, borderTopWidth: style.borderTopWidth };
+        });
+        expect(styles).toEqual({ display: 'inline-flex', borderTopWidth: '2px' });
+      }
+    }
+
+    if (foundHref) {
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await page.goto(foundHref);
+      const desktopStyles = await page.locator('.gallery-detail__related').evaluate((link) => {
+        const style = getComputedStyle(link);
+        return { display: style.display, borderTopWidth: style.borderTopWidth };
+      });
+      expect(desktopStyles).toEqual({ display: 'inline-flex', borderTopWidth: '2px' });
+    }
+  });
+});
