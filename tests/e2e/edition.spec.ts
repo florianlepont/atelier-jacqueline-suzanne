@@ -669,6 +669,157 @@ test.describe('editions related-gallery cross-link (EDN-08)', () => {
   });
 });
 
+// CONT-04: contact CTA closing every édition's photo sequence, D-06 (one
+// shared French/English string across both page types — the gallery-side
+// spec asserts the exact same French copy, which is what makes a future
+// divergence between the two page types visible), D-07 (last in DOM order,
+// after the grid), D-08 (text link with a pink arrow, not a filled button),
+// D-09 (the shipped EDN-08 related-gallery link above it must keep its 14px
+// bordered treatment, byte-identical, with no display-font style bleed).
+// UI-03: verified at both the 390px phone width and the 1280px desktop
+// width. Édition hrefs are discovered at runtime exactly like the EDN-08
+// block above — tests/unit/e2e-content-fragility.test.ts fails the unit
+// suite on any literal galleries/editions slug embedded in an e2e spec.
+test.describe('editions contact CTA (CONT-04)', () => {
+  test('renders on every édition at phone width', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/editions/');
+    const editionHrefs = await page.locator('.editions-index__row').evaluateAll((rows) =>
+      rows
+        .map((row) => row.getAttribute('href'))
+        .filter((href): href is string => Boolean(href)),
+    );
+    expect(editionHrefs.length).toBeGreaterThan(0);
+
+    for (const href of editionHrefs) {
+      await page.goto(href);
+      await expect(page.locator('.edition-detail__contact-cta')).toHaveCount(1);
+    }
+  });
+
+  test('CTA structure, copy, and computed styling match the gallery-page contract, at both viewports and both locales', async ({
+    page,
+  }) => {
+    await page.goto('/editions/');
+    const editionHrefs = await page.locator('.editions-index__row').evaluateAll((rows) =>
+      rows
+        .map((row) => row.getAttribute('href'))
+        .filter((href): href is string => Boolean(href)),
+    );
+    expect(editionHrefs.length).toBeGreaterThan(0);
+    const [href] = editionHrefs;
+
+    for (const viewport of [
+      { width: 390, height: 844 },
+      { width: 1280, height: 900 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto(href);
+
+      const cta = page.locator('.edition-detail__contact-cta');
+      await expect(cta).toBeVisible();
+      await expect(cta).toHaveAttribute('href', /\/contact\/?$/);
+      await expect(cta).toContainText(/Contactez-nous/);
+
+      const ctaStyles = await cta.evaluate((link) => {
+        const style = getComputedStyle(link);
+        return {
+          fontSize: style.fontSize,
+          fontWeight: style.fontWeight,
+          fontFamily: style.fontFamily,
+          backgroundColor: style.backgroundColor,
+        };
+      });
+      expect(ctaStyles.fontSize).toBe('20px');
+      expect(ctaStyles.fontWeight).toBe('600');
+      expect(ctaStyles.fontFamily).toContain('Unbounded');
+      // D-08: a text link with an arrow, not a filled/pill button.
+      expect(ctaStyles.backgroundColor).toBe('rgba(0, 0, 0, 0)');
+
+      const ruleStyles = await page
+        .locator('.edition-detail__contact-cta-rule')
+        .evaluate((el) => {
+          const style = getComputedStyle(el);
+          return { borderTopWidth: style.borderTopWidth, borderTopColor: style.borderTopColor };
+        });
+      expect(ruleStyles).toEqual({ borderTopWidth: '1px', borderTopColor: 'rgb(214, 50, 124)' });
+
+      const arrowColor = await page
+        .locator('.edition-detail__contact-cta-arrow')
+        .evaluate((el) => getComputedStyle(el).color);
+      expect(arrowColor).toBe('rgb(214, 50, 124)');
+    }
+
+    // D-07: the CTA follows the photo grid in DOM order.
+    const domOrder = await page.evaluate(() => {
+      const grid = document.querySelector('.gallery-grid');
+      const cta = document.querySelector('.edition-detail__contact-cta');
+      if (!grid || !cta) return null;
+      return Boolean(grid.compareDocumentPosition(cta) & Node.DOCUMENT_POSITION_FOLLOWING);
+    });
+    expect(domOrder).toBe(true);
+
+    // English locale: derive the /en/ counterpart programmatically, never a
+    // literal slug.
+    const enHref = href.replace(/(^|\/)editions\//, '$1en/editions/');
+    await page.goto(enHref);
+    await expect(page.locator('.edition-detail__contact-cta')).toContainText(/Get in touch/);
+  });
+
+  test('D-09: the shipped related-gallery link keeps its 14px bordered treatment, with no Unbounded style bleed, next to the new CTA', async ({
+    page,
+  }) => {
+    await page.goto('/editions/');
+    const editionHrefs = await page.locator('.editions-index__row').evaluateAll((rows) =>
+      rows
+        .map((row) => row.getAttribute('href'))
+        .filter((href): href is string => Boolean(href)),
+    );
+
+    let checked = false;
+    for (const href of editionHrefs) {
+      await page.goto(href);
+      const related = page.locator('.edition-detail__related');
+      const cta = page.locator('.edition-detail__contact-cta');
+      if ((await related.count()) === 0 || (await cta.count()) === 0) continue;
+
+      await page.setViewportSize({ width: 1280, height: 900 });
+
+      const pair = await page.evaluate(() => {
+        const relatedEl = document.querySelector('.edition-detail__related');
+        const ctaEl = document.querySelector('.edition-detail__contact-cta');
+        if (!relatedEl || !ctaEl) return null;
+        const relatedStyle = getComputedStyle(relatedEl);
+        const ctaStyle = getComputedStyle(ctaEl);
+        return {
+          related: {
+            fontSize: relatedStyle.fontSize,
+            borderTopWidth: relatedStyle.borderTopWidth,
+            fontFamily: relatedStyle.fontFamily,
+          },
+          cta: {
+            fontSize: ctaStyle.fontSize,
+            fontFamily: ctaStyle.fontFamily,
+          },
+        };
+      });
+
+      expect(pair).not.toBeNull();
+      expect(pair!.related.fontSize).toBe('14px');
+      expect(pair!.related.borderTopWidth).toBe('2px');
+      expect(pair!.cta.fontSize).toBe('20px');
+      expect(pair!.cta.fontFamily).toContain('Unbounded');
+      expect(pair!.related.fontSize).not.toBe(pair!.cta.fontSize);
+      expect(pair!.related.fontFamily).not.toContain('Unbounded');
+
+      checked = true;
+      break;
+    }
+
+    expect(checked).toBe(true);
+  });
+});
+
 test.describe('editions lightbox', () => {
   // quick-260801-kgh: the hero is now drawn from the single `images` array
   // via pickHeroIndex (landscape-preferred, not always index 0) — mirrors
