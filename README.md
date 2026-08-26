@@ -83,7 +83,7 @@ This project has two deploy targets. Do not confuse them.
 
 Both deploy workflows run the full blocking gate set (lint, typecheck, Playwright e2e, Vitest coverage) before publishing anything.
 
-Per D-03, GitHub Pages stays alive permanently as a pre-production environment after the domain cutover — it is not retired. It is useful for previewing future changes before they reach the real domain, at no extra cost.
+GitHub Pages stays alive permanently as a pre-production environment after the domain cutover — it is not retired. It is useful for previewing future changes before they reach the real domain, at no extra cost.
 
 ### Production deploy: the two paths
 
