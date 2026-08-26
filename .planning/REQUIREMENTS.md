@@ -48,15 +48,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| EDN-12 | TBD | Pending |
-| CONT-04 | TBD | Pending |
-| UI-03 | TBD | Pending |
+| EDN-12 | Phase 24 | Pending |
+| CONT-04 | Phase 24 | Pending |
+| UI-03 | Phase 24 | Pending |
 
 **Coverage:**
 - v1.8 requirements: 3 total
-- Mapped to phases: 0
-- Unmapped: 3 ⚠️ (roadmap not yet created)
+- Mapped to phases: 3
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-08-26*
-*Last updated: 2026-08-26 after initial definition*
+*Last updated: 2026-08-26 after ROADMAP.md creation — all 3 v1.8 requirements mapped to Phase 24 (Cross-Linking & Contact CTA), 100% coverage, no orphans.*
