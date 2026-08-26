@@ -176,6 +176,45 @@ describe('buildGalleryDetailModel', () => {
     });
     expect(model.carouselReturnHref).toContain('?carousel=brume');
   });
+
+  // EDN-12 (D-01, D-02): the reverse gallery -> édition cross-link.
+  it('resolves relatedEdition into a link when populated (fr), and null when absent', () => {
+    const withRelated = buildGalleryDetailModel({
+      gallery: gallery({relatedEdition: {title: 'Rebut', slug: 'rebut'}}),
+      locale: 'fr',
+      pageUrl: PAGE_URL_FR,
+      homeIndex: 0,
+    });
+    expect(withRelated.relatedLink).not.toBeNull();
+    expect(withRelated.relatedLink!.href).toMatch(/\/editions\/rebut\/?$/);
+    expect(withRelated.relatedLink!.text).toBe("Voir l'édition « Rebut »");
+
+    const withoutKey = buildGalleryDetailModel({
+      gallery: gallery(),
+      locale: 'fr',
+      pageUrl: PAGE_URL_FR,
+      homeIndex: 0,
+    });
+    expect(withoutKey.relatedLink).toBeNull();
+
+    const withExplicitNull = buildGalleryDetailModel({
+      gallery: gallery({relatedEdition: null}),
+      locale: 'fr',
+      pageUrl: PAGE_URL_FR,
+      homeIndex: 0,
+    });
+    expect(withExplicitNull.relatedLink).toBeNull();
+  });
+
+  it('resolves relatedEdition into a locale-correct href for en', () => {
+    const model = buildGalleryDetailModel({
+      gallery: gallery({relatedEdition: {title: 'Rebut', slug: 'rebut'}}),
+      locale: 'en',
+      pageUrl: PAGE_URL_EN,
+      homeIndex: 0,
+    });
+    expect(model.relatedLink!.href).toMatch(/\/en\/editions\/rebut\/?$/);
+  });
 });
 
 describe('buildEditionDetailModel', () => {
