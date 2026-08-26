@@ -239,8 +239,17 @@ const mobileCtaLabel = viewEditionLabel.replace(/^\s*—\s*/, '');
     color: var(--editions-row-accent-text);
   }
 
+  /* quick-260826-q79: 0.75 is the smallest clean quarter-step that keeps a
+     dimmed non-hovered title at or above WCAG's 3:1 large-text threshold
+     once composited over the accent background html.editions-row-active
+     paints behind it. Binding worst case is palette entry 0 (white
+     --color-on-accent over --pink-600 #D6327C), which needs alpha >= 0.717
+     and lands at 3.16:1 here. The previous value (0.28) failed at roughly
+     1.5:1 across every palette entry. tests/unit/editions-dim-contrast.test.ts
+     recomputes this from the live palette tokens on every run, so a future
+     palette change cannot silently re-break it. */
   .editions-index:hover .editions-index__title {
-    opacity: 0.28;
+    opacity: 0.75;
   }
 
   .editions-index__row:hover .editions-index__title {

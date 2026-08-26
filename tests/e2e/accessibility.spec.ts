@@ -244,7 +244,7 @@ test.describe('automatic accent palette contrast (quick-260825-g2l)', () => {
     })
   }
 
-  test('éditions row-hover accent (first row, shared entry-0 pairing) produces no serious or critical color-contrast violations', async ({
+  test('éditions row-hover accent (every published row, every reachable palette pairing) produces no serious or critical color-contrast violations', async ({
     page,
   }) => {
     await page.goto('/editions/')
@@ -253,40 +253,32 @@ test.describe('automatic accent palette contrast (quick-260825-g2l)', () => {
     const rowCount = await rows.count()
     expect(rowCount, 'no éditions rows found -- is at least one édition published?').toBeGreaterThan(0)
 
-    // Row position 0 always maps to ACCENTS[0 % ACCENTS.length] --
-    // EditionsOverviewBody.astro's shared entry-0 pairing with the homepage's
-    // automatic palette -- since éditions carry no per-document color field.
-    await rows.first().hover()
-    // Same 0.35s color/background-color transition settle budget
-    // findRowWithDifferingAccent uses in tests/e2e/edition.spec.ts.
-    await page.waitForTimeout(400)
+    // Row `i` maps to ACCENTS[i % ACCENTS.length] -- EditionsOverviewBody.astro's
+    // shared automatic palette with the homepage's carousel -- since éditions
+    // carry no per-document color field. Content-driven loop (260825-et3's
+    // content-robustness principle): never hardcode a row count or palette
+    // length.
+    for (let index = 0; index < rowCount; index += 1) {
+      await rows.nth(index).hover()
+      // Same 0.35s color/background-color transition settle budget
+      // findRowWithDifferingAccent uses in tests/e2e/edition.spec.ts.
+      await page.waitForTimeout(400)
 
-    // Every other /editions/ scan in this file runs at rest; the hovered
-    // state (page AND header background flipped to the accent via
-    // html.editions-row-active in BaseLayout.astro) had zero automated
-    // contrast coverage until this test.
-    //
-    // Excludes the DIMMED sibling rows' titles (`.editions-index:hover
-    // .editions-index__title { opacity: 0.28 }`, EditionsOverviewBody.astro):
-    // this quick task discovered, but is deliberately out of scope for, a
-    // SEPARATE pre-existing contrast bug -- blending ANY row-accent text
-    // color at 28% opacity over its own accent background fails 3:1
-    // regardless of ink vs white (verified: ink-on-pink ~1.52:1, white-on-pink
-    // ~1.48:1 -- both already failing before this task's --color-on-accent
-    // fix). That bug is a distinct design/mechanism issue (the opacity-based
-    // dimming pattern itself, not the token this task fixes) affecting all 5
-    // accent entries alike; fixing it is out of scope for a single CSS custom
-    // property change and is tracked as a follow-up (see this quick task's
-    // SUMMARY.md). This test stays scoped to what quick-260825-g2l actually
-    // fixes: the header and the actively-hovered row's own (full-opacity)
-    // entry-0 pairing.
-    const results = await new AxeBuilder({page})
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
-      .exclude('.editions-index__row:not(:hover) .editions-index__title')
-      .analyze()
-    const blocking = results.violations.filter(
-      (violation) => violation.impact === 'serious' || violation.impact === 'critical',
-    )
-    expect(blocking, blocking.map((violation) => `${violation.id}: ${violation.help}`).join('\n')).toEqual([])
+      // The dimmed non-hovered sibling titles are now IN scope -- the dim
+      // opacity was raised in quick-260826-q79 so every palette pairing
+      // clears 3:1. tests/unit/editions-dim-contrast.test.ts covers all 5
+      // entries deterministically regardless of how many éditions happen to
+      // be published; this test proves it live in a real browser for the
+      // reachable ones.
+      const results = await new AxeBuilder({page}).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
+      const blocking = results.violations.filter(
+        (violation) => violation.impact === 'serious' || violation.impact === 'critical',
+      )
+      expect(
+        blocking,
+        `row ${index} hovered (palette entry ${index % 5}):\n` +
+          blocking.map((violation) => `${violation.id}: ${violation.help}`).join('\n'),
+      ).toEqual([])
+    }
   })
 })
