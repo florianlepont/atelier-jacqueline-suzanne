@@ -156,3 +156,13 @@ None — no external service configuration required.
 ---
 *Phase: 24-cross-linking-contact-cta*
 *Completed: 2026-08-26*
+
+## Self-Check: PASSED
+
+- FOUND: `.planning/phases/24-cross-linking-contact-cta/24-02-SUMMARY.md`
+- FOUND: `src/lib/page-models.ts`
+- FOUND: `tests/unit/page-models.test.ts`
+- FOUND commit: d4bc43e (test, RED — relatedLink)
+- FOUND commit: 78ecd05 (feat, GREEN — relatedLink)
+- FOUND commit: 9141abb (test, RED — contact CTA)
+- FOUND commit: 6ddac9b (feat, GREEN — contact CTA)
