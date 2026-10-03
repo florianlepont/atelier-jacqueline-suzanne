@@ -54,6 +54,16 @@ Pour une nouvelle collection, saisir d’abord son nom puis utiliser **Générer
 la page ». Dans la liste des collections, le glisser-déposer définit l’ordre affiché sur la page
 d’accueil.
 
+## Photos : réduction et signature automatiques
+
+Chaque photo téléversée (bouton, glisser-déposer, ou plusieurs photos à la fois) est
+automatiquement réduite à 2400 px au maximum sur son côté le plus long, puis signée
+« © Romane Lepont » en bas à droite. Un message vert confirme les tailles avant et après.
+Un message orange signifie que la photo a été envoyée telle quelle (ni réduite ni signée) :
+prévenir Florian. Les images déjà présentes dans la Médiathèque ne sont pas modifiées.
+Les détails et les réglages sont dans la dernière section de
+`docs/reduction-images-sanity.md`.
+
 ## Pages et réglages communs
 
 - **Page d’accueil** : introduction et référencement de l’accueil ;
