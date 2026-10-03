@@ -9,6 +9,7 @@ import {resolveActions, resolveBadges} from './editorial/workflow'
 import {openSitePageInspector} from './editorial/OpenSitePage'
 import {MediaLibrary} from './editorial/MediaLibrary'
 import {StudioLayout} from './editorial/StudioLayout'
+import {resolveImageAssetSources} from './editorial/imageUploadSource'
 import {PUBLIC_SINGLETON_TYPES} from './editorial/workflowLogic'
 
 export default defineConfig({
@@ -21,6 +22,15 @@ export default defineConfig({
   studio: {
     components: {
       layout: StudioLayout,
+    },
+  },
+
+  // Single global hook that resizes and signs every image uploaded in the
+  // Studio (single fields and image arrays alike): it wraps the Uploader of the
+  // default asset source. Settings live in editorial/imageUploadConfig.ts.
+  form: {
+    image: {
+      assetSources: resolveImageAssetSources,
     },
   },
 

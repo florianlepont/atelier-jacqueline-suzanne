@@ -5,6 +5,7 @@ Baseline Wave 0 mesurée le 2026-08-11 avant toute modification des composants d
 | Fichier de production | Statements Wave 0 | Branches Wave 0 | Functions Wave 0 | Lines Wave 0 | Comportements restant à couvrir | Cible finale S/B/F/L |
 |---|---:|---:|---:|---:|---|---:|
 | `editorial/CreditsManager.tsx` | 39.02% | 14.75% | 17.86% | 44.93% | sélection, création du draft, patch/commit, succès, erreur et cleanup | 60/50/60/60 |
+| `editorial/ImageUploadNotices.tsx` | n/a (créé le 2026-10-03, couvert dès sa création) | n/a | n/a | n/a | abonnement au canal de notices, regroupement par lot, attente maximale, nettoyage au démontage | 60/50/60/60 |
 | `editorial/MediaLibrary.tsx` | 46.67% | 25.88% | 33.33% | 49.25% | succès/erreur/retry, filtres, sélection et absence de mise à jour après unmount | 60/50/60/60 |
 | `editorial/OpenSitePage.tsx` | 54.55% | 40.00% | 50.00% | 63.16% | routes publiques, slug absent, menu masqué et fermeture | 60/50/60/60 |
 | `editorial/SeoPreviewInput.tsx` | 90.00% | 83.33% | 75.00% | 90.00% | locale EN, noIndex et fallbacks | 60/50/60/60 |
@@ -15,7 +16,7 @@ Baseline globale : statements 49.58% (241/486), branches 35.92% (162/451), funct
 
 ## Gate d’exhaustivité
 
-La liste de référence exclut uniquement les tests et le harnais, et contient exactement les six lignes ci-dessus :
+La liste de référence exclut uniquement les tests et le harnais, et contient exactement les sept lignes ci-dessus :
 
 ```sh
 rg --files sanity/editorial -g '*.tsx' -g '!**/__tests__/**' -g '!**/test/**' | sort
@@ -30,16 +31,21 @@ Mesuré le 2026-08-13 après les cinq suites comportementales (`EditorialDashboa
 | Fichier de production | Statements final | Branches final | Functions final | Lines final | Cible S/B/F/L | Verdict |
 |---|---:|---:|---:|---:|---:|---|
 | `editorial/CreditsManager.tsx` | 92.68% | 77.04% | 85.71% | 92.75% | 60/50/60/60 | ✅ |
+| `editorial/ImageUploadNotices.tsx` | 100.00% | 100.00% | 100.00% | 100.00% | 60/50/60/60 | ✅ |
 | `editorial/MediaLibrary.tsx` | 96.42% | 79.12% | 97.05% | 98.61% | 60/50/60/60 | ✅ |
 | `editorial/OpenSitePage.tsx` | 95.45% | 80.00% | 100.00% | 100.00% | 60/50/60/60 | ✅ |
 | `editorial/SeoPreviewInput.tsx` | 100.00% | 94.44% | 100.00% | 100.00% | 60/50/60/60 | ✅ |
 | `editorial/StudioLayout.tsx` | 100.00% | 100.00% | 100.00% | 100.00% | 60/50/60/60 | ✅ |
 | `editorial/workflow.tsx` | 93.33% | 73.91% | 100.00% | 100.00% | 60/50/60/60 | ✅ |
 
-Global final : statements 86.34% (487/564), branches 70.54% (376/533), functions 83.62% (143/171), lines 89.18% (429/481) — contre le seuil global 75/65/75/75 activé dans `sanity/vitest.config.ts`. Les six fichiers et le total dépassent leurs seuils respectifs sans aucune exclusion de convenance ni retrait du glob `editorial/**/*.tsx`. Ces chiffres varient légèrement (±1-2 points, surtout sur les branches) d'une exécution à l'autre selon l'ordre d'isolation des tests ; la gate (`sanity/scripts/check-tsx-coverage.mjs`) revérifie les seuils à chaque exécution plutôt que de se fier à ce relevé figé.
+Global final : statements 86.34% (487/564), branches 70.54% (376/533), functions 83.62% (143/171), lines 89.18% (429/481) — contre le seuil global 75/65/75/75 activé dans `sanity/vitest.config.ts`. Les six fichiers d’origine et le total dépassent leurs seuils respectifs sans aucune exclusion de convenance ni retrait du glob `editorial/**/*.tsx`. Ces chiffres varient légèrement (±1-2 points, surtout sur les branches) d'une exécution à l'autre selon l'ordre d'isolation des tests ; la gate (`sanity/scripts/check-tsx-coverage.mjs`) revérifie les seuils à chaque exécution plutôt que de se fier à ce relevé figé.
 
-Le script `sanity/scripts/check-tsx-coverage.mjs`, chaîné après Vitest dans `test:coverage`, relit `coverage/tsx/coverage-final.json`, applique 60/50/60/60 par fichier, et vérifie que l'ensemble des fichiers instrumentés correspond exactement à `rg --files sanity/editorial -g '*.tsx' -g '!**/__tests__/**' -g '!**/test/**'` et aux six lignes de cette matrice — aucun fichier de production ne peut disparaître silencieusement d'une future mesure.
+Le script `sanity/scripts/check-tsx-coverage.mjs`, chaîné après Vitest dans `test:coverage`, relit `coverage/tsx/coverage-final.json`, applique 60/50/60/60 par fichier, et vérifie que l'ensemble des fichiers instrumentés correspond exactement à `rg --files sanity/editorial -g '*.tsx' -g '!**/__tests__/**' -g '!**/test/**'` et aux sept lignes de cette matrice — aucun fichier de production ne peut disparaître silencieusement d'une future mesure.
 
 ## Note du 2026-10-03 (quick 261003-idz)
 
 Les composants `DocumentChecklist.tsx` et `EditorialDashboard.tsx` (bare file names, sans préfixe de dossier) ont été supprimés avec le tableau de bord éditorial : la publication passe désormais par le bouton natif Publier de Sanity. Les deux lignes correspondantes ont été retirées des deux tableaux ci-dessus ; la matrice liste désormais exactement les six fichiers TSX restants.
+
+## Note du 2026-10-03 (quick 261003-l05)
+
+Le composant `ImageUploadNotices.tsx` (sans préfixe de dossier, montée une seule fois dans `StudioLayout.tsx`) affiche les messages français de réduction et de signature automatiques des images téléversées. Il est ajouté aux deux tableaux ci-dessus : la matrice liste désormais exactement sept fichiers TSX. Il n'a pas de baseline Wave 0 puisqu'il est testé dès sa création (`ImageUploadNotices.test.tsx`) ; mesure du 2026-10-03 avec `npm --prefix sanity run test:coverage` : 100 / 100 / 100 / 100 (statements, branches, functions, lines), contre le plancher par fichier 60/50/60/60. Les mesures « Global final » ci-dessus restent une trace historique des six fichiers d’origine.

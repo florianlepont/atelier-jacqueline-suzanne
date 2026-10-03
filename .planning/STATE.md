@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-08-04)
 Phase: Milestone v1.8 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-10-03 - Completed quick task 261003-kci: Sanity image downsizing script (dry-run by default, not yet run against the real dataset) and AI-crawler robots.txt opt-out
+Last activity: 2026-10-03 - Completed quick task 261003-l05: Studio automatic image resize and signature on upload (unit-tested; 5 manual browser checks pending)
 
 ## Performance Metrics
 
@@ -304,6 +304,7 @@ Both prior research-carryover items were resolved during Phase 1 execution:
 | 261003-jbt | Apply the public-repo audit fixes: contact.php multi-line/array handling with executed php-cli tests, Astro 7.3.5, PR CI, staging noindex, SFTP host/user moved to repo variables, MIT licence + content-rights notice + SECURITY.md, untrack settings.local.json | 2026-10-03 | 1ca1f70 | Verified | [261003-jbt-corrections-audit-contact-php-astro-7-3-](./quick/261003-jbt-corrections-audit-contact-php-astro-7-3-/) |
 | 261003-idz | Native Sanity publish + direct OVH deploy; remove GitHub Pages staging, editorial dashboard, markers and checklist | 2026-10-03 | ccfb19b | | [261003-idz-publication-native-sanity-deploiement-di](./quick/261003-idz-publication-native-sanity-deploiement-di/) |
 | 261003-kci | Sanity image downsizing script (dry-run by default, never executed against the real dataset) with French runbook, plus robots.txt opt-out for 11 AI crawlers | 2026-10-03 | 44e63ab | Verified | [261003-kci-sanity-script-de-reduction-des-images-dr](./quick/261003-kci-sanity-script-de-reduction-des-images-dr/) |
+| 261003-l05 | Studio: every image uploaded through the Studio is resized client-side (max 2400px on the longest side) and gets a discreet configurable signature, via one `form.image.assetSources` wrapper; real browser upload path not exercised (manual checks documented) | 2026-10-03 | 978f0d7 | Verified (unit level) | [261003-l05-studio-reduction-et-signature-automatiqu](./quick/261003-l05-studio-reduction-et-signature-automatiqu/) |
 
 ## Deferred Items
 
