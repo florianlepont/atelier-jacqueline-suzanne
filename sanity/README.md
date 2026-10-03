@@ -4,104 +4,41 @@ Le Studio est l’unique espace où préparer et publier le contenu du site. Il 
 automatiquement chaque modification comme brouillon : aucune action « Enregistrer » n’est
 nécessaire.
 
-## Le parcours quotidien
+## Publier une modification
 
-1. Depuis le **Tableau de bord**, ouvrir le contenu à modifier.
+1. Ouvrir la fiche à modifier (collection, édition, page…).
 2. Modifier les champs. Le Studio sauvegarde le brouillon automatiquement.
-3. Consulter la **Checklist** du document.
-4. Revenir au Tableau de bord : le contenu apparaît dans le lot **Mettre le site à jour**.
-5. Depuis le Tableau de bord, un seul clic sur **Mettre le site à jour** publie tout le lot. Le
-   site de test se met à jour automatiquement.
-6. Une fois le site de test confirmé à jour, cliquer sur le bouton rond posé sur la ligne entre
-   les deux étapes de la barre de progression pour ouvrir le site de test et confirmer qu’il est
-   passé en revue. Le bouton du bloc, au-dessus de la barre, affiche alors **« Publier sur le site
-   en ligne »** : cliquer dessus pour envoyer le site vers son adresse réelle. Les deux actions
-   sont volontairement séparées : le bouton du bloc montre toujours la prochaine étape à venir,
-   mais reste grisé tant que le site de test n’a pas été passé en revue.
+3. Cliquer sur **Publier**, en bas de la fiche.
 
-Les fiches de contenu n’ont volontairement pas de bouton de publication. Un brouillon ne
-devient public qu’avec l’action globale **Mettre le site à jour** du Tableau de bord.
+Le site https://atelierjacquelinesuzanne.fr se met ensuite à jour tout seul, en général en moins
+de 10 minutes. Tant que le bouton **Publier** n’a pas été cliqué, rien ne change sur le site.
+Plusieurs publications à la suite ne posent aucun problème : le site finit toujours par afficher
+les dernières versions publiées.
 
-## Comprendre la checklist
+## Si le bouton Publier est grisé
 
-- **Indispensable** : l’information doit être complétée. Un seul élément indispensable
-  manquant bloque le lot entier.
-- **Recommandé** : améliore la qualité éditoriale, le partage ou le référencement, mais ne
-  bloque pas la publication.
+Un champ obligatoire n’est pas rempli : il est signalé en rouge dans la fiche. Compléter ce champ,
+puis le bouton redevient cliquable. Les simples avertissements ne bloquent pas la publication.
 
-Le Tableau de bord donne un lien direct vers chaque document bloqué. Après correction, revenir
-au Tableau de bord pour relancer la vérification.
+## Vérifier sur le site
 
-## Comprendre le lot de publication
-
-Le nombre affiché à côté de **Mettre le site à jour** correspond aux documents publics dont un
-brouillon existe. Le récapitulatif distingue :
-
-- **Modifié** : remplace une version déjà publique ;
-- **Nouveau** : ajoute un nouveau contenu visible ;
-- **Sera retiré du site** : publie une version archivée ou masquée ;
-- **Nouveau, gardé hors ligne** : conserve le contenu hors du site public.
-
-La publication est globale et atomique : toutes les modifications sont envoyées dans une seule
-transaction Sanity. Cette transaction enregistre aussi un unique marqueur technique de
-déploiement : il déclenche une seule reconstruction du site, même si le lot contient plusieurs
-documents. Ce marqueur n’est pas un contenu éditorial ; ne jamais le créer ni le modifier. Si une
-vérification ou la transaction échoue, le Tableau de bord n’annonce jamais un succès partiel.
-Actualiser les données, corriger l’erreur signalée, puis réessayer.
+Le bouton **Voir sur le site** (en haut de la fiche) ouvre la page en ligne. Après une publication,
+patienter quelques minutes puis recharger la page si la modification n’apparaît pas encore.
 
 ## Visibilité d’une collection ou d’une édition
 
-Le champ **Visibilité** prépare ce qui se passera lors de la prochaine mise à jour globale. Le
-changer n’a aucun effet immédiat sur le site :
+Le champ **Visibilité** a trois états, qui prennent effet une fois la fiche publiée :
 
-- un contenu visible devient public après **Mettre le site à jour** ;
-- un contenu masqué ou archivé est retiré après cette même action ;
-- son document et ses médias restent conservés dans Sanity.
+- **Publiée sur le site** : la collection ou l’édition est visible ;
+- **En préparation** : le contenu reste hors ligne ;
+- **Archivée** : le contenu est conservé hors ligne.
 
-## État de la mise à jour du site de test
+Le menu à côté de **Publier** propose aussi **Dépublier**, qui retire une collection ou une
+édition du site, mais il vaut mieux utiliser **En préparation** ou **Archivée** : le document et ses
+médias restent conservés dans Sanity dans tous les cas.
 
-Après la publication Sanity, GitHub reconstruit le site de test. Le statut compare la date de
-publication avec les exécutions GitHub suivantes :
-
-- **Modifications en attente** : des brouillons restent à publier ;
-- **Mise à jour en attente** : la nouvelle exécution GitHub n’est pas encore visible ;
-- **Mise à jour en cours** : le site est en reconstruction ;
-- **Site de test à jour** : une exécution créée après la publication a réussi ;
-- **Échec de la mise à jour** : Sanity est publié, mais le site peut encore afficher l’ancienne
-  version ;
-- **Mise à jour non démarrée** : aucune exécution n’est apparue après trois minutes ; l’étape
-  concernée passe alors au rouge, exactement comme un échec, pour la distinguer d’une mise à jour
-  encore réellement en cours — c’est le moment d’ouvrir le lien et de prévenir le mainteneur ;
-- **État temporairement indisponible** : le Tableau de bord ne peut pas prouver la fraîcheur du
-  site.
-
-En cas d’échec ou de délai anormal, ouvrir le lien du statut pour consulter GitHub Actions et
-prévenir le mainteneur. Ne pas republier plusieurs fois sans avoir identifié la cause.
-
-Une fois la publication vers le site en ligne déclenchée, les mêmes statuts apparaissent pour le
-Site en ligne, jusqu’à **Site en ligne à jour**.
-
-Sous le bouton du bloc de publication — un seul bouton, dont le texte change selon l’étape en
-cours (« Mettre le site à jour », « Publier sur le site en ligne », ou « Publication… » pendant
-qu’une mise en ligne est en cours) —, une barre de progression montre deux étapes (« Studio » et
-« Site en ligne ») reliées par une ligne dont le centre porte le bouton rond. Chaque étape devient
-verte une fois à jour, tourne pendant son exécution et devient rouge en cas d’échec. Tant que des
-modifications enregistrées ne sont pas encore publiées, l’étape **Studio** devient bleue et affiche
-« Contenu modifié — prêt à être publié ».
-
-Tant qu’il existe des modifications non publiées, l’étape **Site en ligne** n’est jamais affichée
-comme à jour, même si le site en ligne lui-même n’a pas changé — c’est volontaire, pour que
-l’indicateur décrive toujours le dernier contenu enregistré plutôt que l’état réel du site en
-ligne.
-
-Le bouton rond central reste verrouillé jusqu’à ce que le site de test soit confirmé à jour, devient
-alors cliquable — et porte alors une petite légende nommant le site de test qu’il ouvre —, s’éteint
-pendant que la publication est en cours, puis affiche une coche une fois terminée. Le statut de la
-mise en ligne — y compris l’étape en échec le cas échéant — est signalé par la petite ligne sous le
-titre **Mettre le site à jour**, en haut du bloc. La zone sous la barre de progression ne porte
-jamais de texte explicatif et ne contient plus de bouton : elle ne porte qu’un lien, qui n’apparaît
-qu’en cas d’échec, vers l’exécution GitHub Actions concernée — le bouton de publication vit
-désormais en haut du bloc.
+Les cinq pages (Accueil, À propos, Contact, Éditions, Réglages du site) ne peuvent pas être
+dépubliées, supprimées ni dupliquées, volontairement : le site en a toujours besoin.
 
 ## Collections photo
 
@@ -111,7 +48,7 @@ désormais en haut du bloc.
 4. Dans **Photos**, glisser-déposer les images et les réordonner. La première image est la
    couverture.
 5. Ajouter une courte description française et anglaise à chaque image.
-6. Vérifier la Checklist, puis revenir au Tableau de bord.
+6. Cliquer sur **Publier**.
 
 Pour une nouvelle collection, saisir d’abord son nom puis utiliser **Générer** sous « Adresse de
 la page ». Dans la liste des collections, le glisser-déposer définit l’ordre affiché sur la page
@@ -134,60 +71,22 @@ l’image de partage. Ces champs sont recommandés ; les valeurs éditoriales pr
 de repli lorsqu’ils sont vides.
 
 Chaque photo possède une rubrique **Crédits et droits**. Le crédit « Romane Lepont » et la
-mention « Tous droits réservés » peuvent être adaptés image par image. Les informations de
-format, de technique et de droits demandées par la Checklist sont indispensables avant la
-publication des collections et éditions concernées.
+mention « Tous droits réservés » peuvent être adaptés image par image. Les crédits sont
+obligatoires : **Publier** reste grisé tant qu’ils manquent. Après avoir utilisé l’outil
+**Crédits et droits**, ouvrir chaque collection modifiée et cliquer sur **Publier**.
 
 ## Agenda / Expositions
 
-Cette rubrique accueille les événements à venir. Elle est indépendante du lot public actuel :
-les expositions restent gérées et publiées avec leur propre flux tant que leur affichage sur le
-site n’est pas livré.
+Les expositions se publient comme n’importe quelle fiche, avec **Publier**. Elles ne sont pas
+encore affichées sur le site.
 
 ## Dépannage
 
-- **Le bouton global est désactivé** : ouvrir les contenus signalés en rouge et compléter les
-  informations indispensables.
-- **Une modification n’apparaît pas dans le lot** : attendre la sauvegarde automatique, puis
-  actualiser le Tableau de bord.
-- **La publication échoue** : utiliser **Actualiser et réessayer**. Si l’erreur persiste,
-  transmettre son détail technique au mainteneur.
-- **Le site de test semble ancien après un succès Sanity** : attendre le statut GitHub.
-  Seul **Site de test à jour** confirme une exécution postérieure à la publication.
-- **Le statut GitHub est indisponible** : ouvrir GitHub Actions depuis le statut et prévenir le
-  mainteneur ; le Tableau de bord ne suppose pas que le site est à jour.
-- **Le bouton « Publier sur le site en ligne » reste grisé** : le site de test n’est pas encore
-  confirmé à jour ; vérifier d’abord son statut avant de contacter le mainteneur.
-
-## Vérification technique du déclenchement GitHub
-
-Cette vérification est réservée au mainteneur après le déploiement du Studio. Dans Sanity Manage,
-modifier le webhook existant **GitHub Actions rebuild** — sans en créer un second — pour qu’il
-réagisse aux créations et mises à jour du seul document publié dont l’identifiant et le type sont
-`siteDeployment`, avec le filtre `_id == 'siteDeployment' && _type == 'siteDeployment'`.
-Désactiver les brouillons et versions. Conserver sa destination GitHub, son en-tête
-d’autorisation existant et sa projection `event_type` : aucun secret ne doit être copié dans le
-Studio ou ce dépôt.
-
-Avant un essai, noter les livraisons du webhook et les exécutions GitHub Actions existantes.
-Préparer au moins deux brouillons publics déjà approuvés, puis les publier ensemble une seule fois
-avec **Mettre le site à jour**. Pour cet unique lot, vérifier :
-
-- une seule livraison Sanity réussie (statut 204) ;
-- une seule nouvelle exécution GitHub Actions, déclenchée par `repository_dispatch` avec l’action
-  `sanity-content-published` ;
-- une exécution terminée avec succès, puis le statut **Site de test à jour** dans le Tableau de
-  bord.
-
-La confirmation de la publication sur le site en ligne se vérifie séparément, uniquement en
-cliquant **Publier sur le site en ligne** une fois le site de test confirmé : une seule exécution
-`deploy-ovh.yml`, déclenchée par
-`repository_dispatch` avec l’action `production-deploy-requested`, terminée avec succès, puis le
-statut **Site en ligne à jour** dans le Tableau de bord.
-
-Consigner uniquement l’horodatage du lot, le nombre de documents publics modifiés, le statut de la
-livraison et l’issue de l’exécution GitHub. En cas de plusieurs livraisons ou exécutions, ne pas
-republier : laisser le webhook large désactivé et transmettre les entrées de journal au mainteneur.
+- **Le bouton Publier est grisé** : ouvrir la fiche et compléter les champs signalés en rouge.
+- **Une fiche affiche « Modifications non publiées »** : cliquer sur **Publier** pour les envoyer
+  sur le site.
+- **Le site n’est pas à jour après environ 15 minutes** : prévenir le mainteneur (Florian) en lui
+  indiquant la fiche concernée et l’heure de la publication.
 
 ## Développement local
 
@@ -197,6 +96,3 @@ npm run dev
 ```
 
 Le Studio est généralement disponible sur `http://localhost:3333`.
-
-Pour changer la destination du lien **Ouvrir le site**, copier `.env.example` vers `.env.local`
-et adapter `SANITY_STUDIO_PREVIEW_URL` avant de construire ou déployer le Studio.

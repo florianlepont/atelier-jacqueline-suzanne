@@ -12,7 +12,7 @@ Content — galleries, Éditions, agenda entries, page copy — is authored and 
 - **Headless CMS, build-time content** — Sanity powers galleries, Éditions, About, and agenda content, fetched at build time rather than queried at runtime. The non-technical site owner publishes content through the Studio; a publish triggers a rebuild rather than a live database call.
 - **Built-in i18n routing** — French served at the root, English under `/en/`, via Astro's native `astro:i18n`, keeping the bilingual requirement out of custom routing code.
 - **Blocking CI gates before every deploy** — GitHub Actions runs lint, typecheck, unit tests (with coverage thresholds), and end-to-end browser tests across both the site and the separate Sanity Studio subproject before anything ships.
-- **Two deploy targets, different roles** — GitHub Pages is a permanently-live staging/preview environment; OVH is the production host serving the real domain, with production releases triggered by the photographer's own publish action in Studio rather than by a code push.
+- **One production target, deployed by publishing** — OVH serves the real domain and is updated automatically when the photographer clicks Sanity's native Publish button (one Sanity webhook triggers the deploy workflow). CI gates every push, and a push to `main` never deploys the site.
 - **Near-zero cost by design** — free hosting/CMS tiers plus an already-owned domain and host, targeting ~0-5€/month recurring cost as an explicit constraint, not an accident.
 
 For full project context, decisions, and constraints, see [`.planning/PROJECT.md`](.planning/PROJECT.md) and [`CLAUDE.md`](CLAUDE.md).
@@ -44,11 +44,9 @@ Names only — never commit real values, tokens, or keys. `.env` is gitignored; 
 | `SANITY_PROJECT_ID` | required (build) | Sanity project id for build-time content fetch. |
 | `SANITY_DATASET` | required (build) | Sanity dataset name (e.g. `production`). |
 | `SANITY_API_READ_TOKEN` | required (build) | Sanity read token used at build time. |
-| `SITE_URL` | optional (build) | Canonical site origin; defaults to `https://florianlepont.github.io`. |
-| `ASTRO_BASE` | optional (build) | Base path; defaults to `/`; set `/atelier-jacqueline-suzanne/` for the GitHub Pages staging build. |
-| `PUBLIC_CONTACT_ENDPOINT` | optional (build) | Contact form POST target; defaults to the same-origin path `/contact.php`. Must be set to the absolute production URL (`https://atelierjacquelinesuzanne.fr/contact.php`) for the GitHub Pages staging build, since that host cannot execute PHP. |
-
-Note: the `sanity/` Studio has its own env (`SANITY_STUDIO_PREVIEW_URL`) documented in `sanity/README.md`.
+| `SITE_URL` | optional (build) | Canonical site origin; `astro.config.mjs` provides a fallback for local builds. The OVH production workflow always sets `https://atelierjacquelinesuzanne.fr` explicitly. |
+| `ASTRO_BASE` | optional (build) | Base path; defaults to `/`. No workflow sets it. |
+| `PUBLIC_CONTACT_ENDPOINT` | optional (build) | Contact form POST target; defaults to the same-origin path `/contact.php`. Leave it unset: `public/contact.php` sends no CORS headers, so a build served from another origin could not read the endpoint's response. |
 
 ## Scripts
 
@@ -64,38 +62,36 @@ Note: the `sanity/` Studio has its own env (`SANITY_STUDIO_PREVIEW_URL`) documen
 
 Root and `sanity/` each run their own Vitest, with a real but narrow overlap — knowing which one exercises what avoids duplicating tests or, worse, believing something is covered when it isn't.
 
-- **Root Vitest** (`tests/unit/**`, this `package.json`'s `test:unit`/`test:coverage`) runs in a plain Node environment and instruments coverage for two directories: `src/lib/**/*.ts` (Astro-side render models and helpers) **and `sanity/editorial/**/*.ts`** — the Sanity Studio dashboard's pure-logic modules (`dashboardLogic.ts`, `deployment.ts`, `checks.ts`, `pipelineView.ts`, `releaseGate.ts`, `workflowLogic.ts`). These are plain functions with no React/DOM dependency, so a plain Node test can import and exercise them directly without needing Studio's own jsdom harness. `vitest.config.ts`'s `coverage.exclude` carves out two things that match that glob but aren't production logic: `sanity/editorial/test/**` (Studio's own jsdom/RTL test-support code) and `sanity/editorial/useDeploymentPolling.ts` (a React hook — `useState`/`useEffect` can't run outside a component render, so it's tested instead by Studio's own suite; see below).
-- **Studio Vitest** (`sanity/vitest.config.ts`, run via `npm --prefix sanity run test`/`test:coverage`) runs in jsdom with React Testing Library, covering `.tsx` component files under `sanity/editorial/__tests__/` (`EditorialDashboard.tsx`, `CreditsManager.tsx`, etc.) plus `.ts`/`.tsx` files under `sanity/schemas/__tests__/` (schema-builder helpers like `sanity/schemas/lib/localeField.ts`, which need the real `defineField`/`defineType` from the `sanity` package — resolvable only from `sanity/node_modules`, not the root project). Its own coverage gate (`coverage.include: ['editorial/**/*.tsx']`, enforced by `scripts/check-tsx-coverage.mjs`'s 60/50/60/60 per-file floor) only measures `.tsx` files — the `.ts` logic modules it also runs (schemas/lib, or a hook test like `useDeploymentPolling.test.tsx`) execute and must pass, but aren't counted toward that specific gate.
-- **Typechecking is likewise split**: root's `npm run typecheck` (`astro check`) covers `src/` and root-level `tests/`. `sanity/`'s own `npm run typecheck` (`tsc --noEmit -p tsconfig.typecheck.json`) covers Studio's source, scoped to exclude `__tests__/`/`test/`/`*.test.ts(x)` — those are excluded because of one pre-existing, narrow type-inference quirk in `CreditsManager.test.tsx` (a JSX `render()` overload colliding with an ambient Sanity structure-builder type when the whole `sanity/` TS program compiles together), unrelated to and not masking any production-code type error. Both typecheck scripts run as their own blocking CI gate in `.github/workflows/deploy.yml` and `deploy-ovh.yml`.
+- **Root Vitest** (`tests/unit/**`, this `package.json`'s `test:unit`/`test:coverage`) runs in a plain Node environment and instruments coverage for two directories: `src/lib/**/*.ts` (Astro-side render models and helpers) **and `sanity/editorial/**/*.ts`** — the Sanity Studio's pure-logic modules (`workflowLogic.ts` and `siteUrl.ts`). These are plain functions with no React/DOM dependency, so a plain Node test can import and exercise them directly without needing Studio's own jsdom harness. `vitest.config.ts`'s `coverage.exclude` carves out `sanity/editorial/test/**` (Studio's own jsdom/RTL test-support code), which matches that glob but isn't production logic.
+- **Studio Vitest** (`sanity/vitest.config.ts`, run via `npm --prefix sanity run test`/`test:coverage`) runs in jsdom with React Testing Library, covering `.tsx` component files under `sanity/editorial/__tests__/` (`CreditsManager.tsx`, `MediaLibrary.tsx`, `OpenSitePage.tsx`, etc.) plus `.ts`/`.tsx` files under `sanity/schemas/__tests__/` (schema-builder helpers like `sanity/schemas/lib/localeField.ts`, which need the real `defineField`/`defineType` from the `sanity` package — resolvable only from `sanity/node_modules`, not the root project). Its own coverage gate (`coverage.include: ['editorial/**/*.tsx']`, enforced by `scripts/check-tsx-coverage.mjs`'s 60/50/60/60 per-file floor) only measures `.tsx` files — the `.ts` logic modules it also runs (such as schemas/lib) execute and must pass, but aren't counted toward that specific gate.
+- **Typechecking is likewise split**: root's `npm run typecheck` (`astro check`) covers `src/` and root-level `tests/`. `sanity/`'s own `npm run typecheck` (`tsc --noEmit -p tsconfig.typecheck.json`) covers Studio's source, scoped to exclude `__tests__/`/`test/`/`*.test.ts(x)` — those are excluded because of one pre-existing, narrow type-inference quirk in `CreditsManager.test.tsx` (a JSX `render()` overload colliding with an ambient Sanity structure-builder type when the whole `sanity/` TS program compiles together), unrelated to and not masking any production-code type error. Both typecheck scripts run as their own blocking CI gate in `.github/workflows/ci.yml` and `deploy-ovh.yml`.
 
 In short: if you add a new plain-logic `.ts` file under `sanity/editorial/` or `sanity/schemas/lib/`, root Vitest already covers it. If you add a new `.tsx` component or a React hook, it belongs in Studio's own suite (`sanity/editorial/__tests__/` or `sanity/schemas/__tests__/`) instead — and if it's a hook, add its filename to root `vitest.config.ts`'s `coverage.exclude` so root's coverage report doesn't count it as an untested `.ts` file.
 
 ## Deployments
 
-This project has two deploy targets. Do not confuse them.
+The site has one production target, OVH, updated automatically when Romane clicks Sanity's native **Publier** button. CI gates every push, and a push never deploys the site.
 
-| | Staging — GitHub Pages | Production — OVH |
+| Workflow | Trigger | What it does |
 |---|---|---|
-| Trigger | Automatic on push to `main`, and on the Sanity `sanity-content-published` webhook | Automatic on the dedicated `production-deploy-requested` event fired by the editor's `Publier sur le site en ligne` click in Sanity Studio (no approval); manual dispatch otherwise (Required-reviewer approval) — a code commit to `main` never deploys here |
-| Workflow | `.github/workflows/deploy.yml` | `.github/workflows/deploy-ovh.yml` |
-| Base path | `/atelier-jacqueline-suzanne/` | Root (`/`) |
-| URL | https://florianlepont.github.io/atelier-jacqueline-suzanne/ | https://atelierjacquelinesuzanne.fr |
+| `.github/workflows/ci.yml` | Push to `main`, and manual dispatch | Runs every blocking gate (Studio lint/coverage/build/typecheck, root lint/typecheck, static-artifact verification, Playwright e2e, Vitest coverage), then republishes the hosted Sanity Studio. **Never deploys the site.** |
+| `.github/workflows/deploy-ovh.yml` | The Sanity webhook event `production-deploy-requested` (automatic, through the `production-ovh-auto` environment, no approval pause), and manual dispatch (pauses on the `production-ovh` Required reviewer) | Runs the same gates, builds with `SITE_URL=https://atelierjacquelinesuzanne.fr` at the root base path, and uploads `dist/` to OVH over SFTP. The live site is https://atelierjacquelinesuzanne.fr. |
 
-Both deploy workflows run the full blocking gate set (lint, typecheck, Playwright e2e, Vitest coverage) before publishing anything.
+A push to `main` never deploys the site. Code merged to `main` reaches production with the next content publish (a `repository_dispatch` run always builds the default branch), or right away with `gh workflow run deploy-ovh.yml`. Keep `main` production-ready.
 
-GitHub Pages stays alive permanently as a pre-production environment after the domain cutover — it is not retired. It is useful for previewing future changes before they reach the real domain, at no extra cost.
+A burst of publishes leaves at most one run in progress plus one pending run, and the latest pending run wins, so two uploads never race on the same webroot.
 
 ### Sanity Studio: published automatically
 
-The hosted Studio at https://atelier-jacqueline-suzanne.sanity.studio/ is republished automatically by `.github/workflows/deploy.yml`, as the final step of every push to `main` — after the GitHub Pages deploy and after every blocking gate has passed.
+The hosted Studio at https://atelier-jacqueline-suzanne.sanity.studio/ is republished automatically by `.github/workflows/ci.yml`, as the final step of every push to `main`, after every blocking gate has passed.
 
-It does **not** republish on the `sanity-content-published` content webhook, since a content publish can't change Studio source code.
+It does **not** republish on a content publish, since a content publish can't change Studio source code.
 
 It republishes on *every* push to `main`, not only pushes that touch `sanity/`: the Studio build already runs on every push anyway, and a paths filter would reintroduce the exact staleness risk this step exists to remove.
 
-To force a republish without a code change, re-run the last `deploy.yml` run from the Actions tab. Running `npm run deploy` from `sanity/` locally still works but is no longer the expected path.
+To force a republish without a code change, re-run the last `ci.yml` run from the Actions tab. Running `npm run deploy` from `sanity/` locally still works but is no longer the expected path.
 
-If the repository secret below is missing, the site still deploys and the run stays green, but the run carries a warning annotation and the live Studio silently stays on its previous bundle.
+If the repository secret below is missing, the run stays green but carries a warning annotation and the live Studio silently stays on its previous bundle.
 
 **One-time setup — repository secret `SANITY_AUTH_TOKEN`:**
 
@@ -103,39 +99,73 @@ If the repository secret below is missing, the site still deploys and the run st
 2. Add it as a **repository-level** secret (not scoped to an environment): `gh secret set SANITY_AUTH_TOKEN`.
 3. This must be a distinct token from the existing read-only `SANITY_API_READ_TOKEN` — reusing that read token will fail the publish.
 
-### Production deploy: the two paths
-
-- **Content path (editor-gated).** Romane publishes in Studio → the content webhook fires and rebuilds GitHub Pages staging only → the dashboard's pipeline bar shows staging going green → she opens staging and checks it herself → she clicks `Publier sur le site en ligne` → that publishes an internal release-marker document → a second Sanity webhook fires the production-release event → deploy-ovh.yml runs every blocking gate and deploys to the real domain with no GitHub approval pause, because her click already was the human checkpoint and she has no GitHub access to give a second one.
-- **Code path (manual, unchanged).** A commit landing on `main` deploys only to GitHub Pages staging. Shipping code to production is still an explicit `gh workflow run deploy-ovh.yml` that pauses on the `production-ovh` Required reviewer.
-- **The caveat, restated:** because the release event always builds the default branch, a production release also ships whatever code is currently on `main`. Keep `main` production-ready. Note that this is now materially safer than before, because the release is a deliberate, separately-timed act rather than a side effect of every content publish.
-
 ### Production deploy: one-time setup
 
-Before `deploy-ovh.yml` can be run, these six things must be configured once:
+Before `deploy-ovh.yml` can run, these things must be configured once:
 
 1. **Repository secret `OVH_SFTP_PASSWORD`** — the SFTP password for user `atelihu`, found in the OVH Control Panel under Web Cloud → Hosting plans → `atelihu` → FTP - SSH. Set it scoped to the environment:
    ```
    gh secret set OVH_SFTP_PASSWORD --env production-ovh
    ```
-2. **Repository Environment `production-ovh`** — create it under Settings → Environments, with at least one Required reviewer. This is what makes the workflow pause for approval; without it the run proceeds straight to the SFTP push and D-02's approval gate does not exist.
+2. **Repository Environment `production-ovh`** — create it under Settings → Environments, with at least one Required reviewer. This is what makes manual runs pause for approval; without it a manual run proceeds straight to the SFTP push and D-02's approval gate does not exist.
 3. **Confirm the webroot path** under `/home/atelihu` (the workflow assumes `www`) — OVH Control Panel → Web Cloud → Hosting plans → `atelihu` → Multisite.
-4. **Confirm `atelierjacquelinesuzanne.fr` is attached to the `atelihu` hosting plan** via Multisite, since the DNS cutover in the launch runbook points the domain at that hosting.
-5. **Repository Environment `production-ovh-auto`** — create it under Settings → Environments with NO required reviewer (leave Deployment protection rules empty). This is what lets the content path skip the approval pause. Then copy the SFTP secret onto it, since GitHub environment secrets do not carry across environments:
+4. **Confirm `atelierjacquelinesuzanne.fr` is attached to the `atelihu` hosting plan** via Multisite.
+5. **Repository Environment `production-ovh-auto`** — create it under Settings → Environments with NO required reviewer (leave Deployment protection rules empty). This is what lets a Sanity publish deploy without an approval pause: Romane's own click on Publier is the deliberate act. Then copy the SFTP secret onto it, since GitHub environment secrets do not carry across environments:
    ```
    gh secret set OVH_SFTP_PASSWORD --env production-ovh-auto
    ```
    If this step is skipped, automatic runs fail fast at the workflow's `Guard: SFTP credentials are present` step with an explicit error, rather than silently attempting an unauthenticated upload.
-6. **Sanity Project Webhook (`production-deploy-requested`)** — configured in **Sanity's own dashboard** (`https://www.sanity.io/manage` → project → API → Webhooks), **NOT** in this repository. Until it exists, the Studio `Publier sur le site en ligne` button will publish its marker and report success, and nothing will happen: no production run will ever start. Configuration:
-   - Trigger on **Create** and **Update**.
-   - Dataset: `production`.
-   - Filter on the release-marker document type: `_type == "siteProductionRelease"`.
-   - HTTP method: `POST` to `https://api.github.com/repos/florianlepont/atelier-jacqueline-suzanne/dispatches`.
-   - Body (projection) producing the event this repo's workflow now listens for: `{"event_type": "production-deploy-requested"}`.
-   - Headers: `Accept: application/vnd.github+json`, `Content-Type: application/json`, and a bearer `Authorization` header.
-   - The token is a **fine-grained GitHub PAT** scoped to this single repo (`florianlepont/atelier-jacqueline-suzanne`) with `Contents: Read and write` and an expiry date. It lives **ONLY** in this webhook's header configuration in Sanity's dashboard — it must never be committed to this repository, written into any workflow file, or pasted anywhere else.
-   - Verification note: the **existing** webhook driving the staging event (`sanity-content-published`) almost certainly filters on the *other* marker document type (`siteDeployment`). Open it, confirm its shape, and mirror it for the new webhook rather than editing it — staging must keep its own trigger untouched.
+6. **Sanity webhook** — see the next section.
 
-### Production deploy: how to run one
+### Sanity webhook
+
+Webhooks live in **Sanity's own dashboard** (https://www.sanity.io/manage → project `gwz8iug4` → API → Webhooks), **not** in this repository. Until the webhook is configured as below, a click on Publier updates Sanity and nothing else: no production run starts.
+
+Sanity's plan allows 2 webhooks and both are in use, so **edit one and delete the other**:
+
+| Setting | Value |
+|---|---|
+| Webhook to edit | the existing **Production deploy requested** (optionally rename it to "Production deploy (OVH)") |
+| Webhook to delete | **GitHub Actions rebuild** |
+| Project / dataset | `gwz8iug4` / `production` |
+| URL | `https://api.github.com/repos/florianlepont/atelier-jacqueline-suzanne/dispatches` (unchanged) |
+| Trigger on | Create, Update, Delete |
+| Filter | `_type in ["siteSettings", "homePage", "editionsPage", "aboutPage", "contactPage", "gallery", "edition", "exhibition"]` |
+| Projection | `{"event_type": "production-deploy-requested"}` (unchanged) |
+| Status | Enabled |
+| Advanced: HTTP method | `POST` |
+| Advanced: HTTP headers | `Authorization: Bearer <fine-grained PAT>` (unchanged), `Accept: application/vnd.github+json`, `Content-Type: application/json` |
+| Advanced: API version | leave as is (the projection uses no version-specific GROQ) |
+| Advanced: Drafts | unchecked (never trigger on draft edits) |
+| Advanced: Versions | unchecked |
+| Advanced: Secret | empty (GitHub does not verify Sanity signatures) |
+| PAT | fine-grained, repository `florianlepont/atelier-jacqueline-suzanne` only, permission `Contents: Read and write`, with an expiry date. Lives **ONLY** in this webhook's Authorization header, never in the repo or a workflow file. |
+
+`exhibition` is in the filter even though exhibitions are not rendered on the site yet: for now a publish of one just triggers a harmless rebuild. `seo` and `imageRights` are object types and never fire. A test (`tests/unit/publishing-docs.test.ts`) keeps this filter in lockstep with the document types in `sanity/schemas/`, so adding a document type fails CI until the filter line above is updated.
+
+**PAT expiry warning:** when the PAT expires, deliveries start failing with 401 in the webhook's attempts log and the site silently stops updating. Rotate the PAT in the webhook header before it expires.
+
+### Switching over (one-time, after merging this change)
+
+1. Merge into `main`. `ci.yml` republishes the Studio, which now has the native Publier button and no Tableau de bord. Nothing is deployed to the site.
+2. Edit **Production deploy requested** with the values from the table above. Only the filter, the triggers and the drafts/versions options change.
+3. Delete **GitHub Actions rebuild**. It fed the retired GitHub Pages staging site, and no workflow listens to its event anymore.
+4. Unpublish GitHub Pages: Settings → Pages, or
+   ```
+   gh api -X DELETE repos/florianlepont/atelier-jacqueline-suzanne/pages
+   ```
+   Optionally delete the `github-pages` environment:
+   ```
+   gh api -X DELETE repos/florianlepont/atelier-jacqueline-suzanne/environments/github-pages
+   ```
+5. Optional: from `sanity/`, after `npx sanity login`, run `npx sanity documents delete siteDeployment siteProductionRelease`. This removes the two orphaned marker documents left by the retired dashboard. Their types are in neither the schema nor the webhook filter, so deleting them triggers nothing.
+6. Verify:
+   - publish a harmless edit in Studio;
+   - the webhook's attempts log in Sanity shows a 2xx delivery;
+   - a "Deploy to OVH production" run appears, triggered by `repository_dispatch`, and finishes green without an approval pause (about 6 minutes);
+   - the change is visible on https://atelierjacquelinesuzanne.fr.
+
+### Production deploy: how to run one manually
 
 1. Dispatch the workflow — from the Actions tab, or `gh workflow run deploy-ovh.yml`.
 2. The `build` job runs every blocking gate (Sanity Studio lint/build, typecheck, static-artifact verification, Playwright e2e, Vitest coverage) and writes a recap to the run summary: commit, target host/path, resolved `SITE_URL`, file count/size, and confirmation that `contact.php` and `.htaccess` are both present.
