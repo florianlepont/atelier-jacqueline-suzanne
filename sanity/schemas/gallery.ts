@@ -35,7 +35,7 @@ export const gallery = defineType({
       type: 'string',
       group: 'publication',
       description:
-        'Ce choix prendra effet lors de la prochaine mise à jour du site depuis le tableau de bord. « En préparation » et « Archivée » gardent la collection hors ligne.',
+        'Ce choix prend effet une fois la collection publiée avec le bouton « Publier » ; le site en ligne se met ensuite à jour automatiquement en quelques minutes. « En préparation » et « Archivée » gardent la collection hors ligne.',
       initialValue: 'published',
       options: {
         layout: 'radio',

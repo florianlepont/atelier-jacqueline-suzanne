@@ -2,7 +2,7 @@ import {Box, Button, Stack, Text} from '@sanity/ui'
 import {LaunchIcon} from '@sanity/icons/Launch'
 import {useEditState} from 'sanity'
 import type {DocumentInspector, DocumentInspectorComponent} from 'sanity'
-import {SITE_PREVIEW_URL} from './deployment'
+import {publicSiteUrl} from './siteUrl'
 
 type UnknownRecord = Record<string, unknown>
 
@@ -21,11 +21,6 @@ function publicPagePath(documentType: string, value: UnknownRecord): string | un
   return undefined
 }
 
-function siteUrl(path: string) {
-  const base = SITE_PREVIEW_URL.endsWith('/') ? SITE_PREVIEW_URL.slice(0, -1) : SITE_PREVIEW_URL
-  return `${base}${path}`
-}
-
 const OpenSitePagePanel: DocumentInspectorComponent = ({documentId, documentType, onClose}) => {
   const {draft, published} = useEditState(documentId, documentType)
   const value = (draft ?? published ?? {}) as UnknownRecord
@@ -37,7 +32,7 @@ const OpenSitePagePanel: DocumentInspectorComponent = ({documentId, documentType
         {path ? (
           <Button
             as="a"
-            href={siteUrl(path)}
+            href={publicSiteUrl(path)}
             target="_blank"
             rel="noreferrer"
             tone="primary"

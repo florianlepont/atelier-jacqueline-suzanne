@@ -9,36 +9,22 @@ type FetchImplementation = (
 
 export interface SanityTestClient {
   fetch: ReturnType<typeof vi.fn<FetchImplementation>>
-  listen: ReturnType<typeof vi.fn>
-  action: ReturnType<typeof vi.fn>
   transaction: ReturnType<typeof vi.fn>
 }
 
 function defaultFetch(query: string): Promise<unknown> {
   if (query.includes('"assets"')) return Promise.resolve({assets: [], galleries: []})
-  if (query.includes("_id == 'siteDeployment'")) return Promise.resolve(null)
   return Promise.resolve([])
 }
 
 export const sanityTestState = {
-  unsubscribe: vi.fn(),
-  openInspector: vi.fn(),
   toastPush: vi.fn(),
-  historyStore: {getTransactions: vi.fn(() => Promise.resolve([]))},
-  userStore: {getUsers: vi.fn(() => Promise.resolve([]))},
   editState: {
     draft: null as Record<string, unknown> | null,
     published: {_id: 'gallery-1', _type: 'gallery', title: 'Collection test'} as Record<
       string,
       unknown
     > | null,
-  },
-  documentPane: {
-    documentId: 'gallery-1',
-    documentType: 'gallery',
-    ready: true,
-    inspector: {name: 'checklist'} as unknown,
-    openInspector: vi.fn(),
   },
   client: null as unknown as SanityTestClient,
 }
@@ -51,10 +37,6 @@ export function createSanityTestClient(fetchImplementation: FetchImplementation 
   }
   const client: SanityTestClient = {
     fetch: vi.fn(fetchImplementation),
-    listen: vi.fn(() => ({
-      subscribe: vi.fn(() => ({unsubscribe: sanityTestState.unsubscribe})),
-    })),
-    action: vi.fn(() => Promise.resolve({})),
     transaction: vi.fn(() => transaction),
   }
   sanityTestState.client = client
@@ -62,21 +44,10 @@ export function createSanityTestClient(fetchImplementation: FetchImplementation 
 }
 
 export function resetSanityTestState() {
-  sanityTestState.unsubscribe = vi.fn()
-  sanityTestState.openInspector = vi.fn()
   sanityTestState.toastPush = vi.fn()
-  sanityTestState.historyStore = {getTransactions: vi.fn(() => Promise.resolve([]))}
-  sanityTestState.userStore = {getUsers: vi.fn(() => Promise.resolve([]))}
   sanityTestState.editState = {
     draft: null,
     published: {_id: 'gallery-1', _type: 'gallery', title: 'Collection test'},
-  }
-  sanityTestState.documentPane = {
-    documentId: 'gallery-1',
-    documentType: 'gallery',
-    ready: true,
-    inspector: {name: 'checklist'},
-    openInspector: vi.fn(),
   }
   createSanityTestClient()
 }

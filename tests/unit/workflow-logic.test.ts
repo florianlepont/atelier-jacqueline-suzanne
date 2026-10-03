@@ -1,27 +1,21 @@
 import {describe, expect, it} from 'vitest'
 import {
-  CHECKLIST_ENABLED_TYPES,
   PUBLIC_SINGLETON_TYPES,
-  PUBLIC_SITE_DOCUMENT_TYPES,
   collectionStatusBadge,
-  completenessBadge,
   filterDocumentActions,
-  INTERNAL_SYSTEM_DOCUMENT_TYPES,
-  isInternalSystemDocumentType,
-  isPublicSiteDocumentType,
 } from '../../sanity/editorial/workflowLogic'
 
+const allActions = () => [
+  {action: 'publish'},
+  {action: 'discardChanges'},
+  {action: 'unpublish'},
+  {action: 'restore'},
+  {action: 'delete'},
+  {action: 'duplicate'},
+]
+
 describe('Sanity workflow decision logic', () => {
-  it('defines the exact public and singleton scopes', () => {
-    expect(PUBLIC_SITE_DOCUMENT_TYPES).toEqual([
-      'siteSettings',
-      'homePage',
-      'editionsPage',
-      'aboutPage',
-      'contactPage',
-      'gallery',
-      'edition',
-    ])
+  it('defines the exact singleton scope', () => {
     expect(PUBLIC_SINGLETON_TYPES).toEqual([
       'siteSettings',
       'homePage',
@@ -29,79 +23,23 @@ describe('Sanity workflow decision logic', () => {
       'aboutPage',
       'contactPage',
     ])
-    expect(isPublicSiteDocumentType('edition')).toBe(true)
-    expect(isPublicSiteDocumentType('exhibition')).toBe(false)
-    expect(isPublicSiteDocumentType('siteDeployment')).toBe(false)
-    expect(isPublicSiteDocumentType('siteProductionRelease')).toBe(false)
-    expect(INTERNAL_SYSTEM_DOCUMENT_TYPES).toEqual(['siteDeployment', 'siteProductionRelease'])
-    expect(isInternalSystemDocumentType('siteProductionRelease')).toBe(true)
-    expect(CHECKLIST_ENABLED_TYPES).toEqual([
-      ...PUBLIC_SITE_DOCUMENT_TYPES,
-      'exhibition',
-    ])
-    expect(PUBLIC_SITE_DOCUMENT_TYPES.every((type) => CHECKLIST_ENABLED_TYPES.includes(type))).toBe(
-      true,
-    )
   })
 
-  it('removes publish paths while retaining draft-management actions in order', () => {
-    const actions = [
-      {action: 'publish'},
-      {action: 'discardChanges'},
-      {action: 'unpublish'},
-      {action: 'restore'},
-      {action: 'delete'},
-      {action: 'duplicate'},
-    ]
-    expect(filterDocumentActions(actions, 'gallery')).toEqual([
-      {action: 'discardChanges'},
-      {action: 'restore'},
-      {action: 'delete'},
-      {action: 'duplicate'},
-    ])
-    expect(filterDocumentActions(actions, 'edition')).toEqual([
-      {action: 'discardChanges'},
-      {action: 'restore'},
-      {action: 'delete'},
-      {action: 'duplicate'},
-    ])
-    expect(filterDocumentActions(actions, 'editionsPage')).toEqual([
-      {action: 'discardChanges'},
-      {action: 'restore'},
-    ])
-    expect(filterDocumentActions(actions, 'exhibition')).toBe(actions)
+  it('keeps native publishing and removes only unpublish/delete/duplicate from singletons, preserving order', () => {
+    for (const type of PUBLIC_SINGLETON_TYPES) {
+      expect(filterDocumentActions(allActions(), type), type).toEqual([
+        {action: 'publish'},
+        {action: 'discardChanges'},
+        {action: 'restore'},
+      ])
+    }
   })
 
-  it('removes every manual mutation action from the internal deployment marker', () => {
-    const actions = [
-      {action: 'publish'},
-      {action: 'discardChanges'},
-      {action: 'unpublish'},
-      {action: 'restore'},
-      {action: 'delete'},
-      {action: 'duplicate'},
-    ]
-
-    expect(filterDocumentActions(actions, 'siteDeployment')).toEqual([])
-  })
-
-  it('removes every manual mutation action from the internal production-release marker', () => {
-    const actions = [
-      {action: 'publish'},
-      {action: 'discardChanges'},
-      {action: 'unpublish'},
-      {action: 'restore'},
-      {action: 'delete'},
-      {action: 'duplicate'},
-    ]
-
-    expect(filterDocumentActions(actions, 'siteProductionRelease')).toEqual([])
-  })
-
-  it('reports required, recommended, and ready completeness states', () => {
-    expect(completenessBadge(false, false).label).toBe('À compléter')
-    expect(completenessBadge(true, false).label).toBe('SEO à compléter')
-    expect(completenessBadge(true, true).label).toBe('Prêt')
+  it('returns the same untouched array for every non-singleton type', () => {
+    for (const type of ['gallery', 'edition', 'exhibition', 'someUnknownType']) {
+      const actions = allActions()
+      expect(filterDocumentActions(actions, type), type).toBe(actions)
+    }
   })
 
   it('reports every gallery publication state', () => {
