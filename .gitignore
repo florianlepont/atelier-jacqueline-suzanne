@@ -34,3 +34,6 @@ coverage/
 
 # GSD research cache
 .planning/research/.cache/
+
+# Per-machine Claude Code settings (contain developer-machine paths)
+.claude/settings.local.json

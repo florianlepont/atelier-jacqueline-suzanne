@@ -164,6 +164,14 @@ npm run dev
 
 Studio runs at http://localhost:3333. See [`sanity/README.md`](sanity/README.md) for the editor workflow (in French, for Romane).
 
+## Licence
+
+The source code is released under the MIT licence (see [`LICENSE`](LICENSE)).
+
+The photographs, texts, logos and brand (the Atelier Jacqueline Suzanne name and visual identity) are (c) Romane Lepont, all rights reserved, and are not covered by the MIT licence. This includes an explicit reservation against AI training and text-and-data-mining use; see [`LICENSE-CONTENT.md`](LICENSE-CONTENT.md).
+
+To report a vulnerability, see [`SECURITY.md`](SECURITY.md).
+
 ## Author
 
 **Florian Lepont**
