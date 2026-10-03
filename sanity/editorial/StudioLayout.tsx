@@ -1,5 +1,6 @@
 import type {LayoutProps} from 'sanity'
 import {createGlobalStyle} from 'styled-components'
+import {ImageUploadNotices} from './ImageUploadNotices'
 
 const CompactDocumentFormStyles = createGlobalStyle`
   /* Sanity applies its large space-6 rhythm both after the document title
@@ -25,6 +26,7 @@ export function StudioLayout(props: LayoutProps) {
   return (
     <>
       <CompactDocumentFormStyles />
+      <ImageUploadNotices />
       {props.renderDefault(props)}
     </>
   )
