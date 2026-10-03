@@ -30,9 +30,9 @@ interface Props {
 
 const { locale, publicEmail = 'contact@atelierjacquelinesuzanne.fr' } = Astro.props;
 
-// 05-02-PLAN.md: same-origin '/contact.php' on the OVH production build;
-// overridden to an absolute URL for the permanently-alive GitHub Pages
-// build (D-03), which has no PHP runtime, via PUBLIC_CONTACT_ENDPOINT.
+// Same-origin '/contact.php' by default; override via PUBLIC_CONTACT_ENDPOINT
+// only for a build served from another origin (contact.php sends no CORS
+// headers).
 const contactEndpoint = resolveContactEndpoint(import.meta.env.PUBLIC_CONTACT_ENDPOINT);
 
 const nameLabel = locale === 'en' ? 'Name' : 'Nom';

@@ -1,22 +1,15 @@
 import {defineConfig} from 'sanity'
 import {structureTool} from 'sanity/structure'
 import {frFRLocale} from '@sanity/locale-fr-fr'
-import {DashboardIcon} from '@sanity/icons/Dashboard'
 import {DocumentsIcon} from '@sanity/icons/Documents'
 import {ImagesIcon} from '@sanity/icons/Images'
 import {schemaTypes} from './schemas'
 import {structure} from './schemas/structure'
-import {EditorialDashboard} from './editorial/EditorialDashboard'
 import {resolveActions, resolveBadges} from './editorial/workflow'
-import {checklistInspector} from './editorial/DocumentChecklist'
 import {openSitePageInspector} from './editorial/OpenSitePage'
 import {MediaLibrary} from './editorial/MediaLibrary'
 import {StudioLayout} from './editorial/StudioLayout'
-import {
-  checklistEnabledTypeSet as checklistEnabledTypes,
-  INTERNAL_SYSTEM_DOCUMENT_TYPES,
-  PUBLIC_SINGLETON_TYPES,
-} from './editorial/workflowLogic'
+import {PUBLIC_SINGLETON_TYPES} from './editorial/workflowLogic'
 
 export default defineConfig({
   name: 'default',
@@ -43,12 +36,6 @@ export default defineConfig({
   ],
 
   tools: (prev) => [
-    {
-      name: 'dashboard',
-      title: 'Tableau de bord',
-      icon: DashboardIcon,
-      component: EditorialDashboard,
-    },
     ...prev,
     {name: 'media', title: 'Médiathèque', icon: ImagesIcon, component: MediaLibrary},
   ],
@@ -75,21 +62,17 @@ export default defineConfig({
     // document (or duplicating the existing one) via those affordances.
     // A second document would make `*[_type == "siteSettings"][0]` in
     // src/lib/sanity.ts non-deterministic, silently breaking Romane's edits.
+    // resolveActions therefore strips unpublish/delete/duplicate from the five
+    // singletons only; every document keeps Sanity's native Publish action.
     actions: resolveActions,
     badges: resolveBadges,
-    inspectors: (prev, context) =>
-      checklistEnabledTypes.has(context.documentType)
-        ? [openSitePageInspector, checklistInspector, ...prev]
-        : [openSitePageInspector, ...prev],
+    inspectors: (prev) => [openSitePageInspector, ...prev],
     newDocumentOptions: (prev, context) =>
       context.creationContext.type === 'global'
         ? prev.filter(
             (template) =>
               !PUBLIC_SINGLETON_TYPES.includes(
                 template.templateId as (typeof PUBLIC_SINGLETON_TYPES)[number],
-              ) &&
-              !INTERNAL_SYSTEM_DOCUMENT_TYPES.includes(
-                template.templateId as (typeof INTERNAL_SYSTEM_DOCUMENT_TYPES)[number],
               ),
           )
         : prev,
