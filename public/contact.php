@@ -38,28 +38,45 @@ function fail(int $code, string $message): void {
     exit;
 }
 
+// Reads one POST field as a trimmed string. A field submitted as an array
+// (name[]=x) is not a string, so it yields null instead of reaching trim(),
+// which would raise an uncaught TypeError (an HTTP 500 on the real host).
+function post_string(string $key): ?string {
+    $value = $_POST[$key] ?? '';
+    if (!is_string($value)) {
+        return null;
+    }
+    return trim($value);
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     fail(405, 'Method not allowed');
 }
 
 // Field names mirror the <form> in src/components/ContactForm.astro exactly:
 // three real fields (name/email/message) plus the honeypot decoy (website).
-$name = trim($_POST['name'] ?? '');
-$email = trim($_POST['email'] ?? '');
-$message = trim($_POST['message'] ?? '');
-$honeypot = trim($_POST['website'] ?? '');
+$name = post_string('name');
+$email = post_string('email');
+$message = post_string('message');
+$honeypot = post_string('website');
 
 // Honeypot short-circuit (D-08 — the only anti-spam layer this project
 // wants): pretend success and send nothing, exactly like the client-side
 // isHoneypotTriggered check already does, so the detection mechanism is
-// never revealed to whoever/whatever filled the decoy field.
-if ($honeypot !== '') {
+// never revealed to whoever/whatever filled the decoy field. A non-string
+// value in the decoy can only come from a bot or a hand-crafted request, so
+// it counts as filled.
+if ($honeypot === null || $honeypot !== '') {
     echo json_encode(['success' => true]);
     exit;
 }
 
 // Required-field check, mirroring the client-side isBlank semantics —
-// never trust that the client-side validation actually ran.
+// never trust that the client-side validation actually ran. A non-string
+// (array) value is rejected the same way as a missing one.
+if ($name === null || $email === null || $message === null) {
+    fail(400, 'Invalid input');
+}
 if ($name === '' || $email === '' || $message === '') {
     fail(400, 'Missing required field');
 }
@@ -70,12 +87,15 @@ if (strlen($name) > 200 || strlen($email) > 254 || strlen($message) > 5000) {
     fail(400, 'Field too long');
 }
 
-// Core header-injection defence: reject any submitted value containing a
-// carriage return or line feed before any header string is built below.
-// This MUST run before the header-construction lines further down — a
-// newline reaching a header value is how additional recipients or headers
-// get smuggled into the outgoing message.
-foreach ([$name, $email, $message] as $field) {
+// Core header-injection defence: reject a carriage return or line feed in
+// name or email before any header string is built below. Both are single-line
+// fields by definition, and the email reaches the Reply-To header, so a
+// newline there is how additional recipients or headers get smuggled into the
+// outgoing message. The message is deliberately excluded: it is only ever
+// placed in the body after the blank line, where a line break is legitimate
+// and cannot create a header.
+// This MUST run before the header-construction lines further down.
+foreach ([$name, $email] as $field) {
     if (preg_match('/[\r\n]/', $field)) {
         fail(400, 'Invalid input');
     }
