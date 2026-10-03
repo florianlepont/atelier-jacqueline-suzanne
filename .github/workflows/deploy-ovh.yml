@@ -1,28 +1,22 @@
 name: Deploy to OVH production
 
 # This is the ONLY path that ever writes to the real production domain,
-# atelierjacquelinesuzanne.fr, served from OVH Web Hosting. It now starts
-# only from a deliberate `Mettre en production` click in Sanity Studio's
-# editorial dashboard (see .planning/quick/260811-w8d-build-the-real-mettre-
-# en-production-feat/), which publishes an internal `siteProductionRelease`
-# release-marker document; a Sanity Project Webhook filtering on that
-# document type fires this workflow's dedicated
-# `production-deploy-requested` repository_dispatch event. This is why the
-# unprotected `production-ovh-auto` environment below carries no GitHub
-# reviewer gate for that event: the editor's click IS the human checkpoint,
-# and it happens only after she has checked GitHub Pages staging herself —
-# a second approval in a tool she has no access to would add nothing.
+# atelierjacquelinesuzanne.fr, served from OVH Web Hosting. It starts
+# automatically when the single Sanity webhook (configured per README.md
+# "Sanity webhook") fires the `production-deploy-requested`
+# repository_dispatch event on any publish, unpublish or delete of a public
+# document. Those runs use the reviewer-free `production-ovh-auto`
+# environment below, because Romane's own click on Sanity's native Publier
+# button is the deliberate act. Manual `workflow_dispatch` runs use the
+# reviewer-gated `production-ovh` environment and still pause for a
+# recorded human approval (D-02).
 #
-# A content publish ALONE no longer reaches production; it only rebuilds
-# GitHub Pages staging via .github/workflows/deploy.yml, which this
-# workflow does not touch and does not share a trigger with. Every other
-# trigger (a manual `workflow_dispatch`) still pauses on the
-# `production-ovh` environment's Required reviewer, per D-02, exactly as
-# before.
+# A push to `main` never runs this workflow: .github/workflows/ci.yml gates
+# every push and republishes the hosted Studio, nothing more.
 #
 # Because `repository_dispatch` always runs against the default branch, a
-# production release also ships whatever code is currently on `main` —
-# treat `main` as always production-ready.
+# publish also ships whatever code is currently on `main` — keep `main`
+# production-ready (ci.yml gates every push to it).
 #
 # The `deploy` job below is gated on a trigger-conditional GitHub
 # Environment. With a Required reviewer configured on `production-ovh`,
@@ -40,11 +34,11 @@ permissions:
   contents: read
 
 # Only one production push should ever be in flight/queued — two
-# interleaved pushes to the same remote directory would race. This same
-# `ovh-production` group with `cancel-in-progress: false` now also
-# serialises automatic runs: a burst of Sanity publishes queues rather
-# than racing, and GitHub keeps only the most recent pending run — which
-# is the desired latest-content-wins behaviour.
+# interleaved pushes to the same remote directory would race. This
+# `ovh-production` group with `cancel-in-progress: false` also serialises
+# automatic runs: a burst of publishes leaves at most one running and one
+# pending run, and the most recent pending run wins — the desired
+# latest-content-wins behaviour.
 concurrency:
   group: ovh-production
   cancel-in-progress: false
@@ -56,21 +50,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Mirrors staging's gates exactly (D-XX: production never skips a
-      # gate staging enforces) — Studio lint/test:coverage/build, Studio
-      # typecheck, root lint, and root typecheck all run here too, not just
-      # on GitHub Pages.
+      # Same gates as ci.yml (production never skips a gate): Studio
+      # lint/test:coverage/build, Studio typecheck, root lint, and root
+      # typecheck all run here too.
       - name: Install dependencies, lint, and type-check
         uses: ./.github/actions/lint-typecheck-and-install
 
       # Production build: root base path (OVH serves the domain root, so
-      # the base-path env var used by the GitHub Pages build is
-      # deliberately left UNSET here — setting it would make every baked
-      # href/asset path wrong on the real domain) and an explicit
-      # SITE_URL pointing at the real domain. A missing SITE_URL here is
-      # the failure mode that silently ships canonical tags, hreflang
-      # links, sitemap.xml, and robots.txt all pointing back at the
-      # GitHub Pages host. PUBLIC_CONTACT_ENDPOINT is deliberately left
+      # the base-path override must stay UNSET here — setting it would make
+      # every baked href/asset path wrong on the real domain) and an
+      # explicit SITE_URL pointing at the real domain. A missing SITE_URL
+      # here is the failure mode that silently ships canonical tags,
+      # hreflang links, sitemap.xml, and robots.txt all pointing at the
+      # wrong host. The contact endpoint override is deliberately left
       # UNSET too: production is same-origin with contact.php, so the
       # contact-form helper's default (/contact.php) is already correct.
       - name: Build (OVH production artifact, root base)
@@ -87,8 +79,7 @@ jobs:
       - name: Verify static artifact
         run: npm run test:artifact
 
-      # BLOCKING gates: the production path never skips a gate the staging
-      # path enforces.
+      # BLOCKING gates: the same e2e and unit-test gates as ci.yml.
       - name: Playwright e2e and Vitest coverage
         uses: ./.github/actions/e2e-and-unit-tests
 
@@ -106,8 +97,8 @@ jobs:
             exit 1
           fi
 
-      # This recap is the artifact a human reads before approving the
-      # `deploy` job's environment gate (D-02) — it is already visible in
+      # This recap is what a human reads before approving a manual run's
+      # `deploy` job environment gate (D-02) — it is already visible in
       # the same run, above the Approve/Reject button.
       - name: Deploy recap
         run: |
@@ -155,7 +146,7 @@ jobs:
     # environment, not the job, so a conditional approval gate requires
     # two environments: `production-ovh` carries the Required reviewer
     # and gates manual runs (D-02), while `production-ovh-auto` is
-    # deliberately created with no protection rules so Sanity-content
+    # deliberately created with no protection rules so Sanity-publish
     # runs deploy straight through. Environment secrets do not cross
     # environments, so `OVH_SFTP_PASSWORD` must exist on BOTH (see
     # README.md "Deployments").
@@ -234,5 +225,5 @@ jobs:
             echo ""
             echo "Files pushed to the OVH hosting plan configured in the repository variables."
             echo ""
-            echo "DNS is unchanged by this workflow — files are now on the server, but the domain does not point at this hosting until the separate manual DNS cutover runs."
+            echo "The files are live at https://atelierjacquelinesuzanne.fr. This workflow never touches DNS."
           } >> "$GITHUB_STEP_SUMMARY"

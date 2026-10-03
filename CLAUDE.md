@@ -23,15 +23,16 @@ A bilingual (French/English) website for Romane Lepont's photography and artisti
 ## Technology Stack
 
 > Status (updated 2026-07-20): this section describes the actually-implemented stack. The original research plan (Cloudflare Pages hosting, the `@astrojs/cloudflare` adapter, and Stripe-in-Workers checkout) was superseded — see PROJECT.md Key Decisions and STATE.md Phase 01 decisions. E-commerce is deferred to the v1.x milestone.
+>
+> Update (2026-10-03, quick 261003-idz): GitHub Pages staging and the Studio editorial dashboard were retired. Publishing is now native Sanity (the Publier button) with a direct OVH deploy: one Sanity webhook fires `production-deploy-requested`, which runs `deploy-ovh.yml`.
 
 ### Core Technologies
 
 | Technology | Version | Purpose | Notes |
 |------------|---------|---------|-------|
 | **Astro** | 7.0.6 | Static site framework — `output: 'static'` in astro.config.mjs, with NO server-rendering integration installed | The config explicitly excludes the Cloudflare adapter, the Node adapter, and the Workers deploy CLI, because OVH Web Hosting is a zero-compute Apache file host. Zero-JS-by-default; built-in i18n. |
-| **GitHub Pages** | — (platform) | Staging host — current public site, deployed by GitHub Actions | Project-page base path `/atelier-jacqueline-suzanne/` injected via `ASTRO_BASE` at build time; live at https://florianlepont.github.io/atelier-jacqueline-suzanne/. |
-| **OVH Web Hosting** | — (platform, Phase 5, not yet cut over) | Production host; ultimately serves the real domain atelierjacquelinesuzanne.fr | Free tier, static files uploaded over SFTP; zero request-time compute, which is WHY the build is static-only. |
-| **Sanity** (Content Lake + Studio) | `@sanity/client` 7.23.0 / `@sanity/image-url` 2.1.1 / Studio `sanity` ^6.4.0 | Headless CMS for galleries, About, site settings, agenda | Content fetched at BUILD time (published perspective only). Studio is the separate `sanity/` subproject with its own package.json. |
+| **OVH Web Hosting** | — (platform) | Production host, live at https://atelierjacquelinesuzanne.fr since the 2026-08-13 cutover | Free tier, static files uploaded over SFTP by `deploy-ovh.yml` on every Sanity publish; zero request-time compute, which is WHY the build is static-only. |
+| **Sanity** (Content Lake + Studio) | `@sanity/client` 7.23.0 / `@sanity/image-url` 2.1.1 / Studio `sanity` 6.6.0 (exact pin) | Headless CMS for galleries, About, site settings, agenda | Content fetched at BUILD time (published perspective only). Studio is the separate `sanity/` subproject with its own package.json. |
 | **astro:i18n** (built-in, Astro 7 core) | — | fr/en locale routing | French served at root, English under `/en/`, no Accept-Language auto-redirect. |
 
 ### Supporting Libraries
@@ -48,11 +49,11 @@ A bilingual (French/English) website for Romane Lepont's photography and artisti
 |------|---------|-------|
 | Vitest | 4.1.9 — unit tests (`npm run test:unit`) | Runs as a BLOCKING gate in CI before deploy. |
 | Playwright | 1.61.1 — e2e tests (`npm run test:e2e`) | Runs as a BLOCKING gate in CI before deploy. |
-| GitHub Actions | CI/CD pipeline (`.github/workflows/deploy.yml`) | Full ordered flow below the table. Triggered on push to `main` and on `repository_dispatch (sanity-content-published)` fired by a Sanity publish webhook. |
+| GitHub Actions | CI/CD pipeline (`.github/workflows/ci.yml` and `.github/workflows/deploy-ovh.yml`) | `ci.yml` runs every blocking gate on each push to `main`, then republishes the hosted Studio, and never deploys the site. `deploy-ovh.yml` runs the same gates and is the only site deploy: it fires on `repository_dispatch (production-deploy-requested)` from the single Sanity publish webhook (no approval pause), or on manual dispatch (reviewer-gated). |
 | Sanity CLI | Studio dev/build/deploy, run from `sanity/` | `sanity dev` (localhost:3333), `sanity build`, `sanity deploy`. |
 | TypeScript | Type safety across Astro components and config | Strict tsconfig; Astro ships TS support out of the box. |
 
-**GitHub Actions pipeline, in actual step order:** checkout → `actions/setup-node@v4` (`cache: npm`, `cache-dependency-path` covering both `package-lock.json` and `sanity/package-lock.json`) → `npm ci` → `npm ci --prefix sanity` → Sanity Studio lint + test:coverage + build as a BLOCKING gate (`npm --prefix sanity run lint`, `npm --prefix sanity run test:coverage`, `npm --prefix sanity run build`) → Sanity Studio type-check as its own BLOCKING gate (`npm --prefix sanity run typecheck`, `tsc --noEmit` scoped by `sanity/tsconfig.typecheck.json` to exclude test files) → root lint as its own BLOCKING gate (`npm run lint`) → `npm run typecheck` (astro check) as its own BLOCKING gate, run BEFORE the first build → build (root base, test artifact) → verify root static artifact via `npm run test:artifact` → cache Playwright browser binaries (`actions/cache@v4` on `~/.cache/ms-playwright`, keyed on OS + `package-lock.json` hash) → install Playwright browsers scoped to `chromium` and `webkit` only (matching the two configured Playwright projects, `chromium` + `webkit-mobile`; on a cache hit, only `install-deps` runs for OS-level deps, since those aren't stored in the browser cache) → Playwright e2e as a BLOCKING gate → `npm run test:coverage` (Vitest unit tests with coverage thresholds) as a BLOCKING gate → rebuild with GitHub Pages base (`ASTRO_BASE: /atelier-jacqueline-suzanne/`) → un-prefixed-link grep guard → verify GitHub Pages static artifact via `npm run test:artifact` with `EXPECTED_BASE: /atelier-jacqueline-suzanne/` → strip the PHP endpoint from the Pages artifact (`rm -f dist/contact.php`, since GitHub Pages has no PHP runtime) → upload Pages artifact → deploy to GitHub Pages.
+**GitHub Actions pipelines, in actual step order.** Shared gates (composite action `lint-typecheck-and-install`): `actions/setup-node@v4` (`cache: npm`, `cache-dependency-path` covering both `package-lock.json` and `sanity/package-lock.json`) → `npm ci` → `npm ci --prefix sanity` → Sanity Studio lint + test:coverage + build as a BLOCKING gate (`npm --prefix sanity run lint`, `npm --prefix sanity run test:coverage`, `npm --prefix sanity run build`) → Sanity Studio type-check as its own BLOCKING gate (`npm --prefix sanity run typecheck`, `tsc --noEmit` scoped by `sanity/tsconfig.typecheck.json` to exclude test files) → root lint as its own BLOCKING gate (`npm run lint`) → `npm run typecheck` (astro check) as its own BLOCKING gate, run BEFORE the first build. **`ci.yml`** (push to `main`, manual): checkout → shared gates → build (root base, test artifact) → verify the static artifact via `npm run test:artifact` → shared e2e/coverage gates (composite action `e2e-and-unit-tests`: cache Playwright browser binaries with `actions/cache@v4` on `~/.cache/ms-playwright`, keyed on OS + `package-lock.json` hash; install Playwright browsers scoped to `chromium` and `webkit` only, with only `install-deps` on a cache hit; Playwright e2e as a BLOCKING gate; `npm run test:coverage` as a BLOCKING gate) → publish the hosted Sanity Studio (`npm --prefix sanity run deploy`, skipped with a warning if `SANITY_AUTH_TOKEN` is unset). It never deploys the site. **`deploy-ovh.yml`** (Sanity webhook `production-deploy-requested`, or manual dispatch): checkout → shared gates → build (root base, `SITE_URL=https://atelierjacquelinesuzanne.fr`) → `npm run test:artifact` → shared e2e/coverage gates → top-level dotfile guard (only `.htaccess`) → deploy recap → upload build artifact (hidden files included) → deploy job gated by the `production-ovh-auto` environment (webhook, no approval) or `production-ovh` (manual, Required reviewer): SFTP credentials guard → download artifact → SFTP upload of `dist/*` → SFTP upload of `.htaccess`. A push to `main` never deploys the site: code on `main` ships with the next Sanity publish or a manual dispatch.
 
 ## Deferred to v1.x (not yet implemented)
 
@@ -63,7 +64,7 @@ E-commerce is NOT present in the current codebase. None of the following is inst
 - **EU/France shipping + VAT** handling.
 - **Commerce legal** — CGV (terms of sale) and related e-commerce compliance pages.
 
-The "browse and buy / checkout" language in the Project section above describes the v1.x milestone GOAL, not shipped v1 behavior. When commerce ships it will need a request-time compute surface (checkout session creation, webhook handling), which the current static-only OVH/GitHub Pages hosting cannot provide — so the hosting/adapter decision for commerce (e.g., Cloudflare Pages Functions, or another compute option) is deferred to that milestone and will be re-evaluated then.
+The "browse and buy / checkout" language in the Project section above describes the v1.x milestone GOAL, not shipped v1 behavior. When commerce ships it will need a request-time compute surface (checkout session creation, webhook handling), which the current static-only OVH hosting cannot provide — so the hosting/adapter decision for commerce (e.g., Cloudflare Pages Functions, or another compute option) is deferred to that milestone and will be re-evaluated then.
 
 ## What NOT to Use
 
@@ -77,8 +78,7 @@ The "browse and buy / checkout" language in the Project section above describes 
 
 | Item | Cost | Notes |
 |------|------|-------|
-| GitHub Pages (staging) | **0€/month** | Free for public repos; current deploy target. |
-| OVH Web Hosting (production, Phase 5) | Existing/already owned | Domain + hosting already in use by the current site — not a new recurring cost. |
+| OVH Web Hosting (production) | Existing/already owned | Domain + hosting already in use by the current site — not a new recurring cost. |
 | Sanity (Content Lake + Studio) | **0€/month** | Free plan comfortably covers a single-artist catalog + agenda. |
 | Domain (atelierjacquelinesuzanne.fr) | Existing/already owned | Not a new cost. |
 | Stripe processing fees | Applies only once v1.x commerce ships | Per-transaction only, no monthly platform fee. |

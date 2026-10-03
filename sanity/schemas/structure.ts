@@ -19,10 +19,9 @@ import {CreditsManager} from '../editorial/CreditsManager'
  * by `@sanity/orderable-document-list`, and excludes them from the generic
  * document-type list below so neither is listed twice.
  *
- * Document types use the Studio's default single form view -- Checklist and
- * Voir sur le site are inspectors (editorial/DocumentChecklist.tsx,
- * OpenSitePage.tsx), registered globally in sanity.config.ts rather than as
- * per-type views. Crédits et droits is site-wide, not per-document (it bulk-
+ * Document types use the Studio's default single form view -- Voir sur
+ * le site is an inspector (editorial/OpenSitePage.tsx), registered globally in
+ * sanity.config.ts rather than as a per-type view. Crédits et droits is site-wide, not per-document (it bulk-
  * applies the same rights across as many collections as needed at once), so
  * it gets its own top-level destination instead (editorial/CreditsManager.tsx).
  */
@@ -87,8 +86,6 @@ export const structure: StructureResolver = (S, context) =>
             'edition',
             'exhibition',
             'seo',
-            'siteDeployment',
-            'siteProductionRelease',
           ].includes(listItem.getId() ?? ''),
       ),
     ])

@@ -16,19 +16,6 @@
 
 header('Content-Type: application/json; charset=utf-8');
 
-// CORS: GitHub Pages stays alive permanently as pre-production (D-03), so
-// this endpoint is called cross-origin from https://florianlepont.github.io
-// in addition to same-origin production requests once the domain cuts over.
-// Only that one exact origin is ever echoed back, and only after an
-// allowlist match — never a wildcard, never the raw request origin
-// unchecked, and never with Allow-Credentials.
-$allowedOrigins = ['https://florianlepont.github.io'];
-$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if (in_array($origin, $allowedOrigins, true)) {
-    header('Access-Control-Allow-Origin: ' . $origin);
-    header('Vary: Origin');
-}
-
 // Single rejection path so every failure response has the same status/JSON
 // shape — mirrors the client-side renderSubmissionError() single-failure-
 // path convention.
