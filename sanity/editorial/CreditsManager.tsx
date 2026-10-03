@@ -19,7 +19,10 @@ import {
 } from '@sanity/ui'
 import {useClient} from 'sanity'
 import type {UserComponent} from 'sanity/structure'
-import {baseId} from './dashboardLogic'
+
+function baseId(id: string) {
+  return id.replace(/^drafts\./, '')
+}
 
 interface ImageRights {
   credit?: string

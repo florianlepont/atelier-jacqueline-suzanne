@@ -29,13 +29,6 @@ export default getViteConfig({
       // aggregate. Production includes stay instrumented; only this
       // generated/test-support path is excluded.
       //
-      // useDeploymentPolling.ts is a React hook (useState/useEffect), not
-      // pure logic like its sibling modules here -- it can only execute
-      // inside a React render, which this project's environment: 'node'
-      // run cannot provide. It's exercised instead by sanity/'s own
-      // jsdom + Testing Library suite (useDeploymentPolling.test.ts),
-      // which this coverage run has no visibility into.
-      //
       // home-carousel-runtime.ts's mount/cleanup CONTRACT (the early-return
       // guard, idempotent cleanup) is unit-tested and counted; the ~1100
       // lines of real carousel business logic inside a successful mount are
@@ -48,7 +41,6 @@ export default getViteConfig({
       // aggregate down for logic this project already verifies elsewhere.
       exclude: [
         'sanity/editorial/test/**',
-        'sanity/editorial/useDeploymentPolling.ts',
         'src/client/home-carousel-runtime.ts',
       ],
       thresholds: {
