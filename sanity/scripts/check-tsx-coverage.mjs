@@ -8,7 +8,7 @@
 // floor, and — just as importantly — proves the file SET itself is complete:
 // the files instrumented in the coverage report, the files on disk under
 // `editorial/`, and the files listed in the coverage matrix doc must all be
-// the exact same eight. A file silently dropped from any one of those three
+// exactly the same set. A file silently dropped from any one of those three
 // (a bad exclude, a stale matrix, a component nobody ever imports in a test)
 // would otherwise ship unnoticed with a false "all green".
 //
