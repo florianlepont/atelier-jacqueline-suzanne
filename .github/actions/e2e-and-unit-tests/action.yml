@@ -1,11 +1,10 @@
 name: Playwright e2e and Vitest coverage
 description: >
-  Shared suffix for both deploy workflows: install/cache Playwright browsers,
-  then run the e2e and unit-test-with-coverage gates that must pass
-  identically in staging and production. Extracted from
-  deploy.yml/deploy-ovh.yml to remove duplication between them. Must run
+  Shared suffix for ci.yml and deploy-ovh.yml: install/cache Playwright
+  browsers, then run the e2e and unit-test-with-coverage gates that must pass
+  identically in both. Extracted to remove duplication between them. Must run
   after the workflow's own build step, which stays inline in each caller
-  (staging and production build with different base paths/env vars).
+  (the CI build and the production build use different env vars).
 runs:
   using: composite
   steps:
