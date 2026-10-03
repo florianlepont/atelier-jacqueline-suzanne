@@ -20,7 +20,10 @@ test.describe('SEO metadata', () => {
   test('robots.txt references the generated sitemap', async ({page}) => {
     const response = await page.request.get('/robots.txt');
     expect(response.ok()).toBe(true);
-    expect(await response.text()).toContain('Sitemap: https://');
+    const robots = await response.text();
+    expect(robots).toContain('Sitemap: https://');
+    expect(robots).toContain('User-agent: *\nAllow: /\n');
+    expect(robots).toContain('User-agent: GPTBot');
   });
 
   test('sitemap contains both languages and gallery pages', async ({page}) => {

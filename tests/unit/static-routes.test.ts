@@ -1,6 +1,7 @@
 import {readFileSync} from 'node:fs'
 import {describe, expect, it} from 'vitest'
 import {
+  AI_CRAWLER_USER_AGENTS,
   buildRobotsText,
   buildSitemapXml,
   escapeXml,
@@ -107,5 +108,94 @@ describe('bilingual detail-page adapters stay thin and physically present (quick
       expect(source).not.toContain('structuredData')
       expect(source).not.toContain('pickHeroIndex')
     }
+  })
+})
+
+interface RobotsGroup {
+  agents: string[]
+  rules: string[]
+}
+
+// Splits robots.txt into blank-line separated groups; the Sitemap line is not
+// part of any group (it is a standalone directive).
+function parseRobotsGroups(text: string): {groups: RobotsGroup[]; sitemaps: string[]} {
+  const groups: RobotsGroup[] = []
+  const sitemaps: string[] = []
+  for (const block of text.split(/\n\s*\n/)) {
+    const group: RobotsGroup = {agents: [], rules: []}
+    for (const line of block.split('\n').map((value) => value.trim()).filter(Boolean)) {
+      if (line.toLowerCase().startsWith('sitemap:')) sitemaps.push(line)
+      else if (line.toLowerCase().startsWith('user-agent:')) group.agents.push(line.slice('user-agent:'.length).trim())
+      else group.rules.push(line)
+    }
+    if (group.agents.length > 0) groups.push(group)
+  }
+  return {groups, sitemaps}
+}
+
+describe('robots.txt AI crawler opt-out', () => {
+  const origin = new URL('https://example.com')
+  const expectedAgents = [
+    'GPTBot',
+    'ChatGPT-User',
+    'OAI-SearchBot',
+    'CCBot',
+    'Google-Extended',
+    'anthropic-ai',
+    'ClaudeBot',
+    'Claude-Web',
+    'Bytespider',
+    'PerplexityBot',
+    'Applebot-Extended',
+  ]
+
+  it('exports exactly the 11 crawler names, without duplicates', () => {
+    expect([...AI_CRAWLER_USER_AGENTS].sort()).toEqual([...expectedAgents].sort())
+    expect(new Set(AI_CRAWLER_USER_AGENTS).size).toBe(AI_CRAWLER_USER_AGENTS.length)
+  })
+
+  it('keeps the generic group first and allow-only, so search engines stay welcome', () => {
+    const text = buildRobotsText(origin, '/')
+    expect(text.startsWith('User-agent: *\nAllow: /\n')).toBe(true)
+    const {groups} = parseRobotsGroups(text)
+    expect(groups[0]).toEqual({agents: ['*'], rules: ['Allow: /']})
+    expect(groups[0].rules.some((rule) => rule.startsWith('Disallow'))).toBe(false)
+  })
+
+  it('gives every AI crawler its own group with exactly Disallow: /', () => {
+    const {groups} = parseRobotsGroups(buildRobotsText(origin, '/'))
+    const aiGroups = groups.slice(1)
+    expect(aiGroups).toHaveLength(expectedAgents.length)
+    for (const name of expectedAgents) {
+      const group = groups.find((candidate) => candidate.agents.includes(name))
+      expect(group, name).toEqual({agents: [name], rules: ['Disallow: /']})
+    }
+    // One agent per group: some simple parsers only honour the last agent line of a shared group.
+    expect(aiGroups.every((group) => group.agents.length === 1)).toBe(true)
+  })
+
+  it('emits a single Sitemap line, last, ending with one trailing newline', () => {
+    const text = buildRobotsText(origin, '/')
+    const {sitemaps} = parseRobotsGroups(text)
+    expect(sitemaps).toEqual(['Sitemap: https://example.com/sitemap.xml'])
+    const lines = text.split('\n').filter((line) => line.trim() !== '')
+    expect(lines[lines.length - 1]).toBe(sitemaps[0])
+    expect(text.endsWith('\n')).toBe(true)
+    expect(text.endsWith('\n\n')).toBe(false)
+  })
+
+  it('keeps the Sitemap URL base-aware for the project-page base and the root base', () => {
+    expect(parseRobotsGroups(buildRobotsText(new URL('https://florianlepont.github.io'), '/atelier-jacqueline-suzanne')).sitemaps).toEqual([
+      'Sitemap: https://florianlepont.github.io/atelier-jacqueline-suzanne/sitemap.xml',
+    ])
+    expect(parseRobotsGroups(buildRobotsText(new URL('https://atelierjacquelinesuzanne.fr'), '/')).sitemaps).toEqual([
+      'Sitemap: https://atelierjacquelinesuzanne.fr/sitemap.xml',
+    ])
+  })
+
+  it('keeps src/pages/robots.txt.ts delegating to buildRobotsText', () => {
+    const source = readFileSync('src/pages/robots.txt.ts', 'utf8')
+    expect(source).toContain("from '../lib/static-routes'")
+    expect(source).toMatch(/buildRobotsText\(/)
   })
 })
