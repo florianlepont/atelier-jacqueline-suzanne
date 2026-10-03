@@ -44,6 +44,7 @@ Names only — never commit real values, tokens, or keys. `.env` is gitignored; 
 | `SANITY_PROJECT_ID` | required (build) | Sanity project id for build-time content fetch. |
 | `SANITY_DATASET` | required (build) | Sanity dataset name (e.g. `production`). |
 | `SANITY_API_READ_TOKEN` | required (build) | Sanity read token used at build time. |
+| `SANITY_WRITE_TOKEN` | optional (maintenance) | Temporary Sanity write token, read only by `npm run sanity:downsize-images -- --apply`. Never needed for builds; export it for one session, never put it in `.env`. |
 | `SITE_URL` | optional (build) | Canonical site origin; `astro.config.mjs` provides a fallback for local builds. The OVH production workflow always sets `https://atelierjacquelinesuzanne.fr` explicitly. |
 | `ASTRO_BASE` | optional (build) | Base path; defaults to `/`. No workflow sets it. |
 | `PUBLIC_CONTACT_ENDPOINT` | optional (build) | Contact form POST target; defaults to the same-origin path `/contact.php`. Leave it unset: `public/contact.php` sends no CORS headers, so a build served from another origin could not read the endpoint's response. |
@@ -57,6 +58,7 @@ Names only — never commit real values, tokens, or keys. `.env` is gitignored; 
 | `npm run preview` | Preview the production build locally. |
 | `npm run test:unit` | Run unit tests (Vitest). |
 | `npm run test:e2e` | Run e2e tests (Playwright). |
+| `npm run sanity:downsize-images` | Maintenance script that shrinks oversized Sanity images. A read-only dry-run by default; follow the runbook (in French): [`docs/reduction-images-sanity.md`](docs/reduction-images-sanity.md). |
 
 ## Testing: two separate Vitest projects, deliberately coupled
 
