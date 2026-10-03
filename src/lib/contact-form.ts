@@ -48,14 +48,11 @@ export const DEFAULT_CONTACT_ENDPOINT = '/contact.php';
  * Resolves the contact form's fetch target from an optional build-time
  * configuration value.
  *
- * WHY this indirection exists instead of hardcoding a path: on the OVH
- * production build the endpoint is same-origin, so a relative path is
- * correct. But D-03 (05-CONTEXT.md) keeps GitHub Pages alive permanently as
- * a pre-production environment, and that build is served from a different
- * origin under a `/atelier-jacqueline-suzanne/` base — a relative path there would resolve
- * against the GitHub Pages host, which has no PHP runtime. So the Pages
- * build overrides this with an absolute URL at build time via
- * `PUBLIC_CONTACT_ENDPOINT`.
+ * WHY this indirection exists instead of hardcoding a path: the endpoint is
+ * same-origin by default (the OVH production build), so a relative path is
+ * correct. Override it via `PUBLIC_CONTACT_ENDPOINT` only for a build served
+ * from another origin — and note that `public/contact.php` sends no CORS
+ * headers, so such a build could not read the endpoint's response.
  */
 export function resolveContactEndpoint(configured?: string | null): string {
   if (typeof configured === 'string') {

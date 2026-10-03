@@ -1,10 +1,9 @@
 import {Button, Card, Flex, Stack, Text} from '@sanity/ui'
 import {useFormValue, type StringInputProps} from 'sanity'
-import {SITE_PREVIEW_URL} from '../editorial/deployment'
+import {publicSiteUrl} from '../editorial/siteUrl'
 
 function pageUrl(locale: 'fr' | 'en', slug: string) {
-  const base = SITE_PREVIEW_URL.endsWith('/') ? SITE_PREVIEW_URL : `${SITE_PREVIEW_URL}/`
-  return `${base}${locale === 'en' ? 'en/' : ''}galleries/${slug}/`
+  return publicSiteUrl(`${locale === 'en' ? 'en/' : ''}galleries/${slug}/`)
 }
 
 export function PublishedPageLinks(_props: StringInputProps) {

@@ -106,9 +106,9 @@ const firstGallery = galleries[0];
 const initialDisplayMode = Astro.url.searchParams.get('view') === 'grid' ? 'grid' : 'carousel';
 
 // Base-aware logo paths (matches BaseLayout.astro's assetBase pattern) — a
-// bare root-relative "/logos/..." src 404s under the GitHub Pages deploy's
-// ASTRO_BASE=/atelier-jacqueline-suzanne/ subpath (.github/workflows/deploy.yml), even
-// though every <a href> here is already base-safe via getRelativeLocaleUrl.
+// bare root-relative "/logos/..." src 404s under any base-prefixed build
+// (ASTRO_BASE set to a subpath), even though every <a href> here is already
+// base-safe via getRelativeLocaleUrl.
 const assetBase = getAssetBase();
 const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
 const logoBlackSrc = `${assetBase}/logos/AJS_Brutalist_Black_Transparent.png`;
