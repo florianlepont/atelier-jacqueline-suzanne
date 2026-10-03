@@ -14,7 +14,8 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:artifact": "node tests/scripts/verify-static-artifact.mjs",
-    "test:smoke": "bash scripts/launch-smoke-check.sh"
+    "test:smoke": "bash scripts/launch-smoke-check.sh",
+    "sanity:downsize-images": "node scripts/sanity-downsize-images.mjs"
   },
   "dependencies": {
     "@fontsource/unbounded": "^5.2.8",
@@ -32,6 +33,7 @@
     "eslint": "^10.7.0",
     "eslint-plugin-astro": "^3.0.1",
     "jsdom": "^29.1.1",
+    "sharp": "^0.35.4",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.64.0",
     "vitest": "4.1.9"

@@ -42,6 +42,21 @@ export default [
     },
   },
   {
+    // Plain-Node maintenance scripts (e.g. scripts/sanity-downsize-images.mjs
+    // and its pure module): they run directly under Node, not through Astro.
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        fetch: 'readonly',
+        Buffer: 'readonly',
+        URL: 'readonly',
+        AbortSignal: 'readonly',
+      },
+    },
+  },
+  {
     // `astroHTML` is Astro's ambient JSX namespace (declared globally by
     // astro/astro-jsx.d.ts) — real for frontmatter typing, but unknown to
     // `no-undef`, which only understands runtime globals.
