@@ -43,6 +43,12 @@ const robots = await readFile(new URL('robots.txt', dist), 'utf8')
 if (!robots.includes(`${expectedBase}sitemap.xml`)) {
   failures.push(`robots.txt does not reference ${expectedBase}sitemap.xml`)
 }
+if (!robots.includes('User-agent: *\nAllow: /\n')) {
+  failures.push('robots.txt lost its generic allow group (User-agent: * / Allow: /)')
+}
+if (!robots.includes('User-agent: GPTBot\nDisallow: /\n')) {
+  failures.push('robots.txt does not opt GPTBot out (User-agent: GPTBot / Disallow: /)')
+}
 
 const sitemap = await readFile(new URL('sitemap.xml', dist), 'utf8')
 if (expectedBase !== '/' && !sitemap.includes(expectedBase)) {
