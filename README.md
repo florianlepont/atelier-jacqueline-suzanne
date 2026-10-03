@@ -79,6 +79,8 @@ The site has one production target, OVH, updated automatically when Romane click
 
 A push to `main` never deploys the site. Code merged to `main` reaches production with the next content publish (a `repository_dispatch` run always builds the default branch), or right away with `gh workflow run deploy-ovh.yml`. Keep `main` production-ready.
 
+Separately, `.github/workflows/pr-checks.yml` runs lint, typecheck and unit tests on every pull request, with a read-only token and no secrets.
+
 A burst of publishes leaves at most one run in progress plus one pending run, and the latest pending run wins, so two uploads never race on the same webroot.
 
 ### Sanity Studio: published automatically
@@ -103,19 +105,25 @@ If the repository secret below is missing, the run stays green but carries a war
 
 Before `deploy-ovh.yml` can run, these things must be configured once:
 
-1. **Repository secret `OVH_SFTP_PASSWORD`** — the SFTP password for user `atelihu`, found in the OVH Control Panel under Web Cloud → Hosting plans → `atelihu` → FTP - SSH. Set it scoped to the environment:
+1. **Repository secret `OVH_SFTP_PASSWORD`** — the SFTP password for the `OVH_SFTP_USER` login (see item 7), found in the OVH Control Panel under Web Cloud → Hosting plans → your plan → FTP - SSH. Set it scoped to the environment:
    ```
    gh secret set OVH_SFTP_PASSWORD --env production-ovh
    ```
 2. **Repository Environment `production-ovh`** — create it under Settings → Environments, with at least one Required reviewer. This is what makes manual runs pause for approval; without it a manual run proceeds straight to the SFTP push and D-02's approval gate does not exist.
-3. **Confirm the webroot path** under `/home/atelihu` (the workflow assumes `www`) — OVH Control Panel → Web Cloud → Hosting plans → `atelihu` → Multisite.
-4. **Confirm `atelierjacquelinesuzanne.fr` is attached to the `atelihu` hosting plan** via Multisite.
+3. **Confirm the webroot path** under `/home/<OVH_SFTP_USER>` (the workflow assumes `www`) — OVH Control Panel → Web Cloud → Hosting plans → your plan → Multisite.
+4. **Confirm `atelierjacquelinesuzanne.fr` is attached to the hosting plan** via Multisite.
 5. **Repository Environment `production-ovh-auto`** — create it under Settings → Environments with NO required reviewer (leave Deployment protection rules empty). This is what lets a Sanity publish deploy without an approval pause: Romane's own click on Publier is the deliberate act. Then copy the SFTP secret onto it, since GitHub environment secrets do not carry across environments:
    ```
    gh secret set OVH_SFTP_PASSWORD --env production-ovh-auto
    ```
    If this step is skipped, automatic runs fail fast at the workflow's `Guard: SFTP credentials are present` step with an explicit error, rather than silently attempting an unauthenticated upload.
 6. **Sanity webhook** — see the next section.
+7. **Repository Actions variables `OVH_SFTP_HOST` and `OVH_SFTP_USER`** — the SFTP server hostname and the FTP/SFTP login (which is also the hosting account name used in the remote path `/home/<login>/www`). Take both from the OVH Control Panel → Web Cloud → Hosting plans → your plan → FTP - SSH, and create them at **repository level** (not environment-scoped, so the build job and both environments see them):
+   ```
+   gh variable set OVH_SFTP_HOST --body '<ftp server hostname>'
+   gh variable set OVH_SFTP_USER --body '<ftp login>'
+   ```
+   They are variables, not secrets, because they are identifiers rather than credentials; they only need to stay out of the tracked workflow file. Both must exist before the next production run: otherwise the `Guard: SFTP credentials are present` step fails the run before any upload is attempted.
 
 ### Sanity webhook
 
@@ -168,7 +176,7 @@ Sanity's plan allows 2 webhooks and both are in use, so **edit one and delete th
 ### Production deploy: how to run one manually
 
 1. Dispatch the workflow — from the Actions tab, or `gh workflow run deploy-ovh.yml`.
-2. The `build` job runs every blocking gate (Sanity Studio lint/build, typecheck, static-artifact verification, Playwright e2e, Vitest coverage) and writes a recap to the run summary: commit, target host/path, resolved `SITE_URL`, file count/size, and confirmation that `contact.php` and `.htaccess` are both present.
+2. The `build` job runs every blocking gate (Sanity Studio lint/build, typecheck, static-artifact verification, Playwright e2e, Vitest coverage) and writes a recap to the run summary: commit, resolved `SITE_URL`, file count/size, and confirmation that `contact.php` and `.htaccess` are both present.
 3. The run pauses on the `production-ovh` environment. Read the recap, then Approve.
 4. The `deploy` job pushes `dist/` over SFTP to OVH.
 
@@ -185,6 +193,14 @@ npm run dev
 ```
 
 Studio runs at http://localhost:3333. See [`sanity/README.md`](sanity/README.md) for the editor workflow (in French, for Romane).
+
+## Licence
+
+The source code is released under the MIT licence (see [`LICENSE`](LICENSE)).
+
+The photographs, texts, logos and brand (the Atelier Jacqueline Suzanne name and visual identity) are (c) Romane Lepont, all rights reserved, and are not covered by the MIT licence. This includes an explicit reservation against AI training and text-and-data-mining use; see [`LICENSE-CONTENT.md`](LICENSE-CONTENT.md).
+
+To report a vulnerability, see [`SECURITY.md`](SECURITY.md).
 
 ## Author
 

@@ -28,9 +28,9 @@ const stripComments = (source: string): string =>
     .join('\n');
 
 describe('repository-wide workflow invariants', () => {
-  it('contains exactly ci.yml and deploy-ovh.yml (the GitHub Pages workflow is gone)', () => {
+  it('contains exactly ci.yml, deploy-ovh.yml and pr-checks.yml (the GitHub Pages workflow is gone)', () => {
     const files = readdirSync(workflowsDir).sort();
-    expect(files).toEqual(['ci.yml', 'deploy-ovh.yml']);
+    expect(files).toEqual(['ci.yml', 'deploy-ovh.yml', 'pr-checks.yml']);
     expect(existsSync(new URL('deploy.yml', workflowsDir))).toBe(false);
   });
 
@@ -111,6 +111,54 @@ describe('.github/workflows/deploy-ovh.yml', () => {
     const firstSftpActionIndex = ovhWorkflow.indexOf('uses: wlixcc/SFTP-Deploy-Action');
     expect(guardIndex).toBeGreaterThan(deployJobIndex);
     expect(guardIndex).toBeLessThan(firstSftpActionIndex);
+  });
+
+  it('reads the SFTP host and account name from repository variables, never from literals', () => {
+    const usernameLines = ovhWorkflow.split('\n').filter((line) => /^\s*username:/.test(line));
+    const serverLines = ovhWorkflow.split('\n').filter((line) => /^\s*server:/.test(line));
+    const remotePathLines = ovhWorkflow.split('\n').filter((line) => /^\s*remote_path:/.test(line));
+    expect(usernameLines.length).toBe(2);
+    expect(serverLines.length).toBe(2);
+    expect(remotePathLines.length).toBe(2);
+    for (const line of usernameLines) {
+      expect(line).toContain('${{ vars.OVH_SFTP_USER }}');
+    }
+    for (const line of serverLines) {
+      expect(line).toContain('${{ vars.OVH_SFTP_HOST }}');
+    }
+    for (const line of remotePathLines) {
+      expect(line).toContain('${{ vars.OVH_SFTP_USER }}');
+    }
+  });
+
+  it('contains no OVH hostname and no literal /home/<account> path anywhere in the file', () => {
+    expect(ovhWorkflow).not.toMatch(/\.hosting\.ovh\.net/);
+    expect(ovhWorkflow).not.toMatch(/\/home\/(?!\$\{\{)[A-Za-z0-9_-]+/);
+  });
+
+  it('extends the credential guard to both repository variables without echoing their values', () => {
+    const guardStart = ovhWorkflow.indexOf('Guard: SFTP credentials are present');
+    const guardEnd = ovhWorkflow.indexOf('Download build artifact');
+    expect(guardStart).toBeGreaterThan(-1);
+    expect(guardEnd).toBeGreaterThan(guardStart);
+    const guard = ovhWorkflow.slice(guardStart, guardEnd);
+    expect(guard).toContain('vars.OVH_SFTP_HOST');
+    expect(guard).toContain('vars.OVH_SFTP_USER');
+    expect(guard).not.toMatch(/echo[^\n]*\$\{?OVH_SFTP_(HOST|USER)\b/);
+  });
+
+  it('prints no SFTP host, account or remote path in the recap or completion summary', () => {
+    const recapStart = ovhWorkflow.indexOf('name: Deploy recap');
+    const recapEnd = ovhWorkflow.indexOf('name: Upload build artifact');
+    const completeStart = ovhWorkflow.indexOf('name: Deploy complete');
+    const recap = ovhWorkflow.slice(recapStart, recapEnd);
+    const complete = ovhWorkflow.slice(completeStart);
+    for (const section of [recap, complete]) {
+      expect(section).not.toMatch(/Target host|Remote path/i);
+      expect(section).not.toMatch(/\/home\//);
+      expect(section).not.toContain('vars.');
+      expect(section).not.toMatch(/\$\{?OVH_SFTP_(HOST|USER)/);
+    }
   });
 
   it('sets SITE_URL to the real production domain', () => {

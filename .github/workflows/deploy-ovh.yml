@@ -106,8 +106,7 @@ jobs:
             echo "## OVH production deploy recap"
             echo ""
             echo "- **Commit:** \`${GITHUB_SHA}\` — $(git log -1 --pretty=%s)"
-            echo "- **Target host:** \`ftp.cluster129.hosting.ovh.net\`"
-            echo "- **Remote path:** \`/home/atelihu/www\`"
+            echo "- **SFTP target:** read from the OVH_SFTP_HOST and OVH_SFTP_USER repository variables (not printed here)"
             echo "- **Resolved SITE_URL:** \`https://atelierjacquelinesuzanne.fr\`"
             echo "- **File count:** $(find dist -type f | wc -l)"
             echo "- **Total size:** $(du -sh dist | cut -f1)"
@@ -155,18 +154,28 @@ jobs:
       name: ${{ github.event_name == 'repository_dispatch' && 'production-ovh-auto' || 'production-ovh' }}
       url: https://atelierjacquelinesuzanne.fr
     steps:
-      # Without this, a missing environment secret resolves to an empty
-      # string and the SFTP action attempts an unauthenticated
-      # connection, producing an opaque failure. This turns that into a
-      # loud, actionable one before any upload is attempted.
+      # Without this, a missing environment secret or repository variable
+      # resolves to an empty string and the SFTP action attempts a broken or
+      # unauthenticated connection, producing an opaque failure. This turns
+      # that into a loud, actionable one before any upload is attempted. The
+      # SFTP host and account name live in repository variables (not in this
+      # tracked file); only their NAMES are ever printed, never their values.
       - name: 'Guard: SFTP credentials are present'
         env:
           OVH_SFTP_PASSWORD: ${{ secrets.OVH_SFTP_PASSWORD }}
+          OVH_SFTP_HOST: ${{ vars.OVH_SFTP_HOST }}
+          OVH_SFTP_USER: ${{ vars.OVH_SFTP_USER }}
         run: |
           if [ -z "$OVH_SFTP_PASSWORD" ]; then
             echo "::error::OVH_SFTP_PASSWORD is missing on both the production-ovh and production-ovh-auto environments (whichever this run resolved to). Run: gh secret set OVH_SFTP_PASSWORD --env production-ovh-auto" >&2
             exit 1
           fi
+          for name in OVH_SFTP_HOST OVH_SFTP_USER; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Repository variable $name is not set. Run: gh variable set $name --body '<value from the OVH Control Panel, FTP - SSH>'" >&2
+              exit 1
+            fi
+          done
 
       - name: Download build artifact
         uses: actions/download-artifact@v4
@@ -186,12 +195,12 @@ jobs:
       - name: Deploy dist to OVH (SFTP)
         uses: wlixcc/SFTP-Deploy-Action@a5ccb9c6211a94cc59404f0fdb2a9936a6dfee64 # v1.2.6
         with:
-          username: atelihu
-          server: ftp.cluster129.hosting.ovh.net
+          username: ${{ vars.OVH_SFTP_USER }}
+          server: ${{ vars.OVH_SFTP_HOST }}
           port: '22'
           password: ${{ secrets.OVH_SFTP_PASSWORD }}
           local_path: './dist/*'
-          remote_path: '/home/atelihu/www'
+          remote_path: '/home/${{ vars.OVH_SFTP_USER }}/www'
           sftp_only: true
 
       # The previous step's ./dist/* glob cannot match dotfiles, so
@@ -201,12 +210,12 @@ jobs:
       - name: Deploy .htaccess to OVH (SFTP, dotfile)
         uses: wlixcc/SFTP-Deploy-Action@a5ccb9c6211a94cc59404f0fdb2a9936a6dfee64 # v1.2.6
         with:
-          username: atelihu
-          server: ftp.cluster129.hosting.ovh.net
+          username: ${{ vars.OVH_SFTP_USER }}
+          server: ${{ vars.OVH_SFTP_HOST }}
           port: '22'
           password: ${{ secrets.OVH_SFTP_PASSWORD }}
           local_path: './dist/.htaccess'
-          remote_path: '/home/atelihu/www'
+          remote_path: '/home/${{ vars.OVH_SFTP_USER }}/www'
           sftp_only: true
 
       - name: Deploy complete
@@ -214,7 +223,7 @@ jobs:
           {
             echo "## OVH production deploy complete"
             echo ""
-            echo "Files pushed to \`atelihu@ftp.cluster129.hosting.ovh.net:/home/atelihu/www\`."
+            echo "Files pushed to the OVH hosting plan configured in the repository variables."
             echo ""
             echo "The files are live at https://atelierjacquelinesuzanne.fr. This workflow never touches DNS."
           } >> "$GITHUB_STEP_SUMMARY"
