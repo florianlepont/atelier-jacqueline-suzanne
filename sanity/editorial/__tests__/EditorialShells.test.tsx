@@ -28,7 +28,7 @@ describe('OpenSitePage', () => {
     render(createElement(OpenSitePanel, {documentId: 'homePage', documentType: 'homePage', onClose}))
 
     const link = screen.getByRole('link', {name: /Ouvrir la page du site/}) as HTMLAnchorElement
-    expect(link.getAttribute('href')).toBe('https://florianlepont.github.io/atelier-jacqueline-suzanne/')
+    expect(link.getAttribute('href')).toBe('https://atelierjacquelinesuzanne.fr/')
     fireEvent.click(link)
     expect(onClose).toHaveBeenCalledOnce()
   })
@@ -44,7 +44,7 @@ describe('OpenSitePage', () => {
 
     const link = screen.getByRole('link', {name: /Ouvrir la page du site/}) as HTMLAnchorElement
     expect(link.getAttribute('href')).toBe(
-      'https://florianlepont.github.io/atelier-jacqueline-suzanne/galleries/paysages/',
+      'https://atelierjacquelinesuzanne.fr/galleries/paysages/',
     )
   })
 
@@ -159,146 +159,37 @@ describe('StudioLayout', () => {
 // ---------------------------------------------------------------------------
 
 describe('resolveBadges', () => {
-  it('prepends the editorial badges for checklist-enabled types', () => {
+  it('prepends exactly the collection status badge for a gallery', () => {
     const prev: unknown[] = [() => null]
     const badges = resolveBadges(prev as never, {schemaType: 'gallery'} as never)
-    expect(badges).toHaveLength(4)
-    expect(badges[3]).toBe(prev[0])
+    expect(badges).toHaveLength(2)
+    expect(badges[1]).toBe(prev[0])
   })
 
-  it('leaves the badge list untouched for a type without a checklist', () => {
+  it('leaves the badge list untouched for any other type', () => {
     const prev: unknown[] = [() => null]
-    const badges = resolveBadges(prev as never, {schemaType: 'siteDeployment'} as never)
-    expect(badges).toBe(prev)
+    expect(resolveBadges(prev as never, {schemaType: 'homePage'} as never)).toBe(prev)
+    expect(resolveBadges(prev as never, {schemaType: 'edition'} as never)).toBe(prev)
   })
 })
 
-describe('AutoOpenChecklistBadge (workflow badge[0])', () => {
-  function AutoOpenBadge(props: {draft?: unknown; published?: unknown}) {
+describe('CollectionStatusBadge (workflow badges[0])', () => {
+  function invoke(props: {draft?: unknown; published?: unknown}) {
     const badges = resolveBadges([] as never, {schemaType: 'gallery'} as never)
-    const Badge = badges[0] as unknown as ComponentType<{draft?: unknown; published?: unknown}>
-    return createElement(Badge, props)
-  }
-
-  it('opens the checklist automatically once for an incomplete document, and never twice for the same document', () => {
-    sanityTestState.documentPane = {
-      documentId: 'gallery-1',
-      documentType: 'gallery',
-      ready: true,
-      inspector: null,
-      openInspector: vi.fn(),
-    }
-    const view = render(createElement(AutoOpenBadge, {draft: null, published: {_type: 'gallery'}}))
-    expect(sanityTestState.documentPane.openInspector).toHaveBeenCalledWith('checklist')
-    expect(sanityTestState.documentPane.openInspector).toHaveBeenCalledOnce()
-
-    // Re-render with new document content but the SAME documentId: the
-    // "decide once per document" guard must not reopen it (e.g. after a
-    // manual close).
-    view.rerender(createElement(AutoOpenBadge, {draft: {_type: 'gallery', title: 'x'}, published: null}))
-    expect(sanityTestState.documentPane.openInspector).toHaveBeenCalledOnce()
-  })
-
-  it('does not auto-open when the document is already complete', () => {
-    sanityTestState.documentPane = {
-      documentId: 'gallery-2',
-      documentType: 'gallery',
-      ready: true,
-      inspector: null,
-      openInspector: vi.fn(),
-    }
-    render(
-      createElement(AutoOpenBadge, {
-        draft: null,
-        published: {
-          _type: 'gallery',
-          publicationStatus: 'published',
-          title: 'Complète',
-          slug: {current: 'complete'},
-          statement: {fr: 'a', en: 'b'},
-          images: [
-            {
-              asset: {_ref: 'i'},
-              alt: {fr: 'a', en: 'b'},
-              rights: {credit: 'c', copyrightNotice: 'd', usage: 'e'},
-            },
-          ],
-        },
-      }),
-    )
-    expect(sanityTestState.documentPane.openInspector).not.toHaveBeenCalled()
-  })
-
-  it('does not auto-open while another inspector is already open', () => {
-    sanityTestState.documentPane = {
-      documentId: 'gallery-3',
-      documentType: 'gallery',
-      ready: true,
-      inspector: {name: 'comments'},
-      openInspector: vi.fn(),
-    }
-    render(createElement(AutoOpenBadge, {draft: null, published: {_type: 'gallery'}}))
-    expect(sanityTestState.documentPane.openInspector).not.toHaveBeenCalled()
-  })
-
-  it('waits until the document pane is ready before deciding', () => {
-    sanityTestState.documentPane = {
-      documentId: 'gallery-4',
-      documentType: 'gallery',
-      ready: false,
-      inspector: null,
-      openInspector: vi.fn(),
-    }
-    render(createElement(AutoOpenBadge, {draft: null, published: {_type: 'gallery'}}))
-    expect(sanityTestState.documentPane.openInspector).not.toHaveBeenCalled()
-  })
-})
-
-describe('CompletenessBadge and CollectionStatusBadge (workflow badges[1], badges[2])', () => {
-  function invoke(index: 1 | 2, props: {draft?: unknown; published?: unknown}) {
-    const badges = resolveBadges([] as never, {schemaType: 'gallery'} as never)
-    const Badge = badges[index] as unknown as (p: typeof props) => unknown
+    const Badge = badges[0] as unknown as (p: typeof props) => unknown
     return Badge(props)
   }
 
-  it('flags missing required content', () => {
-    expect(invoke(1, {draft: null, published: {_type: 'gallery'}})).toMatchObject({
-      label: 'À compléter',
+  it('flags a collection that was never published', () => {
+    expect(invoke({draft: {_type: 'gallery', title: 'x'}, published: null})).toMatchObject({
+      label: 'Jamais publiée',
       color: 'warning',
     })
   })
 
-  it('flags missing recommended (SEO) content once required content is complete', () => {
-    expect(
-      invoke(1, {
-        draft: null,
-        published: {
-          _type: 'gallery',
-          publicationStatus: 'published',
-          title: 'Complète',
-          slug: {current: 'complete'},
-          statement: {fr: 'a', en: 'b'},
-          images: [
-            {
-              asset: {_ref: 'i'},
-              alt: {fr: 'a', en: 'b'},
-              rights: {credit: 'c', copyrightNotice: 'd', usage: 'e'},
-            },
-          ],
-        },
-      }),
-    ).toMatchObject({label: 'SEO à compléter', color: 'primary'})
-  })
-
-  it('flags a collection that was never published', () => {
-    expect(
-      invoke(2, {draft: {_type: 'gallery', title: 'x'}, published: null}),
-    ).toMatchObject({label: 'Jamais publiée', color: 'warning'})
-  })
-
   it('flags unpublished edits on an already-online collection', () => {
     expect(
-      invoke(2, {
+      invoke({
         draft: {_type: 'gallery', title: 'x'},
         published: {_type: 'gallery', title: 'x'},
       }),
@@ -306,15 +197,28 @@ describe('CompletenessBadge and CollectionStatusBadge (workflow badges[1], badge
   })
 
   it('returns null for a non-gallery type', () => {
-    expect(invoke(2, {draft: null, published: {_type: 'homePage'}})).toBeNull()
+    expect(invoke({draft: null, published: {_type: 'homePage'}})).toBeNull()
   })
 })
 
 describe('resolveActions', () => {
-  it('strips publish/unpublish for a public site document type', () => {
+  it('keeps Sanity native actions untouched for a gallery, publish and unpublish included', () => {
     const actions = [{action: 'publish'}, {action: 'unpublish'}, {action: 'delete'}]
     const result = resolveActions(actions as never, {schemaType: 'gallery'} as never)
-    expect(result).toEqual([{action: 'delete'}])
+    expect(result).toBe(actions)
+  })
+
+  it('keeps publish but strips unpublish, delete and duplicate for a singleton page', () => {
+    const actions = [
+      {action: 'publish'},
+      {action: 'discardChanges'},
+      {action: 'restore'},
+      {action: 'unpublish'},
+      {action: 'delete'},
+      {action: 'duplicate'},
+    ]
+    const result = resolveActions(actions as never, {schemaType: 'siteSettings'} as never)
+    expect(result).toEqual([{action: 'publish'}, {action: 'discardChanges'}, {action: 'restore'}])
   })
 
   it('leaves actions untouched for a schema type outside the editorial workflow', () => {
