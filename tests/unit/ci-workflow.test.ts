@@ -4,13 +4,13 @@ import { describe, expect, it } from 'vitest';
 // Text assertions over the raw workflow source (no YAML parser), mirroring
 // tests/unit/deploy-ovh-workflow.test.ts. Comment lines are stripped first so
 // the header narration cannot satisfy or violate an assertion.
-const raw = await readFile(new URL('../../.github/workflows/ci.yml', import.meta.url), 'utf8');
+const raw = await readFile(new URL('../../.github/workflows/pr-checks.yml', import.meta.url), 'utf8');
 const ci = raw
   .split('\n')
   .filter((line) => !line.trim().startsWith('#'))
   .join('\n');
 
-describe('.github/workflows/ci.yml', () => {
+describe('.github/workflows/pr-checks.yml', () => {
   it('triggers on pull_request only', () => {
     expect(ci).toMatch(/^\s*pull_request:/m);
     expect(ci).not.toContain('pull_request_target');

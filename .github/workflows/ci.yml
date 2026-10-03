@@ -1,42 +1,77 @@
-name: CI (pull request)
+name: CI and Sanity Studio publish
 
-# Fast lint, typecheck and unit-test gate for every pull request.
+# The GitHub Pages staging site was retired (quick 261003-idz). This workflow
+# gates every push to `main` with the full set of blocking checks (Studio
+# lint/coverage/build/typecheck, root lint/typecheck, artifact verification,
+# Playwright e2e, Vitest coverage) and then republishes the hosted Sanity
+# Studio so the Studio never lags behind the code on `main`.
 #
-# Pull requests (especially from forks) receive no repository secrets by
-# design, so the site build (which needs Sanity credentials) and the
-# Playwright e2e suite stay on the deploy pipelines (deploy.yml and
-# deploy-ovh.yml). Pushes to main are already gated by those workflows, so
-# this one deliberately has no push or dispatch trigger.
-#
-# Safety: `pull_request` only (never the `_target` variant, which would run
-# untrusted PR code with secrets in scope), a read-only token, no secrets, no
-# environment, no deploy/pages/id-token permission.
-
+# It NEVER deploys the website. Code on `main` reaches production only
+# through .github/workflows/deploy-ovh.yml: on the next Sanity publish (which
+# builds the default branch), or through a manual dispatch of that workflow.
+# Keep `main` production-ready.
 on:
-  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  checks:
+  verify-and-publish-studio:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          persist-credentials: false
 
-      # Same composite the deploy workflows run (Node 22, both npm ci, Studio
-      # lint/coverage/build/typecheck, root lint, astro check), reused so the
-      # PR gates cannot drift from the deploy gates. It needs no secrets.
       - name: Install dependencies, lint, and type-check
         uses: ./.github/actions/lint-typecheck-and-install
 
-      - name: Unit tests with coverage thresholds
-        run: npm run test:coverage
+      # Root-base test artifact. Its dist/ output is only used to run the
+      # artifact verifier and the Playwright suite below; nothing is deployed.
+      - name: Build (test artifact, root base)
+        run: npm run build
+        env:
+          SANITY_PROJECT_ID: ${{ secrets.SANITY_PROJECT_ID }}
+          SANITY_DATASET: ${{ secrets.SANITY_DATASET }}
+          SANITY_API_READ_TOKEN: ${{ secrets.SANITY_API_READ_TOKEN }}
+
+      - name: Verify static artifact
+        run: npm run test:artifact
+
+      - name: Playwright e2e and Vitest coverage
+        uses: ./.github/actions/e2e-and-unit-tests
+
+      # Closes the manual-publish gap diagnosed in
+      # .planning/debug/resolved/preprod-site-404-after-rename.md: the hosted
+      # Studio could otherwise only be refreshed by someone running
+      # `sanity deploy` by hand.
+      #
+      # Runs on every push to `main`, not only pushes touching `sanity/` (D-02).
+      #
+      # Last step in the job (D-01): it inherits every blocking gate above
+      # (Studio lint/coverage/build/typecheck, root lint/typecheck, artifact
+      # verification, Playwright, Vitest coverage) for free.
+      #
+      # If SANITY_AUTH_TOKEN is missing, this step warns and exits 0 instead
+      # of failing the run (D-03) — deliberately different from the
+      # fail-loud `Guard: SFTP credentials are present` step in
+      # deploy-ovh.yml. That guard protects an irreversible production
+      # upload; this one protects an idempotent, re-runnable Studio publish
+      # that cannot be set up until this workflow change has already landed
+      # (Claude cannot create repository secrets). Once the secret exists, a
+      # genuine publish failure still fails the run loudly.
+      - name: Publish the hosted Sanity Studio
+        env:
+          SANITY_AUTH_TOKEN: ${{ secrets.SANITY_AUTH_TOKEN }}
+        run: |
+          if [ -z "${SANITY_AUTH_TOKEN}" ]; then
+            echo "::warning::SANITY_AUTH_TOKEN repository secret is not set — skipping hosted Sanity Studio publish. Add it under repo Settings > Secrets and variables > Actions (see README.md for setup steps)."
+            exit 0
+          fi
+          npm --prefix sanity run deploy

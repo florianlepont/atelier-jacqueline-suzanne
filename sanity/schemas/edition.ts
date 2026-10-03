@@ -27,7 +27,7 @@ export const edition = defineType({
       type: 'string',
       group: 'publication',
       description:
-        'Ce choix prendra effet lors de la prochaine mise à jour du site depuis le tableau de bord. « En préparation » et « Archivée » gardent l’édition hors ligne.',
+        'Ce choix prend effet une fois l’édition publiée avec le bouton « Publier » ; le site en ligne se met ensuite à jour automatiquement en quelques minutes. « En préparation » et « Archivée » gardent l’édition hors ligne.',
       initialValue: 'published',
       options: {
         layout: 'radio',
