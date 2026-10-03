@@ -1,0 +1,42 @@
+name: CI (pull request)
+
+# Fast lint, typecheck and unit-test gate for every pull request.
+#
+# Pull requests (especially from forks) receive no repository secrets by
+# design, so the site build (which needs Sanity credentials) and the
+# Playwright e2e suite stay on the deploy pipelines (deploy.yml and
+# deploy-ovh.yml). Pushes to main are already gated by those workflows, so
+# this one deliberately has no push or dispatch trigger.
+#
+# Safety: `pull_request` only (never the `_target` variant, which would run
+# untrusted PR code with secrets in scope), a read-only token, no secrets, no
+# environment, no deploy/pages/id-token permission.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Same composite the deploy workflows run (Node 22, both npm ci, Studio
+      # lint/coverage/build/typecheck, root lint, astro check), reused so the
+      # PR gates cannot drift from the deploy gates. It needs no secrets.
+      - name: Install dependencies, lint, and type-check
+        uses: ./.github/actions/lint-typecheck-and-install
+
+      - name: Unit tests with coverage thresholds
+        run: npm run test:coverage

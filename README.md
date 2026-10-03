@@ -45,7 +45,7 @@ Names only — never commit real values, tokens, or keys. `.env` is gitignored; 
 | `SANITY_DATASET` | required (build) | Sanity dataset name (e.g. `production`). |
 | `SANITY_API_READ_TOKEN` | required (build) | Sanity read token used at build time. |
 | `SITE_URL` | optional (build) | Canonical site origin; defaults to `https://florianlepont.github.io`. |
-| `ASTRO_BASE` | optional (build) | Base path; defaults to `/`; set `/atelier-jacqueline-suzanne/` for the GitHub Pages staging build. |
+| `ASTRO_BASE` | optional (build) | Base path; defaults to `/`; set `/atelier-jacqueline-suzanne/` for the GitHub Pages staging build. A non-root base marks the build as staging: every page then emits a `noindex, nofollow` robots meta, so the mirror stays out of search results. |
 | `PUBLIC_CONTACT_ENDPOINT` | optional (build) | Contact form POST target; defaults to the same-origin path `/contact.php`. Must be set to the absolute production URL (`https://atelierjacquelinesuzanne.fr/contact.php`) for the GitHub Pages staging build, since that host cannot execute PHP. |
 
 Note: the `sanity/` Studio has its own env (`SANITY_STUDIO_PREVIEW_URL`) documented in `sanity/README.md`.
@@ -83,6 +83,8 @@ This project has two deploy targets. Do not confuse them.
 
 Both deploy workflows run the full blocking gate set (lint, typecheck, Playwright e2e, Vitest coverage) before publishing anything.
 
+Separately, `.github/workflows/ci.yml` runs lint, typecheck and unit tests on every pull request, with a read-only token and no secrets.
+
 GitHub Pages stays alive permanently as a pre-production environment after the domain cutover — it is not retired. It is useful for previewing future changes before they reach the real domain, at no extra cost.
 
 ### Sanity Studio: published automatically
@@ -111,15 +113,15 @@ If the repository secret below is missing, the site still deploys and the run st
 
 ### Production deploy: one-time setup
 
-Before `deploy-ovh.yml` can be run, these six things must be configured once:
+Before `deploy-ovh.yml` can be run, these seven things must be configured once:
 
-1. **Repository secret `OVH_SFTP_PASSWORD`** — the SFTP password for user `atelihu`, found in the OVH Control Panel under Web Cloud → Hosting plans → `atelihu` → FTP - SSH. Set it scoped to the environment:
+1. **Repository secret `OVH_SFTP_PASSWORD`** — the SFTP password for the `OVH_SFTP_USER` login (see item 7), found in the OVH Control Panel under Web Cloud → Hosting plans → your plan → FTP - SSH. Set it scoped to the environment:
    ```
    gh secret set OVH_SFTP_PASSWORD --env production-ovh
    ```
 2. **Repository Environment `production-ovh`** — create it under Settings → Environments, with at least one Required reviewer. This is what makes the workflow pause for approval; without it the run proceeds straight to the SFTP push and D-02's approval gate does not exist.
-3. **Confirm the webroot path** under `/home/atelihu` (the workflow assumes `www`) — OVH Control Panel → Web Cloud → Hosting plans → `atelihu` → Multisite.
-4. **Confirm `atelierjacquelinesuzanne.fr` is attached to the `atelihu` hosting plan** via Multisite, since the DNS cutover in the launch runbook points the domain at that hosting.
+3. **Confirm the webroot path** under `/home/<OVH_SFTP_USER>` (the workflow assumes `www`) — OVH Control Panel → Web Cloud → Hosting plans → your plan → Multisite.
+4. **Confirm `atelierjacquelinesuzanne.fr` is attached to the hosting plan** via Multisite, since the DNS cutover in the launch runbook points the domain at that hosting.
 5. **Repository Environment `production-ovh-auto`** — create it under Settings → Environments with NO required reviewer (leave Deployment protection rules empty). This is what lets the content path skip the approval pause. Then copy the SFTP secret onto it, since GitHub environment secrets do not carry across environments:
    ```
    gh secret set OVH_SFTP_PASSWORD --env production-ovh-auto
@@ -134,11 +136,17 @@ Before `deploy-ovh.yml` can be run, these six things must be configured once:
    - Headers: `Accept: application/vnd.github+json`, `Content-Type: application/json`, and a bearer `Authorization` header.
    - The token is a **fine-grained GitHub PAT** scoped to this single repo (`florianlepont/atelier-jacqueline-suzanne`) with `Contents: Read and write` and an expiry date. It lives **ONLY** in this webhook's header configuration in Sanity's dashboard — it must never be committed to this repository, written into any workflow file, or pasted anywhere else.
    - Verification note: the **existing** webhook driving the staging event (`sanity-content-published`) almost certainly filters on the *other* marker document type (`siteDeployment`). Open it, confirm its shape, and mirror it for the new webhook rather than editing it — staging must keep its own trigger untouched.
+7. **Repository Actions variables `OVH_SFTP_HOST` and `OVH_SFTP_USER`** — the SFTP server hostname and the FTP/SFTP login (which is also the hosting account name used in the remote path `/home/<login>/www`). Take both from the OVH Control Panel → Web Cloud → Hosting plans → your plan → FTP - SSH, and create them at **repository level** (not environment-scoped, so the build job and both environments see them):
+   ```
+   gh variable set OVH_SFTP_HOST --body '<ftp server hostname>'
+   gh variable set OVH_SFTP_USER --body '<ftp login>'
+   ```
+   They are variables, not secrets, because they are identifiers rather than credentials; they only need to stay out of the tracked workflow file. Both must exist before the next production run: otherwise the `Guard: SFTP credentials are present` step fails the run before any upload is attempted.
 
 ### Production deploy: how to run one
 
 1. Dispatch the workflow — from the Actions tab, or `gh workflow run deploy-ovh.yml`.
-2. The `build` job runs every blocking gate (Sanity Studio lint/build, typecheck, static-artifact verification, Playwright e2e, Vitest coverage) and writes a recap to the run summary: commit, target host/path, resolved `SITE_URL`, file count/size, and confirmation that `contact.php` and `.htaccess` are both present.
+2. The `build` job runs every blocking gate (Sanity Studio lint/build, typecheck, static-artifact verification, Playwright e2e, Vitest coverage) and writes a recap to the run summary: commit, resolved `SITE_URL`, file count/size, and confirmation that `contact.php` and `.htaccess` are both present.
 3. The run pauses on the `production-ovh` environment. Read the recap, then Approve.
 4. The `deploy` job pushes `dist/` over SFTP to OVH.
 
