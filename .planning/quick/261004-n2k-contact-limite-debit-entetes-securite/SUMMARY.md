@@ -9,3 +9,8 @@ status: complete
 - Privacy policy (FR + EN) discloses the hashed-IP rate-limit counters.
 - Not exercised: real OVH Apache (mod_headers availability) and real PHP on OVH; check the response headers with `curl -I https://atelierjacquelinesuzanne.fr/` after the next deploy. If a page misbehaves, the CSP line in `public/.htaccess` is the one to loosen. Legal text had no legal review.
 - Deliberately not done: host-based canonical redirect (cannot be tested without OVH).
+
+## Live check after deploy (2026-10-04)
+- OVH Apache serves nosniff, Referrer-Policy, Permissions-Policy and the CSP; pages 200; `contact.php` accepted a test POST (`success: true`).
+- HSTS was NOT emitted: the `expr=%{HTTPS} == 'on'` condition never matched on OVH. Follow-up commit sends it unconditionally (browsers ignore HSTS on plain HTTP, which is redirected anyway).
+- Not exercised live: the 429 limit (avoided spamming Romane's mailbox).

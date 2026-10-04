@@ -27,12 +27,14 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 # forms and fetch() only to this origin (the contact form posts to
 # /contact.php). If a future feature loads from another host, add it here.
 #
-# HSTS is sent over HTTPS only, for six months, without includeSubDomains or
-# preload: nothing here is allowed to affect other names on the domain.
+# HSTS lasts six months, without includeSubDomains or preload: nothing here
+# is allowed to affect other names on the domain. It is sent unconditionally
+# (a first version gated on %{HTTPS} was never emitted on OVH); browsers ignore
+# it on plain HTTP, and plain HTTP is redirected to HTTPS above anyway.
 <IfModule mod_headers.c>
   Header always set X-Content-Type-Options "nosniff"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), interest-cohort=()"
   Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data: https://cdn.sanity.io; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
-  Header always set Strict-Transport-Security "max-age=15552000" "expr=%{HTTPS} == 'on'"
+  Header always set Strict-Transport-Security "max-age=15552000"
 </IfModule>
