@@ -2,23 +2,30 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_THRESHOLD,
+  HEIGHT_TOLERANCE_PX,
   MIN_THRESHOLD,
   REDACTED,
+  ReducedImageError,
   USAGE_TEXT,
   assessDeletionSafety,
+  buildReducedImageUrl,
   computeTargetDimensions,
   deriveFilename,
   describeError,
+  fetchReducedImage,
   findReferencePaths,
   formatDryRunReport,
   parseImageAssetId,
   planReferencePatches,
   redactSecrets,
   resolveCliOptions,
+  resolveOutputFormat,
   selectOversizedAssets,
+  validateReducedImage,
 } from '../../scripts/lib/sanity-image-downsize.mjs';
 
-// Pure-logic tests only: no network, no sharp, no process access.
+// Pure-logic tests only: no real network, no sharp, no process access. Network
+// and image decoding are replaced by injected stubs.
 
 const OLD_ID = 'image-aaaa1111-6000x4000-jpg';
 const NEW_ID = 'image-bbbb2222-2400x1600-jpg';
@@ -548,6 +555,358 @@ describe('formatDryRunReport', () => {
   });
 });
 
+const JPEG_ASSET = {
+  _id: 'image-badfea3dd4d4ab5abbf8f09a5556610da89d90b9-13040x9730-jpg',
+  mimeType: 'image/jpeg',
+  extension: 'jpg',
+  url: 'https://cdn.sanity.io/images/gwz8iug4/production/badfea3dd4d4ab5abbf8f09a5556610da89d90b9-13040x9730.jpg',
+  width: 13040,
+  height: 9730,
+};
+const JPEG_TARGET = { width: 2400, height: 1791 };
+const PNG_ASSET = {
+  _id: 'image-cad9b00c5232d9beb80459bfeb40ef95bfc07194-3872x2592-png',
+  mimeType: 'image/png',
+  extension: 'png',
+  url: 'https://cdn.sanity.io/images/gwz8iug4/production/cad9b00c5232d9beb80459bfeb40ef95bfc07194-3872x2592.png',
+  width: 3872,
+  height: 2592,
+};
+const PNG_TARGET = { width: 2400, height: 1607 };
+
+function errorCode(fn: () => unknown): string | undefined {
+  try {
+    fn();
+  } catch (error) {
+    return (error as { code?: string }).code;
+  }
+  return undefined;
+}
+
+describe('resolveOutputFormat', () => {
+  it('decides from the mime type', () => {
+    expect(resolveOutputFormat({ _id: 'a', mimeType: 'image/jpeg' })).toEqual({
+      mimeType: 'image/jpeg',
+      fm: 'jpg',
+      sharpFormat: 'jpeg',
+    });
+    expect(resolveOutputFormat({ _id: 'a', mimeType: 'image/png' })).toEqual({
+      mimeType: 'image/png',
+      fm: 'png',
+      sharpFormat: 'png',
+    });
+    expect(resolveOutputFormat({ _id: 'a', mimeType: 'image/webp' })).toEqual({
+      mimeType: 'image/webp',
+      fm: 'webp',
+      sharpFormat: 'webp',
+    });
+  });
+
+  it('trims and lowercases the mime type', () => {
+    expect(resolveOutputFormat({ _id: 'a', mimeType: ' IMAGE/JPEG ' }).fm).toBe('jpg');
+  });
+
+  it.each([
+    ['jpg', 'image/jpeg'],
+    ['JPEG', 'image/jpeg'],
+    ['png', 'image/png'],
+    ['WebP', 'image/webp'],
+  ])('falls back to the extension %s when the mime type is missing', (extension, mimeType) => {
+    expect(resolveOutputFormat({ _id: 'a', extension }).mimeType).toBe(mimeType);
+  });
+
+  it('rejects a mime type and an extension that disagree', () => {
+    expect(errorCode(() => resolveOutputFormat({ _id: 'a', mimeType: 'image/png', extension: 'jpg' }))).toBe(
+      'UNSUPPORTED_FORMAT',
+    );
+  });
+
+  it('ignores an unknown extension next to a valid mime type', () => {
+    expect(resolveOutputFormat({ _id: 'a', mimeType: 'image/jpeg', extension: 'bin' }).fm).toBe('jpg');
+  });
+
+  it('rejects unsupported formats and assets with no format information', () => {
+    expect(errorCode(() => resolveOutputFormat({ _id: 'a', mimeType: 'image/gif' }))).toBe('UNSUPPORTED_FORMAT');
+    expect(errorCode(() => resolveOutputFormat({ _id: 'a', mimeType: 'image/svg+xml' }))).toBe('UNSUPPORTED_FORMAT');
+    expect(errorCode(() => resolveOutputFormat({ _id: 'a', extension: 'tiff' }))).toBe('UNSUPPORTED_FORMAT');
+    expect(errorCode(() => resolveOutputFormat({ _id: 'a' }))).toBe('UNSUPPORTED_FORMAT');
+  });
+});
+
+describe('buildReducedImageUrl', () => {
+  it('asks for a JPEG at quality 90', () => {
+    expect(buildReducedImageUrl(JPEG_ASSET, 2400)).toBe(`${JPEG_ASSET.url}?w=2400&q=90&fm=jpg`);
+  });
+
+  it('asks for a lossless PNG without a quality', () => {
+    expect(buildReducedImageUrl(PNG_ASSET, 2400)).toBe(`${PNG_ASSET.url}?w=2400&fm=png`);
+  });
+
+  it('asks for a WebP at quality 90', () => {
+    const asset = { ...JPEG_ASSET, mimeType: 'image/webp', extension: 'webp', url: JPEG_ASSET.url.replace('.jpg', '.webp') };
+    expect(buildReducedImageUrl(asset, 2400)).toBe(`${asset.url}?w=2400&fm=webp&q=90`);
+  });
+
+  it('uses the given target width', () => {
+    expect(buildReducedImageUrl(JPEG_ASSET, 3000)).toContain('?w=3000&');
+  });
+
+  it('decides the format from the extension when the mime type is missing', () => {
+    const { mimeType: _mimeType, ...noMime } = PNG_ASSET;
+    expect(buildReducedImageUrl(noMime, 2400)).toBe(`${PNG_ASSET.url}?w=2400&fm=png`);
+  });
+
+  it('rejects conflicting and unsupported formats', () => {
+    expect(errorCode(() => buildReducedImageUrl({ ...JPEG_ASSET, extension: 'png' }, 2400))).toBe('UNSUPPORTED_FORMAT');
+    expect(errorCode(() => buildReducedImageUrl({ ...JPEG_ASSET, mimeType: 'image/gif' }, 2400))).toBe(
+      'UNSUPPORTED_FORMAT',
+    );
+    expect(errorCode(() => buildReducedImageUrl({ ...JPEG_ASSET, mimeType: 'image/svg+xml' }, 2400))).toBe(
+      'UNSUPPORTED_FORMAT',
+    );
+    const { mimeType: _mimeType, ...noMime } = JPEG_ASSET;
+    expect(errorCode(() => buildReducedImageUrl({ ...noMime, extension: 'tiff' }, 2400))).toBe('UNSUPPORTED_FORMAT');
+  });
+
+  it('rejects a missing, empty or unparsable url', () => {
+    const { url: _url, ...noUrl } = JPEG_ASSET;
+    expect(errorCode(() => buildReducedImageUrl(noUrl, 2400))).toBe('MISSING_URL');
+    expect(errorCode(() => buildReducedImageUrl({ ...JPEG_ASSET, url: '' }, 2400))).toBe('MISSING_URL');
+    expect(errorCode(() => buildReducedImageUrl({ ...JPEG_ASSET, url: 'not a url' }, 2400))).toBe('MISSING_URL');
+  });
+
+  it('drops any query string or fragment already on the asset url', () => {
+    const url = buildReducedImageUrl({ ...JPEG_ASSET, url: `${JPEG_ASSET.url}?q=100&dl=x#frag` }, 2400);
+    expect(url).toBe(`${JPEG_ASSET.url}?w=2400&q=90&fm=jpg`);
+  });
+
+  it('never asks for automatic format negotiation or a download', () => {
+    for (const asset of [JPEG_ASSET, PNG_ASSET]) {
+      const url = buildReducedImageUrl(asset, 2400);
+      expect(url).not.toContain('auto=');
+      expect(url).not.toContain('dl=');
+    }
+  });
+
+  it.each([0, -1, 2400.5, Number.NaN, Number.POSITIVE_INFINITY, '2400'])('rejects the target width %j', (width) => {
+    expect(() => buildReducedImageUrl(JPEG_ASSET, width as number)).toThrow(RangeError);
+  });
+});
+
+describe('validateReducedImage', () => {
+  const good = { format: 'jpeg', width: 2400, height: 1791 };
+
+  function validate(overrides: Record<string, unknown> = {}) {
+    return validateReducedImage({
+      expectedMimeType: 'image/jpeg',
+      contentType: 'image/jpeg',
+      decoded: good,
+      target: JPEG_TARGET,
+      ...overrides,
+    } as Parameters<typeof validateReducedImage>[0]);
+  }
+
+  function failureCode(overrides: Record<string, unknown> = {}): string | undefined {
+    const result = validate(overrides);
+    return result.ok ? undefined : result.code;
+  }
+
+  it('accepts an exact match', () => {
+    expect(validate()).toEqual({ ok: true });
+    expect(HEIGHT_TOLERANCE_PX).toBe(1);
+  });
+
+  it('compares the content type case-insensitively and ignores parameters', () => {
+    expect(validate({ contentType: 'IMAGE/JPEG; charset=binary' })).toEqual({ ok: true });
+  });
+
+  it('rejects a wrong or missing content type, even when nothing decoded', () => {
+    expect(failureCode({ contentType: 'text/html' })).toBe('CONTENT_TYPE_MISMATCH');
+    expect(failureCode({ contentType: null })).toBe('CONTENT_TYPE_MISMATCH');
+    expect(failureCode({ contentType: 'text/html', decoded: null })).toBe('CONTENT_TYPE_MISMATCH');
+  });
+
+  it('rejects an undecodable image', () => {
+    expect(failureCode({ decoded: null })).toBe('UNDECODABLE');
+    expect(failureCode({ decoded: { format: 'jpeg', width: 0, height: 1791 } })).toBe('UNDECODABLE');
+    expect(failureCode({ decoded: { format: 'jpeg', width: 2400, height: Number.NaN } })).toBe('UNDECODABLE');
+    expect(failureCode({ decoded: { format: 'jpeg', width: 2400 } })).toBe('UNDECODABLE');
+  });
+
+  it('rejects a decoded format that differs from the expected one', () => {
+    expect(failureCode({ decoded: { ...good, format: 'png' } })).toBe('FORMAT_MISMATCH');
+    expect(failureCode({ decoded: { ...good, format: undefined } })).toBe('FORMAT_MISMATCH');
+    expect(
+      failureCode({
+        expectedMimeType: 'image/webp',
+        contentType: 'image/webp',
+        decoded: { ...good, format: 'webp' },
+      }),
+    ).toBeUndefined();
+  });
+
+  it('requires the exact width', () => {
+    expect(failureCode({ decoded: { ...good, width: 2399 } })).toBe('DIMENSIONS_MISMATCH');
+    expect(failureCode({ decoded: { ...good, width: 2401 } })).toBe('DIMENSIONS_MISMATCH');
+  });
+
+  it('tolerates a height off by 1 px in both directions but not by 2 px', () => {
+    expect(failureCode({ decoded: { ...good, height: 1790 } })).toBeUndefined();
+    expect(failureCode({ decoded: { ...good, height: 1792 } })).toBeUndefined();
+    expect(failureCode({ decoded: { ...good, height: 1789 } })).toBe('DIMENSIONS_MISMATCH');
+    expect(failureCode({ decoded: { ...good, height: 1793 } })).toBe('DIMENSIONS_MISMATCH');
+  });
+
+  it('shows the received and the expected size in a dimensions failure', () => {
+    const result = validate({ decoded: { ...good, width: 2000, height: 1500 } });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.message).toContain('2000x1500');
+      expect(result.message).toContain('2400x1791');
+    }
+  });
+
+  it('never throws on hostile input', () => {
+    expect(() => validate({ decoded: undefined, contentType: undefined })).not.toThrow();
+  });
+});
+
+describe('fetchReducedImage', () => {
+  type StubOptions = { ok?: boolean; status?: number; contentType?: string | null; bytes?: Uint8Array };
+
+  function stubResponse({ ok = true, status = 200, contentType = 'image/jpeg', bytes = new Uint8Array([1, 2, 3, 4]) }: StubOptions = {}) {
+    return {
+      ok,
+      status,
+      headers: { get: (name: string) => (name.toLowerCase() === 'content-type' ? contentType : null) },
+      arrayBuffer: async (): Promise<ArrayBuffer> => {
+        const copy = new ArrayBuffer(bytes.byteLength);
+        new Uint8Array(copy).set(bytes);
+        return copy;
+      },
+    };
+  }
+
+  function setup(response: ReturnType<typeof stubResponse>, decoded: unknown = { format: 'jpeg', width: 2400, height: 1791 }) {
+    const urls: string[] = [];
+    const seen: Buffer[] = [];
+    const fetchImpl = async (url: string) => {
+      urls.push(url);
+      return response;
+    };
+    const decodeImage = async (data: Buffer) => {
+      seen.push(data);
+      if (decoded instanceof Error) throw decoded;
+      return decoded as { format?: string; width?: number; height?: number };
+    };
+    return { urls, seen, fetchImpl, decodeImage };
+  }
+
+  async function rejectionCode(promise: Promise<unknown>): Promise<string | undefined> {
+    try {
+      await promise;
+    } catch (error) {
+      expect(error).toBeInstanceOf(ReducedImageError);
+      return (error as ReducedImageError).code;
+    }
+    return undefined;
+  }
+
+  it('returns the received bytes unchanged with the decoded size', async () => {
+    const bytes = new Uint8Array([9, 8, 7, 6, 5]);
+    const { urls, seen, fetchImpl, decodeImage } = setup(stubResponse({ bytes }));
+    const result = await fetchReducedImage({ asset: JPEG_ASSET, target: JPEG_TARGET, fetchImpl, decodeImage });
+    expect(urls).toEqual([`${JPEG_ASSET.url}?w=2400&q=90&fm=jpg`]);
+    expect(Buffer.isBuffer(result.data)).toBe(true);
+    expect([...result.data]).toEqual([...bytes]);
+    expect(result).toMatchObject({ mimeType: 'image/jpeg', width: 2400, height: 1791 });
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toBe(result.data);
+  });
+
+  it('works for a PNG', async () => {
+    const { urls, fetchImpl, decodeImage } = setup(stubResponse({ contentType: 'image/png' }), {
+      format: 'png',
+      width: 2400,
+      height: 1607,
+    });
+    const result = await fetchReducedImage({ asset: PNG_ASSET, target: PNG_TARGET, fetchImpl, decodeImage });
+    expect(urls).toEqual([`${PNG_ASSET.url}?w=2400&fm=png`]);
+    expect(result.mimeType).toBe('image/png');
+  });
+
+  it('rejects an HTTP error without decoding', async () => {
+    const { seen, fetchImpl, decodeImage } = setup(stubResponse({ ok: false, status: 404 }));
+    const code = await rejectionCode(fetchReducedImage({ asset: JPEG_ASSET, target: JPEG_TARGET, fetchImpl, decodeImage }));
+    expect(code).toBe('HTTP_ERROR');
+    expect(seen).toHaveLength(0);
+  });
+
+  it('rejects a wrong content type even if the decoder would also fail', async () => {
+    const { fetchImpl, decodeImage } = setup(stubResponse({ contentType: 'text/html' }), new Error('not an image'));
+    const code = await rejectionCode(fetchReducedImage({ asset: JPEG_ASSET, target: JPEG_TARGET, fetchImpl, decodeImage }));
+    expect(code).toBe('CONTENT_TYPE_MISMATCH');
+  });
+
+  it('rejects bytes the decoder cannot read', async () => {
+    const { fetchImpl, decodeImage } = setup(stubResponse(), new Error('truncated'));
+    const code = await rejectionCode(fetchReducedImage({ asset: JPEG_ASSET, target: JPEG_TARGET, fetchImpl, decodeImage }));
+    expect(code).toBe('UNDECODABLE');
+  });
+
+  it('rejects a wrong decoded format', async () => {
+    const { fetchImpl, decodeImage } = setup(stubResponse(), { format: 'png', width: 2400, height: 1791 });
+    const code = await rejectionCode(fetchReducedImage({ asset: JPEG_ASSET, target: JPEG_TARGET, fetchImpl, decodeImage }));
+    expect(code).toBe('FORMAT_MISMATCH');
+  });
+
+  it('rejects wrong dimensions', async () => {
+    const { fetchImpl, decodeImage } = setup(stubResponse(), { format: 'jpeg', width: 2400, height: 1500 });
+    const code = await rejectionCode(fetchReducedImage({ asset: JPEG_ASSET, target: JPEG_TARGET, fetchImpl, decodeImage }));
+    expect(code).toBe('DIMENSIONS_MISMATCH');
+  });
+
+  it('rejects an unsupported asset before any request', async () => {
+    const { urls, fetchImpl, decodeImage } = setup(stubResponse());
+    const code = await rejectionCode(
+      fetchReducedImage({ asset: { ...JPEG_ASSET, mimeType: 'image/gif' }, target: JPEG_TARGET, fetchImpl, decodeImage }),
+    );
+    expect(code).toBe('UNSUPPORTED_FORMAT');
+    expect(urls).toHaveLength(0);
+  });
+
+  it('lets a failure of fetch itself propagate unchanged', async () => {
+    const boom = new Error('network down');
+    const fetchImpl = async () => {
+      throw boom;
+    };
+    const decodeImage = async () => ({ format: 'jpeg', width: 2400, height: 1791 });
+    await expect(fetchReducedImage({ asset: JPEG_ASSET, target: JPEG_TARGET, fetchImpl, decodeImage })).rejects.toBe(boom);
+  });
+});
+
+describe('CLI source guard', () => {
+  const source = readFileSync('scripts/sanity-downsize-images.mjs', 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
+
+  it('requests the reduced image before uploading, and uploads exactly the validated bytes', () => {
+    const fetchCall = source.indexOf('fetchReducedImage(');
+    const upload = source.indexOf('assets.upload(');
+    expect(fetchCall).toBeGreaterThan(-1);
+    expect(upload).toBeGreaterThan(fetchCall);
+    expect(source).toMatch(/assets\.upload\(\s*'image',\s*reduced\.data,/);
+    expect(source).toContain('contentType: reduced.mimeType');
+  });
+
+  it.each(['resize', 'rotate', 'keepIccProfile', 'jpeg', 'png', 'webp', 'toBuffer'])(
+    'never calls the sharp method %s',
+    (method) => {
+      expect(source).not.toMatch(new RegExp(`\\.${method}\\s*\\(`));
+    },
+  );
+});
+
 describe('docs contract', () => {
   const runbook = readFileSync('docs/reduction-images-sanity.md', 'utf8');
   const readme = readFileSync('README.md', 'utf8');
@@ -556,6 +915,13 @@ describe('docs contract', () => {
     'the runbook mentions %s',
     (needle) => {
       expect(runbook).toContain(needle);
+    },
+  );
+
+  it.each(['côté serveur', 'jamais téléchargé', 'Sanity sert du sRGB', 'laissée intacte', '±1 px'])(
+    'the runbook states the CDN-side reduction contract: %s',
+    (fragment) => {
+      expect(runbook).toContain(fragment);
     },
   );
 

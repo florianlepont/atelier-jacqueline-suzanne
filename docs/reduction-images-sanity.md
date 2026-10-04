@@ -7,7 +7,8 @@ Ce guide explique comment alléger les images du projet Sanity (`gwz8iug4`, data
 - Toute image plus large que **2400 px** est remplacée par une copie de 2400 px de large (le seuil se règle avec `--threshold`, minimum 800).
 - **Le site garde le même rendu** : le rapport hauteur/largeur est conservé, donc les recadrages et les points d'intérêt (hotspot) définis dans le Studio restent valides. Seule la largeur change, et les images plus petites ne sont jamais agrandies.
 - Seuls les formats **JPEG, PNG et WebP** sont traités. Les SVG et les GIF sont ignorés.
-- C'est uniquement une économie de **poids de stockage** (plan gratuit de Sanity). Les copies réduites n'ont plus les données EXIF (position GPS, appareil photo) ; le profil colorimétrique ICC est conservé.
+- C'est uniquement une économie de **poids de stockage** (plan gratuit de Sanity).
+- La réduction est faite côté serveur par le CDN de Sanity, qui redimensionne à partir de l'original stocké : le fichier original n'est jamais téléchargé. La copie réduite n'a plus de données EXIF (ni position GPS, ni appareil photo) et pas de profil ICC, car Sanity sert du sRGB. Les copies JPEG et WebP sont produites en qualité 90, les PNG restent sans perte.
 - Le script **ne supprime rien** tant que vous ne lui demandez pas explicitement (étape 4).
 
 Le script est **en lecture seule par défaut** : sans option, il ne fait que lister ce qu'il ferait.
@@ -58,12 +59,19 @@ npm run sanity:downsize-images -- --apply --i-have-a-backup
 
 Sans la sauvegarde confirmée (`--i-have-a-backup`) **et** sans `SANITY_WRITE_TOKEN`, le script refuse de démarrer (code 2) avant tout accès à Sanity.
 
-Pour chaque image trop large, le script télécharge l'original, le réduit, téléverse la copie (avec le même nom de fichier d'origine), puis repointe toutes les références (documents publiés **et** brouillons) vers la nouvelle image, en une seule transaction par image, protégée contre les modifications faites entre-temps dans le Studio.
+Pour chaque image trop large, le script, dans cet ordre :
+
+1. demande au CDN la version réduite (largeur = largeur cible) ;
+2. vérifie ce qu'il a reçu, avant toute autre action ;
+3. téléverse cette copie telle que reçue, avec le même nom de fichier d'origine ;
+4. repointe toutes les références (documents publiés **et** brouillons) vers la nouvelle image, en une seule transaction par image, protégée contre les modifications faites entre-temps dans le Studio.
+
+Rien n'est recompressé sur la machine de la personne qui lance le script : il n'y a donc pas de seconde compression. Les vérifications faites avant tout téléversement : réponse HTTP correcte, type de fichier attendu (JPEG, PNG ou WebP, identique à l'original), image lisible en entier, largeur exactement égale à la largeur cible et hauteur à ±1 px de la hauteur cible. Le jeton d'écriture n'est envoyé qu'à l'API de Sanity, jamais au CDN.
 
 - **Rien n'est supprimé** : les anciennes images restent dans la médiathèque.
 - Les documents publiés modifiés déclenchent le **rebuild habituel du site** (webhook Sanity). C'est normal.
 - Le script peut être **relancé sans risque** : une image déjà remplacée n'est plus référencée par aucun document, elle est donc simplement ignorée, et une image en échec est retentée.
-- Si une image échoue, elle est signalée et le script continue avec les suivantes ; le code de sortie est alors 1.
+- Si une image échoue, elle est signalée et le script continue avec les suivantes ; le code de sortie est alors 1. Une image qui ne passe pas les vérifications est laissée intacte : rien n'est téléversé, modifié ou supprimé pour elle, la ligne affiche ÉCHEC avec la raison, elle est retentée à la prochaine exécution, et tant qu'elle n'est pas remplacée la suppression de l'étape 4 reste refusée.
 
 ## Étape 3 : vérifier le site et le Studio
 
@@ -137,7 +145,7 @@ La limite s'applique au **côté le plus long**, pas seulement à la largeur : u
 ### Métadonnées et couleur
 
 - La réécriture supprime les métadonnées **EXIF et IPTC, position GPS comprise** : c'est un bénéfice voulu pour la vie privée. L'orientation EXIF est appliquée avant la réduction, la photo reste donc à l'endroit.
-- Le profil colorimétrique ICC n'est **pas conservé** : l'image est convertie en sRGB, le standard du web (le script hors ligne, lui, conserve le profil). Exportez depuis Lightroom en sRGB.
+- Le profil colorimétrique ICC n'est **pas conservé** : l'image est convertie en sRGB, le standard du web (le script hors ligne se comporte de la même façon, car le CDN sert du sRGB sans profil ICC). Exportez depuis Lightroom en sRGB.
 - Une image déjà petite n'est laissée **intacte** (EXIF compris) que lorsque la signature est désactivée ; signature activée, toute image JPEG, PNG ou WebP est réécrite.
 
 ### Modifier ou désactiver
