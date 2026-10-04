@@ -1,6 +1,6 @@
 ---
-// French privacy policy page (LEGAL-03 / LEGAL-05): contact-form, Sanity, and
-// hosting-log data flows, plus the ajs_locale cookie disclosure. Hardcoded
+// French privacy policy page (LEGAL-03 / LEGAL-05): contact-form, Sanity image
+// CDN, and hosting-log data flows, plus the ajs_locale cookie disclosure. Hardcoded
 // content (Pattern 3 — no Sanity fetch), same convention as
 // src/pages/about.astro and src/pages/mentions-legales.astro: this is a
 // lightweight, plain-language notice (D-04), not a formal Article 13
@@ -20,6 +20,14 @@
 // which is why there is no accept/reject banner anywhere on the site
 // (04-RESEARCH.md "CNIL Cookie Guidance"). This is also the sole place
 // cookie information appears (no separate cookie-policy page, per D-02).
+//
+// Sanity section (quick task 261004-kbq): discloses that the photographs are
+// served by Sanity's image CDN, so the visitor's browser requests them
+// directly and Sanity's CDN receives the IP address and request data
+// (legitimate interest, Art. 6(1)(f) GDPR). The contact-form "no third
+// party" statements remain true and are scoped to the form only
+// (public/contact.php sends through OVH mail()). These texts have had no
+// legal review.
 import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
@@ -27,10 +35,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   <div class="legal-page">
     <h1>Politique de confidentialité</h1>
     <p>
-      Cette page décrit, de façon simple et directe, les seules données traitées par ce site :
-      celles du formulaire de contact, le contenu du site lui-même, les journaux techniques de
-      l'hébergeur, et un unique cookie technique. Ce n'est pas un document juridique formel — c'est
-      une explication claire de ce qui se passe réellement.
+      Cette page décrit, de façon simple et directe, les données traitées par ce site : celles du
+      formulaire de contact, l'affichage des images du site par un prestataire tiers (Sanity), les
+      journaux techniques de l'hébergeur, et un unique cookie technique. Ce n'est pas un document
+      juridique formel — c'est une explication claire de ce qui se passe réellement.
     </p>
 
     <h2>Formulaire de contact</h2>
@@ -53,7 +61,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       répondre. Un champ caché supplémentaire (« pot de miel ») sert uniquement à détecter les
       robots spammeurs — il ne collecte aucune donnée vous concernant.
     </p>
-    <p>Destinataire : Romane Lepont uniquement — aucun prestataire tiers n'intervient.</p>
+    <p>
+      Destinataire : Romane Lepont uniquement — aucun prestataire tiers n'intervient dans le
+      traitement de ce formulaire.
+    </p>
     <p>
       Durée de conservation : votre message est conservé uniquement le temps nécessaire pour vous
       répondre, puis supprimé.
@@ -64,11 +75,23 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       CNIL (Commission nationale de l'informatique et des libertés).
     </p>
 
-    <h2>Contenu du site (Sanity)</h2>
+    <h2>Images du site (Sanity)</h2>
     <p>
-      Le contenu du site (galeries, textes) provient d'un système de gestion de contenu (Sanity),
-      interrogé uniquement au moment de la construction du site. Aucune donnée vous concernant n'est
-      jamais transmise à Sanity.
+      Les textes et les photographies du site sont gérés dans un système de gestion de contenu,
+      Sanity, interrogé uniquement au moment de la construction du site, une étape qui n'implique
+      aucune donnée de visiteur.
+    </p>
+    <p>
+      En revanche, les photographies affichées sur le site sont servies par le réseau de diffusion
+      de contenu (CDN) de Sanity, une société tierce. Lorsque votre navigateur charge une image, il
+      envoie directement une requête à ce prestataire, qui reçoit ainsi votre adresse IP et les
+      données techniques de la requête. Pour savoir comment Sanity traite ces données, consultez sa
+      propre politique de confidentialité.
+    </p>
+    <p>
+      Finalité : afficher les images du site. Base légale : l'intérêt légitime d'afficher le site et
+      ses images (article 6, paragraphe 1, point f du RGPD). Ce site ne dépose aucun cookie
+      publicitaire ni traceur à cette occasion.
     </p>
 
     <h2>Journaux d'hébergement</h2>

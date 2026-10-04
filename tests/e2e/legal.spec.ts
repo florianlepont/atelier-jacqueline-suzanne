@@ -99,6 +99,10 @@ test.describe('privacy policy page content', () => {
     const main = page.locator('main');
     await expect(main).toContainText('ajs_locale');
     await expect(main).toContainText(/formulaire de contact/i);
+    await expect(main).toContainText('réseau de diffusion de contenu (CDN)');
+    await expect(main).toContainText('adresse IP');
+    await expect(main).toContainText('intérêt légitime');
+    await expect(main).not.toContainText("Aucune donnée vous concernant n'est jamais transmise à Sanity");
   });
 
   test('English privacy policy page renders at "/en/confidentialite/"', async ({ page }) => {
@@ -106,6 +110,12 @@ test.describe('privacy policy page content', () => {
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(page.locator('main h1')).toContainText(/privacy/i);
+
+    const main = page.locator('main');
+    await expect(main).toContainText('content delivery network (CDN)');
+    await expect(main).toContainText('IP address');
+    await expect(main).toContainText('legitimate interest');
+    await expect(main).not.toContainText('No data about you is ever sent to Sanity');
   });
 
   test('Privacy policy copy differs between the French and English pages', async ({ page }) => {
