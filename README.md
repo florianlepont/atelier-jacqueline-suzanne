@@ -35,6 +35,16 @@ cp .env.example .env
 # then fill in the required vars below
 ```
 
+### Getting the Sanity values (new developer)
+
+The content lives in a Sanity project you must be invited to (ask Florian or Romane). Once invited:
+
+1. `SANITY_PROJECT_ID` is `gwz8iug4` and `SANITY_DATASET` is `production` (identifiers, not secrets).
+2. Create your own **read** token: https://www.sanity.io/manage → project `gwz8iug4` → API → Tokens → Add API token, permission **Viewer**. Put it in your local `.env` as `SANITY_API_READ_TOKEN`. Never reuse the CI token and never commit it.
+3. Run `npm run dev`. If the build says a Sanity variable is missing or invalid, the first two lines above are the usual cause.
+
+The unit tests also read `SANITY_PROJECT_ID` and `SANITY_DATASET` (any valid project id works, no token needed): export them before `npm run test:unit` or two test files fail on client creation.
+
 ## Environment variables
 
 Names only — never commit real values, tokens, or keys. `.env` is gitignored; `.env.example` is the template.
@@ -56,8 +66,13 @@ Names only — never commit real values, tokens, or keys. `.env` is gitignored; 
 | `npm run dev` | Start the Astro dev server. |
 | `npm run build` | Build the static site (`astro build`). |
 | `npm run preview` | Preview the production build locally. |
+| `npm run lint` | ESLint over the whole repository. |
+| `npm run typecheck` | Type-check the site (`astro check`). The Studio has its own: `npm --prefix sanity run typecheck`. |
 | `npm run test:unit` | Run unit tests (Vitest). |
-| `npm run test:e2e` | Run e2e tests (Playwright). |
+| `npm run test:coverage` | Unit tests with the coverage thresholds CI enforces. |
+| `npm run test:e2e` | Run e2e tests (Playwright). Needs the Playwright browsers; CI runs chromium and webkit. |
+| `npm run test:artifact` | Verify the built `dist/` (needs `npm run build` first): 404 wiring, `.htaccess` and its security headers, `contact.php`, robots, sitemap. |
+| `npm run test:smoke` | `scripts/launch-smoke-check.sh`: probes a live origin (pass it as an argument, e.g. `npm run test:smoke -- https://atelierjacquelinesuzanne.fr`): page responses, 404 handling, the contact endpoint and, with `MX_BASELINE`, that the e-mail MX records did not change. It does not check security headers: use `curl -I` for that. |
 | `npm run sanity:downsize-images` | Maintenance script that shrinks oversized Sanity images. A read-only dry-run by default; follow the runbook (in French): [`docs/reduction-images-sanity.md`](docs/reduction-images-sanity.md). |
 
 ## Testing: two separate Vitest projects, deliberately coupled
@@ -99,7 +114,7 @@ If the repository secret below is missing, the run stays green but carries a war
 
 **One-time setup — repository secret `SANITY_AUTH_TOKEN`:**
 
-1. Create the token: https://www.sanity.io/manage → project `gwz8iug4` → API → Tokens → Add API token. Give it the `Deploy Studio` role if offered, otherwise `Editor`.
+1. Create the token: https://www.sanity.io/manage → project `gwz8iug4` → API → Tokens → Add API token. Give it the **`Deploy Studio` permission only**. Do not add Editor, Developer or Administrator: this token sits in GitHub and must not be able to edit content or manage access.
 2. Add it as a **repository-level** secret (not scoped to an environment): `gh secret set SANITY_AUTH_TOKEN`.
 3. This must be a distinct token from the existing read-only `SANITY_API_READ_TOKEN` — reusing that read token will fail the publish.
 
@@ -195,6 +210,18 @@ npm run dev
 ```
 
 Studio runs at http://localhost:3333. See [`sanity/README.md`](sanity/README.md) for the editor workflow (in French, for Romane).
+
+## Security
+
+- **HTTP headers.** `public/.htaccess` sends nosniff, Referrer-Policy, Permissions-Policy, a Content-Security-Policy and HSTS. The CSP allows only the site itself, images from `cdn.sanity.io`, and the inline scripts and styles Astro emits. A feature that loads from another host must add it there; `npm run test:artifact` checks the headers are present.
+- **Contact form.** `public/contact.php` has a honeypot, field validation, header-injection protection, and a rate limit (5 messages per hour per visitor, 40 per hour site-wide). The visitor address is kept only as a hash for an hour.
+- **Supply chain.** Every GitHub Action is pinned to a commit SHA, and Dependabot proposes weekly grouped updates for the site, the Studio and the Actions.
+- **Secrets.** No secret is committed; the SFTP host and login are repository variables, the passwords and tokens are GitHub secrets. Push protection is enabled on the repository.
+- **Reporting.** See [`SECURITY.md`](SECURITY.md).
+
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the branch and pull request workflow and the checks to run before opening a PR.
 
 ## Licence
 
