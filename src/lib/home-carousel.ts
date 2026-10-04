@@ -178,7 +178,10 @@ export function computeWordmarkSeamFraction(
  * stubbing `Math.random` on `globalThis` still takes effect when the caller
  * omits the second argument entirely.
  */
-export function pickRandomGalleryIndex(count: number, randomSource: () => number = Math.random): number {
+export function pickRandomGalleryIndex(
+  count: number,
+  randomSource: () => number = Math.random,
+): number {
   if (count <= 0) return 0;
   return Math.floor(randomSource() * count);
 }

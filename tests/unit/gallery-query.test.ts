@@ -1,8 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  resetBuildCacheForTests,
-  setBuildCacheEnabledForTests,
-} from '../../src/lib/build-cache';
+import { resetBuildCacheForTests, setBuildCacheEnabledForTests } from '../../src/lib/build-cache';
 
 // RED (Wave 0): src/lib/sanity.ts's getGalleries/getGallery exports do not
 // exist yet — they are built in Plan 02-01 Task 3. Importing them now yields
@@ -140,7 +137,9 @@ describe('getGalleries', () => {
     const { getGalleries } = await import('../../src/lib/sanity');
     await getGalleries();
 
-    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('"dimensions": asset->metadata.dimensions'));
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('"dimensions": asset->metadata.dimensions'),
+    );
   });
 
   // EDN-12: relatedEdition must be dereferenced in GALLERIES_QUERY because
@@ -189,7 +188,6 @@ describe('getGalleries', () => {
     const { getGalleries } = await import('../../src/lib/sanity');
     await expect(getGalleries()).resolves.toEqual(galleries);
   });
-
 });
 
 describe('getGallery', () => {
@@ -333,13 +331,13 @@ describe('getSiteSettings', () => {
 
   it('returns null safely when the singleton is unavailable', async () => {
     fetchMock.mockResolvedValueOnce(undefined);
-    const {getSiteSettings} = await import('../../src/lib/sanity');
+    const { getSiteSettings } = await import('../../src/lib/sanity');
     await expect(getSiteSettings()).resolves.toBeNull();
   });
 
   it('queries the fixed siteSettings singleton', async () => {
     fetchMock.mockResolvedValueOnce(null);
-    const {getSiteSettings} = await import('../../src/lib/sanity');
+    const { getSiteSettings } = await import('../../src/lib/sanity');
     await getSiteSettings();
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('_type == "siteSettings"'));
   });

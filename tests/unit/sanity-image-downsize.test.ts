@@ -49,7 +49,10 @@ describe('selectOversizedAssets', () => {
       { _id: 'b', mimeType: 'image/png', width: 900 },
     ];
     expect(selectOversizedAssets(assets, 1000).oversized.map((asset) => asset._id)).toEqual(['a']);
-    expect(selectOversizedAssets(assets, 800).oversized.map((asset) => asset._id)).toEqual(['a', 'b']);
+    expect(selectOversizedAssets(assets, 800).oversized.map((asset) => asset._id)).toEqual([
+      'a',
+      'b',
+    ]);
   });
 
   it('skips unsupported formats and unknown dimensions with a reason', () => {
@@ -95,20 +98,35 @@ describe('selectOversizedAssets', () => {
 
 describe('computeTargetDimensions', () => {
   it('scales a landscape image down to the max width', () => {
-    expect(computeTargetDimensions({ width: 6000, height: 4000 }, 2400)).toEqual({ width: 2400, height: 1600 });
+    expect(computeTargetDimensions({ width: 6000, height: 4000 }, 2400)).toEqual({
+      width: 2400,
+      height: 1600,
+    });
   });
 
   it('is width-driven for portrait images', () => {
-    expect(computeTargetDimensions({ width: 4000, height: 6000 }, 2400)).toEqual({ width: 2400, height: 3600 });
+    expect(computeTargetDimensions({ width: 4000, height: 6000 }, 2400)).toEqual({
+      width: 2400,
+      height: 3600,
+    });
   });
 
   it('never upscales', () => {
-    expect(computeTargetDimensions({ width: 2400, height: 1600 }, 2400)).toEqual({ width: 2400, height: 1600 });
-    expect(computeTargetDimensions({ width: 1000, height: 700 }, 2400)).toEqual({ width: 1000, height: 700 });
+    expect(computeTargetDimensions({ width: 2400, height: 1600 }, 2400)).toEqual({
+      width: 2400,
+      height: 1600,
+    });
+    expect(computeTargetDimensions({ width: 1000, height: 700 }, 2400)).toEqual({
+      width: 1000,
+      height: 700,
+    });
   });
 
   it('defaults to the default threshold', () => {
-    expect(computeTargetDimensions({ width: 4800, height: 3200 })).toEqual({ width: 2400, height: 1600 });
+    expect(computeTargetDimensions({ width: 4800, height: 3200 })).toEqual({
+      width: 2400,
+      height: 1600,
+    });
   });
 
   it('keeps the aspect ratio within 1 px and rounds the height', () => {
@@ -128,7 +146,9 @@ describe('computeTargetDimensions', () => {
     expect(() => computeTargetDimensions({ width: -5, height: 100 })).toThrow(RangeError);
     expect(() => computeTargetDimensions({ width: Number.NaN, height: 100 })).toThrow(RangeError);
     expect(() => computeTargetDimensions({ width: 100, height: Number.NaN })).toThrow(RangeError);
-    expect(() => computeTargetDimensions({ width: '100' as unknown as number, height: 100 })).toThrow(RangeError);
+    expect(() =>
+      computeTargetDimensions({ width: '100' as unknown as number, height: 100 }),
+    ).toThrow(RangeError);
     expect(() => computeTargetDimensions({ width: 4000, height: 3000 }, 0)).toThrow(RangeError);
   });
 });
@@ -200,7 +220,10 @@ describe('findReferencePaths', () => {
 
   it('returns every occurrence of the same asset', () => {
     const doc = { a: { asset: ref(OLD_ID) }, b: [{ _key: 'x', asset: ref(OLD_ID) }] };
-    expect(findReferencePaths(doc, OLD_ID).sort()).toEqual(['a.asset._ref', 'b[_key=="x"].asset._ref']);
+    expect(findReferencePaths(doc, OLD_ID).sort()).toEqual([
+      'a.asset._ref',
+      'b[_key=="x"].asset._ref',
+    ]);
   });
 
   it('ignores plain strings and references to other assets', () => {
@@ -219,7 +242,10 @@ describe('findReferencePaths', () => {
   });
 
   it('does not complain about odd keys that are not on a matching path', () => {
-    const doc = { 'weird-key': { asset: ref('image-zzzz-1x1-jpg') }, image: { asset: ref(OLD_ID) } };
+    const doc = {
+      'weird-key': { asset: ref('image-zzzz-1x1-jpg') },
+      image: { asset: ref(OLD_ID) },
+    };
     expect(findReferencePaths(doc, OLD_ID)).toEqual(['image.asset._ref']);
   });
 });
@@ -247,8 +273,18 @@ describe('planReferencePatches', () => {
   });
 
   it('plans a draft and its published twin independently, each with its own revision', () => {
-    const published = { _id: 'about', _type: 'aboutPage', _rev: 'r-pub', image: { asset: ref(OLD_ID) } };
-    const draft = { _id: 'drafts.about', _type: 'aboutPage', _rev: 'r-draft', image: { asset: ref(OLD_ID) } };
+    const published = {
+      _id: 'about',
+      _type: 'aboutPage',
+      _rev: 'r-pub',
+      image: { asset: ref(OLD_ID) },
+    };
+    const draft = {
+      _id: 'drafts.about',
+      _type: 'aboutPage',
+      _rev: 'r-draft',
+      image: { asset: ref(OLD_ID) },
+    };
     const { patches } = planReferencePatches([published, draft], OLD_ID, NEW_ID);
     expect(patches.map((patch) => [patch.documentId, patch.ifRevisionID])).toEqual([
       ['about', 'r-pub'],
@@ -264,7 +300,11 @@ describe('planReferencePatches', () => {
     const noRev = { _id: 'no-rev', image: { asset: ref(OLD_ID) } };
     const oddKey = { _id: 'odd-key', _rev: 'r', 'a b': { asset: ref(OLD_ID) } };
     const good = { _id: 'good', _rev: 'r', image: { asset: ref(OLD_ID) } };
-    const { patches, unpatchable } = planReferencePatches([noPath, noRev, oddKey, good], OLD_ID, NEW_ID);
+    const { patches, unpatchable } = planReferencePatches(
+      [noPath, noRev, oddKey, good],
+      OLD_ID,
+      NEW_ID,
+    );
     expect(patches.map((patch) => patch.documentId)).toEqual(['good']);
     expect(unpatchable).toEqual(['no-path', 'no-rev', 'odd-key']);
   });
@@ -288,7 +328,10 @@ describe('resolveCliOptions', () => {
     return result.options;
   }
 
-  function errorCodes(argv: string[], environment: Record<string, string | undefined> = env): string[] {
+  function errorCodes(
+    argv: string[],
+    environment: Record<string, string | undefined> = env,
+  ): string[] {
     const result = resolveCliOptions(argv, environment);
     if (result.ok) throw new Error('expected errors');
     return result.errors.map((error) => error.code);
@@ -335,13 +378,16 @@ describe('resolveCliOptions', () => {
 
   it('refuses --apply without a write token', () => {
     expect(errorCodes(['--apply', '--i-have-a-backup'])).toEqual(['APPLY_REQUIRES_WRITE_TOKEN']);
-    expect(errorCodes(['--apply', '--i-have-a-backup'], { ...env, SANITY_WRITE_TOKEN: '  ' })).toEqual([
-      'APPLY_REQUIRES_WRITE_TOKEN',
-    ]);
+    expect(
+      errorCodes(['--apply', '--i-have-a-backup'], { ...env, SANITY_WRITE_TOKEN: '  ' }),
+    ).toEqual(['APPLY_REQUIRES_WRITE_TOKEN']);
   });
 
   it('reports both apply problems together', () => {
-    expect(errorCodes(['--apply'])).toEqual(['APPLY_REQUIRES_BACKUP_FLAG', 'APPLY_REQUIRES_WRITE_TOKEN']);
+    expect(errorCodes(['--apply'])).toEqual([
+      'APPLY_REQUIRES_BACKUP_FLAG',
+      'APPLY_REQUIRES_WRITE_TOKEN',
+    ]);
   });
 
   it('accepts --apply with the backup flag and a token, and carries the token', () => {
@@ -351,9 +397,12 @@ describe('resolveCliOptions', () => {
 
   it('refuses --delete-originals without --apply', () => {
     expect(errorCodes(['--delete-originals'])).toEqual(['DELETE_REQUIRES_APPLY']);
-    expect(errorCodes(['--delete-originals', '--i-have-a-backup'], { ...env, SANITY_WRITE_TOKEN: TOKEN })).toEqual([
-      'DELETE_REQUIRES_APPLY',
-    ]);
+    expect(
+      errorCodes(['--delete-originals', '--i-have-a-backup'], {
+        ...env,
+        SANITY_WRITE_TOKEN: TOKEN,
+      }),
+    ).toEqual(['DELETE_REQUIRES_APPLY']);
   });
 
   it('accepts the full destructive combination only with everything present', () => {
@@ -372,7 +421,9 @@ describe('resolveCliOptions', () => {
   });
 
   it('passes the optional read token through', () => {
-    expect(options([], { ...env, SANITY_API_READ_TOKEN: 'read-token' }).readToken).toBe('read-token');
+    expect(options([], { ...env, SANITY_API_READ_TOKEN: 'read-token' }).readToken).toBe(
+      'read-token',
+    );
     expect(options([]).readToken).toBeUndefined();
   });
 
@@ -390,7 +441,12 @@ describe('resolveCliOptions', () => {
   });
 
   it('never leaks the token into errors', () => {
-    const cases: string[][] = [['--apply'], ['--delete-originals'], ['--nope'], ['--threshold=abc']];
+    const cases: string[][] = [
+      ['--apply'],
+      ['--delete-originals'],
+      ['--nope'],
+      ['--threshold=abc'],
+    ];
     for (const argv of cases) {
       const result = resolveCliOptions(argv, { SANITY_WRITE_TOKEN: TOKEN });
       expect(JSON.stringify(result)).not.toContain(TOKEN);
@@ -416,7 +472,9 @@ describe('assessDeletionSafety', () => {
   });
 
   it('treats an empty candidate list as safe', () => {
-    expect(assessDeletionSafety({ assetIds: [], remainingReferenceCounts: {}, failedAssetIds: [] }).safe).toBe(true);
+    expect(
+      assessDeletionSafety({ assetIds: [], remainingReferenceCounts: {}, failedAssetIds: [] }).safe,
+    ).toBe(true);
   });
 
   it('fails closed on a missing or non-numeric count', () => {
@@ -429,7 +487,11 @@ describe('assessDeletionSafety', () => {
     expect(result.blockers.map((blocker) => [blocker.assetId, blocker.code])).toEqual([
       [ids[1], 'UNKNOWN_REFERENCE_COUNT'],
     ]);
-    const missing = assessDeletionSafety({ assetIds: ids, remainingReferenceCounts: {}, failedAssetIds: [] });
+    const missing = assessDeletionSafety({
+      assetIds: ids,
+      remainingReferenceCounts: {},
+      failedAssetIds: [],
+    });
     expect(missing.blockers).toHaveLength(2);
     const nan = assessDeletionSafety({
       assetIds: [ids[0]],
@@ -446,7 +508,9 @@ describe('assessDeletionSafety', () => {
       failedAssetIds: [],
     });
     expect(result.safe).toBe(false);
-    expect(result.blockers).toEqual([expect.objectContaining({ assetId: ids[1], code: 'STILL_REFERENCED' })]);
+    expect(result.blockers).toEqual([
+      expect.objectContaining({ assetId: ids[1], code: 'STILL_REFERENCED' }),
+    ]);
   });
 
   it('blocks on a failed replacement even when its count is 0', () => {
@@ -456,7 +520,9 @@ describe('assessDeletionSafety', () => {
       failedAssetIds: [ids[0]],
     });
     expect(result.safe).toBe(false);
-    expect(result.blockers).toEqual([expect.objectContaining({ assetId: ids[0], code: 'REPLACEMENT_FAILED' })]);
+    expect(result.blockers).toEqual([
+      expect.objectContaining({ assetId: ids[0], code: 'REPLACEMENT_FAILED' }),
+    ]);
   });
 });
 
@@ -538,7 +604,10 @@ describe('formatDryRunReport', () => {
     const text = formatDryRunReport({
       rows: [row],
       skipped: [
-        { asset: { _id: 'a', mimeType: 'image/svg+xml', width: 5000 }, reason: 'UNSUPPORTED_FORMAT' },
+        {
+          asset: { _id: 'a', mimeType: 'image/svg+xml', width: 5000 },
+          reason: 'UNSUPPORTED_FORMAT',
+        },
         { asset: { _id: 'b', mimeType: 'image/gif', width: 5000 }, reason: 'UNSUPPORTED_FORMAT' },
         { asset: { _id: 'c', mimeType: 'image/jpeg' }, reason: 'UNKNOWN_DIMENSIONS' },
       ],
@@ -616,19 +685,27 @@ describe('resolveOutputFormat', () => {
   });
 
   it('rejects a mime type and an extension that disagree', () => {
-    expect(errorCode(() => resolveOutputFormat({ _id: 'a', mimeType: 'image/png', extension: 'jpg' }))).toBe(
-      'UNSUPPORTED_FORMAT',
-    );
+    expect(
+      errorCode(() => resolveOutputFormat({ _id: 'a', mimeType: 'image/png', extension: 'jpg' })),
+    ).toBe('UNSUPPORTED_FORMAT');
   });
 
   it('ignores an unknown extension next to a valid mime type', () => {
-    expect(resolveOutputFormat({ _id: 'a', mimeType: 'image/jpeg', extension: 'bin' }).fm).toBe('jpg');
+    expect(resolveOutputFormat({ _id: 'a', mimeType: 'image/jpeg', extension: 'bin' }).fm).toBe(
+      'jpg',
+    );
   });
 
   it('rejects unsupported formats and assets with no format information', () => {
-    expect(errorCode(() => resolveOutputFormat({ _id: 'a', mimeType: 'image/gif' }))).toBe('UNSUPPORTED_FORMAT');
-    expect(errorCode(() => resolveOutputFormat({ _id: 'a', mimeType: 'image/svg+xml' }))).toBe('UNSUPPORTED_FORMAT');
-    expect(errorCode(() => resolveOutputFormat({ _id: 'a', extension: 'tiff' }))).toBe('UNSUPPORTED_FORMAT');
+    expect(errorCode(() => resolveOutputFormat({ _id: 'a', mimeType: 'image/gif' }))).toBe(
+      'UNSUPPORTED_FORMAT',
+    );
+    expect(errorCode(() => resolveOutputFormat({ _id: 'a', mimeType: 'image/svg+xml' }))).toBe(
+      'UNSUPPORTED_FORMAT',
+    );
+    expect(errorCode(() => resolveOutputFormat({ _id: 'a', extension: 'tiff' }))).toBe(
+      'UNSUPPORTED_FORMAT',
+    );
     expect(errorCode(() => resolveOutputFormat({ _id: 'a' }))).toBe('UNSUPPORTED_FORMAT');
   });
 });
@@ -643,7 +720,12 @@ describe('buildReducedImageUrl', () => {
   });
 
   it('asks for a WebP at quality 90', () => {
-    const asset = { ...JPEG_ASSET, mimeType: 'image/webp', extension: 'webp', url: JPEG_ASSET.url.replace('.jpg', '.webp') };
+    const asset = {
+      ...JPEG_ASSET,
+      mimeType: 'image/webp',
+      extension: 'webp',
+      url: JPEG_ASSET.url.replace('.jpg', '.webp'),
+    };
     expect(buildReducedImageUrl(asset, 2400)).toBe(`${asset.url}?w=2400&fm=webp&q=90`);
   });
 
@@ -657,26 +739,37 @@ describe('buildReducedImageUrl', () => {
   });
 
   it('rejects conflicting and unsupported formats', () => {
-    expect(errorCode(() => buildReducedImageUrl({ ...JPEG_ASSET, extension: 'png' }, 2400))).toBe('UNSUPPORTED_FORMAT');
-    expect(errorCode(() => buildReducedImageUrl({ ...JPEG_ASSET, mimeType: 'image/gif' }, 2400))).toBe(
+    expect(errorCode(() => buildReducedImageUrl({ ...JPEG_ASSET, extension: 'png' }, 2400))).toBe(
       'UNSUPPORTED_FORMAT',
     );
-    expect(errorCode(() => buildReducedImageUrl({ ...JPEG_ASSET, mimeType: 'image/svg+xml' }, 2400))).toBe(
-      'UNSUPPORTED_FORMAT',
-    );
+    expect(
+      errorCode(() => buildReducedImageUrl({ ...JPEG_ASSET, mimeType: 'image/gif' }, 2400)),
+    ).toBe('UNSUPPORTED_FORMAT');
+    expect(
+      errorCode(() => buildReducedImageUrl({ ...JPEG_ASSET, mimeType: 'image/svg+xml' }, 2400)),
+    ).toBe('UNSUPPORTED_FORMAT');
     const { mimeType: _mimeType, ...noMime } = JPEG_ASSET;
-    expect(errorCode(() => buildReducedImageUrl({ ...noMime, extension: 'tiff' }, 2400))).toBe('UNSUPPORTED_FORMAT');
+    expect(errorCode(() => buildReducedImageUrl({ ...noMime, extension: 'tiff' }, 2400))).toBe(
+      'UNSUPPORTED_FORMAT',
+    );
   });
 
   it('rejects a missing, empty or unparsable url', () => {
     const { url: _url, ...noUrl } = JPEG_ASSET;
     expect(errorCode(() => buildReducedImageUrl(noUrl, 2400))).toBe('MISSING_URL');
-    expect(errorCode(() => buildReducedImageUrl({ ...JPEG_ASSET, url: '' }, 2400))).toBe('MISSING_URL');
-    expect(errorCode(() => buildReducedImageUrl({ ...JPEG_ASSET, url: 'not a url' }, 2400))).toBe('MISSING_URL');
+    expect(errorCode(() => buildReducedImageUrl({ ...JPEG_ASSET, url: '' }, 2400))).toBe(
+      'MISSING_URL',
+    );
+    expect(errorCode(() => buildReducedImageUrl({ ...JPEG_ASSET, url: 'not a url' }, 2400))).toBe(
+      'MISSING_URL',
+    );
   });
 
   it('drops any query string or fragment already on the asset url', () => {
-    const url = buildReducedImageUrl({ ...JPEG_ASSET, url: `${JPEG_ASSET.url}?q=100&dl=x#frag` }, 2400);
+    const url = buildReducedImageUrl(
+      { ...JPEG_ASSET, url: `${JPEG_ASSET.url}?q=100&dl=x#frag` },
+      2400,
+    );
     expect(url).toBe(`${JPEG_ASSET.url}?w=2400&q=90&fm=jpg`);
   });
 
@@ -688,9 +781,12 @@ describe('buildReducedImageUrl', () => {
     }
   });
 
-  it.each([0, -1, 2400.5, Number.NaN, Number.POSITIVE_INFINITY, '2400'])('rejects the target width %j', (width) => {
-    expect(() => buildReducedImageUrl(JPEG_ASSET, width as number)).toThrow(RangeError);
-  });
+  it.each([0, -1, 2400.5, Number.NaN, Number.POSITIVE_INFINITY, '2400'])(
+    'rejects the target width %j',
+    (width) => {
+      expect(() => buildReducedImageUrl(JPEG_ASSET, width as number)).toThrow(RangeError);
+    },
+  );
 });
 
 describe('validateReducedImage', () => {
@@ -728,8 +824,12 @@ describe('validateReducedImage', () => {
 
   it('rejects an undecodable image', () => {
     expect(failureCode({ decoded: null })).toBe('UNDECODABLE');
-    expect(failureCode({ decoded: { format: 'jpeg', width: 0, height: 1791 } })).toBe('UNDECODABLE');
-    expect(failureCode({ decoded: { format: 'jpeg', width: 2400, height: Number.NaN } })).toBe('UNDECODABLE');
+    expect(failureCode({ decoded: { format: 'jpeg', width: 0, height: 1791 } })).toBe(
+      'UNDECODABLE',
+    );
+    expect(failureCode({ decoded: { format: 'jpeg', width: 2400, height: Number.NaN } })).toBe(
+      'UNDECODABLE',
+    );
     expect(failureCode({ decoded: { format: 'jpeg', width: 2400 } })).toBe('UNDECODABLE');
   });
 
@@ -772,13 +872,25 @@ describe('validateReducedImage', () => {
 });
 
 describe('fetchReducedImage', () => {
-  type StubOptions = { ok?: boolean; status?: number; contentType?: string | null; bytes?: Uint8Array };
+  type StubOptions = {
+    ok?: boolean;
+    status?: number;
+    contentType?: string | null;
+    bytes?: Uint8Array;
+  };
 
-  function stubResponse({ ok = true, status = 200, contentType = 'image/jpeg', bytes = new Uint8Array([1, 2, 3, 4]) }: StubOptions = {}) {
+  function stubResponse({
+    ok = true,
+    status = 200,
+    contentType = 'image/jpeg',
+    bytes = new Uint8Array([1, 2, 3, 4]),
+  }: StubOptions = {}) {
     return {
       ok,
       status,
-      headers: { get: (name: string) => (name.toLowerCase() === 'content-type' ? contentType : null) },
+      headers: {
+        get: (name: string) => (name.toLowerCase() === 'content-type' ? contentType : null),
+      },
       arrayBuffer: async (): Promise<ArrayBuffer> => {
         const copy = new ArrayBuffer(bytes.byteLength);
         new Uint8Array(copy).set(bytes);
@@ -787,7 +899,10 @@ describe('fetchReducedImage', () => {
     };
   }
 
-  function setup(response: ReturnType<typeof stubResponse>, decoded: unknown = { format: 'jpeg', width: 2400, height: 1791 }) {
+  function setup(
+    response: ReturnType<typeof stubResponse>,
+    decoded: unknown = { format: 'jpeg', width: 2400, height: 1791 },
+  ) {
     const urls: string[] = [];
     const seen: Buffer[] = [];
     const fetchImpl = async (url: string) => {
@@ -815,7 +930,12 @@ describe('fetchReducedImage', () => {
   it('returns the received bytes unchanged with the decoded size', async () => {
     const bytes = new Uint8Array([9, 8, 7, 6, 5]);
     const { urls, seen, fetchImpl, decodeImage } = setup(stubResponse({ bytes }));
-    const result = await fetchReducedImage({ asset: JPEG_ASSET, target: JPEG_TARGET, fetchImpl, decodeImage });
+    const result = await fetchReducedImage({
+      asset: JPEG_ASSET,
+      target: JPEG_TARGET,
+      fetchImpl,
+      decodeImage,
+    });
     expect(urls).toEqual([`${JPEG_ASSET.url}?w=2400&q=90&fm=jpg`]);
     expect(Buffer.isBuffer(result.data)).toBe(true);
     expect([...result.data]).toEqual([...bytes]);
@@ -830,46 +950,77 @@ describe('fetchReducedImage', () => {
       width: 2400,
       height: 1607,
     });
-    const result = await fetchReducedImage({ asset: PNG_ASSET, target: PNG_TARGET, fetchImpl, decodeImage });
+    const result = await fetchReducedImage({
+      asset: PNG_ASSET,
+      target: PNG_TARGET,
+      fetchImpl,
+      decodeImage,
+    });
     expect(urls).toEqual([`${PNG_ASSET.url}?w=2400&fm=png`]);
     expect(result.mimeType).toBe('image/png');
   });
 
   it('rejects an HTTP error without decoding', async () => {
     const { seen, fetchImpl, decodeImage } = setup(stubResponse({ ok: false, status: 404 }));
-    const code = await rejectionCode(fetchReducedImage({ asset: JPEG_ASSET, target: JPEG_TARGET, fetchImpl, decodeImage }));
+    const code = await rejectionCode(
+      fetchReducedImage({ asset: JPEG_ASSET, target: JPEG_TARGET, fetchImpl, decodeImage }),
+    );
     expect(code).toBe('HTTP_ERROR');
     expect(seen).toHaveLength(0);
   });
 
   it('rejects a wrong content type even if the decoder would also fail', async () => {
-    const { fetchImpl, decodeImage } = setup(stubResponse({ contentType: 'text/html' }), new Error('not an image'));
-    const code = await rejectionCode(fetchReducedImage({ asset: JPEG_ASSET, target: JPEG_TARGET, fetchImpl, decodeImage }));
+    const { fetchImpl, decodeImage } = setup(
+      stubResponse({ contentType: 'text/html' }),
+      new Error('not an image'),
+    );
+    const code = await rejectionCode(
+      fetchReducedImage({ asset: JPEG_ASSET, target: JPEG_TARGET, fetchImpl, decodeImage }),
+    );
     expect(code).toBe('CONTENT_TYPE_MISMATCH');
   });
 
   it('rejects bytes the decoder cannot read', async () => {
     const { fetchImpl, decodeImage } = setup(stubResponse(), new Error('truncated'));
-    const code = await rejectionCode(fetchReducedImage({ asset: JPEG_ASSET, target: JPEG_TARGET, fetchImpl, decodeImage }));
+    const code = await rejectionCode(
+      fetchReducedImage({ asset: JPEG_ASSET, target: JPEG_TARGET, fetchImpl, decodeImage }),
+    );
     expect(code).toBe('UNDECODABLE');
   });
 
   it('rejects a wrong decoded format', async () => {
-    const { fetchImpl, decodeImage } = setup(stubResponse(), { format: 'png', width: 2400, height: 1791 });
-    const code = await rejectionCode(fetchReducedImage({ asset: JPEG_ASSET, target: JPEG_TARGET, fetchImpl, decodeImage }));
+    const { fetchImpl, decodeImage } = setup(stubResponse(), {
+      format: 'png',
+      width: 2400,
+      height: 1791,
+    });
+    const code = await rejectionCode(
+      fetchReducedImage({ asset: JPEG_ASSET, target: JPEG_TARGET, fetchImpl, decodeImage }),
+    );
     expect(code).toBe('FORMAT_MISMATCH');
   });
 
   it('rejects wrong dimensions', async () => {
-    const { fetchImpl, decodeImage } = setup(stubResponse(), { format: 'jpeg', width: 2400, height: 1500 });
-    const code = await rejectionCode(fetchReducedImage({ asset: JPEG_ASSET, target: JPEG_TARGET, fetchImpl, decodeImage }));
+    const { fetchImpl, decodeImage } = setup(stubResponse(), {
+      format: 'jpeg',
+      width: 2400,
+      height: 1500,
+    });
+    const code = await rejectionCode(
+      fetchReducedImage({ asset: JPEG_ASSET, target: JPEG_TARGET, fetchImpl, decodeImage }),
+    );
     expect(code).toBe('DIMENSIONS_MISMATCH');
   });
 
   it('rejects an unsupported asset before any request', async () => {
     const { urls, fetchImpl, decodeImage } = setup(stubResponse());
     const code = await rejectionCode(
-      fetchReducedImage({ asset: { ...JPEG_ASSET, mimeType: 'image/gif' }, target: JPEG_TARGET, fetchImpl, decodeImage }),
+      fetchReducedImage({
+        asset: { ...JPEG_ASSET, mimeType: 'image/gif' },
+        target: JPEG_TARGET,
+        fetchImpl,
+        decodeImage,
+      }),
     );
     expect(code).toBe('UNSUPPORTED_FORMAT');
     expect(urls).toHaveLength(0);
@@ -881,7 +1032,9 @@ describe('fetchReducedImage', () => {
       throw boom;
     };
     const decodeImage = async () => ({ format: 'jpeg', width: 2400, height: 1791 });
-    await expect(fetchReducedImage({ asset: JPEG_ASSET, target: JPEG_TARGET, fetchImpl, decodeImage })).rejects.toBe(boom);
+    await expect(
+      fetchReducedImage({ asset: JPEG_ASSET, target: JPEG_TARGET, fetchImpl, decodeImage }),
+    ).rejects.toBe(boom);
   });
 });
 
@@ -911,12 +1064,16 @@ describe('docs contract', () => {
   const runbook = readFileSync('docs/reduction-images-sanity.md', 'utf8');
   const readme = readFileSync('README.md', 'utf8');
 
-  it.each(['sanity dataset export', '--i-have-a-backup', '--apply', '--delete-originals', 'Lightroom', 'CDN'])(
-    'the runbook mentions %s',
-    (needle) => {
-      expect(runbook).toContain(needle);
-    },
-  );
+  it.each([
+    'sanity dataset export',
+    '--i-have-a-backup',
+    '--apply',
+    '--delete-originals',
+    'Lightroom',
+    'CDN',
+  ])('the runbook mentions %s', (needle) => {
+    expect(runbook).toContain(needle);
+  });
 
   it.each(['côté serveur', 'jamais téléchargé', 'Sanity sert du sRGB', 'laissée intacte', '±1 px'])(
     'the runbook states the CDN-side reduction contract: %s',

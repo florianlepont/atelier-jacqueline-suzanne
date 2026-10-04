@@ -50,9 +50,13 @@ test.describe('detail hero reveal title never overflows its panel or the viewpor
         const { titleRight, revealRight, scrollWidth, clientWidth, viewportWidth } = result!;
 
         // 1px rounding tolerance, as specified by the plan.
-        expect(titleRight, `title overflowed its own panel on ${href}`).toBeLessThanOrEqual(revealRight + 1);
+        expect(titleRight, `title overflowed its own panel on ${href}`).toBeLessThanOrEqual(
+          revealRight + 1,
+        );
         expect(titleRight, `title overflowed the viewport on ${href}`).toBeLessThan(viewportWidth);
-        expect(scrollWidth, `title has horizontal overflow on ${href}`).toBeLessThanOrEqual(clientWidth);
+        expect(scrollWidth, `title has horizontal overflow on ${href}`).toBeLessThanOrEqual(
+          clientWidth,
+        );
       }
     });
   }
@@ -95,6 +99,9 @@ test.describe('detail hero reveal title never overflows its panel or the viewpor
     // multiple lines rather than merely fitting on one, confirming the
     // wrap mechanism (not a no-op container resize) is what prevented the
     // overflow above.
-    expect(result.height, 'expected the unbreakable word to wrap onto multiple lines').toBeGreaterThan(100);
+    expect(
+      result.height,
+      'expected the unbreakable word to wrap onto multiple lines',
+    ).toBeGreaterThan(100);
   });
 });

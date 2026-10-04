@@ -40,7 +40,9 @@ function extractDesktopDimOpacity(componentSource: string): number {
   ).toBeGreaterThan(-1);
   const desktopPortion = componentSource.slice(0, mediaMarkerIndex);
 
-  const ruleMatch = desktopPortion.match(/\.editions-index:hover\s+\.editions-index__title\s*{([\s\S]*?)}/);
+  const ruleMatch = desktopPortion.match(
+    /\.editions-index:hover\s+\.editions-index__title\s*{([\s\S]*?)}/,
+  );
   expect(
     ruleMatch,
     'expected to find a `.editions-index:hover .editions-index__title { ... }` rule before the mobile breakpoint',
@@ -95,11 +97,15 @@ function toHex(rootBlock: string, value: string): string {
   if (/^#[0-9A-Fa-f]{6}$/.test(value)) return value.toUpperCase();
   const varMatch = value.match(/^var\(--([\w-]+)\)$/);
   if (!varMatch) {
-    throw new Error(`toHex: unrecognised value "${value}" -- expected a hex literal or var(--token)`);
+    throw new Error(
+      `toHex: unrecognised value "${value}" -- expected a hex literal or var(--token)`,
+    );
   }
   const resolved = resolveToken(rootBlock, varMatch[1]);
   if (!/^#[0-9A-Fa-f]{6}$/.test(resolved)) {
-    throw new Error(`toHex: --${varMatch[1]} resolved to "${resolved}", which is not a 6-digit hex color`);
+    throw new Error(
+      `toHex: --${varMatch[1]} resolved to "${resolved}", which is not a 6-digit hex color`,
+    );
   }
   return resolved.toUpperCase();
 }

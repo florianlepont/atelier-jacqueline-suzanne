@@ -64,7 +64,11 @@ export const exhibition = defineType({
     select: {title: 'title', startDate: 'startDate', venue: 'venue', city: 'city', media: 'image'},
     prepare({title, startDate, venue, city, media}) {
       const place = [venue, city].filter(Boolean).join(' — ')
-      return {title: title || 'Événement sans nom', subtitle: [startDate, place].filter(Boolean).join(' · '), media}
+      return {
+        title: title || 'Événement sans nom',
+        subtitle: [startDate, place].filter(Boolean).join(' · '),
+        media,
+      }
     },
   },
 })

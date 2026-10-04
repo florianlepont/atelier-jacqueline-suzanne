@@ -138,7 +138,7 @@ describe('resolveAutomaticAccent (260825-hl7 bug 2: single shared automatic pale
     expect(resolveAutomaticAccent(Number.POSITIVE_INFINITY)).toEqual(resolveAutomaticAccent(0));
   });
 
-  it('every var(--token) reference in the palette names a custom property actually declared in BaseLayout.astro\'s :root block', () => {
+  it("every var(--token) reference in the palette names a custom property actually declared in BaseLayout.astro's :root block", () => {
     const layoutSource = readFileSync('src/layouts/BaseLayout.astro', 'utf8');
     const rootMatch = layoutSource.match(/:root\s*{([\s\S]*?)}/);
     expect(rootMatch).not.toBeNull();
@@ -154,7 +154,7 @@ describe('resolveAutomaticAccent (260825-hl7 bug 2: single shared automatic pale
   });
 });
 
-describe('COLOR_INK stays in lockstep with BaseLayout.astro\'s --gray-900 (WR-01)', () => {
+describe("COLOR_INK stays in lockstep with BaseLayout.astro's --gray-900 (WR-01)", () => {
   // COLOR_INK exists so plain TS/JS code needing this exact ink value (e.g.
   // getHeroTextColor's fallback above) doesn't re-type the hex literal --
   // but the single source of truth for the color itself is still the CSS

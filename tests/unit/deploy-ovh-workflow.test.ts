@@ -65,7 +65,9 @@ describe('.github/workflows/ci.yml', () => {
     expect(ciWorkflow).toContain('SANITY_AUTH_TOKEN: ${{ secrets.SANITY_AUTH_TOKEN }}');
 
     const publishIndex = ciWorkflow.indexOf('npm --prefix sanity run deploy');
-    const sharedGatesIndex = ciWorkflow.indexOf('uses: ./.github/actions/lint-typecheck-and-install');
+    const sharedGatesIndex = ciWorkflow.indexOf(
+      'uses: ./.github/actions/lint-typecheck-and-install',
+    );
     const sharedE2eIndex = ciWorkflow.indexOf('uses: ./.github/actions/e2e-and-unit-tests');
     expect(sharedGatesIndex).toBeGreaterThan(-1);
     expect(sharedE2eIndex).toBeGreaterThan(sharedGatesIndex);
@@ -208,7 +210,8 @@ describe('.github/workflows/deploy-ovh.yml', () => {
   });
 
   it('sends the dotfile .htaccess via its own explicit-path SFTP step', () => {
-    const htaccessLocalPaths = ovhWorkflow.match(/local_path:\s*['"]?\.\/dist\/\.htaccess['"]?/g) ?? [];
+    const htaccessLocalPaths =
+      ovhWorkflow.match(/local_path:\s*['"]?\.\/dist\/\.htaccess['"]?/g) ?? [];
     expect(htaccessLocalPaths.length).toBe(1);
   });
 

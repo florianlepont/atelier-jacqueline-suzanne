@@ -5,10 +5,7 @@ import {describe, expect, it, vi} from 'vitest'
 import {openSitePageInspector} from '../OpenSitePage'
 import {SeoPreviewInput} from '../SeoPreviewInput'
 import {StudioLayout} from '../StudioLayout'
-import {
-  resolveActions,
-  resolveBadges,
-} from '../workflow'
+import {resolveActions, resolveBadges} from '../workflow'
 import {sanityTestState} from '../test/mocks'
 
 // ---------------------------------------------------------------------------
@@ -25,7 +22,9 @@ describe('OpenSitePage', () => {
   it('links to the public route for a page type that has one, and closes on click', () => {
     sanityTestState.editState = {draft: null, published: {_type: 'homePage'}}
     const onClose = vi.fn()
-    render(createElement(OpenSitePanel, {documentId: 'homePage', documentType: 'homePage', onClose}))
+    render(
+      createElement(OpenSitePanel, {documentId: 'homePage', documentType: 'homePage', onClose}),
+    )
 
     const link = screen.getByRole('link', {name: /Ouvrir la page du site/}) as HTMLAnchorElement
     expect(link.getAttribute('href')).toBe('https://atelierjacquelinesuzanne.fr/')
@@ -39,7 +38,11 @@ describe('OpenSitePage', () => {
       published: null,
     }
     render(
-      createElement(OpenSitePanel, {documentId: 'gallery-1', documentType: 'gallery', onClose: () => undefined}),
+      createElement(OpenSitePanel, {
+        documentId: 'gallery-1',
+        documentType: 'gallery',
+        onClose: () => undefined,
+      }),
     )
 
     const link = screen.getByRole('link', {name: /Ouvrir la page du site/}) as HTMLAnchorElement
@@ -51,7 +54,11 @@ describe('OpenSitePage', () => {
   it('falls back to explanatory text when there is no public route yet', () => {
     sanityTestState.editState = {draft: {_type: 'gallery'}, published: null}
     render(
-      createElement(OpenSitePanel, {documentId: 'gallery-1', documentType: 'gallery', onClose: () => undefined}),
+      createElement(OpenSitePanel, {
+        documentId: 'gallery-1',
+        documentType: 'gallery',
+        onClose: () => undefined,
+      }),
     )
     expect(screen.getByText(/Générez d’abord l’adresse de la page/)).toBeTruthy()
     expect(screen.queryByRole('link', {name: /Ouvrir la page du site/})).toBeNull()

@@ -46,7 +46,11 @@ function localePattern(segment: ContentSegment, locale: ContentLocale): RegExp {
     : new RegExp(`(?<!/en)/${segment}/[^/"]+/?$`);
 }
 
-async function extractHrefs(page: Page, segment: ContentSegment, locale: ContentLocale): Promise<string[]> {
+async function extractHrefs(
+  page: Page,
+  segment: ContentSegment,
+  locale: ContentLocale,
+): Promise<string[]> {
   const response = await page.request.get(listingPath(segment, locale));
   const html = await response.text();
   const pattern = localePattern(segment, locale);

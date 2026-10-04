@@ -102,7 +102,9 @@ test.describe('privacy policy page content', () => {
     await expect(main).toContainText('réseau de diffusion de contenu (CDN)');
     await expect(main).toContainText('adresse IP');
     await expect(main).toContainText('intérêt légitime');
-    await expect(main).not.toContainText("Aucune donnée vous concernant n'est jamais transmise à Sanity");
+    await expect(main).not.toContainText(
+      "Aucune donnée vous concernant n'est jamais transmise à Sanity",
+    );
   });
 
   test('English privacy policy page renders at "/en/confidentialite/"', async ({ page }) => {
@@ -130,7 +132,10 @@ test.describe('privacy policy page content', () => {
 });
 
 test.describe('cookie disclosure', () => {
-  test(`loading the mentions légales page sets no ${COOKIE_NAME} cookie`, async ({ page, context }) => {
+  test(`loading the mentions légales page sets no ${COOKIE_NAME} cookie`, async ({
+    page,
+    context,
+  }) => {
     await page.goto('/mentions-legales/');
 
     const cookies = await context.cookies();
@@ -139,7 +144,10 @@ test.describe('cookie disclosure', () => {
     expect(localeCookie).toBeUndefined();
   });
 
-  test(`loading the privacy policy page sets no ${COOKIE_NAME} cookie`, async ({ page, context }) => {
+  test(`loading the privacy policy page sets no ${COOKIE_NAME} cookie`, async ({
+    page,
+    context,
+  }) => {
     await page.goto('/confidentialite/');
 
     const cookies = await context.cookies();

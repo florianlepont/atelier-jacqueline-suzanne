@@ -1,21 +1,26 @@
-import type {Gallery, HomePage, SiteSettings} from './sanity'
+import type { Gallery, HomePage, SiteSettings } from './sanity';
 import {
   blurPlaceholderUrl,
   fullSizeUrl,
   responsiveImageSrcSet,
   responsiveThumbnailSrcSet,
   thumbnailUrl,
-} from './image'
-import type {Locale} from './site-config'
-import {getHeroTextColor, normalizeHeroColor, resolveHomepageIntro, resolveSiteCopy} from './site-config'
-import {pickHeroIndex} from './image-orientation'
+} from './image';
+import type { Locale } from './site-config';
+import {
+  getHeroTextColor,
+  normalizeHeroColor,
+  resolveHomepageIntro,
+  resolveSiteCopy,
+} from './site-config';
+import { pickHeroIndex } from './image-orientation';
 
 const JOB_TITLE: Record<Locale, string> = {
   fr: 'Photographe',
   en: 'Photographer',
-}
+};
 
-const DEFAULT_SITE_TITLE = 'Atelier Jacqueline Suzanne'
+const DEFAULT_SITE_TITLE = 'Atelier Jacqueline Suzanne';
 
 // 260825-hl7 (bug 2): extracted so both buildHomePageModel (below) and
 // getHomeGalleryIndex share the exact same predicate — previously this
@@ -23,7 +28,7 @@ const DEFAULT_SITE_TITLE = 'Atelier Jacqueline Suzanne'
 // with no way for a caller outside this module to ask "would this gallery
 // even appear on the homepage?" without duplicating the condition.
 export function isHomeVisibleGallery(gallery: Gallery): boolean {
-  return gallery.showOnHomePage !== false && gallery.images.length > 0
+  return gallery.showOnHomePage !== false && gallery.images.length > 0;
 }
 
 /**
@@ -37,43 +42,43 @@ export function isHomeVisibleGallery(gallery: Gallery): boolean {
  * callers must not treat -1 as a valid array index.
  */
 export function getHomeGalleryIndex(galleries: Gallery[], slug: string): number {
-  const visible = galleries.filter(isHomeVisibleGallery)
-  return visible.findIndex((gallery) => gallery.slug === slug)
+  const visible = galleries.filter(isHomeVisibleGallery);
+  return visible.findIndex((gallery) => gallery.slug === slug);
 }
 
 export interface HomePageGalleryModel {
-  slug: string
-  title: string
-  heroSrc: string
-  heroSrcSet: string
-  gridSrc: string
-  gridSrcSet: string
-  blurSrc: string
-  alt: string
-  statement: string
-  heroColor?: string
-  heroTextColor?: '#1A1A1A' | '#FFFFFF'
+  slug: string;
+  title: string;
+  heroSrc: string;
+  heroSrcSet: string;
+  gridSrc: string;
+  gridSrcSet: string;
+  blurSrc: string;
+  alt: string;
+  statement: string;
+  heroColor?: string;
+  heroTextColor?: '#1A1A1A' | '#FFFFFF';
 }
 
 export interface HomePageStructuredData {
-  '@context': 'https://schema.org'
-  '@type': 'CollectionPage'
-  name: string
-  description: string | undefined
-  url: string
-  inLanguage: Locale
-  about: {'@type': 'Person'; name: string; jobTitle: string}
+  '@context': 'https://schema.org';
+  '@type': 'CollectionPage';
+  name: string;
+  description: string | undefined;
+  url: string;
+  inLanguage: Locale;
+  about: { '@type': 'Person'; name: string; jobTitle: string };
 }
 
 export interface HomePageModel {
-  siteCopy: ReturnType<typeof resolveSiteCopy> & {homepageIntro: string}
-  siteTitle: string
-  seoTitle: string
-  seoDescription: string | undefined
-  seoImage: string | undefined
-  noIndex: boolean | undefined
-  structuredData: HomePageStructuredData
-  galleries: HomePageGalleryModel[]
+  siteCopy: ReturnType<typeof resolveSiteCopy> & { homepageIntro: string };
+  siteTitle: string;
+  seoTitle: string;
+  seoDescription: string | undefined;
+  seoImage: string | undefined;
+  noIndex: boolean | undefined;
+  structuredData: HomePageStructuredData;
+  galleries: HomePageGalleryModel[];
 }
 
 /**
@@ -91,21 +96,24 @@ export function buildHomePageModel({
   galleries,
   pageUrl,
 }: {
-  locale: Locale
-  homePage: HomePage | null
-  siteSettings: SiteSettings | null
-  galleries: Gallery[]
-  pageUrl: string
+  locale: Locale;
+  homePage: HomePage | null;
+  siteSettings: SiteSettings | null;
+  galleries: Gallery[];
+  pageUrl: string;
 }): HomePageModel {
   const siteCopy = {
     ...resolveSiteCopy(siteSettings, locale),
     homepageIntro: resolveHomepageIntro(homePage, locale),
-  }
+  };
 
   const seoTitle =
-    homePage?.seo?.title?.[locale] ?? siteSettings?.defaultSeo?.title?.[locale] ?? DEFAULT_SITE_TITLE
-  const seoDescription = homePage?.seo?.description?.[locale] ?? siteSettings?.defaultSeo?.description?.[locale]
-  const seoImage = homePage?.seo?.image ? fullSizeUrl(homePage.seo.image, 1200) : undefined
+    homePage?.seo?.title?.[locale] ??
+    siteSettings?.defaultSeo?.title?.[locale] ??
+    DEFAULT_SITE_TITLE;
+  const seoDescription =
+    homePage?.seo?.description?.[locale] ?? siteSettings?.defaultSeo?.description?.[locale];
+  const seoImage = homePage?.seo?.image ? fullSizeUrl(homePage.seo.image, 1200) : undefined;
 
   const structuredData: HomePageStructuredData = {
     '@context': 'https://schema.org',
@@ -114,14 +122,14 @@ export function buildHomePageModel({
     description: seoDescription,
     url: pageUrl,
     inLanguage: locale,
-    about: {'@type': 'Person', name: 'Romane Lepont', jobTitle: JOB_TITLE[locale]},
-  }
+    about: { '@type': 'Person', name: 'Romane Lepont', jobTitle: JOB_TITLE[locale] },
+  };
 
   const galleryModels: HomePageGalleryModel[] = galleries
     .filter(isHomeVisibleGallery)
     .map((gallery) => {
-      const cover = gallery.images[pickHeroIndex(gallery.images)]
-      const heroColor = normalizeHeroColor(gallery.heroColor)
+      const cover = gallery.images[pickHeroIndex(gallery.images)];
+      const heroColor = normalizeHeroColor(gallery.heroColor);
       return {
         slug: gallery.slug,
         title: gallery.title,
@@ -137,8 +145,8 @@ export function buildHomePageModel({
         statement: gallery.statement?.[locale] ?? '',
         heroColor,
         heroTextColor: heroColor ? getHeroTextColor(heroColor) : undefined,
-      }
-    })
+      };
+    });
 
   return {
     siteCopy,
@@ -149,5 +157,5 @@ export function buildHomePageModel({
     noIndex: homePage?.seo?.noIndex,
     structuredData,
     galleries: galleryModels,
-  }
+  };
 }

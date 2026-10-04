@@ -1,7 +1,9 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('Keyboard access and language switcher', () => {
-  test('the first Tab stop is the skip link, and activating it moves focus to main', async ({ page }) => {
+  test('the first Tab stop is the skip link, and activating it moves focus to main', async ({
+    page,
+  }) => {
     await page.goto('/about/');
     await page.keyboard.press('Tab');
     const skip = page.locator('.skip-link');

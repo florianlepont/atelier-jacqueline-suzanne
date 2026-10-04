@@ -42,7 +42,7 @@ export default defineConfig({
     {
       name: 'webkit-mobile',
       testMatch: '**/*.smoke.spec.ts',
-      use: {...devices['iPhone 15 Pro']},
+      use: { ...devices['iPhone 15 Pro'] },
     },
   ],
 });

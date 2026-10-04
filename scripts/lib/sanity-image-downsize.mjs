@@ -83,7 +83,8 @@ export function selectOversizedAssets(assets, threshold = DEFAULT_THRESHOLD) {
     oversized.push(asset);
   }
   /** @type {(a: ImageAsset, b: ImageAsset) => number} */
-  const byWidthThenId = (a, b) => (b.width ?? 0) - (a.width ?? 0) || (a._id < b._id ? -1 : a._id > b._id ? 1 : 0);
+  const byWidthThenId = (a, b) =>
+    (b.width ?? 0) - (a.width ?? 0) || (a._id < b._id ? -1 : a._id > b._id ? 1 : 0);
   oversized.sort(byWidthThenId);
   skipped.sort((a, b) => (a.asset._id < b.asset._id ? -1 : a.asset._id > b.asset._id ? 1 : 0));
   return { oversized, skipped };
@@ -98,8 +99,14 @@ export function selectOversizedAssets(assets, threshold = DEFAULT_THRESHOLD) {
  */
 export function computeTargetDimensions(dimensions, maxWidth = DEFAULT_THRESHOLD) {
   const { width, height } = dimensions ?? {};
-  if (!isPositiveFiniteNumber(width) || !isPositiveFiniteNumber(height) || !isPositiveFiniteNumber(maxWidth)) {
-    throw new RangeError('Dimensions invalides : largeur, hauteur et largeur maximale doivent être des nombres > 0.');
+  if (
+    !isPositiveFiniteNumber(width) ||
+    !isPositiveFiniteNumber(height) ||
+    !isPositiveFiniteNumber(maxWidth)
+  ) {
+    throw new RangeError(
+      'Dimensions invalides : largeur, hauteur et largeur maximale doivent être des nombres > 0.',
+    );
   }
   if (width <= maxWidth) return { width, height };
   const targetWidth = Math.round(maxWidth);
@@ -187,8 +194,13 @@ const MIME_BY_EXTENSION = Object.freeze({
  */
 export function resolveOutputFormat(asset) {
   const mime = typeof asset.mimeType === 'string' ? asset.mimeType.trim().toLowerCase() : '';
-  const extension = typeof asset.extension === 'string' ? asset.extension.trim().toLowerCase().replace(/^\./, '') : '';
-  const fromExtension = Object.hasOwn(MIME_BY_EXTENSION, extension) ? MIME_BY_EXTENSION[extension] : undefined;
+  const extension =
+    typeof asset.extension === 'string'
+      ? asset.extension.trim().toLowerCase().replace(/^\./, '')
+      : '';
+  const fromExtension = Object.hasOwn(MIME_BY_EXTENSION, extension)
+    ? MIME_BY_EXTENSION[extension]
+    : undefined;
 
   let mimeType;
   if (mime !== '') {
@@ -203,7 +215,10 @@ export function resolveOutputFormat(asset) {
     mimeType = fromExtension;
   }
   if (mimeType === undefined || !Object.hasOwn(OUTPUT_FORMATS, mimeType)) {
-    throw new ReducedImageError('UNSUPPORTED_FORMAT', `Format non géré : ${mime || extension || 'inconnu'}.`);
+    throw new ReducedImageError(
+      'UNSUPPORTED_FORMAT',
+      `Format non géré : ${mime || extension || 'inconnu'}.`,
+    );
   }
   return { ...OUTPUT_FORMATS[mimeType] };
 }
@@ -258,7 +273,8 @@ export function buildReducedImageUrl(asset, targetWidth) {
  * @returns {{ ok: true } | { ok: false, code: 'CONTENT_TYPE_MISMATCH' | 'UNDECODABLE' | 'FORMAT_MISMATCH' | 'DIMENSIONS_MISMATCH', message: string }}
  */
 export function validateReducedImage({ expectedMimeType, contentType, decoded, target }) {
-  const received = typeof contentType === 'string' ? contentType.split(';')[0].trim().toLowerCase() : '';
+  const received =
+    typeof contentType === 'string' ? contentType.split(';')[0].trim().toLowerCase() : '';
   if (received !== expectedMimeType) {
     return {
       ok: false,
@@ -266,8 +282,16 @@ export function validateReducedImage({ expectedMimeType, contentType, decoded, t
       message: `Type de contenu inattendu : ${received || 'absent'} au lieu de ${expectedMimeType}.`,
     };
   }
-  if (!decoded || !isPositiveFiniteNumber(decoded.width) || !isPositiveFiniteNumber(decoded.height)) {
-    return { ok: false, code: 'UNDECODABLE', message: "L'image reçue est illisible ou incomplète." };
+  if (
+    !decoded ||
+    !isPositiveFiniteNumber(decoded.width) ||
+    !isPositiveFiniteNumber(decoded.height)
+  ) {
+    return {
+      ok: false,
+      code: 'UNDECODABLE',
+      message: "L'image reçue est illisible ou incomplète.",
+    };
   }
   const expectedFormat = Object.hasOwn(OUTPUT_FORMATS, expectedMimeType)
     ? OUTPUT_FORMATS[expectedMimeType].sharpFormat
@@ -279,7 +303,10 @@ export function validateReducedImage({ expectedMimeType, contentType, decoded, t
       message: `Format décodé inattendu : ${decoded.format ?? 'inconnu'} au lieu de ${expectedFormat ?? expectedMimeType}.`,
     };
   }
-  if (decoded.width !== target.width || Math.abs(decoded.height - target.height) > HEIGHT_TOLERANCE_PX) {
+  if (
+    decoded.width !== target.width ||
+    Math.abs(decoded.height - target.height) > HEIGHT_TOLERANCE_PX
+  ) {
     return {
       ok: false,
       code: 'DIMENSIONS_MISMATCH',
@@ -369,7 +396,10 @@ export function findReferencePaths(value, assetId) {
     if (Array.isArray(node)) {
       node.forEach((member, index) => {
         const key =
-          member && typeof member === 'object' && !Array.isArray(member) && typeof member._key === 'string'
+          member &&
+          typeof member === 'object' &&
+          !Array.isArray(member) &&
+          typeof member._key === 'string'
             ? member._key
             : null;
         const segment = key !== null ? `[_key==${JSON.stringify(key)}]` : `[${index}]`;
@@ -534,12 +564,17 @@ export function resolveCliOptions(argv, env) {
 
   /** @type {CliError[]} */
   const errors = [];
-  const projectId = cleanEnvValue(/** @type {string | undefined} */ (values['project-id'])) ?? cleanEnvValue(env.SANITY_PROJECT_ID);
-  const dataset = cleanEnvValue(/** @type {string | undefined} */ (values.dataset)) ?? cleanEnvValue(env.SANITY_DATASET);
+  const projectId =
+    cleanEnvValue(/** @type {string | undefined} */ (values['project-id'])) ??
+    cleanEnvValue(env.SANITY_PROJECT_ID);
+  const dataset =
+    cleanEnvValue(/** @type {string | undefined} */ (values.dataset)) ??
+    cleanEnvValue(env.SANITY_DATASET);
   if (!projectId) {
     errors.push({
       code: 'MISSING_PROJECT_ID',
-      message: 'Identifiant de projet manquant : utilisez --project-id ou la variable SANITY_PROJECT_ID.',
+      message:
+        'Identifiant de projet manquant : utilisez --project-id ou la variable SANITY_PROJECT_ID.',
     });
   }
   if (!dataset) {
@@ -571,13 +606,14 @@ export function resolveCliOptions(argv, env) {
     errors.push({
       code: 'APPLY_REQUIRES_BACKUP_FLAG',
       message:
-        '--apply exige --i-have-a-backup : faites d\'abord une sauvegarde (sanity dataset export) puis confirmez-le avec ce drapeau.',
+        "--apply exige --i-have-a-backup : faites d'abord une sauvegarde (sanity dataset export) puis confirmez-le avec ce drapeau.",
     });
   }
   if (apply && !envWriteToken) {
     errors.push({
       code: 'APPLY_REQUIRES_WRITE_TOKEN',
-      message: '--apply exige la variable d\'environnement SANITY_WRITE_TOKEN (jeton temporaire avec droits Éditeur).',
+      message:
+        "--apply exige la variable d'environnement SANITY_WRITE_TOKEN (jeton temporaire avec droits Éditeur).",
     });
   }
   if (deleteOriginals && !apply) {
@@ -625,7 +661,9 @@ export function assessDeletionSafety({ assetIds, remainingReferenceCounts, faile
   /** @type {DeletionBlocker[]} */
   const blockers = [];
   for (const assetId of assetIds) {
-    const count = Object.hasOwn(remainingReferenceCounts, assetId) ? remainingReferenceCounts[assetId] : undefined;
+    const count = Object.hasOwn(remainingReferenceCounts, assetId)
+      ? remainingReferenceCounts[assetId]
+      : undefined;
     if (typeof count !== 'number' || !Number.isInteger(count) || count < 0) {
       blockers.push({
         assetId,
@@ -644,7 +682,8 @@ export function assessDeletionSafety({ assetIds, remainingReferenceCounts, faile
     blockers.push({
       assetId,
       code: 'REPLACEMENT_FAILED',
-      message: 'Le remplacement de cette image a échoué dans cette exécution : suppression refusée.',
+      message:
+        'Le remplacement de cette image a échoué dans cette exécution : suppression refusée.',
     });
   }
   return { safe: blockers.length === 0, blockers };
@@ -731,7 +770,9 @@ export function formatDryRunReport({ rows, skipped, threshold }) {
     });
     const totalBytes = rows.reduce((sum, row) => sum + (row.asset.size ?? 0), 0);
     lines.push('');
-    lines.push(`Total : ${rows.length} image(s), ${formatMegabytes(totalBytes)} actuellement stockés.`);
+    lines.push(
+      `Total : ${rows.length} image(s), ${formatMegabytes(totalBytes)} actuellement stockés.`,
+    );
   }
 
   if (skipped.length > 0) {
@@ -739,7 +780,10 @@ export function formatDryRunReport({ rows, skipped, threshold }) {
     const unknown = skipped.filter((entry) => entry.reason === 'UNKNOWN_DIMENSIONS').length;
     lines.push('');
     lines.push('Ignorées par le script :');
-    if (unsupported > 0) lines.push(`  ${unsupported} image(s) dans un format non géré (seuls JPEG, PNG et WebP sont réduits)`);
+    if (unsupported > 0)
+      lines.push(
+        `  ${unsupported} image(s) dans un format non géré (seuls JPEG, PNG et WebP sont réduits)`,
+      );
     if (unknown > 0) lines.push(`  ${unknown} image(s) aux dimensions inconnues`);
   }
 

@@ -40,12 +40,18 @@ describe('stripBasePath', () => {
 
   it('strips a non-root base without doubling it', () => {
     expect(stripBasePath('/atelier-jacqueline-suzanne/', '/atelier-jacqueline-suzanne/')).toBe('/');
-    expect(stripBasePath('/atelier-jacqueline-suzanne/en/', '/atelier-jacqueline-suzanne/')).toBe('/en/');
-    expect(stripBasePath('/atelier-jacqueline-suzanne/rebut', '/atelier-jacqueline-suzanne/')).toBe('/rebut');
+    expect(stripBasePath('/atelier-jacqueline-suzanne/en/', '/atelier-jacqueline-suzanne/')).toBe(
+      '/en/',
+    );
+    expect(stripBasePath('/atelier-jacqueline-suzanne/rebut', '/atelier-jacqueline-suzanne/')).toBe(
+      '/rebut',
+    );
   });
 
   it('leaves the path untouched if it does not start with the configured base', () => {
-    expect(stripBasePath('/other-site/en/', '/atelier-jacqueline-suzanne/')).toBe('/other-site/en/');
+    expect(stripBasePath('/other-site/en/', '/atelier-jacqueline-suzanne/')).toBe(
+      '/other-site/en/',
+    );
   });
 });
 

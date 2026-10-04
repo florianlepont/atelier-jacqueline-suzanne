@@ -17,7 +17,11 @@ describe('CreditsManager lifecycle', () => {
   it('loads galleries and pre-selects only collections with incomplete credits', async () => {
     createSanityTestClient(() =>
       Promise.resolve([
-        galleryDoc({_id: 'drafts.gallery-1', title: 'Incomplète', images: [{_key: 'i1', rights: {}}]}),
+        galleryDoc({
+          _id: 'drafts.gallery-1',
+          title: 'Incomplète',
+          images: [{_key: 'i1', rights: {}}],
+        }),
         galleryDoc({
           _id: 'gallery-2',
           title: 'Complète',
@@ -83,7 +87,9 @@ describe('CreditsManager lifecycle', () => {
       'drafts.gallery-1',
       expect.objectContaining({
         set: expect.objectContaining({
-          images: [expect.objectContaining({rights: expect.objectContaining({credit: 'Romane Lepont'})})],
+          images: [
+            expect.objectContaining({rights: expect.objectContaining({credit: 'Romane Lepont'})}),
+          ],
         }),
       }),
     )

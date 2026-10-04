@@ -4,7 +4,10 @@ import { describe, expect, it } from 'vitest';
 // Text assertions over the raw workflow source (no YAML parser), mirroring
 // tests/unit/deploy-ovh-workflow.test.ts. Comment lines are stripped first so
 // the header narration cannot satisfy or violate an assertion.
-const raw = await readFile(new URL('../../.github/workflows/pr-checks.yml', import.meta.url), 'utf8');
+const raw = await readFile(
+  new URL('../../.github/workflows/pr-checks.yml', import.meta.url),
+  'utf8',
+);
 const ci = raw
   .split('\n')
   .filter((line) => !line.trim().startsWith('#'))
