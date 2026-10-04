@@ -11,6 +11,8 @@
     "dev": "sanity dev",
     "start": "sanity start",
     "lint": "eslint .",
+    "format": "prettier --write \"**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
     "test": "vitest run --config vitest.config.ts",
     "test:coverage": "vitest run --config vitest.config.ts --coverage && node scripts/check-tsx-coverage.mjs"
