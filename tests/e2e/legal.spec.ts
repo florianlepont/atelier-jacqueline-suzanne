@@ -53,6 +53,42 @@ test.describe('mentions légales page content', () => {
   });
 });
 
+// The publisher address is typed in Studio, so a given build may or may not
+// contain one: these tests never assert which state is live, only that
+// exactly one publisher notice is rendered and the host sentence carries no
+// address (the digit check is the address guard).
+test.describe('mentions légales publisher notice (content-agnostic)', () => {
+  test('French page renders exactly one publisher notice and an address-free host sentence', async ({
+    page,
+  }) => {
+    await page.goto('/mentions-legales/');
+    const main = page.locator('main');
+
+    const addressNotice = await main.locator('p', { hasText: 'Éditrice du site :' }).count();
+    const anonymityNotice = await main.locator('p', { hasText: 'ne sont pas publiés' }).count();
+    expect(addressNotice + anonymityNotice).toBe(1);
+
+    const hostNote = main.locator('p', { hasText: "compte d'hébergement OVH de Florian Lepont" });
+    await expect(hostNote).toHaveCount(1);
+    await expect(hostNote).not.toContainText(/\d/);
+  });
+
+  test('English page renders exactly one publisher notice and an address-free host sentence', async ({
+    page,
+  }) => {
+    await page.goto('/en/mentions-legales/');
+    const main = page.locator('main');
+
+    const addressNotice = await main.locator('p', { hasText: 'Site publisher:' }).count();
+    const anonymityNotice = await main.locator('p', { hasText: 'are not published here' }).count();
+    expect(addressNotice + anonymityNotice).toBe(1);
+
+    const hostNote = main.locator('p', { hasText: 'OVH hosting account of Florian Lepont' });
+    await expect(hostNote).toHaveCount(1);
+    await expect(hostNote).not.toContainText(/\d/);
+  });
+});
+
 test.describe('privacy policy page content', () => {
   test('French privacy policy page renders at "/confidentialite/"', async ({ page }) => {
     await page.goto('/confidentialite/');
