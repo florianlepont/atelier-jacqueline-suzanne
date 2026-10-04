@@ -54,6 +54,17 @@ runs:
       shell: bash
       run: npm run lint
 
+    # BLOCKING gate: formatting. Prettier only reformats .ts/.mjs files (not
+    # .astro templates, whose inline whitespace can be significant); each
+    # project keeps its own config (root: .prettierrc.json, Studio: the
+    # `prettier` key in sanity/package.json). Fix with `npm run format` and
+    # `npm --prefix sanity run format`.
+    - name: Check formatting (Prettier)
+      shell: bash
+      run: |
+        npm run format:check
+        npm --prefix sanity run format:check
+
     # BLOCKING gate: a type error inside .astro frontmatter (or any .ts
     # source) fails the run before any build is attempted.
     - name: Type-check (astro check)

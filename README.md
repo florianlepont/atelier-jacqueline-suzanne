@@ -67,6 +67,7 @@ Names only — never commit real values, tokens, or keys. `.env` is gitignored; 
 | `npm run build` | Build the static site (`astro build`). |
 | `npm run preview` | Preview the production build locally. |
 | `npm run lint` | ESLint over the whole repository. |
+| `npm run format` / `npm run format:check` | Prettier over the site's `.ts`/`.mjs` files (write / check only). CI runs the check, for the Studio too (`npm --prefix sanity run format:check`). `.astro` files are not auto-formatted. |
 | `npm run typecheck` | Type-check the site (`astro check`). The Studio has its own: `npm --prefix sanity run typecheck`. |
 | `npm run test:unit` | Run unit tests (Vitest). |
 | `npm run test:coverage` | Unit tests with the coverage thresholds CI enforces. |

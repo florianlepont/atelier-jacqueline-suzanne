@@ -67,3 +67,14 @@ describe('GitHub Actions supply chain', () => {
     expect(text).toMatch(/ignore:\s*\n\s*- dependency-name: sanity/);
   });
 });
+
+describe('formatting gate', () => {
+  it('runs Prettier checks for the site and the Studio in the shared gates', async () => {
+    const text = await readFile(
+      new URL('../../.github/actions/lint-typecheck-and-install/action.yml', import.meta.url),
+      'utf8',
+    );
+    expect(text).toContain('npm run format:check');
+    expect(text).toContain('npm --prefix sanity run format:check');
+  });
+});
