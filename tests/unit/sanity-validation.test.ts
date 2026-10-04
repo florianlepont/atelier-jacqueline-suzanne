@@ -1,5 +1,7 @@
+import {readFileSync} from 'node:fs'
 import {describe, expect, it, vi} from 'vitest'
 import {
+  PUBLISHER_ADDRESS_MAX_LENGTH,
   sanitizeAboutPage,
   sanitizeContactPage,
   sanitizeEdition,
@@ -16,6 +18,91 @@ const renderableImage = {
   asset: {_ref: 'image-asset-1200x800-jpg'},
   alt: {fr: 'Une photographie', en: 'A photograph'},
 }
+
+const validSiteDocument = {
+  _id: 'siteSettings',
+  siteTitle: {fr: 'Atelier', en: 'Studio'},
+  navLabels: {},
+  footerText: {fr: 'Pied', en: 'Footer'},
+}
+
+describe('sanitizeSiteSettings publisherAddress', () => {
+  const sanitize = (publisherAddress: unknown) =>
+    sanitizeSiteSettings({...validSiteDocument, publisherAddress})
+
+  it('trims a clean single-line address without raising an issue', () => {
+    const result = sanitize('  TEST-ADDRESS-FIXTURE  ')
+    expect(result.value?.publisherAddress).toBe('TEST-ADDRESS-FIXTURE')
+    expect(result.issues).toEqual([])
+  })
+
+  it('normalises CRLF, trims lines and drops blank lines', () => {
+    const result = sanitize('  TEST-ADDRESS-FIXTURE-LINE-1  \r\n\r\n TEST-ADDRESS-FIXTURE-LINE-2\r\n')
+    expect(result.value?.publisherAddress).toBe(
+      'TEST-ADDRESS-FIXTURE-LINE-1\nTEST-ADDRESS-FIXTURE-LINE-2',
+    )
+  })
+
+  it('treats absent, null, empty and whitespace-only values as silently absent', () => {
+    const absent = sanitizeSiteSettings(validSiteDocument)
+    expect(absent.value).not.toHaveProperty('publisherAddress')
+    expect(absent.issues).toEqual([])
+    for (const empty of [null, '', '   \n  \n   ']) {
+      const result = sanitize(empty)
+      expect(result.value).not.toHaveProperty('publisherAddress')
+      expect(result.issues).toEqual([])
+    }
+  })
+
+  it('keeps exactly the maximum length and drops one more character', () => {
+    const atLimit = 'x'.repeat(PUBLISHER_ADDRESS_MAX_LENGTH)
+    expect(sanitize(atLimit).value?.publisherAddress).toBe(atLimit)
+    const over = sanitize(`${atLimit}x`)
+    expect(over.value).not.toHaveProperty('publisherAddress')
+    expect(over.issues.map(({code}) => code)).toEqual(['publisherAddress.invalid_removed'])
+  })
+
+  it('drops angle brackets, control characters and non-strings but keeps the document', () => {
+    const rejected = [
+      '<b>TEST-ADDRESS-FIXTURE</b>',
+      'TEST-ADDRESS-FIXTURE >',
+      `TEST-ADDRESS-FIXTURE${String.fromCharCode(7)}`,
+      42,
+      {},
+      ['TEST-ADDRESS-FIXTURE'],
+    ]
+    for (const value of rejected) {
+      const result = sanitize(value)
+      expect(result.value).not.toBeNull()
+      expect(result.value).not.toHaveProperty('publisherAddress')
+      expect(result.issues.map(({code}) => code)).toEqual(['publisherAddress.invalid_removed'])
+    }
+  })
+
+  it('never puts the address in the diagnostics', () => {
+    const result = sanitize('<b>TEST-ADDRESS-FIXTURE</b>')
+    expect(JSON.stringify(result.issues)).not.toContain('TEST-ADDRESS-FIXTURE')
+  })
+
+  it('still returns null for an invalid siteTitle even with a valid address', () => {
+    const result = sanitizeSiteSettings({
+      ...validSiteDocument,
+      siteTitle: {fr: 'Atelier'},
+      publisherAddress: 'TEST-ADDRESS-FIXTURE',
+    })
+    expect(result.value).toBeNull()
+  })
+
+  it('keeps the cap identical in the Studio schema and the sanitizer', () => {
+    const capture = (path: string) =>
+      /PUBLISHER_ADDRESS_MAX_LENGTH\s*=\s*(\d+)/.exec(readFileSync(path, 'utf8'))?.[1]
+    const studio = capture('sanity/schemas/siteSettings.ts')
+    const build = capture('src/lib/sanity-validation.ts')
+    expect(studio).toBeDefined()
+    expect(studio).toBe(build)
+    expect(Number(build)).toBe(PUBLISHER_ADDRESS_MAX_LENGTH)
+  })
+})
 
 describe('singleton sanitizers', () => {
   it('requires complete site title/footer locales and a navLabels object', () => {
