@@ -8,6 +8,10 @@ const NAV_ERRORS = {
   enError: 'La version anglaise est obligatoire.',
 }
 
+// Mirrored in src/lib/sanity-validation.ts (the two npm projects cannot import
+// each other); a root unit test fails if the two values diverge.
+export const PUBLISHER_ADDRESS_MAX_LENGTH = 300
+
 export const siteSettings = defineType({
   name: 'siteSettings',
   title: 'Réglages du site',
@@ -27,6 +31,7 @@ export const siteSettings = defineType({
     {name: 'navigation', title: 'Navigation'},
     {name: 'footer', title: 'Pied de page'},
     {name: 'seo', title: 'SEO'},
+    {name: 'legal', title: 'Mentions légales'},
   ],
   fields: [
     localeStringField({
@@ -64,6 +69,24 @@ export const siteSettings = defineType({
       type: 'seo',
       group: 'seo',
       description: 'Utilisé lorsqu’une page ne possède pas ses propres réglages SEO.',
+    }),
+    defineField({
+      name: 'publisherAddress',
+      title: 'Adresse de l’éditrice (mentions légales)',
+      type: 'text',
+      rows: 3,
+      group: 'legal',
+      description:
+        'Laisser VIDE tant que le site est édité à titre non professionnel : la page « Mentions légales » affiche alors la mention d’anonymat de l’article 1-1, II de la loi n° 2004-575 du 21 juin 2004 (LCEN). Dès que Romane commence à vendre (tirages, originaux, livres, produits), l’éditrice devient professionnelle : la loi impose alors de publier son nom, son adresse et son numéro de téléphone. Renseigner alors ce champ avec l’adresse postale complète, sans « domiciliée au » (le site l’ajoute), une ligne d’adresse par ligne, en texte brut (300 caractères au maximum), puis prévenir Florian : le numéro de téléphone, le statut et les conditions de vente ne sont pas gérés ici.',
+      validation: (rule) =>
+        rule
+          .max(PUBLISHER_ADDRESS_MAX_LENGTH)
+          .error(`L’adresse ne doit pas dépasser ${PUBLISHER_ADDRESS_MAX_LENGTH} caractères.`)
+          .custom((value) =>
+            typeof value !== 'string' || (!value.includes('<') && !value.includes('>'))
+              ? true
+              : 'Texte brut uniquement : les caractères < et > ne sont pas autorisés.',
+          ),
     }),
     // Obsolete text fields stay addressable during migration, but are hidden
     // and no longer queried by the site.

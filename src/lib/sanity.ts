@@ -76,6 +76,11 @@ export interface SiteSettings {
     editions?: Partial<LocaleString>
   }
   footerText: LocaleString
+  /**
+   * Optional plain-text postal address of the publisher, lines separated by
+   * `\n`. Absent means the non-professional anonymity regime. Never log it.
+   */
+  publisherAddress?: string
   defaultSeo?: SeoSettings
 }
 
@@ -84,6 +89,7 @@ const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{
   siteTitle,
   navLabels,
   footerText,
+  publisherAddress,
   defaultSeo
 }`
 

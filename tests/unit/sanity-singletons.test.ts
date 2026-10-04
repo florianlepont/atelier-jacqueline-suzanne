@@ -41,11 +41,13 @@ const contracts: SingletonContract[] = [
       navLabels: {about: {fr: 'À propos'}, contact: 12},
       footerText: {fr: 'Pied de page', en: 'Footer'},
       defaultSeo: {title: false},
+      publisherAddress: '  TEST-ADDRESS-FIXTURE  ',
     },
     expectedPartial: {
       siteTitle: {fr: 'Atelier', en: 'Studio'},
       navLabels: {about: {fr: 'À propos'}},
       footerText: {fr: 'Pied de page', en: 'Footer'},
+      publisherAddress: 'TEST-ADDRESS-FIXTURE',
     },
     queryMarker: '_type == "siteSettings"',
   },
@@ -136,6 +138,29 @@ describe('Sanity singleton getter contracts', () => {
       })
     })
   }
+
+  it('projects publisherAddress in the site settings query', async () => {
+    fetchMock.mockResolvedValueOnce(contracts[0].minimal)
+    const sanity = await import('../../src/lib/sanity')
+
+    await sanity.getSiteSettings()
+
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringMatching(/publisherAddress/))
+  })
+
+  it('warns with a code only when a rejected address is dropped', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ...(contracts[0].minimal as Record<string, unknown>),
+      publisherAddress: '<b>TEST-ADDRESS-FIXTURE</b>',
+    })
+    const sanity = await import('../../src/lib/sanity')
+
+    await sanity.getSiteSettings()
+
+    const warnCalls = vi.mocked(console.warn).mock.calls
+    expect(JSON.stringify(warnCalls)).toContain('publisherAddress.invalid_removed')
+    expect(JSON.stringify(warnCalls)).not.toContain('TEST-ADDRESS-FIXTURE')
+  })
 
   it('routes all five singleton getters through distinct production-build cache keys', async () => {
     setBuildCacheEnabledForTests(true)
