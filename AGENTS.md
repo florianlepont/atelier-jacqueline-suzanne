@@ -30,9 +30,9 @@ A bilingual (French/English) website for Romane Lepont's photography and artisti
 
 | Technology | Version | Purpose | Notes |
 |------------|---------|---------|-------|
-| **Astro** | 7.0.6 | Static site framework — `output: 'static'` in astro.config.mjs, with NO server-rendering integration installed | The config explicitly excludes the Cloudflare adapter, the Node adapter, and the Workers deploy CLI, because OVH Web Hosting is a zero-compute Apache file host. Zero-JS-by-default; built-in i18n. |
+| **Astro** | 7.3.5 | Static site framework — `output: 'static'` in astro.config.mjs, with NO server-rendering integration installed | The config explicitly excludes the Cloudflare adapter, the Node adapter, and the Workers deploy CLI, because OVH Web Hosting is a zero-compute Apache file host. Zero-JS-by-default; built-in i18n. |
 | **OVH Web Hosting** | — (platform) | Production host, live at https://atelierjacquelinesuzanne.fr since the 2026-08-13 cutover | Free tier, static files uploaded over SFTP by `deploy-ovh.yml` on every Sanity publish; zero request-time compute, which is WHY the build is static-only. |
-| **Sanity** (Content Lake + Studio) | `@sanity/client` 7.23.0 / `@sanity/image-url` 2.1.1 / Studio `sanity` 6.6.0 (exact pin) | Headless CMS for galleries, About, site settings, agenda | Content fetched at BUILD time (published perspective only). Studio is the separate `sanity/` subproject with its own package.json. |
+| **Sanity** (Content Lake + Studio) | `@sanity/client` 7.23.0 / `@sanity/image-url` 2.1.1 / Studio `sanity` 6.6.0 (exact pin) | Headless CMS for galleries, Éditions, About, site settings. Exhibitions (agenda) are modelled in the Studio but not rendered on the site yet | Content fetched at BUILD time (published perspective only). Studio is the separate `sanity/` subproject with its own package.json. |
 | **astro:i18n** (built-in, Astro 7 core) | — | fr/en locale routing | French served at root, English under `/en/`, no Accept-Language auto-redirect. |
 
 ### Supporting Libraries
@@ -47,11 +47,19 @@ A bilingual (French/English) website for Romane Lepont's photography and artisti
 
 | Tool | Purpose | Notes |
 |------|---------|-------|
-| Vitest | 4.1.9 — unit tests (`npm run test:unit`) | Runs as a BLOCKING gate in CI before deploy. |
+| Vitest | 4.1.11 — unit tests (`npm run test:unit`) | Runs as a BLOCKING gate in CI before deploy. |
 | Playwright | 1.61.1 — e2e tests (`npm run test:e2e`) | Runs as a BLOCKING gate in CI before deploy. |
 | GitHub Actions | CI/CD pipeline (`.github/workflows/ci.yml` and `.github/workflows/deploy-ovh.yml`) | `ci.yml` runs every blocking gate on each push to `main`, then republishes the hosted Studio, and never deploys the site. `deploy-ovh.yml` runs the same gates and is the only site deploy: it fires on `repository_dispatch (production-deploy-requested)` from the single Sanity publish webhook (no approval pause), or on manual dispatch (reviewer-gated). |
 | Sanity CLI | Studio dev/build/deploy, run from `sanity/` | `sanity dev` (localhost:3333), `sanity build`, `sanity deploy`. |
 | TypeScript | Type safety across Astro components and config | Strict tsconfig; Astro ships TS support out of the box. |
+
+**Other workflows and repo automation.** `pr-checks.yml` runs lint, typecheck and unit tests on every pull request (check name `checks`, required by the `main` ruleset, read-only token, no secrets). Every external GitHub Action is pinned to a full commit SHA, enforced by `tests/unit/ci-workflow.test.ts`; `.github/dependabot.yml` keeps Actions and both npm projects current weekly (the `sanity` pin is ignored on purpose). `SANITY_AUTH_TOKEN` must be a token with the `Deploy Studio` permission only.
+
+**Production hardening (OVH).** `public/.htaccess` sends nosniff, Referrer-Policy, Permissions-Policy, a Content-Security-Policy (self, `cdn.sanity.io` images, inline Astro scripts/styles, `data:` fonts, no framing) and HSTS, all inside `<IfModule mod_headers.c>`; a new third-party host (analytics, fonts, embeds) must be added to that CSP. `public/contact.php` rate-limits sends per visitor (hashed IP, 5/hour) and site-wide (40/hour).
+
+**Photos.** Images on Sanity are capped at 2400 px on the longest side (the Studio resizes and signs new uploads, `sanity/editorial/imageUpload*`); full-resolution print masters stay on Romane's own storage, never in Sanity, `public/` or git. `npm run sanity:downsize-images` is the maintenance script (runbook: `docs/reduction-images-sanity.md`).
+
+**Address and legal pages.** No personal postal address is stored in the repository. The legal notice reads an optional `publisherAddress` field from the Sanity `siteSettings` document (empty means the anonymity wording for non-professional publishers). The legal texts have had no legal review.
 
 ## Deferred to v1.x (not yet implemented)
 
@@ -77,7 +85,7 @@ The "browse and buy / checkout" language in the Project section above describes 
 | Item | Cost | Notes |
 |------|------|-------|
 | OVH Web Hosting (production) | Existing/already owned | Domain + hosting already in use by the current site — not a new recurring cost. |
-| Sanity (Content Lake + Studio) | **0€/month** | Free plan comfortably covers a single-artist catalog + agenda. |
+| Sanity (Content Lake + Studio) | **0€/month** | Free plan comfortably covers a single-artist catalog. |
 | Domain (atelierjacquelinesuzanne.fr) | Existing/already owned | Not a new cost. |
 | Stripe processing fees | Applies only once v1.x commerce ships | Per-transaction only, no monthly platform fee. |
 
