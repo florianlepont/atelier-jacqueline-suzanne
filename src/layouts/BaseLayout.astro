@@ -104,7 +104,12 @@ const siteSettings = await getSiteSettings();
 // partially populated, and this runs in frontmatter at build time, so an
 // unguarded nested access here would fail the entire site build.
 const siteTitle = siteSettings?.siteTitle?.[locale] ?? 'Atelier Jacqueline Suzanne';
-const footerText = siteSettings?.footerText?.[locale] ?? '';
+// Fallback so the public footer always carries a rights line, even when the
+// footerText field is empty in the Studio (same wording as the image credit
+// fallback in Lightbox.astro and page-models.ts).
+const defaultFooterText =
+  locale === 'en' ? '© Romane Lepont — All rights reserved' : '© Romane Lepont — Tous droits réservés';
+const footerText = siteSettings?.footerText?.[locale]?.trim() || defaultFooterText;
 const siteCopy = resolveSiteCopy(siteSettings, locale);
 const mobileGalleryLinks = (await getGalleries())
   .filter((gallery) => gallery.showOnHomePage !== false && gallery.images.length > 0)
