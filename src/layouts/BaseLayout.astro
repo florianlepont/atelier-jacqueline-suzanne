@@ -179,6 +179,8 @@ const instagramNewTabHint = locale === 'en' ? ' (opens in new tab)' : ' (nouvell
 const legalNoticeLabel = locale === 'en' ? 'Legal notice' : 'Mentions légales';
 const legalNoticeHref = getRelativeLocaleUrl(locale, 'mentions-legales');
 const privacyLabel = locale === 'en' ? 'Privacy' : 'Confidentialité';
+const skipLinkLabel = locale === 'en' ? 'Skip to content' : 'Aller au contenu';
+const legalNavLabel = locale === 'en' ? 'Legal' : 'Informations légales';
 const privacyHref = getRelativeLocaleUrl(locale, 'confidentialite');
 // D-11: real AJS wordmark PNG logo, header only. Base-aware (matches the
 // CR-01 precedent, 01-REVIEW.md) so the asset resolves correctly under
@@ -261,6 +263,7 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
     class:list={{ 'has-phone-canvas': Boolean(phoneCanvasColor) }}
     style={phoneCanvasColor ? `--phone-canvas-color: ${phoneCanvasColor};` : undefined}
   >
+    <a href="#main-content" class="skip-link">{skipLinkLabel}</a>
     {headerVariant !== 'none' && (
       <SiteHeader
         variant={headerVariant}
@@ -281,13 +284,13 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
         galleryLinks={mobileGalleryLinks}
       />
     )}
-    <main>
+    <main id="main-content" tabindex="-1">
       <slot />
     </main>
     {!hideFooter && (
       <footer class="chrome-band">
         <p class="footer-text">{footerText}</p>
-        <nav class="footer-legal-nav" aria-label="Legal">
+        <nav class="footer-legal-nav" aria-label={legalNavLabel}>
           <a href={legalNoticeHref} class="nav-link">{legalNoticeLabel}</a>
           <a href={privacyHref} class="nav-link">{privacyLabel}</a>
         </nav>
@@ -461,6 +464,29 @@ const logoWhiteSrc = `${assetBase}/logos/AJS_Brutalist_White_Transparent.png`;
   button:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: var(--focus-ring-offset);
+  }
+
+  /* Keyboard users: first tab stop jumps past the header to <main>. Hidden
+     off-screen until focused, then shown top-left above everything. <main> is
+     only focused programmatically (tabindex -1), so it needs no focus ring. */
+  .skip-link {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    padding: var(--space-sm) var(--space-md);
+    background-color: var(--color-dominant);
+    color: var(--color-accent);
+    font-size: 14px;
+    transform: translateY(-120%);
+  }
+
+  .skip-link:focus-visible {
+    transform: translateY(0);
+  }
+
+  main:focus {
+    outline: none;
   }
 
   /* Visually-hidden but screen-reader-available utility (introduced here for
