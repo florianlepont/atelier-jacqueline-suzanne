@@ -310,6 +310,8 @@ Both prior research-carryover items were resolved during Phase 1 execution:
 | 261004-m1d | Dependency audit: root 8 → 0 vulnerabilities, Studio 25 → 11 (remaining are unpatched dev-CLI transitives); vitest 4.1.11; `sanity` pin unchanged | 2026-10-04 | pending | Verified (unit level) | [261004-m1d-dependances-audit-npm](./quick/261004-m1d-dependances-audit-npm/) |
 | 261004-n2k | Contact form rate limit (5/h per visitor, 40/h site-wide, hashed IP) and security headers in `.htaccess` (CSP, HSTS, nosniff, Referrer-Policy, Permissions-Policy); privacy policy updated; CSP checked in Chromium on 31 pages | 2026-10-04 | pending | Verified (unit level) | [261004-n2k-contact-limite-debit-entetes-securite](./quick/261004-n2k-contact-limite-debit-entetes-securite/) |
 | 261004-p3s | GitHub Actions pinned by commit SHA (5 actions), `dependabot.yml` added (Actions + both npm projects, `sanity` pin ignored), tests enforce both | 2026-10-04 | pending | Verified (unit level) | [261004-p3s-actions-sha-dependabot](./quick/261004-p3s-actions-sha-dependabot/) |
+| 261004-q4w | Legal notice: intellectual-property section FR/EN (author rights, no AI training, TDM opt-out); footer rights-line fallback when `footerText` is empty; no legal review | 2026-10-04 | pending | Verified (unit level) | [261004-q4w-mentions-legales-pi-pied-de-page](./quick/261004-q4w-mentions-legales-pi-pied-de-page/) |
+| 261004-r5d | Docs refresh: CLAUDE.md/AGENTS.md versions and hardening notes, README (Sanity onboarding, all scripts, Security, Contributing), new CONTRIBUTING.md and PR template | 2026-10-04 | pending | Verified (unit level) | [261004-r5d-docs-readme-contributing](./quick/261004-r5d-docs-readme-contributing/) |
 
 ## Deferred Items
 
