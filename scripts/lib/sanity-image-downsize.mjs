@@ -1,15 +1,19 @@
 // @ts-check
 // Pure logic for scripts/sanity-downsize-images.mjs. Everything here is
-// network-free and side-effect-free (no process access, no sharp, no Sanity
-// client) so it can be unit-tested exhaustively; the CLI wires it to the
-// outside world.
+// side-effect-free (no process access, no sharp, no Sanity client, no global
+// fetch: network and image decoding are injected) so it can be unit-tested
+// exhaustively; the CLI wires it to the outside world.
 
 import { parseArgs } from 'node:util';
 
 export const DEFAULT_THRESHOLD = 2400;
 export const MIN_THRESHOLD = 800;
 export const RESIZABLE_MIME_TYPES = Object.freeze(['image/jpeg', 'image/png', 'image/webp']);
+// Quality value sent to the Sanity CDN for JPEG and WebP (PNG is lossless).
 export const OUTPUT_QUALITY = 90;
+// The reduced height may differ from the one computed from the recorded size
+// by at most this many pixels (rounding differences).
+export const HEIGHT_TOLERANCE_PX = 1;
 export const REDACTED = '[REDACTED]';
 
 /**
@@ -124,6 +128,206 @@ export function deriveFilename(asset) {
   if (asset.originalFilename) return asset.originalFilename;
   const parsed = parseImageAssetId(asset._id);
   return parsed ? `${parsed.hash}.${parsed.extension}` : 'image';
+}
+
+/**
+ * Error raised when the reduced image cannot be requested or does not pass
+ * validation. Nothing may be uploaded for the image concerned.
+ */
+export class ReducedImageError extends Error {
+  /**
+   * @param {'UNSUPPORTED_FORMAT' | 'MISSING_URL' | 'HTTP_ERROR' | 'CONTENT_TYPE_MISMATCH' | 'UNDECODABLE' | 'FORMAT_MISMATCH' | 'DIMENSIONS_MISMATCH'} code
+   * @param {string} message
+   */
+  constructor(code, message) {
+    super(message);
+    this.name = 'ReducedImageError';
+    this.code = code;
+  }
+}
+
+/**
+ * @typedef {object} FetchLikeResponse
+ * @property {boolean} ok
+ * @property {number} status
+ * @property {{ get: (name: string) => string | null }} headers
+ * @property {() => Promise<ArrayBuffer>} arrayBuffer
+ */
+
+/**
+ * @typedef {object} DecodedImage
+ * @property {string} [format]
+ * @property {number} [width]
+ * @property {number} [height]
+ */
+
+/** @type {Readonly<Record<string, { mimeType: string, fm: string, sharpFormat: string }>>} */
+const OUTPUT_FORMATS = Object.freeze({
+  'image/jpeg': { mimeType: 'image/jpeg', fm: 'jpg', sharpFormat: 'jpeg' },
+  'image/png': { mimeType: 'image/png', fm: 'png', sharpFormat: 'png' },
+  'image/webp': { mimeType: 'image/webp', fm: 'webp', sharpFormat: 'webp' },
+});
+
+/** @type {Readonly<Record<string, string>>} */
+const MIME_BY_EXTENSION = Object.freeze({
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+});
+
+/**
+ * Output format to request from the CDN. The mime type is authoritative; the
+ * extension is only used when the mime type is missing, and a conflict between
+ * the two is refused (fail closed).
+ *
+ * @param {ImageAsset} asset
+ * @returns {{ mimeType: string, fm: string, sharpFormat: string }}
+ * @throws {ReducedImageError} UNSUPPORTED_FORMAT
+ */
+export function resolveOutputFormat(asset) {
+  const mime = typeof asset.mimeType === 'string' ? asset.mimeType.trim().toLowerCase() : '';
+  const extension = typeof asset.extension === 'string' ? asset.extension.trim().toLowerCase().replace(/^\./, '') : '';
+  const fromExtension = Object.hasOwn(MIME_BY_EXTENSION, extension) ? MIME_BY_EXTENSION[extension] : undefined;
+
+  let mimeType;
+  if (mime !== '') {
+    if (fromExtension !== undefined && fromExtension !== mime) {
+      throw new ReducedImageError(
+        'UNSUPPORTED_FORMAT',
+        `Type de fichier ambigu : ${mime} d'après le type MIME, ${fromExtension} d'après l'extension.`,
+      );
+    }
+    mimeType = mime;
+  } else {
+    mimeType = fromExtension;
+  }
+  if (mimeType === undefined || !Object.hasOwn(OUTPUT_FORMATS, mimeType)) {
+    throw new ReducedImageError('UNSUPPORTED_FORMAT', `Format non géré : ${mime || extension || 'inconnu'}.`);
+  }
+  return { ...OUTPUT_FORMATS[mimeType] };
+}
+
+/**
+ * URL of the already-reduced version of an asset, served by the Sanity CDN.
+ * Any query string or fragment on the stored URL is dropped.
+ *
+ * @param {ImageAsset} asset
+ * @param {number} targetWidth
+ * @returns {string}
+ * @throws {RangeError} when targetWidth is not a positive integer
+ * @throws {ReducedImageError} UNSUPPORTED_FORMAT or MISSING_URL
+ */
+export function buildReducedImageUrl(asset, targetWidth) {
+  if (!Number.isInteger(targetWidth) || targetWidth <= 0) {
+    throw new RangeError('Largeur cible invalide : un entier > 0 est attendu.');
+  }
+  const { fm } = resolveOutputFormat(asset);
+  /** @type {URL} */
+  let url;
+  try {
+    if (typeof asset.url !== 'string' || asset.url.trim() === '') throw new Error('empty');
+    url = new URL(asset.url.trim());
+  } catch {
+    throw new ReducedImageError('MISSING_URL', "URL de l'image inconnue ou illisible.");
+  }
+  url.search = '';
+  url.hash = '';
+  url.searchParams.set('w', String(targetWidth));
+  if (fm === 'jpg') {
+    url.searchParams.set('q', String(OUTPUT_QUALITY));
+    url.searchParams.set('fm', fm);
+  } else if (fm === 'webp') {
+    url.searchParams.set('fm', fm);
+    url.searchParams.set('q', String(OUTPUT_QUALITY));
+  } else {
+    url.searchParams.set('fm', fm);
+  }
+  return url.toString();
+}
+
+/**
+ * Decide whether what the CDN returned may be uploaded. Never throws. The
+ * content type is checked first so an error page is reported as such.
+ *
+ * @param {object} input
+ * @param {string} input.expectedMimeType
+ * @param {string | null | undefined} input.contentType
+ * @param {DecodedImage | null | undefined} input.decoded
+ * @param {{ width: number, height: number }} input.target
+ * @returns {{ ok: true } | { ok: false, code: 'CONTENT_TYPE_MISMATCH' | 'UNDECODABLE' | 'FORMAT_MISMATCH' | 'DIMENSIONS_MISMATCH', message: string }}
+ */
+export function validateReducedImage({ expectedMimeType, contentType, decoded, target }) {
+  const received = typeof contentType === 'string' ? contentType.split(';')[0].trim().toLowerCase() : '';
+  if (received !== expectedMimeType) {
+    return {
+      ok: false,
+      code: 'CONTENT_TYPE_MISMATCH',
+      message: `Type de contenu inattendu : ${received || 'absent'} au lieu de ${expectedMimeType}.`,
+    };
+  }
+  if (!decoded || !isPositiveFiniteNumber(decoded.width) || !isPositiveFiniteNumber(decoded.height)) {
+    return { ok: false, code: 'UNDECODABLE', message: "L'image reçue est illisible ou incomplète." };
+  }
+  const expectedFormat = Object.hasOwn(OUTPUT_FORMATS, expectedMimeType)
+    ? OUTPUT_FORMATS[expectedMimeType].sharpFormat
+    : undefined;
+  if (expectedFormat === undefined || decoded.format !== expectedFormat) {
+    return {
+      ok: false,
+      code: 'FORMAT_MISMATCH',
+      message: `Format décodé inattendu : ${decoded.format ?? 'inconnu'} au lieu de ${expectedFormat ?? expectedMimeType}.`,
+    };
+  }
+  if (decoded.width !== target.width || Math.abs(decoded.height - target.height) > HEIGHT_TOLERANCE_PX) {
+    return {
+      ok: false,
+      code: 'DIMENSIONS_MISMATCH',
+      message: `Dimensions inattendues : ${decoded.width}x${decoded.height} reçues, ${target.width}x${target.height} attendues.`,
+    };
+  }
+  return { ok: true };
+}
+
+/**
+ * Request the reduced image from the CDN and validate it. Network and
+ * decoding are injected. The bytes are returned exactly as received.
+ *
+ * @param {object} input
+ * @param {ImageAsset} input.asset
+ * @param {{ width: number, height: number }} input.target
+ * @param {(url: string) => Promise<FetchLikeResponse>} input.fetchImpl
+ * @param {(data: Buffer) => Promise<DecodedImage>} input.decodeImage
+ * @returns {Promise<{ data: Buffer, mimeType: string, width: number, height: number }>}
+ * @throws {ReducedImageError}
+ */
+export async function fetchReducedImage({ asset, target, fetchImpl, decodeImage }) {
+  const format = resolveOutputFormat(asset);
+  const url = buildReducedImageUrl(asset, target.width);
+
+  const response = await fetchImpl(url);
+  if (!response.ok) {
+    throw new ReducedImageError('HTTP_ERROR', `Réponse HTTP ${response.status} du CDN.`);
+  }
+  const data = Buffer.from(await response.arrayBuffer());
+
+  /** @type {DecodedImage | null} */
+  let decoded;
+  try {
+    decoded = await decodeImage(data);
+  } catch {
+    decoded = null;
+  }
+
+  const verdict = validateReducedImage({
+    expectedMimeType: format.mimeType,
+    contentType: response.headers.get('content-type'),
+    decoded,
+    target,
+  });
+  if (!verdict.ok) throw new ReducedImageError(verdict.code, verdict.message);
+  const checked = /** @type {{ width: number, height: number }} */ (decoded);
+  return { data, mimeType: format.mimeType, width: checked.width, height: checked.height };
 }
 
 const SIMPLE_KEY = /^[A-Za-z_][A-Za-z0-9_]*$/;
