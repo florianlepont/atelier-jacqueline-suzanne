@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       # Same gates as ci.yml (production never skips a gate): Studio
       # lint/test:coverage/build, Studio typecheck, root lint, and root
@@ -128,12 +128,12 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # actions/upload-artifact@v4.4+ excludes hidden files by default.
+      # actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2.4+ excludes hidden files by default.
       # Without include-hidden-files: true, dist/.htaccess never even
       # reaches the deploy job, and production ships with no Apache
       # config (no ErrorDocument, no Options -Indexes, no HTTPS redirect).
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ovh-dist
           path: dist
@@ -178,7 +178,7 @@ jobs:
           done
 
       - name: Download build artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: ovh-dist
           path: dist

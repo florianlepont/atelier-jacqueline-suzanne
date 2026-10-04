@@ -1,0 +1,35 @@
+# Weekly dependency updates. Security advisories are raised separately by
+# Dependabot security updates (repository setting) and are not limited by
+# this file. Every ecosystem is grouped so a week of updates arrives as one
+# pull request that has to pass the same blocking CI gates as any other.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directories:
+      - /
+      - /.github/actions/*
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ['*']
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      npm-root:
+        patterns: ['*']
+  - package-ecosystem: npm
+    directory: /sanity
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    # `sanity` is pinned to an exact version on purpose: major Studio upgrades
+    # are done by hand with the Studio tests, not by a bot.
+    ignore:
+      - dependency-name: sanity
+    groups:
+      npm-studio:
+        patterns: ['*']
