@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-08-04)
 Phase: Milestone v1.8 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-10-04 - Completed quick task 261004-eam: fixed the Sanity image downsizing script (CDN-side reduction instead of downloading originals); real apply run still pending
+Last activity: 2026-10-04 - Completed quick task 261004-kbq: publisher address moved to an optional Sanity field, privacy policy corrected (no legal review)
 
 ## Performance Metrics
 
@@ -306,6 +306,7 @@ Both prior research-carryover items were resolved during Phase 1 execution:
 | 261003-kci | Sanity image downsizing script (dry-run by default, never executed against the real dataset) with French runbook, plus robots.txt opt-out for 11 AI crawlers | 2026-10-03 | 44e63ab | Verified | [261003-kci-sanity-script-de-reduction-des-images-dr](./quick/261003-kci-sanity-script-de-reduction-des-images-dr/) |
 | 261003-l05 | Studio: every image uploaded through the Studio is resized client-side (max 2400px on the longest side) and gets a discreet configurable signature, via one `form.image.assetSources` wrapper; real browser upload path not exercised (manual checks documented) | 2026-10-03 | 978f0d7 | Verified (unit level) | [261003-l05-studio-reduction-et-signature-automatiqu](./quick/261003-l05-studio-reduction-et-signature-automatiqu/) |
 | 261004-eam | Fix the Sanity image downsizing script: the image CDN never serves original bytes, so the script now asks the CDN for the reduced version (server-side), validates content-type/decode/dimensions (width exact, height +-1px) and uploads it unchanged; first real run had failed 49/49 with nothing written; real --apply path still unexercised | 2026-10-04 | 61a2dde | Verified (unit level) | [261004-eam-fix-sanity-downsize-script-use-cdn-resiz](./quick/261004-eam-fix-sanity-downsize-script-use-cdn-resiz/) |
+| 261004-kbq | Legal notice: optional publisher-address field on siteSettings (empty = LCEN anonymity wording, filled = address shown), former personal address purged from tracked files; privacy policy now discloses the Sanity image CDN; legal texts have had no legal review | 2026-10-04 | 598c395 | Verified (unit level) | [261004-kbq-mentions-legales-adresse-hors-depot-conf](./quick/261004-kbq-mentions-legales-adresse-hors-depot-conf/) |
 
 ## Deferred Items
 
