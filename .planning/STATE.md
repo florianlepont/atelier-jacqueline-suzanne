@@ -315,7 +315,7 @@ Both prior research-carryover items were resolved during Phase 1 execution:
 | 261004-s6a | Accessibility: skip link, main focus target, localized landmark labels, language switcher keeps query/fragment, 404 lazy images; 3 new test files | 2026-10-04 | pending | Verified (unit + chromium e2e) | [261004-s6a-accessibilite-lien-evitement-libelles](./quick/261004-s6a-accessibilite-lien-evitement-libelles/) |
 | 261004-t7c | Dead code: 368 lines of unused scroll-zoom helpers removed from home-carousel.ts with their 61 tests; runtime imports untouched | 2026-10-04 | pending | Verified (unit level) | [261004-t7c-code-mort-home-carousel](./quick/261004-t7c-code-mort-home-carousel/) |
 | 261004-u8f | Prettier: config + scripts + blocking CI check for both projects; one formatting-only commit over 103 .ts/.mjs files (built site byte-identical), blame-ignore list; .astro not formatted | 2026-10-04 | pending | Verified (unit + build hash) | [261004-u8f-prettier](./quick/261004-u8f-prettier/) |
-| 261004-v9g | E2E: 19 of 42 fixed waits replaced by frame/transition-based settle helpers; skips and intentionally timed waits kept; specs run 3x on chromium | 2026-10-04 | pending | Verified (chromium e2e x3) | [261004-v9g-tests-e2e-attentes](./quick/261004-v9g-tests-e2e-attentes/) |
+| 261004-v9g | E2E: 20 of 42 fixed waits replaced by frame/transition-based settle helpers; skips and intentionally timed waits kept; specs run 3x on chromium | 2026-10-04 | pending | Verified (chromium e2e x3) | [261004-v9g-tests-e2e-attentes](./quick/261004-v9g-tests-e2e-attentes/) |
 
 ## Deferred Items
 
