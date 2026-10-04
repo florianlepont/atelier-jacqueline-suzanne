@@ -78,7 +78,8 @@ const pool = (await getGalleries())
             srcset={photo.srcset}
             sizes="100vw"
             alt=""
-            loading="eager"
+            loading={index === 0 ? 'eager' : 'lazy'}
+            decoding="async"
             fetchpriority={index === 0 ? undefined : 'low'}
           />
         ))}
