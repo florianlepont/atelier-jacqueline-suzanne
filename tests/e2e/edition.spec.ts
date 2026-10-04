@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { firstGalleryHref } from './helpers/content';
+import { settleFrames, settleTransitions } from './helpers/settle';
 
 // These routes are live: `/editions/`, `/en/editions/` render the
 // sketch-010-B2-approved "Cursor Preview" flat text-row index (index
@@ -569,9 +570,9 @@ test.describe('edition detail scroll-up-to-return (Item 6, quick-260803-bvu)', (
       await page.goto(href);
 
       await page.evaluate(() => window.scrollTo(0, 500));
-      await page.waitForTimeout(150);
+      await settleFrames(page);
       await page.evaluate(() => window.scrollTo(0, 0));
-      await page.waitForTimeout(150);
+      await settleFrames(page);
 
       await page.evaluate(() =>
         window.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, bubbles: true })),
@@ -591,9 +592,9 @@ test.describe('edition detail scroll-up-to-return (Item 6, quick-260803-bvu)', (
       await page.goto(`/en/editions/${slug}/`);
 
       await page.evaluate(() => window.scrollTo(0, 500));
-      await page.waitForTimeout(150);
+      await settleFrames(page);
       await page.evaluate(() => window.scrollTo(0, 0));
-      await page.waitForTimeout(150);
+      await settleFrames(page);
 
       await page.evaluate(() =>
         window.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, bubbles: true })),
@@ -633,9 +634,9 @@ test.describe('edition detail scroll-up-to-return (Item 6, quick-260803-bvu)', (
       await page.goto(href);
 
       await page.evaluate(() => window.scrollTo(0, 60));
-      await page.waitForTimeout(80);
+      await settleFrames(page);
       await page.evaluate(() => window.scrollTo(0, 0));
-      await page.waitForTimeout(80);
+      await settleFrames(page);
       await page.evaluate(() =>
         window.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, bubbles: true })),
       );
@@ -992,11 +993,11 @@ async function findRowWithDifferingAccent(
     // The eyebrow's own `transition: color 0.35s ease` must settle before
     // this discovery read is trustworthy — a mid-transition read could
     // false-negative a row that does genuinely differ once settled.
-    await page.waitForTimeout(400);
+    await settleTransitions(page);
     const candidateColor = await eyebrow.evaluate((el) => getComputedStyle(el).color);
     if (candidateColor !== baselineColor) return candidate;
     await page.mouse.move(0, 0);
-    await page.waitForTimeout(400);
+    await settleTransitions(page);
   }
   return null;
 }

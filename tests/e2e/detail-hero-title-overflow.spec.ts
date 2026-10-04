@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { galleryHrefs } from './helpers/content';
+import { settleFrames } from './helpers/settle';
 
 // 260825-hl7 (BUG-01): a long single-word gallery/édition title (e.g. the
 // live "Trousseau" gallery) previously overflowed the desktop reveal panel
@@ -30,7 +31,7 @@ test.describe('detail hero reveal title never overflows its panel or the viewpor
         // onProgress) at its end state (t=1, REVEAL_DISTANCE=900) before
         // reading layout.
         await page.evaluate(() => window.scrollTo(0, 1200));
-        await page.waitForTimeout(150);
+        await settleFrames(page);
 
         const result = await page.evaluate(() => {
           const reveal = document.querySelector<HTMLElement>('.detail-hero__reveal');
@@ -69,7 +70,7 @@ test.describe('detail hero reveal title never overflows its panel or the viewpor
     const [href] = await galleryHrefs(page, 'fr');
     await page.goto(href);
     await page.evaluate(() => window.scrollTo(0, 1200));
-    await page.waitForTimeout(150);
+    await settleFrames(page);
 
     const result = await page.evaluate(() => {
       const title = document.querySelector<HTMLElement>('.detail-hero__reveal-title')!;
