@@ -669,3 +669,62 @@ export function buildEditionsIndexModel({
     seoDescription: labels.seoDescription,
   };
 }
+
+export type LegalPublisherNotice =
+  | {kind: 'address'; lead: string; lines: string[]}
+  | {kind: 'anonymity'; text: string};
+
+export interface LegalNoticeModel {
+  publisherNotice: LegalPublisherNotice;
+  hostedByNote: string;
+}
+
+const LEGAL_NOTICE_COPY: Record<
+  Locale,
+  {addressLead: string; anonymityText: string; hostedByNote: string}
+> = {
+  fr: {
+    addressLead: 'Éditrice du site : Romane Lepont, domiciliée au',
+    anonymityText:
+      "Le site étant édité à titre non professionnel, l'adresse et le numéro de téléphone personnels de l'éditrice ne sont pas publiés, conformément à l'article 1-1, II de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique.",
+    hostedByNote: "Le site est hébergé via le compte d'hébergement OVH de Florian Lepont.",
+  },
+  en: {
+    addressLead: 'Site publisher: Romane Lepont, residing at',
+    anonymityText:
+      "As the site is published on a non-professional basis, the publisher's personal address and phone number are not published here, in accordance with Article 1-1, II of French law n° 2004-575 of 21 June 2004 for confidence in the digital economy (LCEN).",
+    hostedByNote: 'The site is hosted via the OVH hosting account of Florian Lepont.',
+  },
+};
+
+/**
+ * Pure site-settings + locale -> legal-notice model (mentions légales). No
+ * fetch, no HTML: every string is plain text that Astro escapes, so it must
+ * never be fed to `set:html`. The discriminated union guarantees exactly ONE
+ * variable publisher notice: either the address notice (the owner typed an
+ * address in Studio) or the Article 1-1, II anonymity wording, so the two
+ * paragraphs can never be rendered together nor both be missing.
+ * The address is never logged.
+ */
+export function buildLegalNoticeModel({
+  siteSettings,
+  locale,
+}: {
+  siteSettings: SiteSettings | null;
+  locale: Locale;
+}): LegalNoticeModel {
+  const copy = LEGAL_NOTICE_COPY[locale];
+  // Defensive: sanitizeSiteSettings already cleaned the value.
+  const lines = (siteSettings?.publisherAddress ?? '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  return {
+    publisherNotice:
+      lines.length > 0
+        ? {kind: 'address', lead: copy.addressLead, lines}
+        : {kind: 'anonymity', text: copy.anonymityText},
+    hostedByNote: copy.hostedByNote,
+  };
+}
