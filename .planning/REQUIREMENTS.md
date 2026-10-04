@@ -88,13 +88,47 @@
 
 ## Traceability
 
-Filled by the roadmap.
+Filled by the roadmap on 2026-10-04. Phases 25-29 continue the numbering from v1.8's Phase 24. Each requirement maps to exactly one phase.
 
 | Requirement | Phase | Status |
 |---|---|---|
-| (to be filled by the roadmapper) | | |
+| SHOP-01 | Phase 25 | Pending |
+| SHOP-02 | Phase 25 | Pending |
+| SHOP-03 | Phase 25 | Pending |
+| SHOP-04 | Phase 25 | Pending |
+| SHOP-05 | Phase 25 | Pending |
+| SHOP-06 | Phase 25 | Pending |
+| SHOP-07 | Phase 25 | Pending |
+| CHK-01 | Phase 26 | Pending |
+| CHK-02 | Phase 27 | Pending |
+| CHK-03 | Phase 27 | Pending |
+| CHK-04 | Phase 27 | Pending |
+| CHK-05 | Phase 27 | Pending |
+| CHK-06 | Phase 27 | Pending |
+| CHK-07 | Phase 28 | Pending |
+| CHK-08 | Phase 26 | Pending |
+| SHIP-01 | Phase 27 | Pending |
+| SHIP-02 | Phase 27 | Pending |
+| SHIP-03 | Phase 28 | Pending |
+| SHIP-04 | Phase 28 | Pending |
+| LEGAL-01 | Phase 28 | Pending |
+| LEGAL-02 | Phase 28 | Pending |
+| LEGAL-03 | Phase 28 | Pending |
+| LEGAL-04 | Phase 28 | Pending |
+| LEGAL-05 | Phase 28 | Pending |
+| LIVE-01 | Phase 29 | Pending |
+| LIVE-02 | Phase 29 | Pending |
+| LIVE-03 | Phase 29 | Pending |
+| LIVE-04 | Phase 29 | Pending |
 
-**Coverage:** 28 requirements.
+**Coverage:** 28/28 requirements mapped (Phase 25: 7, Phase 26: 2, Phase 27: 7, Phase 28: 8, Phase 29: 4). Orphans: 0. Duplicates: 0.
+
+**Mapping notes:**
+- LIVE-01 is mapped to Phase 29, the phase it gates, but the work itself is the parallel administrative track, which starts at kickoff and is not a numbered phase.
+- LIVE-04 is mapped to Phase 29 as its closing criterion; it also runs as a local success criterion in Phases 25-28 (the UI-02/UI-03 precedent).
+- SHOP-07 is mapped to Phase 25 (where the stock model is decided); Phase 27 re-proves it under real stock movement.
+- CHK-07 sits in Phase 28 rather than Phase 27 because the choice between an own e-mail and Stripe's receipt depends on the legal review.
 
 ---
 *Requirements defined: 2026-10-04.*
+*Traceability filled: 2026-10-04 (roadmap created, Phases 25-29).*

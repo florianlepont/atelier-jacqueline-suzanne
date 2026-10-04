@@ -2,11 +2,14 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Boutique
+current_phase: 25
+current_phase_name: Read-Only Catalogue & Shop Flag
 status: planning
-last_updated: "2026-10-04T15:31:14.419Z"
+stopped_at: v2.0 Boutique roadmap created (Phases 25-29, 28/28 requirements mapped); ready for /gsd-discuss-phase 25 or /gsd-plan-phase 25
+last_updated: "2026-10-04T16:17:20.164Z"
 last_activity: 2026-10-04
+last_activity_desc: v2.0 roadmap created (Phases 25-29, 28/28 requirements mapped)
 progress:
-  total_phases: 0
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,17 +20,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-08-04)
+See: .planning/PROJECT.md (updated 2026-10-04)
 
-**Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1 milestone delivers the portfolio/about/contact foundation; v1.3 adds a non-transactional Éditions showcase; checkout still follows in the future v1.x shop milestone.)
-**Current focus:** Phase 24 — Cross-Linking & Contact CTA
+**Core value:** Visitors can browse Romane's photographic work and buy a piece through a real, working checkout — everything else supports that. (v1.0–v1.8 delivered the portfolio, About, Contact, Éditions showcase and the live OVH site; milestone v2.0 Boutique, roadmapped as Phases 25–29, adds the shop and Stripe checkout for limited-edition prints, with real sales gated on Romane's business registration and a professional legal and tax review.)
+**Current focus:** Phase 25 — Read-Only Catalogue & Shop Flag
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-10-04 — Milestone v2.0 started
+Phase: 25 of 29 (Read-Only Catalogue & Shop Flag)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-04 — v2.0 roadmap created (Phases 25-29, 28/28 requirements mapped)
 
 ## Performance Metrics
 
@@ -98,6 +101,7 @@ Last activity: 2026-10-04 — Milestone v2.0 started
 - v1.5 milestone "Global Improvements & Bug Fixes" roadmapped 2026-08-02: three new integer phases (17–19, continuing numbering from Phase 16; Phase 5 stays untouched/separately tracked and out of this milestone) cover all eight v1.5 requirements (HOME-11, HOME-12, PORT-04, PORT-05, PORT-06, EDN-09, UI-01, CONT-03) — all small, independent, single-or-few-component CSS/Astro/vanilla-JS bug fixes with no shared data model, so grouped by area/blast-radius into 3 phases rather than one giant phase or 8 thin ones. Phase 17 (Homepage Carousel & Intro Fixes — HOME-11, HOME-12): both bugs live in `HomeCarousel.astro` alone, no shared-component risk, done first. Phase 18 (Gallery & Éditions Display Fixes — PORT-04, PORT-05, PORT-06): `DetailHero.astro`, the shared `GalleryGrid.astro` thumbnail component, and the two gallery detail-page route files — contained to the Portfolio/Éditions display surface, done second. Phase 19 (Site-Wide Visual Polish — EDN-09, UI-01, CONT-03): `EditionsOverviewBody.astro`, the shared `PageTitleHeader.astro` consumed by Contact/About/Éditions, and `ContactPageBody.astro` — sequenced last because UI-01 touches the one component shared by three pages and must not reintroduce the horizontal-scroll bug Phase 16 fixed.
 - v1.6 milestone "Mobile Experience Redesign" roadmapped 2026-08-03: four new integer phases (20–23, continuing numbering from Phase 19; Phase 5 stays untouched/separately tracked and out of this milestone) cover all nine v1.6 requirements (HOME-13, HOME-14, HOME-15, HOME-16, PORT-07, EDN-10, EDN-11, ABOUT-05, UI-02). Sequenced by blast radius/dependency rather than one phase per requirement or per page: Phase 20 (Mobile Navigation & Accent Color — HOME-13, HOME-16): the homepage's mechanical, lower-risk pieces (mobile nav menu, per-visit random accent color reusing the existing `heroColor` field), done first with no sketch exploration needed, and the accent-color mechanism the next phase's scroll view will consume. Phase 21 (Homepage Scroll Experience — HOME-14, HOME-15): the milestone's biggest, riskiest, sketch-explored centerpiece — the scroll-driven single view replacing the carousel/grid toggle, plus the full-screen wordmark-to-letterform-zoom entry transition into it (HOME-15 is literally the entry transition into HOME-14's view, so kept in the same phase) — depends on Phase 20. Phase 22 (Gallery & Édition Scroll Navigation — PORT-07, EDN-10, EDN-11): PORT-07 and EDN-10 grouped because Gallery and Édition detail pages already share the `GalleryGrid`/`Lightbox` component surface (same Lightbox-retirement pattern applied to both); EDN-11 (sketch-explored intro-text legibility + primary-photo placement) folded into the same phase rather than split into a thin single-requirement phase, since it's a dependent next step on the same Édition detail page once EDN-10's scroll layout exists (the primary photo can only sit "among the others" once the others are shown in that new layout). Phase 23 (About Portrait Placement & Milestone Regression Close — ABOUT-05, UI-02): the isolated, single-component, sketch-explored About fix, kept standalone since it shares no surface with the other three phases (matching the Phase 15/16 precedent of keeping unrelated single-page fixes separate rather than force-merging them); UI-02 (the desktop/tablet-unchanged regression guard) is formally mapped here for traceability as the milestone's closing combined regression sweep, but per explicit user framing is also checked as a running local success criterion within Phases 20, 21, and 22 individually — not deferred to Phase 23 alone, since each earlier phase touches shared components also rendered on desktop.
 - [Roadmap]: v1.8 milestone "Cross-linking & Contact CTA" mapped to a single new phase (24), continuing integer numbering from Phase 23 — the highest phase number so far. Only 3 requirements (EDN-12, CONT-04, UI-03), 2 of them functional and genuinely independent (EDN-12 is a build-time reverse-lookup query + a link on the Portfolio gallery detail page; CONT-04 is a new shared CTA component rendered at the end of both the gallery AND édition photo sequences) with no dependency between them. Kept as one phase rather than two single-requirement phases: both touch the same Gallery detail page surface (EDN-12 exclusively, CONT-04 partially), so splitting would have meant two separate phases editing the same template for unrelated reasons — higher regression risk than doing both together and verifying once. UI-03 (mobile + desktop/tablet regression check) is not a separate phase — mirroring the v1.6 UI-02 precedent, it is the phase's own closing/running success criterion, not deferred to a dedicated final phase. These are the two backlog seeds SEED-001 and SEED-002 (see Deferred Items below, previously logged dormant at the v1.6/v1.7 milestone closes) — now in active scope as CONT-04 and EDN-12 respectively.
+- Phase 25-29 added: v2.0 milestone "Boutique" roadmapped 2026-10-04: five new integer phases (25-29, continuing numbering from Phase 24, not reset) cover all 28 v2.0 requirements (SHOP-01..07, CHK-01..08, SHIP-01..04, LEGAL-01..05, LIVE-01..04), mapped 28/28 with no orphans or duplicates. Phase 25 (Read-Only Catalogue & Shop Flag, SHOP-01..07) ships before any server code or payment, behind a build-time shop flag that is off by default, with "Prix sur demande" instead of prices until the VAT regime is confirmed. Phase 26 (Checkout Server Foundation, CHK-01, CHK-08) is the short technical trial plus the owner's host decision and the sandbox-only environment (Stripe test mode plus a separate Sanity staging dataset). Phase 27 (Test-Mode Checkout & Stock, CHK-02..06, SHIP-01, SHIP-02) is direct buy of one limited-edition print, no cart, reserve-then-pay stock, with the minimal delivery-zone model landing with checkout. Phase 28 (Delivery, VAT & Sales Legal Pages, SHIP-03, SHIP-04, CHK-07, LEGAL-01..05) overlaps Phase 27 in time, needs accountant and legal-reviewer input, and ends in a blocking professional-review plus Florian sign-off. Phase 29 (Go-Live Gate, LIVE-01..04) builds no features: it checks registration, Stripe live activation, one real purchase and refund in both languages and both viewport classes, Romane's one-page guide, and the final go decision. The administrative track (Romane's registration, accountant answers, Stripe dry run) is deliberately not a numbered phase: it runs in parallel from kickoff and gates Phase 29 through LIVE-01. LIVE-04 follows the UI-02/UI-03 precedent, running in Phases 25-28 and closing in Phase 29. Standard granularity applied (5 phases); Phase 26 is kept separate from Phase 27 despite having only two requirements because the host decision is an owner checkpoint that determines what Phase 27 builds.
 
 ### Decisions
 
@@ -161,6 +165,7 @@ Recent decisions affecting current work:
 
 - [Phase 05]: Contact-form recipient confirmed by the maintainer as contact@atelierjacquelinesuzanne.fr (D-07) — the existing publicEmail default, explicitly confirmed rather than assumed.
 - [Phase 05]: PHP mail() endpoint validation tested via source-invariant text assertions (no PHP runtime), per 05-VALIDATION.md Wave 0's recommendation for a single ~110-line script.
+- [Phase Roadmap]: v2.0 milestone "Boutique" mapped to five phases (25-29), continuing numbering from Phase 24. Order: read-only catalogue behind a build-time flag (25) -> checkout server foundation with the host trial and decision (26) -> sandbox checkout and stock (27) -> delivery/VAT/sales legal pages overlapping 27 (28) -> go-live gate (29). Launch products are limited-edition prints only, direct buy with no cart, and "Prix sur demande" until the VAT regime is confirmed. The administrative track (registration, accountant, Stripe dry run) is a parallel non-phase track gating Phase 29 via LIVE-01; LIVE-04 runs in Phases 25-28 and closes Phase 29. Unlike earlier milestones, three phases carry blocking human or professional sign-offs (26 host decision, 28 legal review plus Florian sign-off, 29 real purchase and go decision). No legal, tax or VAT advice is given in the roadmap. — Derived from the reconciled order in research/v2.0-boutique/SUMMARY.md, adapted to the owner decisions in REQUIREMENTS.md. The research's separate fulfilment/hardening phase was folded away: orders stay in the Stripe Dashboard, so its remaining pieces became CHK-06 (Phase 27) and LIVE-03 (Phase 29). CHK-07 sits in Phase 28 because the own-e-mail-versus-Stripe-receipt choice depends on the legal review. SHOP-07 is owned by Phase 25 (stock model decided there) and re-proved in Phase 27.
 
 ### Pending Todos
 
@@ -176,6 +181,9 @@ Both prior research-carryover items were resolved during Phase 1 execution:
 - OVH deployment method: confirmed via the OVH panel — "Free hosting" tier, SFTP enabled on port 22, host `ftp.cluster129.hosting.ovh.net`, user `atelihu`, home dir `/home/atelihu` (see 01-02-SUMMARY.md). Note: this same Free tier cannot attach any subdomain (multisite requires a paid tier) — Phase 1 staging used GitHub Pages instead; Phase 5's production cutover plan should account for the single-domain limitation.
 
 (The v1.3 Rebut/Éditions naming-overlap question carried here previously was resolved during Phase 11 — see PROJECT.md Key Decisions; removed as a blocker.)
+
+- [v2.0] Real sales are blocked until Romane's business registration (SIRET), the accountant's answers (VAT regime, art-work VAT classification, EU sales, invoicing, publisher address) and a professional legal review of the CGV/withdrawal/legal pages are done (LIVE-01, LEGAL-05). This is the parallel administrative track, not a numbered phase: it has external lead times, so it should start at kickoff. It gates Phase 29 and feeds Phase 25 (prices stay "Prix sur demande"), Phase 28 and Phase 29. Everything before go-live is built in Stripe sandbox against a Sanity staging dataset.
+- [v2.0 Phase 26] Owner decision needed before Phase 27 can be planned: where the checkout server runs (Cloudflare Worker is the research recommendation, PHP on OVH the fallback), decided after a short technical trial (CHK-01). Florian signs it off.
 
 ### Quick Tasks Completed
 
@@ -408,13 +416,13 @@ Items acknowledged and deferred at v1.8 milestone close on 2026-08-26 (`/gsd-com
 
 ## Session Continuity
 
-**Resume file:** .planning/MILESTONES.md
+**Resume file:** .planning/ROADMAP.md
 
-Last session: 2026-08-26T22:29:04.346Z
-Stopped at: v1.8 milestone complete and archived
+Last session: 2026-10-04T16:17:07.485Z
+Stopped at: v2.0 Boutique roadmap created (Phases 25-29, 28/28 requirements mapped); ready for /gsd-discuss-phase 25 or /gsd-plan-phase 25
 
-**Next up:** Scope the next milestone with `/gsd-new-milestone`. v1.0 through v1.8 are all shipped and archived; the site is live in production at atelierjacquelinesuzanne.fr with the reverse gallery↔édition cross-link (EDN-12) and universal end-of-sequence contact CTA (CONT-04) both live. The v1.x Shop/Checkout wave (Stripe, stock, shipping/VAT, commerce legal, Exhibitions) remains the only unscoped work — tracked in REQUIREMENTS.md's v2 section (soon to be archived to `.planning/milestones/v1.8-REQUIREMENTS.md`) — and is the natural candidate for the next milestone.
+**Next up:** Plan the first v2.0 phase with `/gsd-discuss-phase 25` then `/gsd-plan-phase 25` (Read-Only Catalogue & Shop Flag: no server code, no payment). v2.0 Boutique is roadmapped as Phases 25-29 (28/28 requirements mapped; see ROADMAP.md and REQUIREMENTS.md Traceability). Start the parallel administrative track now (Romane's registration, the accountant's answers, a Stripe onboarding dry run): it has external lead times and gates Phase 29. Phase 26 needs an owner sign-off on where the checkout server runs, and Phase 28 needs accountant and legal-reviewer input plus Florian's sign-off.
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Discuss or plan Phase 25 (/gsd-discuss-phase 25 or /gsd-plan-phase 25); start the administrative track in parallel
