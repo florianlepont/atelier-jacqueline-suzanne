@@ -40,7 +40,9 @@ async function resolvedDominantColor(page: Page): Promise<string> {
 }
 
 test.describe('homepage main background stays phone-only (260825-jvm)', () => {
-  test('desktop, carousel mode: main paints the dominant background, never the phone-canvas colour', async ({ page }) => {
+  test('desktop, carousel mode: main paints the dominant background, never the phone-canvas colour', async ({
+    page,
+  }) => {
     await page.goto('/');
 
     const rawPhoneCanvas = await resolvedPhoneCanvasColor(page);
@@ -54,7 +56,9 @@ test.describe('homepage main background stays phone-only (260825-jvm)', () => {
     expect(actual).not.toBe(forbiddenPhoneCanvas);
   });
 
-  test('desktop, grid mode: main paints the dominant background, never the phone-canvas colour nor any gallery hero accent', async ({ page }) => {
+  test('desktop, grid mode: main paints the dominant background, never the phone-canvas colour nor any gallery hero accent', async ({
+    page,
+  }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
     await expect(page.locator('[data-role="home-grid"]')).toBeVisible();
@@ -74,7 +78,9 @@ test.describe('homepage main background stays phone-only (260825-jvm)', () => {
     const heroColors = await page
       .locator('ul[data-role="home-carousel-data"] li')
       .evaluateAll((lis) =>
-        lis.map((li) => (li as HTMLElement).dataset.heroColor ?? '').filter((value) => value.length > 0),
+        lis
+          .map((li) => (li as HTMLElement).dataset.heroColor ?? '')
+          .filter((value) => value.length > 0),
       );
     for (const rawHeroColor of heroColors) {
       const normalizedHeroColor = await normalizeColor(page, rawHeroColor);

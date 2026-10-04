@@ -1,6 +1,6 @@
-import {describe, expect, it} from 'vitest';
-import type {Gallery, HomePage, SiteSettings} from '../../src/lib/sanity';
-import type {buildHomePageModel as BuildHomePageModel} from '../../src/lib/home-page-model';
+import { describe, expect, it } from 'vitest';
+import type { Gallery, HomePage, SiteSettings } from '../../src/lib/sanity';
+import type { buildHomePageModel as BuildHomePageModel } from '../../src/lib/home-page-model';
 
 // image.ts (imported transitively by home-page-model.ts) pulls the real
 // sanityClient value from sanity.ts, which throws at module-load time if
@@ -12,46 +12,45 @@ import type {buildHomePageModel as BuildHomePageModel} from '../../src/lib/home-
 process.env.SANITY_PROJECT_ID ??= 'test-project';
 process.env.SANITY_DATASET ??= 'test-dataset';
 
-const {buildHomePageModel, getHomeGalleryIndex, isHomeVisibleGallery} = (await import(
-  '../../src/lib/home-page-model'
-)) as {
-  buildHomePageModel: typeof BuildHomePageModel;
-  getHomeGalleryIndex: (galleries: Gallery[], slug: string) => number;
-  isHomeVisibleGallery: (gallery: Gallery) => boolean;
-};
+const { buildHomePageModel, getHomeGalleryIndex, isHomeVisibleGallery } =
+  (await import('../../src/lib/home-page-model')) as {
+    buildHomePageModel: typeof BuildHomePageModel;
+    getHomeGalleryIndex: (galleries: Gallery[], slug: string) => number;
+    isHomeVisibleGallery: (gallery: Gallery) => boolean;
+  };
 
 const image = (overrides: Partial<Gallery['images'][number]> = {}) => ({
-  asset: {_ref: 'image-cover-1200x800-jpg'},
-  alt: {fr: 'Une photographie', en: 'A photograph'},
-  dimensions: {width: 1200, height: 800, aspectRatio: 1.5},
+  asset: { _ref: 'image-cover-1200x800-jpg' },
+  alt: { fr: 'Une photographie', en: 'A photograph' },
+  dimensions: { width: 1200, height: 800, aspectRatio: 1.5 },
   ...overrides,
 });
 
 const gallery = (overrides: Partial<Gallery> = {}): Gallery => ({
   title: 'Paysages',
   slug: 'paysages',
-  statement: {fr: 'Déclaration FR', en: 'Statement EN'},
+  statement: { fr: 'Déclaration FR', en: 'Statement EN' },
   images: [image()],
   ...overrides,
 });
 
 const homePage = (overrides: Partial<HomePage> = {}): HomePage => ({
-  intro: {fr: 'Intro FR', en: 'Intro EN'},
+  intro: { fr: 'Intro FR', en: 'Intro EN' },
   seo: {
-    title: {fr: 'Titre SEO FR', en: 'SEO Title EN'},
-    description: {fr: 'Description FR', en: 'Description EN'},
+    title: { fr: 'Titre SEO FR', en: 'SEO Title EN' },
+    description: { fr: 'Description FR', en: 'Description EN' },
   },
   ...overrides,
 });
 
 const siteSettings = (overrides: Partial<SiteSettings> = {}): SiteSettings => ({
-  siteTitle: {fr: 'Atelier Jacqueline Suzanne', en: 'Atelier Jacqueline Suzanne'},
+  siteTitle: { fr: 'Atelier Jacqueline Suzanne', en: 'Atelier Jacqueline Suzanne' },
   navLabels: {
-    about: {fr: 'À propos', en: 'About'},
-    contact: {fr: 'Contact', en: 'Contact'},
-    editions: {fr: 'Éditions', en: 'Editions'},
+    about: { fr: 'À propos', en: 'About' },
+    contact: { fr: 'Contact', en: 'Contact' },
+    editions: { fr: 'Éditions', en: 'Editions' },
   },
-  footerText: {fr: '', en: ''},
+  footerText: { fr: '', en: '' },
   ...overrides,
 });
 
@@ -60,10 +59,10 @@ const PAGE_URL_EN = 'https://atelierjacquelinesuzanne.fr/en/';
 
 describe('buildHomePageModel', () => {
   it('produces the same structure for fr and en, diverging only on localized fields and URLs', () => {
-    const shared = {homePage: homePage(), siteSettings: siteSettings(), galleries: [gallery()]};
+    const shared = { homePage: homePage(), siteSettings: siteSettings(), galleries: [gallery()] };
 
-    const fr = buildHomePageModel({locale: 'fr', pageUrl: PAGE_URL_FR, ...shared});
-    const en = buildHomePageModel({locale: 'en', pageUrl: PAGE_URL_EN, ...shared});
+    const fr = buildHomePageModel({ locale: 'fr', pageUrl: PAGE_URL_FR, ...shared });
+    const en = buildHomePageModel({ locale: 'en', pageUrl: PAGE_URL_EN, ...shared });
 
     expect(fr.seoTitle).toBe('Titre SEO FR');
     expect(en.seoTitle).toBe('SEO Title EN');
@@ -105,8 +104,10 @@ describe('buildHomePageModel', () => {
     const withDefaultOnly = buildHomePageModel({
       locale: 'en',
       pageUrl: PAGE_URL_EN,
-      homePage: {intro: {en: 'Intro'}},
-      siteSettings: siteSettings({defaultSeo: {title: {en: 'Default title'}, description: {en: 'Default desc'}}}),
+      homePage: { intro: { en: 'Intro' } },
+      siteSettings: siteSettings({
+        defaultSeo: { title: { en: 'Default title' }, description: { en: 'Default desc' } },
+      }),
       galleries: [],
     });
     expect(withDefaultOnly.seoTitle).toBe('Default title');
@@ -115,8 +116,8 @@ describe('buildHomePageModel', () => {
     const withBoth = buildHomePageModel({
       locale: 'en',
       pageUrl: PAGE_URL_EN,
-      homePage: homePage({seo: {title: {en: 'Page title wins'}}}),
-      siteSettings: siteSettings({defaultSeo: {title: {en: 'Default title'}}}),
+      homePage: homePage({ seo: { title: { en: 'Page title wins' } } }),
+      siteSettings: siteSettings({ defaultSeo: { title: { en: 'Default title' } } }),
       galleries: [],
     });
     expect(withBoth.seoTitle).toBe('Page title wins');
@@ -126,7 +127,7 @@ describe('buildHomePageModel', () => {
     const model = buildHomePageModel({
       locale: 'fr',
       pageUrl: PAGE_URL_FR,
-      homePage: homePage({seo: {noIndex: true}}),
+      homePage: homePage({ seo: { noIndex: true } }),
       siteSettings: siteSettings(),
       galleries: [],
     });
@@ -139,7 +140,7 @@ describe('buildHomePageModel', () => {
       pageUrl: PAGE_URL_FR,
       homePage: homePage(),
       siteSettings: siteSettings(),
-      galleries: [gallery({showOnHomePage: false}), gallery({slug: 'visible'})],
+      galleries: [gallery({ showOnHomePage: false }), gallery({ slug: 'visible' })],
     });
     expect(model.galleries).toHaveLength(1);
     expect(model.galleries[0].slug).toBe('visible');
@@ -151,7 +152,7 @@ describe('buildHomePageModel', () => {
       pageUrl: PAGE_URL_FR,
       homePage: homePage(),
       siteSettings: siteSettings(),
-      galleries: [gallery({images: []}), gallery({slug: 'has-images'})],
+      galleries: [gallery({ images: [] }), gallery({ slug: 'has-images' })],
     });
     expect(model.galleries).toHaveLength(1);
     expect(model.galleries[0].slug).toBe('has-images');
@@ -163,7 +164,7 @@ describe('buildHomePageModel', () => {
       pageUrl: PAGE_URL_EN,
       homePage: homePage(),
       siteSettings: siteSettings(),
-      galleries: [gallery({images: [image({alt: {fr: 'Seulement FR'} as never})]})],
+      galleries: [gallery({ images: [image({ alt: { fr: 'Seulement FR' } as never })] })],
     });
     expect(model.galleries[0].alt).toBe('');
   });
@@ -174,7 +175,7 @@ describe('buildHomePageModel', () => {
       pageUrl: PAGE_URL_EN,
       homePage: homePage(),
       siteSettings: siteSettings(),
-      galleries: [gallery({statement: {} as never})],
+      galleries: [gallery({ statement: {} as never })],
     });
     expect(model.galleries[0].statement).toBe('');
   });
@@ -185,7 +186,7 @@ describe('buildHomePageModel', () => {
       pageUrl: PAGE_URL_FR,
       homePage: homePage(),
       siteSettings: siteSettings(),
-      galleries: [gallery({heroColor: 'plum'})],
+      galleries: [gallery({ heroColor: 'plum' })],
     });
     expect(model.galleries[0].heroColor).toBeTruthy();
     expect(model.galleries[0].heroTextColor).toBeTruthy();
@@ -197,7 +198,7 @@ describe('buildHomePageModel', () => {
       pageUrl: PAGE_URL_FR,
       homePage: homePage(),
       siteSettings: siteSettings(),
-      galleries: [gallery({heroColor: undefined})],
+      galleries: [gallery({ heroColor: undefined })],
     });
     expect(model.galleries[0].heroColor).toBeUndefined();
     expect(model.galleries[0].heroTextColor).toBeUndefined();
@@ -220,50 +221,53 @@ describe('buildHomePageModel', () => {
 describe('isHomeVisibleGallery (260825-hl7 bug 2: extracted homepage-visibility predicate)', () => {
   it('is true for a gallery with images and showOnHomePage not explicitly false', () => {
     expect(isHomeVisibleGallery(gallery())).toBe(true);
-    expect(isHomeVisibleGallery(gallery({showOnHomePage: true}))).toBe(true);
+    expect(isHomeVisibleGallery(gallery({ showOnHomePage: true }))).toBe(true);
   });
 
   it('is false when showOnHomePage is explicitly false', () => {
-    expect(isHomeVisibleGallery(gallery({showOnHomePage: false}))).toBe(false);
+    expect(isHomeVisibleGallery(gallery({ showOnHomePage: false }))).toBe(false);
   });
 
   it('is false when the gallery has no images', () => {
-    expect(isHomeVisibleGallery(gallery({images: []}))).toBe(false);
+    expect(isHomeVisibleGallery(gallery({ images: [] }))).toBe(false);
   });
 });
 
 describe('getHomeGalleryIndex (260825-hl7 bug 2: shared index basis for the detail-page accent fallback)', () => {
   it('returns the 0-based position among homepage-visible galleries only', () => {
     const galleries = [
-      gallery({slug: 'first'}),
-      gallery({slug: 'hidden', showOnHomePage: false}),
-      gallery({slug: 'second'}),
+      gallery({ slug: 'first' }),
+      gallery({ slug: 'hidden', showOnHomePage: false }),
+      gallery({ slug: 'second' }),
     ];
     expect(getHomeGalleryIndex(galleries, 'first')).toBe(0);
     expect(getHomeGalleryIndex(galleries, 'second')).toBe(1);
   });
 
   it('returns -1 for a gallery excluded from the homepage (showOnHomePage: false)', () => {
-    const galleries = [gallery({slug: 'first'}), gallery({slug: 'hidden', showOnHomePage: false})];
+    const galleries = [
+      gallery({ slug: 'first' }),
+      gallery({ slug: 'hidden', showOnHomePage: false }),
+    ];
     expect(getHomeGalleryIndex(galleries, 'hidden')).toBe(-1);
   });
 
   it('returns -1 for a gallery with no images', () => {
-    const galleries = [gallery({slug: 'first'}), gallery({slug: 'empty', images: []})];
+    const galleries = [gallery({ slug: 'first' }), gallery({ slug: 'empty', images: [] })];
     expect(getHomeGalleryIndex(galleries, 'empty')).toBe(-1);
   });
 
   it('returns -1 for a slug not present in the list at all', () => {
-    const galleries = [gallery({slug: 'first'})];
+    const galleries = [gallery({ slug: 'first' })];
     expect(getHomeGalleryIndex(galleries, 'does-not-exist')).toBe(-1);
   });
 
   it('produces the same index buildHomePageModel would render that gallery at (order-preserving parity)', () => {
     const galleries = [
-      gallery({slug: 'a'}),
-      gallery({slug: 'b', showOnHomePage: false}),
-      gallery({slug: 'c'}),
-      gallery({slug: 'd'}),
+      gallery({ slug: 'a' }),
+      gallery({ slug: 'b', showOnHomePage: false }),
+      gallery({ slug: 'c' }),
+      gallery({ slug: 'd' }),
     ];
     const model = buildHomePageModel({
       locale: 'fr',

@@ -6,7 +6,7 @@ import {
   pickRandomGalleryIndex,
   wordmarkPhotoFilter,
 } from '../lib/home-carousel';
-import {resolveAutomaticAccent} from '../lib/site-config';
+import { resolveAutomaticAccent } from '../lib/site-config';
 
 export interface HomeRuntimeScope {
   readonly signal: AbortSignal;
@@ -122,7 +122,9 @@ export function mountDesktopHomeCarousel(root: HTMLElement): () => void {
   // same value for the exact same homepage index — see that module's own
   // doc comment for the full rationale.
   const heroImg = hero.querySelector<HTMLImageElement>('[data-role="hero-image"]');
-  const heroPlaceholderImg = hero.querySelector<HTMLImageElement>('[data-role="hero-image-placeholder"]');
+  const heroPlaceholderImg = hero.querySelector<HTMLImageElement>(
+    '[data-role="hero-image-placeholder"]',
+  );
   const indexLabel = hero.querySelector<HTMLElement>('[data-role="index-label"]');
   const titleEl = hero.querySelector<HTMLElement>('[data-role="gallery-title"]');
   const accentPanel = hero.querySelector<HTMLElement>('[data-role="accent-panel"]');
@@ -132,12 +134,16 @@ export function mountDesktopHomeCarousel(root: HTMLElement): () => void {
   const wordmarkStackEl = hero.querySelector<HTMLElement>('.home-hero__wordmark-stack');
   const wordmarkPeekPrevEl = hero.querySelector<HTMLElement>('.home-hero__wordmark-peek--prev');
   const wordmarkPeekNextEl = hero.querySelector<HTMLElement>('.home-hero__wordmark-peek--next');
-  const progressDashes = Array.from(hero.querySelectorAll<HTMLButtonElement>('[data-role="progress"] .home-hero__progress-dash'));
+  const progressDashes = Array.from(
+    hero.querySelectorAll<HTMLButtonElement>('[data-role="progress"] .home-hero__progress-dash'),
+  );
   const autoplayToggle = hero.querySelector<HTMLButtonElement>('[data-role="autoplay-toggle"]');
 
   // Grid tiles are server-rendered once and never re-rendered by
   // render(); their listeners belong to this desktop lifecycle.
-  const gridTileImgs = Array.from(root.querySelectorAll<HTMLImageElement>('.home-grid__tile-img--sharp'));
+  const gridTileImgs = Array.from(
+    root.querySelectorAll<HTMLImageElement>('.home-grid__tile-img--sharp'),
+  );
   gridTileImgs.forEach((img) => {
     if (img.complete) {
       showSharp(img);
@@ -316,7 +322,13 @@ export function mountDesktopHomeCarousel(root: HTMLElement): () => void {
     peekEl.style.setProperty('--wordmark-bg-position', peekResult.position);
 
     const heroRect = heroImg.getBoundingClientRect();
-    const seam = computeWordmarkSeamFraction(zone, heroRect.left, heroRect.right, wmRect.left, wmRect.width);
+    const seam = computeWordmarkSeamFraction(
+      zone,
+      heroRect.left,
+      heroRect.right,
+      wmRect.left,
+      wmRect.width,
+    );
     wordmarkStackEl.style.setProperty('--wm-seam', String(seam));
     wordmarkStackEl.dataset.peekZone = zone;
   }
@@ -431,8 +443,14 @@ export function mountDesktopHomeCarousel(root: HTMLElement): () => void {
         const onError = () => showSharp(heroImg);
         // 'error' covers a failed fetch (bad asset, transient CDN issue) —
         // without it the hero stays stuck on the blurred placeholder forever.
-        heroImg.addEventListener('load', onLoad, { once: true, signal: pendingHeroLoadCtrl.signal });
-        heroImg.addEventListener('error', onError, { once: true, signal: pendingHeroLoadCtrl.signal });
+        heroImg.addEventListener('load', onLoad, {
+          once: true,
+          signal: pendingHeroLoadCtrl.signal,
+        });
+        heroImg.addEventListener('error', onError, {
+          once: true,
+          signal: pendingHeroLoadCtrl.signal,
+        });
       }
     }
     if (indexLabel) {
@@ -529,7 +547,12 @@ export function mountDesktopHomeCarousel(root: HTMLElement): () => void {
     // reduced-motion listener, and the manual-nav resumes in
     // goToPrev/goToNext/goToIndex — already funnels through) rather
     // than duplicated at each call site.
-    if (autoAdvancePausedByUser || phoneViewport.matches || root!.dataset.displayMode !== 'carousel') return;
+    if (
+      autoAdvancePausedByUser ||
+      phoneViewport.matches ||
+      root!.dataset.displayMode !== 'carousel'
+    )
+      return;
     timer = runtime.setInterval(() => {
       carouselIndex = (carouselIndex + 1) % galleries.length;
       // quick-260803-bvu (Item 1): auto-advance must always look like
@@ -577,29 +600,37 @@ export function mountDesktopHomeCarousel(root: HTMLElement): () => void {
     autoplayToggle.setAttribute(
       'aria-label',
       autoAdvancePausedByUser
-        ? autoplayToggle.dataset.labelPlay ?? ''
-        : autoplayToggle.dataset.labelPause ?? '',
+        ? (autoplayToggle.dataset.labelPlay ?? '')
+        : (autoplayToggle.dataset.labelPause ?? ''),
     );
   }
 
-  autoplayToggle?.addEventListener('click', () => {
-    hasUserChosenAutoplay = true;
-    autoAdvancePausedByUser = !autoAdvancePausedByUser;
-    syncAutoplayControl();
-    if (autoAdvancePausedByUser) {
-      stopAutoAdvance();
-    } else {
-      startAutoAdvance();
-    }
-  }, { signal: runtime.signal });
+  autoplayToggle?.addEventListener(
+    'click',
+    () => {
+      hasUserChosenAutoplay = true;
+      autoAdvancePausedByUser = !autoAdvancePausedByUser;
+      syncAutoplayControl();
+      if (autoAdvancePausedByUser) {
+        stopAutoAdvance();
+      } else {
+        startAutoAdvance();
+      }
+    },
+    { signal: runtime.signal },
+  );
 
-  reduceMotionQuery.addEventListener('change', (event) => {
-    if (hasUserChosenAutoplay) return;
-    autoAdvancePausedByUser = event.matches;
-    syncAutoplayControl();
-    if (autoAdvancePausedByUser) stopAutoAdvance();
-    else startAutoAdvance();
-  }, { signal: runtime.signal });
+  reduceMotionQuery.addEventListener(
+    'change',
+    (event) => {
+      if (hasUserChosenAutoplay) return;
+      autoAdvancePausedByUser = event.matches;
+      syncAutoplayControl();
+      if (autoAdvancePausedByUser) stopAutoAdvance();
+      else startAutoAdvance();
+    },
+    { signal: runtime.signal },
+  );
 
   // CR-01: a resize/orientation change crossing the 767px breakpoint
   // (e.g. rotating a tablet, or a desktop window narrowed past it)
@@ -607,10 +638,14 @@ export function mountDesktopHomeCarousel(root: HTMLElement): () => void {
   // load. startAutoAdvance() already no-ops if paused-by-user or
   // still below the breakpoint, so this is safe to call
   // unconditionally on the "now wider" transition.
-  phoneViewport.addEventListener('change', () => {
-    if (phoneViewport.matches) stopAutoAdvance();
-    else startAutoAdvance();
-  }, { signal: runtime.signal });
+  phoneViewport.addEventListener(
+    'change',
+    () => {
+      if (phoneViewport.matches) stopAutoAdvance();
+      else startAutoAdvance();
+    },
+    { signal: runtime.signal },
+  );
 
   function showCarousel() {
     root!.dataset.displayMode = 'carousel';
@@ -660,19 +695,23 @@ export function mountDesktopHomeCarousel(root: HTMLElement): () => void {
   }
 
   progressDashes.forEach((dash) => {
-    dash.addEventListener('click', () => {
-      const i = Number(dash.dataset.index);
-      if (!Number.isNaN(i)) goToIndex(i);
-      // HOME-11 fallout fix: a mouse click on this <button> leaves it
-      // holding DOM focus in Chromium, which — now that hover no
-      // longer pauses/resumes (D-01) — would permanently freeze
-      // auto-advance via the focusin/focusout pair (D-02) until the
-      // user tabs elsewhere. `:focus-visible` distinguishes a real
-      // keyboard-driven focus (kept, so D-02's Tab-in pause still
-      // works) from this mouse-click focus (blurred immediately, so
-      // the timer resumes via `focusout`).
-      if (!dash.matches(':focus-visible')) dash.blur();
-    }, { signal: runtime.signal });
+    dash.addEventListener(
+      'click',
+      () => {
+        const i = Number(dash.dataset.index);
+        if (!Number.isNaN(i)) goToIndex(i);
+        // HOME-11 fallout fix: a mouse click on this <button> leaves it
+        // holding DOM focus in Chromium, which — now that hover no
+        // longer pauses/resumes (D-01) — would permanently freeze
+        // auto-advance via the focusin/focusout pair (D-02) until the
+        // user tabs elsewhere. `:focus-visible` distinguishes a real
+        // keyboard-driven focus (kept, so D-02's Tab-in pause still
+        // works) from this mouse-click focus (blurred immediately, so
+        // the timer resumes via `focusout`).
+        if (!dash.matches(':focus-visible')) dash.blur();
+      },
+      { signal: runtime.signal },
+    );
   });
 
   // Direct request: arrow-key navigation, only while the carousel
@@ -680,21 +719,25 @@ export function mountDesktopHomeCarousel(root: HTMLElement): () => void {
   // form control elsewhere on the page (About/Contact share this
   // layout's header, and a stray ArrowLeft/ArrowRight while typing
   // in an <input> shouldn't hijack the carousel).
-  document.addEventListener('keydown', (event) => {
-    // CR-01 (see IN-01): the dataset check alone never gates this off
-    // on a phone, for the same reason startAutoAdvance() needed its
-    // own explicit phoneViewport check above.
-    if (root!.dataset.displayMode !== 'carousel' || phoneViewport.matches) return;
-    const target = event.target as HTMLElement | null;
-    if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
-    if (event.key === 'ArrowLeft') {
-      event.preventDefault();
-      goToPrev();
-    } else if (event.key === 'ArrowRight') {
-      event.preventDefault();
-      goToNext();
-    }
-  }, { signal: runtime.signal });
+  document.addEventListener(
+    'keydown',
+    (event) => {
+      // CR-01 (see IN-01): the dataset check alone never gates this off
+      // on a phone, for the same reason startAutoAdvance() needed its
+      // own explicit phoneViewport check above.
+      if (root!.dataset.displayMode !== 'carousel' || phoneViewport.matches) return;
+      const target = event.target as HTMLElement | null;
+      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        goToPrev();
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        goToNext();
+      }
+    },
+    { signal: runtime.signal },
+  );
 
   // Direct request: swipe support on mobile. touchstart/touchend
   // (not touchmove) — only the net horizontal distance matters, and
@@ -708,12 +751,16 @@ export function mountDesktopHomeCarousel(root: HTMLElement): () => void {
   let touchStartX = 0;
   let touchStartY = 0;
   const heroPhoto = hero.querySelector<HTMLElement>('.home-hero__photo');
-  heroPhoto?.addEventListener('touchstart', (event) => {
-    const touch = event.changedTouches[0];
-    if (!touch) return;
-    touchStartX = touch.clientX;
-    touchStartY = touch.clientY;
-  }, { passive: true, signal: runtime.signal });
+  heroPhoto?.addEventListener(
+    'touchstart',
+    (event) => {
+      const touch = event.changedTouches[0];
+      if (!touch) return;
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+    },
+    { passive: true, signal: runtime.signal },
+  );
   // quick-260726-u97: mobile tap-to-open — extends this SAME handler
   // (not a second touch listener) so it composes cleanly with the
   // swipe it already detects. A genuine tap (negligible movement on
@@ -722,33 +769,42 @@ export function mountDesktopHomeCarousel(root: HTMLElement): () => void {
   // deltaY) is neither, so it correctly does nothing — a tap never
   // fires mid-swipe and never hijacks a vertical scroll.
   const TAP_MAX_MOVEMENT = 10;
-  heroPhoto?.addEventListener('touchend', (event) => {
-    // D-11 (20-REVIEW.md CR-01): a tap that bubbles up from a caption
-    // control — a progress dash or the autoplay toggle — must not be
-    // reinterpreted as a tap-to-open. Mirrors the existing desktop
-    // click handler's own .home-hero__caption exclusion below. This
-    // guard belongs HERE (not in the new mobile scroll deck) because
-    // this handler stays live for touchscreen tablets at 768px and
-    // wider (phase success criterion 5).
-    const target = event.target as HTMLElement | null;
-    if (target?.closest('.home-hero__caption')) return;
-    const touch = event.changedTouches[0];
-    if (!touch) return;
-    const deltaX = touch.clientX - touchStartX;
-    const deltaY = touch.clientY - touchStartY;
-    const direction = detectSwipeDirection(deltaX, deltaY, SWIPE_MIN_DISTANCE, SWIPE_DIRECTION_RATIO);
-    if (direction === 'next') {
-      goToNext();
-      return;
-    }
-    if (direction === 'prev') {
-      goToPrev();
-      return;
-    }
-    if (Math.abs(deltaX) <= TAP_MAX_MOVEMENT && Math.abs(deltaY) <= TAP_MAX_MOVEMENT) {
-      openCurrent();
-    }
-  }, { passive: true, signal: runtime.signal });
+  heroPhoto?.addEventListener(
+    'touchend',
+    (event) => {
+      // D-11 (20-REVIEW.md CR-01): a tap that bubbles up from a caption
+      // control — a progress dash or the autoplay toggle — must not be
+      // reinterpreted as a tap-to-open. Mirrors the existing desktop
+      // click handler's own .home-hero__caption exclusion below. This
+      // guard belongs HERE (not in the new mobile scroll deck) because
+      // this handler stays live for touchscreen tablets at 768px and
+      // wider (phase success criterion 5).
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('.home-hero__caption')) return;
+      const touch = event.changedTouches[0];
+      if (!touch) return;
+      const deltaX = touch.clientX - touchStartX;
+      const deltaY = touch.clientY - touchStartY;
+      const direction = detectSwipeDirection(
+        deltaX,
+        deltaY,
+        SWIPE_MIN_DISTANCE,
+        SWIPE_DIRECTION_RATIO,
+      );
+      if (direction === 'next') {
+        goToNext();
+        return;
+      }
+      if (direction === 'prev') {
+        goToPrev();
+        return;
+      }
+      if (Math.abs(deltaX) <= TAP_MAX_MOVEMENT && Math.abs(deltaY) <= TAP_MAX_MOVEMENT) {
+        openCurrent();
+      }
+    },
+    { passive: true, signal: runtime.signal },
+  );
 
   // D3: reuses the current slide's title link — its href AND its
   // existing click listener (which already calls setCrossDocPhoto())
@@ -838,12 +894,18 @@ export function mountDesktopHomeCarousel(root: HTMLElement): () => void {
     }
     if (currentZone === 'left') {
       lastPeekZone = 'left';
-      heroPhoto.style.setProperty('--peek-shift', `${currentProximity * PEEK_MAX_PUSH_FRACTION * 100}%`);
+      heroPhoto.style.setProperty(
+        '--peek-shift',
+        `${currentProximity * PEEK_MAX_PUSH_FRACTION * 100}%`,
+      );
       if (peekPrev) peekPrev.style.transform = `translateX(${-100 + currentProximity * 100}%)`;
       if (peekNext) peekNext.style.transform = 'translateX(100%)';
     } else if (currentZone === 'right') {
       lastPeekZone = 'right';
-      heroPhoto.style.setProperty('--peek-shift', `${-currentProximity * PEEK_MAX_PUSH_FRACTION * 100}%`);
+      heroPhoto.style.setProperty(
+        '--peek-shift',
+        `${-currentProximity * PEEK_MAX_PUSH_FRACTION * 100}%`,
+      );
       if (peekNext) peekNext.style.transform = `translateX(${100 - currentProximity * 100}%)`;
       if (peekPrev) peekPrev.style.transform = 'translateX(-100%)';
     } else {
@@ -939,9 +1001,10 @@ export function mountDesktopHomeCarousel(root: HTMLElement): () => void {
       // neutral, all un-eased), force a reflow, then remove
       // .is-opening.
       photo.classList.add('is-opening');
-      carouselIndex = direction === 'next'
-        ? (carouselIndex + 1) % galleries.length
-        : (carouselIndex - 1 + galleries.length) % galleries.length;
+      carouselIndex =
+        direction === 'next'
+          ? (carouselIndex + 1) % galleries.length
+          : (carouselIndex - 1 + galleries.length) % galleries.length;
       render();
       void photo.offsetWidth;
       photo.classList.remove('is-opening');
@@ -979,80 +1042,92 @@ export function mountDesktopHomeCarousel(root: HTMLElement): () => void {
     peekPrev = heroPhoto.querySelector<HTMLImageElement>('[data-role="peek-prev"]');
     peekNext = heroPhoto.querySelector<HTMLImageElement>('[data-role="peek-next"]');
 
-    heroPhoto.addEventListener('mousemove', (event) => {
-      // quick-260727-bsm (Bug C): a stray move mid-commit must not
-      // rewrite --peek-shift and fight the in-progress full-slide
-      // animation commitEdge() is driving.
-      if (committing) return;
-      const rect = heroPhoto.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      if (cursorEl) {
-        cursorEl.style.transform = `translate(${x}px, ${y}px)`;
-      }
-      // quick-260803-bvu (Item 2): the progress dashes and the
-      // pause/play toggle live inside .home-hero__caption, which sits
-      // inside the left EDGE_ZONE_FRACTION band — so the accent
-      // directional pill (.home-hero__cursor-ring, z-index 4) was
-      // painting directly over them. is-over-controls (CSS below)
-      // hides the custom cursor whenever the pointer is over the
-      // caption and this skips the peek push entirely, restoring an
-      // unobstructed hit area with the controls' own native pointer
-      // cursor (.home-hero__progress-dash/.home-hero__autoplay-toggle
-      // already set `cursor: pointer` explicitly, confirmed live —
-      // that part was never broken, only the visual overlap was).
-      const target = event.target as HTMLElement | null;
-      const overControls = !!target?.closest('.home-hero__caption');
-      heroPhoto.classList.toggle('is-over-controls', overControls);
-      if (overControls) {
+    heroPhoto.addEventListener(
+      'mousemove',
+      (event) => {
+        // quick-260727-bsm (Bug C): a stray move mid-commit must not
+        // rewrite --peek-shift and fight the in-progress full-slide
+        // animation commitEdge() is driving.
+        if (committing) return;
+        const rect = heroPhoto.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        if (cursorEl) {
+          cursorEl.style.transform = `translate(${x}px, ${y}px)`;
+        }
+        // quick-260803-bvu (Item 2): the progress dashes and the
+        // pause/play toggle live inside .home-hero__caption, which sits
+        // inside the left EDGE_ZONE_FRACTION band — so the accent
+        // directional pill (.home-hero__cursor-ring, z-index 4) was
+        // painting directly over them. is-over-controls (CSS below)
+        // hides the custom cursor whenever the pointer is over the
+        // caption and this skips the peek push entirely, restoring an
+        // unobstructed hit area with the controls' own native pointer
+        // cursor (.home-hero__progress-dash/.home-hero__autoplay-toggle
+        // already set `cursor: pointer` explicitly, confirmed live —
+        // that part was never broken, only the visual overlap was).
+        const target = event.target as HTMLElement | null;
+        const overControls = !!target?.closest('.home-hero__caption');
+        heroPhoto.classList.toggle('is-over-controls', overControls);
+        if (overControls) {
+          currentZone = 'center';
+          currentProximity = 0;
+          if (cursorEl) {
+            cursorEl.dataset.zone = 'center';
+          }
+          resetPeek();
+          return;
+        }
+        const { zone, proximity } = computeHoverZone(x / rect.width, EDGE_ZONE_FRACTION);
+        currentZone = zone;
+        currentProximity = proximity;
+        if (cursorEl) {
+          cursorEl.dataset.zone = zone;
+        }
+        updatePeek();
+      },
+      { signal: runtime.signal },
+    );
+
+    heroPhoto.addEventListener(
+      'mouseenter',
+      () => {
+        heroPhoto.classList.add('is-cursor-active');
+        // quick-260727-drq (Bug 1): arms the instant, un-eased peek
+        // transform for the whole hover — removed only right before the
+        // two discrete moments (mouseleave's resetPeek() below, and
+        // commitEdge()'s full-slide targets) so those keep the 420ms
+        // ease.
+        heroPhoto.classList.add('is-tracking');
+      },
+      { signal: runtime.signal },
+    );
+
+    heroPhoto.addEventListener(
+      'mouseleave',
+      () => {
+        heroPhoto.classList.remove('is-cursor-active');
+        // quick-260803-bvu (Item 2): belt-and-braces — a mouseleave that
+        // fires while the pointer was last over the caption (a fast
+        // exit can skip an intermediate mousemove) must not leave the
+        // cursor permanently hidden for the next hover session.
+        heroPhoto.classList.remove('is-over-controls');
         currentZone = 'center';
         currentProximity = 0;
         if (cursorEl) {
           cursorEl.dataset.zone = 'center';
         }
-        resetPeek();
-        return;
-      }
-      const { zone, proximity } = computeHoverZone(x / rect.width, EDGE_ZONE_FRACTION);
-      currentZone = zone;
-      currentProximity = proximity;
-      if (cursorEl) {
-        cursorEl.dataset.zone = zone;
-      }
-      updatePeek();
-    }, { signal: runtime.signal });
-
-    heroPhoto.addEventListener('mouseenter', () => {
-      heroPhoto.classList.add('is-cursor-active');
-      // quick-260727-drq (Bug 1): arms the instant, un-eased peek
-      // transform for the whole hover — removed only right before the
-      // two discrete moments (mouseleave's resetPeek() below, and
-      // commitEdge()'s full-slide targets) so those keep the 420ms
-      // ease.
-      heroPhoto.classList.add('is-tracking');
-    }, { signal: runtime.signal });
-
-    heroPhoto.addEventListener('mouseleave', () => {
-      heroPhoto.classList.remove('is-cursor-active');
-      // quick-260803-bvu (Item 2): belt-and-braces — a mouseleave that
-      // fires while the pointer was last over the caption (a fast
-      // exit can skip an intermediate mousemove) must not leave the
-      // cursor permanently hidden for the next hover session.
-      heroPhoto.classList.remove('is-over-controls');
-      currentZone = 'center';
-      currentProximity = 0;
-      if (cursorEl) {
-        cursorEl.dataset.zone = 'center';
-      }
-      // quick-260727-drq (Bug 1): removed BEFORE resetPeek() below so
-      // the recede back to neutral re-engages the 420ms ease.
-      heroPhoto.classList.remove('is-tracking');
-      // quick-260727-bsm (Bug C): a commit already in flight owns the
-      // peek layers' animation to full-slide — resetting them here
-      // would fight it. finish()'s own render()->resetPeek() call
-      // handles the neutral reset once the commit completes.
-      if (!committing) resetPeek();
-    }, { signal: runtime.signal });
+        // quick-260727-drq (Bug 1): removed BEFORE resetPeek() below so
+        // the recede back to neutral re-engages the 420ms ease.
+        heroPhoto.classList.remove('is-tracking');
+        // quick-260727-bsm (Bug C): a commit already in flight owns the
+        // peek layers' animation to full-slide — resetting them here
+        // would fight it. finish()'s own render()->resetPeek() call
+        // handles the neutral reset once the commit completes.
+        if (!committing) resetPeek();
+      },
+      { signal: runtime.signal },
+    );
 
     // Desktop click: center zone opens the current gallery, edge
     // zones commit the in-progress peek to a full slide then swap
@@ -1060,18 +1135,22 @@ export function mountDesktopHomeCarousel(root: HTMLElement): () => void {
     // ignored so the title link, progress dashes, and autoplay toggle
     // keep their own existing handlers — they must never be hijacked
     // by zone navigation.
-    heroPhoto.addEventListener('click', (event) => {
-      if (committing || opening) return;
-      const target = event.target as HTMLElement;
-      if (target.closest('.home-hero__caption')) return;
-      if (currentZone === 'left') {
-        commitEdge('prev');
-      } else if (currentZone === 'right') {
-        commitEdge('next');
-      } else {
-        openCurrent();
-      }
-    }, { signal: runtime.signal });
+    heroPhoto.addEventListener(
+      'click',
+      (event) => {
+        if (committing || opening) return;
+        const target = event.target as HTMLElement;
+        if (target.closest('.home-hero__caption')) return;
+        if (currentZone === 'left') {
+          commitEdge('prev');
+        } else if (currentZone === 'right') {
+          commitEdge('next');
+        } else {
+          openCurrent();
+        }
+      },
+      { signal: runtime.signal },
+    );
   }
 
   // D-01/D-02/D-03: a single stateful button — its aria-label always
@@ -1079,25 +1158,29 @@ export function mountDesktopHomeCarousel(root: HTMLElement): () => void {
   // attributes (the plain module script can't read frontmatter vars).
   const modeToggleBtn = root.querySelector<HTMLButtonElement>('[data-role="mode-toggle"]');
 
-  modeToggleBtn?.addEventListener('click', () => {
-    // Stop the periodic attention-pulse (see .home-toggle--used in
-    // the <style> block) for good once the visitor has actually
-    // found and used the control — no reason to keep nudging it.
-    modeToggleBtn.classList.add('home-toggle--used');
+  modeToggleBtn?.addEventListener(
+    'click',
+    () => {
+      // Stop the periodic attention-pulse (see .home-toggle--used in
+      // the <style> block) for good once the visitor has actually
+      // found and used the control — no reason to keep nudging it.
+      modeToggleBtn.classList.add('home-toggle--used');
 
-    const goingToGrid = root!.dataset.displayMode === 'carousel';
+      const goingToGrid = root!.dataset.displayMode === 'carousel';
 
-    // Accessible name flips synchronously, outside the transition
-    // callback — correct even before the (possibly deferred-a-frame)
-    // DOM mutation below runs.
-    modeToggleBtn.setAttribute(
-      'aria-label',
-      goingToGrid ? modeToggleBtn.dataset.labelCarousel ?? '' : modeToggleBtn.dataset.labelGrid ?? '',
-    );
+      // Accessible name flips synchronously, outside the transition
+      // callback — correct even before the (possibly deferred-a-frame)
+      // DOM mutation below runs.
+      modeToggleBtn.setAttribute(
+        'aria-label',
+        goingToGrid
+          ? (modeToggleBtn.dataset.labelCarousel ?? '')
+          : (modeToggleBtn.dataset.labelGrid ?? ''),
+      );
 
-    const mutate = goingToGrid ? showGrid : showCarousel;
+      const mutate = goingToGrid ? showGrid : showCarousel;
 
-    /* The native View Transitions API composites full-page snapshots
+      /* The native View Transitions API composites full-page snapshots
        while this switch moves both a photo and a coloured accent
        panel. In WebKit/Chromium that compositor can temporarily paint
        the accent snapshot across the header, even though the header's
@@ -1105,8 +1188,10 @@ export function mountDesktopHomeCarousel(root: HTMLElement): () => void {
        colour, so this particular switch deliberately uses a direct DOM
        swap. The carousel's in-gallery photo motion remains unchanged;
        only the unreliable grid/carousel morph is removed. */
-    mutate();
-  }, { signal: runtime.signal });
+      mutate();
+    },
+    { signal: runtime.signal },
+  );
 
   // quick-260725-tqs (Item 6, Part C): land on the gallery requested
   // by DetailHero's scroll-up-to-return gesture (?carousel=<slug>).
@@ -1175,7 +1260,10 @@ export function mountDesktopHomeCarousel(root: HTMLElement): () => void {
     const randomGallery = galleries[randomIndex];
     const randomFallback = resolveAutomaticAccent(randomIndex);
     const randomAccent = randomGallery?.heroColor
-      ? { bg: randomGallery.heroColor, text: randomGallery.heroTextColor ?? 'var(--color-on-accent)' }
+      ? {
+          bg: randomGallery.heroColor,
+          text: randomGallery.heroTextColor ?? 'var(--color-on-accent)',
+        }
       : randomFallback;
     root!.style.setProperty('--current-accent', randomAccent.bg);
     root!.style.setProperty('--current-accent-text', randomAccent.text);
@@ -1197,15 +1285,24 @@ export function mountDesktopHomeCarousel(root: HTMLElement): () => void {
   // above), so a stale computed --wordmark-bg-size/-position from a
   // previous width would drift out of alignment.
   let resizeTimer: number | null = null;
-  window.addEventListener('resize', () => {
-    if (resizeTimer) clearTimeout(resizeTimer);
-    resizeTimer = runtime.setTimeout(syncWordmarkLayers, 100);
-  }, { signal: runtime.signal });
+  window.addEventListener(
+    'resize',
+    () => {
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = runtime.setTimeout(syncWordmarkLayers, 100);
+    },
+    { signal: runtime.signal },
+  );
   runtime.addCleanup(() => {
     pendingHeroLoadCtrl?.abort();
     if (namedCrossDocPhoto) namedCrossDocPhoto.style.viewTransitionName = '';
     root.classList.remove('is-accent-init', 'has-wordmark-photo');
-    heroPhoto?.classList.remove('is-cursor-active', 'is-over-controls', 'is-tracking', 'is-opening');
+    heroPhoto?.classList.remove(
+      'is-cursor-active',
+      'is-over-controls',
+      'is-tracking',
+      'is-opening',
+    );
     document.documentElement.classList.remove('mobile-home-arrival-past');
   });
 

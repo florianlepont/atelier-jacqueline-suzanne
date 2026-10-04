@@ -1,6 +1,6 @@
-import {createImageUrlBuilder} from '@sanity/image-url'
-import {sanityClient} from './sanity'
-import type {GalleryImage, SanityImage} from './sanity'
+import { createImageUrlBuilder } from '@sanity/image-url';
+import { sanityClient } from './sanity';
+import type { GalleryImage, SanityImage } from './sanity';
 
 /**
  * Build-time only Sanity CDN image URL builder.
@@ -9,14 +9,14 @@ import type {GalleryImage, SanityImage} from './sanity'
  * frontmatter (build-time code), never from a client-side `<script>` — it
  * imports the same build-time `sanityClient` singleton.
  */
-const builder = createImageUrlBuilder(sanityClient)
+const builder = createImageUrlBuilder(sanityClient);
 
 /**
  * 1:1 square-crop thumbnail URL, for gallery listing/detail grid cards
  * (UI-SPEC: grid alignment across mixed portrait/landscape source photos).
  */
 export function thumbnailUrl(img: GalleryImage, size = 600): string {
-  return builder.image(img).width(size).height(size).fit('crop').auto('format').url()
+  return builder.image(img).width(size).height(size).fit('crop').auto('format').url();
 }
 
 /**
@@ -31,7 +31,7 @@ export function previewPanelUrl(img: GalleryImage, width = 680): string {
     .height(Math.round((width * 4) / 3))
     .fit('crop')
     .auto('format')
-    .url()
+    .url();
 }
 
 /**
@@ -39,7 +39,7 @@ export function previewPanelUrl(img: GalleryImage, width = 680): string {
  * never cropped).
  */
 export function fullSizeUrl(img: SanityImage, maxWidth = 2000): string {
-  return builder.image(img).width(maxWidth).fit('max').auto('format').url()
+  return builder.image(img).width(maxWidth).fit('max').auto('format').url();
 }
 
 /**
@@ -55,7 +55,7 @@ export function responsiveImageSrcSet(
     .filter((width) => width > 0)
     .sort((a, b) => a - b)
     .map((width) => `${fullSizeUrl(img, width)} ${width}w`)
-    .join(', ')
+    .join(', ');
 }
 
 /** Width-descriptor candidates for the square-cropped grid treatment. */
@@ -67,7 +67,7 @@ export function responsiveThumbnailSrcSet(
     .filter((width) => width > 0)
     .sort((a, b) => a - b)
     .map((width) => `${thumbnailUrl(img, width)} ${width}w`)
-    .join(', ')
+    .join(', ');
 }
 
 /**
@@ -76,5 +76,5 @@ export function responsiveThumbnailSrcSet(
  * not a solid color). Used for both the hero photo and grid tiles.
  */
 export function blurPlaceholderUrl(img: SanityImage, width = 24): string {
-  return builder.image(img).width(width).blur(50).auto('format').url()
+  return builder.image(img).width(width).blur(50).auto('format').url();
 }

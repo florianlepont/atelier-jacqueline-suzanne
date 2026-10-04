@@ -42,7 +42,9 @@ test.describe('contact form success', () => {
     expect(page.url()).toBe(urlBefore);
   });
 
-  test('submitting valid input shows the inline EN success message at /en/contact/', async ({ page }) => {
+  test('submitting valid input shows the inline EN success message at /en/contact/', async ({
+    page,
+  }) => {
     await page.route(CONTACT_ENDPOINT, (route) =>
       route.fulfill({
         status: 200,
@@ -91,7 +93,9 @@ test.describe('contact form honeypot', () => {
 });
 
 test.describe('contact form validation', () => {
-  test('empty name shows a per-field validation error and fires no network call', async ({ page }) => {
+  test('empty name shows a per-field validation error and fires no network call', async ({
+    page,
+  }) => {
     let requestFired = false;
     await page.route(CONTACT_ENDPOINT, (route) => {
       requestFired = true;
@@ -107,7 +111,9 @@ test.describe('contact form validation', () => {
     expect(requestFired).toBe(false);
   });
 
-  test('malformed email shows a per-field validation error and fires no network call', async ({ page }) => {
+  test('malformed email shows a per-field validation error and fires no network call', async ({
+    page,
+  }) => {
     let requestFired = false;
     await page.route(CONTACT_ENDPOINT, (route) => {
       requestFired = true;
@@ -124,7 +130,9 @@ test.describe('contact form validation', () => {
     expect(requestFired).toBe(false);
   });
 
-  test('empty English message shows the localized error and fires no network call', async ({page}) => {
+  test('empty English message shows the localized error and fires no network call', async ({
+    page,
+  }) => {
     let requestFired = false;
     await page.route(CONTACT_ENDPOINT, (route) => {
       requestFired = true;
@@ -133,7 +141,7 @@ test.describe('contact form validation', () => {
     await page.goto('/en/contact/');
     await page.getByLabel(/^name$/i).fill('Jane Doe');
     await page.getByLabel(/^email$/i).fill('jane@example.com');
-    await page.getByRole('button', {name: /send message/i}).click();
+    await page.getByRole('button', { name: /send message/i }).click();
     await expect(page.getByText(/please enter a message/i)).toBeVisible();
     expect(requestFired).toBe(false);
   });
@@ -148,57 +156,63 @@ test.describe('contact form submission failures', () => {
   };
 
   const expectRecoverableError = async (page: import('@playwright/test').Page) => {
-    await expect(page.locator('[data-role="form-status"]')).toContainText(/une erreur est survenue/i);
-    const submit = page.getByRole('button', {name: /envoyer le message/i});
+    await expect(page.locator('[data-role="form-status"]')).toContainText(
+      /une erreur est survenue/i,
+    );
+    const submit = page.getByRole('button', { name: /envoyer le message/i });
     await expect(submit).toBeEnabled();
     await expect(page.getByLabel(/^nom$/i)).toHaveValue('Jeanne Dupont');
   };
 
-  test('shows a recoverable error for an HTTP failure', async ({page}) => {
+  test('shows a recoverable error for an HTTP failure', async ({ page }) => {
     await page.route(CONTACT_ENDPOINT, (route) =>
-      route.fulfill({status: 503, contentType: 'application/json', body: '{"success":false}'}),
+      route.fulfill({ status: 503, contentType: 'application/json', body: '{"success":false}' }),
     );
     await fillValidForm(page);
-    await page.getByRole('button', {name: /envoyer le message/i}).click();
+    await page.getByRole('button', { name: /envoyer le message/i }).click();
     await expectRecoverableError(page);
   });
 
-  test('shows a recoverable error for a rejected application response', async ({page}) => {
+  test('shows a recoverable error for a rejected application response', async ({ page }) => {
     await page.route(CONTACT_ENDPOINT, (route) =>
-      route.fulfill({status: 200, contentType: 'application/json', body: '{"success":false}'}),
+      route.fulfill({ status: 200, contentType: 'application/json', body: '{"success":false}' }),
     );
     await fillValidForm(page);
-    await page.getByRole('button', {name: /envoyer le message/i}).click();
+    await page.getByRole('button', { name: /envoyer le message/i }).click();
     await expectRecoverableError(page);
   });
 
-  test('shows a recoverable error for invalid JSON', async ({page}) => {
+  test('shows a recoverable error for invalid JSON', async ({ page }) => {
     await page.route(CONTACT_ENDPOINT, (route) =>
-      route.fulfill({status: 200, contentType: 'text/plain', body: 'not json'}),
+      route.fulfill({ status: 200, contentType: 'text/plain', body: 'not json' }),
     );
     await fillValidForm(page);
-    await page.getByRole('button', {name: /envoyer le message/i}).click();
+    await page.getByRole('button', { name: /envoyer le message/i }).click();
     await expectRecoverableError(page);
   });
 
-  test('shows a recoverable error when the network fails', async ({page}) => {
+  test('shows a recoverable error when the network fails', async ({ page }) => {
     await page.route(CONTACT_ENDPOINT, (route) => route.abort('failed'));
     await fillValidForm(page);
-    await page.getByRole('button', {name: /envoyer le message/i}).click();
+    await page.getByRole('button', { name: /envoyer le message/i }).click();
     await expectRecoverableError(page);
   });
 
-  test('coalesces duplicate submit events into one request', async ({page}) => {
+  test('coalesces duplicate submit events into one request', async ({ page }) => {
     let requests = 0;
     await page.route(CONTACT_ENDPOINT, async (route) => {
       requests += 1;
       await new Promise((resolve) => setTimeout(resolve, 100));
-      await route.fulfill({status: 200, contentType: 'application/json', body: '{"success":true}'});
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: '{"success":true}',
+      });
     });
     await fillValidForm(page);
     await page.locator('#contact-form').evaluate((form) => {
-      form.dispatchEvent(new Event('submit', {bubbles: true, cancelable: true}));
-      form.dispatchEvent(new Event('submit', {bubbles: true, cancelable: true}));
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     });
     await expect(page.locator('[data-role="form-status"]')).toContainText(/merci/i);
     expect(requests).toBe(1);
@@ -253,8 +267,8 @@ test.describe('contact link-row hover-fill spacing (CONT-03)', () => {
     const rowBox = await row.boundingBox();
     expect(rowBox).toBeTruthy();
 
-    const beforeWidth = await row.evaluate(
-      (el) => parseFloat(getComputedStyle(el, '::before').width),
+    const beforeWidth = await row.evaluate((el) =>
+      parseFloat(getComputedStyle(el, '::before').width),
     );
     expect(Math.abs(beforeWidth - rowBox!.width)).toBeLessThanOrEqual(0.5);
 

@@ -37,7 +37,9 @@ describe('public/contact.php', () => {
   });
 
   it('never interpolates a variable into the From header line', () => {
-    const headerAssignmentLines = source.split('\n').filter((line) => /\$headers\s*(=|\.=)/.test(line));
+    const headerAssignmentLines = source
+      .split('\n')
+      .filter((line) => /\$headers\s*(=|\.=)/.test(line));
     expect(headerAssignmentLines.length).toBeGreaterThan(0);
 
     const fromLine = headerAssignmentLines.find((line) => line.includes('From:'));
@@ -53,7 +55,9 @@ describe('public/contact.php', () => {
   });
 
   it('never wildcards CORS and only echoes an allowlisted origin', () => {
-    const corsLines = source.split('\n').filter((line) => line.includes('Access-Control-Allow-Origin'));
+    const corsLines = source
+      .split('\n')
+      .filter((line) => line.includes('Access-Control-Allow-Origin'));
     if (corsLines.length > 0) {
       for (const line of corsLines) {
         expect(line).not.toContain('*');
@@ -134,21 +138,17 @@ require getenv('AJS_CONTACT_PHP');
     runCounter += 1;
     const rateDir = options.rateDir ?? join(tempDir, `rate-${runCounter}`);
     const capturePath = join(tempDir, `mail-${runCounter}.txt`);
-    const result = spawnSync(
-      phpBin,
-      ['-d', `sendmail_path=${captureScriptPath}`, harnessPath],
-      {
-        env: {
-          ...process.env,
-          AJS_POST_JSON: JSON.stringify(post),
-          AJS_CONTACT_PHP: contactPhpPath,
-          AJS_CAPTURE: capturePath,
-          AJS_CONTACT_RATE_DIR: rateDir,
-          AJS_REMOTE_ADDR: options.remoteAddr ?? '203.0.113.1',
-        },
-        encoding: 'utf8',
+    const result = spawnSync(phpBin, ['-d', `sendmail_path=${captureScriptPath}`, harnessPath], {
+      env: {
+        ...process.env,
+        AJS_POST_JSON: JSON.stringify(post),
+        AJS_CONTACT_PHP: contactPhpPath,
+        AJS_CAPTURE: capturePath,
+        AJS_CONTACT_RATE_DIR: rateDir,
+        AJS_REMOTE_ADDR: options.remoteAddr ?? '203.0.113.1',
       },
-    );
+      encoding: 'utf8',
+    });
 
     let json: RunResult['json'];
     try {

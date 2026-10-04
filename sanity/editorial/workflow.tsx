@@ -1,8 +1,4 @@
-import type {
-  DocumentActionsResolver,
-  DocumentBadgeComponent,
-  DocumentBadgesResolver,
-} from 'sanity'
+import type {DocumentActionsResolver, DocumentBadgeComponent, DocumentBadgesResolver} from 'sanity'
 import {collectionStatusBadge, filterDocumentActions} from './workflowLogic'
 
 const CollectionStatusBadge: DocumentBadgeComponent = ({draft, published}) => {

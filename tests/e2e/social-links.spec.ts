@@ -12,7 +12,7 @@ test('Instagram is absent from the site-wide footer', async ({ page }) => {
 
 test.describe('About page Instagram mention', () => {
   for (const path of ['/about/', '/en/about/']) {
-    test(`${path} has no Instagram mention in the main content`, async ({page}) => {
+    test(`${path} has no Instagram mention in the main content`, async ({ page }) => {
       await page.goto(path);
       await expect(page.locator('main a[href*="instagram.com"]')).toHaveCount(0);
     });
@@ -36,7 +36,9 @@ test.describe('Contact page Instagram mention', () => {
     // keeping the social link before it in reading and keyboard order.
     const socialPrecedesForm = await link.evaluate((social) => {
       const form = document.querySelector('form');
-      return Boolean(form && social.compareDocumentPosition(form) & Node.DOCUMENT_POSITION_FOLLOWING);
+      return Boolean(
+        form && social.compareDocumentPosition(form) & Node.DOCUMENT_POSITION_FOLLOWING,
+      );
     });
     expect(socialPrecedesForm).toBe(true);
   });
@@ -55,7 +57,9 @@ test.describe('Contact page Instagram mention', () => {
 
     const socialPrecedesForm = await link.evaluate((social) => {
       const form = document.querySelector('form');
-      return Boolean(form && social.compareDocumentPosition(form) & Node.DOCUMENT_POSITION_FOLLOWING);
+      return Boolean(
+        form && social.compareDocumentPosition(form) & Node.DOCUMENT_POSITION_FOLLOWING,
+      );
     });
     expect(socialPrecedesForm).toBe(true);
   });

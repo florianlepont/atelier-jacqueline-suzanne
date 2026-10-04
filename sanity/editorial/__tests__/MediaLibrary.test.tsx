@@ -42,9 +42,7 @@ describe('MediaLibrary lifecycle', () => {
   })
 
   it('shows an error on load failure and recovers via the retry button', async () => {
-    const client = createSanityTestClient(() =>
-      Promise.reject(new Error('Sanity indisponible')),
-    )
+    const client = createSanityTestClient(() => Promise.reject(new Error('Sanity indisponible')))
     render(<MediaLibrary />)
 
     await screen.findByText(/Impossible de charger la médiathèque/)

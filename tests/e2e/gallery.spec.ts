@@ -32,7 +32,9 @@ test.describe('gallery listing', () => {
 });
 
 test.describe('gallery detail', () => {
-  test('desktop reveal text uses the gallery accent’s computed black-or-white ink', async ({ page }) => {
+  test('desktop reveal text uses the gallery accent’s computed black-or-white ink', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
@@ -136,9 +138,9 @@ test.describe('lightbox', () => {
     await expect(firstThumbnail).toBeFocused();
   });
 
-  test('shows the photographic credit and copyright notice', async ({page}) => {
+  test('shows the photographic credit and copyright notice', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', {name: 'Grille'}).click();
+    await page.getByRole('button', { name: 'Grille' }).click();
     const href = await page.locator('a.home-grid__tile').first().getAttribute('href');
     await page.goto(href!);
     await page.locator('[data-gallery-thumb]').first().click();
@@ -212,9 +214,11 @@ test.describe('gallery grid masonry layout', () => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
 
-    const hrefs = await page.locator('a.home-grid__tile').evaluateAll((els) =>
-      els.map((el) => el.getAttribute('href')).filter((href): href is string => Boolean(href)),
-    );
+    const hrefs = await page
+      .locator('a.home-grid__tile')
+      .evaluateAll((els) =>
+        els.map((el) => el.getAttribute('href')).filter((href): href is string => Boolean(href)),
+      );
     expect(hrefs.length).toBeGreaterThan(0);
 
     let multiImageGalleryFound = false;
@@ -287,7 +291,9 @@ test.describe('gallery lightbox morph', () => {
     await expect(dialog).toBeVisible();
 
     if (supported) {
-      const vtCallsAfterOpen = await page.evaluate(() => (window as unknown as { __vtCalls: number }).__vtCalls);
+      const vtCallsAfterOpen = await page.evaluate(
+        () => (window as unknown as { __vtCalls: number }).__vtCalls,
+      );
       expect(vtCallsAfterOpen).toBeGreaterThanOrEqual(1);
 
       const counter = dialog.locator('[data-role="counter"]');
@@ -295,14 +301,18 @@ test.describe('gallery lightbox morph', () => {
       await page.keyboard.press('ArrowRight');
       await expect(counter).not.toHaveText(initialCounter);
 
-      const vtCallsAfterNav = await page.evaluate(() => (window as unknown as { __vtCalls: number }).__vtCalls);
+      const vtCallsAfterNav = await page.evaluate(
+        () => (window as unknown as { __vtCalls: number }).__vtCalls,
+      );
       expect(vtCallsAfterNav).toBe(vtCallsAfterOpen);
 
       await page.keyboard.press('Escape');
       await expect(dialog).not.toBeVisible();
       await expect(firstThumbnail).toBeFocused();
 
-      const vtCallsAfterClose = await page.evaluate(() => (window as unknown as { __vtCalls: number }).__vtCalls);
+      const vtCallsAfterClose = await page.evaluate(
+        () => (window as unknown as { __vtCalls: number }).__vtCalls,
+      );
       expect(vtCallsAfterClose).toBeGreaterThan(vtCallsAfterNav);
     } else {
       // Universal fallback assertions (also exercised above when supported):
@@ -335,7 +345,9 @@ test.describe('gallery lightbox morph', () => {
 // index-0 attribute selector, and the expected counter/aria-label position
 // is read from the hero's own data-index rather than assumed to be 1.
 test.describe('gallery hero is clickable (sketch 005)', () => {
-  test('the hero trigger opens the lightbox at its real position with focus return (fr)', async ({ page }) => {
+  test('the hero trigger opens the lightbox at its real position with focus return (fr)', async ({
+    page,
+  }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
     const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
@@ -462,7 +474,9 @@ test.describe('gallery hero reduced-motion (sketch 005)', () => {
   // exactly (explicit user reversal after seeing objectFit="contain" live).
   // The masonry grid below is proven separately by the 'gallery grid
   // masonry layout' describe block further down this file.
-  test('the gallery hero renders object-fit: cover (crop reverted, no letterboxing)', async ({ page }) => {
+  test('the gallery hero renders object-fit: cover (crop reverted, no letterboxing)', async ({
+    page,
+  }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
     const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
@@ -511,7 +525,9 @@ test.describe('gallery hero reduced-motion (sketch 005)', () => {
       const style = getComputedStyle(el);
       return { animationName: style.animationName, display: style.display };
     });
-    expect(reducedMotionState.animationName === 'none' || reducedMotionState.display === 'none').toBe(true);
+    expect(
+      reducedMotionState.animationName === 'none' || reducedMotionState.display === 'none',
+    ).toBe(true);
   });
 
   test('the scroll-down hint label reads "Scroll" on the matching EN route', async ({ page }) => {
@@ -540,7 +556,9 @@ test.describe('gallery hero reduced-motion (sketch 005)', () => {
 test.describe('gallery detail overlay-title matches the homepage carousel title (Item 1)', () => {
   test.use({ viewport: { width: 1280, height: 900 } });
 
-  test('overlay-title: 18px, uppercase, left ~16px; reveal-title unchanged (fr)', async ({ page }) => {
+  test('overlay-title: 18px, uppercase, left ~16px; reveal-title unchanged (fr)', async ({
+    page,
+  }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
     const firstTileHref = await page.locator('a.home-grid__tile').first().getAttribute('href');
@@ -649,7 +667,9 @@ test.describe('gallery detail scroll-up-to-return (Item 6, quick-260725-tqs)', (
 
       // A single sustained upward wheel push (deltaY -200 => +200 upward
       // intent, >= the 150 threshold in one push).
-      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, bubbles: true })));
+      await page.evaluate(() =>
+        window.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, bubbles: true })),
+      );
 
       await page.waitForURL(`**/?carousel=${slug}`);
       await expect(page.locator('[data-role="gallery-title"]')).toHaveText(title.toUpperCase());
@@ -666,7 +686,9 @@ test.describe('gallery detail scroll-up-to-return (Item 6, quick-260725-tqs)', (
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.waitForTimeout(150);
 
-      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, bubbles: true })));
+      await page.evaluate(() =>
+        window.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, bubbles: true })),
+      );
 
       await page.waitForURL(`**/en/?carousel=${slug}`);
       await expect(page.locator('[data-role="gallery-title"]')).toHaveText(title.toUpperCase());
@@ -683,9 +705,13 @@ test.describe('gallery detail scroll-up-to-return (Item 6, quick-260725-tqs)', (
       const { href } = await discoverGallery(page);
       await page.goto(href);
 
-      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -80, bubbles: true })));
+      await page.evaluate(() =>
+        window.dispatchEvent(new WheelEvent('wheel', { deltaY: -80, bubbles: true })),
+      );
       await page.waitForTimeout(80);
-      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -80, bubbles: true })));
+      await page.evaluate(() =>
+        window.dispatchEvent(new WheelEvent('wheel', { deltaY: -80, bubbles: true })),
+      );
       await page.waitForTimeout(300);
 
       expect(page.url()).toBe(new URL(href, page.url()).href);
@@ -696,15 +722,21 @@ test.describe('gallery detail scroll-up-to-return (Item 6, quick-260725-tqs)', (
       const enHref = `/en/galleries/${slug}/`;
       await page.goto(enHref);
 
-      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -80, bubbles: true })));
+      await page.evaluate(() =>
+        window.dispatchEvent(new WheelEvent('wheel', { deltaY: -80, bubbles: true })),
+      );
       await page.waitForTimeout(80);
-      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -80, bubbles: true })));
+      await page.evaluate(() =>
+        window.dispatchEvent(new WheelEvent('wheel', { deltaY: -80, bubbles: true })),
+      );
       await page.waitForTimeout(300);
 
       expect(page.url()).toMatch(new RegExp(`/en/galleries/${slug}/?$`));
     });
 
-    test('fr: a small down-then-up correction (below ENGAGE_DISTANCE) does NOT navigate', async ({ page }) => {
+    test('fr: a small down-then-up correction (below ENGAGE_DISTANCE) does NOT navigate', async ({
+      page,
+    }) => {
       const { href } = await discoverGallery(page);
       await page.goto(href);
 
@@ -712,7 +744,9 @@ test.describe('gallery detail scroll-up-to-return (Item 6, quick-260725-tqs)', (
       await page.waitForTimeout(80);
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.waitForTimeout(80);
-      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, bubbles: true })));
+      await page.evaluate(() =>
+        window.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, bubbles: true })),
+      );
       await page.waitForTimeout(300);
 
       expect(page.url()).toBe(new URL(href, page.url()).href);
@@ -721,7 +755,9 @@ test.describe('gallery detail scroll-up-to-return (Item 6, quick-260725-tqs)', (
     test.describe('touch input', () => {
       test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 
-      test('fresh load: a downward finger drag (upward scroll intent) does NOT navigate', async ({ page }) => {
+      test('fresh load: a downward finger drag (upward scroll intent) does NOT navigate', async ({
+        page,
+      }) => {
         const { href } = await discoverGallery(page);
         await page.goto(href);
 
@@ -762,7 +798,9 @@ test.describe('gallery detail scroll-up-to-return (Item 6, quick-260725-tqs)', (
   test.describe('below-threshold guard (engaged, at top, tiny tick — must NOT navigate)', () => {
     test.use({ viewport: { width: 1280, height: 900 } });
 
-    test('a single small upward wheel tick below the threshold does NOT navigate', async ({ page }) => {
+    test('a single small upward wheel tick below the threshold does NOT navigate', async ({
+      page,
+    }) => {
       const { href } = await discoverGallery(page);
       await page.goto(href);
 
@@ -770,7 +808,9 @@ test.describe('gallery detail scroll-up-to-return (Item 6, quick-260725-tqs)', (
       await page.waitForTimeout(150);
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.waitForTimeout(150);
-      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -60, bubbles: true })));
+      await page.evaluate(() =>
+        window.dispatchEvent(new WheelEvent('wheel', { deltaY: -60, bubbles: true })),
+      );
       await page.waitForTimeout(300);
 
       expect(page.url()).toBe(new URL(href, page.url()).href);
@@ -806,7 +846,9 @@ test.describe('gallery detail scroll-up-to-return (Item 6, quick-260725-tqs)', (
   });
 
   test.describe('homepage ?carousel= init read (independent of the gesture)', () => {
-    test('navigating directly to /?carousel=<slug> lands the carousel on that gallery', async ({ page }) => {
+    test('navigating directly to /?carousel=<slug> lands the carousel on that gallery', async ({
+      page,
+    }) => {
       const { slug, title } = await discoverGallery(page);
 
       await page.goto(`/?carousel=${slug}`);
@@ -844,7 +886,9 @@ test.describe('gallery detail footer restored + scroll-track safety (PORT-06, re
 
     await expect(page.locator('footer.chrome-band')).toHaveCount(1);
 
-    const track = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+    const track = await page.evaluate(
+      () => document.documentElement.scrollHeight - window.innerHeight,
+    );
     expect(track).toBeGreaterThanOrEqual(300);
   });
 
@@ -889,7 +933,9 @@ test.describe('gallery hero landscape-preference + lightbox index remapping', ()
 
     await page.goto(firstTileHref!);
 
-    const heroIndexAttr = await page.locator('.detail-hero [data-gallery-thumb]').getAttribute('data-index');
+    const heroIndexAttr = await page
+      .locator('.detail-hero [data-gallery-thumb]')
+      .getAttribute('data-index');
     expect(heroIndexAttr).toBeTruthy();
     const heroIndex = Number(heroIndexAttr);
 
@@ -1021,7 +1067,12 @@ test.describe('gallery + édition thumbnail tiles render with no frame (PORT-05,
     const borderWidths = await tiles.evaluateAll((els) =>
       els.map((el) => {
         const style = getComputedStyle(el);
-        return [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth];
+        return [
+          style.borderTopWidth,
+          style.borderRightWidth,
+          style.borderBottomWidth,
+          style.borderLeftWidth,
+        ];
       }),
     );
     for (const widths of borderWidths) {
@@ -1030,7 +1081,9 @@ test.describe('gallery + édition thumbnail tiles render with no frame (PORT-05,
       }
     }
 
-    const firstTileBackground = await tiles.first().evaluate((el) => getComputedStyle(el).backgroundColor);
+    const firstTileBackground = await tiles
+      .first()
+      .evaluate((el) => getComputedStyle(el).backgroundColor);
     expect(firstTileBackground).toBe('rgb(26, 26, 26)');
 
     const firstTileImg = tiles.first().locator('img');
@@ -1058,7 +1111,9 @@ test.describe('gallery + édition thumbnail tiles render with no frame (PORT-05,
         naturalRatio: img.naturalWidth / img.naturalHeight,
       };
     });
-    expect(Math.abs(ratios.clientRatio - ratios.naturalRatio) / ratios.naturalRatio).toBeLessThan(0.01);
+    expect(Math.abs(ratios.clientRatio - ratios.naturalRatio) / ratios.naturalRatio).toBeLessThan(
+      0.01,
+    );
 
     // Regression guard: a masonry `.tile img` left at its default `display:
     // inline` leaves a ~3-4px baseline/descender gap below the image, where
@@ -1102,7 +1157,12 @@ test.describe('gallery + édition thumbnail tiles render with no frame (PORT-05,
     const borderWidths = await tiles.evaluateAll((els) =>
       els.map((el) => {
         const style = getComputedStyle(el);
-        return [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth];
+        return [
+          style.borderTopWidth,
+          style.borderRightWidth,
+          style.borderBottomWidth,
+          style.borderLeftWidth,
+        ];
       }),
     );
     for (const widths of borderWidths) {
@@ -1161,7 +1221,9 @@ test.describe('gallery detail hero statement renders in full, no clamp, no clipp
     const hrefs = await page
       .locator('ul[data-role="home-carousel-data"] li')
       .evaluateAll((els) =>
-        els.map((el) => (el as HTMLElement).dataset.href).filter((href): href is string => Boolean(href)),
+        els
+          .map((el) => (el as HTMLElement).dataset.href)
+          .filter((href): href is string => Boolean(href)),
       );
     expect(hrefs.length).toBeGreaterThan(0);
     return hrefs;
@@ -1295,7 +1357,9 @@ async function discoverGalleryHrefsForCta(page: import('@playwright/test').Page)
   await page.getByRole('button', { name: 'Grille' }).click();
   const hrefs = await page
     .locator('a.home-grid__tile')
-    .evaluateAll((els) => els.map((el) => el.getAttribute('href')).filter((href): href is string => Boolean(href)));
+    .evaluateAll((els) =>
+      els.map((el) => el.getAttribute('href')).filter((href): href is string => Boolean(href)),
+    );
   expect(hrefs.length).toBeGreaterThan(0);
   return hrefs;
 }
@@ -1340,10 +1404,12 @@ test.describe('gallery contact CTA (CONT-04)', () => {
       expect(ctaStyles.fontFamily).toContain('Unbounded');
       expect(ctaStyles.backgroundColor).toBe('rgba(0, 0, 0, 0)');
 
-      const ruleStyles = await page.locator('.gallery-detail__contact-cta-rule').evaluate((rule) => {
-        const style = getComputedStyle(rule);
-        return { borderTopWidth: style.borderTopWidth, borderTopColor: style.borderTopColor };
-      });
+      const ruleStyles = await page
+        .locator('.gallery-detail__contact-cta-rule')
+        .evaluate((rule) => {
+          const style = getComputedStyle(rule);
+          return { borderTopWidth: style.borderTopWidth, borderTopColor: style.borderTopColor };
+        });
       expect(ruleStyles.borderTopWidth).toBe('1px');
       expect(ruleStyles.borderTopColor).toBe('rgb(214, 50, 124)');
 
@@ -1402,9 +1468,10 @@ test.describe('gallery reverse edition cross-link (EDN-12)', () => {
       await page.goto(href);
       const related = page.locator('.gallery-detail__related');
       const count = await related.count();
-      expect(count === 0 || count === 1, `${href}: expected 0 or 1 .gallery-detail__related, got ${count}`).toBe(
-        true,
-      );
+      expect(
+        count === 0 || count === 1,
+        `${href}: expected 0 or 1 .gallery-detail__related, got ${count}`,
+      ).toBe(true);
 
       if (count === 1) {
         foundHref = href;
@@ -1465,7 +1532,9 @@ test.describe('gallery detail scroll-track safety with contact CTA present (CONT
 
     await expect(page.locator('.gallery-detail__contact-cta')).toHaveCount(1);
 
-    const track = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+    const track = await page.evaluate(
+      () => document.documentElement.scrollHeight - window.innerHeight,
+    );
     expect(track).toBeGreaterThanOrEqual(300);
   });
 });

@@ -163,8 +163,7 @@ export function createProcessingUploaderClass(
       let result: ProcessResult
       try {
         const outcome = await withTimeout(processFile(file, config), timeoutMs)
-        result =
-          outcome === TIMED_OUT ? {status: 'failed', file, reason: 'timeout'} : outcome
+        result = outcome === TIMED_OUT ? {status: 'failed', file, reason: 'timeout'} : outcome
       } catch (error) {
         result = {status: 'failed', file, reason: 'unexpected', detail: toError(error).message}
       }

@@ -1,23 +1,24 @@
-import {test, expect} from '@playwright/test';
-import {firstGalleryHref, firstEditionHref} from './helpers/content';
+import { test, expect } from '@playwright/test';
+import { firstGalleryHref, firstEditionHref } from './helpers/content';
 
 test.describe('SEO metadata', () => {
-  test('homepage emits social and search metadata', async ({page}) => {
+  test('homepage emits social and search metadata', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', /Atelier Jacqueline Suzanne/i);
+    await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
+      'content',
+      /Atelier Jacqueline Suzanne/i,
+    );
     await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', /summary/);
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', /^https:\/\//);
     await expect(page.locator('link[rel="alternate"][hreflang="fr"]')).toHaveCount(1);
     await expect(page.locator('link[rel="alternate"][hreflang="en"]')).toHaveCount(1);
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /index, follow/);
-    const structuredData = await page
-      .locator('script[type="application/ld+json"]')
-      .textContent();
+    const structuredData = await page.locator('script[type="application/ld+json"]').textContent();
     expect(structuredData).toContain('WebSite');
   });
 
-  test('robots.txt references the generated sitemap', async ({page}) => {
+  test('robots.txt references the generated sitemap', async ({ page }) => {
     const response = await page.request.get('/robots.txt');
     expect(response.ok()).toBe(true);
     const robots = await response.text();
@@ -26,7 +27,7 @@ test.describe('SEO metadata', () => {
     expect(robots).toContain('User-agent: GPTBot');
   });
 
-  test('sitemap contains both languages and gallery pages', async ({page}) => {
+  test('sitemap contains both languages and gallery pages', async ({ page }) => {
     const response = await page.request.get('/sitemap.xml');
     expect(response.ok()).toBe(true);
     const sitemap = await response.text();
@@ -36,22 +37,25 @@ test.describe('SEO metadata', () => {
     expect(sitemap).toContain('/editions/');
   });
 
-  test('About page uses its CMS biography as the default description', async ({page}) => {
+  test('About page uses its CMS biography as the default description', async ({ page }) => {
     await page.goto('/about/');
 
     const description = await page.locator('meta[name="description"]').getAttribute('content');
     expect(description).toContain('Romane');
   });
 
-  test('gallery detail exposes a description and a Sanity social image', async ({page}) => {
+  test('gallery detail exposes a description and a Sanity social image', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', {name: 'Grille'}).click();
+    await page.getByRole('button', { name: 'Grille' }).click();
     const href = await page.locator('a.home-grid__tile').first().getAttribute('href');
     expect(href).toBeTruthy();
 
     await page.goto(href!);
     await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /.+/);
-    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /^https:\/\/cdn\.sanity\.io\//);
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
+      'content',
+      /^https:\/\/cdn\.sanity\.io\//,
+    );
   });
 
   // quick-260811-kog-04: the fr/en gallery and édition detail routes now
@@ -70,16 +74,24 @@ test.describe('SEO metadata', () => {
       'href',
       new RegExp(`/galleries/${slug}/$`),
     );
-    const frAlternate = await page.locator('link[rel="alternate"][hreflang="fr"]').getAttribute('href');
-    const enAlternateFromFr = await page.locator('link[rel="alternate"][hreflang="en"]').getAttribute('href');
+    const frAlternate = await page
+      .locator('link[rel="alternate"][hreflang="fr"]')
+      .getAttribute('href');
+    const enAlternateFromFr = await page
+      .locator('link[rel="alternate"][hreflang="en"]')
+      .getAttribute('href');
 
     await page.goto(`/en/galleries/${slug}/`);
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       'href',
       new RegExp(`/en/galleries/${slug}/$`),
     );
-    const frAlternateFromEn = await page.locator('link[rel="alternate"][hreflang="fr"]').getAttribute('href');
-    const enAlternate = await page.locator('link[rel="alternate"][hreflang="en"]').getAttribute('href');
+    const frAlternateFromEn = await page
+      .locator('link[rel="alternate"][hreflang="fr"]')
+      .getAttribute('href');
+    const enAlternate = await page
+      .locator('link[rel="alternate"][hreflang="en"]')
+      .getAttribute('href');
 
     expect(frAlternateFromEn).toBe(frAlternate);
     expect(enAlternateFromFr).toBe(enAlternate);
@@ -87,7 +99,7 @@ test.describe('SEO metadata', () => {
     expect(enAlternate).toMatch(new RegExp(`/en/galleries/${slug}/$`));
   });
 
-  test('édition detail canonicalizes to itself in both locales', async ({page}) => {
+  test('édition detail canonicalizes to itself in both locales', async ({ page }) => {
     const frHref = await firstEditionHref(page, 'fr');
     const slug = frHref.match(/\/editions\/([^/]+)\/?$/)?.[1];
     expect(slug).toBeTruthy();

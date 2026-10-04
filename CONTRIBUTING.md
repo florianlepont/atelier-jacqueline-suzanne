@@ -17,9 +17,10 @@ This is a small personal project (the site of the photographer Romane Lepont), m
    ```bash
    npm run lint
    npm run typecheck
+   npm run format:check     # fix with npm run format
    npm run test:unit        # export SANITY_PROJECT_ID and SANITY_DATASET first
    npm run build && npm run test:artifact
-   npm --prefix sanity run lint && npm --prefix sanity run typecheck && npm --prefix sanity run test
+   npm --prefix sanity run lint && npm --prefix sanity run format:check && npm --prefix sanity run typecheck && npm --prefix sanity run test
    ```
 
    Playwright end-to-end tests (`npm run test:e2e`) run in CI on every push to `main`.
@@ -28,7 +29,7 @@ This is a small personal project (the site of the photographer Romane Lepont), m
 
 ## Conventions
 
-- Match the surrounding code: naming, comment density, formatting. Prettier settings for the Studio are in `sanity/package.json`.
+- Formatting is enforced by Prettier on `.ts`/`.mjs` files (`npm run format`, and `npm --prefix sanity run format` for the Studio); `.astro` templates are not auto-formatted. Match the surrounding code for naming and comment density.
 - Content comes from Sanity at build time. Do not hard-code editorial text, addresses or prices in templates.
 - Keep the build static: no server-side rendering and no new runtime dependency on a third-party host without discussing it first (the Content-Security-Policy in `public/.htaccess` will block it).
 - Do not commit secrets, tokens, personal addresses or full-resolution photographs.

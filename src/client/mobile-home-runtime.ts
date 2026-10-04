@@ -6,7 +6,9 @@ export function mountMobileHome(root: HTMLElement): () => void {
   const { signal } = controller;
   const arrival = root.querySelector<HTMLElement>('.mobile-home-prototype__arrival');
   const stage = root.querySelector<HTMLElement>('[data-role="prototype-arrival-stage"]');
-  const seriesImages = Array.from(root.querySelectorAll<HTMLImageElement>('.mobile-home-prototype__series-image'));
+  const seriesImages = Array.from(
+    root.querySelectorAll<HTMLImageElement>('.mobile-home-prototype__series-image'),
+  );
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   let active = true;
   let arrivalStart = 0;
@@ -31,7 +33,10 @@ export function mountMobileHome(root: HTMLElement): () => void {
       const rect = track?.getBoundingClientRect();
       return {
         image,
-        panel: image.parentElement?.querySelector<HTMLElement>('.mobile-home-prototype__series-panel--overlay') ?? null,
+        panel:
+          image.parentElement?.querySelector<HTMLElement>(
+            '.mobile-home-prototype__series-panel--overlay',
+          ) ?? null,
         top: (rect?.top ?? 0) + pageY,
         height: rect?.height ?? window.innerHeight,
         lastOffset: null,
@@ -47,7 +52,10 @@ export function mountMobileHome(root: HTMLElement): () => void {
       if (progress === metric.lastOffset) return;
       metric.lastOffset = progress;
       metric.image.style.setProperty('--prototype-series-pan', progress.toFixed(3));
-      metric.panel?.style.setProperty('--prototype-series-panel-progress', clamp01((progress - 0.33) / 0.67).toFixed(3));
+      metric.panel?.style.setProperty(
+        '--prototype-series-panel-progress',
+        clamp01((progress - 0.33) / 0.67).toFixed(3),
+      );
     });
   }
 
@@ -70,8 +78,14 @@ export function mountMobileHome(root: HTMLElement): () => void {
     const introOut = 1 - clamp01((progress - 0.82) / 0.08);
     stage.style.setProperty('--prototype-wordmark-progress', wordmarkProgress.toFixed(3));
     stage.style.setProperty('--prototype-arrival-intro-opacity', (introIn * introOut).toFixed(3));
-    stage.style.setProperty('--prototype-arrival-intro-offset', `${((1 - introIn) * 14).toFixed(1)}px`);
-    stage.style.setProperty('--prototype-arrival-pan', clamp01((progress - 0.38) / 0.44).toFixed(3));
+    stage.style.setProperty(
+      '--prototype-arrival-intro-offset',
+      `${((1 - introIn) * 14).toFixed(1)}px`,
+    );
+    stage.style.setProperty(
+      '--prototype-arrival-pan',
+      clamp01((progress - 0.38) / 0.44).toFixed(3),
+    );
     root.classList.toggle('is-past-arrival', progress > 0.98);
     document.documentElement.classList.toggle('mobile-home-arrival-past', progress > 0.98);
   }

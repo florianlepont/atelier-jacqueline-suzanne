@@ -38,7 +38,7 @@ export default [
     // Static-artifact verification runs directly under Node in local/CI.
     files: ['tests/scripts/**/*.mjs'],
     languageOptions: {
-      globals: {process: 'readonly', console: 'readonly', URL: 'readonly'},
+      globals: { process: 'readonly', console: 'readonly', URL: 'readonly' },
     },
   },
   {

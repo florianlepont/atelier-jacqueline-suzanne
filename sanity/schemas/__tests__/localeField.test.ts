@@ -64,7 +64,12 @@ describe('localeStringField', () => {
   })
 
   it('applies maxLength even when not required', () => {
-    const field = localeStringField({name: 'label', title: 'Libellé', required: false, maxLength: 50})
+    const field = localeStringField({
+      name: 'label',
+      title: 'Libellé',
+      required: false,
+      maxLength: 50,
+    })
     const rule = mockRule()
     ;(subField(field, 'fr').validation as (r: typeof rule) => typeof rule)(rule)
     expect(rule.calls).toEqual([
@@ -118,8 +123,13 @@ describe('localeTextField', () => {
     expect(subField(field, 'en').rows).toBe(5)
   })
 
-  it('matches gallery.ts/edition.ts\'s exact original statement message (required + max 700)', () => {
-    const field = localeTextField({name: 'statement', title: 'Texte de présentation', rows: 5, maxLength: 700})
+  it("matches gallery.ts/edition.ts's exact original statement message (required + max 700)", () => {
+    const field = localeTextField({
+      name: 'statement',
+      title: 'Texte de présentation',
+      rows: 5,
+      maxLength: 700,
+    })
     const rule = mockRule()
     ;(subField(field, 'fr').validation as (r: typeof rule) => typeof rule)(rule)
     expect(rule.calls).toEqual([
@@ -138,15 +148,24 @@ describe('localeAltField', () => {
 
     const objectRule = mockRule()
     ;(field.validation as (r: typeof objectRule) => typeof objectRule)(objectRule)
-    expect(objectRule.calls).toEqual(['required', ['error', "La description de l'image est obligatoire."]])
+    expect(objectRule.calls).toEqual([
+      'required',
+      ['error', "La description de l'image est obligatoire."],
+    ])
 
     const frRule = mockRule()
     ;(subField(field, 'fr').validation as (r: typeof frRule) => typeof frRule)(frRule)
-    expect(frRule.calls).toEqual(['required', ['error', 'La description française est obligatoire.']])
+    expect(frRule.calls).toEqual([
+      'required',
+      ['error', 'La description française est obligatoire.'],
+    ])
 
     const enRule = mockRule()
     ;(subField(field, 'en').validation as (r: typeof enRule) => typeof enRule)(enRule)
-    expect(enRule.calls).toEqual(['required', ['error', 'La description anglaise est obligatoire.']])
+    expect(enRule.calls).toEqual([
+      'required',
+      ['error', 'La description anglaise est obligatoire.'],
+    ])
   })
 
   it('works with no description at all', () => {

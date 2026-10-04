@@ -80,7 +80,9 @@ describe('home-carousel-runtime imports the shared automatic-accent palette (260
   // letting the homepage and gallery detail page silently drift apart again.
   it('imports resolveAutomaticAccent from ../lib/site-config', () => {
     const source = readFileSync('src/client/home-carousel-runtime.ts', 'utf8');
-    expect(source).toMatch(/import\s*\{[^}]*resolveAutomaticAccent[^}]*\}\s*from\s*['"]\.\.\/lib\/site-config['"]/);
+    expect(source).toMatch(
+      /import\s*\{[^}]*resolveAutomaticAccent[^}]*\}\s*from\s*['"]\.\.\/lib\/site-config['"]/,
+    );
   });
 
   it('no longer defines a local ACCENTS array', () => {

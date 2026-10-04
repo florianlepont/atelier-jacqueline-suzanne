@@ -1,5 +1,5 @@
-import {createClient} from '@sanity/client'
-import {getBuildCached} from './build-cache'
+import { createClient } from '@sanity/client';
+import { getBuildCached } from './build-cache';
 import {
   sanitizeAboutPage,
   sanitizeContactPage,
@@ -12,7 +12,7 @@ import {
   sanitizeSiteSettings,
   warnForSanityIssues,
   type SanitizationResult,
-} from './sanity-validation'
+} from './sanity-validation';
 
 /**
  * Build-time only Sanity client.
@@ -24,14 +24,14 @@ import {
  * be bundled into shipped JS.
  */
 
-const projectId = import.meta.env.SANITY_PROJECT_ID
-const dataset = import.meta.env.SANITY_DATASET
-const token = import.meta.env.SANITY_API_READ_TOKEN
+const projectId = import.meta.env.SANITY_PROJECT_ID;
+const dataset = import.meta.env.SANITY_DATASET;
+const token = import.meta.env.SANITY_API_READ_TOKEN;
 
 if (!projectId || !dataset) {
   throw new Error(
     'Missing SANITY_PROJECT_ID or SANITY_DATASET env vars. Copy .env.example to .env and fill in real values.',
-  )
+  );
 }
 
 export const sanityClient = createClient({
@@ -46,42 +46,42 @@ export const sanityClient = createClient({
   // static build. 'published' is CDN-compatible too, so it's safe to keep
   // regardless of the useCdn value above.
   perspective: 'published',
-})
+});
 
 /** A string with both French and English values (D-09 locale-object shape). */
 export interface LocaleString {
-  fr: string
-  en: string
+  fr: string;
+  en: string;
 }
 
 export interface SanityImage {
-  asset: {_ref: string}
-  crop?: {top: number; bottom: number; left: number; right: number}
-  hotspot?: {x: number; y: number; height: number; width: number}
+  asset: { _ref: string };
+  crop?: { top: number; bottom: number; left: number; right: number };
+  hotspot?: { x: number; y: number; height: number; width: number };
 }
 
 export interface SeoSettings {
-  title?: Partial<LocaleString>
-  description?: Partial<LocaleString>
-  image?: SanityImage
-  noIndex?: boolean
+  title?: Partial<LocaleString>;
+  description?: Partial<LocaleString>;
+  image?: SanityImage;
+  noIndex?: boolean;
 }
 
 /** The published `siteSettings` singleton, typed for both locales. */
 export interface SiteSettings {
-  siteTitle: LocaleString
+  siteTitle: LocaleString;
   navLabels: {
-    about?: Partial<LocaleString>
-    contact?: Partial<LocaleString>
-    editions?: Partial<LocaleString>
-  }
-  footerText: LocaleString
+    about?: Partial<LocaleString>;
+    contact?: Partial<LocaleString>;
+    editions?: Partial<LocaleString>;
+  };
+  footerText: LocaleString;
   /**
    * Optional plain-text postal address of the publisher, lines separated by
    * `\n`. Absent means the non-professional anonymity regime. Never log it.
    */
-  publisherAddress?: string
-  defaultSeo?: SeoSettings
+  publisherAddress?: string;
+  defaultSeo?: SeoSettings;
 }
 
 const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{
@@ -91,7 +91,7 @@ const SITE_SETTINGS_QUERY = /* groq */ `*[_type == "siteSettings"][0]{
   footerText,
   publisherAddress,
   defaultSeo
-}`
+}`;
 
 /**
  * Fetches the published `siteSettings` singleton at build time.
@@ -104,7 +104,7 @@ export async function getSiteSettings(): Promise<SiteSettings | null> {
     'siteSettings',
     () => sanityClient.fetch<unknown>(SITE_SETTINGS_QUERY),
     sanitizeSiteSettings,
-  )
+  );
 }
 
 /**
@@ -117,9 +117,9 @@ export async function getSiteSettings(): Promise<SiteSettings | null> {
  * keeps working unmodified.
  */
 export interface ImageDimensions {
-  width: number
-  height: number
-  aspectRatio?: number
+  width: number;
+  height: number;
+  aspectRatio?: number;
 }
 
 /**
@@ -130,41 +130,41 @@ export interface ImageDimensions {
  * preserves Studio's native multi-file drag-and-drop upload.
  */
 export interface GalleryImage extends SanityImage {
-  alt: LocaleString
+  alt: LocaleString;
   rights?: {
-    credit?: string
-    copyrightNotice?: string
-    year?: number
-    usage?: 'allRightsReserved' | 'editorialOnly' | 'licensed' | 'publicDomain'
-    licenseDetails?: string
-    displayCredit?: boolean
-  }
+    credit?: string;
+    copyrightNotice?: string;
+    year?: number;
+    usage?: 'allRightsReserved' | 'editorialOnly' | 'licensed' | 'publicDomain';
+    licenseDetails?: string;
+    displayCredit?: boolean;
+  };
   // Optional because a freshly-uploaded asset can reach the query before
   // Sanity has finished computing its metadata — pickHeroIndex already
   // treats a missing dimensions object as "not landscape" for that case.
   // Both the gallery AND the edition queries project this field now
   // (quick-260801-kgh).
-  dimensions?: ImageDimensions
+  dimensions?: ImageDimensions;
 }
 
 /** A `gallery` document, typed for both locales. */
 export interface Gallery {
-  title: string // D-04: not locale-aware — shared proper noun across fr/en
-  slug: string
-  statement: LocaleString
-  heroColor?: string
-  isVisible?: boolean
-  publicationStatus?: 'preparation' | 'published' | 'archived'
-  showOnHomePage?: boolean
-  seo?: SeoSettings
+  title: string; // D-04: not locale-aware — shared proper noun across fr/en
+  slug: string;
+  statement: LocaleString;
+  heroColor?: string;
+  isVisible?: boolean;
+  publicationStatus?: 'preparation' | 'published' | 'archived';
+  showOnHomePage?: boolean;
+  seo?: SeoSettings;
   // EDN-12: optional, unidirectional cross-link target — dereferenced from
   // the `relatedEdition` reference field (sanity/schemas/gallery.ts). Null
   // or absent for galleries with no linked édition (the common case today).
-  relatedEdition?: { title: string; slug: string } | null
-  images: GalleryImage[] // D-09: images[0] is always the cover
+  relatedEdition?: { title: string; slug: string } | null;
+  images: GalleryImage[]; // D-09: images[0] is always the cover
 }
 
-const PUBLISHED_GALLERY_FILTER = /* groq */ `coalesce(publicationStatus, select(isVisible == false => "preparation", "published")) == "published"`
+const PUBLISHED_GALLERY_FILTER = /* groq */ `coalesce(publicationStatus, select(isVisible == false => "preparation", "published")) == "published"`;
 
 // quick-260724-oep, shared with editions since quick-260801-kgh: each image
 // is projected as a spread of all its existing fields (asset/hotspot/alt/
@@ -178,15 +178,15 @@ const PUBLISHED_GALLERY_FILTER = /* groq */ `coalesce(publicationStatus, select(
 const IMAGES_WITH_DIMENSIONS_PROJECTION = /* groq */ `images[]{
     ...,
     "dimensions": asset->metadata.dimensions
-  }`
+  }`;
 
 const GALLERIES_QUERY = /* groq */ `*[_type == "gallery" && ${PUBLISHED_GALLERY_FILTER}] | order(orderRank) {
   _id, title, "slug": slug.current, statement, heroColor, publicationStatus, "showOnHomePage": coalesce(showOnHomePage, true), "isVisible": coalesce(isVisible, true), seo, ${IMAGES_WITH_DIMENSIONS_PROJECTION}, relatedEdition->{title, "slug": slug.current}
-}`
+}`;
 
 const GALLERY_BY_SLUG_QUERY = /* groq */ `*[_type == "gallery" && slug.current == $slug && ${PUBLISHED_GALLERY_FILTER}][0]{
   _id, title, "slug": slug.current, statement, heroColor, publicationStatus, "showOnHomePage": coalesce(showOnHomePage, true), "isVisible": coalesce(isVisible, true), seo, ${IMAGES_WITH_DIMENSIONS_PROJECTION}, relatedEdition->{title, "slug": slug.current}
-}`
+}`;
 
 /**
  * A single édition photo (an `images[]` member). A member's shape (`alt`/
@@ -194,27 +194,27 @@ const GALLERY_BY_SLUG_QUERY = /* groq */ `*[_type == "gallery" && slug.current =
  * declares the exact same sub-fields as `gallery.ts` does — so a type alias
  * is sufficient.
  */
-export type EditionImage = GalleryImage
+export type EditionImage = GalleryImage;
 
 /** An `edition` document, typed for both locales. */
 export interface Edition {
-  title: string // shared proper noun across fr/en, mirrors Gallery['title']
-  slug: string
-  statement: LocaleString
+  title: string; // shared proper noun across fr/en, mirrors Gallery['title']
+  slug: string;
+  statement: LocaleString;
   // photo shoot of the printed object itself — images[0] is the cover
   // (quick-260801-kgh, mirrors Gallery['images']); pickHeroIndex
   // (src/lib/image-orientation.ts) prefers the first LANDSCAPE photo when
   // there is one.
-  images: EditionImage[]
-  pageCount: number
-  printRun: number
-  dimensions: {width: number; height: number; unit: 'cm' | 'in'}
-  publicationStatus?: 'preparation' | 'published' | 'archived'
+  images: EditionImage[];
+  pageCount: number;
+  printRun: number;
+  dimensions: { width: number; height: number; unit: 'cm' | 'in' };
+  publicationStatus?: 'preparation' | 'published' | 'archived';
   // EDN-08: optional, unidirectional cross-link target — dereferenced from
   // the `relatedGallery` reference field (sanity/schemas/edition.ts). Null
   // or absent for editions with no related gallery set (the common case
   // today: every currently-published édition).
-  relatedGallery?: { title: string; slug: string } | null
+  relatedGallery?: { title: string; slug: string } | null;
   // NOTE: edition has NO `seo` field/group (confirmed absent from Phase 11's
   // sanity/schemas/edition.ts) — do not add a `seo` field here. Any code
   // reading page metadata for an edition must construct it from
@@ -225,28 +225,28 @@ export interface Edition {
 // edition has no `isVisible` field, so the gallery filter's
 // coalesce/select(isVisible…) fallback logic does not apply here — the
 // simpler, correct filter is just the publicationStatus check.
-const PUBLISHED_EDITION_FILTER = /* groq */ `publicationStatus == "published"`
+const PUBLISHED_EDITION_FILTER = /* groq */ `publicationStatus == "published"`;
 
 const EDITIONS_QUERY = /* groq */ `*[_type == "edition" && ${PUBLISHED_EDITION_FILTER}] | order(orderRank) {
   _id, title, "slug": slug.current, statement, ${IMAGES_WITH_DIMENSIONS_PROJECTION}, pageCount, printRun, dimensions, publicationStatus, relatedGallery->{title, "slug": slug.current}
-}`
+}`;
 
 const EDITION_BY_SLUG_QUERY = /* groq */ `*[_type == "edition" && slug.current == $slug && ${PUBLISHED_EDITION_FILTER}][0]{
   _id, title, "slug": slug.current, statement, ${IMAGES_WITH_DIMENSIONS_PROJECTION}, pageCount, printRun, dimensions, publicationStatus, relatedGallery->{title, "slug": slug.current}
-}`
+}`;
 
 export interface AboutPage {
-  biography?: Partial<LocaleString>
-  practice?: Partial<LocaleString>
-  medium?: Partial<LocaleString>
-  image?: SanityImage & {alt?: Partial<LocaleString>}
-  exhibitionImage?: SanityImage & {alt?: Partial<LocaleString>}
-  seo?: SeoSettings
+  biography?: Partial<LocaleString>;
+  practice?: Partial<LocaleString>;
+  medium?: Partial<LocaleString>;
+  image?: SanityImage & { alt?: Partial<LocaleString> };
+  exhibitionImage?: SanityImage & { alt?: Partial<LocaleString> };
+  seo?: SeoSettings;
 }
 
 export interface HomePage {
-  intro?: Partial<LocaleString>
-  seo?: SeoSettings
+  intro?: Partial<LocaleString>;
+  seo?: SeoSettings;
 }
 
 /**
@@ -257,29 +257,29 @@ export interface HomePage {
  * deliberately narrow until that route wiring is a separately-scoped change.
  */
 export interface EditionsPage {
-  intro?: Partial<LocaleString>
+  intro?: Partial<LocaleString>;
 }
 
 export interface ContactPage {
-  intro?: Partial<LocaleString>
-  publicEmail?: string
-  location?: Partial<LocaleString>
-  availability?: Partial<LocaleString>
+  intro?: Partial<LocaleString>;
+  publicEmail?: string;
+  location?: Partial<LocaleString>;
+  availability?: Partial<LocaleString>;
   professionalLinks?: Array<{
-    _key?: string
-    label?: Partial<LocaleString>
-    url?: string
-  }>
-  seo?: SeoSettings
+    _key?: string;
+    label?: Partial<LocaleString>;
+    url?: string;
+  }>;
+  seo?: SeoSettings;
 }
 
 const HOME_PAGE_QUERY = /* groq */ `*[_id == "homePage"][0]{
   _id,
   intro,
   seo
-}`
+}`;
 
-const EDITIONS_PAGE_QUERY = /* groq */ `*[_id == "editionsPage"][0]{ _id, intro }`
+const EDITIONS_PAGE_QUERY = /* groq */ `*[_id == "editionsPage"][0]{ _id, intro }`;
 
 const ABOUT_PAGE_QUERY = /* groq */ `*[_id == "aboutPage"][0]{
   _id,
@@ -289,7 +289,7 @@ const ABOUT_PAGE_QUERY = /* groq */ `*[_id == "aboutPage"][0]{
   image,
   exhibitionImage,
   seo
-}`
+}`;
 
 const CONTACT_PAGE_QUERY = /* groq */ `*[_id == "contactPage"][0]{
   _id,
@@ -299,7 +299,7 @@ const CONTACT_PAGE_QUERY = /* groq */ `*[_id == "contactPage"][0]{
   availability,
   professionalLinks,
   seo
-}`
+}`;
 
 /**
  * Fetches all published `gallery` documents at build time, in Romane's
@@ -313,7 +313,7 @@ export async function getGalleries(): Promise<Gallery[]> {
     'gallery',
     () => sanityClient.fetch<unknown>(GALLERIES_QUERY),
     sanitizeGalleries,
-  )
+  );
 }
 
 /**
@@ -324,11 +324,11 @@ export async function getGalleries(): Promise<Gallery[]> {
 export async function getGallery(slug: string): Promise<Gallery | null> {
   return fetchSanitized(
     'getGallery',
-    {slug},
+    { slug },
     'gallery',
-    () => sanityClient.fetch<unknown>(GALLERY_BY_SLUG_QUERY, {slug}),
+    () => sanityClient.fetch<unknown>(GALLERY_BY_SLUG_QUERY, { slug }),
     sanitizeGallery,
-  )
+  );
 }
 
 /**
@@ -342,7 +342,7 @@ export async function getEditions(): Promise<Edition[]> {
     'edition',
     () => sanityClient.fetch<unknown>(EDITIONS_QUERY),
     sanitizeEditions,
-  )
+  );
 }
 
 /**
@@ -354,11 +354,11 @@ export async function getEditions(): Promise<Edition[]> {
 export async function getEdition(slug: string): Promise<Edition | null> {
   return fetchSanitized(
     'getEdition',
-    {slug},
+    { slug },
     'edition',
-    () => sanityClient.fetch<unknown>(EDITION_BY_SLUG_QUERY, {slug}),
+    () => sanityClient.fetch<unknown>(EDITION_BY_SLUG_QUERY, { slug }),
     sanitizeEdition,
-  )
+  );
 }
 
 export async function getAboutPage(): Promise<AboutPage | null> {
@@ -368,7 +368,7 @@ export async function getAboutPage(): Promise<AboutPage | null> {
     'aboutPage',
     () => sanityClient.fetch<unknown>(ABOUT_PAGE_QUERY),
     sanitizeAboutPage,
-  )
+  );
 }
 
 export async function getHomePage(): Promise<HomePage | null> {
@@ -378,7 +378,7 @@ export async function getHomePage(): Promise<HomePage | null> {
     'homePage',
     () => sanityClient.fetch<unknown>(HOME_PAGE_QUERY),
     sanitizeHomePage,
-  )
+  );
 }
 
 export async function getEditionsPage(): Promise<EditionsPage | null> {
@@ -388,7 +388,7 @@ export async function getEditionsPage(): Promise<EditionsPage | null> {
     'editionsPage',
     () => sanityClient.fetch<unknown>(EDITIONS_PAGE_QUERY),
     sanitizeEditionsPage,
-  )
+  );
 }
 
 export async function getContactPage(): Promise<ContactPage | null> {
@@ -398,7 +398,7 @@ export async function getContactPage(): Promise<ContactPage | null> {
     'contactPage',
     () => sanityClient.fetch<unknown>(CONTACT_PAGE_QUERY),
     sanitizeContactPage,
-  )
+  );
 }
 
 function fetchSanitized<T>(
@@ -409,8 +409,8 @@ function fetchSanitized<T>(
   sanitize: (value: unknown) => SanitizationResult<T>,
 ): Promise<T> {
   return getBuildCached(getterName, parameters, async () => {
-    const result = sanitize(await fetchValue())
-    if (result.issues.length > 0) warnForSanityIssues(documentType, result.issues)
-    return result.value
-  })
+    const result = sanitize(await fetchValue());
+    if (result.issues.length > 0) warnForSanityIssues(documentType, result.issues);
+    return result.value;
+  });
 }

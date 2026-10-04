@@ -321,9 +321,7 @@ function SectionHeader({
           {description}
         </Text>
       </Stack>
-      <Badge tone={tone}>
-        {count}
-      </Badge>
+      <Badge tone={tone}>{count}</Badge>
     </Flex>
   )
 }

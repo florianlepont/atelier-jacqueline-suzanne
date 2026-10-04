@@ -31,7 +31,8 @@ function defaultLocaleError(
     return `Le texte ${lang} est obligatoire et ne doit pas dépasser ${maxLength} caractères.`
   }
   if (required) return `Le texte ${lang} est obligatoire.`
-  if (maxLength !== undefined) return `Le texte ${lang} ne doit pas dépasser ${maxLength} caractères.`
+  if (maxLength !== undefined)
+    return `Le texte ${lang} ne doit pas dépasser ${maxLength} caractères.`
   return undefined
 }
 

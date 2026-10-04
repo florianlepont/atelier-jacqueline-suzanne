@@ -90,7 +90,11 @@ test.describe('editions overview', () => {
   }) => {
     await page.goto('/editions/');
     const frStatement = (
-      await page.locator('.editions-index__row').first().locator('.editions-index__statement').textContent()
+      await page
+        .locator('.editions-index__row')
+        .first()
+        .locator('.editions-index__statement')
+        .textContent()
     )?.trim();
 
     await page.goto('/en/editions/');
@@ -323,8 +327,10 @@ async function assertGridIsFlushMasonry(page: import('@playwright/test').Page): 
         .locator('.gallery-grid .tile img')
         .evaluateAll(
           (els) =>
-            els.filter((el) => (el as HTMLImageElement).complete && (el as HTMLImageElement).naturalWidth > 0)
-              .length,
+            els.filter(
+              (el) =>
+                (el as HTMLImageElement).complete && (el as HTMLImageElement).naturalWidth > 0,
+            ).length,
         ),
     )
     .toBe(tileCount);
@@ -374,7 +380,9 @@ test.describe('editions masonry grid photos flush, no exposed background (quick-
     await page.goto('/editions/');
     const hrefs = await page
       .locator('.editions-index__row')
-      .evaluateAll((els) => els.map((el) => el.getAttribute('href')).filter((href): href is string => Boolean(href)));
+      .evaluateAll((els) =>
+        els.map((el) => el.getAttribute('href')).filter((href): href is string => Boolean(href)),
+      );
     expect(hrefs.length).toBeGreaterThan(0);
 
     let totalTilesMeasured = 0;
@@ -453,10 +461,14 @@ test.describe('editions masonry grid photos flush, no exposed background (quick-
         naturalRatio: img.naturalWidth / img.naturalHeight,
       };
     });
-    expect(Math.abs(ratios.clientRatio - ratios.naturalRatio) / ratios.naturalRatio).toBeLessThan(0.01);
+    expect(Math.abs(ratios.clientRatio - ratios.naturalRatio) / ratios.naturalRatio).toBeLessThan(
+      0.01,
+    );
   });
 
-  test('the hover/focus zoom still applies on édition grid tiles after the masonry swap', async ({ page }) => {
+  test('the hover/focus zoom still applies on édition grid tiles after the masonry swap', async ({
+    page,
+  }) => {
     await page.goto('/editions/');
     const rowHref = await page.locator('.editions-index__row').first().getAttribute('href');
     expect(rowHref).toBeTruthy();
@@ -518,7 +530,9 @@ test.describe('editions hero cross-document transition scoping (Item 4, quick-26
     expect(galleryName).toBe('hero-photo');
   });
 
-  test('the édition hero photo carries no view-transition-name at mobile widths either', async ({ page }) => {
+  test('the édition hero photo carries no view-transition-name at mobile widths either', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/editions/');
     const rowHref = await page.locator('.editions-index__row').first().getAttribute('href');
@@ -559,7 +573,9 @@ test.describe('edition detail scroll-up-to-return (Item 6, quick-260803-bvu)', (
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.waitForTimeout(150);
 
-      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, bubbles: true })));
+      await page.evaluate(() =>
+        window.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, bubbles: true })),
+      );
 
       await page.waitForURL('**/editions/');
     });
@@ -579,7 +595,9 @@ test.describe('edition detail scroll-up-to-return (Item 6, quick-260803-bvu)', (
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.waitForTimeout(150);
 
-      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, bubbles: true })));
+      await page.evaluate(() =>
+        window.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, bubbles: true })),
+      );
 
       await page.waitForURL('**/en/editions/');
     });
@@ -596,15 +614,21 @@ test.describe('edition detail scroll-up-to-return (Item 6, quick-260803-bvu)', (
       const href = await discoverEdition(page);
       await page.goto(href);
 
-      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -80, bubbles: true })));
+      await page.evaluate(() =>
+        window.dispatchEvent(new WheelEvent('wheel', { deltaY: -80, bubbles: true })),
+      );
       await page.waitForTimeout(80);
-      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -80, bubbles: true })));
+      await page.evaluate(() =>
+        window.dispatchEvent(new WheelEvent('wheel', { deltaY: -80, bubbles: true })),
+      );
       await page.waitForTimeout(300);
 
       expect(page.url()).toBe(new URL(href, page.url()).href);
     });
 
-    test('fr: a small down-then-up correction (below ENGAGE_DISTANCE) does NOT navigate', async ({ page }) => {
+    test('fr: a small down-then-up correction (below ENGAGE_DISTANCE) does NOT navigate', async ({
+      page,
+    }) => {
       const href = await discoverEdition(page);
       await page.goto(href);
 
@@ -612,7 +636,9 @@ test.describe('edition detail scroll-up-to-return (Item 6, quick-260803-bvu)', (
       await page.waitForTimeout(80);
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.waitForTimeout(80);
-      await page.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, bubbles: true })));
+      await page.evaluate(() =>
+        window.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, bubbles: true })),
+      );
       await page.waitForTimeout(300);
 
       expect(page.url()).toBe(new URL(href, page.url()).href);
@@ -621,14 +647,16 @@ test.describe('edition detail scroll-up-to-return (Item 6, quick-260803-bvu)', (
 });
 
 test.describe('editions related-gallery cross-link (EDN-08)', () => {
-  test('renders a mobile-friendly related collection card when an edition has a linked gallery', async ({ page }) => {
+  test('renders a mobile-friendly related collection card when an edition has a linked gallery', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/editions/');
-    const editionHrefs = await page.locator('.editions-index__row').evaluateAll((rows) =>
-      rows
-        .map((row) => row.getAttribute('href'))
-        .filter((href): href is string => Boolean(href)),
-    );
+    const editionHrefs = await page
+      .locator('.editions-index__row')
+      .evaluateAll((rows) =>
+        rows.map((row) => row.getAttribute('href')).filter((href): href is string => Boolean(href)),
+      );
 
     let foundRelatedCollection = false;
     let relatedEditionHref = '';
@@ -684,11 +712,11 @@ test.describe('editions contact CTA (CONT-04)', () => {
   test('renders on every édition at phone width', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/editions/');
-    const editionHrefs = await page.locator('.editions-index__row').evaluateAll((rows) =>
-      rows
-        .map((row) => row.getAttribute('href'))
-        .filter((href): href is string => Boolean(href)),
-    );
+    const editionHrefs = await page
+      .locator('.editions-index__row')
+      .evaluateAll((rows) =>
+        rows.map((row) => row.getAttribute('href')).filter((href): href is string => Boolean(href)),
+      );
     expect(editionHrefs.length).toBeGreaterThan(0);
 
     for (const href of editionHrefs) {
@@ -701,11 +729,11 @@ test.describe('editions contact CTA (CONT-04)', () => {
     page,
   }) => {
     await page.goto('/editions/');
-    const editionHrefs = await page.locator('.editions-index__row').evaluateAll((rows) =>
-      rows
-        .map((row) => row.getAttribute('href'))
-        .filter((href): href is string => Boolean(href)),
-    );
+    const editionHrefs = await page
+      .locator('.editions-index__row')
+      .evaluateAll((rows) =>
+        rows.map((row) => row.getAttribute('href')).filter((href): href is string => Boolean(href)),
+      );
     expect(editionHrefs.length).toBeGreaterThan(0);
     const [href] = editionHrefs;
 
@@ -736,12 +764,10 @@ test.describe('editions contact CTA (CONT-04)', () => {
       // D-08: a text link with an arrow, not a filled/pill button.
       expect(ctaStyles.backgroundColor).toBe('rgba(0, 0, 0, 0)');
 
-      const ruleStyles = await page
-        .locator('.edition-detail__contact-cta-rule')
-        .evaluate((el) => {
-          const style = getComputedStyle(el);
-          return { borderTopWidth: style.borderTopWidth, borderTopColor: style.borderTopColor };
-        });
+      const ruleStyles = await page.locator('.edition-detail__contact-cta-rule').evaluate((el) => {
+        const style = getComputedStyle(el);
+        return { borderTopWidth: style.borderTopWidth, borderTopColor: style.borderTopColor };
+      });
       expect(ruleStyles).toEqual({ borderTopWidth: '1px', borderTopColor: 'rgb(214, 50, 124)' });
 
       const arrowColor = await page
@@ -770,11 +796,11 @@ test.describe('editions contact CTA (CONT-04)', () => {
     page,
   }) => {
     await page.goto('/editions/');
-    const editionHrefs = await page.locator('.editions-index__row').evaluateAll((rows) =>
-      rows
-        .map((row) => row.getAttribute('href'))
-        .filter((href): href is string => Boolean(href)),
-    );
+    const editionHrefs = await page
+      .locator('.editions-index__row')
+      .evaluateAll((rows) =>
+        rows.map((row) => row.getAttribute('href')).filter((href): href is string => Boolean(href)),
+      );
 
     let checked = false;
     for (const href of editionHrefs) {
@@ -876,7 +902,7 @@ test.describe('editions lightbox', () => {
 test.describe('editions overview layout', () => {
   test.use({ viewport: { width: 1280, height: 900 } });
 
-  test('hovering a row reveals its statement and activates the cursor-following preview panel with that row\'s photo', async ({
+  test("hovering a row reveals its statement and activates the cursor-following preview panel with that row's photo", async ({
     page,
   }) => {
     for (const url of ['/editions/', '/en/editions/']) {
@@ -894,7 +920,10 @@ test.describe('editions overview layout', () => {
       // "second row" resolved as the LAST row, not a fixed index — removing
       // or reordering éditions in Sanity Studio can never change which row
       // this test targets, as long as there are at least two.
-      test.skip(rowCount < 2, 'needs at least 2 éditions to prove the preview updates on a differing row');
+      test.skip(
+        rowCount < 2,
+        'needs at least 2 éditions to prove the preview updates on a differing row',
+      );
 
       const firstRow = rows.nth(0);
       const lastRow = rows.nth(rowCount - 1);
@@ -918,7 +947,10 @@ test.describe('editions overview layout', () => {
       // intrinsic height, not the old fixed 80px clip. Poll to accommodate
       // the 0.3s grid-template-rows reveal transition.
       await expect
-        .poll(async () => (await lastRow.locator('.editions-index__statement').boundingBox())?.height ?? 0)
+        .poll(
+          async () =>
+            (await lastRow.locator('.editions-index__statement').boundingBox())?.height ?? 0,
+        )
         .toBeGreaterThan(80);
     }
   });
@@ -972,7 +1004,7 @@ async function findRowWithDifferingAccent(
 test.describe('editions row-hover header color sync (EDN-09)', () => {
   test.use({ viewport: { width: 1280, height: 900 } });
 
-  test('hovering a row recolors the shared header eyebrow, eyebrow dot, h1, intro, and divider to the row\'s own accent color', async ({
+  test("hovering a row recolors the shared header eyebrow, eyebrow dot, h1, intro, and divider to the row's own accent color", async ({
     page,
   }) => {
     await page.goto('/editions/');
@@ -1139,7 +1171,9 @@ test.describe('editions hero reduced-motion (sketch 005)', () => {
 test.describe('edition detail desktop contrast', () => {
   test.use({ viewport: { width: 1280, height: 900 } });
 
-  test('uses the dark ink canvas with white reveal text and keeps the mobile panel neutral', async ({ page }) => {
+  test('uses the dark ink canvas with white reveal text and keeps the mobile panel neutral', async ({
+    page,
+  }) => {
     await page.goto('/editions/');
     const rowHref = await page.locator('.editions-index__row').first().getAttribute('href');
     expect(rowHref).toBeTruthy();

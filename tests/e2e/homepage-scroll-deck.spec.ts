@@ -9,14 +9,24 @@ async function openHomepage(page: Page, path: '/' | '/en/') {
 }
 
 async function scrollArrivalTo(page: Page, progress: number) {
-  const target = await page.locator('.mobile-home-prototype__arrival').evaluate((arrival, fraction) => {
-    const element = arrival as HTMLElement;
-    return element.offsetTop + (element.offsetHeight - window.innerHeight) * (fraction as number);
-  }, progress);
+  const target = await page
+    .locator('.mobile-home-prototype__arrival')
+    .evaluate((arrival, fraction) => {
+      const element = arrival as HTMLElement;
+      return element.offsetTop + (element.offsetHeight - window.innerHeight) * (fraction as number);
+    }, progress);
   await page.evaluate((y) => window.scrollTo(0, y), target);
-  await expect.poll(() => page.locator('[data-role="prototype-arrival-stage"]').evaluate((stage) =>
-    Number.parseFloat((stage as HTMLElement).style.getPropertyValue('--prototype-arrival-progress')),
-  )).toBeCloseTo(progress, 1);
+  await expect
+    .poll(() =>
+      page
+        .locator('[data-role="prototype-arrival-stage"]')
+        .evaluate((stage) =>
+          Number.parseFloat(
+            (stage as HTMLElement).style.getPropertyValue('--prototype-arrival-progress'),
+          ),
+        ),
+    )
+    .toBeCloseTo(progress, 1);
 }
 
 function matrixTranslation(transform: string) {
@@ -26,19 +36,25 @@ function matrixTranslation(transform: string) {
 
 test.describe('mobile homepage arrival', () => {
   for (const path of ['/', '/en/'] as const) {
-    test(`${path} serves the prototype instead of the hidden desktop carousel`, async ({ page }) => {
+    test(`${path} serves the prototype instead of the hidden desktop carousel`, async ({
+      page,
+    }) => {
       await openHomepage(page, path);
 
       await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
       await expect(page.locator('[data-role="prototype-arrival-stage"]')).toBeVisible();
       await expect(page.locator('[data-role="prototype-arrival-intro"]')).toHaveText(/\S/);
-      await expect(page.locator('[data-role="prototype-scroll-cue"]')).toHaveText(path === '/' ? 'Défiler' : 'Scroll');
+      await expect(page.locator('[data-role="prototype-scroll-cue"]')).toHaveText(
+        path === '/' ? 'Défiler' : 'Scroll',
+      );
       await expect(page.locator('.homepage-legacy [data-role="home-carousel"]')).toBeHidden();
       await expect(page.locator('.homepage-legacy [data-role="home-grid"]')).toBeHidden();
       await expect(page.locator('[data-role="scroll-deck"]')).toHaveCount(0);
     });
 
-    test(`${path} keeps Paysage alone after the description before the series`, async ({ page }) => {
+    test(`${path} keeps Paysage alone after the description before the series`, async ({
+      page,
+    }) => {
       await openHomepage(page, path);
       const intro = page.locator('[data-role="prototype-arrival-intro"]');
       const firstSeries = page.locator('.mobile-home-prototype__series').first();
@@ -57,7 +73,9 @@ test.describe('mobile homepage arrival', () => {
     });
   }
 
-  test('the arrival and series photographs pan horizontally, with no vertical translation', async ({ page }) => {
+  test('the arrival and series photographs pan horizontally, with no vertical translation', async ({
+    page,
+  }) => {
     await openHomepage(page, '/');
     await scrollArrivalTo(page, 0.65);
     const arrivalPhoto = page.locator('[data-role="prototype-arrival-photo"]');
@@ -68,30 +86,55 @@ test.describe('mobile homepage arrival', () => {
     expect(after).not.toBe(before);
     expect(Number.parseFloat(after)).toBeGreaterThan(Number.parseFloat(before));
 
-    await page.locator('.mobile-home-prototype__series-image-frame').first().scrollIntoViewIfNeeded();
+    await page
+      .locator('.mobile-home-prototype__series-image-frame')
+      .first()
+      .scrollIntoViewIfNeeded();
     const seriesPhoto = page.locator('.mobile-home-prototype__series-image').first();
-    await expect.poll(async () => matrixTranslation(await seriesPhoto.evaluate((image) => getComputedStyle(image).transform))[1]).toBeCloseTo(0, 4);
+    await expect
+      .poll(
+        async () =>
+          matrixTranslation(
+            await seriesPhoto.evaluate((image) => getComputedStyle(image).transform),
+          )[1],
+      )
+      .toBeCloseTo(0, 4);
   });
 
   test('the scroll cue uses ink on the neon accent', async ({ page }) => {
     await openHomepage(page, '/');
-    await expect(page.locator('[data-role="prototype-scroll-cue"]')).toHaveCSS('color', 'rgb(26, 26, 26)');
+    await expect(page.locator('[data-role="prototype-scroll-cue"]')).toHaveCSS(
+      'color',
+      'rgb(26, 26, 26)',
+    );
   });
 
-  test('reduced motion leaves the description legible and does not drive the photo pan', async ({ page }) => {
+  test('reduced motion leaves the description legible and does not drive the photo pan', async ({
+    page,
+  }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await openHomepage(page, '/');
     const intro = page.locator('[data-role="prototype-arrival-intro"]');
     const photo = page.locator('[data-role="prototype-arrival-photo"]');
-    const before = await photo.evaluate((image) => (image as HTMLElement).style.getPropertyValue('--prototype-arrival-pan'));
+    const before = await photo.evaluate((image) =>
+      (image as HTMLElement).style.getPropertyValue('--prototype-arrival-pan'),
+    );
 
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await expect(intro).toHaveCSS('opacity', '1');
     await expect(photo).toHaveCSS('transform', /matrix\([^,]+, 0, 0, [^,]+, 0, 0\)/);
-    await expect.poll(() => photo.evaluate((image) => (image as HTMLElement).style.getPropertyValue('--prototype-arrival-pan'))).toBe(before);
+    await expect
+      .poll(() =>
+        photo.evaluate((image) =>
+          (image as HTMLElement).style.getPropertyValue('--prototype-arrival-pan'),
+        ),
+      )
+      .toBe(before);
   });
 
-  test('desktop keeps the established carousel rather than the phone prototype', async ({ page }) => {
+  test('desktop keeps the established carousel rather than the phone prototype', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/');
     await expect(page.locator('[data-role="home-carousel"]')).toBeVisible();
