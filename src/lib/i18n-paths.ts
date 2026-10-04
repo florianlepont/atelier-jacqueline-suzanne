@@ -46,7 +46,10 @@ export function getSwitcherHref(currentPath: string, targetLocale: 'fr' | 'en'):
 
   // Strip the current locale prefix (if any) and any trailing slash to
   // recover the shared slug.
-  const slug = baseRelativePath.replace(/^\/en\//, '/').replace(/^\//, '').replace(/\/$/, '');
+  const slug = baseRelativePath
+    .replace(/^\/en\//, '/')
+    .replace(/^\//, '')
+    .replace(/\/$/, '');
 
   // Missing-counterpart fallback (D-04): if the current page has no
   // published translation in the target locale, send the visitor to that

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { isBlank, isHoneypotTriggered, isValidEmail, resolveContactEndpoint } from '../../src/lib/contact-form';
+import {
+  isBlank,
+  isHoneypotTriggered,
+  isValidEmail,
+  resolveContactEndpoint,
+} from '../../src/lib/contact-form';
 
 // RED (Wave 0): src/lib/contact-form.ts does not exist yet — it is built in
 // Plan 03-02 Task 2. This import failure is the intended failing state for

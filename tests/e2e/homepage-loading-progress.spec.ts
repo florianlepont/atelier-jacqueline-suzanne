@@ -22,7 +22,9 @@ test.describe('progressive image loading (HOME-09)', () => {
     await expect(heroImg).toHaveAttribute('sizes', '100vw');
   });
 
-  test('hero blur-up: placeholder present and sharp fades in on first paint and after a swap', async ({ page }) => {
+  test('hero blur-up: placeholder present and sharp fades in on first paint and after a swap', async ({
+    page,
+  }) => {
     await page.clock.install();
     await page.goto('/');
 
@@ -40,7 +42,9 @@ test.describe('progressive image loading (HOME-09)', () => {
     await expect(heroImg).toHaveClass(/is-loaded/);
   });
 
-  test('grid tile blur-up: tiles carry a placeholder layer and gain is-loaded', async ({ page }) => {
+  test('grid tile blur-up: tiles carry a placeholder layer and gain is-loaded', async ({
+    page,
+  }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
 
@@ -70,7 +74,9 @@ test.describe('progressive image loading (HOME-09)', () => {
     }
   });
 
-  test('next-gallery hero photo is prefetched to warm the cache before the next swap (D-05)', async ({ page }) => {
+  test('next-gallery hero photo is prefetched to warm the cache before the next swap (D-05)', async ({
+    page,
+  }) => {
     await page.goto('/');
 
     const dataItems = page.locator('ul[data-role="home-carousel-data"] li');
@@ -86,7 +92,10 @@ test.describe('progressive image loading (HOME-09)', () => {
     // predicate (not a glob string) avoids Sanity CDN query-string characters
     // being misinterpreted as glob wildcards.
     const nextHeroPath = new URL(nextHeroSrc!).pathname;
-    const prefetchRequest = page.waitForRequest((req) => new URL(req.url()).pathname === nextHeroPath, { timeout: 5000 });
+    const prefetchRequest = page.waitForRequest(
+      (req) => new URL(req.url()).pathname === nextHeroPath,
+      { timeout: 5000 },
+    );
     await page.reload();
     const request = await prefetchRequest;
     expect(new URL(request.url()).pathname).toBe(nextHeroPath);
@@ -125,7 +134,9 @@ test.describe('carousel progress fill (quick-260725-dcg)', () => {
       .toBeGreaterThan(0);
   });
 
-  test('the explicit pause toggle freezes the fill and resuming un-freezes it', async ({ page }) => {
+  test('the explicit pause toggle freezes the fill and resuming un-freezes it', async ({
+    page,
+  }) => {
     await page.goto('/');
 
     const filling = page.locator('.home-hero__progress-dash.is-filling');
@@ -142,7 +153,9 @@ test.describe('carousel progress fill (quick-260725-dcg)', () => {
       .toBe('running');
   });
 
-  test('manual navigation relocates and restarts the fill on the newly-current dash', async ({ page }) => {
+  test('manual navigation relocates and restarts the fill on the newly-current dash', async ({
+    page,
+  }) => {
     await page.goto('/');
 
     const dashes = page.locator('.home-hero__progress-dash');
@@ -161,7 +174,9 @@ test.describe('carousel progress fill (quick-260725-dcg)', () => {
       .evaluate((el) => getComputedStyle(el, '::after').animationName);
     expect(nameOnCurrent).toContain('home-progress-fill');
 
-    const nameOnFirst = await dashes.nth(0).evaluate((el) => getComputedStyle(el, '::after').animationName);
+    const nameOnFirst = await dashes
+      .nth(0)
+      .evaluate((el) => getComputedStyle(el, '::after').animationName);
     expect(nameOnFirst).toBe('none');
   });
 

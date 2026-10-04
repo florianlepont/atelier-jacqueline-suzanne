@@ -69,7 +69,9 @@ function encodeCanvas(
 }
 
 function failed(file: File, reason: ProcessFailureReason, detail?: string): ProcessResult {
-  return detail === undefined ? {status: 'failed', file, reason} : {status: 'failed', file, reason, detail}
+  return detail === undefined
+    ? {status: 'failed', file, reason}
+    : {status: 'failed', file, reason, detail}
 }
 
 export async function processImageFile(
@@ -129,10 +131,18 @@ export async function processImageFile(
           context.fillText(layout.text, layout.x, layout.y)
         }
 
-        const blob = await encodeCanvas(canvas, mime, usesQuality(mime) ? config.quality : undefined)
+        const blob = await encodeCanvas(
+          canvas,
+          mime,
+          usesQuality(mime) ? config.quality : undefined,
+        )
         if (blob === null) return failed(file, 'encode-failed')
         if (blob.type !== mime) {
-          return failed(file, 'encode-type-mismatch', `${mime} demandé, ${blob.type || 'type vide'} reçu`)
+          return failed(
+            file,
+            'encode-type-mismatch',
+            `${mime} demandé, ${blob.type || 'type vide'} reçu`,
+          )
         }
 
         const output = new File([blob], outputFileName(file.name, mime), {

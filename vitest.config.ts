@@ -39,10 +39,7 @@ export default getViteConfig({
       // maintenance cost disproportionate to the benefit, so the file is
       // excluded from this numeric gate rather than silently dragging the
       // aggregate down for logic this project already verifies elsewhere.
-      exclude: [
-        'sanity/editorial/test/**',
-        'src/client/home-carousel-runtime.ts',
-      ],
+      exclude: ['sanity/editorial/test/**', 'src/client/home-carousel-runtime.ts'],
       thresholds: {
         statements: 80,
         branches: 75,

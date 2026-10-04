@@ -1,8 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  resetBuildCacheForTests,
-  setBuildCacheEnabledForTests,
-} from '../../src/lib/build-cache';
+import { resetBuildCacheForTests, setBuildCacheEnabledForTests } from '../../src/lib/build-cache';
 
 // RED (Wave 0): src/lib/sanity.ts's getEditions/getEdition exports do not
 // exist yet — they are built in Plan 12-01 Task 2. Importing them now yields
@@ -223,7 +220,9 @@ describe('getEditions', () => {
     const { getEditions } = await import('../../src/lib/sanity');
     await getEditions();
 
-    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('"dimensions": asset->metadata.dimensions'));
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('"dimensions": asset->metadata.dimensions'),
+    );
   });
 
   it('resolves without error when relatedGallery is absent/null (the common empty case)', async () => {

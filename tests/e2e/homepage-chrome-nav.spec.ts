@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Instagram nav link (HOME-04)', () => {
-  test('exactly one Instagram link exists in the header with correct href/target/rel', async ({ page }) => {
+  test('exactly one Instagram link exists in the header with correct href/target/rel', async ({
+    page,
+  }) => {
     await page.goto('/');
 
     const header = page.locator('header');
@@ -13,7 +15,9 @@ test.describe('Instagram nav link (HOME-04)', () => {
     expect(rel).toContain('noreferrer');
   });
 
-  test('the link renders an inline svg icon (not visible text) with an accessible name of Instagram', async ({ page }) => {
+  test('the link renders an inline svg icon (not visible text) with an accessible name of Instagram', async ({
+    page,
+  }) => {
     await page.goto('/');
 
     const link = page.locator('header a[href="https://www.instagram.com/ajs_romanelepont/"]');
@@ -26,20 +30,26 @@ test.describe('Instagram nav link (HOME-04)', () => {
     await expect(header.getByRole('link', { name: 'Instagram', exact: false })).toHaveCount(1);
   });
 
-  test('DOM order: the Instagram link comes after the Contact link inside .site-nav', async ({ page }) => {
+  test('DOM order: the Instagram link comes after the Contact link inside .site-nav', async ({
+    page,
+  }) => {
     await page.goto('/');
 
     const navLinks = page.locator('.site-nav > a');
     const hrefs = await navLinks.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
     const contactIndex = hrefs.findIndex((href) => href?.includes('contact'));
-    const instagramIndex = hrefs.findIndex((href) => href === 'https://www.instagram.com/ajs_romanelepont/');
+    const instagramIndex = hrefs.findIndex(
+      (href) => href === 'https://www.instagram.com/ajs_romanelepont/',
+    );
     expect(contactIndex).toBeGreaterThanOrEqual(0);
     expect(instagramIndex).toBeGreaterThan(contactIndex);
   });
 
   // At phone widths, every shared header now exposes Instagram from the
   // hamburger panel instead of the hidden inline navigation.
-  test('at a 393px mobile viewport the homepage has no horizontal page overflow', async ({ page }) => {
+  test('at a 393px mobile viewport the homepage has no horizontal page overflow', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 393, height: 800 });
     await page.goto('/');
 
@@ -50,11 +60,15 @@ test.describe('Instagram nav link (HOME-04)', () => {
     expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.innerWidth);
   });
 
-  test('at a 393px mobile viewport Instagram is visible from the /about/ hamburger panel', async ({ page }) => {
+  test('at a 393px mobile viewport Instagram is visible from the /about/ hamburger panel', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 393, height: 800 });
     await page.goto('/about/');
     await page.locator('[data-role="mobile-nav-toggle"]').click();
-    const instagramLink = page.locator('dialog#mobile-nav .mobile-nav-panel__secondary[href="https://www.instagram.com/ajs_romanelepont/"]');
+    const instagramLink = page.locator(
+      'dialog#mobile-nav .mobile-nav-panel__secondary[href="https://www.instagram.com/ajs_romanelepont/"]',
+    );
     await expect(instagramLink).toBeVisible();
   });
 
@@ -77,7 +91,9 @@ test.describe('Instagram nav link (HOME-04)', () => {
 });
 
 test.describe('homepage semantic heading (quick-260720-nm3)', () => {
-  test('the homepage exposes exactly one accessible level-1 heading containing "Atelier"', async ({ page }) => {
+  test('the homepage exposes exactly one accessible level-1 heading containing "Atelier"', async ({
+    page,
+  }) => {
     await page.goto('/');
 
     const heading = page.getByRole('heading', { level: 1 });

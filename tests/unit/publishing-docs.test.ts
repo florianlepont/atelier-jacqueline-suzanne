@@ -61,7 +61,7 @@ describe('publishing docs describe the native-publish flow only', () => {
     }
   });
 
-  it("sanity/README.md tells Romane to use « Publier » and none of the retired dashboard vocabulary", () => {
+  it('sanity/README.md tells Romane to use « Publier » and none of the retired dashboard vocabulary', () => {
     expect(sanityReadme).toContain('Publier');
     for (const retired of [
       'Tableau de bord',

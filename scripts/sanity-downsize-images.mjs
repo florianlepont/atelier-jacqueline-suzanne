@@ -90,14 +90,19 @@ async function runDryRun(reader, options) {
     const documents = await reader.fetch(REFERENCING_SUMMARY_QUERY, { assetId: asset._id });
     rows.push({
       asset,
-      target: computeTargetDimensions(/** @type {{width: number, height: number}} */ (asset), options.threshold),
+      target: computeTargetDimensions(
+        /** @type {{width: number, height: number}} */ (asset),
+        options.threshold,
+      ),
       documents,
     });
   }
   printLines(formatDryRunReport({ rows, skipped, threshold: options.threshold }));
   console.log('');
-  console.log('Mode lecture seule : rien n\'a été modifié.');
-  console.log('Étapes suivantes : voir docs/reduction-images-sanity.md (sauvegarde d\'abord, puis --apply --i-have-a-backup).');
+  console.log("Mode lecture seule : rien n'a été modifié.");
+  console.log(
+    "Étapes suivantes : voir docs/reduction-images-sanity.md (sauvegarde d'abord, puis --apply --i-have-a-backup).",
+  );
   return 0;
 }
 
@@ -158,11 +163,19 @@ async function replaceAsset({ client, decodeImage, asset, threshold }) {
     return { status: 'ignored', patched: 0 };
   }
 
-  const target = computeTargetDimensions(/** @type {{width: number, height: number}} */ (asset), threshold);
+  const target = computeTargetDimensions(
+    /** @type {{width: number, height: number}} */ (asset),
+    threshold,
+  );
 
   // Validated BEFORE anything is uploaded: any failure throws and leaves the
   // image untouched.
-  const reduced = await fetchReducedImage({ asset, target, fetchImpl: requestFromCdn, decodeImage });
+  const reduced = await fetchReducedImage({
+    asset,
+    target,
+    fetchImpl: requestFromCdn,
+    decodeImage,
+  });
 
   const uploaded = await client.assets.upload('image', reduced.data, {
     filename: deriveFilename(asset),
@@ -170,7 +183,12 @@ async function replaceAsset({ client, decodeImage, asset, threshold }) {
   });
   const newId = uploaded._id;
   const parsed = parseImageAssetId(newId);
-  if (newId === asset._id || !parsed || parsed.width !== reduced.width || parsed.height !== reduced.height) {
+  if (
+    newId === asset._id ||
+    !parsed ||
+    parsed.width !== reduced.width ||
+    parsed.height !== reduced.height
+  ) {
     throw new Error(`Image téléversée inattendue (${newId}).`);
   }
 
@@ -180,7 +198,8 @@ async function replaceAsset({ client, decodeImage, asset, threshold }) {
   if (unpatchable.length > 0) {
     throw new Error(`Documents impossibles à modifier sans risque : ${unpatchable.join(', ')}.`);
   }
-  if (patches.length === 0) throw new Error('Plus aucun document à mettre à jour (modifié entre-temps ?).');
+  if (patches.length === 0)
+    throw new Error('Plus aucun document à mettre à jour (modifié entre-temps ?).');
 
   const transaction = client.transaction();
   for (const patch of patches) {
@@ -189,7 +208,8 @@ async function replaceAsset({ client, decodeImage, asset, threshold }) {
   await transaction.commit();
 
   const remaining = await countReferences(client, asset._id);
-  if (remaining !== 0) throw new Error(`${remaining} référence(s) subsistent après la mise à jour.`);
+  if (remaining !== 0)
+    throw new Error(`${remaining} référence(s) subsistent après la mise à jour.`);
   return { status: 'replaced', newId, patched: patches.length };
 }
 
@@ -200,7 +220,9 @@ async function replaceAsset({ client, decodeImage, asset, threshold }) {
  */
 async function runApply(client, options, secrets) {
   const { oversized, skipped } = await loadCandidates(client, options.threshold);
-  console.log(`Images à traiter (> ${options.threshold} px) : ${oversized.length} (${skipped.length} ignorée(s) : format ou dimensions non gérés).`);
+  console.log(
+    `Images à traiter (> ${options.threshold} px) : ${oversized.length} (${skipped.length} ignorée(s) : format ou dimensions non gérés).`,
+  );
 
   const { default: sharp } = await import('sharp');
   const decodeImage = createDecoder(sharp);
@@ -211,7 +233,12 @@ async function runApply(client, options, secrets) {
   const results = [];
   for (const asset of oversized) {
     try {
-      const outcome = await replaceAsset({ client, decodeImage, asset, threshold: options.threshold });
+      const outcome = await replaceAsset({
+        client,
+        decodeImage,
+        asset,
+        threshold: options.threshold,
+      });
       if (outcome.status === 'ignored') {
         results.push([asset._id, '-', '0', 'ignorée (aucun document ne la référence)']);
       } else {
@@ -229,10 +256,13 @@ async function runApply(client, options, secrets) {
   console.log('');
 
   let exitCode = failedIds.length > 0 ? 1 : 0;
-  if (failedIds.length > 0) console.error(`${failedIds.length} image(s) en échec : voir ci-dessus. Rien n'a été supprimé.`);
+  if (failedIds.length > 0)
+    console.error(`${failedIds.length} image(s) en échec : voir ci-dessus. Rien n'a été supprimé.`);
 
   if (!options.deleteOriginals) {
-    console.log('Aucune ancienne image n\'a été supprimée. Vérifiez le site, puis relancez avec --delete-originals.');
+    console.log(
+      "Aucune ancienne image n'a été supprimée. Vérifiez le site, puis relancez avec --delete-originals.",
+    );
     return exitCode;
   }
 
@@ -257,8 +287,9 @@ async function runApply(client, options, secrets) {
     failedAssetIds: failedIds,
   });
   if (!verdict.safe) {
-    console.error('Suppression ANNULÉE (rien n\'a été supprimé) :');
-    for (const blocker of verdict.blockers) console.error(`  ${blocker.assetId} : ${blocker.message}`);
+    console.error("Suppression ANNULÉE (rien n'a été supprimé) :");
+    for (const blocker of verdict.blockers)
+      console.error(`  ${blocker.assetId} : ${blocker.message}`);
     return 1;
   }
 
@@ -299,7 +330,9 @@ async function main() {
     console.log(USAGE_TEXT);
     return 0;
   }
-  const { options } = /** @type {import('./lib/sanity-image-downsize.mjs').OptionsResult} */ (parsed);
+  const { options } = /** @type {import('./lib/sanity-image-downsize.mjs').OptionsResult} */ (
+    parsed
+  );
   const secrets = [options.writeToken, options.readToken];
 
   try {

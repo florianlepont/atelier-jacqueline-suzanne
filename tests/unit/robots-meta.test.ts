@@ -37,8 +37,13 @@ describe('resolveRobotsContent', () => {
 
 describe('src/layouts/BaseLayout.astro robots wiring', () => {
   it('imports the resolver, passes BASE_URL, and uses the resolved value in the robots meta tag', async () => {
-    const layout = await readFile(new URL('../../src/layouts/BaseLayout.astro', import.meta.url), 'utf8');
-    expect(layout).toMatch(/import\s*\{[^}]*resolveRobotsContent[^}]*\}\s*from\s*'\.\.\/lib\/robots'/);
+    const layout = await readFile(
+      new URL('../../src/layouts/BaseLayout.astro', import.meta.url),
+      'utf8',
+    );
+    expect(layout).toMatch(
+      /import\s*\{[^}]*resolveRobotsContent[^}]*\}\s*from\s*'\.\.\/lib\/robots'/,
+    );
     expect(layout).toMatch(/resolveRobotsContent\(\{[^}]*import\.meta\.env\.BASE_URL[^}]*\}\)/);
     expect(layout).toMatch(/<meta name="robots" content=\{robotsContent\}\s*\/>/);
     expect(layout).not.toContain("'noindex, nofollow'");

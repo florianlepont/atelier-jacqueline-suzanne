@@ -46,8 +46,13 @@ test.describe('carousel hover cursor (sketch 008 Variant C)', () => {
     // background now lives on the inner `.home-hero__cursor-ring` (the
     // outer element is a pure position anchor), so the assertion retargets
     // there.
-    const expectedBg = await page.locator('[data-role="accent-panel"]').evaluate((el) => getComputedStyle(el).backgroundColor);
-    await expect(cursor.locator('.home-hero__cursor-ring')).toHaveCSS('background-color', expectedBg);
+    const expectedBg = await page
+      .locator('[data-role="accent-panel"]')
+      .evaluate((el) => getComputedStyle(el).backgroundColor);
+    await expect(cursor.locator('.home-hero__cursor-ring')).toHaveCSS(
+      'background-color',
+      expectedBg,
+    );
   });
 
   test('right edge zone: arrow shown', async ({ page }) => {
@@ -62,7 +67,9 @@ test.describe('carousel hover cursor (sketch 008 Variant C)', () => {
 
   test('the native cursor is hidden over the hero photo', async ({ page }) => {
     await page.goto('/');
-    const photoCursor = await page.locator('.home-hero__photo').evaluate((el) => getComputedStyle(el).cursor);
+    const photoCursor = await page
+      .locator('.home-hero__photo')
+      .evaluate((el) => getComputedStyle(el).cursor);
     expect(photoCursor).toBe('none');
   });
 
@@ -75,13 +82,17 @@ test.describe('carousel hover cursor (sketch 008 Variant C)', () => {
   // the position/morph split is ever reverted (e.g. back to a single
   // .home-hero__cursor rule with `transition: transform ...` or the CSS
   // default `all`).
-  test('the cursor position anchor carries no transform transition (Safari-jitter fix)', async ({ page }) => {
+  test('the cursor position anchor carries no transform transition (Safari-jitter fix)', async ({
+    page,
+  }) => {
     await page.goto('/');
     const box = await photoBox(page);
     await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.3, { steps: 10 });
 
     const cursor = page.locator('[data-role="hero-cursor"]');
-    const transitionProperty = await cursor.evaluate((el) => getComputedStyle(el).transitionProperty);
+    const transitionProperty = await cursor.evaluate(
+      (el) => getComputedStyle(el).transitionProperty,
+    );
     expect(transitionProperty).not.toBe('all');
     expect(transitionProperty.split(',').map((p) => p.trim())).not.toContain('transform');
   });
@@ -109,7 +120,9 @@ test.describe('carousel hover cursor (sketch 008 Variant C)', () => {
     // it was actually inert. This asserts the fix directly against
     // getComputedStyle, not against a screenshot that could mask the bug
     // again by accident.
-    test('the cursor is invisible and out of document flow, independent of the hover/pointer media query', async ({ page }) => {
+    test('the cursor is invisible and out of document flow, independent of the hover/pointer media query', async ({
+      page,
+    }) => {
       await page.goto('/');
       const cursor = page.locator('[data-role="hero-cursor"]');
       const style = await cursor.evaluate((el) => {
@@ -128,21 +141,31 @@ test.describe('carousel hover cursor (sketch 008 Variant C)', () => {
 });
 
 test.describe('carousel peek transform is un-eased while tracking (Bug 1)', () => {
-  test('is-tracking disables the transform transition on the hero image and peek layers; removing it restores the transition', async ({ page }) => {
+  test('is-tracking disables the transform transition on the hero image and peek layers; removing it restores the transition', async ({
+    page,
+  }) => {
     await page.goto('/');
     const heroImg = page.locator('.home-hero__img--sharp');
     const peekPrev = page.locator('[data-role="peek-prev"]');
 
     await page.locator('.home-hero__photo').evaluate((el) => el.classList.add('is-tracking'));
-    const trackingTransition = await heroImg.evaluate((el) => getComputedStyle(el).transitionProperty);
+    const trackingTransition = await heroImg.evaluate(
+      (el) => getComputedStyle(el).transitionProperty,
+    );
     expect(trackingTransition.split(',').map((p) => p.trim())).not.toContain('transform');
-    const trackingPeekTransition = await peekPrev.evaluate((el) => getComputedStyle(el).transitionProperty);
+    const trackingPeekTransition = await peekPrev.evaluate(
+      (el) => getComputedStyle(el).transitionProperty,
+    );
     expect(trackingPeekTransition.split(',').map((p) => p.trim())).not.toContain('transform');
 
     await page.locator('.home-hero__photo').evaluate((el) => el.classList.remove('is-tracking'));
-    const restedTransition = await heroImg.evaluate((el) => getComputedStyle(el).transitionProperty);
+    const restedTransition = await heroImg.evaluate(
+      (el) => getComputedStyle(el).transitionProperty,
+    );
     expect(restedTransition.split(',').map((p) => p.trim())).toContain('transform');
-    const restedPeekTransition = await peekPrev.evaluate((el) => getComputedStyle(el).transitionProperty);
+    const restedPeekTransition = await peekPrev.evaluate(
+      (el) => getComputedStyle(el).transitionProperty,
+    );
     expect(restedPeekTransition.split(',').map((p) => p.trim())).toContain('transform');
   });
 });
@@ -154,7 +177,9 @@ test.describe('carousel is-tracking re-armed after edge-click commit (quick-2607
     return box;
   }
 
-  test('FR: a second peek after a settled edge-click commit stays un-eased (is-tracking re-armed)', async ({ page }) => {
+  test('FR: a second peek after a settled edge-click commit stays un-eased (is-tracking re-armed)', async ({
+    page,
+  }) => {
     await page.goto('/');
     await page.locator('[data-role="autoplay-toggle"]').click();
 
@@ -183,7 +208,9 @@ test.describe('carousel is-tracking re-armed after edge-click commit (quick-2607
     expect(transition.split(',').map((p) => p.trim())).not.toContain('transform');
   });
 
-  test('EN: a second peek after a settled edge-click commit stays un-eased (is-tracking re-armed)', async ({ page }) => {
+  test('EN: a second peek after a settled edge-click commit stays un-eased (is-tracking re-armed)', async ({
+    page,
+  }) => {
     await page.goto('/en/');
     await page.locator('[data-role="autoplay-toggle"]').click();
 
@@ -224,7 +251,12 @@ test.describe('carousel wordmark mirrored-peek commit (quick-260727-iao)', () =>
       const home = document.querySelector('.home');
       if (!stack || !home) return [];
       const start = performance.now();
-      const out: Array<{ t: number; seam: number; zone: string | null; hasWordmarkPhoto: boolean }> = [];
+      const out: Array<{
+        t: number;
+        seam: number;
+        zone: string | null;
+        hasWordmarkPhoto: boolean;
+      }> = [];
       return new Promise<typeof out>((resolve) => {
         function tick() {
           out.push({
@@ -244,7 +276,9 @@ test.describe('carousel wordmark mirrored-peek commit (quick-260727-iao)', () =>
     });
   }
 
-  test('FR: right-edge commit — seam slides continuously to the incoming extreme, has-wordmark-photo never drops', async ({ page }) => {
+  test('FR: right-edge commit — seam slides continuously to the incoming extreme, has-wordmark-photo never drops', async ({
+    page,
+  }) => {
     await page.goto('/');
     await page.locator('[data-role="autoplay-toggle"]').click();
     await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
@@ -273,13 +307,19 @@ test.describe('carousel wordmark mirrored-peek commit (quick-260727-iao)', () =>
     await expect(indexLabel).not.toHaveText(initialIndex);
     await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
     const stack = page.locator('.home-hero__wordmark-stack');
-    await expect.poll(() => stack.evaluate((el) => getComputedStyle(el).getPropertyValue('--wm-seam').trim())).toBe('1');
+    await expect
+      .poll(() => stack.evaluate((el) => getComputedStyle(el).getPropertyValue('--wm-seam').trim()))
+      .toBe('1');
     const wordmark = page.locator('.home-hero__wordmark');
-    const settledPosition = await wordmark.evaluate((el) => getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim());
+    const settledPosition = await wordmark.evaluate((el) =>
+      getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim(),
+    );
     expect(settledPosition).toMatch(/^-?\d+(\.\d+)?px -?\d+(\.\d+)?px$/);
   });
 
-  test('EN: right-edge commit — seam slides continuously to the incoming extreme, has-wordmark-photo never drops', async ({ page }) => {
+  test('EN: right-edge commit — seam slides continuously to the incoming extreme, has-wordmark-photo never drops', async ({
+    page,
+  }) => {
     await page.goto('/en/');
     await page.locator('[data-role="autoplay-toggle"]').click();
     await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
@@ -302,9 +342,13 @@ test.describe('carousel wordmark mirrored-peek commit (quick-260727-iao)', () =>
     await expect(indexLabel).not.toHaveText(initialIndex);
     await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
     const stack = page.locator('.home-hero__wordmark-stack');
-    await expect.poll(() => stack.evaluate((el) => getComputedStyle(el).getPropertyValue('--wm-seam').trim())).toBe('1');
+    await expect
+      .poll(() => stack.evaluate((el) => getComputedStyle(el).getPropertyValue('--wm-seam').trim()))
+      .toBe('1');
     const wordmark = page.locator('.home-hero__wordmark');
-    const settledPosition = await wordmark.evaluate((el) => getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim());
+    const settledPosition = await wordmark.evaluate((el) =>
+      getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim(),
+    );
     expect(settledPosition).toMatch(/^-?\d+(\.\d+)?px -?\d+(\.\d+)?px$/);
   });
 
@@ -312,7 +356,9 @@ test.describe('carousel wordmark mirrored-peek commit (quick-260727-iao)', () =>
   // peekPrev-covers-all extreme) instead of 0 — one locale is sufficient to
   // prove the mechanism is symmetric (the pure computeWordmarkSeamFraction
   // unit tests already cover both zones' math exhaustively).
-  test('FR: left-edge commit — seam slides continuously toward the peekPrev extreme', async ({ page }) => {
+  test('FR: left-edge commit — seam slides continuously toward the peekPrev extreme', async ({
+    page,
+  }) => {
     await page.goto('/');
     await page.locator('[data-role="autoplay-toggle"]').click();
     await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
@@ -341,7 +387,9 @@ test.describe('carousel wordmark mirrored-peek commit (quick-260727-iao)', () =>
     // clamps to 0 (current covers all) — not 1, which is the right-zone
     // resting extreme asserted above.
     const stack = page.locator('.home-hero__wordmark-stack');
-    await expect.poll(() => stack.evaluate((el) => getComputedStyle(el).getPropertyValue('--wm-seam').trim())).toBe('0');
+    await expect
+      .poll(() => stack.evaluate((el) => getComputedStyle(el).getPropertyValue('--wm-seam').trim()))
+      .toBe('0');
   });
 });
 
@@ -358,7 +406,9 @@ test.describe('carousel wordmark stays synced to the peek (Bug A)', () => {
     await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
 
     const wordmark = page.locator('.home-hero__wordmark');
-    const restPosition = await wordmark.evaluate((el) => getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim());
+    const restPosition = await wordmark.evaluate((el) =>
+      getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim(),
+    );
 
     const box = await photoBox(page);
     await page.mouse.move(box.x + box.width * 0.97, box.y + box.height * 0.3, { steps: 10 });
@@ -366,7 +416,13 @@ test.describe('carousel wordmark stays synced to the peek (Bug A)', () => {
     // expect.poll rides the rAF-driven updates rather than sampling a
     // single frame — the assertion must observe the value actually change
     // while the photo is mid-push/settling, not just at one instant.
-    await expect.poll(() => wordmark.evaluate((el) => getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim())).not.toBe(restPosition);
+    await expect
+      .poll(() =>
+        wordmark.evaluate((el) =>
+          getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim(),
+        ),
+      )
+      .not.toBe(restPosition);
   });
 
   test('EN: wordmark bg-position tracks a right-edge peek push', async ({ page }) => {
@@ -375,12 +431,20 @@ test.describe('carousel wordmark stays synced to the peek (Bug A)', () => {
     await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
 
     const wordmark = page.locator('.home-hero__wordmark');
-    const restPosition = await wordmark.evaluate((el) => getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim());
+    const restPosition = await wordmark.evaluate((el) =>
+      getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim(),
+    );
 
     const box = await photoBox(page);
     await page.mouse.move(box.x + box.width * 0.97, box.y + box.height * 0.3, { steps: 10 });
 
-    await expect.poll(() => wordmark.evaluate((el) => getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim())).not.toBe(restPosition);
+    await expect
+      .poll(() =>
+        wordmark.evaluate((el) =>
+          getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim(),
+        ),
+      )
+      .not.toBe(restPosition);
   });
 
   // quick-260727-iao: proves the MIRRORED-PEEK side of the mechanism — as
@@ -396,7 +460,10 @@ test.describe('carousel wordmark stays synced to the peek (Bug A)', () => {
   // inset() several ways depending on which side accumulated the 100%, so
   // this converts to an effective visible-width fraction rather than
   // matching one exact string).
-  async function peekVisibleFraction(page: import('@playwright/test').Page, selector: string): Promise<number> {
+  async function peekVisibleFraction(
+    page: import('@playwright/test').Page,
+    selector: string,
+  ): Promise<number> {
     return page.locator(selector).evaluate((el) => {
       const clip = getComputedStyle(el).clipPath;
       const match = clip.match(/inset\(([^)]+)\)/);
@@ -412,7 +479,9 @@ test.describe('carousel wordmark stays synced to the peek (Bug A)', () => {
     });
   }
 
-  test('FR: peek-side wordmark layer grows with right-edge proximity, inactive peek stays clipped', async ({ page }) => {
+  test('FR: peek-side wordmark layer grows with right-edge proximity, inactive peek stays clipped', async ({
+    page,
+  }) => {
     await page.goto('/');
     await page.locator('[data-role="autoplay-toggle"]').click();
     await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
@@ -422,12 +491,18 @@ test.describe('carousel wordmark stays synced to the peek (Bug A)', () => {
 
     await page.mouse.move(box.x + box.width * 0.9, box.y + box.height * 0.3, { steps: 10 });
     await page.waitForTimeout(200);
-    const s1 = await stack.evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--wm-seam')));
+    const s1 = await stack.evaluate((el) =>
+      parseFloat(getComputedStyle(el).getPropertyValue('--wm-seam')),
+    );
     expect(await stack.getAttribute('data-peek-zone')).toBe('right');
     expect(s1).toBeLessThan(1);
 
     await page.mouse.move(box.x + box.width * 0.99, box.y + box.height * 0.3, { steps: 10 });
-    await expect.poll(() => stack.evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--wm-seam')))).toBeLessThan(s1);
+    await expect
+      .poll(() =>
+        stack.evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--wm-seam'))),
+      )
+      .toBeLessThan(s1);
 
     // The active peek (next) reveals a growing portion; the inactive peek
     // (prev) stays fully clipped throughout the right-zone push.
@@ -435,7 +510,9 @@ test.describe('carousel wordmark stays synced to the peek (Bug A)', () => {
     expect(await peekVisibleFraction(page, '.home-hero__wordmark-peek--prev')).toBeLessThan(0.01);
   });
 
-  test('EN: peek-side wordmark layer grows with right-edge proximity, inactive peek stays clipped', async ({ page }) => {
+  test('EN: peek-side wordmark layer grows with right-edge proximity, inactive peek stays clipped', async ({
+    page,
+  }) => {
     await page.goto('/en/');
     await page.locator('[data-role="autoplay-toggle"]').click();
     await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
@@ -445,12 +522,18 @@ test.describe('carousel wordmark stays synced to the peek (Bug A)', () => {
 
     await page.mouse.move(box.x + box.width * 0.9, box.y + box.height * 0.3, { steps: 10 });
     await page.waitForTimeout(200);
-    const s1 = await stack.evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--wm-seam')));
+    const s1 = await stack.evaluate((el) =>
+      parseFloat(getComputedStyle(el).getPropertyValue('--wm-seam')),
+    );
     expect(await stack.getAttribute('data-peek-zone')).toBe('right');
     expect(s1).toBeLessThan(1);
 
     await page.mouse.move(box.x + box.width * 0.99, box.y + box.height * 0.3, { steps: 10 });
-    await expect.poll(() => stack.evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--wm-seam')))).toBeLessThan(s1);
+    await expect
+      .poll(() =>
+        stack.evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--wm-seam'))),
+      )
+      .toBeLessThan(s1);
 
     expect(await peekVisibleFraction(page, '.home-hero__wordmark-peek--next')).toBeGreaterThan(0);
     expect(await peekVisibleFraction(page, '.home-hero__wordmark-peek--prev')).toBeLessThan(0.01);
@@ -476,7 +559,9 @@ test.describe('carousel wordmark stays synced to the peek (Bug A)', () => {
   // (100% slide, already covered above) sweeps far enough to reach it. This
   // guards against a regression where the seam erroneously moves off its
   // resting extreme before the photo's real edge has actually arrived.
-  test('FR: left-edge hover-peek proximity correctly does NOT move the seam (panel is out of the hover-push reach; only a full commit reaches it)', async ({ page }) => {
+  test('FR: left-edge hover-peek proximity correctly does NOT move the seam (panel is out of the hover-push reach; only a full commit reaches it)', async ({
+    page,
+  }) => {
     await page.goto('/');
     await page.locator('[data-role="autoplay-toggle"]').click();
     await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
@@ -487,11 +572,15 @@ test.describe('carousel wordmark stays synced to the peek (Bug A)', () => {
     await page.mouse.move(box.x + box.width * 0.1, box.y + box.height * 0.3, { steps: 10 });
     await page.waitForTimeout(200);
     expect(await stack.getAttribute('data-peek-zone')).toBe('left');
-    expect(await stack.evaluate((el) => getComputedStyle(el).getPropertyValue('--wm-seam').trim())).toBe('0');
+    expect(
+      await stack.evaluate((el) => getComputedStyle(el).getPropertyValue('--wm-seam').trim()),
+    ).toBe('0');
 
     await page.mouse.move(box.x + box.width * 0.01, box.y + box.height * 0.3, { steps: 10 });
     await page.waitForTimeout(200);
-    expect(await stack.evaluate((el) => getComputedStyle(el).getPropertyValue('--wm-seam').trim())).toBe('0');
+    expect(
+      await stack.evaluate((el) => getComputedStyle(el).getPropertyValue('--wm-seam').trim()),
+    ).toBe('0');
 
     // Both peeks stay clipped (current shows in full) — the resting state
     // is correctly held, not erroneously disturbed by the hover push.
@@ -524,13 +613,17 @@ test.describe('carousel wordmark current layer does not freeze during an edge ap
       const xFraction = 1 - EDGE_ZONE_FRACTION + EDGE_ZONE_FRACTION * proximity;
       await page.mouse.move(box.x + box.width * xFraction, box.y + box.height * 0.3, { steps: 10 });
       await page.waitForTimeout(200);
-      const position = await wordmark.evaluate((el) => getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim());
+      const position = await wordmark.evaluate((el) =>
+        getComputedStyle(el).getPropertyValue('--wordmark-bg-position').trim(),
+      );
       samples.push(position);
     }
     return samples;
   }
 
-  test('FR: current-layer bg-position keeps changing across proximity 0.80-0.995, never freezes', async ({ page }) => {
+  test('FR: current-layer bg-position keeps changing across proximity 0.80-0.995, never freezes', async ({
+    page,
+  }) => {
     await page.goto('/');
     await page.locator('[data-role="autoplay-toggle"]').click();
     await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
@@ -543,7 +636,9 @@ test.describe('carousel wordmark current layer does not freeze during an edge ap
     expect(distinct.size).toBeGreaterThanOrEqual(3);
   });
 
-  test('EN: current-layer bg-position keeps changing across proximity 0.80-0.995, never freezes', async ({ page }) => {
+  test('EN: current-layer bg-position keeps changing across proximity 0.80-0.995, never freezes', async ({
+    page,
+  }) => {
     await page.goto('/en/');
     await page.locator('[data-role="autoplay-toggle"]').click();
     await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
@@ -577,11 +672,17 @@ test.describe('carousel edge-peek preview (sketch 008 Variant C)', () => {
     const box = await photoBox(page);
     await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.3, { steps: 10 });
 
-    const shift = await page.locator('.home-hero__photo').evaluate((el) => getComputedStyle(el).getPropertyValue('--peek-shift').trim());
+    const shift = await page
+      .locator('.home-hero__photo')
+      .evaluate((el) => getComputedStyle(el).getPropertyValue('--peek-shift').trim());
     expect(shift).toBe('0');
 
-    const prevTransform = await page.locator('[data-role="peek-prev"]').evaluate((el) => getComputedStyle(el).transform);
-    const nextTransform = await page.locator('[data-role="peek-next"]').evaluate((el) => getComputedStyle(el).transform);
+    const prevTransform = await page
+      .locator('[data-role="peek-prev"]')
+      .evaluate((el) => getComputedStyle(el).transform);
+    const nextTransform = await page
+      .locator('[data-role="peek-next"]')
+      .evaluate((el) => getComputedStyle(el).transform);
     // translateX(-100%)/translateX(100%) on the photo's own width — both
     // resolve to a non-zero pixel `e` component with the expected sign.
     const prevX = peekTranslateXPercent(prevTransform);
@@ -592,7 +693,9 @@ test.describe('carousel edge-peek preview (sketch 008 Variant C)', () => {
     expect(nextX!).toBeGreaterThan(0);
   });
 
-  test('approaching the LEFT edge reveals the real previous gallery photo, pushed proportionally to proximity', async ({ page }) => {
+  test('approaching the LEFT edge reveals the real previous gallery photo, pushed proportionally to proximity', async ({
+    page,
+  }) => {
     await page.goto('/');
     // Pin the slide so auto-advance can't swap mid-test.
     await page.locator('[data-role="autoplay-toggle"]').click();
@@ -625,7 +728,9 @@ test.describe('carousel edge-peek preview (sketch 008 Variant C)', () => {
     expect(shiftAt1pct).toBeGreaterThan(shiftAt3pct);
   });
 
-  test('approaching the RIGHT edge reveals the real next gallery photo, pushed proportionally to proximity', async ({ page }) => {
+  test('approaching the RIGHT edge reveals the real next gallery photo, pushed proportionally to proximity', async ({
+    page,
+  }) => {
     await page.goto('/');
     await page.locator('[data-role="autoplay-toggle"]').click();
 
@@ -662,7 +767,9 @@ test.describe('carousel hover-click navigation (sketch 008 Variant C)', () => {
     return box;
   }
 
-  test('FR center click opens the current gallery (same destination as the title)', async ({ page }) => {
+  test('FR center click opens the current gallery (same destination as the title)', async ({
+    page,
+  }) => {
     await page.goto('/');
     await page.locator('[data-role="autoplay-toggle"]').click();
     const href = await page.locator('[data-role="gallery-title"]').getAttribute('href');
@@ -692,7 +799,9 @@ test.describe('carousel hover-click navigation (sketch 008 Variant C)', () => {
     expect(page.url()).toContain(href!);
   });
 
-  test('left edge click navigates to the previous gallery (in-page, no navigation)', async ({ page }) => {
+  test('left edge click navigates to the previous gallery (in-page, no navigation)', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto('/');
     await page.locator('[data-role="autoplay-toggle"]').click();
@@ -710,7 +819,9 @@ test.describe('carousel hover-click navigation (sketch 008 Variant C)', () => {
     expect(page.url()).toMatch(/\/$/);
   });
 
-  test('right edge click navigates to the next gallery (in-page, no navigation)', async ({ page }) => {
+  test('right edge click navigates to the next gallery (in-page, no navigation)', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto('/');
     await page.locator('[data-role="autoplay-toggle"]').click();
@@ -740,7 +851,9 @@ test.describe('carousel hover-click navigation (sketch 008 Variant C)', () => {
     return match ? parseFloat(match[5]) : null;
   }
 
-  test('FR right edge click defers the content swap until the peek has fully slid in, landing on the peeked photo at a neutral transform', async ({ page }) => {
+  test('FR right edge click defers the content swap until the peek has fully slid in, landing on the peeked photo at a neutral transform', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto('/');
     await page.locator('[data-role="autoplay-toggle"]').click();
@@ -767,13 +880,19 @@ test.describe('carousel hover-click navigation (sketch 008 Variant C)', () => {
 
     // The swap happens at rest, not mid-push: the hero photo's transform
     // is neutral (translateX ~0) once settled.
-    await expect.poll(async () => {
-      const transform = await page.locator('.home-hero__img--sharp').evaluate((el) => getComputedStyle(el).transform);
-      return transformTranslateXPx(transform);
-    }).toBeCloseTo(0, 0);
+    await expect
+      .poll(async () => {
+        const transform = await page
+          .locator('.home-hero__img--sharp')
+          .evaluate((el) => getComputedStyle(el).transform);
+        return transformTranslateXPx(transform);
+      })
+      .toBeCloseTo(0, 0);
   });
 
-  test('EN right edge click defers the content swap until the peek has fully slid in', async ({ page }) => {
+  test('EN right edge click defers the content swap until the peek has fully slid in', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto('/en/');
     await page.locator('[data-role="autoplay-toggle"]').click();
@@ -793,7 +912,9 @@ test.describe('carousel hover-click navigation (sketch 008 Variant C)', () => {
     await expect.poll(() => heroImg.getAttribute('src')).toBe(expectedNextSrc);
   });
 
-  test('the autoplay toggle inside the caption is not hijacked by center-zone navigation', async ({ page }) => {
+  test('the autoplay toggle inside the caption is not hijacked by center-zone navigation', async ({
+    page,
+  }) => {
     await page.goto('/');
 
     const toggle = page.locator('[data-role="autoplay-toggle"]');
@@ -867,7 +988,9 @@ test.describe('carousel hover-click navigation (sketch 008 Variant C)', () => {
       expect(page.url()).toContain(href!);
     });
 
-    test('a real horizontal swipe still navigates prev/next unchanged (not hijacked by tap-to-open)', async ({ page }) => {
+    test('a real horizontal swipe still navigates prev/next unchanged (not hijacked by tap-to-open)', async ({
+      page,
+    }) => {
       await page.goto('/');
       const titleEl = page.locator('[data-role="gallery-title"]');
       const initialTitle = await titleEl.innerText();
@@ -894,11 +1017,17 @@ test.describe('carousel hover-click navigation (sketch 008 Variant C)', () => {
       expect(page.url()).toMatch(/\/$/);
     });
 
-    test('the peek layers never leave their resting transform on touch (no hover system on touch)', async ({ page }) => {
+    test('the peek layers never leave their resting transform on touch (no hover system on touch)', async ({
+      page,
+    }) => {
       await page.goto('/');
 
-      const prevTransform = await page.locator('[data-role="peek-prev"]').evaluate((el) => getComputedStyle(el).transform);
-      const nextTransform = await page.locator('[data-role="peek-next"]').evaluate((el) => getComputedStyle(el).transform);
+      const prevTransform = await page
+        .locator('[data-role="peek-prev"]')
+        .evaluate((el) => getComputedStyle(el).transform);
+      const nextTransform = await page
+        .locator('[data-role="peek-next"]')
+        .evaluate((el) => getComputedStyle(el).transform);
       // Rest CSS values: translateX(-100%)/translateX(100%) — never
       // populated with real src/pushed on touch (hoverCapable is false).
       expect(prevTransform).toMatch(/^matrix\(1, 0, 0, 1, -/);
@@ -914,7 +1043,9 @@ test.describe('carousel hover-click navigation (sketch 008 Variant C)', () => {
     // control element as the event target (reusing the file's existing
     // synthesized-Touch/TouchEvent pattern verbatim) and assert neither
     // navigation nor the synchronous opening-state class occurs.
-    test('a tap on a progress dash does not navigate away or enter the opening state', async ({ page }) => {
+    test('a tap on a progress dash does not navigate away or enter the opening state', async ({
+      page,
+    }) => {
       await page.goto('/');
       const startUrl = page.url();
 
@@ -940,11 +1071,15 @@ test.describe('carousel hover-click navigation (sketch 008 Variant C)', () => {
       // it didn't — there is no href to waitForURL against here.
       await page.waitForTimeout(300);
       expect(page.url()).toBe(startUrl);
-      const isOpening = await page.locator('.home-hero__photo').evaluate((el) => el.classList.contains('is-opening'));
+      const isOpening = await page
+        .locator('.home-hero__photo')
+        .evaluate((el) => el.classList.contains('is-opening'));
       expect(isOpening).toBe(false);
     });
 
-    test('a tap on the autoplay toggle does not navigate away or enter the opening state', async ({ page }) => {
+    test('a tap on the autoplay toggle does not navigate away or enter the opening state', async ({
+      page,
+    }) => {
       await page.goto('/');
       const startUrl = page.url();
 
@@ -968,7 +1103,9 @@ test.describe('carousel hover-click navigation (sketch 008 Variant C)', () => {
 
       await page.waitForTimeout(300);
       expect(page.url()).toBe(startUrl);
-      const isOpening = await page.locator('.home-hero__photo').evaluate((el) => el.classList.contains('is-opening'));
+      const isOpening = await page
+        .locator('.home-hero__photo')
+        .evaluate((el) => el.classList.contains('is-opening'));
       expect(isOpening).toBe(false);
     });
   });
@@ -1012,7 +1149,10 @@ test.describe('carousel accent panel crossfades on navigation (Bug 3)', () => {
     const accentPanel = page.locator('[data-role="accent-panel"]');
     const { transitionProperty, transitionDuration } = await accentPanel.evaluate((el) => {
       const style = getComputedStyle(el);
-      return { transitionProperty: style.transitionProperty, transitionDuration: style.transitionDuration };
+      return {
+        transitionProperty: style.transitionProperty,
+        transitionDuration: style.transitionDuration,
+      };
     });
     expect(transitionProperty.split(',').map((p) => p.trim())).toContain('background-color');
     expect(transitionDuration).not.toBe('0s');
@@ -1020,23 +1160,27 @@ test.describe('carousel accent panel crossfades on navigation (Bug 3)', () => {
 });
 
 test.describe('carousel wordmark cutout (HOME-03, D-08)', () => {
-  test('the wordmark uses one clipped photo and adapts its filter to panel contrast', async ({ page }) => {
+  test('the wordmark uses one clipped photo and adapts its filter to panel contrast', async ({
+    page,
+  }) => {
     await page.goto('/');
 
     const wordmark = page.locator('.home-hero__wordmark');
     await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
-    const { clip, bg, blendMode, bgColor, textFill, strokeWidth, filter } = await wordmark.evaluate((el) => {
-      const style = getComputedStyle(el);
-      return {
-        clip: style.webkitBackgroundClip || style.backgroundClip,
-        bg: style.backgroundImage,
-        blendMode: style.backgroundBlendMode,
-        bgColor: style.backgroundColor,
-        textFill: style.webkitTextFillColor,
-        strokeWidth: style.webkitTextStrokeWidth,
-        filter: style.filter,
-      };
-    });
+    const { clip, bg, blendMode, bgColor, textFill, strokeWidth, filter } = await wordmark.evaluate(
+      (el) => {
+        const style = getComputedStyle(el);
+        return {
+          clip: style.webkitBackgroundClip || style.backgroundClip,
+          bg: style.backgroundImage,
+          blendMode: style.backgroundBlendMode,
+          bgColor: style.backgroundColor,
+          textFill: style.webkitTextFillColor,
+          strokeWidth: style.webkitTextStrokeWidth,
+          filter: style.filter,
+        };
+      },
+    );
 
     expect(clip).toContain('text');
     expect(bg).toContain('url(');
@@ -1058,8 +1202,12 @@ test.describe('carousel wordmark cutout (HOME-03, D-08)', () => {
     // galleries, unlike a hardcoded total gallery count or position.
     await page.getByRole('button', { name: /^Brume \(/ }).click();
     await expect(page.locator('.home')).toHaveClass(/has-wordmark-photo/);
-    await expect.poll(() => wordmark.evaluate((el) => getComputedStyle(el).filter)).toContain('brightness(1.38)');
-    await expect.poll(() => wordmark.evaluate((el) => getComputedStyle(el).filter)).toContain('contrast(0.92)');
+    await expect
+      .poll(() => wordmark.evaluate((el) => getComputedStyle(el).filter))
+      .toContain('brightness(1.38)');
+    await expect
+      .poll(() => wordmark.evaluate((el) => getComputedStyle(el).filter))
+      .toContain('contrast(0.92)');
     // Whether the photo is actually legible through the letters is confirmed
     // live in the phase's checkpoint task per D-08 — computed style alone
     // cannot assert visual legibility, so no pixel assertion here.

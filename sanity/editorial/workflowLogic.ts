@@ -39,7 +39,10 @@ export function collectionStatusBadge(
   if (value.publicationStatus === 'archived') {
     return {label: 'Archivée', title: 'Cette collection est conservée hors du site.'}
   }
-  if (value.publicationStatus === 'preparation' || (!value.publicationStatus && value.isVisible === false)) {
+  if (
+    value.publicationStatus === 'preparation' ||
+    (!value.publicationStatus && value.isVisible === false)
+  ) {
     return {
       label: 'En préparation',
       title: "Cette collection n'est pas encore affichée sur le site.",
@@ -56,7 +59,8 @@ export function collectionStatusBadge(
   if (hasDraft) {
     return {
       label: 'Modifications non publiées',
-      title: 'Cette collection est en ligne, mais des modifications récentes ne sont pas encore publiées.',
+      title:
+        'Cette collection est en ligne, mais des modifications récentes ne sont pas encore publiées.',
       color: 'primary',
     }
   }

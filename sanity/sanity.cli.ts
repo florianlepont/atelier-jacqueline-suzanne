@@ -3,7 +3,7 @@ import {defineCliConfig} from 'sanity/cli'
 export default defineCliConfig({
   api: {
     projectId: 'gwz8iug4',
-    dataset: 'production'
+    dataset: 'production',
   },
   deployment: {
     // DIAGNOSTIC-06 (quick-260811-kog-06): disabled so the deployed Studio

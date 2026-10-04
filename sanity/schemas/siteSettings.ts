@@ -90,7 +90,12 @@ export const siteSettings = defineType({
     }),
     // Obsolete text fields stay addressable during migration, but are hidden
     // and no longer queried by the site.
-    localeStringField({name: 'welcomeHeading', title: 'Legacy welcome heading', hidden: true, ...NAV_ERRORS}),
+    localeStringField({
+      name: 'welcomeHeading',
+      title: 'Legacy welcome heading',
+      hidden: true,
+      ...NAV_ERRORS,
+    }),
     localeTextField({name: 'welcomeBody', title: 'Legacy welcome body', hidden: true}),
     localeTextField({name: 'homepageIntro', title: 'Legacy homepage introduction', hidden: true}),
   ],

@@ -1,5 +1,5 @@
-import {readFileSync} from 'node:fs'
-import {describe, expect, it, vi} from 'vitest'
+import { readFileSync } from 'node:fs';
+import { describe, expect, it, vi } from 'vitest';
 import {
   PUBLISHER_ADDRESS_MAX_LENGTH,
   sanitizeAboutPage,
@@ -12,55 +12,57 @@ import {
   sanitizeHomePage,
   sanitizeSiteSettings,
   warnForSanityIssues,
-} from '../../src/lib/sanity-validation'
+} from '../../src/lib/sanity-validation';
 
 const renderableImage = {
-  asset: {_ref: 'image-asset-1200x800-jpg'},
-  alt: {fr: 'Une photographie', en: 'A photograph'},
-}
+  asset: { _ref: 'image-asset-1200x800-jpg' },
+  alt: { fr: 'Une photographie', en: 'A photograph' },
+};
 
 const validSiteDocument = {
   _id: 'siteSettings',
-  siteTitle: {fr: 'Atelier', en: 'Studio'},
+  siteTitle: { fr: 'Atelier', en: 'Studio' },
   navLabels: {},
-  footerText: {fr: 'Pied', en: 'Footer'},
-}
+  footerText: { fr: 'Pied', en: 'Footer' },
+};
 
 describe('sanitizeSiteSettings publisherAddress', () => {
   const sanitize = (publisherAddress: unknown) =>
-    sanitizeSiteSettings({...validSiteDocument, publisherAddress})
+    sanitizeSiteSettings({ ...validSiteDocument, publisherAddress });
 
   it('trims a clean single-line address without raising an issue', () => {
-    const result = sanitize('  TEST-ADDRESS-FIXTURE  ')
-    expect(result.value?.publisherAddress).toBe('TEST-ADDRESS-FIXTURE')
-    expect(result.issues).toEqual([])
-  })
+    const result = sanitize('  TEST-ADDRESS-FIXTURE  ');
+    expect(result.value?.publisherAddress).toBe('TEST-ADDRESS-FIXTURE');
+    expect(result.issues).toEqual([]);
+  });
 
   it('normalises CRLF, trims lines and drops blank lines', () => {
-    const result = sanitize('  TEST-ADDRESS-FIXTURE-LINE-1  \r\n\r\n TEST-ADDRESS-FIXTURE-LINE-2\r\n')
+    const result = sanitize(
+      '  TEST-ADDRESS-FIXTURE-LINE-1  \r\n\r\n TEST-ADDRESS-FIXTURE-LINE-2\r\n',
+    );
     expect(result.value?.publisherAddress).toBe(
       'TEST-ADDRESS-FIXTURE-LINE-1\nTEST-ADDRESS-FIXTURE-LINE-2',
-    )
-  })
+    );
+  });
 
   it('treats absent, null, empty and whitespace-only values as silently absent', () => {
-    const absent = sanitizeSiteSettings(validSiteDocument)
-    expect(absent.value).not.toHaveProperty('publisherAddress')
-    expect(absent.issues).toEqual([])
+    const absent = sanitizeSiteSettings(validSiteDocument);
+    expect(absent.value).not.toHaveProperty('publisherAddress');
+    expect(absent.issues).toEqual([]);
     for (const empty of [null, '', '   \n  \n   ']) {
-      const result = sanitize(empty)
-      expect(result.value).not.toHaveProperty('publisherAddress')
-      expect(result.issues).toEqual([])
+      const result = sanitize(empty);
+      expect(result.value).not.toHaveProperty('publisherAddress');
+      expect(result.issues).toEqual([]);
     }
-  })
+  });
 
   it('keeps exactly the maximum length and drops one more character', () => {
-    const atLimit = 'x'.repeat(PUBLISHER_ADDRESS_MAX_LENGTH)
-    expect(sanitize(atLimit).value?.publisherAddress).toBe(atLimit)
-    const over = sanitize(`${atLimit}x`)
-    expect(over.value).not.toHaveProperty('publisherAddress')
-    expect(over.issues.map(({code}) => code)).toEqual(['publisherAddress.invalid_removed'])
-  })
+    const atLimit = 'x'.repeat(PUBLISHER_ADDRESS_MAX_LENGTH);
+    expect(sanitize(atLimit).value?.publisherAddress).toBe(atLimit);
+    const over = sanitize(`${atLimit}x`);
+    expect(over.value).not.toHaveProperty('publisherAddress');
+    expect(over.issues.map(({ code }) => code)).toEqual(['publisherAddress.invalid_removed']);
+  });
 
   it('drops angle brackets, control characters and non-strings but keeps the document', () => {
     const rejected = [
@@ -70,113 +72,113 @@ describe('sanitizeSiteSettings publisherAddress', () => {
       42,
       {},
       ['TEST-ADDRESS-FIXTURE'],
-    ]
+    ];
     for (const value of rejected) {
-      const result = sanitize(value)
-      expect(result.value).not.toBeNull()
-      expect(result.value).not.toHaveProperty('publisherAddress')
-      expect(result.issues.map(({code}) => code)).toEqual(['publisherAddress.invalid_removed'])
+      const result = sanitize(value);
+      expect(result.value).not.toBeNull();
+      expect(result.value).not.toHaveProperty('publisherAddress');
+      expect(result.issues.map(({ code }) => code)).toEqual(['publisherAddress.invalid_removed']);
     }
-  })
+  });
 
   it('never puts the address in the diagnostics', () => {
-    const result = sanitize('<b>TEST-ADDRESS-FIXTURE</b>')
-    expect(JSON.stringify(result.issues)).not.toContain('TEST-ADDRESS-FIXTURE')
-  })
+    const result = sanitize('<b>TEST-ADDRESS-FIXTURE</b>');
+    expect(JSON.stringify(result.issues)).not.toContain('TEST-ADDRESS-FIXTURE');
+  });
 
   it('still returns null for an invalid siteTitle even with a valid address', () => {
     const result = sanitizeSiteSettings({
       ...validSiteDocument,
-      siteTitle: {fr: 'Atelier'},
+      siteTitle: { fr: 'Atelier' },
       publisherAddress: 'TEST-ADDRESS-FIXTURE',
-    })
-    expect(result.value).toBeNull()
-  })
+    });
+    expect(result.value).toBeNull();
+  });
 
   it('keeps the cap identical in the Studio schema and the sanitizer', () => {
     const capture = (path: string) =>
-      /PUBLISHER_ADDRESS_MAX_LENGTH\s*=\s*(\d+)/.exec(readFileSync(path, 'utf8'))?.[1]
-    const studio = capture('sanity/schemas/siteSettings.ts')
-    const build = capture('src/lib/sanity-validation.ts')
-    expect(studio).toBeDefined()
-    expect(studio).toBe(build)
-    expect(Number(build)).toBe(PUBLISHER_ADDRESS_MAX_LENGTH)
-  })
-})
+      /PUBLISHER_ADDRESS_MAX_LENGTH\s*=\s*(\d+)/.exec(readFileSync(path, 'utf8'))?.[1];
+    const studio = capture('sanity/schemas/siteSettings.ts');
+    const build = capture('src/lib/sanity-validation.ts');
+    expect(studio).toBeDefined();
+    expect(studio).toBe(build);
+    expect(Number(build)).toBe(PUBLISHER_ADDRESS_MAX_LENGTH);
+  });
+});
 
 describe('singleton sanitizers', () => {
   it('requires complete site title/footer locales and a navLabels object', () => {
     const valid = sanitizeSiteSettings({
-      siteTitle: {fr: 'Atelier', en: 'Studio'},
-      navLabels: {about: {fr: 'À propos'}, contact: 42},
-      footerText: {fr: 'Tous droits réservés', en: 'All rights reserved'},
-      defaultSeo: {title: 42},
-    })
+      siteTitle: { fr: 'Atelier', en: 'Studio' },
+      navLabels: { about: { fr: 'À propos' }, contact: 42 },
+      footerText: { fr: 'Tous droits réservés', en: 'All rights reserved' },
+      defaultSeo: { title: 42 },
+    });
     expect(valid.value).toEqual({
-      siteTitle: {fr: 'Atelier', en: 'Studio'},
-      navLabels: {about: {fr: 'À propos'}},
-      footerText: {fr: 'Tous droits réservés', en: 'All rights reserved'},
-    })
-    expect(valid.issues.map(({code}) => code)).toEqual(
+      siteTitle: { fr: 'Atelier', en: 'Studio' },
+      navLabels: { about: { fr: 'À propos' } },
+      footerText: { fr: 'Tous droits réservés', en: 'All rights reserved' },
+    });
+    expect(valid.issues.map(({ code }) => code)).toEqual(
       expect.arrayContaining(['navLabels.invalid_removed', 'defaultSeo.cleaned']),
-    )
-    expect(sanitizeSiteSettings({siteTitle: {fr: 'Atelier'}}).value).toBeNull()
-  })
+    );
+    expect(sanitizeSiteSettings({ siteTitle: { fr: 'Atelier' } }).value).toBeNull();
+  });
 
   it('keeps valid partial about fields and removes malformed nested fields', () => {
     const result = sanitizeAboutPage({
-      biography: {fr: 'Biographie', en: 2},
-      practice: {en: 'Practice'},
+      biography: { fr: 'Biographie', en: 2 },
+      practice: { en: 'Practice' },
       medium: 'photography',
-      image: {asset: {}, alt: {fr: 'Portrait'}},
-      exhibitionImage: {asset: {_ref: 'image-exhibition'}, alt: {en: 'Exhibition'}},
-      seo: {description: {fr: 'Artiste photographe'}},
-    })
+      image: { asset: {}, alt: { fr: 'Portrait' } },
+      exhibitionImage: { asset: { _ref: 'image-exhibition' }, alt: { en: 'Exhibition' } },
+      seo: { description: { fr: 'Artiste photographe' } },
+    });
     expect(result.value).toEqual({
-      biography: {fr: 'Biographie'},
-      practice: {en: 'Practice'},
-      exhibitionImage: {asset: {_ref: 'image-exhibition'}, alt: {en: 'Exhibition'}},
-      seo: {description: {fr: 'Artiste photographe'}},
-    })
-    expect(result.issues.map(({code}) => code)).toEqual(
+      biography: { fr: 'Biographie' },
+      practice: { en: 'Practice' },
+      exhibitionImage: { asset: { _ref: 'image-exhibition' }, alt: { en: 'Exhibition' } },
+      seo: { description: { fr: 'Artiste photographe' } },
+    });
+    expect(result.issues.map(({ code }) => code)).toEqual(
       expect.arrayContaining(['biography.cleaned', 'medium.cleaned', 'image.cleaned']),
-    )
-    expect(sanitizeAboutPage({}).value).toEqual({})
-  })
+    );
+    expect(sanitizeAboutPage({}).value).toEqual({});
+  });
 
   it('keeps partial home/editions intros and drops malformed intro or SEO', () => {
-    expect(sanitizeHomePage({intro: {fr: 'Bonjour'}, seo: {noIndex: true}}).value).toEqual({
-      intro: {fr: 'Bonjour'},
-      seo: {noIndex: true},
-    })
-    expect(sanitizeHomePage({intro: [], seo: 'bad'}).value).toEqual({})
-    expect(sanitizeEditionsPage({intro: {en: 'Printed objects'}}).value).toEqual({
-      intro: {en: 'Printed objects'},
-    })
-    expect(sanitizeEditionsPage({intro: 12}).value).toEqual({})
-  })
+    expect(sanitizeHomePage({ intro: { fr: 'Bonjour' }, seo: { noIndex: true } }).value).toEqual({
+      intro: { fr: 'Bonjour' },
+      seo: { noIndex: true },
+    });
+    expect(sanitizeHomePage({ intro: [], seo: 'bad' }).value).toEqual({});
+    expect(sanitizeEditionsPage({ intro: { en: 'Printed objects' } }).value).toEqual({
+      intro: { en: 'Printed objects' },
+    });
+    expect(sanitizeEditionsPage({ intro: 12 }).value).toEqual({});
+  });
 
   it('filters malformed contact fields, emails and professional links', () => {
     const result = sanitizeContactPage({
-      intro: {fr: 'Parlons de votre projet', en: false},
+      intro: { fr: 'Parlons de votre projet', en: false },
       publicEmail: 'not-an-email',
-      location: {en: 'Paris'},
+      location: { en: 'Paris' },
       availability: [],
       professionalLinks: [
-        {_key: 'instagram', label: {fr: 'Instagram'}, url: 'https://instagram.com/ajs'},
-        {label: {fr: 'Danger'}, url: 'javascript:alert(1)'},
-        {label: {}, url: 'https://example.com'},
+        { _key: 'instagram', label: { fr: 'Instagram' }, url: 'https://instagram.com/ajs' },
+        { label: { fr: 'Danger' }, url: 'javascript:alert(1)' },
+        { label: {}, url: 'https://example.com' },
       ],
-      seo: {image: {asset: {}}},
-    })
+      seo: { image: { asset: {} } },
+    });
     expect(result.value).toEqual({
-      intro: {fr: 'Parlons de votre projet'},
-      location: {en: 'Paris'},
+      intro: { fr: 'Parlons de votre projet' },
+      location: { en: 'Paris' },
       professionalLinks: [
-        {_key: 'instagram', label: {fr: 'Instagram'}, url: 'https://instagram.com/ajs'},
+        { _key: 'instagram', label: { fr: 'Instagram' }, url: 'https://instagram.com/ajs' },
       ],
-    })
-    expect(result.issues.map(({code}) => code)).toEqual(
+    });
+    expect(result.issues.map(({ code }) => code)).toEqual(
       expect.arrayContaining([
         'publicEmail.removed',
         'intro.cleaned',
@@ -184,17 +186,17 @@ describe('singleton sanitizers', () => {
         'professionalLinks.invalid_removed',
         'seo.cleaned',
       ]),
-    )
-    expect(sanitizeContactPage({}).value).toEqual({})
-  })
+    );
+    expect(sanitizeContactPage({}).value).toEqual({});
+  });
 
   it.each([null, [], 'invalid', 7])('rejects a non-object singleton root: %j', (root) => {
-    expect(sanitizeAboutPage(root).value).toBeNull()
-    expect(sanitizeHomePage(root).value).toBeNull()
-    expect(sanitizeEditionsPage(root).value).toBeNull()
-    expect(sanitizeContactPage(root).value).toBeNull()
-  })
-})
+    expect(sanitizeAboutPage(root).value).toBeNull();
+    expect(sanitizeHomePage(root).value).toBeNull();
+    expect(sanitizeEditionsPage(root).value).toBeNull();
+    expect(sanitizeContactPage(root).value).toBeNull();
+  });
+});
 
 describe('gallery and edition sanitizers', () => {
   it('filters invalid images and keeps a document with one renderable image', () => {
@@ -202,16 +204,16 @@ describe('gallery and edition sanitizers', () => {
       _id: 'gallery-rebut',
       title: 'Rebut',
       slug: 'rebut',
-      statement: {fr: 'Texte', en: 'Statement'},
-      images: [{asset: {}}, renderableImage],
-    })
-    expect(result.value?.images).toEqual([renderableImage])
+      statement: { fr: 'Texte', en: 'Statement' },
+      images: [{ asset: {} }, renderableImage],
+    });
+    expect(result.value?.images).toEqual([renderableImage]);
     expect(result.issues).toContainEqual({
       code: 'images.invalid_removed',
       id: 'gallery-rebut',
       slug: 'rebut',
-    })
-  })
+    });
+  });
 
   it('preserves valid Sanity crop/hotspot data and partial alt fallbacks', () => {
     const result = sanitizeGallery({
@@ -219,61 +221,61 @@ describe('gallery and edition sanitizers', () => {
       slug: 'rebut',
       images: [
         {
-          asset: {_ref: 'image-cropped'},
-          crop: {top: 0.1, bottom: 0.2, left: 0, right: 0},
-          hotspot: {x: 0.5, y: 0.4, width: 0.3, height: 0.2},
-          alt: {fr: 'Description française'},
+          asset: { _ref: 'image-cropped' },
+          crop: { top: 0.1, bottom: 0.2, left: 0, right: 0 },
+          hotspot: { x: 0.5, y: 0.4, width: 0.3, height: 0.2 },
+          alt: { fr: 'Description française' },
         },
       ],
-    })
+    });
     expect(result.value?.images[0]).toEqual({
-      asset: {_ref: 'image-cropped'},
-      crop: {top: 0.1, bottom: 0.2, left: 0, right: 0},
-      hotspot: {x: 0.5, y: 0.4, width: 0.3, height: 0.2},
-      alt: {fr: 'Description française', en: ''},
-    })
-  })
+      asset: { _ref: 'image-cropped' },
+      crop: { top: 0.1, bottom: 0.2, left: 0, right: 0 },
+      hotspot: { x: 0.5, y: 0.4, width: 0.3, height: 0.2 },
+      alt: { fr: 'Description française', en: '' },
+    });
+  });
 
   it.each([
-    {title: '', slug: 'rebut', images: [renderableImage]},
-    {title: 'Rebut', slug: '', images: [renderableImage]},
-    {title: 'Rebut', slug: 'rebut', images: []},
-    {title: 'Rebut', slug: 'rebut', images: [{asset: {}}]},
+    { title: '', slug: 'rebut', images: [renderableImage] },
+    { title: 'Rebut', slug: '', images: [renderableImage] },
+    { title: 'Rebut', slug: 'rebut', images: [] },
+    { title: 'Rebut', slug: 'rebut', images: [{ asset: {} }] },
   ])('rejects a gallery missing a renderability requirement', (document) => {
-    expect(sanitizeGallery(document).value).toBeNull()
-  })
+    expect(sanitizeGallery(document).value).toBeNull();
+  });
 
   it('filters invalid collection members and returns [] for a bad root', () => {
-    const valid = {title: 'Rebut', slug: 'rebut', images: [renderableImage]}
-    expect(sanitizeGalleries([valid, null, {title: 'Broken'}]).value).toHaveLength(1)
-    expect(sanitizeGalleries(null).value).toEqual([])
-  })
+    const valid = { title: 'Rebut', slug: 'rebut', images: [renderableImage] };
+    expect(sanitizeGalleries([valid, null, { title: 'Broken' }]).value).toHaveLength(1);
+    expect(sanitizeGalleries(null).value).toEqual([]);
+  });
 
   it('applies the same renderability contract to edition detail and collection data', () => {
     const valid = {
       title: 'Silos',
       slug: 'silos',
-      statement: {fr: 'Texte', en: 'Statement'},
+      statement: { fr: 'Texte', en: 'Statement' },
       images: [renderableImage],
       pageCount: 48,
       printRun: 100,
-      dimensions: {width: 21, height: 29.7, unit: 'cm'},
-      relatedGallery: {title: 'Silos', slug: 'silos-gallery'},
-    }
-    expect(sanitizeEdition(valid).value).toMatchObject(valid)
-    expect(sanitizeEdition({...valid, images: []}).value).toBeNull()
-    expect(sanitizeEditions([valid, {...valid, slug: ''}]).value).toHaveLength(1)
-  })
+      dimensions: { width: 21, height: 29.7, unit: 'cm' },
+      relatedGallery: { title: 'Silos', slug: 'silos-gallery' },
+    };
+    expect(sanitizeEdition(valid).value).toMatchObject(valid);
+    expect(sanitizeEdition({ ...valid, images: [] }).value).toBeNull();
+    expect(sanitizeEditions([valid, { ...valid, slug: '' }]).value).toHaveLength(1);
+  });
 
   it('EDN-12: preserves a populated relatedEdition on a gallery intact', () => {
     const result = sanitizeGallery({
       title: 'Rebut',
       slug: 'rebut',
       images: [renderableImage],
-      relatedEdition: {title: 'Rebut', slug: 'rebut'},
-    })
-    expect(result.value?.relatedEdition).toEqual({title: 'Rebut', slug: 'rebut'})
-  })
+      relatedEdition: { title: 'Rebut', slug: 'rebut' },
+    });
+    expect(result.value?.relatedEdition).toEqual({ title: 'Rebut', slug: 'rebut' });
+  });
 
   it('EDN-12: preserves an explicit null relatedEdition on a gallery', () => {
     const result = sanitizeGallery({
@@ -281,31 +283,31 @@ describe('gallery and edition sanitizers', () => {
       slug: 'rebut',
       images: [renderableImage],
       relatedEdition: null,
-    })
-    expect(result.value?.relatedEdition).toBeNull()
-  })
+    });
+    expect(result.value?.relatedEdition).toBeNull();
+  });
 
   it('EDN-12: leaves relatedEdition key absent on a gallery when the field is absent from input', () => {
     const result = sanitizeGallery({
       title: 'Rebut',
       slug: 'rebut',
       images: [renderableImage],
-    })
-    expect(result.value).not.toHaveProperty('relatedEdition')
-  })
+    });
+    expect(result.value).not.toHaveProperty('relatedEdition');
+  });
 
   it('EDN-12: drops a partially-dereferenced relatedEdition and records a diagnostic issue', () => {
     const result = sanitizeGallery({
       title: 'Rebut',
       slug: 'rebut',
       images: [renderableImage],
-      relatedEdition: {title: 'Rebut'},
-    })
-    expect(result.value).not.toHaveProperty('relatedEdition')
+      relatedEdition: { title: 'Rebut' },
+    });
+    expect(result.value).not.toHaveProperty('relatedEdition');
     expect(result.issues).toContainEqual(
-      expect.objectContaining({code: 'relatedEdition.removed'}),
-    )
-  })
+      expect.objectContaining({ code: 'relatedEdition.removed' }),
+    );
+  });
 
   // RESEARCH.md Pitfall 1: sanitizeEditionDocument uses sanitizeGalleryDocument
   // as its shared base (via an object spread) -- without an explicit
@@ -316,31 +318,31 @@ describe('gallery and edition sanitizers', () => {
     const validEdition = {
       title: 'Silos',
       slug: 'silos',
-      statement: {fr: 'Texte', en: 'Statement'},
+      statement: { fr: 'Texte', en: 'Statement' },
       images: [renderableImage],
       pageCount: 48,
       printRun: 100,
-      dimensions: {width: 21, height: 29.7, unit: 'cm'},
-    }
-    const result = sanitizeEdition({...validEdition, relatedEdition: {title: 'X', slug: 'x'}})
-    expect(result.value).not.toHaveProperty('relatedEdition')
-  })
-})
+      dimensions: { width: 21, height: 29.7, unit: 'cm' },
+    };
+    const result = sanitizeEdition({ ...validEdition, relatedEdition: { title: 'X', slug: 'x' } });
+    expect(result.value).not.toHaveProperty('relatedEdition');
+  });
+});
 
 describe('safe diagnostics', () => {
   it('logs only type, identity and reason codes', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     warnForSanityIssues('gallery', [
-      {code: 'images.none_renderable', id: 'gallery-secret', slug: 'rebut'},
-    ])
+      { code: 'images.none_renderable', id: 'gallery-secret', slug: 'rebut' },
+    ]);
 
     expect(warn).toHaveBeenCalledWith('[sanity-validation]', {
       documentType: 'gallery',
       id: 'gallery-secret',
       slug: 'rebut',
       reasons: ['images.none_renderable'],
-    })
-    expect(JSON.stringify(warn.mock.calls)).not.toContain('token')
-    warn.mockRestore()
-  })
-})
+    });
+    expect(JSON.stringify(warn.mock.calls)).not.toContain('token');
+    warn.mockRestore();
+  });
+});

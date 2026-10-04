@@ -1,6 +1,18 @@
-import type {AboutPage, ContactPage, Edition, EditionsPage, Gallery, SiteSettings} from './sanity';
-import {fullSizeUrl, previewPanelUrl, responsiveImageSrcSet, responsiveThumbnailSrcSet} from './image';
-import {pickHeroIndex} from './image-orientation';
+import type {
+  AboutPage,
+  ContactPage,
+  Edition,
+  EditionsPage,
+  Gallery,
+  SiteSettings,
+} from './sanity';
+import {
+  fullSizeUrl,
+  previewPanelUrl,
+  responsiveImageSrcSet,
+  responsiveThumbnailSrcSet,
+} from './image';
+import { pickHeroIndex } from './image-orientation';
 import {
   getHeroTextColor,
   normalizeHeroColor,
@@ -8,12 +20,12 @@ import {
   resolveEditionsIntro,
   resolveSiteCopy,
 } from './site-config';
-import {getRelatedGalleryLink} from './related-gallery';
-import type {RelatedGalleryLink} from './related-gallery';
-import {getRelatedEditionLink} from './related-edition';
-import type {RelatedEditionLink} from './related-edition';
-import {getRelativeLocaleUrl} from 'astro:i18n';
-import type {GalleryGridItem} from '../components/GalleryGrid.astro';
+import { getRelatedGalleryLink } from './related-gallery';
+import type { RelatedGalleryLink } from './related-gallery';
+import { getRelatedEditionLink } from './related-edition';
+import type { RelatedEditionLink } from './related-edition';
+import { getRelativeLocaleUrl } from 'astro:i18n';
+import type { GalleryGridItem } from '../components/GalleryGrid.astro';
 
 type Locale = 'fr' | 'en';
 
@@ -47,10 +59,10 @@ function buildGridItems(
   localizedAlt: boolean,
 ): GalleryGridItem[] {
   return images
-    .map((img, index) => ({img, index}))
+    .map((img, index) => ({ img, index }))
     .filter((pair) => pair.index !== heroIndex)
-    .map(({img, index}) => {
-      const {width, height} = img.dimensions ?? {};
+    .map(({ img, index }) => {
+      const { width, height } = img.dimensions ?? {};
       const aspectRatio = width && height && height > 0 ? width / height : 1;
       return {
         index,
@@ -59,7 +71,7 @@ function buildGridItems(
         // Empty for galleries (decorative — the real alt lives on the
         // separate hero); localized for éditions (these thumbs are not
         // decorative there) — mirrors GalleryGridItem's own doc comment.
-        alt: localizedAlt ? img.alt?.[locale] ?? '' : '',
+        alt: localizedAlt ? (img.alt?.[locale] ?? '') : '',
         ariaLabel: HERO_LABEL[locale](index + 1, total),
         aspectRatio,
       };
@@ -73,7 +85,7 @@ export interface GalleryDetailStructuredData {
   description: string;
   url: string;
   inLanguage: Locale;
-  creator: {'@type': 'Person'; name: string};
+  creator: { '@type': 'Person'; name: string };
   image: Array<{
     '@type': 'ImageObject';
     contentUrl: string;
@@ -173,7 +185,8 @@ export function buildGalleryDetailModel({
   // input can be an unresolvable var(...) reference string; each palette
   // entry already carries its own correct paired text color.
   const explicitAccent = normalizeHeroColor(gallery.heroColor);
-  const accent: string = explicitAccent ?? resolveAutomaticAccent(homeIndex >= 0 ? homeIndex : 0).bg;
+  const accent: string =
+    explicitAccent ?? resolveAutomaticAccent(homeIndex >= 0 ? homeIndex : 0).bg;
   const accentText: string = explicitAccent
     ? getHeroTextColor(explicitAccent)
     : resolveAutomaticAccent(homeIndex >= 0 ? homeIndex : 0).text;
@@ -191,7 +204,7 @@ export function buildGalleryDetailModel({
     description: seoDescription,
     url: pageUrl,
     inLanguage: locale,
-    creator: {'@type': 'Person', name: 'Romane Lepont'},
+    creator: { '@type': 'Person', name: 'Romane Lepont' },
     image: gallery.images.map((image) => ({
       '@type': 'ImageObject',
       contentUrl: fullSizeUrl(image, 2000),
@@ -251,7 +264,10 @@ const HERO_CAPTION: Record<Locale, string> = {
   en: 'Printed edition',
 };
 
-const FORMAT_TEXT: Record<Locale, (pageCount: string, printRun: string, dimensionsText: string) => string> = {
+const FORMAT_TEXT: Record<
+  Locale,
+  (pageCount: string, printRun: string, dimensionsText: string) => string
+> = {
   fr: (pageCount, printRun, dimensionsText) =>
     `Pages : ${pageCount} · Tirage : ${printRun} exemplaires · Dimensions : ${dimensionsText}`,
   en: (pageCount, printRun, dimensionsText) =>
@@ -371,7 +387,12 @@ export interface AboutPageModel {
 
 const ABOUT_LABELS: Record<
   Locale,
-  {heading: string; studioPracticeHeading: string; mediumTechniqueHeading: string; jobTitle: string}
+  {
+    heading: string;
+    studioPracticeHeading: string;
+    mediumTechniqueHeading: string;
+    jobTitle: string;
+  }
 > = {
   fr: {
     heading: 'À propos',
@@ -387,7 +408,10 @@ const ABOUT_LABELS: Record<
   },
 };
 
-const ABOUT_FALLBACKS: Record<Locale, {biography: string; practice: string; medium: string; seoTitle: string}> = {
+const ABOUT_FALLBACKS: Record<
+  Locale,
+  { biography: string; practice: string; medium: string; seoTitle: string }
+> = {
   fr: {
     biography: 'Le texte de présentation de Romane sera bientôt disponible ici.',
     practice: "Informations sur l'atelier et la pratique de Romane à venir prochainement.",
@@ -468,7 +492,7 @@ export interface ContactPageStructuredData {
   '@type': 'ContactPage';
   name: 'Contact';
   description: string;
-  mainEntity: {'@type': 'Person'; name: string; email: string};
+  mainEntity: { '@type': 'Person'; name: string; email: string };
 }
 
 export interface ContactPageModel {
@@ -493,7 +517,14 @@ const DEFAULT_PUBLIC_EMAIL = 'contact@atelierjacquelinesuzanne.fr';
 
 const CONTACT_LABELS: Record<
   Locale,
-  {intro: string; seoTitle: string; emailLabel: string; formHeading: string; formSubheading: string; newTabHint: string}
+  {
+    intro: string;
+    seoTitle: string;
+    emailLabel: string;
+    formHeading: string;
+    formSubheading: string;
+    newTabHint: string;
+  }
 > = {
   fr: {
     intro: 'Une question, une envie de collaboration ? Écrivez-moi.',
@@ -546,7 +577,7 @@ export function buildContactPageModel({
     location,
     availability,
     instagramLink: instagramLink
-      ? {url: instagramLink.url ?? '', label: instagramLink.label?.[locale] ?? ''}
+      ? { url: instagramLink.url ?? '', label: instagramLink.label?.[locale] ?? '' }
       : null,
     otherLinks: otherProfessionalLinks.map((link) => ({
       url: link.url ?? '',
@@ -565,7 +596,7 @@ export function buildContactPageModel({
       '@type': 'ContactPage',
       name: 'Contact',
       description: intro,
-      mainEntity: {'@type': 'Person', name: 'Romane Lepont', email: publicEmail},
+      mainEntity: { '@type': 'Person', name: 'Romane Lepont', email: publicEmail },
     },
   };
 }
@@ -611,7 +642,8 @@ const EDITIONS_INDEX_LABELS: Record<
     seoTitle: 'Éditions — Atelier Jacqueline Suzanne',
     seoDescription:
       "Découvrez les éditions papier de Romane Lepont — zines et livres publiés par l'Atelier Jacqueline Suzanne.",
-    formatText: (pageCount, printRun) => `Édition imprimée · ${pageCount} pages · Tirage ${printRun}`,
+    formatText: (pageCount, printRun) =>
+      `Édition imprimée · ${pageCount} pages · Tirage ${printRun}`,
   },
   en: {
     heading: 'Editions',
@@ -621,7 +653,8 @@ const EDITIONS_INDEX_LABELS: Record<
     seoTitle: 'Editions — Atelier Jacqueline Suzanne',
     seoDescription:
       "Discover Romane Lepont's paper editions — zines and books published by Atelier Jacqueline Suzanne.",
-    formatText: (pageCount, printRun) => `Printed edition · ${pageCount} pages · Edition of ${printRun}`,
+    formatText: (pageCount, printRun) =>
+      `Printed edition · ${pageCount} pages · Edition of ${printRun}`,
   },
 };
 
@@ -671,8 +704,7 @@ export function buildEditionsIndexModel({
 }
 
 export type LegalPublisherNotice =
-  | {kind: 'address'; lead: string; lines: string[]}
-  | {kind: 'anonymity'; text: string};
+  { kind: 'address'; lead: string; lines: string[] } | { kind: 'anonymity'; text: string };
 
 export interface LegalNoticeModel {
   publisherNotice: LegalPublisherNotice;
@@ -681,7 +713,7 @@ export interface LegalNoticeModel {
 
 const LEGAL_NOTICE_COPY: Record<
   Locale,
-  {addressLead: string; anonymityText: string; hostedByNote: string}
+  { addressLead: string; anonymityText: string; hostedByNote: string }
 > = {
   fr: {
     addressLead: 'Éditrice du site : Romane Lepont, domiciliée au',
@@ -723,8 +755,8 @@ export function buildLegalNoticeModel({
   return {
     publisherNotice:
       lines.length > 0
-        ? {kind: 'address', lead: copy.addressLead, lines}
-        : {kind: 'anonymity', text: copy.anonymityText},
+        ? { kind: 'address', lead: copy.addressLead, lines }
+        : { kind: 'anonymity', text: copy.anonymityText },
     hostedByNote: copy.hostedByNote,
   };
 }

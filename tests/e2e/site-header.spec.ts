@@ -18,7 +18,9 @@ const INSTAGRAM_HREF = 'https://www.instagram.com/ajs_romanelepont/';
 
 test.describe('Shared SiteHeader — Instagram nav link on non-homepage pages (HOME-10, D-01, D-03)', () => {
   for (const path of ['/about/', '/en/about/', '/contact/', '/en/contact/']) {
-    test(`${path}: exactly one Instagram link in the header with correct href/target/rel`, async ({ page }) => {
+    test(`${path}: exactly one Instagram link in the header with correct href/target/rel`, async ({
+      page,
+    }) => {
       await page.goto(path);
 
       const header = page.locator('[data-role="site-header"]');
@@ -31,7 +33,9 @@ test.describe('Shared SiteHeader — Instagram nav link on non-homepage pages (H
     });
   }
 
-  test('the header Instagram link exposes an accessible name containing "Instagram" and renders an inline svg', async ({ page }) => {
+  test('the header Instagram link exposes an accessible name containing "Instagram" and renders an inline svg', async ({
+    page,
+  }) => {
     await page.goto('/about/');
 
     const header = page.locator('[data-role="site-header"]');
@@ -44,7 +48,10 @@ test.describe('Shared SiteHeader — Instagram nav link on non-homepage pages (H
   });
 });
 
-async function assertNoHorizontalOverflowAt393(page: import('@playwright/test').Page, path: string) {
+async function assertNoHorizontalOverflowAt393(
+  page: import('@playwright/test').Page,
+  path: string,
+) {
   await page.setViewportSize({ width: 393, height: 800 });
   await page.goto(path);
 
@@ -80,7 +87,10 @@ test.describe('Shared SiteHeader — mobile fit at 393px (HOME-10, Pitfall 1)', 
 // (max-width: 359px) trims (padding/gap/font-size) already applied to the
 // other three nav links proved sufficient at 320px — no D-03 abbreviation
 // was needed (see 13-01-SUMMARY.md).
-async function assertNoHorizontalOverflowAt320(page: import('@playwright/test').Page, path: string) {
+async function assertNoHorizontalOverflowAt320(
+  page: import('@playwright/test').Page,
+  path: string,
+) {
   await page.setViewportSize({ width: 320, height: 700 });
   await page.goto(path);
 
@@ -93,7 +103,9 @@ async function assertNoHorizontalOverflowAt320(page: import('@playwright/test').
 
 test.describe('Shared SiteHeader — mobile fit at 320px with 4 nav links (EDN-01, D-02)', () => {
   for (const path of ['/about/', '/']) {
-    test(`${path}: no horizontal page overflow at the narrowest supported (320px) viewport`, async ({ page }) => {
+    test(`${path}: no horizontal page overflow at the narrowest supported (320px) viewport`, async ({
+      page,
+    }) => {
       await assertNoHorizontalOverflowAt320(page, path);
     });
   }
@@ -145,7 +157,9 @@ test.describe('Shared SiteHeader — final responsive fit', () => {
     expect(measurements.switcherCenterY).not.toBeNull();
     expect(measurements.navHeight).toBeGreaterThan(0);
     expect(measurements.switcherHeight).toBeGreaterThan(0);
-    expect(Math.abs(measurements.navCenterY! - measurements.switcherCenterY!)).toBeLessThanOrEqual(5);
+    expect(Math.abs(measurements.navCenterY! - measurements.switcherCenterY!)).toBeLessThanOrEqual(
+      5,
+    );
     expect(measurements.scrollWidth).toBeLessThanOrEqual(measurements.innerWidth);
   }
 
@@ -188,7 +202,9 @@ test.describe('Shared SiteHeader — mode-toggle scoping (HOME-10, D-04)', () =>
 });
 
 test.describe('Shared SiteHeader — nav structure (HOME-10, D-01)', () => {
-  test('/about/: .site-nav exposes Galleries, Éditions, About, Contact, and Instagram links in that DOM order', async ({ page }) => {
+  test('/about/: .site-nav exposes Galleries, Éditions, About, Contact, and Instagram links in that DOM order', async ({
+    page,
+  }) => {
     await page.goto('/about/');
 
     const navLinks = page.locator('.site-nav > a.nav-link');
@@ -224,7 +240,9 @@ test.describe('Shared SiteHeader — Éditions nav link (EDN-01, D-01, SC #1/#2)
   ];
 
   for (const { path, editionsSegment } of cases) {
-    test(`${path}: the header's first .nav-link is "Éditions" and resolves to ${editionsSegment}`, async ({ page }) => {
+    test(`${path}: the header's first .nav-link is "Éditions" and resolves to ${editionsSegment}`, async ({
+      page,
+    }) => {
       await page.goto(path);
 
       const header = page.locator('[data-role="site-header"]');
@@ -251,7 +269,9 @@ test.describe('Shared SiteHeader — Éditions nav link (EDN-01, D-01, SC #1/#2)
 // false pass/fail here.
 test.describe('Shared SiteHeader — homepage carousel/grid stay Éditions-free (EDN-01, D-13, SC #3)', () => {
   for (const path of ['/', '/en/']) {
-    test(`${path}: carousel/grid regions contain zero Éditions links; only the header links to Éditions`, async ({ page }) => {
+    test(`${path}: carousel/grid regions contain zero Éditions links; only the header links to Éditions`, async ({
+      page,
+    }) => {
       await page.goto(path);
 
       const carousel = page.locator('[data-role="home-carousel"]');
@@ -276,16 +296,22 @@ test.describe('Shared SiteHeader — homepage carousel/grid stay Éditions-free 
 // <SiteHeader> — the homepage still renders its own .home-nav today, so
 // `.site-nav > a.nav-link` resolves to zero elements on '/'.
 test.describe('Shared SiteHeader — cross-page structural identity (HOME-10, D-01, D-05)', () => {
-  test('/ and /about/ render the same .site-nav .nav-link count and order (Galleries, Éditions, About, Contact, Instagram)', async ({ page }) => {
+  test('/ and /about/ render the same .site-nav .nav-link count and order (Galleries, Éditions, About, Contact, Instagram)', async ({
+    page,
+  }) => {
     await page.goto('/');
     const homeNavLinks = page.locator('.site-nav > a.nav-link');
     await expect(homeNavLinks).toHaveCount(5);
-    const homeHrefs = await homeNavLinks.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
+    const homeHrefs = await homeNavLinks.evaluateAll((els) =>
+      els.map((el) => el.getAttribute('href')),
+    );
 
     await page.goto('/about/');
     const aboutNavLinks = page.locator('.site-nav > a.nav-link');
     await expect(aboutNavLinks).toHaveCount(5);
-    const aboutHrefs = await aboutNavLinks.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
+    const aboutHrefs = await aboutNavLinks.evaluateAll((els) =>
+      els.map((el) => el.getAttribute('href')),
+    );
 
     // Same count, same order, same hrefs — proves one shared component, not
     // two divergent implementations that happen to agree by coincidence.
@@ -305,7 +331,7 @@ test.describe('Shared chrome — contextual neutral link colors', () => {
     const colors = await page.locator('[data-role="site-header"]').evaluate((header) => ({
       header: getComputedStyle(header).color,
       links: Array.from(header.querySelectorAll('.site-nav a, .language-switcher a')).map(
-        (link) => getComputedStyle(link).color
+        (link) => getComputedStyle(link).color,
       ),
     }));
 
@@ -314,14 +340,16 @@ test.describe('Shared chrome — contextual neutral link colors', () => {
     expect(colors.links.every((color) => color === colors.header)).toBe(true);
   });
 
-  test('transparent gallery header links and language switcher match the header white color', async ({ page }) => {
+  test('transparent gallery header links and language switcher match the header white color', async ({
+    page,
+  }) => {
     const href = await firstGalleryHref(page, 'fr');
     await page.goto(href);
 
     const colors = await page.locator('[data-role="site-header"]').evaluate((header) => ({
       header: getComputedStyle(header).color,
       links: Array.from(header.querySelectorAll('.site-nav a, .language-switcher a')).map(
-        (link) => getComputedStyle(link).color
+        (link) => getComputedStyle(link).color,
       ),
     }));
 
@@ -343,7 +371,9 @@ test.describe('Shared chrome — contextual neutral link colors', () => {
     expect(colors.links.every((color) => color === colors.footer)).toBe(true);
   });
 
-  test('desktop footer aligns copyright and legal links on one horizontal row', async ({ page }) => {
+  test('desktop footer aligns copyright and legal links on one horizontal row', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/about/');
 

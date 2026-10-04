@@ -143,7 +143,13 @@ export const CreditsManager: UserComponent = () => {
         const draftId = `drafts.${row.id}`
         const nextImages = row.images.map((image) => ({
           ...image,
-          rights: {...image.rights, credit: credit.trim(), copyrightNotice: copyrightNotice.trim(), usage, displayCredit},
+          rights: {
+            ...image.rights,
+            credit: credit.trim(),
+            copyrightNotice: copyrightNotice.trim(),
+            usage,
+            displayCredit,
+          },
         }))
         // The draft may not exist yet (a published-only collection with no
         // pending edits) -- createIfNotExists seeds it from the current
@@ -164,7 +170,13 @@ export const CreditsManager: UserComponent = () => {
                 hasDraft: true,
                 images: row.images.map((image) => ({
                   ...image,
-                  rights: {...image.rights, credit: credit.trim(), copyrightNotice: copyrightNotice.trim(), usage, displayCredit},
+                  rights: {
+                    ...image.rights,
+                    credit: credit.trim(),
+                    copyrightNotice: copyrightNotice.trim(),
+                    usage,
+                    displayCredit,
+                  },
                 })),
                 incompleteCount: 0,
               }
@@ -208,7 +220,10 @@ export const CreditsManager: UserComponent = () => {
             <Grid columns={[1, 1, 2]} gap={3}>
               <Stack space={2}>
                 <Label size={1}>Crédit photographique</Label>
-                <TextInput value={credit} onChange={(event) => setCredit(event.currentTarget.value)} />
+                <TextInput
+                  value={credit}
+                  onChange={(event) => setCredit(event.currentTarget.value)}
+                />
               </Stack>
               <Stack space={2}>
                 <Label size={1}>Mention de copyright</Label>
@@ -266,7 +281,8 @@ export const CreditsManager: UserComponent = () => {
                   padding={3}
                   style={{
                     cursor: 'pointer',
-                    borderBottom: index < rows.length - 1 ? '1px solid var(--card-border-color)' : undefined,
+                    borderBottom:
+                      index < rows.length - 1 ? '1px solid var(--card-border-color)' : undefined,
                   }}
                 >
                   <Checkbox checked={selected.has(row.id)} onChange={() => toggle(row.id)} />
@@ -278,7 +294,15 @@ export const CreditsManager: UserComponent = () => {
                       {row.images.length} photo{row.images.length > 1 ? 's' : ''}
                     </Text>
                   </Stack>
-                  <Badge tone={row.images.length === 0 ? 'default' : row.incompleteCount ? 'caution' : 'positive'}>
+                  <Badge
+                    tone={
+                      row.images.length === 0
+                        ? 'default'
+                        : row.incompleteCount
+                          ? 'caution'
+                          : 'positive'
+                    }
+                  >
                     {row.images.length === 0
                       ? 'Aucune photo'
                       : row.incompleteCount
@@ -293,7 +317,9 @@ export const CreditsManager: UserComponent = () => {
 
         <Flex justify="flex-end">
           <Button
-            disabled={selectedRows.length === 0 || !credit.trim() || !copyrightNotice.trim() || applying}
+            disabled={
+              selectedRows.length === 0 || !credit.trim() || !copyrightNotice.trim() || applying
+            }
             tone="primary"
             text={
               applying

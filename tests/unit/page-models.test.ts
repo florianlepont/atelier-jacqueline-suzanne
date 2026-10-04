@@ -1,4 +1,4 @@
-import {describe, expect, it} from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 // image.ts (imported transitively by page-models.ts) pulls the real
 // sanityClient value from sanity.ts, which throws at module-load time if
@@ -18,32 +18,39 @@ const {
   buildGalleryDetailModel,
   buildLegalNoticeModel,
 } = await import('../../src/lib/page-models');
-import {getHeroTextColor, resolveAutomaticAccent} from '../../src/lib/site-config';
-import type {AboutPage, ContactPage, Edition, EditionsPage, Gallery, SiteSettings} from '../../src/lib/sanity';
+import { getHeroTextColor, resolveAutomaticAccent } from '../../src/lib/site-config';
+import type {
+  AboutPage,
+  ContactPage,
+  Edition,
+  EditionsPage,
+  Gallery,
+  SiteSettings,
+} from '../../src/lib/sanity';
 
 const image = (overrides: Partial<Gallery['images'][number]> = {}) => ({
-  asset: {_ref: 'image-cover-1200x800-jpg'},
-  alt: {fr: 'Une photographie', en: 'A photograph'},
-  dimensions: {width: 1200, height: 800, aspectRatio: 1.5},
+  asset: { _ref: 'image-cover-1200x800-jpg' },
+  alt: { fr: 'Une photographie', en: 'A photograph' },
+  dimensions: { width: 1200, height: 800, aspectRatio: 1.5 },
   ...overrides,
 });
 
 const gallery = (overrides: Partial<Gallery> = {}): Gallery => ({
   title: 'Paysages',
   slug: 'paysages',
-  statement: {fr: 'Déclaration FR', en: 'Statement EN'},
-  images: [image(), image({asset: {_ref: 'image-two-1200x800-jpg'}})],
+  statement: { fr: 'Déclaration FR', en: 'Statement EN' },
+  images: [image(), image({ asset: { _ref: 'image-two-1200x800-jpg' } })],
   ...overrides,
 });
 
 const edition = (overrides: Partial<Edition> = {}): Edition => ({
   title: 'Rebut',
   slug: 'rebut',
-  statement: {fr: 'Déclaration FR', en: 'Statement EN'},
-  images: [image(), image({asset: {_ref: 'image-two-1200x800-jpg'}})],
+  statement: { fr: 'Déclaration FR', en: 'Statement EN' },
+  images: [image(), image({ asset: { _ref: 'image-two-1200x800-jpg' } })],
   pageCount: 32,
   printRun: 250,
-  dimensions: {width: 15, height: 21, unit: 'cm'},
+  dimensions: { width: 15, height: 21, unit: 'cm' },
   ...overrides,
 });
 
@@ -52,9 +59,9 @@ const PAGE_URL_EN = 'https://atelierjacquelinesuzanne.fr/en/galleries/paysages/'
 
 describe('buildGalleryDetailModel', () => {
   it('produces the same non-localized data for fr and en, diverging only on localized text/labels/URLs', () => {
-    const shared = {gallery: gallery(), homeIndex: 0};
-    const fr = buildGalleryDetailModel({...shared, locale: 'fr', pageUrl: PAGE_URL_FR});
-    const en = buildGalleryDetailModel({...shared, locale: 'en', pageUrl: PAGE_URL_EN});
+    const shared = { gallery: gallery(), homeIndex: 0 };
+    const fr = buildGalleryDetailModel({ ...shared, locale: 'fr', pageUrl: PAGE_URL_FR });
+    const en = buildGalleryDetailModel({ ...shared, locale: 'en', pageUrl: PAGE_URL_EN });
 
     expect(fr.heroIndex).toBe(en.heroIndex);
     expect(fr.heroSrc).toBe(en.heroSrc);
@@ -76,7 +83,7 @@ describe('buildGalleryDetailModel', () => {
 
   it('excludes the hero image from gridItems by its real array index, and reports the correct total', () => {
     const model = buildGalleryDetailModel({
-      gallery: gallery({images: [image(), image(), image()]}),
+      gallery: gallery({ images: [image(), image(), image()] }),
       locale: 'fr',
       pageUrl: PAGE_URL_FR,
       homeIndex: 0,
@@ -88,7 +95,7 @@ describe('buildGalleryDetailModel', () => {
 
   it('falls back to the gallery slug SEO title/description and heroImage social image when seo is absent', () => {
     const model = buildGalleryDetailModel({
-      gallery: gallery({seo: undefined}),
+      gallery: gallery({ seo: undefined }),
       locale: 'fr',
       pageUrl: PAGE_URL_FR,
       homeIndex: 0,
@@ -103,9 +110,9 @@ describe('buildGalleryDetailModel', () => {
     const model = buildGalleryDetailModel({
       gallery: gallery({
         seo: {
-          title: {fr: 'Titre SEO'},
-          description: {fr: 'Description SEO'},
-          image: image({asset: {_ref: 'image-seo-1200x800-jpg'}}),
+          title: { fr: 'Titre SEO' },
+          description: { fr: 'Description SEO' },
+          image: image({ asset: { _ref: 'image-seo-1200x800-jpg' } }),
           noIndex: true,
         },
       }),
@@ -120,7 +127,7 @@ describe('buildGalleryDetailModel', () => {
 
   it('falls back to an empty string, not undefined, when a gallery has no statement for the current locale', () => {
     const model = buildGalleryDetailModel({
-      gallery: gallery({statement: {} as never}),
+      gallery: gallery({ statement: {} as never }),
       locale: 'en',
       pageUrl: PAGE_URL_EN,
       homeIndex: 0,
@@ -135,7 +142,7 @@ describe('buildGalleryDetailModel', () => {
   it('falls back to resolveAutomaticAccent(homeIndex) when the gallery has no recognized hero color', () => {
     const expected = resolveAutomaticAccent(3);
     const model = buildGalleryDetailModel({
-      gallery: gallery({heroColor: undefined}),
+      gallery: gallery({ heroColor: undefined }),
       locale: 'fr',
       pageUrl: PAGE_URL_FR,
       homeIndex: 3,
@@ -147,7 +154,7 @@ describe('buildGalleryDetailModel', () => {
   it('falls back to resolveAutomaticAccent(0) (not a crash) when homeIndex is -1 (gallery hidden from the homepage)', () => {
     const expected = resolveAutomaticAccent(0);
     const model = buildGalleryDetailModel({
-      gallery: gallery({heroColor: undefined}),
+      gallery: gallery({ heroColor: undefined }),
       locale: 'fr',
       pageUrl: PAGE_URL_FR,
       homeIndex: -1,
@@ -158,13 +165,13 @@ describe('buildGalleryDetailModel', () => {
 
   it('an explicit heroColor ignores homeIndex entirely (unchanged behavior)', () => {
     const model = buildGalleryDetailModel({
-      gallery: gallery({heroColor: 'teal'}),
+      gallery: gallery({ heroColor: 'teal' }),
       locale: 'fr',
       pageUrl: PAGE_URL_FR,
       homeIndex: 3,
     });
     const differentIndexModel = buildGalleryDetailModel({
-      gallery: gallery({heroColor: 'teal'}),
+      gallery: gallery({ heroColor: 'teal' }),
       locale: 'fr',
       pageUrl: PAGE_URL_FR,
       homeIndex: 1,
@@ -175,7 +182,7 @@ describe('buildGalleryDetailModel', () => {
 
   it('carouselReturnHref includes the gallery slug as a ?carousel= query param', () => {
     const model = buildGalleryDetailModel({
-      gallery: gallery({slug: 'brume'}),
+      gallery: gallery({ slug: 'brume' }),
       locale: 'fr',
       pageUrl: PAGE_URL_FR,
       homeIndex: 0,
@@ -186,7 +193,7 @@ describe('buildGalleryDetailModel', () => {
   // EDN-12 (D-01, D-02): the reverse gallery -> édition cross-link.
   it('resolves relatedEdition into a link when populated (fr), and null when absent', () => {
     const withRelated = buildGalleryDetailModel({
-      gallery: gallery({relatedEdition: {title: 'Rebut', slug: 'rebut'}}),
+      gallery: gallery({ relatedEdition: { title: 'Rebut', slug: 'rebut' } }),
       locale: 'fr',
       pageUrl: PAGE_URL_FR,
       homeIndex: 0,
@@ -204,7 +211,7 @@ describe('buildGalleryDetailModel', () => {
     expect(withoutKey.relatedLink).toBeNull();
 
     const withExplicitNull = buildGalleryDetailModel({
-      gallery: gallery({relatedEdition: null}),
+      gallery: gallery({ relatedEdition: null }),
       locale: 'fr',
       pageUrl: PAGE_URL_FR,
       homeIndex: 0,
@@ -214,7 +221,7 @@ describe('buildGalleryDetailModel', () => {
 
   it('resolves relatedEdition into a locale-correct href for en', () => {
     const model = buildGalleryDetailModel({
-      gallery: gallery({relatedEdition: {title: 'Rebut', slug: 'rebut'}}),
+      gallery: gallery({ relatedEdition: { title: 'Rebut', slug: 'rebut' } }),
       locale: 'en',
       pageUrl: PAGE_URL_EN,
       homeIndex: 0,
@@ -224,12 +231,22 @@ describe('buildGalleryDetailModel', () => {
 
   // CONT-04 (D-04, D-05, D-06): contact CTA href + label.
   it('emits a locale-correct, base-path-safe contact CTA href and label', () => {
-    const fr = buildGalleryDetailModel({gallery: gallery(), locale: 'fr', pageUrl: PAGE_URL_FR, homeIndex: 0});
+    const fr = buildGalleryDetailModel({
+      gallery: gallery(),
+      locale: 'fr',
+      pageUrl: PAGE_URL_FR,
+      homeIndex: 0,
+    });
     expect(fr.contactCtaHref).toMatch(/\/contact\/?$/);
     expect(fr.contactCtaLabel).toBe('Intéressé·e par une pièce ? Contactez-nous');
     expect(fr.contactCtaLabel).not.toContain('→');
 
-    const en = buildGalleryDetailModel({gallery: gallery(), locale: 'en', pageUrl: PAGE_URL_EN, homeIndex: 0});
+    const en = buildGalleryDetailModel({
+      gallery: gallery(),
+      locale: 'en',
+      pageUrl: PAGE_URL_EN,
+      homeIndex: 0,
+    });
     expect(en.contactCtaHref).toMatch(/\/en\/contact\/?$/);
     expect(en.contactCtaLabel).toBe('Interested in a piece? Get in touch');
     expect(en.contactCtaLabel).not.toContain('→');
@@ -238,9 +255,9 @@ describe('buildGalleryDetailModel', () => {
 
 describe('buildEditionDetailModel', () => {
   it('produces the same non-localized data for fr and en, diverging only on localized text/labels', () => {
-    const shared = {edition: edition()};
-    const fr = buildEditionDetailModel({...shared, locale: 'fr'});
-    const en = buildEditionDetailModel({...shared, locale: 'en'});
+    const shared = { edition: edition() };
+    const fr = buildEditionDetailModel({ ...shared, locale: 'fr' });
+    const en = buildEditionDetailModel({ ...shared, locale: 'en' });
 
     expect(fr.heroIndex).toBe(en.heroIndex);
     expect(fr.leadPhotoSrc).toBe(en.leadPhotoSrc);
@@ -258,21 +275,24 @@ describe('buildEditionDetailModel', () => {
   });
 
   it('builds SEO directly from title/statement/hero image, since édition has no seo field', () => {
-    const model = buildEditionDetailModel({edition: edition({title: 'Silos'}), locale: 'fr'});
+    const model = buildEditionDetailModel({ edition: edition({ title: 'Silos' }), locale: 'fr' });
     expect(model.seoTitle).toBe('Silos — Atelier Jacqueline Suzanne');
     expect(model.seoDescription).toBe('Déclaration FR');
     expect(model.socialImage).toBeTruthy();
   });
 
   it('does not throw when images is missing (D-02 defensive guard), and reports a zero total', () => {
-    const model = buildEditionDetailModel({edition: edition({images: undefined as never}), locale: 'fr'});
+    const model = buildEditionDetailModel({
+      edition: edition({ images: undefined as never }),
+      locale: 'fr',
+    });
     expect(model.total).toBe(0);
     expect(model.gridItems).toEqual([]);
   });
 
   it('localizes each grid item alt text for éditions (unlike galleries, which stay decorative/empty)', () => {
     const model = buildEditionDetailModel({
-      edition: edition({images: [image(), image(), image()]}),
+      edition: edition({ images: [image(), image(), image()] }),
       locale: 'en',
     });
     expect(model.gridItems.every((item) => item.alt === 'A photograph')).toBe(true);
@@ -280,13 +300,16 @@ describe('buildEditionDetailModel', () => {
 
   it('resolves relatedGallery into a link when populated, and null when absent', () => {
     const withRelated = buildEditionDetailModel({
-      edition: edition({relatedGallery: {title: 'Rebut', slug: 'rebut'}}),
+      edition: edition({ relatedGallery: { title: 'Rebut', slug: 'rebut' } }),
       locale: 'fr',
     });
     expect(withRelated.relatedLink).not.toBeNull();
     expect(withRelated.relatedLink!.href).toMatch(/\/galleries\/rebut\/?$/);
 
-    const withoutRelated = buildEditionDetailModel({edition: edition({relatedGallery: null}), locale: 'fr'});
+    const withoutRelated = buildEditionDetailModel({
+      edition: edition({ relatedGallery: null }),
+      locale: 'fr',
+    });
     expect(withoutRelated.relatedLink).toBeNull();
   });
 
@@ -306,50 +329,60 @@ describe('buildEditionDetailModel', () => {
   // the gallery model's copy for the same locale — one shared string, no
   // per-page contextual wording.
   it('emits a locale-correct, base-path-safe contact CTA href and label, identical to the gallery model', () => {
-    const fr = buildEditionDetailModel({edition: edition(), locale: 'fr'});
+    const fr = buildEditionDetailModel({ edition: edition(), locale: 'fr' });
     expect(fr.contactCtaHref).toMatch(/\/contact\/?$/);
     expect(fr.contactCtaLabel).not.toContain('→');
 
-    const en = buildEditionDetailModel({edition: edition(), locale: 'en'});
+    const en = buildEditionDetailModel({ edition: edition(), locale: 'en' });
     expect(en.contactCtaHref).toMatch(/\/en\/contact\/?$/);
     expect(en.contactCtaLabel).not.toContain('→');
 
-    const galleryFr = buildGalleryDetailModel({gallery: gallery(), locale: 'fr', pageUrl: PAGE_URL_FR, homeIndex: 0});
-    const galleryEn = buildGalleryDetailModel({gallery: gallery(), locale: 'en', pageUrl: PAGE_URL_EN, homeIndex: 0});
+    const galleryFr = buildGalleryDetailModel({
+      gallery: gallery(),
+      locale: 'fr',
+      pageUrl: PAGE_URL_FR,
+      homeIndex: 0,
+    });
+    const galleryEn = buildGalleryDetailModel({
+      gallery: gallery(),
+      locale: 'en',
+      pageUrl: PAGE_URL_EN,
+      homeIndex: 0,
+    });
     expect(fr.contactCtaLabel).toBe(galleryFr.contactCtaLabel);
     expect(en.contactCtaLabel).toBe(galleryEn.contactCtaLabel);
   });
 });
 
 const aboutPage = (overrides: Partial<AboutPage> = {}): AboutPage => ({
-  biography: {fr: 'Biographie FR', en: 'Biography EN'},
-  practice: {fr: 'Pratique FR', en: 'Practice EN'},
-  medium: {fr: 'Médium FR', en: 'Medium EN'},
+  biography: { fr: 'Biographie FR', en: 'Biography EN' },
+  practice: { fr: 'Pratique FR', en: 'Practice EN' },
+  medium: { fr: 'Médium FR', en: 'Medium EN' },
   ...overrides,
 });
 
 const siteSettings = (overrides: Partial<SiteSettings> = {}): SiteSettings => ({
-  siteTitle: {fr: 'Atelier Jacqueline Suzanne', en: 'Atelier Jacqueline Suzanne'},
+  siteTitle: { fr: 'Atelier Jacqueline Suzanne', en: 'Atelier Jacqueline Suzanne' },
   navLabels: {
-    about: {fr: 'À propos', en: 'About'},
-    contact: {fr: 'Contact', en: 'Contact'},
-    editions: {fr: 'Éditions', en: 'Editions'},
+    about: { fr: 'À propos', en: 'About' },
+    contact: { fr: 'Contact', en: 'Contact' },
+    editions: { fr: 'Éditions', en: 'Editions' },
   },
-  footerText: {fr: '', en: ''},
+  footerText: { fr: '', en: '' },
   ...overrides,
 });
 
 const contactPage = (overrides: Partial<ContactPage> = {}): ContactPage => ({
-  intro: {fr: 'Intro FR', en: 'Intro EN'},
+  intro: { fr: 'Intro FR', en: 'Intro EN' },
   publicEmail: 'contact@atelierjacquelinesuzanne.fr',
   ...overrides,
 });
 
 describe('buildAboutPageModel', () => {
   it('produces the same non-localized data for fr and en, diverging only on localized text/labels', () => {
-    const shared = {about: aboutPage(), siteSettings: siteSettings()};
-    const fr = buildAboutPageModel({...shared, locale: 'fr', pageUrl: PAGE_URL_FR});
-    const en = buildAboutPageModel({...shared, locale: 'en', pageUrl: PAGE_URL_EN});
+    const shared = { about: aboutPage(), siteSettings: siteSettings() };
+    const fr = buildAboutPageModel({ ...shared, locale: 'fr', pageUrl: PAGE_URL_FR });
+    const en = buildAboutPageModel({ ...shared, locale: 'en', pageUrl: PAGE_URL_EN });
 
     expect(fr.heading).toBe('À propos');
     expect(en.heading).toBe('About');
@@ -381,7 +414,7 @@ describe('buildAboutPageModel', () => {
   it('prefers seo.title/description/image and passes noIndex through when present', () => {
     const model = buildAboutPageModel({
       about: aboutPage({
-        seo: {title: {fr: 'Titre SEO'}, description: {fr: 'Description SEO'}, noIndex: true},
+        seo: { title: { fr: 'Titre SEO' }, description: { fr: 'Description SEO' }, noIndex: true },
       }),
       siteSettings: siteSettings(),
       locale: 'fr',
@@ -395,8 +428,11 @@ describe('buildAboutPageModel', () => {
   it('resolves portrait/exhibition image alt text per locale', () => {
     const model = buildAboutPageModel({
       about: aboutPage({
-        image: {asset: {_ref: 'portrait-jpg'}, alt: {fr: 'Portrait FR', en: 'Portrait EN'}},
-        exhibitionImage: {asset: {_ref: 'exhibition-jpg'}, alt: {fr: 'Expo FR', en: 'Expo EN'}},
+        image: { asset: { _ref: 'portrait-jpg' }, alt: { fr: 'Portrait FR', en: 'Portrait EN' } },
+        exhibitionImage: {
+          asset: { _ref: 'exhibition-jpg' },
+          alt: { fr: 'Expo FR', en: 'Expo EN' },
+        },
       }),
       siteSettings: null,
       locale: 'en',
@@ -409,9 +445,9 @@ describe('buildAboutPageModel', () => {
 
 describe('buildContactPageModel', () => {
   it('produces the same non-localized data for fr and en, diverging only on localized text/labels', () => {
-    const shared = {contact: contactPage()};
-    const fr = buildContactPageModel({...shared, locale: 'fr'});
-    const en = buildContactPageModel({...shared, locale: 'en'});
+    const shared = { contact: contactPage() };
+    const fr = buildContactPageModel({ ...shared, locale: 'fr' });
+    const en = buildContactPageModel({ ...shared, locale: 'en' });
 
     expect(fr.intro).toBe('Intro FR');
     expect(en.intro).toBe('Intro EN');
@@ -424,7 +460,7 @@ describe('buildContactPageModel', () => {
   });
 
   it('falls back to a placeholder intro and the default public email when contact is absent', () => {
-    const model = buildContactPageModel({contact: null, locale: 'fr'});
+    const model = buildContactPageModel({ contact: null, locale: 'fr' });
     expect(model.intro).toContain('collaboration');
     expect(model.publicEmail).toBe('contact@atelierjacquelinesuzanne.fr');
     expect(model.location).toBeUndefined();
@@ -437,22 +473,30 @@ describe('buildContactPageModel', () => {
     const model = buildContactPageModel({
       contact: contactPage({
         professionalLinks: [
-          {label: {fr: 'Instagram', en: 'Instagram'}, url: 'https://www.instagram.com/ajs_romanelepont/'},
-          {label: {fr: 'Portfolio', en: 'Portfolio'}, url: 'https://example.com/portfolio'},
-          {label: {fr: 'Sans URL', en: 'No URL'}, url: undefined},
-          {label: {en: 'No FR label'}, url: 'https://example.com/no-fr-label'},
+          {
+            label: { fr: 'Instagram', en: 'Instagram' },
+            url: 'https://www.instagram.com/ajs_romanelepont/',
+          },
+          { label: { fr: 'Portfolio', en: 'Portfolio' }, url: 'https://example.com/portfolio' },
+          { label: { fr: 'Sans URL', en: 'No URL' }, url: undefined },
+          { label: { en: 'No FR label' }, url: 'https://example.com/no-fr-label' },
         ],
       }),
       locale: 'fr',
     });
-    expect(model.instagramLink).toEqual({url: 'https://www.instagram.com/ajs_romanelepont/', label: 'Instagram'});
-    expect(model.otherLinks).toEqual([{url: 'https://example.com/portfolio', label: 'Portfolio'}]);
+    expect(model.instagramLink).toEqual({
+      url: 'https://www.instagram.com/ajs_romanelepont/',
+      label: 'Instagram',
+    });
+    expect(model.otherLinks).toEqual([
+      { url: 'https://example.com/portfolio', label: 'Portfolio' },
+    ]);
   });
 
   it('prefers seo.title/description/image and passes noIndex through when present', () => {
     const model = buildContactPageModel({
       contact: contactPage({
-        seo: {title: {fr: 'Titre SEO'}, description: {fr: 'Description SEO'}, noIndex: true},
+        seo: { title: { fr: 'Titre SEO' }, description: { fr: 'Description SEO' }, noIndex: true },
       }),
       locale: 'fr',
     });
@@ -464,9 +508,12 @@ describe('buildContactPageModel', () => {
 
 describe('buildEditionsIndexModel', () => {
   it('produces the same non-localized data for fr and en, diverging only on localized text/labels', () => {
-    const shared = {editionsPage: {intro: {fr: 'Intro FR', en: 'Intro EN'}} as EditionsPage, editions: [edition()]};
-    const fr = buildEditionsIndexModel({...shared, locale: 'fr'});
-    const en = buildEditionsIndexModel({...shared, locale: 'en'});
+    const shared = {
+      editionsPage: { intro: { fr: 'Intro FR', en: 'Intro EN' } } as EditionsPage,
+      editions: [edition()],
+    };
+    const fr = buildEditionsIndexModel({ ...shared, locale: 'fr' });
+    const en = buildEditionsIndexModel({ ...shared, locale: 'en' });
 
     expect(fr.heading).toBe('Éditions');
     expect(en.heading).toBe('Editions');
@@ -478,14 +525,14 @@ describe('buildEditionsIndexModel', () => {
   });
 
   it('falls back to the shared default intro when editionsPage is absent', () => {
-    const model = buildEditionsIndexModel({editionsPage: null, editions: [], locale: 'fr'});
+    const model = buildEditionsIndexModel({ editionsPage: null, editions: [], locale: 'fr' });
     expect(model.intro).toContain('objets imprimés');
   });
 
   it('filters out any édition with no photos (D-02/quick-260801-kgh)', () => {
     const model = buildEditionsIndexModel({
       editionsPage: null,
-      editions: [edition(), edition({slug: 'sans-photo', images: []})],
+      editions: [edition(), edition({ slug: 'sans-photo', images: [] })],
       locale: 'fr',
     });
     expect(model.tiles).toHaveLength(1);
@@ -495,7 +542,7 @@ describe('buildEditionsIndexModel', () => {
   it('derives each tile from its own cover image and locale-specific statement/format text', () => {
     const model = buildEditionsIndexModel({
       editionsPage: null,
-      editions: [edition({title: 'Silos', pageCount: 40, printRun: 100})],
+      editions: [edition({ title: 'Silos', pageCount: 40, printRun: 100 })],
       locale: 'en',
     });
     expect(model.tiles).toHaveLength(1);
@@ -520,11 +567,11 @@ describe('buildLegalNoticeModel', () => {
 
   it('returns the address notice with the localized lead when an address is present', () => {
     const fr = buildLegalNoticeModel({
-      siteSettings: siteSettings({publisherAddress: 'TEST-ADDRESS-FIXTURE'}),
+      siteSettings: siteSettings({ publisherAddress: 'TEST-ADDRESS-FIXTURE' }),
       locale: 'fr',
     });
     const en = buildLegalNoticeModel({
-      siteSettings: siteSettings({publisherAddress: 'TEST-ADDRESS-FIXTURE'}),
+      siteSettings: siteSettings({ publisherAddress: 'TEST-ADDRESS-FIXTURE' }),
       locale: 'en',
     });
     expect(fr.publisherNotice).toEqual({
@@ -552,26 +599,28 @@ describe('buildLegalNoticeModel', () => {
     });
 
     const markup = buildLegalNoticeModel({
-      siteSettings: siteSettings({publisherAddress: '<b>TEST-ADDRESS-FIXTURE</b>'}),
+      siteSettings: siteSettings({ publisherAddress: '<b>TEST-ADDRESS-FIXTURE</b>' }),
       locale: 'en',
     });
-    expect(markup.publisherNotice).toMatchObject({lines: ['<b>TEST-ADDRESS-FIXTURE</b>']});
+    expect(markup.publisherNotice).toMatchObject({ lines: ['<b>TEST-ADDRESS-FIXTURE</b>'] });
   });
 
   const emptyCases: Array<[string, SiteSettings | null]> = [
     ['null settings', null],
     ['settings without the field', siteSettings()],
-    ['empty string', siteSettings({publisherAddress: ''})],
-    ['whitespace only', siteSettings({publisherAddress: '   \t  '})],
-    ['blank lines only', siteSettings({publisherAddress: ' \n\n  \n'})],
+    ['empty string', siteSettings({ publisherAddress: '' })],
+    ['whitespace only', siteSettings({ publisherAddress: '   \t  ' })],
+    ['blank lines only', siteSettings({ publisherAddress: ' \n\n  \n' })],
   ];
 
   for (const locale of locales) {
     for (const [label, settings] of emptyCases) {
       it(`falls back to the exact anonymity wording (${locale}, ${label})`, () => {
-        const {publisherNotice} = buildLegalNoticeModel({siteSettings: settings, locale});
-        expect(publisherNotice).toEqual({kind: 'anonymity', text: ANONYMITY_TEXT[locale]});
-        expect((publisherNotice as {text: string}).text.toLowerCase()).toContain('article 1-1, ii');
+        const { publisherNotice } = buildLegalNoticeModel({ siteSettings: settings, locale });
+        expect(publisherNotice).toEqual({ kind: 'anonymity', text: ANONYMITY_TEXT[locale] });
+        expect((publisherNotice as { text: string }).text.toLowerCase()).toContain(
+          'article 1-1, ii',
+        );
         expect(JSON.stringify(publisherNotice)).not.toContain('TEST-ADDRESS-FIXTURE');
       });
     }
@@ -582,10 +631,10 @@ describe('buildLegalNoticeModel', () => {
       const cases: Array<SiteSettings | null> = [
         null,
         siteSettings(),
-        siteSettings({publisherAddress: 'TEST-ADDRESS-FIXTURE'}),
+        siteSettings({ publisherAddress: 'TEST-ADDRESS-FIXTURE' }),
       ];
       for (const settings of cases) {
-        const {publisherNotice} = buildLegalNoticeModel({siteSettings: settings, locale});
+        const { publisherNotice } = buildLegalNoticeModel({ siteSettings: settings, locale });
         expect(['address', 'anonymity']).toContain(publisherNotice.kind);
         if (publisherNotice.kind === 'address') {
           expect(publisherNotice).not.toHaveProperty('text');
@@ -599,8 +648,8 @@ describe('buildLegalNoticeModel', () => {
 
   it('names Florian Lepont as the OVH account holder without any digit, address or not', () => {
     for (const locale of locales) {
-      for (const settings of [null, siteSettings({publisherAddress: 'TEST-ADDRESS-FIXTURE'})]) {
-        const {hostedByNote} = buildLegalNoticeModel({siteSettings: settings, locale});
+      for (const settings of [null, siteSettings({ publisherAddress: 'TEST-ADDRESS-FIXTURE' })]) {
+        const { hostedByNote } = buildLegalNoticeModel({ siteSettings: settings, locale });
         expect(hostedByNote).toBe(HOSTED_BY_NOTE[locale]);
         expect(hostedByNote).toContain('Florian Lepont');
         expect(hostedByNote).not.toMatch(/\d/);

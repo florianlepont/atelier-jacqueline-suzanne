@@ -32,7 +32,10 @@ async function readDataEntries(page: import('@playwright/test').Page): Promise<D
 // the clicked dash is already carouselIndex, and a fresh page always starts
 // on gallery 0 -- detouring through a different dash first forces a real
 // navigation for the final click regardless of which index is requested.
-async function goToGalleryIndex(page: import('@playwright/test').Page, index: number): Promise<void> {
+async function goToGalleryIndex(
+  page: import('@playwright/test').Page,
+  index: number,
+): Promise<void> {
   const dashes = page.locator('.home-hero__progress-dash');
   const count = await dashes.count();
   if (count > 1) {

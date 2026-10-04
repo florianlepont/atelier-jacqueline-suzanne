@@ -1,7 +1,9 @@
 import { expect, test } from '@playwright/test';
 
 for (const path of ['/', '/en/']) {
-  test(`${path} has no overflow and exposes the hamburger at narrow phone widths`, async ({ page }) => {
+  test(`${path} has no overflow and exposes the hamburger at narrow phone widths`, async ({
+    page,
+  }) => {
     for (const width of [393, 320]) {
       await page.setViewportSize({ width, height: 852 });
       await page.goto(path);

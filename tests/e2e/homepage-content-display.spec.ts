@@ -15,9 +15,9 @@ test.describe('collection statements on the homepage', () => {
     await expect(page.locator('.home-hero__byline')).toHaveCount(0);
   });
 
-  test('grid tile reveals its collection statement on hover', async ({page}) => {
+  test('grid tile reveals its collection statement on hover', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', {name: 'Grille'}).click();
+    await page.getByRole('button', { name: 'Grille' }).click();
 
     // gallery `statement` is optional (no validation.required() in
     // sanity/schemas/gallery.ts), so the FIRST tile may legitimately render
@@ -46,7 +46,7 @@ test.describe('collection statements on the homepage', () => {
     const dashes = progress.locator('[data-action="go-to"]');
     const progressPositions: number[] = [];
 
-    for (let index = 0; index < await dashes.count(); index += 1) {
+    for (let index = 0; index < (await dashes.count()); index += 1) {
       await dashes.nth(index).click();
       const box = await progress.boundingBox();
       expect(box).not.toBeNull();
@@ -89,7 +89,9 @@ test.describe('collection statements on the homepage', () => {
 });
 
 test.describe('carousel title has no underline (quick-260726-obg)', () => {
-  test('the title renders with no underline at rest or on hover, keeping its accent-color hover and pointer cursor', async ({ page }) => {
+  test('the title renders with no underline at rest or on hover, keeping its accent-color hover and pointer cursor', async ({
+    page,
+  }) => {
     await page.goto('/');
 
     const title = page.locator('[data-role="gallery-title"]');
@@ -130,7 +132,9 @@ test.describe('carousel intro paragraph resize + reposition (Item 5)', () => {
 });
 
 test.describe('grid hero tile text color tracks accent (260718-r2o)', () => {
-  test('grid hero tile color reads the --current-accent-text variable, not a hardcoded ink value', async ({ page }) => {
+  test('grid hero tile color reads the --current-accent-text variable, not a hardcoded ink value', async ({
+    page,
+  }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
 
@@ -151,7 +155,9 @@ test.describe('grid hero tile text color tracks accent (260718-r2o)', () => {
 });
 
 test.describe('grid-tile title alignment (260718-rhv)', () => {
-  test('every gallery tile title sits at the same offset from its own tile bottom edge', async ({ page }) => {
+  test('every gallery tile title sits at the same offset from its own tile bottom edge', async ({
+    page,
+  }) => {
     // Skips the shared-element view-transition animation (see the
     // 'view-transition toggle — reduced-motion' describe block above for
     // the same pattern) — without this, an evaluate() taken immediately
@@ -168,8 +174,13 @@ test.describe('grid-tile title alignment (260718-rhv)', () => {
     // active, even with the animation itself instant, so wait for every
     // title to report a real (non-zero) box before measuring geometry.
     await page.waitForFunction(() => {
-      const titles = document.querySelectorAll<HTMLElement>('a.home-grid__tile .home-grid__tile-title');
-      return titles.length > 0 && Array.from(titles).every((title) => title.getBoundingClientRect().height > 0);
+      const titles = document.querySelectorAll<HTMLElement>(
+        'a.home-grid__tile .home-grid__tile-title',
+      );
+      return (
+        titles.length > 0 &&
+        Array.from(titles).every((title) => title.getBoundingClientRect().height > 0)
+      );
     });
 
     const tiles = page.locator('a.home-grid__tile');
@@ -191,14 +202,21 @@ test.describe('grid-tile title alignment (260718-rhv)', () => {
     expect(Math.max(...offsets) - Math.min(...offsets)).toBeLessThanOrEqual(1);
   });
 
-  test('clearing a tile statement does not change its title offset (empty-statement defensive)', async ({ page }) => {
+  test('clearing a tile statement does not change its title offset (empty-statement defensive)', async ({
+    page,
+  }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
 
     await page.waitForFunction(() => {
-      const titles = document.querySelectorAll<HTMLElement>('a.home-grid__tile .home-grid__tile-title');
-      return titles.length > 0 && Array.from(titles).every((title) => title.getBoundingClientRect().height > 0);
+      const titles = document.querySelectorAll<HTMLElement>(
+        'a.home-grid__tile .home-grid__tile-title',
+      );
+      return (
+        titles.length > 0 &&
+        Array.from(titles).every((title) => title.getBoundingClientRect().height > 0)
+      );
     });
 
     // This test's whole point is proving that clearing a NON-EMPTY
@@ -241,7 +259,9 @@ test.describe('grid-tile title alignment (260718-rhv)', () => {
 // additive, placed next to (not replacing) the 260718-rhv alignment block
 // above, which must keep passing unchanged.
 test.describe('grid-tile title two-line clamp (quick-260803-bvu, Item 3)', () => {
-  test('the longest gallery title wraps across whole words on up to two lines, no mid-word ellipsis cut', async ({ page }) => {
+  test('the longest gallery title wraps across whole words on up to two lines, no mid-word ellipsis cut', async ({
+    page,
+  }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
 
@@ -281,14 +301,21 @@ test.describe('grid-tile title two-line clamp (quick-260803-bvu, Item 3)', () =>
     expect(info.scrollHeight).toBeLessThanOrEqual(info.clientHeight + 1);
   });
 
-  test('every tile title still starts at the same offset from its own tile bottom edge (260718-rhv invariant preserved)', async ({ page }) => {
+  test('every tile title still starts at the same offset from its own tile bottom edge (260718-rhv invariant preserved)', async ({
+    page,
+  }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
 
     await page.waitForFunction(() => {
-      const titles = document.querySelectorAll<HTMLElement>('a.home-grid__tile .home-grid__tile-title');
-      return titles.length > 0 && Array.from(titles).every((title) => title.getBoundingClientRect().height > 0);
+      const titles = document.querySelectorAll<HTMLElement>(
+        'a.home-grid__tile .home-grid__tile-title',
+      );
+      return (
+        titles.length > 0 &&
+        Array.from(titles).every((title) => title.getBoundingClientRect().height > 0)
+      );
     });
 
     const tiles = page.locator('a.home-grid__tile');
@@ -319,7 +346,9 @@ test.describe('grid-tile title two-line clamp (quick-260803-bvu, Item 3)', () =>
 // already `pointer` on both controls — only the custom cursor overlay
 // itself needed to hide.
 test.describe('carousel pause-toggle cursor affordance (quick-260803-bvu, Item 2)', () => {
-  test('the custom cursor hides over the caption controls but still shows in a plain edge zone', async ({ page }) => {
+  test('the custom cursor hides over the caption controls but still shows in a plain edge zone', async ({
+    page,
+  }) => {
     await page.goto('/');
 
     const toggle = page.locator('[data-role="autoplay-toggle"]');
@@ -341,7 +370,9 @@ test.describe('carousel pause-toggle cursor affordance (quick-260803-bvu, Item 2
     await expect(cursor).toHaveAttribute('data-zone', 'left');
   });
 
-  test('the pause/play toggle is still reachable and clickable while the cursor is hidden over it', async ({ page }) => {
+  test('the pause/play toggle is still reachable and clickable while the cursor is hidden over it', async ({
+    page,
+  }) => {
     await page.goto('/');
 
     const toggle = page.locator('[data-role="autoplay-toggle"]');
@@ -360,7 +391,9 @@ test.describe('grid-tile hover polish (260718-rhv)', () => {
     await page.getByRole('button', { name: 'Grille' }).click();
 
     const tile = page.locator('a.home-grid__tile').first();
-    const accent = await tile.evaluate((el) => getComputedStyle(el).getPropertyValue('--tile-accent').trim());
+    const accent = await tile.evaluate((el) =>
+      getComputedStyle(el).getPropertyValue('--tile-accent').trim(),
+    );
     expect(accent).not.toBe('');
   });
 
@@ -371,7 +404,9 @@ test.describe('grid-tile hover polish (260718-rhv)', () => {
     const tile = page.locator('a.home-grid__tile').first();
     const scrim = tile.locator('.home-grid__tile-scrim');
 
-    const before = await scrim.evaluate((el) => parseFloat(getComputedStyle(el, '::after').opacity));
+    const before = await scrim.evaluate((el) =>
+      parseFloat(getComputedStyle(el, '::after').opacity),
+    );
     expect(before).toBeLessThanOrEqual(0.05);
 
     await tile.hover();
@@ -427,7 +462,9 @@ test.describe('grid-tile hover polish (260718-rhv)', () => {
 });
 
 test.describe('homepage hero photo matches the gallery detail hero (landscape-preference consistency)', () => {
-  test('every home-grid tile photo pathname equals its gallery detail-hero photo pathname', async ({ page }) => {
+  test('every home-grid tile photo pathname equals its gallery detail-hero photo pathname', async ({
+    page,
+  }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
 
@@ -474,7 +511,9 @@ test.describe('grid intro paragraph is not truncated (HOME-12)', () => {
   // .home-grid__tile--hero ancestor (which is aspect-ratio: 1/1 + overflow:
   // hidden and can still clip an un-clamped paragraph even with the CSS
   // clamp removed).
-  test('desktop (1280x800): full paragraph, no clamp, no clipping by the hero tile', async ({ page }) => {
+  test('desktop (1280x800): full paragraph, no clamp, no clipping by the hero tile', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
@@ -509,15 +548,15 @@ test.describe('grid intro paragraph is not truncated (HOME-12)', () => {
 });
 
 test.describe('cross-document morph — click-time source name assignment (sketch 006)', () => {
-  test('clicking the carousel title assigns hero-photo to the current slide\'s sharp photo', async ({ page }) => {
+  test("clicking the carousel title assigns hero-photo to the current slide's sharp photo", async ({
+    page,
+  }) => {
     await page.goto('/');
 
     await page.evaluate(() => {
-      document.querySelector('.home-hero__title')?.addEventListener(
-        'click',
-        (e) => e.preventDefault(),
-        { capture: true },
-      );
+      document
+        .querySelector('.home-hero__title')
+        ?.addEventListener('click', (e) => e.preventDefault(), { capture: true });
     });
 
     await page.locator('.home-hero__title').click();
@@ -527,18 +566,16 @@ test.describe('cross-document morph — click-time source name assignment (sketc
     expect(name).toBe('hero-photo');
   });
 
-  test('clicking a grid tile assigns hero-photo to that tile\'s sharp photo', async ({ page }) => {
+  test("clicking a grid tile assigns hero-photo to that tile's sharp photo", async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
 
     const firstTile = page.locator('a.home-grid__tile:not(.home-grid__tile--hero)').first();
 
     await page.evaluate(() => {
-      document.querySelector('a.home-grid__tile:not(.home-grid__tile--hero)')?.addEventListener(
-        'click',
-        (e) => e.preventDefault(),
-        { capture: true },
-      );
+      document
+        .querySelector('a.home-grid__tile:not(.home-grid__tile--hero)')
+        ?.addEventListener('click', (e) => e.preventDefault(), { capture: true });
     });
 
     await firstTile.click();

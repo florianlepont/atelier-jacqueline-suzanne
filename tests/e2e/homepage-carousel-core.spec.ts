@@ -14,7 +14,10 @@ test.describe('homepage carousel', () => {
     const carousel = page.locator('[data-role="home-carousel"]');
     await expect(carousel).toBeVisible();
     await expect(carousel.locator('[data-role="gallery-title"]')).toHaveText(/.+/);
-    await expect(carousel.locator('[data-role="hero-image"]')).toHaveAttribute('src', /cdn\.sanity\.io/);
+    await expect(carousel.locator('[data-role="hero-image"]')).toHaveAttribute(
+      'src',
+      /cdn\.sanity\.io/,
+    );
   });
 });
 
@@ -33,7 +36,10 @@ test.describe('only galleries with photos appear (D-12)', () => {
       // HOME-09 added a blurred placeholder <img> sibling beneath the sharp
       // tile image (both share the `img` tag) — scope to the sharp layer,
       // which is the one that must carry the real gallery photo.
-      await expect(tile.locator('.home-grid__tile-img--sharp')).toHaveAttribute('src', /cdn\.sanity\.io/);
+      await expect(tile.locator('.home-grid__tile-img--sharp')).toHaveAttribute(
+        'src',
+        /cdn\.sanity\.io/,
+      );
       await expect(tile.locator('.home-grid__tile-title')).toHaveText(/.+/);
     }
   });
@@ -74,7 +80,9 @@ test.describe('carousel/grid display mode toggle (D-08)', () => {
 });
 
 test.describe('auto-advance + pause (D-09)', () => {
-  test('carousel index keeps advancing every 6000ms while the pointer hovers it (HOME-11)', async ({ page }) => {
+  test('carousel index keeps advancing every 6000ms while the pointer hovers it (HOME-11)', async ({
+    page,
+  }) => {
     await page.clock.install();
     await page.goto('/');
 
@@ -96,7 +104,9 @@ test.describe('auto-advance + pause (D-09)', () => {
     await expect(indexLabel).not.toHaveText(labelAfterFirstAdvance);
   });
 
-  test('keyboard focus on the autoplay toggle still pauses auto-advance; blurring resumes it (D-02)', async ({ page }) => {
+  test('keyboard focus on the autoplay toggle still pauses auto-advance; blurring resumes it (D-02)', async ({
+    page,
+  }) => {
     await page.clock.install();
     await page.goto('/');
 
@@ -118,7 +128,9 @@ test.describe('auto-advance + pause (D-09)', () => {
     await expect(indexLabel).not.toHaveText(labelBeforeFocus);
   });
 
-  test('the explicit pause control persists after pointer movement and can resume playback', async ({ page }) => {
+  test('the explicit pause control persists after pointer movement and can resume playback', async ({
+    page,
+  }) => {
     await page.clock.install();
     await page.goto('/');
 
@@ -147,7 +159,10 @@ test.describe('auto-advance + pause (D-09)', () => {
 
     const indexLabel = page.locator('[data-role="index-label"]');
     const initialLabel = await indexLabel.innerText();
-    await expect(page.getByRole('button', { name: 'Relancer le carrousel' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: 'Relancer le carrousel' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
     await page.clock.fastForward(12000);
     await expect(indexLabel).toHaveText(initialLabel);
   });
@@ -164,7 +179,9 @@ test.describe('auto-advance + pause (D-09)', () => {
   // elapsed time can. A real timer plus a tight (default 'raf'-polled)
   // waitForFunction on the index label is used instead so the transform
   // read lands as close as possible to the actual swap frame.
-  test('auto-advance never shows an eased slide even while the pointer rests in an edge zone', async ({ page }) => {
+  test('auto-advance never shows an eased slide even while the pointer rests in an edge zone', async ({
+    page,
+  }) => {
     await page.goto('/');
 
     const heroPhoto = page.locator('.home-hero__photo');
@@ -188,9 +205,13 @@ test.describe('auto-advance + pause (D-09)', () => {
     const indexLabel = page.locator('[data-role="index-label"]');
     const initialLabel = await indexLabel.innerText();
 
-    await page.waitForFunction((label) => {
-      return document.querySelector('[data-role="index-label"]')?.textContent !== label;
-    }, initialLabel, { timeout: 8000 });
+    await page.waitForFunction(
+      (label) => {
+        return document.querySelector('[data-role="index-label"]')?.textContent !== label;
+      },
+      initialLabel,
+      { timeout: 8000 },
+    );
 
     const [transformAtSwap, newLabel] = await Promise.all([
       heroImg.evaluate((el) => getComputedStyle(el).transform),
@@ -206,7 +227,9 @@ test.describe('auto-advance + pause (D-09)', () => {
   // quick-260803-bvu (Item 1 guard): an edge-zone CLICK is a deliberately
   // DIFFERENT, unaffected code path (commitEdge) — it must still produce
   // its own full eased slide-then-swap, unchanged by the auto-advance fix.
-  test('an edge-zone click still commits the full eased slide (commitEdge unaffected)', async ({ page }) => {
+  test('an edge-zone click still commits the full eased slide (commitEdge unaffected)', async ({
+    page,
+  }) => {
     await page.goto('/');
 
     const heroPhoto = page.locator('.home-hero__photo');
@@ -225,7 +248,9 @@ test.describe('auto-advance + pause (D-09)', () => {
 });
 
 test.describe('i18n non-regression guard', () => {
-  test('homepage header still exposes the one-link switcher and differs between locales', async ({ page }) => {
+  test('homepage header still exposes the one-link switcher and differs between locales', async ({
+    page,
+  }) => {
     await page.goto('/');
 
     const header = page.locator('[data-role="site-header"]');
@@ -246,7 +271,9 @@ test.describe('i18n non-regression guard', () => {
 });
 
 test.describe('single unified mode toggle (HOME-01, D-01/D-02)', () => {
-  test('the desktop Galleries shortcut opens the homepage directly in grid mode', async ({ page }) => {
+  test('the desktop Galleries shortcut opens the homepage directly in grid mode', async ({
+    page,
+  }) => {
     await page.goto('/about/');
 
     const galleriesLink = page.locator('[data-role="site-header"] .nav-link--desktop-galleries');
@@ -268,13 +295,13 @@ test.describe('single unified mode toggle (HOME-01, D-01/D-02)', () => {
       .poll(() => header.evaluate((element) => getComputedStyle(element).backgroundColor))
       .toBe('rgb(255, 255, 255)');
     await expect
-      .poll(() =>
-        page.evaluate(() => getComputedStyle(document.documentElement).backgroundColor),
-      )
+      .poll(() => page.evaluate(() => getComputedStyle(document.documentElement).backgroundColor))
       .toBe('rgb(255, 255, 255)');
   });
 
-  test('exactly one toggle button exists and its accessible name flips with display mode', async ({ page }) => {
+  test('exactly one toggle button exists and its accessible name flips with display mode', async ({
+    page,
+  }) => {
     await page.goto('/');
 
     const toggle = page.locator('[data-role="mode-toggle"]');
@@ -311,7 +338,9 @@ test.describe('grid hero-as-first-tile (HOME-02, D-04/D-06)', () => {
 });
 
 test.describe('view-transition toggle — reduced-motion still swaps modes', () => {
-  test('toggling with prefers-reduced-motion: reduce still functionally swaps carousel/grid', async ({ page }) => {
+  test('toggling with prefers-reduced-motion: reduce still functionally swaps carousel/grid', async ({
+    page,
+  }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
 
@@ -329,14 +358,14 @@ test.describe('view-transition toggle — reduced-motion still swaps modes', () 
 
     const accentPanel = page.locator('[data-role="accent-panel"]');
     await expect(accentPanel).toHaveCSS('opacity', '1');
-    await expect
-      .poll(() => accentPanel.evaluate((panel) => panel.getAnimations().length))
-      .toBe(0);
+    await expect.poll(() => accentPanel.evaluate((panel) => panel.getAnimations().length)).toBe(0);
   });
 });
 
 test.describe('grid/carousel swap', () => {
-  test('uses a direct swap so no document-level transition snapshot can recolor the header', async ({ page }) => {
+  test('uses a direct swap so no document-level transition snapshot can recolor the header', async ({
+    page,
+  }) => {
     await page.goto('/');
 
     await page.evaluate(() => {
@@ -350,17 +379,25 @@ test.describe('grid/carousel swap', () => {
     await page.getByRole('button', { name: 'Grille' }).click();
 
     await expect(page.locator('[data-role="home-grid"]')).toBeVisible();
-    await expect(page.locator('[data-role="site-header"]')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    await expect(page.locator('[data-role="site-header"]')).toHaveCSS(
+      'background-color',
+      'rgb(255, 255, 255)',
+    );
     await expect
       .poll(() =>
-        page.evaluate(() => (window as unknown as { __viewTransitionStarted?: boolean }).__viewTransitionStarted),
+        page.evaluate(
+          () =>
+            (window as unknown as { __viewTransitionStarted?: boolean }).__viewTransitionStarted,
+        ),
       )
       .toBe(false);
   });
 });
 
 test.describe('square mode-toggle box (HOME-05)', () => {
-  test('carousel mode: .home-toggle__box is a square and .home-toggle clears the 44px tap-target floor', async ({ page }) => {
+  test('carousel mode: .home-toggle__box is a square and .home-toggle clears the 44px tap-target floor', async ({
+    page,
+  }) => {
     await page.goto('/');
 
     const box = page.locator('.home-toggle__box');
@@ -385,7 +422,9 @@ test.describe('square mode-toggle box (HOME-05)', () => {
     expect(Math.abs((boxBox!.width ?? 0) - (boxBox!.height ?? 0))).toBeLessThanOrEqual(1);
   });
 
-  test('the visible border lives on .home-toggle__box and the single-toggle contract is unchanged', async ({ page }) => {
+  test('the visible border lives on .home-toggle__box and the single-toggle contract is unchanged', async ({
+    page,
+  }) => {
     await page.goto('/');
 
     const box = page.locator('.home-toggle__box');
@@ -401,7 +440,9 @@ test.describe('mode-toggle icon color regression (HOME-10-REGRESSION)', () => {
   test('carousel mode: .home-toggle__box and morph-cell render white', async ({ page }) => {
     await page.goto('/');
 
-    const boxColor = await page.locator('.home-toggle__box').evaluate((el) => getComputedStyle(el).color);
+    const boxColor = await page
+      .locator('.home-toggle__box')
+      .evaluate((el) => getComputedStyle(el).color);
     expect(boxColor).toBe('rgb(255, 255, 255)');
 
     const cellColor = await page
@@ -411,7 +452,9 @@ test.describe('mode-toggle icon color regression (HOME-10-REGRESSION)', () => {
     expect(cellColor).toBe('rgb(255, 255, 255)');
   });
 
-  test('grid mode: .home-toggle__box and morph-cell render ink (no regression)', async ({ page }) => {
+  test('grid mode: .home-toggle__box and morph-cell render ink (no regression)', async ({
+    page,
+  }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Grille' }).click();
     await page.locator('[data-role="mode-toggle"]').blur();
@@ -426,7 +469,7 @@ test.describe('mode-toggle icon color regression (HOME-10-REGRESSION)', () => {
         page
           .locator('.home-toggle__morph-cell')
           .first()
-          .evaluate((el) => getComputedStyle(el).backgroundColor)
+          .evaluate((el) => getComputedStyle(el).backgroundColor),
       )
       .toBe('rgb(26, 26, 26)');
   });

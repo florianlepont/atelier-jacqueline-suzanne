@@ -80,7 +80,7 @@ export const edition = defineType({
       group: 'relatedCollection',
       to: [{type: 'gallery'}],
       description:
-        'Lien optionnel vers la collection Portfolio qui présente les mêmes photographies, lorsqu\'elle existe. Exemple : l\'édition « Rebut » (le livre imprimé) et la collection photo « Rebut » sont le même sujet — renseigner ce champ affiche un lien vers la collection sur la page de l\'édition. Laisser vide s\'il n\'existe pas de collection correspondante.',
+        "Lien optionnel vers la collection Portfolio qui présente les mêmes photographies, lorsqu'elle existe. Exemple : l'édition « Rebut » (le livre imprimé) et la collection photo « Rebut » sont le même sujet — renseigner ce champ affiche un lien vers la collection sur la page de l'édition. Laisser vide s'il n'existe pas de collection correspondante.",
     }),
     // D-05/D-11: photo shoot of the printed object itself (cover, spreads,
     // binding/print detail) -- not a reuse of the gallery's photographic
@@ -173,7 +173,8 @@ export const edition = defineType({
       type: 'number',
       group: 'format',
       description: "Nombre d'exemplaires imprimés.",
-      validation: (rule) => rule.required().integer().positive().error('Le tirage est obligatoire.'),
+      validation: (rule) =>
+        rule.required().integer().positive().error('Le tirage est obligatoire.'),
     }),
     defineField({
       name: 'dimensions',
