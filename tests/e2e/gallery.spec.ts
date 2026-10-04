@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { settleFrames } from './helpers/settle';
 
 // Phase 04.3: the standalone /galleries listing route was removed (the
 // homepage grid is now the sole browse entry point, D-03/D-11). Discovery in
@@ -660,10 +661,10 @@ test.describe('gallery detail scroll-up-to-return (Item 6, quick-260725-tqs)', (
 
       // Arm engagement with a real scroll past ENGAGE_DISTANCE (300).
       await page.evaluate(() => window.scrollTo(0, 500));
-      await page.waitForTimeout(150);
+      await settleFrames(page);
       // Return to the very top.
       await page.evaluate(() => window.scrollTo(0, 0));
-      await page.waitForTimeout(150);
+      await settleFrames(page);
 
       // A single sustained upward wheel push (deltaY -200 => +200 upward
       // intent, >= the 150 threshold in one push).
@@ -682,9 +683,9 @@ test.describe('gallery detail scroll-up-to-return (Item 6, quick-260725-tqs)', (
       await page.goto(`/en/galleries/${slug}/`);
 
       await page.evaluate(() => window.scrollTo(0, 500));
-      await page.waitForTimeout(150);
+      await settleFrames(page);
       await page.evaluate(() => window.scrollTo(0, 0));
-      await page.waitForTimeout(150);
+      await settleFrames(page);
 
       await page.evaluate(() =>
         window.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, bubbles: true })),
@@ -741,9 +742,9 @@ test.describe('gallery detail scroll-up-to-return (Item 6, quick-260725-tqs)', (
       await page.goto(href);
 
       await page.evaluate(() => window.scrollTo(0, 60));
-      await page.waitForTimeout(80);
+      await settleFrames(page);
       await page.evaluate(() => window.scrollTo(0, 0));
-      await page.waitForTimeout(80);
+      await settleFrames(page);
       await page.evaluate(() =>
         window.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, bubbles: true })),
       );
@@ -805,9 +806,9 @@ test.describe('gallery detail scroll-up-to-return (Item 6, quick-260725-tqs)', (
       await page.goto(href);
 
       await page.evaluate(() => window.scrollTo(0, 500));
-      await page.waitForTimeout(150);
+      await settleFrames(page);
       await page.evaluate(() => window.scrollTo(0, 0));
-      await page.waitForTimeout(150);
+      await settleFrames(page);
       await page.evaluate(() =>
         window.dispatchEvent(new WheelEvent('wheel', { deltaY: -60, bubbles: true })),
       );
@@ -1262,7 +1263,7 @@ test.describe('gallery detail hero statement renders in full, no clamp, no clipp
     // rather than forcing styles.
     if (measurement && measurement.revealHeight === 0) {
       await page.evaluate(() => window.scrollTo(0, 400));
-      await page.waitForTimeout(150);
+      await settleFrames(page);
       measurement = await page.evaluate(() => {
         const statementEl = document.querySelector('.detail-hero__statement');
         const revealEl = document.querySelector('.detail-hero__reveal');
