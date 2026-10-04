@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { firstGalleryHref } from './helpers/content';
+import { settleTransitions } from './helpers/settle';
 
 async function reachMobileHeader(page: import('@playwright/test').Page, path: '/' | '/en/') {
   await page.setViewportSize({ width: 393, height: 852 });
@@ -323,7 +324,7 @@ test.describe('automatic accent palette contrast (quick-260825-g2l)', () => {
       await rows.nth(index).hover();
       // Same 0.35s color/background-color transition settle budget
       // findRowWithDifferingAccent uses in tests/e2e/edition.spec.ts.
-      await page.waitForTimeout(400);
+      await settleTransitions(page);
 
       // The dimmed non-hovered sibling titles are now IN scope -- the dim
       // opacity was raised in quick-260826-q79 so every palette pairing
