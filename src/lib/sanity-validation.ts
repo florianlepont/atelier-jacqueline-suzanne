@@ -33,6 +33,10 @@ const RIGHTS_USAGES = new Set([
   'publicDomain',
 ])
 
+// Mirrored in sanity/schemas/siteSettings.ts (the two npm projects cannot
+// import each other); a unit test fails if the two values diverge.
+export const PUBLISHER_ADDRESS_MAX_LENGTH = 300
+
 function asRecord(value: unknown): UnknownRecord | null {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
     ? (value as UnknownRecord)
@@ -341,6 +345,32 @@ function sanitizeCollection<T>(
   }
 }
 
+/**
+ * Cleans the optional publisher address: CRLF normalised, every line trimmed,
+ * blank lines dropped. Anything that is not a plain, short string is rejected
+ * (no value, rejected: true). Absent or blank input is silently absent.
+ * The value is never copied into a diagnostic.
+ */
+function cleanPublisherAddress(value: unknown): {value?: string; rejected: boolean} {
+  if (value === null || value === undefined) return {rejected: false}
+  if (typeof value !== 'string') return {rejected: true}
+
+  const cleaned = value
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .join('\n')
+  if (cleaned.length === 0) return {rejected: false}
+  if (cleaned.length > PUBLISHER_ADDRESS_MAX_LENGTH) return {rejected: true}
+  if (cleaned.includes('<') || cleaned.includes('>')) return {rejected: true}
+  for (let index = 0; index < cleaned.length; index += 1) {
+    const code = cleaned.charCodeAt(index)
+    if ((code < 32 && code !== 10) || code === 127) return {rejected: true}
+  }
+  return {value: cleaned, rejected: false}
+}
+
 export function sanitizeSiteSettings(value: unknown): SanitizationResult<SiteSettings | null> {
   const record = asRecord(value)
   if (!record) return {value: null, issues: [issue('root.not_object', value)]}
@@ -376,9 +406,17 @@ export function sanitizeSiteSettings(value: unknown): SanitizationResult<SiteSet
   if (['about', 'contact', 'editions'].some((key) => localeNeedsCleaning(navRecord[key]))) {
     issues.push(issue('navLabels.invalid_removed', value))
   }
+  const address = cleanPublisherAddress(record.publisherAddress)
+  if (address.rejected) issues.push(issue('publisherAddress.invalid_removed', value))
 
   return {
-    value: {siteTitle, navLabels, footerText, ...(defaultSeo ? {defaultSeo} : {})},
+    value: {
+      siteTitle,
+      navLabels,
+      footerText,
+      ...(address.value ? {publisherAddress: address.value} : {}),
+      ...(defaultSeo ? {defaultSeo} : {}),
+    },
     issues,
   }
 }

@@ -5,41 +5,40 @@
 // its long-standing pre-2024 citation; do not cite the old, abolished
 // numbering here, 04-RESEARCH.md Pitfall 2).
 //
-// Hardcoded content (Pattern 3 — no Sanity fetch), same convention as
-// src/pages/about.astro: legal copy needs developer review before any
-// change, so it is not CMS-editable (04-RESEARCH.md "Don't Hand-Roll").
+// Content source: the legal copy stays in code (developer review before any
+// change; the copy lives in buildLegalNoticeModel(), src/lib/page-models.ts)
+// while ONE value, siteSettings.publisherAddress, is read from Sanity at
+// build time. Empty (the default) means the non-professional regime: the
+// Article 1-1, II anonymity wording is shown and no address is published.
+// Filled means the professional-publisher notice with the address typed in
+// Studio. The model returns exactly one of the two, never both.
 //
 // Identity disclosure (D-08, RESOLVED): LCEN Article 1-1, I requires a
 // professional editorial site to disclose the publisher's real legal name,
 // not just a trade/brand name — "Romane Lepont, exerçant sous le nom
 // commercial « Atelier Jacqueline Suzanne »".
 //
-// Address/phone (D-09, superseded 2026-08-26 by quick task 260826-r78): the
-// site's editorial activity is declared non-professional under LCEN Article
-// 1-1, II — which lets an individual substitute the identity already on file
-// with their host for their own personal address/phone, rather than
-// publishing the latter. Florian holds the actual OVH hosting account (see
-// README.md "Author" / CLAUDE.md), so his identity — not Romane's — is what
-// is genuinely on file with the host; the page discloses that fact directly
-// rather than implying an inaccurate "given privately to the host" claim
-// about Romane specifically. No phone number is published for either party.
+// Hosting (D-07): OVH is the actual, live production host (Phase 5/v1.7
+// shipped 2026-08-13). OVH SAS details verified directly against OVH's own
+// live mentions-légales page (ovhcloud.com/fr/terms-and-conditions/) during
+// the original Phase 4 task — that page does not itself publish a phone
+// number for OVH SAS, so none is asserted here (04-RESEARCH.md Assumption A2
+// delta, recorded in 04-01-SUMMARY.md). Florian holds the actual OVH hosting
+// account (see README.md "Author" / CLAUDE.md), so the host sentence names
+// him as account holder only. The repository is public, so his personal
+// address is deliberately NOT in the repo (quick task 261004-kbq purged the
+// earlier address). No phone number is published for either party.
 //
-// Hosting (D-07): OVH is now the actual, live production host — Phase 5/v1.7
-// shipped 2026-08-13, the site no longer lives on GitHub Pages in production
-// (GitHub Pages remains a separate pre-production staging environment per
-// D-03). Address/RCS/APE details verified directly against OVH's own live
-// mentions-légales page (ovhcloud.com/fr/terms-and-conditions/) during the
-// original Phase 4 task — that page does not itself publish a phone number
-// for OVH SAS, so none is asserted here (04-RESEARCH.md Assumption A2 delta,
-// recorded in 04-01-SUMMARY.md).
-//
-// Business status (D-10, superseded 2026-08-26): now framed explicitly as
-// non-professional (not just "non immatriculée"), matching the LCEN Art.
-// 1-1, II classification above. Re-evaluate this entire block once the v1.x
-// Shop/Checkout milestone ships real commerce — LCEN Section I (professional
-// editor) will then unambiguously apply and this page will need Romane's own
-// real address/phone, plus new CGV pages.
+// Open legal points: these texts have had no legal review; the Statut section
+// still says non-professional even when the address is filled and must be
+// revisited when the v1.x Shop/Checkout milestone ships (new CGV pages
+// included); whether the host's phone number must appear is unverified.
 import BaseLayout from '../layouts/BaseLayout.astro';
+import {getSiteSettings} from '../lib/sanity';
+import {buildLegalNoticeModel} from '../lib/page-models';
+
+const model = buildLegalNoticeModel({siteSettings: await getSiteSettings(), locale: 'fr'});
+const notice = model.publisherNotice;
 ---
 
 <BaseLayout title="Mentions légales — Atelier Jacqueline Suzanne">
@@ -50,15 +49,22 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     <p>Romane Lepont, exerçant sous le nom commercial « Atelier Jacqueline Suzanne », à titre non professionnel.</p>
     <p>Directeur de la publication : Romane Lepont.</p>
     <p>E-mail : contact@atelierjacquelinesuzanne.fr</p>
-    <p>
-      Le site étant édité à titre non professionnel, l'adresse et le numéro de téléphone
-      personnels de l'éditrice ne sont pas publiés, conformément à l'article 1-1, II de la loi
-      n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique.
-    </p>
-    <p>
-      Le site est hébergé via le compte d'hébergement OVH de Florian Lepont, domicilié au 7 rue
-      Saint-Martin, 94290 Villeneuve-le-Roi, France.
-    </p>
+    {
+      notice.kind === 'address' ? (
+        <p>
+          {notice.lead}{' '}
+          {notice.lines.map((line, index) => (
+            <>
+              {index > 0 && <br />}
+              {line}
+            </>
+          ))}
+        </p>
+      ) : (
+        <p>{notice.text}</p>
+      )
+    }
+    <p>{model.hostedByNote}</p>
 
     <h2>Hébergement</h2>
     <p>

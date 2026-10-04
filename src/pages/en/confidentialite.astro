@@ -1,8 +1,9 @@
 ---
 // English privacy policy page (LEGAL-03 / LEGAL-05): identical content and
 // layout to src/pages/confidentialite.astro (see that file's frontmatter
-// comment for the full D-01/D-02/D-03/D-04/D-05 rationale); only import
-// depth and copy differ. Slug is deliberately identical to the FR page
+// comment for the full D-01/D-02/D-03/D-04/D-05 rationale, including the
+// Sanity image CDN disclosure, the form-scoped "no third party" statements
+// and the absence of any legal review); only import depth and copy differ. Slug is deliberately identical to the FR page
 // (04-RESEARCH.md Pitfall 1) — getSwitcherHref() only strips/re-adds the
 // "/en/" prefix, it does not translate slugs.
 import BaseLayout from '../../layouts/BaseLayout.astro';
@@ -12,10 +13,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   <div class="legal-page">
     <h1>Privacy Policy</h1>
     <p>
-      This page describes, simply and directly, the only data handled by this site: contact-form
-      data, the site's own content, the host's technical logs, and a single functional cookie.
-      This is not a formal legal document — it is a plain-language explanation of what actually
-      happens.
+      This page describes, simply and directly, the data handled by this site: contact-form data,
+      the display of the site's images by a third-party provider (Sanity), the host's technical
+      logs, and a single functional cookie. This is not a formal legal document — it is a
+      plain-language explanation of what actually happens.
     </p>
 
     <h2>Contact form</h2>
@@ -34,7 +35,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       hidden field (a "honeypot") is used only to detect spam robots — it never collects any data
       about you.
     </p>
-    <p>Recipient: Romane Lepont only — no third-party processor is involved.</p>
+    <p>
+      Recipient: Romane Lepont only — no third-party processor is involved in handling this form.
+    </p>
     <p>Retention: your message is kept only as long as needed to reply to you, then deleted.</p>
     <p>
       Your rights: you have the right to access, rectify, erase, and object to the processing of
@@ -42,10 +45,21 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       authority).
     </p>
 
-    <h2>Site content (Sanity)</h2>
+    <h2>Site images (Sanity)</h2>
     <p>
-      The site's content (galleries, text) comes from a content management system (Sanity),
-      queried only when the site is built. No data about you is ever sent to Sanity.
+      The site's texts and photographs are managed in a content management system, Sanity, queried
+      only when the site is built, a step that involves no visitor data.
+    </p>
+    <p>
+      However, the photographs shown on the site are served by the content delivery network (CDN)
+      of Sanity, a third-party company. When your browser loads an image, it sends a request
+      directly to that provider, which therefore receives your IP address and the technical data
+      of the request. To learn how Sanity handles this data, see Sanity's own privacy policy.
+    </p>
+    <p>
+      Purpose: displaying the site's images. Legal basis: the legitimate interest in displaying
+      the site and its images (Article 6(1)(f) GDPR). This site sets no advertising cookie or
+      tracker in doing so.
     </p>
 
     <h2>Hosting logs</h2>

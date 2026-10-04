@@ -67,10 +67,20 @@ Les détails et les réglages sont dans la dernière section de
 ## Pages et réglages communs
 
 - **Page d’accueil** : introduction et référencement de l’accueil ;
-- **Réglages du site** : nom du site, libellés du menu, copyright et référencement par défaut ;
+- **Réglages du site** : nom du site, libellés du menu, copyright, référencement par défaut et
+  adresse de l’éditrice pour les mentions légales ;
 - **Page À propos** : biographie, pratique et informations de technique ;
 - **Page Contact** : textes et coordonnées publiques ;
 - **Page Éditions** : introduction de la rubrique et contenus associés.
+
+### Adresse de l’éditrice (mentions légales)
+
+Dans **Réglages du site**, onglet **Mentions légales**, le champ **Adresse de l’éditrice** reste
+vide tant que le site n’est pas professionnel : la page affiche alors la mention d’anonymat prévue
+par la loi. À remplir (adresse postale complète, sans « domiciliée au ») dès que Romane commence à
+vendre, puis cliquer sur **Publier**. Prévenir Florian : le téléphone, le statut et les conditions
+de vente restent à mettre à jour dans le code. Ces textes juridiques n’ont fait l’objet d’aucune
+relecture juridique.
 
 Les aperçus permettent de relire le brouillon en français ou en anglais. Ils ne publient rien.
 
