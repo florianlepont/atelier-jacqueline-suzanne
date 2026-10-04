@@ -10,8 +10,14 @@ import {describe, expect, it} from 'vitest';
 process.env.SANITY_PROJECT_ID ??= 'test-project';
 process.env.SANITY_DATASET ??= 'test-dataset';
 
-const {buildAboutPageModel, buildContactPageModel, buildEditionDetailModel, buildEditionsIndexModel, buildGalleryDetailModel} =
-  await import('../../src/lib/page-models');
+const {
+  buildAboutPageModel,
+  buildContactPageModel,
+  buildEditionDetailModel,
+  buildEditionsIndexModel,
+  buildGalleryDetailModel,
+  buildLegalNoticeModel,
+} = await import('../../src/lib/page-models');
 import {getHeroTextColor, resolveAutomaticAccent} from '../../src/lib/site-config';
 import type {AboutPage, ContactPage, Edition, EditionsPage, Gallery, SiteSettings} from '../../src/lib/sanity';
 
@@ -496,5 +502,109 @@ describe('buildEditionsIndexModel', () => {
     expect(model.tiles[0].title).toBe('Silos');
     expect(model.tiles[0].statement).toBe('Statement EN');
     expect(model.tiles[0].format).toBe('Printed edition · 40 pages · Edition of 100');
+  });
+});
+
+const ANONYMITY_TEXT = {
+  fr: "Le site étant édité à titre non professionnel, l'adresse et le numéro de téléphone personnels de l'éditrice ne sont pas publiés, conformément à l'article 1-1, II de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique.",
+  en: "As the site is published on a non-professional basis, the publisher's personal address and phone number are not published here, in accordance with Article 1-1, II of French law n° 2004-575 of 21 June 2004 for confidence in the digital economy (LCEN).",
+} as const;
+
+const HOSTED_BY_NOTE = {
+  fr: "Le site est hébergé via le compte d'hébergement OVH de Florian Lepont.",
+  en: 'The site is hosted via the OVH hosting account of Florian Lepont.',
+} as const;
+
+describe('buildLegalNoticeModel', () => {
+  const locales = ['fr', 'en'] as const;
+
+  it('returns the address notice with the localized lead when an address is present', () => {
+    const fr = buildLegalNoticeModel({
+      siteSettings: siteSettings({publisherAddress: 'TEST-ADDRESS-FIXTURE'}),
+      locale: 'fr',
+    });
+    const en = buildLegalNoticeModel({
+      siteSettings: siteSettings({publisherAddress: 'TEST-ADDRESS-FIXTURE'}),
+      locale: 'en',
+    });
+    expect(fr.publisherNotice).toEqual({
+      kind: 'address',
+      lead: 'Éditrice du site : Romane Lepont, domiciliée au',
+      lines: ['TEST-ADDRESS-FIXTURE'],
+    });
+    expect(en.publisherNotice).toEqual({
+      kind: 'address',
+      lead: 'Site publisher: Romane Lepont, residing at',
+      lines: ['TEST-ADDRESS-FIXTURE'],
+    });
+  });
+
+  it('splits multi-line addresses and returns markup-looking text verbatim as plain text', () => {
+    const multi = buildLegalNoticeModel({
+      siteSettings: siteSettings({
+        publisherAddress: 'TEST-ADDRESS-FIXTURE-LINE-1\nTEST-ADDRESS-FIXTURE-LINE-2',
+      }),
+      locale: 'fr',
+    });
+    expect(multi.publisherNotice).toMatchObject({
+      kind: 'address',
+      lines: ['TEST-ADDRESS-FIXTURE-LINE-1', 'TEST-ADDRESS-FIXTURE-LINE-2'],
+    });
+
+    const markup = buildLegalNoticeModel({
+      siteSettings: siteSettings({publisherAddress: '<b>TEST-ADDRESS-FIXTURE</b>'}),
+      locale: 'en',
+    });
+    expect(markup.publisherNotice).toMatchObject({lines: ['<b>TEST-ADDRESS-FIXTURE</b>']});
+  });
+
+  const emptyCases: Array<[string, SiteSettings | null]> = [
+    ['null settings', null],
+    ['settings without the field', siteSettings()],
+    ['empty string', siteSettings({publisherAddress: ''})],
+    ['whitespace only', siteSettings({publisherAddress: '   \t  '})],
+    ['blank lines only', siteSettings({publisherAddress: ' \n\n  \n'})],
+  ];
+
+  for (const locale of locales) {
+    for (const [label, settings] of emptyCases) {
+      it(`falls back to the exact anonymity wording (${locale}, ${label})`, () => {
+        const {publisherNotice} = buildLegalNoticeModel({siteSettings: settings, locale});
+        expect(publisherNotice).toEqual({kind: 'anonymity', text: ANONYMITY_TEXT[locale]});
+        expect((publisherNotice as {text: string}).text.toLowerCase()).toContain('article 1-1, ii');
+        expect(JSON.stringify(publisherNotice)).not.toContain('TEST-ADDRESS-FIXTURE');
+      });
+    }
+  }
+
+  it('always returns exactly one notice variant with no keys of the other', () => {
+    for (const locale of locales) {
+      const cases: Array<SiteSettings | null> = [
+        null,
+        siteSettings(),
+        siteSettings({publisherAddress: 'TEST-ADDRESS-FIXTURE'}),
+      ];
+      for (const settings of cases) {
+        const {publisherNotice} = buildLegalNoticeModel({siteSettings: settings, locale});
+        expect(['address', 'anonymity']).toContain(publisherNotice.kind);
+        if (publisherNotice.kind === 'address') {
+          expect(publisherNotice).not.toHaveProperty('text');
+        } else {
+          expect(publisherNotice).not.toHaveProperty('lines');
+          expect(publisherNotice).not.toHaveProperty('lead');
+        }
+      }
+    }
+  });
+
+  it('names Florian Lepont as the OVH account holder without any digit, address or not', () => {
+    for (const locale of locales) {
+      for (const settings of [null, siteSettings({publisherAddress: 'TEST-ADDRESS-FIXTURE'})]) {
+        const {hostedByNote} = buildLegalNoticeModel({siteSettings: settings, locale});
+        expect(hostedByNote).toBe(HOSTED_BY_NOTE[locale]);
+        expect(hostedByNote).toContain('Florian Lepont');
+        expect(hostedByNote).not.toMatch(/\d/);
+      }
+    }
   });
 });
