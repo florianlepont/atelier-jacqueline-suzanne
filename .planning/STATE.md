@@ -1,20 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.8
-milestone_name: Cross-linking & Contact CTA
-current_phase: 8
-status: Awaiting next milestone
-stopped_at: Phase 24 UI-SPEC approved
-last_updated: "2026-08-26T20:29:04.346Z"
-last_activity: 2026-08-26
-last_activity_desc: Milestone v1.8 completed and archived
+milestone: v2.0
+milestone_name: Boutique
+status: planning
+last_updated: "2026-10-04T15:31:14.419Z"
+last_activity: 2026-10-04
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 5
-  completed_plans: 5
-  percent: 100
-current_phase_name: Cross-Linking & Contact CTA
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -28,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-08-04)
 
 ## Current Position
 
-Phase: Milestone v1.8 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-10-04 - Completed quick task 261004-kbq: publisher address moved to an optional Sanity field, privacy policy corrected (no legal review)
+Status: Defining requirements
+Last activity: 2026-10-04 — Milestone v2.0 started
 
 ## Performance Metrics
 

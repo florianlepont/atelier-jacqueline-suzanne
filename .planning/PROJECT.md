@@ -8,7 +8,24 @@ A bilingual (French/English) website for Romane Lepont's photography and artisti
 
 Visitors can browse Romane's photographic work and buy a piece (print, original, book, or merch) through a real, working checkout — everything else supports that. **Delivered in two milestones**: v1 replaces the current site fast with portfolio/about/contact so the old Myportfolio site can be retired sooner; v1.x adds exhibitions, the shop, and checkout on top of that foundation.
 
-## Current Milestone: None — awaiting `/gsd-new-milestone`
+## Current Milestone: v2.0 Boutique
+
+**Goal:** Let a visitor buy a piece from Romane's site through a real checkout (Stripe), with stock, delivery and VAT handled and the sales legal pages in place. Real sales open only once Romane has her business registration (SIRET); everything before that is built and tested without taking real payments.
+
+**Target features:**
+- **Shop (SHOP-*)** — a catalogue with price and availability, built on the Éditions content model, shippable before any payment exists (read-only first).
+- **Checkout (CHK-*)** — Stripe Checkout, first in test mode, running on a small server-side surface that the static OVH hosting cannot provide (hosting choice to be researched); stock re-validated server-side, with the one-of-a-kind original as the edge case.
+- **Delivery and VAT (SHIP-*)** — zones, rates and VAT handling, to be validated with an accountant (no legal advice from this project).
+- **Sales legal pages (LEGAL-02, LEGAL-04)** — CGV, withdrawal right, and the professional publisher identity (the optional `publisherAddress` field already exists in the Sanity site settings, empty until selling starts).
+
+**Key context:**
+- Products are not yet decided (prints, unique originals, paper éditions, merchandise): the model must not assume one.
+- Romane has no SIRET yet: real payouts are blocked until she does; her status and VAT regime are hers to settle with an accountant or the business registration desk.
+- Budget stays near zero (about 0–5 EUR/month) apart from Stripe's per-transaction fees.
+- Web images are capped at 2400 px and originals live outside Sanity; print files must come from private storage at fulfilment time.
+- Both languages (FR/EN) and both viewport classes (phone and desktop/tablet) must be verified, as in earlier milestones.
+- No application code is written in the scoping step: planning documents only.
+
 
 v1.0 through v1.8 are all shipped and archived. The site is live in production at atelierjacquelinesuzanne.fr with the full portfolio, About, Contact, Éditions showcase, bidirectional gallery↔édition cross-linking, and a universal end-of-sequence contact CTA. The only remaining scope is the v1.x Shop/Checkout wave (Exhibitions, Shop, Checkout, Shipping, commerce Legal) — tracked but not yet roadmapped, see Requirements → Active below.
 
@@ -300,4 +317,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-26 after the v1.8 (Cross-linking & Contact CTA) milestone was formally archived via `/gsd-complete-milestone`. 3/3 requirements delivered (EDN-12, CONT-04, UI-03) — the reverse gallery↔édition cross-link and the universal contact CTA are both live, verified clean at phone and desktop/tablet widths. This closes backlog seeds SEED-001/SEED-002, both now marked `status: implemented` in `.planning/seeds/`. All roadmapped work (v1.0 through v1.8) is now shipped and archived — see `.planning/milestones/v1.8-ROADMAP.md` and `.planning/MILESTONES.md`. Next: `/gsd-new-milestone` to scope the v1.x wave (Exhibitions, Shop, Checkout, Shipping, commerce Legal).*
+*Last updated: 2026-10-04 after starting milestone v2.0 Boutique (scoping: shop, checkout, delivery and VAT, sales legal pages).*
