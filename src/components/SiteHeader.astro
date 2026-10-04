@@ -96,7 +96,7 @@ const menuLabel = 'Menu';
     <img src={logoBlackSrc} alt="" class="logo-mark__img logo-mark__img--default" />
     <img src={logoWhiteSrc} alt="" class="logo-mark__img logo-mark__img--hover" />
   </a>
-  <nav class="site-nav" aria-label="Primary">
+  <nav class="site-nav" aria-label={isEnLocale ? 'Primary' : 'Navigation principale'}>
     <a href={desktopGalleriesHref} class="nav-link nav-link--desktop-galleries">{desktopGalleriesLabel}</a>
     {/* EDN-01/D-01: Éditions renders FIRST, highest visual nav priority —
         before the existing About/Contact links. Reuses .nav-link verbatim,

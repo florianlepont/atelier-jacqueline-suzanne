@@ -312,6 +312,7 @@ Both prior research-carryover items were resolved during Phase 1 execution:
 | 261004-p3s | GitHub Actions pinned by commit SHA (5 actions), `dependabot.yml` added (Actions + both npm projects, `sanity` pin ignored), tests enforce both | 2026-10-04 | pending | Verified (unit level) | [261004-p3s-actions-sha-dependabot](./quick/261004-p3s-actions-sha-dependabot/) |
 | 261004-q4w | Legal notice: intellectual-property section FR/EN (author rights, no AI training, TDM opt-out); footer rights-line fallback when `footerText` is empty; no legal review | 2026-10-04 | pending | Verified (unit level) | [261004-q4w-mentions-legales-pi-pied-de-page](./quick/261004-q4w-mentions-legales-pi-pied-de-page/) |
 | 261004-r5d | Docs refresh: CLAUDE.md/AGENTS.md versions and hardening notes, README (Sanity onboarding, all scripts, Security, Contributing), new CONTRIBUTING.md and PR template | 2026-10-04 | pending | Verified (unit level) | [261004-r5d-docs-readme-contributing](./quick/261004-r5d-docs-readme-contributing/) |
+| 261004-s6a | Accessibility: skip link, main focus target, localized landmark labels, language switcher keeps query/fragment, 404 lazy images; 3 new test files | 2026-10-04 | pending | Verified (unit + chromium e2e) | [261004-s6a-accessibilite-lien-evitement-libelles](./quick/261004-s6a-accessibilite-lien-evitement-libelles/) |
 
 ## Deferred Items
 
