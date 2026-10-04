@@ -918,6 +918,13 @@ describe('docs contract', () => {
     },
   );
 
+  it.each(['côté serveur', 'jamais téléchargé', 'Sanity sert du sRGB', 'laissée intacte', '±1 px'])(
+    'the runbook states the CDN-side reduction contract: %s',
+    (fragment) => {
+      expect(runbook).toContain(fragment);
+    },
+  );
+
   it('the runbook orders backup, dry-run, apply, then deletion', () => {
     const backup = runbook.indexOf('sanity dataset export');
     const apply = runbook.indexOf('--apply --i-have-a-backup');
