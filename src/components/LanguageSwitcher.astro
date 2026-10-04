@@ -15,7 +15,7 @@ const targetLabel = targetLocale === 'en' ? 'EN' : 'FR';
 const switchHint = currentLocale === 'fr' ? 'Passer en anglais' : 'Switch to French';
 ---
 
-<nav class="language-switcher" aria-label="Language switcher">
+<nav class="language-switcher" aria-label={currentLocale === 'fr' ? 'Sélecteur de langue' : 'Language switcher'}>
   <a href={targetHref} class="switcher-link" data-locale={targetLocale}>
     <svg
       aria-hidden="true"
@@ -67,6 +67,8 @@ const switchHint = currentLocale === 'fr' ? 'Passer en anglais' : 'Switch to Fre
 </style>
 
 <script>
+  import { carryOverLocation } from '../lib/switcher-url';
+
   const COOKIE_NAME = 'ajs_locale';
 
   // WR-02: `import.meta.env.BASE_URL` is one of the env vars Astro/Vite
@@ -83,6 +85,13 @@ const switchHint = currentLocale === 'fr' ? 'Passer en anglais' : 'Switch to Fre
   document
     .querySelectorAll<HTMLAnchorElement>('.language-switcher .switcher-link')
     .forEach((link) => {
+      // The link is built at build time, so it cannot know the visitor's
+      // query string or fragment (e.g. the homepage `?view=grid`). Carry them
+      // over in the browser so switching language keeps the same view.
+      link.setAttribute(
+        'href',
+        carryOverLocation(link.getAttribute('href') ?? '', window.location.search, window.location.hash),
+      );
       link.addEventListener('click', () => {
         const locale = link.dataset.locale;
         if (locale) {
