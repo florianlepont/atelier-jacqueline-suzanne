@@ -63,6 +63,20 @@ if (!htaccess.includes('Options -Indexes')) {
   failures.push('dist/.htaccess does not disable directory listing (Options -Indexes)')
 }
 
+for (const header of [
+  'X-Content-Type-Options "nosniff"',
+  'Referrer-Policy "strict-origin-when-cross-origin"',
+  'Content-Security-Policy "default-src \'self\'',
+  'Strict-Transport-Security "max-age=',
+]) {
+  if (!htaccess.includes(header)) {
+    failures.push(`dist/.htaccess does not set the security header ${header.split(' ')[0]}`)
+  }
+}
+if (!htaccess.includes('<IfModule mod_headers.c>')) {
+  failures.push('dist/.htaccess security headers are not wrapped in <IfModule mod_headers.c>')
+}
+
 // 05-01-PLAN.md Task 3B: prove the OVH contact endpoint really ships through
 // Astro's public/ passthrough and is the validated build, not a stub —
 // nobody should be able to delete/replace it during a refactor unnoticed.
