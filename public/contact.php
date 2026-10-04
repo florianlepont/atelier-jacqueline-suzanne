@@ -36,6 +36,64 @@ function post_string(string $key): ?string {
     return trim($value);
 }
 
+// Sliding-window rate limit (ASVS V11). The honeypot alone does not stop a
+// bot that leaves the decoy empty, and every accepted submission sends a real
+// e-mail to Romane's mailbox. Two buckets are kept in small files in the PHP
+// temp directory: one per visitor address and one for the whole site, so a
+// flood from many addresses cannot fill the inbox either. The visitor address
+// is stored only as a SHA-256 hash, and only as the timestamps of the last
+// hour; the files hold nothing else and age out on their own. Any storage
+// problem lets the message through (fail open): a broken temp directory must
+// never stop a real visitor from writing to Romane.
+// The directory can be overridden with AJS_CONTACT_RATE_DIR (tests only).
+const RATE_WINDOW_SECONDS = 3600;
+const RATE_LIMIT_PER_VISITOR = 5;
+const RATE_LIMIT_SITE_WIDE = 40;
+
+// Records one attempt in the bucket and reports whether it is within $limit.
+function rate_limit_allows(string $dir, string $bucket, int $limit): bool {
+    $handle = @fopen($dir . '/' . $bucket . '.log', 'c+');
+    if ($handle === false) {
+        return true;
+    }
+    if (!flock($handle, LOCK_EX)) {
+        fclose($handle);
+        return true;
+    }
+    $now = time();
+    $recent = [];
+    $contents = stream_get_contents($handle);
+    if (is_string($contents) && $contents !== '') {
+        foreach (explode("\n", trim($contents)) as $line) {
+            $stamp = (int) $line;
+            if ($stamp > $now - RATE_WINDOW_SECONDS) {
+                $recent[] = $stamp;
+            }
+        }
+    }
+    $allowed = count($recent) < $limit;
+    if ($allowed) {
+        $recent[] = $now;
+    }
+    ftruncate($handle, 0);
+    rewind($handle);
+    fwrite($handle, implode("\n", $recent));
+    flock($handle, LOCK_UN);
+    fclose($handle);
+    return $allowed;
+}
+
+function rate_limit_exceeded(): bool {
+    $override = getenv('AJS_CONTACT_RATE_DIR');
+    $dir = ($override !== false && $override !== '') ? $override : sys_get_temp_dir() . '/ajs-contact-rate';
+    if (!is_dir($dir) && !@mkdir($dir, 0700, true) && !is_dir($dir)) {
+        return false;
+    }
+    $visitor = hash('sha256', (string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+    return !rate_limit_allows($dir, 'v-' . $visitor, RATE_LIMIT_PER_VISITOR)
+        || !rate_limit_allows($dir, 'site', RATE_LIMIT_SITE_WIDE);
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     fail(405, 'Method not allowed');
 }
@@ -91,6 +149,13 @@ foreach ([$name, $email] as $field) {
 // Standard-library email format validation rather than a hand-rolled regex.
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     fail(400, 'Invalid email address');
+}
+
+// Last gate before sending: only messages that passed every check above count
+// against the limits, so a visitor fixing a typo is never penalised.
+if (rate_limit_exceeded()) {
+    header('Retry-After: ' . RATE_WINDOW_SECONDS);
+    fail(429, 'Too many messages');
 }
 
 // Recipient confirmed by the maintainer against the OVH/Zimbra mailbox list

@@ -108,6 +108,7 @@ describe.skipIf(!phpAvailable)('public/contact.php (executed under php-cli)', ()
       harnessPath,
       `<?php
 $_SERVER['REQUEST_METHOD'] = 'POST';
+$_SERVER['REMOTE_ADDR'] = getenv('AJS_REMOTE_ADDR');
 $_POST = json_decode(getenv('AJS_POST_JSON'), true);
 register_shutdown_function(function () {
     $code = http_response_code();
@@ -126,8 +127,12 @@ require getenv('AJS_CONTACT_PHP');
     }
   });
 
-  async function run(post: Record<string, unknown>): Promise<RunResult> {
+  async function run(
+    post: Record<string, unknown>,
+    options: { rateDir?: string; remoteAddr?: string } = {},
+  ): Promise<RunResult> {
     runCounter += 1;
+    const rateDir = options.rateDir ?? join(tempDir, `rate-${runCounter}`);
     const capturePath = join(tempDir, `mail-${runCounter}.txt`);
     const result = spawnSync(
       phpBin,
@@ -138,6 +143,8 @@ require getenv('AJS_CONTACT_PHP');
           AJS_POST_JSON: JSON.stringify(post),
           AJS_CONTACT_PHP: contactPhpPath,
           AJS_CAPTURE: capturePath,
+          AJS_CONTACT_RATE_DIR: rateDir,
+          AJS_REMOTE_ADDR: options.remoteAddr ?? '203.0.113.1',
         },
         encoding: 'utf8',
       },
@@ -221,5 +228,50 @@ require getenv('AJS_CONTACT_PHP');
     expect(r.exitStatus).toBe(0);
     expect(r.json?.success).toBe(true);
     expect(r.mail).toBeNull();
+  });
+
+  it('limits one visitor to 5 messages an hour with a 429 and sends nothing more', async () => {
+    const rateDir = join(tempDir, 'rate-shared-visitor');
+    for (let i = 0; i < 5; i += 1) {
+      const ok = await run(valid, { rateDir });
+      expect(ok.httpStatus).toBe(200);
+      expect(ok.mail).not.toBeNull();
+    }
+    const blocked = await run(valid, { rateDir });
+    expect(blocked.httpStatus).toBe(429);
+    expect(blocked.json?.success).toBe(false);
+    expect(blocked.mail).toBeNull();
+
+    const otherVisitor = await run(valid, { rateDir, remoteAddr: '203.0.113.2' });
+    expect(otherVisitor.httpStatus).toBe(200);
+  });
+
+  it('does not count invalid submissions against the limit', async () => {
+    const rateDir = join(tempDir, 'rate-invalid');
+    for (let i = 0; i < 8; i += 1) {
+      const bad = await run({ ...valid, email: 'not-an-email' }, { rateDir });
+      expect(bad.httpStatus).toBe(400);
+    }
+    const ok = await run(valid, { rateDir });
+    expect(ok.httpStatus).toBe(200);
+  });
+
+  it('stores the visitor address only as a hash', async () => {
+    const rateDir = join(tempDir, 'rate-hash');
+    await run(valid, { rateDir, remoteAddr: '198.51.100.77' });
+    const { readdir } = await import('node:fs/promises');
+    const names = await readdir(rateDir);
+    expect(names.length).toBeGreaterThan(0);
+    for (const name of names) {
+      expect(name).not.toContain('198.51.100.77');
+    }
+  });
+
+  it('lets the message through when the rate directory cannot be used', async () => {
+    const blockerFile = join(tempDir, 'not-a-directory');
+    await writeFile(blockerFile, 'x');
+    const r = await run(valid, { rateDir: join(blockerFile, 'nested') });
+    expect(r.httpStatus).toBe(200);
+    expect(r.mail).not.toBeNull();
   });
 });
