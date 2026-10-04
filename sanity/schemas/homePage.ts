@@ -20,8 +20,7 @@ export const homePage = defineType({
       name: 'intro',
       title: "Introduction de la page d'accueil",
       group: 'content',
-      description:
-        "Court texte affiché aux visiteurs dans le panneau coloré de la page d'accueil.",
+      description: "Court texte affiché aux visiteurs dans le panneau coloré de la page d'accueil.",
       rows: 5,
       frError: "L'introduction française est obligatoire.",
       enError: "L'introduction anglaise est obligatoire.",

@@ -17,7 +17,7 @@ test.describe('about page content', () => {
     await expect(page.locator('main h1')).toContainText('À propos');
 
     await expect(page.getByText('Atelier & pratique')).toBeVisible();
-    await expect(page.getByRole('heading', {name: 'Médium & technique'})).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Médium & technique' })).toBeVisible();
     const editorialParagraphs = page.locator('.about-page__lead, .about-page__section > div > p');
     await expect(editorialParagraphs).toHaveCount(3);
     for (const paragraph of await editorialParagraphs.all()) {
@@ -34,7 +34,7 @@ test.describe('about page content', () => {
     await expect(page.locator('main h1')).toContainText('About');
 
     await expect(page.getByText('Studio & practice')).toBeVisible();
-    await expect(page.getByRole('heading', {name: 'Medium & technique'})).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Medium & technique' })).toBeVisible();
     const editorialParagraphs = page.locator('.about-page__lead, .about-page__section > div > p');
     await expect(editorialParagraphs).toHaveCount(3);
     for (const paragraph of await editorialParagraphs.all()) {
@@ -177,9 +177,9 @@ test.describe('about page content', () => {
     expect(portraitDesktopBox?.width).toBeLessThanOrEqual(112);
     expect(portraitDesktopBox?.width).toBe(portraitDesktopBox?.height);
     expect(exhibitionDesktopBox?.width).toBe(desktopContentBox?.width);
-    expect((exhibitionDesktopBox?.width ?? 0) / (exhibitionDesktopBox?.height ?? 1)).toBeGreaterThan(
-      1.7,
-    );
+    expect(
+      (exhibitionDesktopBox?.width ?? 0) / (exhibitionDesktopBox?.height ?? 1),
+    ).toBeGreaterThan(1.7);
 
     await page.setViewportSize({ width: 375, height: 812 });
     const [portraitMobileBox, exhibitionMobileBox, contentBox] = await Promise.all([

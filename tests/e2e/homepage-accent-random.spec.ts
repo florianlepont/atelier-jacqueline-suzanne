@@ -36,7 +36,9 @@ async function readDataEntries(page: import('@playwright/test').Page): Promise<D
 
 async function currentAccent(page: import('@playwright/test').Page): Promise<string> {
   return page.evaluate(() =>
-    getComputedStyle(document.querySelector('.home') as HTMLElement).getPropertyValue('--current-accent').trim(),
+    getComputedStyle(document.querySelector('.home') as HTMLElement)
+      .getPropertyValue('--current-accent')
+      .trim(),
   );
 }
 
@@ -53,7 +55,10 @@ async function currentAccent(page: import('@playwright/test').Page): Promise<str
 // correct. Reloads first so a stubbed Math.random from an earlier
 // addInitScript doesn't leave the page mid-transition from a different
 // forced starting gallery.
-async function resolveExpectedAccent(page: import('@playwright/test').Page, index: number): Promise<string> {
+async function resolveExpectedAccent(
+  page: import('@playwright/test').Page,
+  index: number,
+): Promise<string> {
   await page.reload();
   const dashes = page.locator('.home-hero__progress-dash');
   const count = await dashes.count();
@@ -84,7 +89,9 @@ test.describe('homepage random starting accent (HOME-16, D-05)', () => {
     await page.setViewportSize({ width: 1280, height: 800 });
   });
 
-  test('a forced lowest random value starts the accent on the first gallery\'s heroColor', async ({ page }) => {
+  test("a forced lowest random value starts the accent on the first gallery's heroColor", async ({
+    page,
+  }) => {
     await page.addInitScript(() => {
       Math.random = () => 0;
     });
@@ -97,7 +104,9 @@ test.describe('homepage random starting accent (HOME-16, D-05)', () => {
     expect(initialAccent).toBe(expectedAccent);
   });
 
-  test('a forced highest random value starts the accent on the LAST gallery\'s heroColor', async ({ page }) => {
+  test("a forced highest random value starts the accent on the LAST gallery's heroColor", async ({
+    page,
+  }) => {
     await page.addInitScript(() => {
       Math.random = () => 0.999;
     });
@@ -122,7 +131,9 @@ test.describe('homepage random starting accent (HOME-16, D-05)', () => {
     expect(initialAccent).toBe(lastAccent);
   });
 
-  test('the randomly-picked accent never leaves the existing five-value palette', async ({ page }) => {
+  test('the randomly-picked accent never leaves the existing five-value palette', async ({
+    page,
+  }) => {
     await page.goto('/');
     const entries = await readDataEntries(page);
 
@@ -155,7 +166,9 @@ test.describe('homepage random starting accent (HOME-16, D-05)', () => {
       // released" below) — waiting for that proves the random pick has
       // landed before reading it, instead of racing the dynamically
       // imported carousel module's init.
-      await expect.poll(() => page.locator('.home').getAttribute('class')).not.toContain('is-accent-init');
+      await expect
+        .poll(() => page.locator('.home').getAttribute('class'))
+        .not.toContain('is-accent-init');
       const accent = await currentAccent(page);
       expect(palette.has(accent)).toBe(true);
     }
@@ -169,7 +182,10 @@ test.describe('homepage random starting accent (HOME-16, D-05)', () => {
 
     const entries = await readDataEntries(page);
     const carousel = page.locator('[data-role="home-carousel"]');
-    await expect(carousel.locator('[data-role="hero-image"]')).toHaveAttribute('src', entries[0].heroSrc);
+    await expect(carousel.locator('[data-role="hero-image"]')).toHaveAttribute(
+      'src',
+      entries[0].heroSrc,
+    );
     await expect(carousel.locator('[data-role="index-label"]')).toHaveText(/^01 \//);
 
     const dashes = carousel.locator('.home-hero__progress-dash');
@@ -177,7 +193,9 @@ test.describe('homepage random starting accent (HOME-16, D-05)', () => {
     await expect(dashes.last()).toHaveAttribute('aria-current', 'false');
   });
 
-  test('the per-gallery accent still follows carousel position after the first advance', async ({ page }) => {
+  test('the per-gallery accent still follows carousel position after the first advance', async ({
+    page,
+  }) => {
     // Phase 21 (HOME-14): the describe block's own beforeEach forces phone
     // width (393x852), but the carousel/progress-dash this test clicks is
     // now retired below 767px (homepage-scroll-deck.spec.ts covers the
@@ -208,7 +226,9 @@ test.describe('homepage random starting accent (HOME-16, D-05)', () => {
   test('the initial-paint transition suppression is released', async ({ page }) => {
     await page.goto('/');
 
-    await expect.poll(() => page.locator('.home').getAttribute('class')).not.toContain('is-accent-init');
+    await expect
+      .poll(() => page.locator('.home').getAttribute('class'))
+      .not.toContain('is-accent-init');
 
     const transitionDuration = await page
       .locator('[data-role="accent-panel"]')
@@ -216,10 +236,15 @@ test.describe('homepage random starting accent (HOME-16, D-05)', () => {
     expect(transitionDuration).not.toBe('0s');
   });
 
-  test('a matched ?carousel= return keeps the returned-to gallery\'s own accent', async ({ page }) => {
+  test("a matched ?carousel= return keeps the returned-to gallery's own accent", async ({
+    page,
+  }) => {
     await page.goto('/');
     const entries = await readDataEntries(page);
-    test.skip(entries.length < 2, 'needs at least 2 homepage galleries for a non-first target to be meaningful');
+    test.skip(
+      entries.length < 2,
+      'needs at least 2 homepage galleries for a non-first target to be meaningful',
+    );
 
     // Target a NON-ZERO index: gallery 0's accent is also what the
     // pre-mount server-rendered markup shows, so a target of 0 could pass
@@ -240,7 +265,10 @@ test.describe('homepage random starting accent (HOME-16, D-05)', () => {
         break;
       }
     }
-    test.skip(r < 0, 'every gallery resolves to the same accent — no differing fixture index available');
+    test.skip(
+      r < 0,
+      'every gallery resolves to the same accent — no differing fixture index available',
+    );
     const rAccent = await resolveExpectedAccent(page, r);
     expect(rAccent).not.toBe(targetAccent);
 
@@ -277,6 +305,8 @@ test.describe('homepage random starting accent (HOME-16, D-05)', () => {
     // The requested gallery must still be the one displayed — fails loudly
     // if a future change makes the fix accidentally alter carouselIndex.
     const carousel = page.locator('[data-role="home-carousel"]');
-    await expect(carousel.locator('[data-role="gallery-title"]')).toHaveText(entries[t].title.toUpperCase());
+    await expect(carousel.locator('[data-role="gallery-title"]')).toHaveText(
+      entries[t].title.toUpperCase(),
+    );
   });
 });

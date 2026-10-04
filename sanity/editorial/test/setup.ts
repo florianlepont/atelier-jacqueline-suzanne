@@ -3,14 +3,8 @@ import {createElement} from 'react'
 import {afterEach, vi} from 'vitest'
 
 vi.mock('@sanity/ui', async () => {
-  const {
-    Primitive,
-    TestButton,
-    TestCheckbox,
-    TestSelect,
-    TestTextInput,
-    sanityTestState,
-  } = await import('./mocks')
+  const {Primitive, TestButton, TestCheckbox, TestSelect, TestTextInput, sanityTestState} =
+    await import('./mocks')
   return {
     Badge: Primitive,
     Box: Primitive,
@@ -50,8 +44,7 @@ vi.mock('sanity', async (importOriginal) => {
 vi.mock('sanity/router', async () => {
   const {Primitive} = await import('./mocks')
   return {
-    IntentLink: (props: Record<string, unknown>) =>
-      createElement(Primitive, {...props, as: 'a'}),
+    IntentLink: (props: Record<string, unknown>) => createElement(Primitive, {...props, as: 'a'}),
   }
 })
 

@@ -100,7 +100,7 @@ export const gallery = defineType({
       group: 'relatedCollection',
       to: [{type: 'edition'}],
       description:
-        'Lien optionnel vers l\'édition qui présente la même collection de photos sous forme imprimée, lorsqu\'elle existe. Exemple : la collection photo « Rebut » et l\'édition « Rebut » (le livre imprimé) sont le même sujet — renseigner ce champ affiche un lien vers l\'édition sur la page de la collection. Laisser vide s\'il n\'existe pas d\'édition correspondante.',
+        "Lien optionnel vers l'édition qui présente la même collection de photos sous forme imprimée, lorsqu'elle existe. Exemple : la collection photo « Rebut » et l'édition « Rebut » (le livre imprimé) sont le même sujet — renseigner ce champ affiche un lien vers l'édition sur la page de la collection. Laisser vide s'il n'existe pas d'édition correspondante.",
     }),
     defineField({
       name: 'showOnHomePage',

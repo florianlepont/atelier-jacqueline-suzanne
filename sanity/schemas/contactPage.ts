@@ -45,7 +45,7 @@ export const contactPage = defineType({
     {
       ...localizedText('intro', 'Texte d’introduction', true),
       group: 'content',
-      description: "Le texte affiché en haut de la page Contact.",
+      description: 'Le texte affiché en haut de la page Contact.',
     },
     defineField({
       name: 'publicEmail',

@@ -93,7 +93,9 @@ test.describe('site-wide horizontal overflow guard (UI-01 D-05)', () => {
     }
   });
 
-  test('/editions/ (overview) has no horizontal overflow at 320/375/768/1280/1920', async ({ page }) => {
+  test('/editions/ (overview) has no horizontal overflow at 320/375/768/1280/1920', async ({
+    page,
+  }) => {
     for (const width of WIDTHS) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto('/editions/');
@@ -113,7 +115,9 @@ test.describe('site-wide horizontal overflow guard (UI-01 D-05)', () => {
     }
   });
 
-  test('first édition detail page has no horizontal overflow at 320/375/768/1280/1920', async ({ page }) => {
+  test('first édition detail page has no horizontal overflow at 320/375/768/1280/1920', async ({
+    page,
+  }) => {
     const href = await firstEditionHref(page);
     for (const width of WIDTHS) {
       await page.setViewportSize({ width, height: 900 });
@@ -179,7 +183,9 @@ test.describe('site-wide horizontal overflow guard (UI-01 D-05)', () => {
   // to html/body": whatever full-bleed technique Task 2 lands, html and
   // body must keep computing overflow-x: visible on every page that uses
   // PageTitleHeader.
-  test('html and body never carry overflow-x on /contact/, /about/ or /editions/', async ({ page }) => {
+  test('html and body never carry overflow-x on /contact/, /about/ or /editions/', async ({
+    page,
+  }) => {
     for (const path of ['/contact/', '/about/', '/editions/']) {
       await page.goto(path);
       const overflowX = await page.evaluate(() => ({
@@ -310,7 +316,9 @@ test.describe('page title header full-bleed geometry (UI-01 bleed)', () => {
           };
         });
 
-        expect(geometry.left, `${path} halftone left at ${viewport.width}px`).toBeLessThanOrEqual(0.5);
+        expect(geometry.left, `${path} halftone left at ${viewport.width}px`).toBeLessThanOrEqual(
+          0.5,
+        );
         expect(
           geometry.right,
           `${path} halftone right at ${viewport.width}px`,
@@ -325,7 +333,9 @@ test.describe('page title header full-bleed geometry (UI-01 bleed)', () => {
   // Mobile behavior is deliberately unchanged by this plan (scope
   // clarification, planning_measurements): the halftone is display:none
   // below 760px, and there is no texture to bleed at that width.
-  test('at 375x812 the halftone stays display:none on /contact/, /about/ and /editions/', async ({ page }) => {
+  test('at 375x812 the halftone stays display:none on /contact/, /about/ and /editions/', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     for (const path of ['/contact/', '/about/', '/editions/']) {
       await page.goto(path);

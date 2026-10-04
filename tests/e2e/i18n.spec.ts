@@ -52,7 +52,9 @@ test.describe('locale content', () => {
     await expect(switcherLink.locator('svg')).toHaveCount(1);
   });
 
-  test('site-title/nav/footer copy differs between the French and English pages', async ({ page }) => {
+  test('site-title/nav/footer copy differs between the French and English pages', async ({
+    page,
+  }) => {
     await page.goto('/');
     const frHeader = await page.locator('[data-role="site-header"]').innerText();
     // quick-260726-obg: the footer is hidden in carousel mode (the default)
@@ -82,13 +84,21 @@ test.describe('homepage structural contract parity (quick-260811-kog-02)', () =>
   }) => {
     await page.goto('/');
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', /\/$/);
-    const frAlternateFr = await page.locator('link[rel="alternate"][hreflang="fr"]').getAttribute('href');
-    const frAlternateEn = await page.locator('link[rel="alternate"][hreflang="en"]').getAttribute('href');
+    const frAlternateFr = await page
+      .locator('link[rel="alternate"][hreflang="fr"]')
+      .getAttribute('href');
+    const frAlternateEn = await page
+      .locator('link[rel="alternate"][hreflang="en"]')
+      .getAttribute('href');
 
     await page.goto('/en/');
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', /\/en\/$/);
-    const enAlternateFr = await page.locator('link[rel="alternate"][hreflang="fr"]').getAttribute('href');
-    const enAlternateEn = await page.locator('link[rel="alternate"][hreflang="en"]').getAttribute('href');
+    const enAlternateFr = await page
+      .locator('link[rel="alternate"][hreflang="fr"]')
+      .getAttribute('href');
+    const enAlternateEn = await page
+      .locator('link[rel="alternate"][hreflang="en"]')
+      .getAttribute('href');
 
     // The alternate set itself (which URL is "the French one", which is
     // "the English one") must not depend on which locale is currently
@@ -110,7 +120,9 @@ test.describe('homepage structural contract parity (quick-260811-kog-02)', () =>
     await expect(page.locator('[data-role="home-carousel"]')).toBeHidden();
   });
 
-  test('the French homepage never shows English-only nav copy, and vice versa', async ({ page }) => {
+  test('the French homepage never shows English-only nav copy, and vice versa', async ({
+    page,
+  }) => {
     await page.goto('/');
     const frBody = await page.locator('body').innerText();
     expect(frBody).not.toContain('About');
@@ -126,14 +138,18 @@ test.describe('homepage structural contract parity (quick-260811-kog-02)', () =>
     page,
   }) => {
     await page.goto('/');
-    const frLinks = await page.locator('a[href*="/galleries/"]').evaluateAll((links) =>
-      links.map((link) => (link as HTMLAnchorElement).getAttribute('href')),
-    );
+    const frLinks = await page
+      .locator('a[href*="/galleries/"]')
+      .evaluateAll((links) =>
+        links.map((link) => (link as HTMLAnchorElement).getAttribute('href')),
+      );
 
     await page.goto('/en/');
-    const enLinks = await page.locator('a[href*="/galleries/"]').evaluateAll((links) =>
-      links.map((link) => (link as HTMLAnchorElement).getAttribute('href')),
-    );
+    const enLinks = await page
+      .locator('a[href*="/galleries/"]')
+      .evaluateAll((links) =>
+        links.map((link) => (link as HTMLAnchorElement).getAttribute('href')),
+      );
 
     expect(frLinks.length).toBeGreaterThan(0);
     expect(enLinks.length).toBeGreaterThan(0);
@@ -172,7 +188,10 @@ test.describe('switcher', () => {
     expect(localeCookie?.value).toBe('en');
   });
 
-  test(`visiting "/" with a pre-set ${COOKIE_NAME}=en cookie redirects to "/en/"`, async ({ browser, baseURL }) => {
+  test(`visiting "/" with a pre-set ${COOKIE_NAME}=en cookie redirects to "/en/"`, async ({
+    browser,
+    baseURL,
+  }) => {
     const context = await browser.newContext();
     await context.addCookies([
       {

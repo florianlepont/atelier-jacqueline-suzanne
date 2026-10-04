@@ -39,16 +39,25 @@ describe('statement max-length validation stays in lockstep across gallery.ts an
 
   it('sanity/schemas/gallery.ts declares exactly 1 max-length constraint', () => {
     const constraints = findMaxLengthConstraints(gallerySource);
-    expect(constraints, 'sanity/schemas/gallery.ts: expected exactly 1 maxLength option').toHaveLength(1);
+    expect(
+      constraints,
+      'sanity/schemas/gallery.ts: expected exactly 1 maxLength option',
+    ).toHaveLength(1);
   });
 
   it('sanity/schemas/edition.ts declares exactly 1 max-length constraint', () => {
     const constraints = findMaxLengthConstraints(editionSource);
-    expect(constraints, 'sanity/schemas/edition.ts: expected exactly 1 maxLength option').toHaveLength(1);
+    expect(
+      constraints,
+      'sanity/schemas/edition.ts: expected exactly 1 maxLength option',
+    ).toHaveLength(1);
   });
 
   it('the max-length value across both files is identical (the lockstep guard, D-03)', () => {
-    const allConstraints = [...findMaxLengthConstraints(gallerySource), ...findMaxLengthConstraints(editionSource)];
+    const allConstraints = [
+      ...findMaxLengthConstraints(gallerySource),
+      ...findMaxLengthConstraints(editionSource),
+    ];
     const uniqueValues = new Set(allConstraints);
     expect(
       uniqueValues.size,

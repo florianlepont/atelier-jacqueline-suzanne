@@ -31,7 +31,10 @@ test.describe('homepage mobile navigation', () => {
       const header = page.locator('[data-role="site-header"]');
       await expect(header).toHaveAttribute('data-mobile-nav', 'true');
       await expect(header.locator('.site-nav')).toBeHidden();
-      await expect(page.locator('[data-role="mobile-nav-toggle"]')).toHaveAttribute('aria-expanded', 'false');
+      await expect(page.locator('[data-role="mobile-nav-toggle"]')).toHaveAttribute(
+        'aria-expanded',
+        'false',
+      );
     });
 
     test(`${path} opens a native dialog with its localized links`, async ({ page }) => {
@@ -48,7 +51,10 @@ test.describe('homepage mobile navigation', () => {
     await openPanel(page);
     await page.keyboard.press('Escape');
     await expect(page.locator('dialog#mobile-nav')).toBeHidden();
-    await expect(page.locator('[data-role="mobile-nav-toggle"]')).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('[data-role="mobile-nav-toggle"]')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
     await expect(page.locator('[data-role="mobile-nav-toggle"]')).toBeFocused();
   });
 
@@ -71,7 +77,9 @@ test.describe('homepage mobile navigation', () => {
     expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth);
   });
 
-  test('reduced-motion visitors can still open and close the panel at the static arrival', async ({ page }) => {
+  test('reduced-motion visitors can still open and close the panel at the static arrival', async ({
+    page,
+  }) => {
     await reachInteractiveHeader(page, '/', true);
     await page.locator('[data-role="mobile-nav-toggle"]').click();
     await expect(page.locator('dialog#mobile-nav')).toBeVisible();

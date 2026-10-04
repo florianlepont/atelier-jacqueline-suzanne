@@ -118,9 +118,7 @@ export function validateImageUploadConfig(config: unknown): string[] {
     maxDimension < MIN_MAX_DIMENSION ||
     maxDimension > MAX_MAX_DIMENSION
   ) {
-    errors.push(
-      `maxDimension : entier entre ${MIN_MAX_DIMENSION} et ${MAX_MAX_DIMENSION} attendu.`,
-    )
+    errors.push(`maxDimension : entier entre ${MIN_MAX_DIMENSION} et ${MAX_MAX_DIMENSION} attendu.`)
   }
 
   if (!isNumberInRange(config.quality, 0.5, 1)) {
@@ -152,7 +150,9 @@ export function validateImageUploadConfig(config: unknown): string[] {
     errors.push('signature.marginRatio : nombre entre 0 et 0,1 attendu.')
   }
   if (!SIGNATURE_POSITIONS.includes(signature.position as SignaturePosition)) {
-    errors.push(`signature.position : l’une des valeurs ${SIGNATURE_POSITIONS.join(', ')} attendue.`)
+    errors.push(
+      `signature.position : l’une des valeurs ${SIGNATURE_POSITIONS.join(', ')} attendue.`,
+    )
   }
   return errors
 }
@@ -384,7 +384,9 @@ function summarizeWithFallbacks(
 /** One toast for a whole batch of upload notices; null when there is nothing to say. */
 export function summarizeNotices(notices: readonly ImageUploadNotice[]): ToastSpec | null {
   if (notices.length === 0) return null
-  const processed = notices.filter((notice): notice is ProcessedNotice => notice.kind === 'processed')
+  const processed = notices.filter(
+    (notice): notice is ProcessedNotice => notice.kind === 'processed',
+  )
   const fallbacks = notices.filter((notice): notice is FallbackNotice => notice.kind === 'fallback')
   if (fallbacks.length > 0) return summarizeWithFallbacks(processed, fallbacks)
   return summarizeProcessedOnly(processed)

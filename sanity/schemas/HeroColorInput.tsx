@@ -28,7 +28,9 @@ export function HeroColorInput(props: StringInputProps) {
   }
 
   return (
-    <div style={{display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))'}}>
+    <div
+      style={{display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))'}}
+    >
       <button
         type="button"
         disabled={readOnly}

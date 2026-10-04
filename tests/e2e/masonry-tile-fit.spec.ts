@@ -34,7 +34,9 @@ test.describe('masonry tiles can never show the tile background (BUG-03)', () =>
   });
 });
 
-async function assertMasonryTilesFitCorrectly(page: import('@playwright/test').Page): Promise<void> {
+async function assertMasonryTilesFitCorrectly(
+  page: import('@playwright/test').Page,
+): Promise<void> {
   const grid = page.locator('.gallery-grid--masonry');
   await expect(grid).toBeVisible();
 
@@ -65,9 +67,10 @@ async function assertMasonryTilesFitCorrectly(page: import('@playwright/test').P
       // isn't masking a genuinely wrong `--ar`, only absorbing a sub-pixel
       // rounding gap.
       const expectedHeight = data.width / data.ar;
-      expect(Math.abs(data.height - expectedHeight), `tile ${i} height does not match width / --ar`).toBeLessThanOrEqual(
-        1,
-      );
+      expect(
+        Math.abs(data.height - expectedHeight),
+        `tile ${i} height does not match width / --ar`,
+      ).toBeLessThanOrEqual(1);
     }
   }
 }

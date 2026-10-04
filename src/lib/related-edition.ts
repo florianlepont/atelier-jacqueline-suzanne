@@ -45,10 +45,7 @@ export function getRelatedEditionLink(
   if (!title?.trim() || !slug?.trim()) return null;
 
   const href = getRelativeLocaleUrl(locale, `editions/${slug}`);
-  const text =
-    locale === 'fr'
-      ? `Voir l'édition « ${title} »`
-      : `View the “${title}” edition`;
+  const text = locale === 'fr' ? `Voir l'édition « ${title} »` : `View the “${title}” edition`;
 
   return { href, text };
 }
