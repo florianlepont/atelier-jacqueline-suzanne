@@ -29,6 +29,10 @@ export default getViteConfig({
       // aggregate. Production includes stay instrumented; only this
       // generated/test-support path is excluded.
       //
+      // The carousel's modules (src/client/home-carousel/**, split out of
+      // home-carousel-runtime.ts) are the same logic and are excluded for the
+      // same reason.
+      //
       // home-carousel-runtime.ts's mount/cleanup CONTRACT (the early-return
       // guard, idempotent cleanup) is unit-tested and counted; the ~1100
       // lines of real carousel business logic inside a successful mount are
@@ -39,7 +43,11 @@ export default getViteConfig({
       // maintenance cost disproportionate to the benefit, so the file is
       // excluded from this numeric gate rather than silently dragging the
       // aggregate down for logic this project already verifies elsewhere.
-      exclude: ['sanity/editorial/test/**', 'src/client/home-carousel-runtime.ts'],
+      exclude: [
+        'sanity/editorial/test/**',
+        'src/client/home-carousel-runtime.ts',
+        'src/client/home-carousel/**',
+      ],
       thresholds: {
         statements: 80,
         branches: 75,
