@@ -6,17 +6,23 @@
 // logique testable vit dans scripts/lib/sanity-image-downsize.mjs ; ce fichier
 // ne fait que relier arguments/environnement, @sanity/client et sharp.
 //
+// Principe : pour chaque image trop large, le script demande au CDN de Sanity la
+// version déjà réduite (redimensionnement côté serveur), vérifie ce qu'il a
+// reçu, puis téléverse ces octets tels quels. L'original n'est jamais
+// téléchargé et rien n'est recompressé localement : sharp sert uniquement à
+// LIRE l'image reçue (validation), jamais à la redimensionner ni à l'encoder.
+//
 // Ordre voulu : les options sont validées (et le script quitte avec le code 2
 // en cas d'erreur) AVANT d'importer @sanity/client ou sharp et avant de créer
 // un client. Ainsi un refus d'usage ne touche jamais le réseau.
 
 import {
-  OUTPUT_QUALITY,
   USAGE_TEXT,
   assessDeletionSafety,
   computeTargetDimensions,
   deriveFilename,
   describeError,
+  fetchReducedImage,
   formatDryRunReport,
   parseImageAssetId,
   planReferencePatches,
@@ -25,7 +31,7 @@ import {
 } from './lib/sanity-image-downsize.mjs';
 
 const API_VERSION = '2024-01-01'; // same as src/lib/sanity.ts
-const DOWNLOAD_TIMEOUT_MS = 120_000;
+const CDN_REQUEST_TIMEOUT_MS = 120_000;
 
 const ASSETS_QUERY = `*[_type == "sanity.imageAsset"]{
   _id, originalFilename, mimeType, extension, size, url,
@@ -38,7 +44,7 @@ const REFERENCE_COUNT_QUERY = `count(*[references($assetId)])`;
 
 /**
  * @typedef {import('@sanity/client').SanityClient} SanityClient
- * @typedef {import('sharp').default} Sharp
+ * @typedef {(data: Buffer) => Promise<import('./lib/sanity-image-downsize.mjs').DecodedImage>} DecodeImage
  */
 
 /**
@@ -107,57 +113,64 @@ async function countReferences(client, assetId) {
 }
 
 /**
- * Replace one oversized asset: download, resize, upload, repoint every
- * reference in one revision-guarded transaction. Deletes nothing.
+ * Plain GET on the public CDN. It sends NO headers and NO token: the write
+ * token must only ever reach the Sanity API.
+ *
+ * @param {string} url
+ * @returns {Promise<Response>}
+ */
+function requestFromCdn(url) {
+  return fetch(url, { signal: AbortSignal.timeout(CDN_REQUEST_TIMEOUT_MS) });
+}
+
+/**
+ * Build the decoding helper used to validate what the CDN returned. It reads
+ * the header (metadata), then forces a full decode (stats) so truncated or
+ * corrupt data throws. Nothing is encoded and the decoded output is discarded.
+ *
+ * @param {import('sharp').default} sharp
+ * @returns {DecodeImage}
+ */
+function createDecoder(sharp) {
+  return async (data) => {
+    const image = sharp(data);
+    const { format, width, height } = await image.metadata();
+    await image.stats();
+    return { format, width, height };
+  };
+}
+
+/**
+ * Replace one oversized asset: request the reduced version from the CDN,
+ * validate it, upload it as received, then repoint every reference in one
+ * revision-guarded transaction. Deletes nothing.
  *
  * @param {object} ctx
  * @param {SanityClient} ctx.client
- * @param {Sharp} ctx.sharp
+ * @param {DecodeImage} ctx.decodeImage
  * @param {import('./lib/sanity-image-downsize.mjs').ImageAsset} ctx.asset
  * @param {number} ctx.threshold
  * @returns {Promise<{ status: 'replaced' | 'ignored', newId?: string, patched: number }>}
  */
-async function replaceAsset({ client, sharp, asset, threshold }) {
+async function replaceAsset({ client, decodeImage, asset, threshold }) {
   const before = await client.fetch(REFERENCING_FULL_QUERY, { assetId: asset._id });
   if (!Array.isArray(before) || before.length === 0) {
     return { status: 'ignored', patched: 0 };
   }
 
   const target = computeTargetDimensions(/** @type {{width: number, height: number}} */ (asset), threshold);
-  if (!asset.url) throw new Error('URL de l\'image originale inconnue.');
 
-  const response = await fetch(asset.url, { signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS) });
-  if (!response.ok) throw new Error(`Téléchargement impossible (HTTP ${response.status}).`);
-  const original = Buffer.from(await response.arrayBuffer());
-  if (typeof asset.size === 'number' && original.length !== asset.size) {
-    throw new Error(`Téléchargement incomplet ou altéré (${original.length} octets reçus, ${asset.size} attendus).`);
-  }
+  // Validated BEFORE anything is uploaded: any failure throws and leaves the
+  // image untouched.
+  const reduced = await fetchReducedImage({ asset, target, fetchImpl: requestFromCdn, decodeImage });
 
-  // Auto-orient, never enlarge, keep the ICC profile. EXIF (incl. GPS and the
-  // now-stale orientation tag) is dropped.
-  let pipeline = sharp(original)
-    .rotate()
-    .resize({ width: target.width, withoutEnlargement: true })
-    .keepIccProfile();
-  if (asset.mimeType === 'image/jpeg') pipeline = pipeline.jpeg({ quality: OUTPUT_QUALITY, mozjpeg: true });
-  else if (asset.mimeType === 'image/webp') pipeline = pipeline.webp({ quality: OUTPUT_QUALITY });
-  else if (asset.mimeType === 'image/png') pipeline = pipeline.png();
-  else throw new Error(`Format non géré : ${asset.mimeType}.`);
-
-  const { data, info } = await pipeline.toBuffer({ resolveWithObject: true });
-  if (info.width !== target.width || Math.abs(info.height - target.height) > 1) {
-    throw new Error(
-      `Dimensions inattendues après réduction : ${info.width}x${info.height} au lieu de ${target.width}x${target.height}.`,
-    );
-  }
-
-  const uploaded = await client.assets.upload('image', data, {
+  const uploaded = await client.assets.upload('image', reduced.data, {
     filename: deriveFilename(asset),
-    contentType: asset.mimeType,
+    contentType: reduced.mimeType,
   });
   const newId = uploaded._id;
   const parsed = parseImageAssetId(newId);
-  if (newId === asset._id || !parsed || parsed.width !== info.width || parsed.height !== info.height) {
+  if (newId === asset._id || !parsed || parsed.width !== reduced.width || parsed.height !== reduced.height) {
     throw new Error(`Image téléversée inattendue (${newId}).`);
   }
 
@@ -190,6 +203,7 @@ async function runApply(client, options, secrets) {
   console.log(`Images à traiter (> ${options.threshold} px) : ${oversized.length} (${skipped.length} ignorée(s) : format ou dimensions non gérés).`);
 
   const { default: sharp } = await import('sharp');
+  const decodeImage = createDecoder(sharp);
 
   /** @type {string[]} */
   const failedIds = [];
@@ -197,7 +211,7 @@ async function runApply(client, options, secrets) {
   const results = [];
   for (const asset of oversized) {
     try {
-      const outcome = await replaceAsset({ client, sharp, asset, threshold: options.threshold });
+      const outcome = await replaceAsset({ client, decodeImage, asset, threshold: options.threshold });
       if (outcome.status === 'ignored') {
         results.push([asset._id, '-', '0', 'ignorée (aucun document ne la référence)']);
       } else {
