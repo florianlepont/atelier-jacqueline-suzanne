@@ -421,6 +421,19 @@ Items acknowledged and deferred at v1.8 milestone close on 2026-08-26 (`/gsd-com
 
 **Resolved, not deferred:** SEED-001 and SEED-002 (both still listed as "dormant" in the v1.6/v1.7 close notes above) are exactly the two backlog seeds this milestone was scoped to close. Both shipped in Phase 24 (SEED-001 → CONT-04, SEED-002 → EDN-12) and their seed files (`.planning/seeds/SEED-001-*.md`, `.planning/seeds/SEED-002-*.md`) are now marked `status: implemented` with a Resolution section, rather than being carried forward a third time.
 
+**Closed, not deferred (triage of 2026-10-05):** the six unexecuted `260722-*` quick tasks that every close since v1.3 re-listed as "missing" are formally abandoned as superseded, and should no longer be carried forward:
+
+| Quick task | Why it is closed |
+|------------|------------------|
+| 260722-compact-sanity-document-layout | The Studio document layout was reworked by the 260801 studio-publication-workflow effort, then the editorial dashboard was retired (261003-idz). |
+| 260722-normalize-sanity-form-spacing | Same Studio rework. |
+| 260722-remove-redundant-sanity-fieldsets | Same Studio rework. |
+| 260722-improve-contact-page | The Contact page was rebuilt in the 260728-ek0 sketch-013 redesign. |
+| 260722-rebalance-contact-typography | Same sketch-013 Contact redesign. |
+| 260722-refine-contact-details | Same sketch-013 Contact redesign. |
+
+Their PLAN files are no longer present under `.planning/quick/`, so nothing is left to execute or to resurface in an audit. The seven `260722-*` tasks that did ship (afi, align-about-contact-design, bhu, improve-wordmark-legibility, neutral-header-footer-colors, site-improvement-pass, tcv) each have a PLAN and a SUMMARY.
+
 ## Session Continuity
 
 **Resume file:** .planning/MILESTONES.md
