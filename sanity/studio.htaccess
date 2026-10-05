@@ -1,0 +1,30 @@
+# Apache config for the self-hosted Sanity Studio, served from
+# https://atelierjacquelinesuzanne.fr/studio (OVH folder www/studio).
+# deploy-ovh.yml uploads this file as www/studio/.htaccess. It overrides the
+# site's own .htaccess for this folder only.
+
+# Mod_rewrite rules are not inherited from the parent folder, so the HTTPS
+# redirect is repeated here.
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+Options -Indexes
+
+# Single-page app: any path that is not a real file falls back to index.html.
+RewriteBase /studio/
+RewriteRule ^index\.html$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /studio/index.html [L]
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  # The editor back office must never be indexed.
+  Header always set X-Robots-Tag "noindex, nofollow"
+  # The Studio loads scripts, styles, fonts and APIs from several Sanity
+  # hosts; the site's strict Content-Security-Policy would break it, so it is
+  # removed for this folder only.
+  Header always unset Content-Security-Policy
+</IfModule>

@@ -103,14 +103,6 @@ describe('Sanity version pin and CI gate ordering (DIAGNOSTIC-05/06)', () => {
     expect(buildPos).toBeGreaterThan(coveragePos);
   });
 
-  it('ci.yml publishes the hosted Studio only after the shared e2e/coverage gate', () => {
-    const publishPos = ciWorkflowSource.indexOf('npm --prefix sanity run deploy');
-    const gatePos = ciWorkflowSource.indexOf('uses: ./.github/actions/e2e-and-unit-tests');
-
-    expect(gatePos).toBeGreaterThanOrEqual(0);
-    expect(publishPos).toBeGreaterThan(gatePos);
-  });
-
   it('deploy-ovh.yml uploads the build artifact only after the shared e2e/coverage gate', () => {
     const uploadPos = ovhWorkflowSource.indexOf('name: Upload build artifact');
     const gatePos = ovhWorkflowSource.indexOf('uses: ./.github/actions/e2e-and-unit-tests');

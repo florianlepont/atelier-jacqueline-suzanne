@@ -92,8 +92,8 @@ The site has one production target, OVH, updated automatically when Romane click
 
 | Workflow | Trigger | What it does |
 |---|---|---|
-| `.github/workflows/ci.yml` | Push to `main`, and manual dispatch | Runs every blocking gate (Studio lint/coverage/build/typecheck, root lint/typecheck, static-artifact verification, Playwright e2e, Vitest coverage), then republishes the hosted Sanity Studio. **Never deploys the site.** |
-| `.github/workflows/deploy-ovh.yml` | The Sanity webhook event `production-deploy-requested` (automatic, through the `production-ovh-auto` environment, no approval pause), and manual dispatch (pauses on the `production-ovh` Required reviewer) | Runs the same gates, builds with `SITE_URL=https://atelierjacquelinesuzanne.fr` at the root base path, and uploads `dist/` to OVH over SFTP. The live site is https://atelierjacquelinesuzanne.fr. |
+| `.github/workflows/ci.yml` | Push to `main`, and manual dispatch | Runs every blocking gate (Studio lint/coverage/build/typecheck, root lint/typecheck, static-artifact verification, Playwright e2e, Vitest coverage), **Never deploys the site or the Studio.** |
+| `.github/workflows/deploy-ovh.yml` | The Sanity webhook event `production-deploy-requested` (automatic, through the `production-ovh-auto` environment, no approval pause), and manual dispatch (pauses on the `production-ovh` Required reviewer) | Runs the same gates, builds with `SITE_URL=https://atelierjacquelinesuzanne.fr` at the root base path, and uploads `dist/` (site) and the Studio build to OVH over SFTP. The live site is https://atelierjacquelinesuzanne.fr. |
 
 A push to `main` never deploys the site. Code merged to `main` reaches production with the next content publish (a `repository_dispatch` run always builds the default branch), or right away with `gh workflow run deploy-ovh.yml`. Keep `main` production-ready.
 
@@ -101,23 +101,19 @@ Separately, `.github/workflows/pr-checks.yml` runs lint, typecheck and unit test
 
 A burst of publishes leaves at most one run in progress plus one pending run, and the latest pending run wins, so two uploads never race on the same webroot.
 
-### Sanity Studio: published automatically
+### Sanity Studio: self-hosted on OVH
 
-The hosted Studio at https://atelier-jacqueline-suzanne.sanity.studio/ is republished automatically by `.github/workflows/ci.yml`, as the final step of every push to `main`, after every blocking gate has passed.
+The Studio is at https://atelierjacquelinesuzanne.fr/studio. It is no longer hosted on `*.sanity.studio` (the OVH plan has no spare domain slot for a subdomain).
 
-It does **not** republish on a content publish, since a content publish can't change Studio source code.
+`deploy-ovh.yml` builds it (`sanity build`, `basePath: '/studio'`) and uploads `sanity/dist` over SFTP to `www/studio`, with `sanity/studio.htaccess` as that folder's `.htaccess` (SPA fallback, no CSP, `noindex`). It ships with the site on every Sanity publish or manual dispatch. `ci.yml` only runs the gates.
 
-It republishes on *every* push to `main`, not only pushes that touch `sanity/`: the Studio build already runs on every push anyway, and a paths filter would reintroduce the exact staleness risk this step exists to remove.
+**One-time setup:**
 
-To force a republish without a code change, re-run the last `ci.yml` run from the Actions tab. Running `npm run deploy` from `sanity/` locally still works but is no longer the expected path.
+1. Sanity CORS: https://www.sanity.io/manage → project `gwz8iug4` → API → CORS origins → add `https://atelierjacquelinesuzanne.fr` with **Allow credentials** checked. For `sanity dev`, `http://localhost:3333` is there by default.
+2. Run `deploy-ovh.yml` once (manual dispatch) to upload the Studio for the first time.
+3. The `SANITY_AUTH_TOKEN` secret is no longer used and can be deleted. The old `atelier-jacqueline-suzanne.sanity.studio` can stay up until the new Studio is confirmed working, then be removed from the Sanity dashboard.
 
-If the repository secret below is missing, the run stays green but carries a warning annotation and the live Studio silently stays on its previous bundle.
-
-**One-time setup — repository secret `SANITY_AUTH_TOKEN`:**
-
-1. Create the token: https://www.sanity.io/manage → project `gwz8iug4` → API → Tokens → Add API token. Give it the **`Deploy Studio` permission only**. Do not add Editor, Developer or Administrator: this token sits in GitHub and must not be able to edit content or manage access.
-2. Add it as a **repository-level** secret (not scoped to an environment): `gh secret set SANITY_AUTH_TOKEN`.
-3. This must be a distinct token from the existing read-only `SANITY_API_READ_TOKEN` — reusing that read token will fail the publish.
+Local dev: `npm --prefix sanity run dev` now serves http://localhost:3333/studio.
 
 ### Production deploy: one-time setup
 

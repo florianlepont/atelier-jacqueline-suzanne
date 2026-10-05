@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 
@@ -60,23 +60,9 @@ describe('.github/workflows/ci.yml', () => {
     expect(ciWorkflow).toMatch(/permissions:\s*\n\s*contents:\s*read/);
   });
 
-  it('publishes the hosted Sanity Studio as the last step, after both shared gate actions (D-01)', () => {
-    expect(ciWorkflow).toContain('npm --prefix sanity run deploy');
-    expect(ciWorkflow).toContain('SANITY_AUTH_TOKEN: ${{ secrets.SANITY_AUTH_TOKEN }}');
-
-    const publishIndex = ciWorkflow.indexOf('npm --prefix sanity run deploy');
-    const sharedGatesIndex = ciWorkflow.indexOf(
-      'uses: ./.github/actions/lint-typecheck-and-install',
-    );
-    const sharedE2eIndex = ciWorkflow.indexOf('uses: ./.github/actions/e2e-and-unit-tests');
-    expect(sharedGatesIndex).toBeGreaterThan(-1);
-    expect(sharedE2eIndex).toBeGreaterThan(sharedGatesIndex);
-    expect(publishIndex).toBeGreaterThan(sharedE2eIndex);
-  });
-
-  it('keeps the warn-and-exit-0 path when the Studio auth secret is missing (D-03)', () => {
-    expect(ciWorkflow).toContain('::warning::SANITY_AUTH_TOKEN');
-    expect(ciWorkflow).toMatch(/exit 0/);
+  it('no longer publishes to sanity.studio: the Studio is self-hosted on OVH', () => {
+    expect(ciWorkflow).not.toContain('npm --prefix sanity run deploy');
+    expect(ciWorkflow).not.toContain('SANITY_AUTH_TOKEN');
   });
 
   it('does not weaken any blocking gate', () => {
@@ -119,9 +105,9 @@ describe('.github/workflows/deploy-ovh.yml', () => {
     const usernameLines = ovhWorkflow.split('\n').filter((line) => /^\s*username:/.test(line));
     const serverLines = ovhWorkflow.split('\n').filter((line) => /^\s*server:/.test(line));
     const remotePathLines = ovhWorkflow.split('\n').filter((line) => /^\s*remote_path:/.test(line));
-    expect(usernameLines.length).toBe(2);
-    expect(serverLines.length).toBe(2);
-    expect(remotePathLines.length).toBe(2);
+    expect(usernameLines.length).toBe(4);
+    expect(serverLines.length).toBe(4);
+    expect(remotePathLines.length).toBe(4);
     for (const line of usernameLines) {
       expect(line).toContain('${{ vars.OVH_SFTP_USER }}');
     }
@@ -178,8 +164,8 @@ describe('.github/workflows/deploy-ovh.yml', () => {
   it('pins every SFTP-Deploy-Action reference to a 40-char lowercase hex commit SHA', () => {
     const allRefs = ovhWorkflow.match(/uses:\s*wlixcc\/SFTP-Deploy-Action@[^\s]+/g) ?? [];
     const pinnedRefs = ovhWorkflow.match(/uses:\s*wlixcc\/SFTP-Deploy-Action@[0-9a-f]{40}/g) ?? [];
-    expect(allRefs.length).toBe(2);
-    expect(pinnedRefs.length).toBe(2);
+    expect(allRefs.length).toBe(4);
+    expect(pinnedRefs.length).toBe(4);
     expect(allRefs.length).toBe(pinnedRefs.length);
   });
 
@@ -231,5 +217,17 @@ describe('.github/workflows/deploy-ovh.yml', () => {
       expect(source).toContain('uses: ./.github/actions/lint-typecheck-and-install');
       expect(source).toContain('uses: ./.github/actions/e2e-and-unit-tests');
     }
+  });
+});
+
+describe('self-hosted Studio deploy (deploy-ovh.yml)', () => {
+  it('uploads the Studio build to its own www/studio folder with its own .htaccess', () => {
+    expect(ovhWorkflow).toContain('sanity/studio.htaccess');
+    expect(ovhWorkflow).toContain("remote_path: '/home/${{ vars.OVH_SFTP_USER }}/www/studio'");
+    expect(ovhWorkflow).toContain("local_path: './studio-dist/.htaccess'");
+  });
+
+  it('serves the Studio under /studio', () => {
+    expect(readFileSync('sanity/sanity.config.ts', 'utf8')).toMatch(/basePath:\s*'\/studio'/);
   });
 });

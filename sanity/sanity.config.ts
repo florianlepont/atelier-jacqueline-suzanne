@@ -19,6 +19,10 @@ export default defineConfig({
   projectId: 'gwz8iug4',
   dataset: 'production',
 
+  // The Studio is self-hosted on OVH under https://atelierjacquelinesuzanne.fr/studio
+  // (the hosting plan has no spare domain slot for a subdomain).
+  basePath: '/studio',
+
   studio: {
     components: {
       layout: StudioLayout,

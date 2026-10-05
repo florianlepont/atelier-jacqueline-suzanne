@@ -12,9 +12,7 @@ export default defineCliConfig({
     // runtime that was never tested locally or in CI.
     // Learn more at https://www.sanity.io/docs/studio/latest-version-of-sanity#k47faf43faf56
     autoUpdates: false,
-    // Deployed to https://atelier-jacqueline-suzanne.sanity.studio/ — appId
-    // pins future `sanity deploy` runs to that same hosted studio instead of
-    // prompting for one.
-    appId: 'y1g7kkfc0x3vjg52pfjjvr56',
+    // The Studio is no longer deployed to *.sanity.studio: it is built with
+    // `sanity build` and uploaded to OVH under /studio by deploy-ovh.yml.
   },
 })
