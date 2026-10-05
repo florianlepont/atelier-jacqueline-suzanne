@@ -227,6 +227,14 @@ describe('self-hosted Studio deploy (deploy-ovh.yml)', () => {
     expect(ovhWorkflow).toContain("local_path: './studio-dist/.htaccess'");
   });
 
+  it('creates www/studio before the Studio upload, ignoring an already-existing folder', () => {
+    const mkdirIndex = ovhWorkflow.indexOf('-mkdir /home/%s/www/studio');
+    const uploadIndex = ovhWorkflow.indexOf('name: Deploy Studio to OVH (SFTP)');
+    expect(mkdirIndex).toBeGreaterThan(-1);
+    expect(uploadIndex).toBeGreaterThan(mkdirIndex);
+    expect(ovhWorkflow).toContain('SSHPASS: ${{ secrets.OVH_SFTP_PASSWORD }}');
+  });
+
   it('serves the Studio under /studio', () => {
     expect(readFileSync('sanity/sanity.config.ts', 'utf8')).toMatch(/basePath:\s*'\/studio'/);
   });
