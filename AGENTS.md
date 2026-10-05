@@ -32,7 +32,7 @@ A bilingual (French/English) website for Romane Lepont's photography and artisti
 |------------|---------|---------|-------|
 | **Astro** | 7.3.5 | Static site framework — `output: 'static'` in astro.config.mjs, with NO server-rendering integration installed | The config explicitly excludes the Cloudflare adapter, the Node adapter, and the Workers deploy CLI, because OVH Web Hosting is a zero-compute Apache file host. Zero-JS-by-default; built-in i18n. |
 | **OVH Web Hosting** | — (platform) | Production host, live at https://atelierjacquelinesuzanne.fr since the 2026-08-13 cutover | Free tier, static files uploaded over SFTP by `deploy-ovh.yml` on every Sanity publish; zero request-time compute, which is WHY the build is static-only. |
-| **Sanity** (Content Lake + Studio) | `@sanity/client` 7.23.0 / `@sanity/image-url` 2.1.1 / Studio `sanity` 6.6.0 (exact pin) | Headless CMS for galleries, Éditions, About, site settings. Exhibitions (agenda) are modelled in the Studio but not rendered on the site yet | Content fetched at BUILD time (published perspective only). Studio is the separate `sanity/` subproject with its own package.json. |
+| **Sanity** (Content Lake + Studio) | `@sanity/client` 7.23.0 / `@sanity/image-url` 2.1.1 / Studio `sanity` 6.17.0 (exact pin) | Headless CMS for galleries, Éditions, About, site settings. Exhibitions (agenda) are modelled in the Studio but not rendered on the site yet | Content fetched at BUILD time (published perspective only). Studio is the separate `sanity/` subproject with its own package.json. |
 | **astro:i18n** (built-in, Astro 7 core) | — | fr/en locale routing | French served at root, English under `/en/`, no Accept-Language auto-redirect. |
 
 ### Supporting Libraries
