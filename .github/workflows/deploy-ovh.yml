@@ -241,6 +241,21 @@ jobs:
           remote_path: '/home/${{ vars.OVH_SFTP_USER }}/www'
           sftp_only: true
 
+      # The SFTP action cannot create a missing remote directory on OVH's
+      # mutualized tier ("destination is not a directory"), so www/studio is
+      # created first. The leading "-" makes sftp ignore the error when the
+      # folder already exists, so this is safe on every run. The password
+      # travels through the environment (SSHPASS), never the command line.
+      - name: Ensure the Studio folder exists on OVH (SFTP)
+        env:
+          SSHPASS: ${{ secrets.OVH_SFTP_PASSWORD }}
+          OVH_SFTP_HOST: ${{ vars.OVH_SFTP_HOST }}
+          OVH_SFTP_USER: ${{ vars.OVH_SFTP_USER }}
+        run: |
+          sudo apt-get install -y --no-install-recommends sshpass >/dev/null
+          printf -- '-mkdir /home/%s/www/studio\n' "$OVH_SFTP_USER" \
+            | sshpass -e sftp -oStrictHostKeyChecking=accept-new -oBatchMode=no -b - "$OVH_SFTP_USER@$OVH_SFTP_HOST"
+
       # The Studio lives in its own remote folder (www/studio), so the site
       # upload above never overwrites it and vice versa.
       - name: Deploy Studio to OVH (SFTP)
