@@ -24,12 +24,12 @@ describe('Sanity version pin and CI gate ordering (DIAGNOSTIC-05/06)', () => {
     'utf8',
   );
 
-  it('sanity/package.json declares the sanity dependency as exactly 6.6.0 (no range)', () => {
-    expect(sanityPackageJson.dependencies.sanity).toBe('6.6.0');
+  it('sanity/package.json declares the sanity dependency as exactly 6.17.0 (no range)', () => {
+    expect(sanityPackageJson.dependencies.sanity).toBe('6.17.0');
   });
 
-  it('sanity/package-lock.json resolves the sanity package to exactly 6.6.0', () => {
-    expect(sanityLockfile.packages['node_modules/sanity'].version).toBe('6.6.0');
+  it('sanity/package-lock.json resolves the sanity package to exactly 6.17.0', () => {
+    expect(sanityLockfile.packages['node_modules/sanity'].version).toBe('6.17.0');
   });
 
   it('sanity/sanity.cli.ts disables Studio auto-updates', () => {
