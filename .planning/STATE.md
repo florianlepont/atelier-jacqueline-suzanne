@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-08-04)
 Phase: Milestone v1.8 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-10-04 - Completed quick task 261004-kbq: publisher address moved to an optional Sanity field, privacy policy corrected (no legal review)
+Last activity: 2026-10-05 - Sanity Studio self-hosted on OVH at /studio and updated to 6.17.0 (PRs #37-#39), see Quick Tasks Completed
 
 ## Performance Metrics
 
@@ -165,6 +165,8 @@ Recent decisions affecting current work:
 
 - [Phase 05]: Contact-form recipient confirmed by the maintainer as contact@atelierjacquelinesuzanne.fr (D-07) — the existing publicEmail default, explicitly confirmed rather than assumed.
 - [Phase 05]: PHP mail() endpoint validation tested via source-invariant text assertions (no PHP runtime), per 05-VALIDATION.md Wave 0's recommendation for a single ~110-line script.
+
+- [Studio hosting, 2026-10-05]: The Studio moved from `*.sanity.studio` to `https://atelierjacquelinesuzanne.fr/studio`. A `studio.` subdomain was tried first but the OVH plan's attached-domain limit (3: apex, www, OVH technical name) was reached and `www` is worth keeping. The SFTP action cannot create a missing remote folder on OVH's mutualized tier, so the deploy creates `www/studio` first with `sftp -mkdir`. Access stays protected by the Sanity login, plus `noindex`; no extra Apache password (operator decision). The `sanity` version stays an exact pin, bumped by hand.
 
 ### Pending Todos
 
@@ -318,6 +320,7 @@ Both prior research-carryover items were resolved during Phase 1 execution:
 | 261004-v9g | E2E: 20 of 41 fixed waits replaced by frame/transition-based settle helpers; skips and intentionally timed waits kept; specs run 3x on chromium | 2026-10-04 | pending | Verified (chromium e2e x3) | [261004-v9g-tests-e2e-attentes](./quick/261004-v9g-tests-e2e-attentes/) |
 | 261004-w1x | Carousel runtime split: 1,315-line file into a 275-line composition + 9 modules (verbatim move, token-level parity check), coverage exclusion extended | 2026-10-04 | pending | Verified (tokens + unit + chromium e2e) | [261004-w1x-decoupage-carrousel](./quick/261004-w1x-decoupage-carrousel/) |
 | 261004-x2y | Git history rewritten to remove a personal address (2 commits affected, 0 occurrences left on 1,765 commits); exhibitions agenda deferred to v3; blame-ignore hash updated | 2026-10-04 | pending | Verified (history scan + tree identical) | [261004-x2y-purge-historique-git](./quick/261004-x2y-purge-historique-git/) |
+| 261005-stu | Studio self-hosted on OVH at https://atelierjacquelinesuzanne.fr/studio (`basePath: '/studio'`, `SANITY_STUDIO_BASEPATH` at build, own `.htaccess`: SPA fallback, noindex, no CSP), uploaded to `www/studio` by `deploy-ovh.yml` after an `sftp -mkdir`; `ci.yml` no longer runs `sanity deploy` (`SANITY_AUTH_TOKEN` unused); `sanity` 6.6.0 → 6.17.0 with react/react-dom 19.3.0; Sanity CORS origin added; verified live by the operator (Studio loads and works) | 2026-10-05 | 17b9971, f128e69, 9c2f58b | Verified (CI + live) | (no quick directory: done via PRs #37, #38, #39) |
 
 ## Deferred Items
 
