@@ -11,8 +11,9 @@ name: Deploy to OVH production
 # reviewer-gated `production-ovh` environment and still pause for a
 # recorded human approval (D-02).
 #
-# A push to `main` never runs this workflow: .github/workflows/ci.yml gates
-# every push and republishes the hosted Studio, nothing more.
+# A push to `main` never runs this workflow: .github/workflows/ci.yml only
+# gates every push. This workflow also ships the self-hosted Sanity Studio
+# (https://atelierjacquelinesuzanne.fr/studio) alongside the site.
 #
 # Because `repository_dispatch` always runs against the default branch, a
 # publish also ships whatever code is currently on `main` — keep `main`
@@ -139,6 +140,22 @@ jobs:
           path: dist
           include-hidden-files: true
 
+      # The Studio is self-hosted under /studio (www/studio on OVH). It was
+      # already built by the shared gates above (`sanity build`, basePath
+      # /studio); its Apache config ships as dist/.htaccess so the SFTP
+      # steps below can send it by explicit name, like the site's.
+      - name: Prepare Studio artifact
+        run: |
+          test -f sanity/dist/index.html
+          cp sanity/studio.htaccess sanity/dist/.htaccess
+
+      - name: Upload Studio artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ovh-studio-dist
+          path: sanity/dist
+          include-hidden-files: true
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -183,6 +200,12 @@ jobs:
           name: ovh-dist
           path: dist
 
+      - name: Download Studio artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ovh-studio-dist
+          path: studio-dist
+
       # Pinned to the immutable commit SHA (v1.2.6), never a tag or branch:
       # this is a Docker action that builds and runs third-party code on
       # this runner while OVH_SFTP_PASSWORD is in scope, so a mutable tag
@@ -216,6 +239,30 @@ jobs:
           password: ${{ secrets.OVH_SFTP_PASSWORD }}
           local_path: './dist/.htaccess'
           remote_path: '/home/${{ vars.OVH_SFTP_USER }}/www'
+          sftp_only: true
+
+      # The Studio lives in its own remote folder (www/studio), so the site
+      # upload above never overwrites it and vice versa.
+      - name: Deploy Studio to OVH (SFTP)
+        uses: wlixcc/SFTP-Deploy-Action@a5ccb9c6211a94cc59404f0fdb2a9936a6dfee64 # v1.2.6
+        with:
+          username: ${{ vars.OVH_SFTP_USER }}
+          server: ${{ vars.OVH_SFTP_HOST }}
+          port: '22'
+          password: ${{ secrets.OVH_SFTP_PASSWORD }}
+          local_path: './studio-dist/*'
+          remote_path: '/home/${{ vars.OVH_SFTP_USER }}/www/studio'
+          sftp_only: true
+
+      - name: Deploy Studio .htaccess to OVH (SFTP, dotfile)
+        uses: wlixcc/SFTP-Deploy-Action@a5ccb9c6211a94cc59404f0fdb2a9936a6dfee64 # v1.2.6
+        with:
+          username: ${{ vars.OVH_SFTP_USER }}
+          server: ${{ vars.OVH_SFTP_HOST }}
+          port: '22'
+          password: ${{ secrets.OVH_SFTP_PASSWORD }}
+          local_path: './studio-dist/.htaccess'
+          remote_path: '/home/${{ vars.OVH_SFTP_USER }}/www/studio'
           sftp_only: true
 
       - name: Deploy complete
